@@ -32,7 +32,7 @@ export function ShareDialog({ isOpen, onClose, title, summary, url, imageUrl, is
     ? `${window.location.origin}${url}`
     : url;
 
-  const shareText = `${title}${summary ? `\n\n${summary.slice(0, 120)}...` : ""}\n\n📰 Lee más en ProgramBI`;
+  const shareText = `${title}${summary ? `\n\n${summary.slice(0, 120)}...` : ""}\n\n📰 Lee más en Reclu`;
 
   const copyLink = async () => {
     try {
@@ -118,7 +118,7 @@ export function ShareDialog({ isOpen, onClose, title, summary, url, imageUrl, is
                           <Headphones className="w-2.5 h-2.5" /> AUDIO
                         </span>
                       )}
-                      <span className="text-[9px] text-muted-foreground/50 font-medium">programbi.cl</span>
+                      <span className="text-[9px] text-muted-foreground/50 font-medium">reclu.com</span>
                     </div>
                     <p className="text-xs font-semibold text-foreground line-clamp-2 leading-tight">{title}</p>
                     {summary && <p className="text-[10px] text-muted-foreground/60 line-clamp-1 mt-0.5">{summary}</p>}

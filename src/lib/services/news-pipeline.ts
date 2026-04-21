@@ -1,50 +1,7 @@
 import { callOpenRouter } from '../openrouter';
 import { createClient } from '@supabase/supabase-js';
-import { randomUUID } from 'crypto';
 
-// Helper to log AI steps to Supabase for observability
-async function logAiStep(data: {
-  traceId: string;
-  step: string;
-  model: string;
-  prompt: string;
-  response: string;
-  tokensUsed: number;
-}) {
-  console.log(`[AI-LOG] Attempting to log step: ${data.step} (${data.model}) - Tokens: ${data.tokensUsed}`);
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  
-  if (!supabaseUrl || !supabaseKey) {
-    console.warn("[AI-LOG] Missing Supabase credentials for logging.");
-    return;
-  }
-
-  try {
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    const { error } = await supabase.from('ai_pipeline_logs').insert({
-      trace_id: data.traceId,
-      step: data.step,
-      model: data.model,
-      prompt: data.prompt,
-      response: data.response,
-      tokens_used: data.tokensUsed,
-    });
-
-    if (error) {
-      if (error.code === 'PGRST205') {
-        console.error("[AI-LOG] ERROR CRÍTICO: La tabla 'ai_pipeline_logs' no existe o no es visible en Supabase.");
-        console.error("[AI-LOG] Por favor, ejecuta el SQL en Supabase para crear la tabla.");
-      } else {
-        console.error("[AI-LOG] Supabase insert error:", error);
-      }
-    } else {
-      console.log(`[AI-LOG] Successfully logged step: ${data.step}`);
-    }
-  } catch (err) {
-    console.error("[AI-LOG] unexpected error:", err);
-  }
-}
+// ─── Types ───────────────────────────────────────
 
 export interface RawArticle {
   title: string;
@@ -53,31 +10,10 @@ export interface RawArticle {
   sourceName: string;
   publishedAt: string;
   imageUrl?: string | null;
+  sourceUrl?: string;
   feed_tag?: string;
   country_code?: string;
-}
-
-export function generateSlug(text: string): string {
-  return text
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^\w\s-]/g, '')
-    .replace(/[\s_]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
-export interface ClusteredEvent {
-  event_id: string;
-  main_topic: string;
-  category: 'tech_global' | 'finanzas' | 'inversiones' | 'economia' | 'impacto_global' | 'chile' | 'general';
-  relevance_score: number; // 0-100
-  articles: RawArticle[];
-  feed_tag?: string;
-  country_code?: string;
-  tags?: string[];
-  sentiment?: 'positive' | 'negative' | 'neutral';
-  is_live?: boolean;
+  language?: string;
 }
 
 export interface FinalNewsArticle {
@@ -101,307 +37,283 @@ export interface FinalNewsArticle {
   is_live?: boolean;
 }
 
-/**
- * Find the best image for a cluster by searching rawArticles.
- * Hunter Alpha strips imageUrl, so we match by keywords.
- */
-function findBestImage(cluster: ClusteredEvent, rawArticles?: RawArticle[]): string | null {
-  // 1. Try cluster.articles first
-  for (const art of cluster.articles) {
-    if (art.imageUrl) return art.imageUrl;
-    if ((art as any).image_url) return (art as any).image_url;
-  }
-  if (!rawArticles?.length) return null;
+// ─── Helpers ─────────────────────────────────────
 
-  // 2. Match by URL
-  const clusterUrls = new Set(cluster.articles.map(a => a.url));
-  for (const raw of rawArticles) {
-    if (raw.imageUrl && clusterUrls.has(raw.url)) return raw.imageUrl;
-  }
-
-  // 3. Match by title keywords
-  const topicWords = cluster.main_topic.toLowerCase().split(/\s+/).filter(w => w.length > 3);
-  let best: RawArticle | null = null;
-  let bestScore = 0;
-  for (const raw of rawArticles) {
-    if (!raw.imageUrl) continue;
-    const t = raw.title.toLowerCase();
-    const score = topicWords.filter(w => t.includes(w)).length;
-    if (score > bestScore) { bestScore = score; best = raw; }
-  }
-  if (best) return best.imageUrl!;
-
-  // 4. Fallback: any image
-  return rawArticles.find(r => r.imageUrl)?.imageUrl || null;
+export function generateSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .substring(0, 120);
 }
 
-/**
- * Helper: fetch from NewsData.io with given params
- */
-async function fetchFromNewsData(params: string, countryCode: string): Promise<RawArticle[]> {
-  const apiKey = process.env.NEWSDATA_API_KEY;
-  if (!apiKey) { console.error("NEWSDATA_API_KEY missing"); return []; }
+function getSupabaseAdmin() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+  return createClient(url, key);
+}
 
-  const url = `https://newsdata.io/api/1/latest?apikey=${apiKey}&${params}`;
+// ─── AI Pipeline Logging ─────────────────────────
+
+async function logAiStep(data: {
+  traceId: string;
+  step: string;
+  model: string;
+  prompt: string;
+  response: string;
+  tokensUsed: number;
+}) {
   try {
-    const res = await fetch(url, { next: { revalidate: 60 } });
-    if (!res.ok) throw new Error(`NewsData API error: ${res.statusText}`);
-    const data = await res.json();
-    if (!data.results || !Array.isArray(data.results)) return [];
-
-    return data.results.map((item: any) => ({
-      title: item.title || '',
-      summary: item.description || item.content || '',
-      url: item.link || '',
-      sourceName: item.source_id || item.source_url || 'NewsData.io',
-      publishedAt: item.pubDate || new Date().toISOString(),
-      imageUrl: item.image_url || null,
-      country_code: countryCode,
-    })).filter((a: RawArticle) => a.title && a.summary);
+    const supabase = getSupabaseAdmin();
+    await supabase.from('ai_pipeline_logs').insert({
+      trace_id: data.traceId,
+      step: data.step,
+      model: data.model,
+      prompt: data.prompt.substring(0, 5000), // Limit stored prompt size
+      response: data.response.substring(0, 5000),
+      tokens_used: data.tokensUsed,
+    });
   } catch (err) {
-    console.error(`Error fetching ${countryCode} from NewsData.io:`, err);
-    return [];
+    console.warn("[AI-LOG] Log failed (non-critical):", err);
   }
 }
 
+// ─── Phase 1: Google News RSS Fetch ──────────────
+// FREE · Real-time · Unlimited
+// Returns ~10-15 articles per feed
+
+interface RSSFeed {
+  url: string;
+  country_code: string;
+  feed_tag: string;
+  language: string;
+}
+
+const RSS_FEEDS: RSSFeed[] = [
+  // Chile (4 feeds)
+  {
+    url: 'https://news.google.com/rss/search?q=economia+finanzas+chile&hl=es-419&gl=CL&ceid=CL:es-419',
+    country_code: 'cl', feed_tag: 'economia', language: 'es'
+  },
+  {
+    url: 'https://news.google.com/rss/search?q=inversiones+bolsa+mercado+chile&hl=es-419&gl=CL&ceid=CL:es-419',
+    country_code: 'cl', feed_tag: 'inversiones', language: 'es'
+  },
+  {
+    url: 'https://news.google.com/rss/search?q=tecnologia+innovacion+startups+chile&hl=es-419&gl=CL&ceid=CL:es-419',
+    country_code: 'cl', feed_tag: 'tech_global', language: 'es'
+  },
+  {
+    url: 'https://news.google.com/rss/search?q=banco+central+politica+economica+chile&hl=es-419&gl=CL&ceid=CL:es-419',
+    country_code: 'cl', feed_tag: 'chile', language: 'es'
+  },
+  // USA / Global (4 feeds)
+  {
+    url: 'https://news.google.com/rss/search?q=finance+wall+street+markets+stocks&hl=en-US&gl=US&ceid=US:en',
+    country_code: 'us', feed_tag: 'finanzas', language: 'en'
+  },
+  {
+    url: 'https://news.google.com/rss/search?q=economy+federal+reserve+inflation+GDP&hl=en-US&gl=US&ceid=US:en',
+    country_code: 'us', feed_tag: 'economia', language: 'en'
+  },
+  {
+    url: 'https://news.google.com/rss/search?q=artificial+intelligence+big+tech+startups&hl=en-US&gl=US&ceid=US:en',
+    country_code: 'us', feed_tag: 'tech_global', language: 'en'
+  },
+  {
+    url: 'https://news.google.com/rss/search?q=investments+cryptocurrency+IPO+venture+capital&hl=en-US&gl=US&ceid=US:en',
+    country_code: 'us', feed_tag: 'inversiones', language: 'en'
+  },
+];
+
 /**
- * Phase 1: 1 BROAD fetch per country (6 countries in parallel)
- * Grok will classify the topic later via 2-digit code.
+ * Parse Google News RSS XML into RawArticle[]
+ * Google News RSS uses standard RSS 2.0 format
  */
-export async function fetchRawNews(): Promise<RawArticle[]> {
-  // Country configs: code -> NewsData params
-  const countryFetches: { code: string; params: string }[] = [
-    { code: 'cl', params: 'country=cl&language=es&category=business,technology,politics' },
-    { code: 'ar', params: 'country=ar&language=es&category=business,technology,politics' },
-    { code: 'co', params: 'country=co&language=es&category=business,technology,politics' },
-    { code: 'br', params: 'country=br&language=pt&category=business,technology,politics' },
-    { code: 'ec', params: 'country=ec&language=es&category=business,technology,politics' },
-    { code: 'mx', params: 'country=mx&language=es&category=business,technology,politics' },
-  ];
+function parseRSSXml(xml: string, feed: RSSFeed): RawArticle[] {
+  const articles: RawArticle[] = [];
+  
+  // Extract <item> blocks
+  const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+  let match;
+  
+  while ((match = itemRegex.exec(xml)) !== null) {
+    const itemXml = match[1];
+    
+    const title = itemXml.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/)?.[1]
+      || itemXml.match(/<title>(.*?)<\/title>/)?.[1]
+      || '';
+    
+    const link = itemXml.match(/<link>(.*?)<\/link>/)?.[1]
+      || itemXml.match(/<link[^>]*href=["']([^"']+)["']/)?.[1]
+      || '';
 
-  console.log(`[PIPELINE] Fetching ${countryFetches.length} countries in parallel...`);
+    const pubDate = itemXml.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] || '';
+    
+    const description = itemXml.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/)?.[1]
+      || itemXml.match(/<description>(.*?)<\/description>/)?.[1]
+      || '';
+    
+    // Extract source from Google News format
+    const sourceMatch = itemXml.match(/<source[^>]*url=["']([^"']+)["'][^>]*>(.*?)<\/source>/);
+    const sourceName = sourceMatch?.[2] || 'Google News';
+    const sourceUrl = sourceMatch?.[1] || '';
+    
+    // Try to get media:content image
+    const mediaUrl = itemXml.match(/<media:content[^>]*url=["']([^"']+)["']/)?.[1] || null;
 
-  const results = await Promise.all(
-    countryFetches.map(cf => fetchFromNewsData(cf.params, cf.code))
+    // Clean HTML from description
+    const cleanDesc = description
+      .replace(/<[^>]+>/g, '')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .trim();
+
+    if (title && link) {
+      articles.push({
+        title: title.replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&quot;/g, '"'),
+        summary: cleanDesc || title,
+        url: link,
+        sourceName,
+        sourceUrl,
+        publishedAt: pubDate ? new Date(pubDate).toISOString() : new Date().toISOString(),
+        imageUrl: mediaUrl,
+        feed_tag: feed.feed_tag,
+        country_code: feed.country_code,
+        language: feed.language,
+      });
+    }
+  }
+  
+  return articles;
+}
+
+/**
+ * Fetch all RSS feeds in parallel
+ */
+export async function fetchFromGoogleNewsRSS(): Promise<RawArticle[]> {
+  console.log(`[PIPELINE] Fetching ${RSS_FEEDS.length} Google News RSS feeds...`);
+  
+  const results = await Promise.allSettled(
+    RSS_FEEDS.map(async (feed) => {
+      try {
+        const res = await fetch(feed.url, {
+          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; RecluBot/1.0)' },
+          signal: AbortSignal.timeout(10000),
+        });
+        if (!res.ok) throw new Error(`RSS fetch failed: ${res.status}`);
+        const xml = await res.text();
+        return parseRSSXml(xml, feed);
+      } catch (err) {
+        console.error(`[PIPELINE] RSS error for ${feed.feed_tag}/${feed.country_code}:`, err);
+        return [];
+      }
+    })
   );
-
-  const allArticles = results.flat();
-  console.log(`[PIPELINE] Fetched ${allArticles.length} total articles across ${countryFetches.length} countries`);
+  
+  const allArticles = results
+    .filter((r): r is PromiseFulfilledResult<RawArticle[]> => r.status === 'fulfilled')
+    .flatMap(r => r.value);
+  
+  console.log(`[PIPELINE] Fetched ${allArticles.length} articles from ${RSS_FEEDS.length} feeds`);
   return allArticles;
 }
 
-/**
- * Phase 2: Hunter Alpha — Fast Deduplication & Relevance Filter
- * 
- * This model is cheap and fast. We use it ONLY to:
- *   1. Remove duplicate/near-duplicate articles about the same event.
- *   2. Assign a category and relevance score.
- *   3. Group source URLs for Grok to research later.
- * 
- * It does NOT rewrite anything. It's a sorting machine.
- */
-export async function clusterNewsWithQwen(articles: RawArticle[], traceId?: string): Promise<ClusteredEvent[]> {
-  const prompt = `Eres un motor de deduplicación de noticias. Tu ÚNICA tarea es agrupar artículos que hablan del MISMO evento y filtrar spam.
+// ─── Image Extraction (og:image) ─────────────────
+// Only called for articles that PASS the filter (≥65)
 
-ENTRADA: ${articles.length} artículos raw en JSON.
-SALIDA: Un JSON array donde cada objeto es un evento único.
+const USER_AGENTS = [
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
+];
 
-REGLAS ESTRICTAS:
-- Si 2+ artículos hablan del mismo hecho, agrúpalos en UN solo evento.
-- Asigna una categoría EXACTA entre: "chile", "tech_global", "finanzas", "inversiones", "economia", "impacto_global", "general".
-   - "chile": Todo lo que ocurre en Chile, política local o impacto directo en empresas e instituciones chilenas.
-   - "tech_global": IA, startups, ciberseguridad, grandes tecnológicas (Big Tech), innovación y disrupción digital.
-   - "finanzas": Mercados bursátiles, bancos, tasas de interés, monedas/divisas, resultados financieros, Wall Street.
-   - "inversiones": Venture Capital, rondas de financiamiento, fusiones, adquisiciones, criptomonedas, bienes raíces.
-   - "economia": Macroeconomía, inflación, PIB, empleo, políticas fiscales, comercio internacional, decisiones banco central.
-   - "impacto_global": Geopolítica mundial, guerras, decisiones internacionales críticas, crisis mundiales.
-- Asigna relevance_score (0-100): 90+ = breaking news global, 70-89 = importante, 50-69 = interesante, <50 = relleno.
-- Asigna un sentimiento ("positive", "negative", "neutral") predominante.
-- Genera un arreglo de 1 a 3 "tags" EXTREMADAMENTE específicos y cortos (ej. "IA", "Cobre", "Bolsa").
-- Asigna "is_live": true SOLO si el evento está en desarrollo activo ("en vivo", "en seguimiento") o es un evento importante que ocurrirá muy pronto (ej. "Trump hablará en 5 horas"). En cualquier otro caso, asigna false.
-- NO reescribas nada. Solo agrupa y clasifica.
-
-ARTÍCULOS RAW:
-${JSON.stringify(articles.map(a => ({ title: a.title, summary: a.summary.substring(0, 500), url: a.url, source: a.sourceName })), null, 2)}
-
-Responde SOLO con JSON válido, sin markdown ni texto adicional:
-[
-  {
-    "event_id": "slug-descriptivo",
-    "main_topic": "Descripción corta del evento en español",
-    "category": "tech_global",
-    "relevance_score": 85,
-    "sentiment": "neutral",
-    "is_live": false,
-    "tags": ["TagCorto1", "TagCorto2"],
-    "articles": [/* objetos RawArticle originales completos que pertenecen a este evento */]
-  }
-]`;
-
-  const model = process.env.OPENROUTER_FILTER_MODEL || 'openrouter/hunter-alpha';
-  console.log(`[PIPELINE] Calling Hunter Alpha (${model}) with ${articles.length} articles...`);
-  const { content, usage } = await callOpenRouter({
-    model,
-    messages: [{ role: 'user', content: prompt }],
-    temperature: 0.05,
-  });
-
-  if (traceId) {
-    await logAiStep({
-      traceId,
-      step: 'clustering',
-      model,
-      prompt,
-      response: content,
-      tokensUsed: usage?.total_tokens || 0,
-    });
-  }
-
-  try {
-    const rawJson = content.replace(/```json\n?|\`\`\`/g, '').trim();
-    return JSON.parse(rawJson) as ClusteredEvent[];
-  } catch (err) {
-    console.error("Failed to parse Hunter Alpha response:", content.substring(0, 500));
-    throw new Error("Hunter Alpha returned invalid JSON");
-  }
-}
+import { GoogleDecoder } from 'google-news-url-decoder';
 
 /**
- * Phase 3: Grok 4.1 Fast (:online) — Deep Research & Professional Rewriting
- * 
- * This is the brain. Grok receives the SOURCE URLs and uses its web browsing
- * to read the original articles, cross-reference with other sources, and write
- * a completely original, professional news article in Spanish.
+ * Resolve Google News redirect URLs to get the actual article URL.
+ * Uses the community google-news-url-decoder package to natively parse the encoded CBMi URL.
  */
-export async function rewriteNewsWithGrok(cluster: ClusteredEvent, traceId?: string, rawArticles?: RawArticle[]): Promise<FinalNewsArticle> {
-  // Only send URLs + titles (saves tokens, Grok searches the web for full content)
-  const sourceList = cluster.articles.slice(0, 3).map((a, i) => 
-    `${i+1}. "${a.title}" — ${a.sourceName}\n   URL: ${a.url}`
-  ).join('\n');
-
-  const prompt = `Eres el corresponsal principal de "NewsBI Pulse", un portal premium de noticias en ESPAÑOL.
-
-MISIÓN: Investiga las siguientes fuentes, busca MÁS fuentes que hablen del MISMO tema en la web, y redacta una noticia profesional y original.
-
-FUENTES INICIALES:
-${sourceList}
-
-INSTRUCCIONES:
-1. USA tu capacidad de búsqueda web para leer las URLs, encontrar más fuentes sobre el mismo tema, y crear un artículo MULTI-FUENTE de 4-6 párrafos.
-2. Tono periodístico premium, objetivo y elegante. EN ESPAÑOL.
-3. Usa **negritas** para nombres propios, cifras clave y hechos impactantes.
-4. NO incluyas etiquetas XML, citas inline, ni referencias numéricas en el texto. Solo texto limpio.
-5. Genera tags ESPECÍFICOS y cortos (nombres propios, temas concretos). Ejemplo: "Irán", "Epstein", "Bitcoin", "Fed", "Litio".
-6. Evalúa la importancia: 90-100 = crisis mundial/breaking news, 70-89 = noticia importante, 50-69 = interesante, 30-49 = menor.
-
-RESPONDE SOLO con este JSON (sin markdown, sin backticks):
-{
-  "title": "Título SEO impactante (max 100 chars)",
-  "summary": "Resumen de 1 oración",
-  "content": "Artículo completo con párrafos separados por doble salto de línea. SIN etiquetas XML ni citas inline.",
-  "tags": ["Tag1", "Tag2", "Tag3", "Tag4", "Tag5"],
-  "relevance_score": 85,
-  "category": "tech_global|finanzas|inversiones|economia|impacto_global|chile|general",
-  "sentiment": "positive|negative|neutral",
-  "city": "Ciudad principal del evento o null",
-  "f": 14
-}
-f = código 2 dígitos: primer dígito=país (1=CL,2=AR,3=CO,4=BR,5=EC,6=MX) segundo dígito=tema (1=General,2=Tech,3=Impacto Global,4=Finanzas,5=Inversiones,6=Economía)`;
-
-  const model = process.env.OPENROUTER_ENRICH_MODEL || 'x-ai/grok-4.1-fast:online';
-  const { content, usage, citations } = await callOpenRouter({
-    model,
-    messages: [{ role: 'user', content: prompt }],
-    temperature: 0.3,
-    search: true,
-  });
-
-  if (traceId) {
-    await logAiStep({
-      traceId,
-      step: `rewriting:${cluster.main_topic.substring(0, 30)}`,
-      model,
-      prompt,
-      response: content,
-      tokensUsed: usage?.total_tokens || 0,
-    });
-  }
-
+async function resolveGoogleNewsUrl(url: string): Promise<string> {
+  if (!url.includes('news.google.com')) return url;
   try {
-    // Clean Grok citation artifacts before parsing
-    let cleaned = content
-      .replace(/```json\n?|```/g, '')
-      .replace(/<grok:render[^>]*>[\s\S]*?<\/grok:render>/g, '')
-      .replace(/<grok:[^>]*\/>/g, '')
-      .replace(/\[\d+\]/g, '')
-      .trim();
-    
-    const data = JSON.parse(cleaned);
-    
-    // Also clean the content field itself
-    if (data.content) {
-      data.content = data.content
-        .replace(/<grok:render[^>]*>[\s\S]*?<\/grok:render>/g, '')
-        .replace(/<grok:[^>]*\/>/g, '')
-        .replace(/\[\d+\]/g, '')
-        .trim();
+    const decoder = new GoogleDecoder();
+    const result = await decoder.decode(url);
+    if (result && result.status && result.decoded_url) {
+      return result.decoded_url;
     }
-
-    // Decode Grok's 2-digit f value
-    const COUNTRY_DECODE: Record<number, string> = { 1:'cl', 2:'ar', 3:'co', 4:'br', 5:'ec', 6:'mx' };
-    const TOPIC_DECODE: Record<number, string> = { 1:'chile', 2:'tech_global', 3:'impacto_global', 4:'finanzas', 5:'inversiones', 6:'economia' };
-    
-    const fVal = Number(data.f) || 0;
-    const countryNum = Math.floor(fVal / 10);
-    const topicNum = fVal % 10;
-    const grokCountry = COUNTRY_DECODE[countryNum] || cluster.country_code || 'cl';
-    const grokFeedTag = TOPIC_DECODE[topicNum] || cluster.feed_tag || 'chile';
-
-    return {
-      title: data.title,
-      content: data.content,
-      summary: data.summary,
-      sentiment: data.sentiment || 'neutral',
-      category: data.category || cluster.category,
-      relevance_score: Number(data.relevance_score) || 50,
-      city: data.city === 'null' || data.city === null ? null : data.city,
-      imageUrl: findBestImage(cluster, rawArticles),
-      slug: generateSlug(data.title),
-      ai_model: model,
-      is_live: cluster.is_live || false,
-      sources: [
-        ...cluster.articles.map(a => ({ name: a.sourceName, url: a.url })),
-        ...(citations || []).map((url: string) => {
-          try {
-            const hostname = new URL(url).hostname.replace('www.', '');
-            return { name: hostname, url };
-          } catch (_e) { return { name: 'Web', url }; }
-        })
-      ].filter((s, i, arr) => arr.findIndex(x => x.url === s.url) === i), // deduplicate
-      feed_tag: grokFeedTag,
-      country_code: grokCountry,
-      tags: Array.isArray(data.tags) ? data.tags.slice(0, 5) : [],
-      views: 0,
-    };
   } catch (err) {
-    console.error("Failed to parse Grok response:", content.substring(0, 500));
-    throw new Error("Grok returned invalid JSON");
+    console.warn(`[PIPELINE] Failed to decode Google News URL: ${url.substring(0, 50)}...`);
+  }
+  return url;
+}
+
+export async function extractOgImage(articleUrl: string): Promise<string | null> {
+  try {
+    // Step 1: Resolve Google News redirects
+    const realUrl = await resolveGoogleNewsUrl(articleUrl);
+    
+    // Step 2: Fetch the page with a browser-like User-Agent
+    const ua = USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
+    const res = await fetch(realUrl, {
+      headers: {
+        'User-Agent': ua,
+        'Accept': 'text/html,application/xhtml+xml',
+        'Accept-Language': 'es-CL,es;q=0.9,en;q=0.8',
+      },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(8000),
+    });
+    
+    if (!res.ok) return null;
+    
+    // Only read first 60KB to save bandwidth (og:image is always in <head>)
+    const reader = res.body?.getReader();
+    if (!reader) return null;
+    
+    let html = '';
+    const decoder = new TextDecoder();
+    while (html.length < 60000) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      html += decoder.decode(value, { stream: true });
+      if (html.includes('</head>')) break;
+    }
+    reader.cancel();
+
+    // Priority 1: og:image (both attribute orderings)
+    const ogMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i)
+      || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i);
+    if (ogMatch?.[1] && ogMatch[1].startsWith('http')) return ogMatch[1];
+    
+    // Priority 2: twitter:image
+    const twMatch = html.match(/<meta[^>]*name=["']twitter:image["'][^>]*content=["']([^"']+)["']/i)
+      || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*name=["']twitter:image["']/i);
+    if (twMatch?.[1] && twMatch[1].startsWith('http')) return twMatch[1];
+
+    // Priority 3: twitter:image:src
+    const twSrc = html.match(/<meta[^>]*name=["']twitter:image:src["'][^>]*content=["']([^"']+)["']/i);
+    if (twSrc?.[1] && twSrc[1].startsWith('http')) return twSrc[1];
+
+    return null;
+  } catch {
+    return null;
   }
 }
 
-/**
- * Phase 2: Step 3.5 Flash — Filter + Rewrite Minor Articles
- * 
- * This free model receives ALL raw articles in a single batch.
- * It classifies each by importance (0-100):
- *   - importance >= 70 → route: "GROK" (sent to Grok for premium rewriting)
- *   - importance < 70  → route: "SELF" (Step rewrites it directly)
- */
+// ─── Phase 2: Step 3.5 Flash — Filter + Classify + Rewrite Minor ───
+
 interface StepFilterResult {
   index: number;
   title_original: string;
   importance: number;
-  route: 'GROK' | 'SELF';
+  route: 'GROK' | 'SELF' | 'DISCARD';
   section?: string;
   reason: string;
   rewritten?: {
@@ -418,179 +330,263 @@ interface StepFilterResult {
 
 export async function filterWithStep(articles: RawArticle[], traceId?: string): Promise<StepFilterResult[]> {
   const articleList = articles.map((a, i) => 
-    `${i}. "${a.title}" — ${a.sourceName}\n   Resumen: ${a.summary.substring(0, 200)}\n   URL: ${a.url}`
+    `${i}. "${a.title}" — ${a.sourceName} [${a.country_code?.toUpperCase()}/${a.language}]\n   ${a.summary.substring(0, 150)}`
   ).join('\n\n');
 
-  const prompt = `Eres el editor jefe de "NewsBI Pulse", un portal premium de noticias FINANCIERAS Y ECONÓMICAS en ESPAÑOL.
+  const prompt = `Eres el editor de "Reclu", portal PREMIUM de noticias económicas y financieras en ESPAÑOL.
 
-ENFOQUE DEL PORTAL: Economía, finanzas, inversiones, mercados, política económica, tech con impacto financiero. 
-NO NOS INTERESA: Deportes, fútbol, entretenimiento, farándula, crimen común, sucesos policiales.
+ENFOQUE: Economía, finanzas, inversiones, mercados, tech con impacto financiero, política económica Chile/EEUU.
+EXCLUIR: Deportes, fútbol, entretenimiento, farándula, crimen, sucesos policiales.
 
-Tu trabajo tiene 2 partes:
-1. CLASIFICAR cada noticia por importancia FINANCIERA (0-100)
-2. ASIGNAR la SECCIÓN correcta del portal
-3. REESCRIBIR las noticias MENORES (importancia < 70) tú mismo
+CLASIFICAR importancia financiera (0-100):
+- 90-100: BREAKING — Crisis, tasas de interés, crash mercados, quiebra empresa grande
+- 85-89: MUY IMPORTANTE — Resultados corporativos grandes, IPOs, fusiones, datos macro clave
+- 65-84: INTERESANTE — Noticias corporativas, tech relevante, política económica
+- 0-64: DESCARTAR — Menor, irrelevante, deportes, entretenimiento
 
-ESCALA DE IMPORTANCIA FINANCIERA:
-- 90-100: Crisis económica, cambio de tasas de interés, caídas de mercados, quiebra de empresa grande, evento geopolítico con impacto económico directo
-- 70-89: Resultados financieros de empresas grandes, acuerdos comerciales, cambios regulatorios, IPOs, fusiones, datos macroeconómicos
-- 50-69: Noticias corporativas menores, startups, tech interesante, política local con impacto económico indirecto
-- 30-49: Noticias muy locales sin impacto económico, política menor
-- 0-29: Deportes, fútbol, entretenimiento, publicidad, spam, sucesos policiales → DESCARTAR
+RUTAS:
+- importance ≥ 85 → route: "GROK" (sin rewritten)
+- importance 65-84 → route: "SELF" (incluir rewritten completo EN ESPAÑOL)
+- importance < 65 → route: "DISCARD" (sin rewritten)
 
-SECCIONES DEL PORTAL (campo "section"):
-- "chile": Noticias de Chile (economía, empresas, política chilena, ex presidentes)
-- "finanzas": Bancos, corporativos, fusiones, resultados financieros
-- "inversiones": Bolsa, criptomonedas, mercados, trading, commodities
-- "economia": Macroeconomía, inflación, PIB, tasas de interés, indicadores
-- "impacto_global": SOLO guerras, pandemias, crisis mundiales, elecciones de potencias (EEUU, China). ¡Noticias políticas locales de Latinoamérica o Chile NUNCA son impacto global!
-- "tech_global": IA, Big Tech, startups tech con valorización relevante
+SECCIONES: chile, finanzas, inversiones, economia, impacto_global, tech_global
 
-NOTICIAS A EVALUAR:
+Si el artículo original es en INGLÉS, SIEMPRE traducir y reescribir en ESPAÑOL.
+
+ARTÍCULOS:
 ${articleList}
 
-RESPONDE con este JSON exacto (sin markdown, sin backticks):
-{
-  "articles": [
-    {
-      "index": 0,
-      "title_original": "Título original",
-      "importance": 85,
-      "route": "GROK",
-      "section": "inversiones",
-      "reason": "Caída de mercados asiáticos por tensiones comerciales"
-    },
-    {
-      "index": 1,
-      "title_original": "Otro título",
-      "importance": 55,
-      "route": "SELF",
-      "section": "finanzas",
-      "reason": "Noticia corporativa menor",
-      "rewritten": {
-        "title": "Título reescrito SEO en español (max 100)",
-        "summary": "Resumen de 1 oración",
-        "content": "Artículo de 2-3 párrafos. Tono periodístico. Usa **negritas** para datos clave.",
-        "tags": ["Tag1", "Tag2", "Tag3"],
-        "category": "business",
-        "sentiment": "positive|negative|neutral",
-        "city": "Ciudad o null",
-        "f": 14
-      }
-    }
-  ]
-}
+IMPORTANTE: Responde ÚNICAMENTE con JSON puro. Sin explicaciones, sin markdown, sin texto antes o después del JSON:
+{"articles":[{"index":0,"title_original":"...","importance":85,"route":"GROK","section":"finanzas","reason":"..."},{"index":1,"title_original":"...","importance":70,"route":"SELF","section":"economia","reason":"...","rewritten":{"title":"Título SEO español max 90 chars","summary":"1 oración","content":"2-3 párrafos con **negritas** en datos clave","tags":["Tag1","Tag2","Tag3"],"category":"economia","sentiment":"neutral","city":null,"f":14}}]}
 
-REGLAS ESTRICTAS:
-- route="GROK" SOLO para importancia >= 70 (NO incluir "rewritten"). Estas son las que realmente merecen investigación profunda con web search.
-- route="SELF" para importancia < 70 (INCLUIR "rewritten" completo)
-- DESCARTAR (importance < 25, route SELF sin rewritten): deportes, fútbol, entretenimiento, publicidad
-- section DEBE ser una de: chile, finanzas, inversiones, economia, impacto_global, tech_global
-- f = código 2 dígitos: primer dígito=país (1=CL,2=AR,3=CO,4=BR,5=EC,6=MX) segundo=tema (1=General,2=Tech,3=Impacto Global,4=Finanzas,5=Inversiones,6=Economía)
-- Escribe TODO en español
-- Sé MUY estricto: una noticia de fútbol NUNCA es importante. Una caída de bolsa SÍ lo es.`;
+f = 2 dígitos: país(1=CL,2=US) + tema(1=General,2=Tech,3=Impacto,4=Finanzas,5=Inversiones,6=Economía)`;
 
   const model = process.env.OPENROUTER_FILTER_MODEL || 'stepfun/step-3.5-flash:free';
-  console.log(`[PIPELINE] Calling Step 3.5 Flash (${model}) with ${articles.length} articles...`);
+  console.log(`[PIPELINE] Step filter: ${articles.length} articles → ${model}`);
+  
   const { content, usage } = await callOpenRouter({
     model,
     messages: [{ role: 'user', content: prompt }],
     temperature: 0.1,
-    max_tokens: 8000,
+    max_tokens: 6000,
   });
 
-  console.log(`[PIPELINE] Step raw response (first 300): ${content.substring(0, 300)}`);
-
   if (traceId) {
-    await logAiStep({
-      traceId,
-      step: 'filter_step',
-      model,
-      prompt,
-      response: content,
-      tokensUsed: usage?.total_tokens || 0,
-    });
+    await logAiStep({ traceId, step: 'filter_step', model, prompt, response: content, tokensUsed: usage?.total_tokens || 0 });
   }
 
   try {
     const rawJson = content.replace(/```json\n?|```/g, '').trim();
     const parsed = JSON.parse(rawJson);
     const results: StepFilterResult[] = parsed.articles || parsed;
-    console.log(`[PIPELINE] Step classified ${results.length} articles: ${results.filter(r => r.route === 'GROK').length} GROK, ${results.filter(r => r.route === 'SELF').length} SELF`);
+    
+    const grokCount = results.filter(r => r.route === 'GROK').length;
+    const selfCount = results.filter(r => r.route === 'SELF').length;
+    const discardCount = results.filter(r => r.route === 'DISCARD' || r.importance < 60).length;
+    console.log(`[PIPELINE] Step: ${grokCount} GROK, ${selfCount} SELF, ${discardCount} DISCARD`);
+    
     return results;
   } catch (err) {
-    console.error("Failed to parse Step response:", content.substring(0, 800));
-    // Fallback: route all articles to GROK
-    console.warn("[PIPELINE] Step parse failed — falling back: routing all articles to GROK");
-    return articles.map((a, i) => ({
-      index: i,
-      title_original: a.title,
-      importance: 75,
-      route: 'GROK' as const,
-      reason: 'Step fallback',
+    console.error("[PIPELINE] Step parse failed:", content.substring(0, 500));
+    // Fallback: send top articles to GROK
+    return articles.slice(0, 3).map((a, i) => ({
+      index: i, title_original: a.title, importance: 80, route: 'GROK' as const, reason: 'Step parse fallback',
     }));
   }
 }
 
+// ─── Phase 3: Grok 4.1 Fast :online — Premium Research ──────────
+// 
+// COST OPTIMIZATIONS applied:
+// 1. reasoning: 'none' — no chain-of-thought (already set in openrouter.ts)
+// 2. max_tokens: 1500 — hard cap on output (article doesn't need more)
+// 3. Compact prompt — minimal instructions, max info density
+// 4. Only 1-2 source URLs — less web search tokens
+// 5. temperature: 0.2 — less creative = fewer tokens
 
-/**
- * Full Pipeline Execution (Fetch → Step Filter → Grok/Self → DB)
- */
-export async function runNewsPipeline(): Promise<{ success: boolean; articles: FinalNewsArticle[]; error?: string; step?: string }> {
-  console.log("=== [PIPELINE] Starting Two-LLM Pipeline Run ===");
+export async function rewriteNewsWithGrok(
+  article: RawArticle,
+  section: string,
+  traceId?: string
+): Promise<FinalNewsArticle> {
+  const prompt = `Periodista de "Reclu". Investiga en la web y escribe noticia profesional EN ESPAÑOL.
+
+FUENTE: "${article.title}" — ${article.sourceName}
+URL: ${article.url}
+
+INSTRUCCIONES:
+- Busca la URL y más fuentes sobre el mismo tema
+- Artículo de 3-4 párrafos, tono periodístico premium
+- Usa **negritas** en nombres, cifras y datos clave
+- Sin etiquetas XML, sin citas numéricas
+- IMPORTANTE: Busca la imagen principal (og:image) del artículo original e inclúyela en image_url
+
+JSON (sin markdown):
+{"title":"Título SEO max 90 chars","summary":"1 oración","content":"Artículo completo","tags":["T1","T2","T3","T4"],"relevance_score":85,"category":"${section}","sentiment":"neutral","city":null,"image_url":"https://...","f":${article.country_code === 'cl' ? '1' : '2'}4}`;
+
+  const model = process.env.OPENROUTER_ENRICH_MODEL || 'x-ai/grok-4.1-fast:online';
   
-  let traceId: string;
-  try {
-    traceId = randomUUID();
-  } catch (e) {
-    traceId = "00000000-0000-0000-0000-000000000000".replace(/0/g, () => (Math.random() * 16 | 0).toString(16));
+  const { content, usage, citations } = await callOpenRouter({
+    model,
+    messages: [{ role: 'user', content: prompt }],
+    temperature: 0.2,    // Low = more deterministic, fewer tokens
+    max_tokens: 1500,     // Hard cap — 3-4 paragraphs fit in ~800-1200 tokens
+    search: true,         // Enable web search
+  });
+
+  if (traceId) {
+    await logAiStep({
+      traceId,
+      step: `grok:${article.title.substring(0, 30)}`,
+      model, prompt, response: content,
+      tokensUsed: usage?.total_tokens || 0,
+    });
   }
+
+  // Parse response
+  let cleaned = content
+    .replace(/```json\n?|```/g, '')
+    .replace(/<grok:render[^>]*>[\s\S]*?<\/grok:render>/g, '')
+    .replace(/<grok:[^>]*\/>/g, '')
+    .replace(/\[\d+\]/g, '')
+    .trim();
   
-  console.log(`=== [PIPELINE] Trace ID: ${traceId} ===`);
+  const data = JSON.parse(cleaned);
+  
+  // Clean content field
+  if (data.content) {
+    data.content = data.content
+      .replace(/<grok:render[^>]*>[\s\S]*?<\/grok:render>/g, '')
+      .replace(/<grok:[^>]*\/>/g, '')
+      .replace(/\[\d+\]/g, '')
+      .trim();
+  }
+
+  // Decode country/topic from f value
+  const COUNTRY_DECODE: Record<number, string> = { 1: 'cl', 2: 'us' };
+  const TOPIC_DECODE: Record<number, string> = { 1: 'chile', 2: 'tech_global', 3: 'impacto_global', 4: 'finanzas', 5: 'inversiones', 6: 'economia' };
+  
+  const fVal = Number(data.f) || 0;
+  const countryNum = Math.floor(fVal / 10);
+  const topicNum = fVal % 10;
+
+  return {
+    title: data.title,
+    content: data.content,
+    summary: data.summary,
+    sentiment: data.sentiment || 'neutral',
+    category: data.category || section,
+    relevance_score: Number(data.relevance_score) || 80,
+    city: data.city === 'null' || data.city === null ? undefined : data.city,
+    imageUrl: data.image_url || article.imageUrl || null,
+    slug: generateSlug(data.title),
+    ai_model: model,
+    is_live: false,
+    sources: [
+      { name: article.sourceName, url: article.url },
+      ...(citations || []).map((url: string) => {
+        try { return { name: new URL(url).hostname.replace('www.', ''), url }; }
+        catch { return { name: 'Web', url }; }
+      })
+    ].filter((s, i, arr) => arr.findIndex(x => x.url === s.url) === i),
+    feed_tag: TOPIC_DECODE[topicNum] || section,
+    country_code: COUNTRY_DECODE[countryNum] || article.country_code || 'cl',
+    tags: Array.isArray(data.tags) ? data.tags.slice(0, 5) : [],
+    views: 0,
+  };
+}
+
+// ─── Pipeline Execution ──────────────────────────
+// Config limits per execution (to control costs + volume)
+
+const PIPELINE_CONFIG = {
+  MAX_ARTICLES_TO_FILTER: 10,     // Max sent to filter per run
+  MAX_STEP_WRITES_PER_RUN: 4,    // Max articles Step rewrites (free)
+  MAX_GROK_CALLS_PER_RUN: 1,     // Max Grok enrichments per run (~$0.02 each)
+  GROK_THRESHOLD: 85,            // Only the MOST important news go to Grok
+  STEP_THRESHOLD: 65,            // Min importance for Step/publish
+  IMAGE_EXTRACTION_CONCURRENCY: 5, // Parallel og:image fetches
+};
+
+export async function runNewsPipeline(): Promise<{
+  success: boolean;
+  articles: FinalNewsArticle[];
+  error?: string;
+  step?: string;
+  stats?: { fetched: number; filtered: number; grokCalls: number; stepWrites: number; saved: number; durationMs: number };
+}> {
+  const startTime = Date.now();
+  console.log("=== [PIPELINE v2] Starting Google News RSS Pipeline ===");
+  
+  const traceId = crypto.randomUUID?.() 
+    || "00000000-0000-0000-0000-000000000000".replace(/0/g, () => (Math.random() * 16 | 0).toString(16));
   
   try {
-    // ─── Step 1: Fetch raw articles ───
-    console.log("[PIPELINE] Step 1: Fetching raw articles from NewsData.io...");
-    let rawArticles = await fetchRawNews();
-    rawArticles = rawArticles.slice(0, 40);
-    console.log(`[PIPELINE] Step 1 Complete: Fetched ${rawArticles.length} raw articles.`);
+    // ─── Step 1: Fetch from Google News RSS ───
+    console.log("[PIPELINE] Step 1: Fetching Google News RSS...");
+    const rawArticles = await fetchFromGoogleNewsRSS();
     
     if (rawArticles.length === 0) {
-      console.warn("[PIPELINE] No raw articles found. Exiting pipeline.");
-      return { success: true, articles: [] } as any; 
+      console.warn("[PIPELINE] No articles from RSS. Exiting.");
+      return { success: true, articles: [], stats: { fetched: 0, filtered: 0, grokCalls: 0, stepWrites: 0, saved: 0, durationMs: Date.now() - startTime } };
     }
-    
-    // Deduplicate by title
+
+    // ─── Step 2: Local deduplication (free, no API) ───
     const seenTitles = new Set<string>();
-    const uniqueArticles: RawArticle[] = [];
+    const unique: RawArticle[] = [];
     for (const art of rawArticles) {
-      const key = art.title.toLowerCase().trim();
-      if (!seenTitles.has(key)) {
+      // Normalize title for dedup (remove source suffix, lowercase)
+      const key = art.title.toLowerCase().replace(/\s*[-–|].+$/, '').trim();
+      if (!seenTitles.has(key) && key.length > 15) {
         seenTitles.add(key);
-        uniqueArticles.push(art);
+        unique.push(art);
       }
     }
-    // Take max 10 unique articles for Step to evaluate
-    const toFilter = uniqueArticles.slice(0, 5);
-    console.log(`[PIPELINE] Deduplicated to ${uniqueArticles.length}, sending ${toFilter.length} to Step.`);
+    
+    // Check against existing DB slugs
+    const supabase = getSupabaseAdmin();
+    const recentSlugs = new Set<string>();
+    const { data: recentArticles } = await supabase
+      .from('news_articles')
+      .select('slug')
+      .order('published_at', { ascending: false })
+      .limit(200);
+    
+    if (recentArticles) {
+      for (const a of recentArticles) recentSlugs.add(a.slug);
+    }
+    
+    const fresh = unique.filter(a => !recentSlugs.has(generateSlug(a.title)));
+    const toFilter = fresh.slice(0, PIPELINE_CONFIG.MAX_ARTICLES_TO_FILTER);
+    
+    console.log(`[PIPELINE] Step 2: ${rawArticles.length} raw → ${unique.length} unique → ${fresh.length} fresh → ${toFilter.length} to filter`);
 
-    // ─── Step 2: Filter with Step 3.5 Flash ───
-    console.log("[PIPELINE] Step 2: Filtering articles with Step 3.5 Flash...");
+    if (toFilter.length === 0) {
+      console.log("[PIPELINE] No fresh articles to process.");
+      return { success: true, articles: [], stats: { fetched: rawArticles.length, filtered: 0, grokCalls: 0, stepWrites: 0, saved: 0, durationMs: Date.now() - startTime } };
+    }
+
+    // ─── Step 3: Filter with Step 3.5 Flash (FREE) ───
+    console.log("[PIPELINE] Step 3: Filtering with Step 3.5 Flash...");
     const filterResults = await filterWithStep(toFilter, traceId);
     
-    // Separate into GROK and SELF routes
-    const grokArticles = filterResults.filter(r => r.route === 'GROK' && r.importance >= 70);
-    const selfArticles = filterResults.filter(r => r.route === 'SELF' && r.rewritten && r.importance >= 25);
+    const grokArticles = filterResults
+      .filter(r => r.route === 'GROK' && r.importance >= PIPELINE_CONFIG.GROK_THRESHOLD)
+      .slice(0, PIPELINE_CONFIG.MAX_GROK_CALLS_PER_RUN);
     
-    console.log(`[PIPELINE] Step 2 Complete: ${grokArticles.length} → Grok, ${selfArticles.length} → Self-rewritten`);
+    const selfArticles = filterResults
+      .filter(r => r.route === 'SELF' && r.rewritten && r.importance >= PIPELINE_CONFIG.STEP_THRESHOLD)
+      .slice(0, PIPELINE_CONFIG.MAX_STEP_WRITES_PER_RUN);
+    
+    console.log(`[PIPELINE] Step 3: ${grokArticles.length} → Grok, ${selfArticles.length} → Step`);
 
-    // ─── Country/Topic decode helper ───
-    const COUNTRY_DECODE: Record<number, string> = { 1:'cl', 2:'ar', 3:'co', 4:'br', 5:'ec', 6:'mx' };
-    const TOPIC_DECODE: Record<number, string> = { 1:'chile', 2:'tech_global', 3:'impacto_global', 4:'finanzas', 5:'inversiones', 6:'economia' };
-
-    // ─── Step 3a: Convert SELF articles to FinalNewsArticle ───
-    const selfFinalArticles: FinalNewsArticle[] = [];
+    // ─── Country/Topic decode ───
+    const COUNTRY_DECODE: Record<number, string> = { 1: 'cl', 2: 'us' };
+    const TOPIC_DECODE: Record<number, string> = { 1: 'chile', 2: 'tech_global', 3: 'impacto_global', 4: 'finanzas', 5: 'inversiones', 6: 'economia' };
     const stepModel = process.env.OPENROUTER_FILTER_MODEL || 'stepfun/step-3.5-flash:free';
+
+    // ─── Step 4a: Convert SELF articles ───
+    const selfFinalArticles: FinalNewsArticle[] = [];
     
     for (const item of selfArticles) {
       const raw = toFilter[item.index];
@@ -608,7 +604,7 @@ export async function runNewsPipeline(): Promise<{ success: boolean; articles: F
         category: item.rewritten.category || 'business',
         relevance_score: item.importance,
         city: item.rewritten.city === 'null' ? undefined : (item.rewritten.city || undefined),
-        imageUrl: raw.imageUrl || null,
+        imageUrl: raw.imageUrl || null, // Will try og:image next
         slug: generateSlug(item.rewritten.title),
         ai_model: stepModel,
         sources: [{ name: raw.sourceName, url: raw.url }],
@@ -618,137 +614,152 @@ export async function runNewsPipeline(): Promise<{ success: boolean; articles: F
         views: 0,
       });
     }
-    console.log(`[PIPELINE] Step 3a: ${selfFinalArticles.length} self-rewritten articles ready.`);
 
-    // ─── Step 3b: Send GROK articles to Grok 4.1 Fast ───
-    console.log(`[PIPELINE] Step 3b: Enriching ${grokArticles.length} important articles with Grok...`);
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    
+    // ─── Step 4b: Grok enrichment (PREMIUM, costs ~$0.02/article) ───
     const grokFinalArticles: FinalNewsArticle[] = [];
-
+    
     for (const item of grokArticles) {
       const raw = toFilter[item.index];
       if (!raw) continue;
-
-      const potentialSlug = generateSlug(raw.title);
-      const { data: existing } = await supabase
-        .from('news_articles')
-        .select('id')
-        .eq('slug', potentialSlug)
-        .maybeSingle();
-
-      if (existing) {
-        console.log(`[PIPELINE] Skipping '${raw.title.substring(0, 40)}' - duplicate in DB.`);
-        continue;
-      }
       
       try {
-        const cluster: ClusteredEvent = {
-          event_id: generateSlug(raw.title),
-          main_topic: raw.title,
-          category: 'tech_global',
-          relevance_score: item.importance,
-          articles: [raw],
-          feed_tag: raw.feed_tag,
-          country_code: raw.country_code,
-          tags: [],
-          sentiment: 'neutral',
-        };
-        
-        const enriched = await rewriteNewsWithGrok(cluster, traceId, rawArticles);
+        const enriched = await rewriteNewsWithGrok(raw, item.section || 'finanzas', traceId);
         grokFinalArticles.push(enriched);
-        // Delay to prevent 429 Too Many Requests
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Rate limit: 2s between Grok calls
+        if (grokArticles.indexOf(item) < grokArticles.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
       } catch (e) {
         console.error(`[PIPELINE] Grok error on '${raw.title.substring(0, 40)}':`, e);
       }
     }
-    console.log(`[PIPELINE] Step 3b: ${grokFinalArticles.length} Grok-enriched articles ready.`);
 
-    // ─── Step 4: Combine and save to DB ───
-    const allFinalArticles = [...grokFinalArticles, ...selfFinalArticles];
-    console.log(`[PIPELINE] Step 4: Saving ${allFinalArticles.length} articles (${grokFinalArticles.length} Grok + ${selfFinalArticles.length} Step)...`);
+    // ─── Step 5: Extract og:image for all publishable articles ───
+    const allFinal = [...grokFinalArticles, ...selfFinalArticles];
+    const articlesNeedingImages = allFinal.filter(a => !a.imageUrl);
+    console.log(`[PIPELINE] Step 5: Extracting images for ${articlesNeedingImages.length}/${allFinal.length} articles...`);
     
-    if (allFinalArticles.length > 0) {
-      let savedCount = 0;
-
-      for (const a of allFinalArticles) {
-        // Check for slug duplicates
-        const { data: dup } = await supabase
-          .from('news_articles')
-          .select('id')
-          .eq('slug', a.slug)
-          .maybeSingle();
-        
-        if (dup) {
-          console.log(`[PIPELINE] Skipping duplicate slug: ${a.slug.substring(0, 40)}`);
-          continue;
-        }
-
-        const fullRow: Record<string, any> = {
-          title: a.title,
-          content: a.content,
-          summary: a.summary,
-          category: a.category,
-          sources: a.sources,
-          ai_model: a.ai_model,
-          sentiment: a.sentiment,
-          relevance_score: a.relevance_score,
-          city: a.city,
-          lat: a.lat,
-          lng: a.lng,
-          image_url: a.imageUrl,
-          slug: a.slug,
-          feed_tag: a.feed_tag || null,
-          country_code: a.country_code || null,
-          is_live: a.is_live || false, 
-          published_at: new Date().toISOString(),
-          tags: a.tags || [],
-          views: a.views || 0
-        };
-
-        let { error } = await supabase.from('news_articles').insert(fullRow);
-
-        if (error && error.code === 'PGRST204') {
-          const missingCol = error.message.match(/'(\w+)' column/)?.[1];
-          if (missingCol) delete fullRow[missingCol];
-          const retry = await supabase.from('news_articles').insert(fullRow);
-          error = retry.error;
-          
-          if (error && error.code === 'PGRST204') {
-            const missingCol2 = error.message.match(/'(\w+)' column/)?.[1];
-            if (missingCol2) delete fullRow[missingCol2];
-            const retry2 = await supabase.from('news_articles').insert(fullRow);
-            error = retry2.error;
-          }
-        }
-
-        if (error) {
-          console.error(`[PIPELINE] DB Error for "${a.title.substring(0, 30)}":`, JSON.stringify(error));
-        } else {
-          savedCount++;
-          console.log(`[PIPELINE] ✅ Saved [${a.ai_model.includes('grok') ? 'GROK' : 'STEP'}]: ${a.title.substring(0, 50)}`);
-        }
-      }
+    if (articlesNeedingImages.length > 0) {
+      // Try og:image from source article URLs
+      const imageResults = await Promise.allSettled(
+        articlesNeedingImages.slice(0, PIPELINE_CONFIG.IMAGE_EXTRACTION_CONCURRENCY).map(a => 
+          extractOgImage(a.sources[0]?.url || '')
+        )
+      );
       
-      console.log(`[PIPELINE] Step 4 Complete: ${savedCount}/${allFinalArticles.length} articles saved.`);
+      let imagesFound = 0;
+      imageResults.forEach((result, idx) => {
+        if (result.status === 'fulfilled' && result.value) {
+          articlesNeedingImages[idx].imageUrl = result.value;
+          imagesFound++;
+        }
+      });
+      
+      console.log(`[PIPELINE] Step 5: Found ${imagesFound}/${articlesNeedingImages.length} images via og:image`);
+      
+      // Fallback: Generate AI images for those that still failed using Pollinations AI
+      articlesNeedingImages.forEach((article) => {
+        if (!article.imageUrl) {
+          // Remove special characters for safety and generate an image URL
+          const cleanTitle = article.title.replace(/[^a-zA-Z0-9 áéíóúÁÉÍÓÚñÑ]/g, '').trim();
+          const prompt = `Professional high quality news photography about ${cleanTitle} economy finance`;
+          article.imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=800&height=400&nologo=true`;
+          console.log(`[PIPELINE] Step 5: Applied AI image fallback for: ${article.title.substring(0, 30)}`);
+        }
+      });
     }
-    
-    console.log("=== Pipeline finished successfully ===");
-    return { success: true, articles: allFinalArticles };
+
+    // ─── Step 6: Save to Supabase ───
+    console.log(`[PIPELINE] Step 6: Saving ${allFinal.length} articles...`);
+    let savedCount = 0;
+
+    for (const a of allFinal) {
+      // Final dedup check
+      const { data: dup } = await supabase
+        .from('news_articles')
+        .select('id')
+        .eq('slug', a.slug)
+        .maybeSingle();
+      
+      if (dup) {
+        console.log(`[PIPELINE] Skip duplicate: ${a.slug.substring(0, 40)}`);
+        continue;
+      }
+
+      const fullRow: Record<string, any> = {
+        title: a.title,
+        content: a.content,
+        summary: a.summary,
+        category: a.category,
+        sources: a.sources,
+        ai_model: a.ai_model,
+        sentiment: a.sentiment,
+        relevance_score: a.relevance_score,
+        city: a.city,
+        image_url: a.imageUrl,
+        slug: a.slug,
+        feed_tag: a.feed_tag || null,
+        country_code: a.country_code || null,
+        is_live: a.is_live || false,
+        published_at: new Date().toISOString(),
+        tags: a.tags || [],
+        views: a.views || 0,
+      };
+
+      let { error } = await supabase.from('news_articles').insert(fullRow);
+
+      // Handle missing columns gracefully — retry up to 5 times removing unknown columns
+      let retries = 0;
+      while (error?.code === 'PGRST204' && retries < 5) {
+        const missingCol = error.message.match(/'(\w+)' column/)?.[1];
+        if (!missingCol) break;
+        console.warn(`[PIPELINE] Removing unknown column '${missingCol}' and retrying...`);
+        delete fullRow[missingCol];
+        const retry = await supabase.from('news_articles').insert(fullRow);
+        error = retry.error;
+        retries++;
+      }
+
+      if (error) {
+        console.error(`[PIPELINE] DB Error: "${a.title.substring(0, 30)}":`, JSON.stringify(error));
+      } else {
+        savedCount++;
+        console.log(`[PIPELINE] ✅ [${a.ai_model.includes('grok') ? 'GROK' : 'STEP'}] ${a.title.substring(0, 50)}`);
+      }
+    }
+
+    // ─── Step 7: Log pipeline run ───
+    const durationMs = Date.now() - startTime;
+    try {
+      await supabase.from('pipeline_runs').insert({
+        articles_fetched: rawArticles.length,
+        articles_published: savedCount,
+        grok_calls: grokFinalArticles.length,
+        step_calls: 1,
+        duration_ms: durationMs,
+        status: 'success',
+      });
+    } catch { /* table might not exist yet */ }
+
+    const stats = {
+      fetched: rawArticles.length,
+      filtered: toFilter.length,
+      grokCalls: grokFinalArticles.length,
+      stepWrites: selfFinalArticles.length,
+      saved: savedCount,
+      durationMs,
+    };
+
+    console.log(`=== [PIPELINE v2] Done in ${(durationMs / 1000).toFixed(1)}s — ${savedCount} articles saved ===`);
+    return { success: true, articles: allFinal, stats };
 
   } catch (err: any) {
-    console.error("Pipeline crashed:", err?.message, err?.stack);
-    try {
-      require('fs').writeFileSync('pipeline_error_debug.txt', `${err?.message}\n${err?.stack}`);
-    } catch(e) {}
-    return { 
-      success: false, 
-      articles: [], 
-      error: `${err?.message || "Unknown error"} | Stack: ${(err?.stack || '').substring(0, 300)}`, 
-      step: 'pipeline_crash' 
+    console.error("[PIPELINE] CRASH:", err?.message, err?.stack);
+    return {
+      success: false,
+      articles: [],
+      error: `${err?.message || "Unknown"} | ${(err?.stack || '').substring(0, 300)}`,
+      step: 'pipeline_crash',
     };
   }
 }

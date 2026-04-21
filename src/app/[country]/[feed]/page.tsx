@@ -21,5 +21,5 @@ export default async function FeedPage({ params }: Props) {
     'economia': 'economia',
   };
 
-  return <CountryFeedPage countrySlug={country} initialFeed={feedTagMap[feed]} />;
+  return <CountryFeedPage initialFeed={feedTagMap[feed]} />;
 }

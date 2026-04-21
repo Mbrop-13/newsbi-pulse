@@ -21,7 +21,7 @@ export async function POST(req: Request) {
       });
     }
 
-    const systemPrompt = `Eres "${name}", un asistente de IA financiero avanzado y élite, exclusivo de la plataforma ProgramBI.
+    const systemPrompt = `Eres "${name}", un asistente de IA financiero avanzado y élite, exclusivo de la plataforma Reclu.
 Tu objetivo es ayudar al usuario a entender el mercado, las noticias y tomar mejores decisiones.
 
 PERFIL DEL USUARIO:
@@ -33,7 +33,7 @@ INSTRUCCIONES:
 1. Responde de forma concisa, profesional, pero conversacional. (Máx 2-3 párrafos).
 2. Usa viñetas o negritas para resaltar datos clave o tickers.
 3. Si el usuario pregunta por su portafolio o las noticias actuales, básate en el contexto provisto arriba para darle un análisis en tiempo real.
-4. NUNCA menciones que eres una IA de OpenAI o Anthropic. Eres una creación pura de ProgramBI.`;
+4. NUNCA menciones que eres una IA de OpenAI o Anthropic. Eres una creación pura de Reclu.`;
 
     const formattedMessages = [
       { role: 'system', content: systemPrompt },

@@ -4,17 +4,20 @@ import { useState, useEffect, useRef } from "react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Sun, Moon, LogIn, ChevronDown, User, Headphones, Filter, ArrowLeft, Bot, Sparkles, Layers, Settings, X, Check } from "lucide-react";
+import { Search, Sun, Moon, LogIn, ChevronDown, User, Headphones, Filter, ArrowLeft, Bot, Sparkles, Layers, Settings, X, Check, Settings2, TrendingUp, Landmark, LineChart, Globe, PieChart, Cpu, BookOpen, Briefcase, Scale, Zap, BarChart3 } from "lucide-react";
 import { DiamondsButton } from "./diamonds-button";
 import { AuthModals } from "./auth-modals";
 import { SearchDialog } from "./search-dialog";
-import { useAuthStore } from "@/lib/stores/auth-store";
+import { ViewSettingsDialog } from "./view-settings-dialog";
+import { useAuthStore, useAuthModalStore } from "@/lib/stores/auth-store";
 import { useAssistantStore } from "@/lib/stores/assistant-store";
+import { useAIChatStore } from "@/lib/stores/ai-chat-store";
 import { createClient } from "@/lib/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -22,19 +25,17 @@ import {
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 import { useAudioPlayerStore } from "@/lib/stores/audio-player-store";
-import { COUNTRIES, getCountry, DEFAULT_COUNTRY } from "@/lib/country-config";
 import { usePathname, useRouter } from "next/navigation";
 import { useFilterStore } from "@/lib/stores/filter-store";
 export function Navbar() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [authModal, setAuthModal] = useState<{
-    isOpen: boolean;
-    view: "login" | "register";
-  }>({ isOpen: false, view: "login" });
   const [searchOpen, setSearchOpen] = useState(false);
+  const [viewSettingsOpen, setViewSettingsOpen] = useState(false);
   const [temaSearch, setTemaSearch] = useState("");
   const [filtrosView, setFiltrosView] = useState<"main" | "fuentes">("main");
+  const [seccionesOpen, setSeccionesOpen] = useState(false);
+  const seccionesTimer = useRef<NodeJS.Timeout | null>(null);
   
   const { availableSources, selectedSources, toggleSource, clearSources } = useFilterStore();
   const [fuenteSearch, setFuenteSearch] = useState("");
@@ -58,19 +59,13 @@ export function Navbar() {
   const lastScrollY = useRef(0);
 
   const { user, isAuthenticated, setUser } = useAuthStore();
+  const { isOpen: authModalOpen, view: authModalView, openModal, closeModal } = useAuthModalStore();
   const toggleAudioSidebar = useAudioPlayerStore((s) => s.toggleSidebar);
   const isAudioOpen = useAudioPlayerStore((s) => s.isOpen);
   const supabase = createClient();
 
   const router = useRouter();
   const pathname = usePathname();
-  
-  // Extract country from URL
-  const pathSegment = pathname?.split('/')[1] || '';
-  const countryFromPath = getCountry(pathSegment);
-  
-  const activeCountrySlug = countryFromPath?.slug || DEFAULT_COUNTRY;
-  const activeCountry = getCountry(activeCountrySlug) || getCountry(DEFAULT_COUNTRY)!;
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -118,7 +113,7 @@ export function Navbar() {
   };
 
   const openAuth = (view: "login" | "register") => {
-    setAuthModal({ isOpen: true, view });
+    openModal(view);
   };
 
   return (
@@ -127,173 +122,160 @@ export function Navbar() {
         initial={false}
         animate={{ y: visible ? 0 : -100 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
-        className={`fixed top-0 left-0 right-0 z-50 h-16 transition-colors duration-300 backdrop-blur-md ${scrolled
+        className={`fixed top-0 left-0 right-0 z-50 h-16 transition-colors duration-300 backdrop-blur-md overflow-visible ${scrolled
             ? "bg-white/80 dark:bg-slate-900/80 border-b border-gray-200/50 dark:border-gray-800/50 shadow-sm"
             : "bg-white/80 dark:bg-slate-900/80 border-b border-transparent"
           }`}
       >
         <div className="w-full px-6 xl:px-12 h-full flex items-center justify-between gap-4">
 
-          {/* Left: Logo + Country selector */}
-          <div className="flex-shrink-0 flex items-center gap-2">
-            <Link href={`/${activeCountrySlug}`} className="flex items-center hover:opacity-80 transition-opacity mr-1">
-               <span className="font-bold text-xl tracking-tight text-[#1890FF]">ProgramBI</span>
+          {/* Left: Logo */}
+          <div className="flex-shrink-0 flex items-center gap-3 h-full overflow-visible">
+            <Link href={`/`} className="flex items-center hover:opacity-80 transition-opacity h-full overflow-visible">
+               <img 
+                 src="https://cdn.shopify.com/s/files/1/0564/3812/8712/files/freepik__background__94196.png?v=1771922713" 
+                 alt="Reclu" 
+                 className="h-[84px] w-auto object-contain max-w-none"
+               />
             </Link>
 
-            <div className="w-px h-6 bg-gray-200 dark:bg-gray-700" />
-
-            {/* Country flag dropdown — standalone, no conflict */}
-            <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-1.5 px-3 py-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/5 transition-colors outline-none border border-transparent hover:border-gray-200 dark:hover:border-white/10">
-                <img src={activeCountry.flagUrl} alt={activeCountry.name} className="w-6 h-4 object-cover rounded-[2px] shadow-sm" />
-                <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-[220px] rounded-xl border-gray-200 dark:border-gray-800 shadow-2xl p-2 bg-white dark:bg-slate-900 mt-2" align="start" sideOffset={8}>
-                <div className="text-[10px] font-bold tracking-wider text-gray-400 uppercase px-2 py-1 cursor-default">Seleccionar país</div>
-                <DropdownMenuSeparator className="bg-gray-100 dark:bg-gray-800 my-1" />
-                {COUNTRIES.map(c => (
-                  <DropdownMenuItem
-                    key={c.code}
-                  >
-                    <Link
-                      href={`/${c.slug}`}
-                      className={`cursor-pointer rounded-lg py-2.5 px-3 flex items-center gap-3 transition-colors outline-none ${
-                        c.slug === activeCountrySlug
-                          ? "bg-[#1890FF]/10 text-[#1890FF] font-semibold focus:bg-[#1890FF]/15 focus:text-[#1890FF]"
-                          : "hover:bg-[#1890FF]/10 hover:text-[#1890FF] focus:bg-[#1890FF]/15 focus:text-[#1890FF]"
-                      }`}
-                    >
-                      <img src={c.flagUrl} alt={c.name} className="w-6 h-4 object-cover rounded-[2px] shadow-sm" />
-                      <span className="text-sm font-medium">{c.name}</span>
-                      {c.slug === activeCountrySlug && (
-                        <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#1890FF]" />
-                      )}
-                    </Link>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
 
-          {/* New Nav Menu */}
-          <nav className="hidden lg:flex items-center gap-5 text-sm font-semibold text-gray-600 dark:text-gray-300 ml-2 mr-auto">
-
-            {/* ASISTENTE WAVE LINK */}
-            <Link 
-              href="/asistente" 
-              onClick={(e) => {
-                if (!isAuthenticated) {
-                  e.preventDefault();
-                  openAuth("login");
-                }
-              }}
-              className="flex items-center hover:opacity-80 transition-opacity"
-            >
-              <motion.span 
-                animate={{ backgroundPosition: ["0% 50%", "200% 50%"] }}
-                transition={{ repeat: Infinity, duration: 4, ease: "linear" }}
-                className="bg-[linear-gradient(90deg,#1890FF,#60A5FA,#93C5FD,#60A5FA,#1890FF)] bg-[length:200%_auto] bg-clip-text text-transparent font-bold"
-              >
-                Asistente
-              </motion.span>
-            </Link>
-
-            {/* TEMAS MEGA MENU REMOVED PER USER REQUEST */}
-
-            {/* FILTROS MEGA MENU */}
-            <DropdownMenu onOpenChange={(open) => { if (!open) setFiltrosView("main"); }}>
-              <DropdownMenuTrigger className="flex items-center gap-1 hover:text-[#1890FF] outline-none transition-colors">
-                Fuentes
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-[320px] rounded-xl border-gray-200 dark:border-gray-800 shadow-2xl p-3 bg-white dark:bg-slate-900 mt-2 flex flex-col">
-                <div className="flex items-center justify-between mb-3 px-1">
-                  <h4 className="text-sm font-bold text-gray-900 dark:text-white">Filtrar por Fuentes</h4>
-                  {selectedSources.length > 0 && (
-                    <span className="bg-[#1890FF]/10 text-[#1890FF] text-[10px] font-bold px-2 py-0.5 rounded-full">
-                      {selectedSources.length} seleccionadas
-                    </span>
-                  )}
-                </div>
-
-                <div className="relative mb-3">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Buscar fuente..."
-                    value={fuenteSearch}
-                    onChange={(e) => setFuenteSearch(e.target.value)}
-                    onKeyDown={(e) => e.stopPropagation()}
-                    className="w-full pl-9 pr-8 py-2 text-sm bg-gray-50 dark:bg-white/5 text-gray-800 dark:text-gray-200 rounded-xl border border-gray-100 dark:border-gray-800 focus:ring-2 focus:ring-[#1890FF] outline-none transition-all"
-                  />
-                  {fuenteSearch && (
-                    <button onClick={() => setFuenteSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2">
-                      <X className="w-4 h-4 text-gray-400 hover:text-gray-600" />
-                    </button>
-                  )}
-                </div>
-
-                <div className="max-h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-800 pr-1 flex flex-col gap-1">
-                  {filteredSources.length === 0 ? (
-                      <div className="py-6 text-center text-xs text-gray-500">No hay fuentes disponibles.</div>
-                  ) : (
-                    filteredSources.map((source) => {
-                      const isSelected = selectedSources.includes(source.name);
-                      const favicon = getFavicon(source.url);
-                      return (
-                        <DropdownMenuCheckboxItem
-                          key={source.name}
-                          checked={isSelected}
-                          onCheckedChange={() => toggleSource(source.name)}
-                          onSelect={(e) => e.preventDefault()}
-                          className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm font-medium transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
-                        >
-                          <div className="flex items-center gap-2 flex-1">
-                            {favicon ? (
-                              <img src={favicon} alt="" className="w-5 h-5 rounded-full bg-white object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-                            ) : (
-                              <div className="w-5 h-5 rounded-full bg-gray-200 dark:bg-white/10" />
-                            )}
-                            <span className="truncate max-w-[200px]">{source.name}</span>
-                          </div>
-                        </DropdownMenuCheckboxItem>
-                      );
-                    })
-                  )}
-                </div>
-                
-                {selectedSources.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
-                    <button
-                      onClick={() => clearSources()}
-                      className="w-full bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 text-red-500 text-xs font-bold px-4 py-2.5 rounded-lg transition-colors"
-                    >
-                      Limpiar selección
-                    </button>
-                  </div>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {/* RECIENTE LINK REMOVED PER USER REQUEST */}
-            <Link href="/mundo" className="hover:text-[#1890FF] transition-colors">Mundo</Link>
-          </nav>
-
-          {/* Center: Minimal Search Bar (Shifted to the left) */}
-          <div className="flex-1 max-w-sm hidden md:flex items-center justify-start ml-6">
+          {/* Center: Minimal Search Bar + View Settings */}
+          <div className="flex-1 max-w-sm hidden md:flex items-center gap-2 ml-2">
             <button
               onClick={() => setSearchOpen(true)}
-              className="w-full h-10 flex items-center bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors rounded-full px-4 text-sm text-gray-500 border border-transparent focus:border-[#1890FF] focus:ring-1 focus:ring-[#1890FF] outline-none group shadow-inner"
+              className="flex-1 h-10 flex items-center bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors rounded-full px-4 text-sm text-gray-500 border border-transparent focus:border-[#1890FF] focus:ring-1 focus:ring-[#1890FF] outline-none group shadow-inner"
             >
-              <Search className="w-4 h-4 text-[#1890FF] mr-2" />
-              <span className="flex-1 text-left placeholder:text-gray-500">Buscar noticias, temas o fuentes...</span>
-              <kbd className="hidden lg:flex items-center gap-1 text-[10px] font-mono text-gray-400 bg-white/50 dark:bg-black/50 px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-700">
+              <Search className="w-4 h-4 text-[#1890FF] mr-2 flex-shrink-0" />
+              <span className="flex-1 text-left placeholder:text-gray-500 truncate">Buscar...</span>
+              <kbd className="hidden lg:flex items-center gap-1 text-[10px] font-mono text-gray-400 bg-white/50 dark:bg-black/50 px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-700 ml-2 shrink-0">
                 <span className="text-xs">⌘</span>K
               </kbd>
             </button>
+            <button
+              onClick={() => setViewSettingsOpen(true)}
+              className="h-10 w-10 flex flex-shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-500 hover:text-[#1890FF]"
+              title="Ajustes de Vista"
+            >
+              <Settings2 className="w-4 h-4" />
+            </button>
           </div>
 
-          {/* Right: Actions, Theme, Auth */}
-          <div className="flex items-center gap-3 sm:gap-4 ml-4">
+          {/* Right Side Group: Nav Menu + Actions */}
+          <div className="flex items-center gap-6 ml-auto">
+            {/* Nav Menu */}
+            <nav className="hidden lg:flex items-center gap-6 text-sm font-semibold text-gray-600 dark:text-gray-300">
+
+              {/* ASISTENTE WAVE LINK */}
+              <Link 
+                href="/asistente" 
+                className="flex items-center hover:opacity-80 transition-opacity"
+              >
+                <motion.span 
+                  animate={{ backgroundPosition: ["0% 50%", "200% 50%"] }}
+                  transition={{ repeat: Infinity, duration: 4, ease: "linear" }}
+                  className="bg-[linear-gradient(90deg,#1890FF,#60A5FA,#93C5FD,#60A5FA,#1890FF)] bg-[length:200%_auto] bg-clip-text text-transparent font-bold"
+                >
+                  Asistente
+                </motion.span>
+              </Link>
+
+              {/* MERCADOS LINK */}
+              <Link 
+                href="/mercados" 
+                className="flex items-center hover:text-[#1890FF] transition-colors"
+              >
+                Mercados
+              </Link>
+
+              {/* SECCIONES MEGA MENU (replaces Fuentes) */}
+              <div 
+                className="relative"
+                onMouseEnter={() => { if(seccionesTimer.current) clearTimeout(seccionesTimer.current); setSeccionesOpen(true); }}
+                onMouseLeave={() => { seccionesTimer.current = setTimeout(() => setSeccionesOpen(false), 200); }}
+              >
+                <button className="flex items-center gap-1 hover:text-[#1890FF] transition-colors outline-none">
+                  Secciones
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${seccionesOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                <AnimatePresence>
+                  {seccionesOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8, scale: 0.97 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.97 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute left-1/2 -translate-x-1/2 top-full mt-4 w-[680px] bg-white/98 dark:bg-slate-900/98 backdrop-blur-2xl border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl shadow-black/10 dark:shadow-black/40 p-6 z-50"
+                    >
+                      {/* Header */}
+                      <div className="flex items-center justify-between mb-5">
+                        <div>
+                          <h3 className="text-base font-black text-gray-900 dark:text-white">Explora por Sección</h3>
+                          <p className="text-xs text-gray-500 mt-0.5">Navega directamente al contenido que te interesa</p>
+                        </div>
+                        <Link href="/mercados" onClick={() => setSeccionesOpen(false)} className="text-[11px] font-bold text-[#1890FF] hover:underline flex items-center gap-1">
+                          Ver Mercados <TrendingUp className="w-3 h-3" />
+                        </Link>
+                      </div>
+
+                      {/* Sections Grid */}
+                      <div className="grid grid-cols-3 gap-3">
+                        {[
+                          { href: "/", icon: <Zap className="w-5 h-5" />, label: "Principal", desc: "Las noticias más importantes del momento", color: "text-blue-500", bg: "bg-blue-500/10" },
+                          { href: "/finanzas", icon: <Landmark className="w-5 h-5" />, label: "Finanzas", desc: "Corporativo, bancos y fusiones globales", color: "text-emerald-500", bg: "bg-emerald-500/10" },
+                          { href: "/inversiones", icon: <LineChart className="w-5 h-5" />, label: "Inversiones", desc: "Bolsa, cripto y mercados de capitales", color: "text-amber-500", bg: "bg-amber-500/10" },
+                          { href: "/impacto-global", icon: <Globe className="w-5 h-5" />, label: "Impacto Global", desc: "Eventos que afectan economías locales", color: "text-purple-500", bg: "bg-purple-500/10" },
+                          { href: "/economia", icon: <PieChart className="w-5 h-5" />, label: "Economía", desc: "Macroeconomía, PIB e indicadores", color: "text-rose-500", bg: "bg-rose-500/10" },
+                          { href: "/tech-global", icon: <Cpu className="w-5 h-5" />, label: "Tech Global", desc: "IA, startups, Big Tech y más", color: "text-cyan-500", bg: "bg-cyan-500/10" },
+                          { href: "/mundo", icon: <Globe className="w-5 h-5" />, label: "Mundo", desc: "Noticias internacionales en el mapa", color: "text-indigo-500", bg: "bg-indigo-500/10" },
+                          { href: "/predicciones", icon: <BarChart3 className="w-5 h-5" />, label: "Predicciones", desc: "Mercados de predicción y probabilidades", color: "text-orange-500", bg: "bg-orange-500/10" },
+                          { href: "/asistente", icon: <Bot className="w-5 h-5" />, label: "Asistente IA", desc: "Tu analista personal con inteligencia artificial", color: "text-blue-500", bg: "bg-gradient-to-br from-blue-500/10 to-indigo-500/10" },
+                        ].map((section) => (
+                          <Link
+                            key={section.href}
+                            href={section.href}
+                            onClick={() => setSeccionesOpen(false)}
+                            className="group flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-all"
+                          >
+                            <div className={`p-2 rounded-xl ${section.bg} ${section.color} shrink-0 group-hover:scale-110 transition-transform`}>
+                              {section.icon}
+                            </div>
+                            <div className="min-w-0">
+                              <h4 className="text-sm font-bold text-gray-900 dark:text-white group-hover:text-[#1890FF] transition-colors">{section.label}</h4>
+                              <p className="text-[11px] text-gray-500 line-clamp-2 leading-relaxed mt-0.5">{section.desc}</p>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+
+                      {/* Bottom Bar */}
+                      <div className="mt-5 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                        <button
+                          onClick={() => { setSeccionesOpen(false); setViewSettingsOpen(true); }}
+                          className="flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-[#1890FF] transition-colors px-3 py-2 rounded-lg hover:bg-[#1890FF]/5"
+                        >
+                          <Settings2 className="w-3.5 h-3.5" /> Preferencias de Vista
+                        </button>
+                        <Link
+                          href="/suscripcion"
+                          onClick={() => setSeccionesOpen(false)}
+                          className="flex items-center gap-2 text-xs font-bold text-[#1890FF] bg-[#1890FF]/5 hover:bg-[#1890FF]/10 px-4 py-2 rounded-lg transition-colors"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" /> Reclu Max
+                        </Link>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              <Link href="/predicciones" className="hover:text-[#1890FF] transition-colors flex items-center gap-1">🔮 Predicciones</Link>
+            </nav>
+
+            {/* Right: Actions, Theme, Auth */}
+            <div className="flex items-center gap-3 sm:gap-4">
 
             {/* New Headphones Button */}
             <button
@@ -302,23 +284,14 @@ export function Navbar() {
                   ? "bg-[#1890FF] text-white shadow-lg shadow-[#1890FF]/30"
                   : "bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-[#1890FF] hover:bg-[#1890FF]/10"
                 }`}
-              title="NewsBI Radio"
+              title="Reclu Radio"
             >
               <Headphones className="w-4 h-4" />
             </button>
 
-            {/* Assistant Controls (visible only on /asistente) */}
             {pathname === '/asistente' && (
               <>
                 <div className="w-px h-5 bg-gray-200 dark:bg-gray-700" />
-                <button
-                  onClick={() => useAssistantStore.getState().setShowPreferences(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-[#1890FF]/10 text-[#1890FF] text-xs font-bold hover:bg-blue-100 dark:hover:bg-[#1890FF]/20 transition-colors"
-                  title="Preferencias de IA"
-                >
-                  <Layers className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Preferencias</span>
-                </button>
                 <button
                   onClick={() => useAssistantStore.getState().setShowSettings(true)}
                   className="flex items-center justify-center w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
@@ -329,6 +302,7 @@ export function Navbar() {
               </>
             )}
 
+
             {/* Mobile Search Icon */}
             <button
               className="md:hidden flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 text-[#1890FF]"
@@ -337,15 +311,21 @@ export function Navbar() {
               <Search className="w-4 h-4" />
             </button>
 
-            {/* Theme Toggle */}
-            {mounted && (
-              <button
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="text-[#1890FF] hover:bg-[#1890FF]/10 p-2 rounded-full transition-colors focus:outline-none"
-              >
-                {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-              </button>
-            )}
+            {/* AI Chat Button (replaces old theme toggle) */}
+            <button
+              onClick={() => {
+                if (!isAuthenticated) {
+                  openModal("login");
+                  return;
+                }
+                useAIChatStore.getState().toggle();
+              }}
+              className="relative text-purple-500 hover:bg-purple-500/10 p-2 rounded-full transition-colors focus:outline-none group"
+              title="R-ai"
+            >
+              <Sparkles className="w-5 h-5" />
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full border-2 border-white dark:border-slate-900 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </button>
 
             {/* Diamonds Reward System Toggle */}
             {mounted && <DiamondsButton />}
@@ -363,10 +343,12 @@ export function Navbar() {
                   <ChevronDown className="w-4 h-4 text-gray-500 hidden sm:block" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 rounded-xl border-gray-200 dark:border-gray-800 shadow-xl p-2 bg-white dark:bg-slate-900">
-                  <DropdownMenuLabel className="py-2 px-3">
-                    <p className="font-semibold text-sm text-gray-900 dark:text-gray-100 line-clamp-1">{user.name}</p>
-                    <p className="text-[11px] text-gray-500 line-clamp-1">{user.email}</p>
-                  </DropdownMenuLabel>
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel className="py-2 px-3">
+                      <p className="font-semibold text-sm text-gray-900 dark:text-gray-100 line-clamp-1">{user.name}</p>
+                      <p className="text-[11px] text-gray-500 line-clamp-1">{user.email}</p>
+                    </DropdownMenuLabel>
+                  </DropdownMenuGroup>
                   <DropdownMenuSeparator className="bg-gray-100 dark:bg-gray-800 mx-1" />
                   <Link href="/profile">
                     <DropdownMenuItem className="text-sm py-2 px-3 cursor-pointer rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
@@ -374,12 +356,27 @@ export function Navbar() {
                       Mi Perfil
                     </DropdownMenuItem>
                   </Link>
-                  <Link href="/profile">
+                  <Link href="/mis-predicciones">
+                    <DropdownMenuItem className="text-sm py-2 px-3 cursor-pointer rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
+                      <TrendingUp className="w-4 h-4 mr-2 text-blue-500" />
+                      Mis Predicciones
+                    </DropdownMenuItem>
+                  </Link>
+                  <Link href="/suscripcion">
                     <DropdownMenuItem className="text-sm py-2 px-3 cursor-pointer rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-[#1890FF] font-medium">
                       Suscripción Premium
                     </DropdownMenuItem>
                   </Link>
                   <DropdownMenuSeparator className="bg-gray-100 dark:bg-gray-800 mx-1" />
+                  {mounted && (
+                    <DropdownMenuItem
+                      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                      className="text-sm py-2 px-3 cursor-pointer rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    >
+                      {theme === "dark" ? <Sun className="w-4 h-4 mr-2 text-amber-500" /> : <Moon className="w-4 h-4 mr-2 text-indigo-500" />}
+                      {theme === "dark" ? "Modo Claro" : "Modo Oscuro"}
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem
                     onClick={handleLogout}
                     className="text-sm py-2 px-3 cursor-pointer rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
@@ -405,18 +402,23 @@ export function Navbar() {
               </div>
             ) : null}
 
+            </div>
           </div>
         </div>
       </motion.header>
 
       <AuthModals
-        isOpen={authModal.isOpen}
-        onClose={() => setAuthModal({ ...authModal, isOpen: false })}
-        defaultView={authModal.view}
+        isOpen={authModalOpen}
+        onClose={closeModal}
+        defaultView={authModalView}
       />
       <SearchDialog
         isOpen={searchOpen}
         onClose={() => setSearchOpen(false)}
+      />
+      <ViewSettingsDialog
+        isOpen={viewSettingsOpen}
+        onClose={() => setViewSettingsOpen(false)}
       />
     </>
   );

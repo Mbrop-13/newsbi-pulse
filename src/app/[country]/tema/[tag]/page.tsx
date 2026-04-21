@@ -11,5 +11,5 @@ export default async function TemaPage({ params }: Props) {
   if (!isValidCountry(country)) return notFound();
   if (!tag) return notFound();
 
-  return <CountryFeedPage countrySlug={country} searchTag={tag} />;
+  return <CountryFeedPage searchTag={tag} />;
 }

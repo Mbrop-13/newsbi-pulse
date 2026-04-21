@@ -3,12 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
-function getUTCDaysDiff(d1: Date, d2: Date) {
-  // Reset hours to compare pure calendar days
-  const utc1 = Date.UTC(d1.getUTCFullYear(), d1.getUTCMonth(), d1.getUTCDate());
-  const utc2 = Date.UTC(d2.getUTCFullYear(), d2.getUTCMonth(), d2.getUTCDate());
-  return Math.floor((utc2 - utc1) / (1000 * 60 * 60 * 24));
-}
+// Reemplazado por lógica estricta de 24h en milisegundos
 
 function calculateReward(day: number): number {
   if (day >= 1 && day <= 3) return 10;
@@ -65,16 +60,17 @@ export async function POST() {
 
   // Check existing record
   const lastClaim = new Date(dbRecord.last_claim_date);
-  const diffDays = getUTCDaysDiff(lastClaim, now);
+  const diffMs = now.getTime() - lastClaim.getTime();
+  const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
-  if (diffDays === 0) {
-    return NextResponse.json({ error: 'Already claimed today' }, { status: 400 });
+  if (diffMs < ONE_DAY_MS) {
+    return NextResponse.json({ error: 'Debes esperar 24 horas exactas para reclamar' }, { status: 400 });
   }
 
   // Calculate new consecutive days
-  // If exact 1 day passed, they keep streak. Otherwise, streak breaks.
+  // If between 24h and 48h, they keep the streak. Otherwise, streak breaks.
   let newConsecutive = 1;
-  if (diffDays === 1) {
+  if (diffMs < 2 * ONE_DAY_MS) {
     newConsecutive = (dbRecord.consecutive_days % 7) + 1;
   }
 

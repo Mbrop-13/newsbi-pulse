@@ -77,7 +77,7 @@ export function AudioPlayer({ articleId, title, audioUrl, onClose }: AudioPlayer
           onClick={handleSeek}
         >
           <div
-            className="h-full bg-gradient-to-r from-programbi to-cyan-accent transition-all"
+            className="h-full bg-gradient-to-r from-reclu to-cyan-accent transition-all"
             style={{ width: `${duration ? (progress / duration) * 100 : 0}%` }}
           />
         </div>
@@ -89,7 +89,7 @@ export function AudioPlayer({ articleId, title, audioUrl, onClose }: AudioPlayer
               variant="ghost"
               size="icon"
               onClick={togglePlay}
-              className="w-10 h-10 rounded-full bg-programbi/10 hover:bg-programbi/20 text-programbi"
+              className="w-10 h-10 rounded-full bg-reclu/10 hover:bg-reclu/20 text-reclu"
             >
               {isPlaying ? (
                 <Pause className="w-5 h-5" />

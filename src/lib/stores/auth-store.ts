@@ -6,6 +6,8 @@ export interface User {
   name: string;
   email: string;
   avatar: string;
+  tier?: "free" | "pro" | "max" | "ultra";
+  role?: "admin" | "user";
 }
 
 interface AuthState {
@@ -30,3 +32,17 @@ export const useAuthStore = create<AuthState>()(
     }
   )
 );
+
+interface AuthModalState {
+  isOpen: boolean;
+  view: "login" | "register";
+  openModal: (view?: "login" | "register") => void;
+  closeModal: () => void;
+}
+
+export const useAuthModalStore = create<AuthModalState>((set) => ({
+  isOpen: false,
+  view: "login",
+  openModal: (view = "login") => set({ isOpen: true, view }),
+  closeModal: () => set({ isOpen: false }),
+}));

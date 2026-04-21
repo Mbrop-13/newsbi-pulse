@@ -18,7 +18,7 @@ export function DiamondsButton() {
   }, [isAuthenticated, user, loadDiamonds]);
 
   const handleClick = () => {
-    router.push("/recompensas");
+    router.push("/mis-diamantes");
   };
 
   // Wait until mounted if relying on auth to prevent hydration mismatch
@@ -34,7 +34,13 @@ export function DiamondsButton() {
       {canClaimToday && isAuthenticated && (
         <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse border-2 border-white dark:border-slate-950" />
       )}
-      <Gem className="w-4 h-4 text-[#1890FF] fill-[#1890FF]/20 group-hover:scale-110 transition-transform" />
+      <div className="relative w-6 h-6 flex items-center justify-center pointer-events-none">
+        <img 
+          src="https://cdn.shopify.com/s/files/1/0564/3812/8712/files/diamante-1.png?v=1774402513" 
+          alt="Diamond" 
+          className="absolute w-[70px] h-[70px] max-w-none object-contain group-hover:scale-110 transition-transform"
+        />
+      </div>
       <span className="text-sm font-bold text-gray-700 dark:text-gray-200">{balance}</span>
     </button>
   );

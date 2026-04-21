@@ -2,10 +2,11 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, MessageSquare, RefreshCw, Globe, Cpu, TrendingUp, LineChart, PieChart, Landmark } from "lucide-react";
+import { Loader2, MessageSquare, RefreshCw, Globe, Cpu, TrendingUp, LineChart, PieChart, Landmark, Flame, Eye, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { NewsCard } from "@/components/news-card";
 import { createClient } from "@/lib/supabase/client";
+import { useAuthStore } from "@/lib/stores/auth-store";
 
 export type FeedTab = "chile" | "tech_global" | "impacto_global" | "finanzas" | "inversiones" | "economia";
 
@@ -24,6 +25,7 @@ export function FeedContent({ currentFeed }: { currentFeed: FeedTab }) {
   const [syncStatus, setSyncStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [visibleCount, setVisibleCount] = useState(12);
   const supabase = createClient();
+  const userRole = useAuthStore(s => s.user?.role);
 
   // Fetch all articles on mount
   useEffect(() => {
@@ -108,23 +110,25 @@ export function FeedContent({ currentFeed }: { currentFeed: FeedTab }) {
             </div>
 
             {/* Sync button */}
-            <button
-              onClick={handleManualSync}
-              disabled={isSyncing}
-              className={`hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${
-                syncStatus === 'success' ? 'bg-green-500 hover:bg-green-600' :
-                syncStatus === 'error' ? 'bg-red-500 hover:bg-red-600' :
-                'bg-[#1890FF] hover:bg-[#1890FF]/90'
-              } text-white shrink-0`}
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
-              <span>
-                {isSyncing ? 'Procesando IA...' :
-                 syncStatus === 'success' ? '¡Actualizado!' :
-                 syncStatus === 'error' ? 'Error' :
-                 'Actualizar'}
-              </span>
-            </button>
+            {userRole === "admin" && (
+              <button
+                onClick={handleManualSync}
+                disabled={isSyncing}
+                className={`hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${
+                  syncStatus === 'success' ? 'bg-green-500 hover:bg-green-600' :
+                  syncStatus === 'error' ? 'bg-red-500 hover:bg-red-600' :
+                  'bg-[#1890FF] hover:bg-[#1890FF]/90'
+                } text-white shrink-0`}
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                <span>
+                  {isSyncing ? 'Procesando IA...' :
+                   syncStatus === 'success' ? '¡Actualizado!' :
+                   syncStatus === 'error' ? 'Error' :
+                   'Actualizar'}
+                </span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -155,13 +159,15 @@ export function FeedContent({ currentFeed }: { currentFeed: FeedTab }) {
           >
             {visibleArticles.length > 0 ? (
               <div className="flex flex-col gap-12">
-                {/* Hero: First article large */}
+                {/* ── HERO SECTION ── */}
                 {visibleArticles[0] && (
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    {/* Main Featured Article */}
                     <div className="lg:col-span-8">
                       <NewsCard article={visibleArticles[0]} index={0} layout="featured" />
                     </div>
-                    <div className="lg:col-span-4 flex flex-col gap-6">
+                    {/* Side Articles */}
+                    <div className="lg:col-span-4 flex flex-col gap-5">
                       {visibleArticles[1] && (
                         <NewsCard article={visibleArticles[1]} index={1} layout="compact" />
                       )}
@@ -172,11 +178,32 @@ export function FeedContent({ currentFeed }: { currentFeed: FeedTab }) {
                   </div>
                 )}
 
-                {/* Grid: Rest of articles */}
+                {/* ── MAIN CONTENT + TRENDING SIDEBAR (TOP SECTION) ── */}
                 {visibleArticles.length > 3 && (
+                  <div className="flex flex-col lg:flex-row gap-8">
+                    {/* Left: First batch of news (6 items = 2 rows of 3) */}
+                    <div className="flex-1 min-w-0">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                        {visibleArticles.slice(3, 9).map((article, i) => (
+                          <NewsCard key={article.id} article={article} index={i + 3} />
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Right: Trending / Most Viewed Panel */}
+                    <div className="lg:w-[340px] xl:w-[380px] flex-shrink-0">
+                      <div>
+                        <TrendingPanel articles={feedArticles} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── FULL WIDTH BOTTOM GRID ── */}
+                {visibleArticles.length > 9 && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {visibleArticles.slice(3).map((article, i) => (
-                      <NewsCard key={article.id} article={article} index={i + 3} />
+                    {visibleArticles.slice(9).map((article, i) => (
+                      <NewsCard key={article.id} article={article} index={i + 9} />
                     ))}
                   </div>
                 )}
@@ -205,6 +232,100 @@ export function FeedContent({ currentFeed }: { currentFeed: FeedTab }) {
             )}
           </motion.div>
         </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
+/* ── Trending / Most Viewed Panel ── */
+function TrendingPanel({ articles }: { articles: any[] }) {
+  const trending = useMemo(() => {
+    return [...articles]
+      .sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0))
+      .slice(0, 10); // Limit to 10 to approximate height of 2 rows of images
+  }, [articles]);
+
+  if (trending.length === 0) return null;
+
+  const fmtDate = (d: string) => {
+    try {
+      const date = new Date(d);
+      const now = new Date();
+      const diff = now.getTime() - date.getTime();
+      const mins = Math.floor(diff / 60000);
+      if (mins < 60) return `hace ${mins}m`;
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) return `hace ${hrs}h`;
+      return `hace ${Math.floor(hrs / 24)}d`;
+    } catch { return ""; }
+  };
+
+  return (
+    <div className="bg-white dark:bg-[#1E293B] rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+      {/* Header */}
+      <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center gap-2">
+        <Flame className="w-4 h-4 text-orange-500" />
+        <h3 className="font-bold text-sm text-gray-900 dark:text-white">Más Relevantes</h3>
+      </div>
+
+      {/* Horizontal scroll on mobile */}
+      <div className="lg:hidden overflow-x-auto scrollbar-hide">
+        <div className="flex gap-4 p-4" style={{ width: 'max-content' }}>
+          {trending.map((article) => (
+            <Link
+              key={article.id}
+              href={`/article/${article.slug || article.id}`}
+              className="flex-shrink-0 w-[260px] group"
+            >
+              <div className="bg-gray-50 dark:bg-white/[0.03] rounded-xl border border-gray-100 dark:border-gray-700/50 p-3 hover:border-[#1890FF]/30 transition-all h-full flex gap-3">
+                {article.image_url && (
+                  <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-gray-200 dark:bg-gray-700">
+                    <img src={article.image_url} alt="" className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-gray-900 dark:text-white line-clamp-2 group-hover:text-[#1890FF] transition-colors leading-snug">
+                    {article.title}
+                  </p>
+                  <span className="text-[10px] text-gray-400 mt-1 block">{fmtDate(article.published_at)}</span>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* Vertical list on desktop */}
+      <div className="hidden lg:block divide-y divide-gray-50 dark:divide-gray-800">
+        {trending.map((article, i) => (
+          <Link
+            key={article.id}
+            href={`/article/${article.slug || article.id}`}
+            className="flex items-start gap-3 px-5 py-4 hover:bg-gray-50 dark:hover:bg-white/[0.03] transition-colors group"
+          >
+            <span className="text-lg font-black text-gray-200 dark:text-gray-700 w-6 flex-shrink-0 text-right tabular-nums">
+              {i + 1}
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 line-clamp-2 group-hover:text-[#1890FF] transition-colors leading-snug">
+                {article.title}
+              </p>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-[10px] text-gray-400">{fmtDate(article.published_at)}</span>
+                {article.relevance_score > 0 && (
+                  <span className="text-[10px] font-bold text-orange-500/70 flex items-center gap-0.5">
+                    <Eye className="w-3 h-3" /> {Math.round(article.relevance_score * 100)}%
+                  </span>
+                )}
+              </div>
+            </div>
+            {article.image_url && (
+              <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100 dark:bg-gray-800">
+                <img src={article.image_url} alt="" className="w-full h-full object-cover" />
+              </div>
+            )}
+          </Link>
+        ))}
       </div>
     </div>
   );

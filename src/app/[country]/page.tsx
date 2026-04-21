@@ -9,5 +9,5 @@ interface Props {
 export default async function CountryPage({ params }: Props) {
   const { country } = await params;
   if (!isValidCountry(country)) return notFound();
-  return <CountryFeedPage countrySlug={country} />;
+  return <CountryFeedPage />;
 }

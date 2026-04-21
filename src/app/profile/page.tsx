@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import {
@@ -20,6 +20,12 @@ import {
   Image as ImageIcon,
   LayoutGrid,
   Eye,
+  Crown,
+  Gem,
+  TrendingUp,
+  ArrowUpRight,
+  ArrowDownRight,
+  Activity,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/lib/stores/auth-store";
@@ -31,10 +37,27 @@ import { NewsCard } from "@/components/news-card";
 import { createClient } from "@/lib/supabase/client";
 import { useTheme } from "next-themes";
 
+type UserStats = {
+  diamondBalance: number;
+  totalBets: number;
+  totalWins: number;
+  totalShares: number;
+};
+
+type BetActivity = {
+  id: string;
+  prediction_id: string;
+  side: string;
+  amount: number;
+  shares: number;
+  created_at: string;
+  prediction_title?: string;
+};
+
 export default function ProfilePage() {
   const { user, isAuthenticated } = useAuthStore();
   const bookmarks = useBookmarkStore((s) => s.bookmarkedArticleIds);
-  const [activeTab, setActiveTab] = useState<"guardados" | "preferencias">("guardados");
+  const [activeTab, setActiveTab] = useState<"guardados" | "actividad" | "preferencias">("guardados");
   const { theme, setTheme } = useTheme();
   const {
     fontSize, setFontSize,
@@ -44,9 +67,70 @@ export default function ProfilePage() {
   } = usePersonalizationStore();
   const supabase = createClient();
 
+  const [stats, setStats] = useState<UserStats>({ diamondBalance: 0, totalBets: 0, totalWins: 0, totalShares: 0 });
+  const [recentActivity, setRecentActivity] = useState<BetActivity[]>([]);
+  const [loadingStats, setLoadingStats] = useState(true);
+
   const bookmarkedArticles = MOCK_ARTICLES.filter((a) =>
     bookmarks.includes(a.id)
   );
+
+  // Fetch real stats from Supabase
+  useEffect(() => {
+    async function fetchStats() {
+      if (!user) return;
+      setLoadingStats(true);
+
+      // Diamond balance
+      const { data: diamonds } = await supabase
+        .from("user_diamonds")
+        .select("balance")
+        .eq("user_id", user.id)
+        .single();
+
+      // All bets (including sells as negative)
+      const { data: bets } = await supabase
+        .from("user_bets")
+        .select("id, prediction_id, side, amount, shares, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      const positiveBets = (bets || []).filter(b => Number(b.shares) > 0);
+      const totalShares = (bets || []).reduce((sum, b) => sum + Number(b.shares || 0), 0);
+
+      // Try to get prediction titles for recent activity
+      const recentBets = (bets || []).slice(0, 10);
+      const predictionIds = [...new Set(recentBets.map(b => b.prediction_id))];
+      
+      let predictionMap: Record<string, string> = {};
+      if (predictionIds.length > 0) {
+        const { data: predictions } = await supabase
+          .from("predictions")
+          .select("id, title")
+          .in("id", predictionIds);
+        
+        (predictions || []).forEach(p => {
+          predictionMap[p.id] = p.title;
+        });
+      }
+
+      const activityWithTitles = recentBets.map(b => ({
+        ...b,
+        prediction_title: predictionMap[b.prediction_id] || "Mercado desconocido",
+      }));
+
+      setStats({
+        diamondBalance: Number(diamonds?.balance || 0),
+        totalBets: positiveBets.length,
+        totalWins: 0,
+        totalShares: Math.max(0, Number(totalShares.toFixed(2))),
+      });
+      setRecentActivity(activityWithTitles);
+      setLoadingStats(false);
+    }
+
+    fetchStats();
+  }, [user]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -81,6 +165,7 @@ export default function ProfilePage() {
 
   const tabs = [
     { id: "guardados" as const, label: "Guardados", icon: Bookmark, count: bookmarks.length },
+    { id: "actividad" as const, label: "Actividad", icon: Activity, count: recentActivity.length },
     { id: "preferencias" as const, label: "Preferencias", icon: Settings },
   ];
 
@@ -116,34 +201,70 @@ export default function ProfilePage() {
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 pb-1">
-              <h1 className="font-editorial text-2xl md:text-3xl font-bold">
-                {user.name}
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1 className="font-editorial text-2xl md:text-3xl font-bold">
+                  {user.name}
+                </h1>
+                <span className="px-2.5 py-0.5 bg-secondary/60 border border-border text-[10px] font-bold uppercase tracking-wider rounded-full text-muted-foreground">
+                  Free
+                </span>
+              </div>
               <p className="text-sm text-muted-foreground">{user.email}</p>
             </div>
-            <Button
-              onClick={handleLogout}
-              variant="outline"
-              className="gap-2 rounded-xl text-xs font-semibold border-border h-9"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              Cerrar sesión
-            </Button>
+            <div className="flex items-center gap-2">
+              <Link href="/suscripcion">
+                <Button className="gap-2 rounded-xl text-xs font-semibold h-9 bg-gradient-to-r from-[#0052CC] to-[#0066FF] hover:from-[#0052CC]/90 hover:to-[#0066FF]/90 text-white shadow-sm">
+                  <Crown className="w-3.5 h-3.5" />
+                  Upgrade a Pro
+                </Button>
+              </Link>
+              <Button
+                onClick={handleLogout}
+                variant="outline"
+                className="gap-2 rounded-xl text-xs font-semibold border-border h-9"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                Salir
+              </Button>
+            </div>
           </div>
         </motion.div>
 
-        {/* Stats Bar */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
+        {/* Quick Actions */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
           {[
-            { label: "Guardados", value: bookmarks.length, icon: Bookmark },
-            { label: "Artículos leídos", value: 24, icon: Newspaper },
-            { label: "Minutos leyendo", value: 142, icon: Clock },
+            { label: "Mis Predicciones", href: "/mis-predicciones", icon: TrendingUp, color: "text-blue-500", bg: "bg-blue-500/10" },
+            { label: "Mis Diamantes", href: "/mis-diamantes", icon: Gem, color: "text-amber-500", bg: "bg-amber-500/10" },
+            { label: "Recompensas", href: "/recompensas", icon: Crown, color: "text-purple-500", bg: "bg-purple-500/10" },
+            { label: "Suscripción", href: "/suscripcion", icon: Newspaper, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+          ].map((action) => (
+            <Link key={action.label} href={action.href}>
+              <div className="bg-card border border-border rounded-xl p-4 hover:border-accent/30 hover:shadow-sm transition-all group cursor-pointer">
+                <div className={`w-9 h-9 ${action.bg} rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
+                  <action.icon className={`w-4.5 h-4.5 ${action.color}`} />
+                </div>
+                <p className="text-xs font-semibold group-hover:text-accent transition-colors flex items-center gap-1">
+                  {action.label}
+                  <ChevronRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </p>
+              </div>
+            </Link>
+          ))}
+        </div>
+
+        {/* Stats Bar */}
+        <div className="grid grid-cols-4 gap-3 mb-8">
+          {[
+            { label: "Diamantes", value: loadingStats ? "..." : stats.diamondBalance.toLocaleString(), icon: Gem, color: "text-amber-500" },
+            { label: "Apuestas", value: loadingStats ? "..." : stats.totalBets, icon: TrendingUp, color: "text-blue-500" },
+            { label: "Shares activas", value: loadingStats ? "..." : stats.totalShares, icon: BarChart3, color: "text-emerald-500" },
+            { label: "Guardados", value: bookmarks.length, icon: Bookmark, color: "text-purple-500" },
           ].map((stat) => (
             <div
               key={stat.label}
               className="bg-card border border-border rounded-xl p-4 text-center"
             >
-              <stat.icon className="w-4 h-4 text-accent mx-auto mb-2" />
+              <stat.icon className={`w-4 h-4 ${stat.color} mx-auto mb-2`} />
               <p className="font-editorial text-xl font-bold">{stat.value}</p>
               <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">
                 {stat.label}
@@ -209,6 +330,71 @@ export default function ProfilePage() {
                   <Button variant="outline" className="gap-2 rounded-xl">
                     <Newspaper className="w-4 h-4" />
                     Explorar noticias
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {activeTab === "actividad" && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2 }}
+          >
+            {recentActivity.length > 0 ? (
+              <div className="space-y-2">
+                {recentActivity.map((act, i) => {
+                  const isSell = Number(act.shares) < 0;
+                  const absAmount = Math.abs(Number(act.amount));
+                  const absShares = Math.abs(Number(act.shares));
+                  const date = new Date(act.created_at);
+                  const timeAgo = getTimeAgo(date);
+
+                  return (
+                    <motion.div
+                      key={act.id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.03 }}
+                      className="flex items-center gap-4 bg-card border border-border rounded-xl px-5 py-4 hover:border-accent/20 transition-colors"
+                    >
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                        isSell ? "bg-rose-500/10" : "bg-emerald-500/10"
+                      }`}>
+                        {isSell ? (
+                          <ArrowDownRight className="w-4 h-4 text-rose-500" />
+                        ) : (
+                          <ArrowUpRight className="w-4 h-4 text-emerald-500" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">
+                          {isSell ? "Vendió" : "Apostó"} {absAmount.toFixed(2)} 💎 → {absShares.toFixed(2)} shares
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {act.prediction_title} · Lado {act.side.toUpperCase()}
+                        </p>
+                      </div>
+                      <span className="text-[11px] text-muted-foreground shrink-0">{timeAgo}</span>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="py-16 text-center">
+                <Activity className="w-12 h-12 text-muted-foreground/20 mx-auto mb-4" />
+                <h3 className="font-editorial text-lg font-bold mb-2">
+                  Sin actividad reciente
+                </h3>
+                <p className="text-sm text-muted-foreground max-w-xs mx-auto mb-6">
+                  Tu historial de apuestas y ventas aparecerá aquí.
+                </p>
+                <Link href="/predicciones">
+                  <Button variant="outline" className="gap-2 rounded-xl">
+                    <TrendingUp className="w-4 h-4" />
+                    Explorar predicciones
                   </Button>
                 </Link>
               </div>
@@ -403,4 +589,17 @@ export default function ProfilePage() {
       </div>
     </div>
   );
+}
+
+function getTimeAgo(date: Date): string {
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "ahora";
+  if (mins < 60) return `${mins}m`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d`;
+  return `${Math.floor(days / 7)}sem`;
 }

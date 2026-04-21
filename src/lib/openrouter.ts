@@ -28,24 +28,52 @@ export async function callOpenRouter(options: OpenRouterOptions): Promise<{
     max_tokens: options.max_tokens ?? 2000,
   };
 
+  // Cost optimization for Grok models
   if (options.model.toLowerCase().includes('grok')) {
-    payload.reasoning = { effort: 'none' };
+    payload.reasoning = { effort: 'none' }; // No chain-of-thought = fewer output tokens
+    payload.provider = {
+      order: ['xai'],           // Prefer direct XAI provider (cheapest)
+      allow_fallbacks: true,
+    };
   }
 
   if (options.search) {
     payload.plugins = [{ id: 'web' }];
   }
 
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+  let response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
-      'HTTP-Referer': 'https://programbi.com',
-      'X-Title': 'NewsBI Pulse',
+      'HTTP-Referer': 'https://reclu.com',
+      'X-Title': 'Reclu',
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(payload)
   });
+
+  // Retry on rate limit (429) or server errors (502/503) with exponential backoff
+  if (response.status === 429 || response.status === 502 || response.status === 503) {
+    const retryDelays = [5000, 10000, 20000]; // 5s, 10s, 20s
+    for (let attempt = 0; attempt < retryDelays.length; attempt++) {
+      console.warn(`[OpenRouter] ${response.status} — retrying in ${retryDelays[attempt] / 1000}s (attempt ${attempt + 2}/4)...`);
+      await new Promise(resolve => setTimeout(resolve, retryDelays[attempt]));
+      
+      response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'HTTP-Referer': 'https://reclu.com',
+          'X-Title': 'Reclu',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      if (response.ok) break;
+      if (response.status !== 429 && response.status !== 502 && response.status !== 503) break;
+    }
+  }
 
   if (!response.ok) {
     const errorText = await response.text();

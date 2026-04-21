@@ -28,7 +28,12 @@ export const useDiamondStore = create<DiamondState>((set, get) => ({
         .eq('user_id', userId)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        // Table might not exist yet - fail gracefully
+        console.warn("Diamond store: table query failed (table may not exist):", error.message);
+        set({ balance: 0, consecutiveDays: 0, lastClaimDate: null, canClaimToday: true, isLoading: false });
+        return;
+      }
 
       if (data) {
         set({
@@ -41,12 +46,9 @@ export const useDiamondStore = create<DiamondState>((set, get) => ({
         if (data.last_claim_date) {
           const lastClaim = new Date(data.last_claim_date);
           const now = new Date();
-          // We consider "today" as the same calendar day in local time or UTC
-          // For simplicity, if the day, month, and year are the same in UTC, they can't claim
-          const isSameDay = lastClaim.getUTCFullYear() === now.getUTCFullYear() &&
-                            lastClaim.getUTCMonth() === now.getUTCMonth() &&
-                            lastClaim.getUTCDate() === now.getUTCDate();
-          set({ canClaimToday: !isSameDay });
+          // We require exactly 24 hours (86400000ms) to pass since last claim
+          const diffMs = now.getTime() - lastClaim.getTime();
+          set({ canClaimToday: diffMs >= 24 * 60 * 60 * 1000 });
         } else {
           set({ canClaimToday: true });
         }

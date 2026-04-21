@@ -1,7 +1,7 @@
 {
-  "name": "NewsBI Pulse",
-  "short_name": "NewsBI",
-  "description": "Plataforma de noticias IA en tiempo real by ProgramBI",
+  "name": "Reclu",
+  "short_name": "Reclu",
+  "description": "Plataforma de noticias IA en tiempo real by Reclu",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0F172A",

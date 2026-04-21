@@ -34,6 +34,7 @@ interface AssistantState {
   removeTicker: (symbol: string) => void;
   completeSetup: () => void;
   resetSetup: () => void;
+  cancelSetup: () => void;
   setShowPreferences: (v: boolean) => void;
   setShowSettings: (v: boolean) => void;
   setAssistantTone: (tone: string) => void;
@@ -92,6 +93,7 @@ export const useAssistantStore = create<AssistantState>()(
     removeTicker: (symbol) => set((state) => ({ tickers: state.tickers.filter(t => t.symbol !== symbol) })),
     completeSetup: () => set({ hasCompletedSetup: true }),
     resetSetup: () => set({ name: '', topics: [], tickers: [], interests: {}, hasCompletedSetup: false }),
+    cancelSetup: () => set({ hasCompletedSetup: true }),
     setShowPreferences: (v) => set({ showPreferences: v }),
     setShowSettings: (v) => set({ showSettings: v }),
     setAssistantTone: (tone) => set({ assistantTone: tone }),

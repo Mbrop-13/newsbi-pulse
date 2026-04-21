@@ -10,10 +10,10 @@ export function Footer() {
   return (
     <footer className="border-t border-border mt-16 hidden md:block">
       <div className="max-w-[1200px] mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
+        <div className="flex flex-col md:flex-row gap-10 md:gap-20">
           {/* Brand */}
-          <div className="md:col-span-1">
-            <Logo />
+          <div className="md:w-[240px] shrink-0">
+            <Logo showText={false} size="lg" className="-ml-1" />
             <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
               Plataforma de noticias impulsada por IA. Análisis inteligente,
               verificación y audio profesional.
@@ -28,73 +28,80 @@ export function Footer() {
               <a href="https://linkedin.com" className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors" aria-label="LinkedIn">
                 <Linkedin className="w-4 h-4" />
               </a>
-              <a href="mailto:info@programbi.com" className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors" aria-label="Email">
+              <a href="mailto:info@reclu.com" className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors" aria-label="Email">
                 <Mail className="w-4 h-4" />
               </a>
             </div>
           </div>
 
+          {/* Link Columns — pushed right */}
+          <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-10">
+
           {/* Secciones */}
           <div>
             <h4 className="text-sm font-bold mb-4 text-foreground">Secciones</h4>
             <ul className="space-y-2">
-              {["Inicio", "Tecnología", "Negocios", "Chile", "En Vivo"].map((item) => (
-                <li key={item}>
-                  <Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    {item}
-                  </Link>
-                </li>
-              ))}
+              <li><Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Principal</Link></li>
+              <li><Link href="/finanzas" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Finanzas</Link></li>
+              <li><Link href="/inversiones" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Inversiones</Link></li>
+              <li><Link href="/economia" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Economía</Link></li>
+              <li><Link href="/tech-global" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Tech Global</Link></li>
+              <li><Link href="/impacto-global" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Impacto Global</Link></li>
             </ul>
           </div>
 
-          {/* Tecnología */}
+          {/* Explorar */}
           <div>
-            <h4 className="text-sm font-bold mb-4 text-foreground">Tecnología</h4>
+            <h4 className="text-sm font-bold mb-4 text-foreground">Explorar</h4>
             <ul className="space-y-2">
-              {["Grok AI (xAI)", "NewsData.io", "Supabase", "Next.js 15"].map((item) => (
-                <li key={item}>
-                  <span className="text-sm text-muted-foreground">{item}</span>
-                </li>
-              ))}
+              <li><Link href="/tendencia" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Tendencia</Link></li>
+              <li><Link href="/breaking" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Breaking</Link></li>
+              <li><Link href="/mercados" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Mercados</Link></li>
+              <li><Link href="/predicciones" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Predicciones</Link></li>
+              <li><Link href="/mundo" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Mundo</Link></li>
+              <li><Link href="/asistente" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Asistente IA</Link></li>
             </ul>
           </div>
 
-          {/* ProgramBI */}
+          {/* Tu Cuenta */}
           <div>
-            <h4 className="text-sm font-bold mb-4 text-foreground">ProgramBI</h4>
+            <h4 className="text-sm font-bold mb-4 text-foreground">Tu Cuenta</h4>
             <ul className="space-y-2">
+              <li><Link href="/profile" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Mi Perfil</Link></li>
+              <li><Link href="/guardados" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Guardados</Link></li>
+              <li><Link href="/lista-lectura" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Lista de Lectura</Link></li>
+              <li><Link href="/suscripcion" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Suscripción Premium</Link></li>
               <li>
                 <a
-                  href="https://programbi.com"
+                  href="https://reclu.com"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
                 >
-                  programbi.com
+                  reclu.com
                   <ExternalLink className="w-3 h-3" />
                 </a>
               </li>
-              <li><Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Privacidad</Link></li>
-              <li><Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Términos</Link></li>
             </ul>
           </div>
 
+          </div>{/* end link columns wrapper */}
+        </div>{/* end main flex row */}
+
           {/* Newsletter */}
-          <div className="md:col-span-4 mt-4 pt-6 border-t border-border">
+          <div className="mt-6 pt-6 border-t border-border">
             <div className="max-w-xs">
               <NewsletterForm variant="footer" />
             </div>
           </div>
-        </div>
 
         <Separator className="my-8" />
 
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} NewsBI Pulse by{" "}
-            <a href="https://programbi.com" className="text-accent hover:underline" target="_blank" rel="noopener noreferrer">
-              ProgramBI
+            © {new Date().getFullYear()} Reclu by{" "}
+            <a href="https://reclu.com" className="text-accent hover:underline" target="_blank" rel="noopener noreferrer">
+              Reclu
             </a>
             . Todos los derechos reservados.
           </p>

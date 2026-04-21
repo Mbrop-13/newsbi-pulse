@@ -35,6 +35,8 @@ export function AuthModals({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
   const login = useAuthStore((state) => state.login);
   const supabase = createClient();
 
@@ -42,6 +44,7 @@ export function AuthModals({
     e.preventDefault();
     setLoading(true);
     setErrorMsg(null);
+    setSuccessMsg(null);
 
     const formData = new FormData(e.currentTarget);
     const email = formData.get("email") as string;
@@ -54,9 +57,24 @@ export function AuthModals({
           email,
           password,
         });
+        console.log("[Auth] Login result:", { data, error });
         if (error) {
-          setErrorMsg(error.message);
+          if (error.message === "Email not confirmed") {
+            setErrorMsg("Tu correo electrónico aún no ha sido confirmado. Revisa tu bandeja de entrada.");
+          } else if (error.message === "Invalid login credentials") {
+            setErrorMsg("Correo o contraseña incorrectos.");
+          } else {
+            setErrorMsg(error.message);
+          }
           return;
+        }
+        if (data.user) {
+          login({
+            id: data.user.id,
+            email: data.user.email || "",
+            name: data.user.user_metadata?.full_name || "Usuario",
+            avatar: data.user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=U&background=1890FF&color=fff`,
+          });
         }
         onClose();
       } else {
@@ -70,11 +88,26 @@ export function AuthModals({
             },
           },
         });
+        console.log("[Auth] SignUp result:", { data, error });
         if (error) {
           setErrorMsg(error.message);
           return;
         }
-        onClose();
+        // Check if email confirmation is required
+        if (data.user && !data.session) {
+          setSuccessMsg("¡Cuenta creada! Revisa tu correo electrónico para confirmar tu cuenta antes de iniciar sesión.");
+        } else if (data.session) {
+          // Auto-confirmed, log in directly
+          if (data.user) {
+            login({
+              id: data.user.id,
+              email: data.user.email || "",
+              name: data.user.user_metadata?.full_name || fullName,
+              avatar: data.user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=0066FF&color=fff&bold=true`,
+            });
+          }
+          onClose();
+        }
       }
     } catch {
       setErrorMsg("Ocurrió un error inesperado.");
@@ -151,11 +184,7 @@ export function AuthModals({
                 </motion.div>
               </div>
               {/* Tagline */}
-              <div className="absolute top-5 left-6">
-                <p className="text-white/60 text-[10px] font-bold uppercase tracking-[0.2em]">
-                  NewsBI Pulse
-                </p>
-              </div>
+
             </div>
 
             {/* ───── Form Body ───── */}
@@ -191,6 +220,21 @@ export function AuthModals({
                       >
                         <span className="w-1.5 h-1.5 rounded-full bg-destructive animate-pulse flex-shrink-0" />
                         {errorMsg}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Success Banner */}
+                  <AnimatePresence>
+                    {successMsg && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="bg-green-500/10 border border-green-500/30 text-green-600 dark:text-green-400 text-xs font-semibold px-4 py-2.5 rounded-lg mb-5 flex items-center gap-2"
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse flex-shrink-0" />
+                        {successMsg}
                       </motion.div>
                     )}
                   </AnimatePresence>

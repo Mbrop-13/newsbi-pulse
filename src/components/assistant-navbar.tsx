@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -47,7 +48,7 @@ export function AssistantNavbar() {
         {/* Left: Logo + Preferencias */}
         <div className="flex-shrink-0 flex items-center gap-4">
           <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
-             <span className="font-bold text-xl tracking-tight text-[#1890FF]">ProgramBI</span>
+             <span className="font-bold text-[26px] tracking-tight text-[#1890FF]">Reclu</span>
           </Link>
 
           <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-2 hidden sm:block" />
@@ -95,7 +96,7 @@ export function AssistantNavbar() {
                 ? "bg-[#1890FF] text-white shadow-lg shadow-[#1890FF]/30"
                 : "bg-gray-100 dark:bg-slate-800 text-gray-500 hover:text-[#1890FF] hover:bg-[#1890FF]/10"
               }`}
-            title="NewsBI Radio"
+            title="Reclu Radio"
           >
             <Headphones className="w-4 h-4" />
           </button>
@@ -122,10 +123,12 @@ export function AssistantNavbar() {
                 </Avatar>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 rounded-xl border-gray-200 dark:border-gray-800 shadow-xl p-2 bg-white dark:bg-slate-900 mt-2">
-                <DropdownMenuLabel className="py-2 px-3">
-                  <p className="font-semibold text-sm text-gray-900 dark:text-gray-100 line-clamp-1">{user.name}</p>
-                  <p className="text-[11px] text-gray-500 line-clamp-1">{user.email}</p>
-                </DropdownMenuLabel>
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel className="py-2 px-3">
+                    <p className="font-semibold text-sm text-gray-900 dark:text-gray-100 line-clamp-1">{user.name}</p>
+                    <p className="text-[11px] text-gray-500 line-clamp-1">{user.email}</p>
+                  </DropdownMenuLabel>
+                </DropdownMenuGroup>
                 <DropdownMenuSeparator className="bg-gray-100 dark:bg-gray-800 mx-1" />
                 <Link href="/profile">
                   <DropdownMenuItem className="text-sm py-2 px-3 cursor-pointer rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">

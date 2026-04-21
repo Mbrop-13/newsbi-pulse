@@ -35,11 +35,11 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Protect the assistant route — redirect unauthenticated users to home
-  if (!user && request.nextUrl.pathname.startsWith('/asistente')) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/'
-    return NextResponse.redirect(url)
+  // The assistant route is no longer protected here because it has its own unauthenticated landing page.
+
+  // Protect /admin routes: require authentication
+  if (request.nextUrl.pathname.startsWith('/admin') && !user) {
+    return NextResponse.redirect(new URL('/', request.url));
   }
 
   return supabaseResponse

@@ -10,29 +10,29 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "NewsBI Pulse | Noticias y Análisis IA",
+  title: "Reclu | Noticias y Análisis IA",
   description: "Plataforma de noticias impulsada por Inteligencia Artificial y agentes autónomos.",
   keywords: [
     "noticias IA",
-    "ProgramBI",
+    "Reclu",
     "Grok",
     "noticias Chile",
     "tech news",
     "business news",
   ],
-  authors: [{ name: "ProgramBI", url: "https://programbi.com" }],
+  authors: [{ name: "Reclu", url: "https://reclu.com" }],
   openGraph: {
-    title: "NewsBI Pulse | Noticias IA en Tiempo Real",
+    title: "Reclu | Noticias IA en Tiempo Real",
     description: "Plataforma de noticias impulsada por IA Grok. Análisis inteligente y cobertura en vivo.",
-    url: "https://newsbi-pulse.vercel.app",
-    siteName: "NewsBI Pulse",
+    url: "https://reclu.vercel.app",
+    siteName: "Reclu",
     type: "website",
     locale: "es_CL",
   },
   twitter: {
     card: "summary_large_image",
-    title: "NewsBI Pulse | Noticias IA en Tiempo Real",
-    description: "Plataforma de noticias IA by ProgramBI. Análisis inteligente y cobertura en vivo.",
+    title: "Reclu | Noticias IA en Tiempo Real",
+    description: "Plataforma de noticias IA by Reclu. Análisis inteligente y cobertura en vivo.",
   },
   manifest: "/manifest.json",
   themeColor: [

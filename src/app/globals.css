@@ -49,9 +49,9 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 
   /* Brand Colors */
-  --color-programbi: #1890FF;
-  --color-programbi-dark: #096DD9;
-  --color-programbi-light: #40A9FF;
+  --color-reclu: #1890FF;
+  --color-reclu-dark: #096DD9;
+  --color-reclu-light: #40A9FF;
   --color-cyan-accent: #22D3EE;
   --color-live-red: #EF4444;
   --color-surface: var(--surface);
@@ -265,4 +265,20 @@
 }
 .dark ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.15);
+}
+
+/* ── Force Remove SVG Focus Rings ── */
+.recharts-wrapper,
+.recharts-wrapper *,
+.recharts-surface,
+.recharts-surface * {
+  outline: none !important;
+}
+
+/* ── Gradient Text Utility ── */
+.gradient-text {
+  background: linear-gradient(135deg, #0052CC 0%, #22D3EE 50%, #0066FF 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }

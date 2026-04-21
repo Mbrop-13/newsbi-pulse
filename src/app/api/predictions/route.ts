@@ -12,8 +12,8 @@ export async function GET(request: NextRequest) {
 
     // We need service_role to bypass RLS on user_bets so we can reconstruct the full history for the chart
     const supabaseAdmin = createSupabaseClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co",
+      process.env.SUPABASE_SERVICE_ROLE_KEY || "placeholder-key"
     );
 
     let query = supabaseAdmin

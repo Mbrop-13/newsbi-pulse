@@ -10,8 +10,8 @@ export default async function PredictionPage({ params }: { params: Promise<{ id:
 
   // We need service_role to bypass RLS on user_bets and get the full history
   const supabaseAdmin = createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co",
+    process.env.SUPABASE_SERVICE_ROLE_KEY || "placeholder-key"
   );
 
   // 1. Fetch the specific prediction using ID or Slug

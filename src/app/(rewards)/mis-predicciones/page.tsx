@@ -25,6 +25,7 @@ interface Bet {
     winner: string | null;
     total_volume: number;
     slug?: string;
+    status: string;
   };
 }
 

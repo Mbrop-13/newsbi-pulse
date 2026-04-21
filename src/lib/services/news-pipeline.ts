@@ -234,6 +234,7 @@ const USER_AGENTS = [
   'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
 ];
 
+// @ts-ignore
 import { GoogleDecoder } from 'google-news-url-decoder';
 
 /**

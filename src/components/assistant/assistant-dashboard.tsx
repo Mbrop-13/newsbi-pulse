@@ -11,7 +11,7 @@ import {
   Loader2, Send, Settings, Sparkles, User as UserIcon, Bot, Search, ArrowRight, X,
   TrendingDown, TrendingUp, Layers, ChevronRight, ArrowLeft, GripVertical, Plus,
   Headphones, Sun, Moon, ChevronDown, Zap, Newspaper, MessageSquare, BarChart3, Paperclip,
-  LayoutGrid, List, AlignJustify
+  LayoutGrid, List, AlignJustify, BookOpen
 } from "lucide-react";
 import { NewsCard } from "@/components/news-card";
 import { TraditionalNewspaper } from "@/components/traditional-newspaper";

@@ -49,7 +49,8 @@ export async function callOpenRouter(options: OpenRouterOptions): Promise<{
       'X-Title': 'Reclu',
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(90000) // 90 second timeout to prevent indefinite hangs
   });
 
   // Retry on rate limit (429) or server errors (502/503) with exponential backoff
@@ -67,7 +68,8 @@ export async function callOpenRouter(options: OpenRouterOptions): Promise<{
           'X-Title': 'Reclu',
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(90000)
       });
       
       if (response.ok) break;

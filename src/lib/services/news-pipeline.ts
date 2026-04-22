@@ -393,41 +393,56 @@ f = 2 dígitos: país(1=CL,2=US) + tema(1=General,2=Tech,3=Impacto,4=Finanzas,5=
 // 4. Only 1-2 source URLs — less web search tokens
 // 5. temperature: 0.2 — less creative = fewer tokens
 
+// ── Static system prompt for Grok (cacheable by OpenRouter) ──
+// Placed outside the function so it's byte-identical across all calls.
+// OpenRouter auto-caches stable system prefixes → 50-90% cheaper on input tokens.
+const GROK_SYSTEM_PROMPT = `Eres un periodista senior de "Reclu", portal PREMIUM de noticias financieras en ESPAÑOL.
+
+Tu trabajo: recibir una URL de noticia, investigarla en la web, y producir un artículo profesional.
+
+REGLAS OBLIGATORIAS:
+- Artículo de 3-4 párrafos, tono periodístico premium, 100% EN ESPAÑOL
+- Usa **negritas** en nombres propios, cifras, porcentajes y datos clave
+- Sin etiquetas XML, sin citas numéricas tipo [1][2], sin markdown de código
+- Busca la imagen principal (og:image) del artículo original e inclúyela en image_url
+- Si no encuentras imagen, devuelve image_url como null
+
+RESPONDE ÚNICAMENTE con JSON puro (sin markdown):
+{"title":"Título SEO max 90 chars","summary":"1 oración de resumen","content":"Artículo completo 3-4 párrafos","tags":["T1","T2","T3","T4"],"relevance_score":85,"category":"finanzas","sentiment":"neutral","city":null,"image_url":"https://...","f":14}
+
+Campo f = 2 dígitos: país(1=CL,2=US) + tema(1=General,2=Tech,3=Impacto,4=Finanzas,5=Inversiones,6=Economía)`;
+
 export async function rewriteNewsWithGrok(
   article: RawArticle,
   section: string,
   traceId?: string
 ): Promise<FinalNewsArticle> {
-  const prompt = `Periodista de "Reclu". Investiga en la web y escribe noticia profesional EN ESPAÑOL.
+  // Dynamic user message — only the variable data, kept minimal for cost efficiency
+  const userPrompt = `Investiga y escribe sobre esta noticia. Categoría: ${section}
 
-FUENTE: "${article.title}" — ${article.sourceName}
+Título: ${article.title}
+Fuente: ${article.sourceName}
 URL: ${article.url}
-
-INSTRUCCIONES:
-- Busca la URL y más fuentes sobre el mismo tema
-- Artículo de 3-4 párrafos, tono periodístico premium
-- Usa **negritas** en nombres, cifras y datos clave
-- Sin etiquetas XML, sin citas numéricas
-- IMPORTANTE: Busca la imagen principal (og:image) del artículo original e inclúyela en image_url
-
-JSON (sin markdown):
-{"title":"Título SEO max 90 chars","summary":"1 oración","content":"Artículo completo","tags":["T1","T2","T3","T4"],"relevance_score":85,"category":"${section}","sentiment":"neutral","city":null,"image_url":"https://...","f":${article.country_code === 'cl' ? '1' : '2'}4}`;
+País: ${article.country_code === 'cl' ? 'Chile (f=1X)' : 'USA (f=2X)'}`;
 
   const model = process.env.OPENROUTER_ENRICH_MODEL || 'x-ai/grok-4.1-fast:online';
   
   const { content, usage, citations } = await callOpenRouter({
     model,
-    messages: [{ role: 'user', content: prompt }],
-    temperature: 0.2,    // Low = more deterministic, fewer tokens
-    max_tokens: 1500,     // Hard cap — 3-4 paragraphs fit in ~800-1200 tokens
-    search: true,         // Enable web search
+    messages: [
+      { role: 'system', content: GROK_SYSTEM_PROMPT },  // Static → cached
+      { role: 'user', content: userPrompt },              // Dynamic → minimal
+    ],
+    temperature: 0.2,
+    max_tokens: 1500,
+    search: true,
   });
 
   if (traceId) {
     await logAiStep({
       traceId,
       step: `grok:${article.title.substring(0, 30)}`,
-      model, prompt, response: content,
+      model, prompt: userPrompt, response: content,
       tokensUsed: usage?.total_tokens || 0,
     });
   }
@@ -535,20 +550,32 @@ export async function runNewsPipeline(): Promise<{
       }
     }
     
-    // Check against existing DB slugs
+    // Check against existing DB slugs AND source URLs (prevents re-processing same Currents article)
     const supabase = getSupabaseAdmin();
     const recentSlugs = new Set<string>();
+    const recentSourceUrls = new Set<string>();
     const { data: recentArticles } = await supabase
       .from('news_articles')
-      .select('slug')
+      .select('slug, sources')
       .order('published_at', { ascending: false })
-      .limit(200);
+      .limit(300);
     
     if (recentArticles) {
-      for (const a of recentArticles) recentSlugs.add(a.slug);
+      for (const a of recentArticles) {
+        recentSlugs.add(a.slug);
+        // Extract all source URLs from the JSONB sources column
+        if (Array.isArray(a.sources)) {
+          for (const s of a.sources) {
+            if (s.url) recentSourceUrls.add(s.url);
+          }
+        }
+      }
     }
     
-    const fresh = unique.filter(a => !recentSlugs.has(generateSlug(a.title)));
+    const fresh = unique.filter(a => 
+      !recentSlugs.has(generateSlug(a.title)) && 
+      !recentSourceUrls.has(a.url)
+    );
     const toFilter = fresh.slice(0, PIPELINE_CONFIG.MAX_ARTICLES_TO_FILTER);
     
     console.log(`[PIPELINE] Step 2: ${rawArticles.length} raw → ${unique.length} unique → ${fresh.length} fresh → ${toFilter.length} to filter`);

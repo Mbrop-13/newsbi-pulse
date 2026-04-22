@@ -380,7 +380,41 @@ f = 2 dígitos: país(1=CL,2=US) + tema(1=General,2=Tech,3=Impacto,4=Finanzas,5=
     
     return results;
   } catch (err) {
-    console.error("[PIPELINE] Step parse failed:", content.substring(0, 500));
+    console.error("[PIPELINE] Step parse failed, attempting to salvage articles...");
+    
+    // ─── JSON SALVAGE ALGORITHM ───
+    // If Ling cuts off the response, we can still rescue the articles it DID finish.
+    const salvagedResults: StepFilterResult[] = [];
+    const blocks = content.split('{"index"');
+    
+    for (let i = 1; i < blocks.length; i++) {
+      let block = '{"index"' + blocks[i];
+      // Try to find the closing brace by attempting to parse progressively smaller substrings
+      let parsedObj: any = null;
+      for (let end = block.length; end > 10; end--) {
+        if (block[end - 1] === '}') {
+          try {
+            parsedObj = JSON.parse(block.substring(0, end));
+            break; // Success!
+          } catch (e) {
+            // keep shrinking
+          }
+        }
+      }
+      if (parsedObj && typeof parsedObj.index === 'number' && parsedObj.route) {
+        salvagedResults.push(parsedObj);
+      }
+    }
+
+    if (salvagedResults.length > 0) {
+      console.log(`[PIPELINE] Salvaged ${salvagedResults.length} articles successfully!`);
+      const grokCount = salvagedResults.filter(r => r.route === 'GROK').length;
+      const selfCount = salvagedResults.filter(r => r.route === 'SELF').length;
+      console.log(`[PIPELINE] Salvaged Step: ${grokCount} GROK, ${selfCount} SELF`);
+      return salvagedResults;
+    }
+
+    console.error("[PIPELINE] Salvage failed entirely. Applying GROK fallback.");
     // Fallback: send top articles to GROK
     return articles.slice(0, 3).map((a, i) => ({
       index: i, title_original: a.title, importance: 90, route: 'GROK' as const, reason: 'Step parse fallback',

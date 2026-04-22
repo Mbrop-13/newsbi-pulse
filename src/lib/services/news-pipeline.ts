@@ -361,7 +361,7 @@ f = 2 dígitos: país(1=CL,2=US) + tema(1=General,2=Tech,3=Impacto,4=Finanzas,5=
     model,
     messages: [{ role: 'user', content: prompt }],
     temperature: 0.1,
-    max_tokens: 6000,
+    max_tokens: 16000,
   });
 
   if (traceId) {

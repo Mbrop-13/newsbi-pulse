@@ -193,8 +193,12 @@ export async function fetchFromCurrentsAPI(): Promise<RawArticle[]> {
           country_code: feed.country_code,
           language: feed.language,
         }));
-      } catch (err) {
-        console.error(`[PIPELINE] Currents error for ${feed.feed_tag}/${feed.country_code}:`, err);
+      } catch (err: any) {
+        if (err.name === 'TimeoutError' || err.message?.includes('timeout')) {
+          console.error(`[PIPELINE] Currents API Timeout (15s) for ${feed.feed_tag}/${feed.country_code}`);
+        } else {
+          console.error(`[PIPELINE] Currents error for ${feed.feed_tag}/${feed.country_code}:`, err.message || err);
+        }
         return [];
       }
     })

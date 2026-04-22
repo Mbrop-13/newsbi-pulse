@@ -383,7 +383,7 @@ f = 2 dígitos: país(1=CL,2=US) + tema(1=General,2=Tech,3=Impacto,4=Finanzas,5=
     console.error("[PIPELINE] Step parse failed:", content.substring(0, 500));
     // Fallback: send top articles to GROK
     return articles.slice(0, 3).map((a, i) => ({
-      index: i, title_original: a.title, importance: 80, route: 'GROK' as const, reason: 'Step parse fallback',
+      index: i, title_original: a.title, importance: 90, route: 'GROK' as const, reason: 'Step parse fallback',
     }));
   }
 }

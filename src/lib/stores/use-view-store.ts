@@ -34,7 +34,7 @@ const defaultState = {
   fontSize: 'base' as ViewFontSize,
   showImages: true,
   showPredictions: true,
-  articleWidth: 'normal' as ArticleWidth,
+  articleWidth: 'wide' as ArticleWidth,
   timePeriod: '24h' as TimePeriod,
 };
 

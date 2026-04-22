@@ -12,6 +12,9 @@ import { useViewStore, type ViewDensity, type ViewFontSize } from "@/lib/stores/
    Hero → Secondary Row → Section Blocks → Briefs
    ───────────────────────────────────────────────────────── */
 
+import { BookmarkButton } from "./bookmark-button";
+import { ReadingListButton } from "./reading-list-button";
+
 /* ── Helpers for density & fontSize mappings ── */
 
 function getDensityClasses(density: ViewDensity) {
@@ -117,12 +120,29 @@ function HeroArticle({ article, density, fontSize }: { article: NewsArticle; den
           {article.title}
         </h2>
         {article.image_url && (
-          <div className="w-full mb-4 overflow-hidden rounded-none">
+          <div className="w-full mb-4 overflow-hidden rounded-none relative">
             <img
               src={article.image_url}
               alt={article.title}
               className={`w-full object-cover rounded-none grayscale-[20%] group-hover:grayscale-0 transition-all duration-700 ${imageClass}`}
             />
+            
+            {/* Hover Actions Overlay */}
+            <div className="absolute top-3 right-3 flex items-center gap-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <ReadingListButton 
+                article={{
+                  id: article.id,
+                  title: article.title,
+                  category: article.category,
+                  image_url: article.image_url || undefined,
+                  slug: article.slug,
+                  published_at: article.published_at,
+                  source: article.sources?.[0]?.name
+                }}
+                className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-md text-white hover:bg-[#1890FF] hover:text-white border-none" 
+              />
+              <BookmarkButton articleId={article.id} className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-md text-white hover:bg-[#1890FF] hover:text-white border-none" />
+            </div>
           </div>
         )}
         <div className={`text-gray-700 dark:text-gray-300 leading-relaxed prose dark:prose-invert max-w-none prose-p:m-0 line-clamp-[14] font-serif ${summaryClass}`}>
@@ -154,12 +174,28 @@ function SecondaryArticle({ article, showImage = true, density, fontSize }: { ar
     <article className="group flex flex-col">
       <Link href={`/article/${article.slug || article.id}`} className="flex flex-col gap-2 focus:outline-none">
         {showImage && article.image_url && (
-          <div className="w-full overflow-hidden mb-2 rounded-none">
+          <div className="w-full overflow-hidden mb-2 rounded-none relative">
             <img
               src={article.image_url}
               alt={article.title}
               className={`w-full object-cover rounded-none grayscale-[20%] group-hover:grayscale-0 transition-all duration-500 ${imageClass}`}
             />
+            {/* Hover Actions Overlay */}
+            <div className="absolute top-2 right-2 flex items-center gap-1.5 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <ReadingListButton 
+                article={{
+                  id: article.id,
+                  title: article.title,
+                  category: article.category,
+                  image_url: article.image_url || undefined,
+                  slug: article.slug,
+                  published_at: article.published_at,
+                  source: article.sources?.[0]?.name
+                }}
+                className="w-7 h-7 flex items-center justify-center rounded-full bg-black/40 backdrop-blur-md text-white hover:bg-[#1890FF] hover:text-white border-none scale-90" 
+              />
+              <BookmarkButton articleId={article.id} className="w-7 h-7 flex items-center justify-center rounded-full bg-black/40 backdrop-blur-md text-white hover:bg-[#1890FF] hover:text-white border-none scale-90" />
+            </div>
           </div>
         )}
         <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#1890FF]">{article.category}</span>

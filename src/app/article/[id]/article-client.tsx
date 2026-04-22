@@ -211,8 +211,8 @@ export default function ArticlePage() {
                 <ExpandableSources sources={article.sources} />
                 {(article.relevance_score || 0) > 0 && (
                   <span 
-                    className="flex shrink-0 items-center justify-center w-6 h-6 rounded-full bg-[#1890FF]/10 text-[#1890FF] border border-[#1890FF]/25 shadow-sm text-[11px] font-black"
-                    title={`${article.relevance_score > 1 ? Math.round(article.relevance_score) : Math.round(article.relevance_score * 100)}% de Importancia según Inteligencia Artificial`}
+                    className="flex shrink-0 items-center justify-center w-6 h-6 rounded-full bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-[10px] font-bold tracking-tight shadow-sm"
+                    title="Porcentaje de Importancia asignado por Inteligencia Artificial"
                   >
                     {article.relevance_score > 1 ? Math.round(article.relevance_score) : Math.round(article.relevance_score * 100)}
                   </span>

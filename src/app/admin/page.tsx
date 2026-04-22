@@ -137,12 +137,12 @@ export default function AdminDashboard() {
     setRunningPipeline(true);
     setPipelineResult(null);
     try {
-      const res = await fetch("/api/cron?manual=true");
+      const res = await fetch("/api/github/dispatch", { method: 'POST' });
       const data = await res.json();
       if (data.success) {
-        setPipelineResult(`✅ ${data.stats?.saved || 0} artículos guardados en ${formatDuration(data.stats?.durationMs || 0)}`);
-        // Refresh stats after pipeline run
-        setTimeout(fetchStats, 2000);
+        setPipelineResult(`✅ Señal enviada a GitHub Actions. Revisa los logs en GitHub en 1 minuto.`);
+        // Refresh stats after a bit
+        setTimeout(fetchStats, 5000);
       } else {
         setPipelineResult(`❌ Error: ${data.error || "desconocido"}`);
       }

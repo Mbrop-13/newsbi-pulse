@@ -1,0 +1,46 @@
+name: AI News Pipeline
+
+on:
+  schedule:
+    # Corre cada 10 minutos
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+    # Permite ejecutarlo manualmente desde GitHub
+  repository_dispatch:
+    # Permite dispararlo desde el botón "Ejecutar Pipeline" en Vercel
+    types: [manual-pipeline-run]
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360 # 6 hours max, well above Vercel's 60s limit
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Pipeline
+        env:
+          # Inyectamos los secretos desde GitHub Settings > Secrets
+          CURRENTS_API_KEY: ${{ secrets.CURRENTS_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENROUTER_FILTER_MODEL: ${{ secrets.OPENROUTER_FILTER_MODEL || 'inclusionai/ling-2.6-flash:free' }}
+          OPENROUTER_ENRICH_MODEL: ${{ secrets.OPENROUTER_ENRICH_MODEL || 'x-ai/grok-4.1-fast:online' }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            npm run pipeline -- --manual
+          else
+            npm run pipeline
+          fi

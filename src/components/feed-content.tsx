@@ -120,7 +120,7 @@ export function FeedContent({ currentFeed }: { currentFeed: FeedTab }) {
         {/* ── Section Navigation (Not sticky) ── */}
         <div className="-mx-4 px-4 py-3 bg-gray-50 dark:bg-[#0F172A] border-b border-gray-200/50 dark:border-white/5 mb-8">
           <div className="flex items-center justify-between">
-            <div className="flex gap-1.5 overflow-x-auto pb-2 sm:pb-0 scrollbar-hide flex-nowrap">
+            <div className="flex gap-1.5 overflow-x-auto pb-2 sm:pb-0 hide-scrollbar flex-nowrap">
               {TABS.map(tab => (
                 <Link
                   key={tab.id}
@@ -297,7 +297,7 @@ function TrendingPanel({ articles }: { articles: any[] }) {
       </div>
 
       {/* Horizontal scroll on mobile */}
-      <div className="lg:hidden overflow-x-auto scrollbar-hide">
+      <div className="lg:hidden overflow-x-auto hide-scrollbar">
         <div className="flex gap-4 p-4" style={{ width: 'max-content' }}>
           {trending.map((article) => (
             <Link

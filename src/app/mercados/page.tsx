@@ -107,7 +107,7 @@ export default function MercadosPage() {
         {/* ══════════════════════════════════════════════════ */}
         {/* TAB BAR (Home-page style pills)                   */}
         {/* ══════════════════════════════════════════════════ */}
-        <div className="flex items-center gap-4 overflow-x-auto scrollbar-hide mb-6 pt-2">
+        <div className="flex items-center gap-4 overflow-x-auto hide-scrollbar mb-6 pt-2">
           {/* Tab pills */}
           <div className="flex items-center gap-2">
             {TABS.map(tab => (

@@ -273,7 +273,7 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
         {/* ── Filter Bar ── */}
         <div className="-mx-4 px-4 pt-2 pb-3 bg-gray-50 dark:bg-[#0F172A] border-b border-gray-200/50 dark:border-white/5">
           <div className="flex items-center justify-between gap-4">
-            <div className="flex-1 min-w-0 flex items-center gap-2.5 overflow-x-auto scrollbar-hide flex-nowrap pr-4 pb-1">
+            <div className="flex-1 min-w-0 flex items-center gap-2.5 overflow-x-auto hide-scrollbar flex-nowrap pr-4 pb-1">
               {/* Timing filters */}
               <button 
                 onClick={() => { triggerTransition(); setFilterMode('tendencia'); router.push('/tendencia'); }}
@@ -579,7 +579,7 @@ function TrendingPanel({ articles }: { articles: any[] }) {
       </div>
 
       {/* Horizontal scroll on mobile */}
-      <div className="lg:hidden overflow-x-auto scrollbar-hide">
+      <div className="lg:hidden overflow-x-auto hide-scrollbar">
         <div className="flex gap-4 p-4" style={{ width: 'max-content' }}>
           {trending.map((article) => (
             <Link key={article.id} href={`/article/${article.slug || article.id}`} className="flex-shrink-0 w-[260px] group">

@@ -7,6 +7,7 @@ import Link from "next/link";
 import { NewsCard } from "@/components/news-card";
 import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { useViewStore } from "@/lib/stores/use-view-store";
 
 export type FeedTab = "chile" | "tech_global" | "impacto_global" | "finanzas" | "inversiones" | "economia";
 
@@ -26,6 +27,7 @@ export function FeedContent({ currentFeed }: { currentFeed: FeedTab }) {
   const [visibleCount, setVisibleCount] = useState(12);
   const supabase = createClient();
   const userRole = useAuthStore(s => s.user?.role);
+  const { timePeriod } = useViewStore();
 
   // Fetch all articles on mount
   useEffect(() => {
@@ -62,8 +64,15 @@ export function FeedContent({ currentFeed }: { currentFeed: FeedTab }) {
       inversiones: ["business"],
       economia: ["business"],
     };
-    return dbArticles.filter(a => categoryMap[currentFeed]?.includes(a.category?.toLowerCase()));
-  }, [dbArticles, currentFeed]);
+    let filtered = dbArticles.filter(a => categoryMap[currentFeed]?.includes(a.category?.toLowerCase()));
+    
+    // Sort logic based on historical viewing preference
+    if (timePeriod === "all") {
+      return filtered.sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0));
+    }
+    
+    return filtered;
+  }, [dbArticles, currentFeed, timePeriod]);
 
   const visibleArticles = feedArticles.slice(0, visibleCount);
   const hasMore = visibleCount < feedArticles.length;

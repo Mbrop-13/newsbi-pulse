@@ -98,6 +98,7 @@ function HeroArticle({ article, density, fontSize }: { article: NewsArticle; den
   const titleClass = getHeroTitleClass(fontSize);
   const summaryClass = getHeroSummaryClass(fontSize);
   const imageClass = getHeroImageClass(density);
+  const contentToDisplay = article.summary ? `${article.summary}\n\n${article.content || ""}` : (article.content || "");
 
   return (
     <article className="group">
@@ -116,16 +117,16 @@ function HeroArticle({ article, density, fontSize }: { article: NewsArticle; den
           {article.title}
         </h2>
         {article.image_url && (
-          <div className="w-full mb-4 overflow-hidden rounded-xl">
+          <div className="w-full mb-4 overflow-hidden rounded-none">
             <img
               src={article.image_url}
               alt={article.title}
-              className={`w-full object-cover rounded-xl grayscale-[20%] group-hover:grayscale-0 transition-all duration-700 ${imageClass}`}
+              className={`w-full object-cover rounded-none grayscale-[20%] group-hover:grayscale-0 transition-all duration-700 ${imageClass}`}
             />
           </div>
         )}
-        <div className={`text-gray-700 dark:text-gray-300 leading-relaxed prose dark:prose-invert max-w-none prose-p:m-0 line-clamp-4 font-serif ${summaryClass}`}>
-          <ReactMarkdown>{article.summary || ""}</ReactMarkdown>
+        <div className={`text-gray-700 dark:text-gray-300 leading-relaxed prose dark:prose-invert max-w-none prose-p:m-0 line-clamp-[14] font-serif ${summaryClass}`}>
+          <ReactMarkdown>{contentToDisplay}</ReactMarkdown>
         </div>
         <div className="flex items-center gap-3 mt-4 text-xs text-gray-500 uppercase tracking-wider font-medium">
           <Clock className="w-3.5 h-3.5" />
@@ -153,11 +154,11 @@ function SecondaryArticle({ article, showImage = true, density, fontSize }: { ar
     <article className="group flex flex-col">
       <Link href={`/article/${article.slug || article.id}`} className="flex flex-col gap-2 focus:outline-none">
         {showImage && article.image_url && (
-          <div className="w-full overflow-hidden mb-2 rounded-xl">
+          <div className="w-full overflow-hidden mb-2 rounded-none">
             <img
               src={article.image_url}
               alt={article.title}
-              className={`w-full object-cover rounded-xl grayscale-[20%] group-hover:grayscale-0 transition-all duration-500 ${imageClass}`}
+              className={`w-full object-cover rounded-none grayscale-[20%] group-hover:grayscale-0 transition-all duration-500 ${imageClass}`}
             />
           </div>
         )}

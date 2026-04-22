@@ -81,148 +81,160 @@ async function logAiStep(data: {
   }
 }
 
-// ─── Phase 1: Google News RSS Fetch ──────────────
-// FREE · Real-time · Unlimited
-// Returns ~10-15 articles per feed
+// ─── Phase 1: Currents API Fetch ─────────────────
+// Real-time news · 600 req/day free · No delay
+// Returns structured JSON with images included
 
-interface RSSFeed {
-  url: string;
-  country_code: string;
-  feed_tag: string;
+interface CurrentsFeed {
+  keywords: string;
   language: string;
+  country: string;
+  feed_tag: string;
+  country_code: string;
+  category: string; // Currents API category
 }
 
-const RSS_FEEDS: RSSFeed[] = [
+const CURRENTS_FEEDS: CurrentsFeed[] = [
   // Chile (4 feeds)
   {
-    url: 'https://news.google.com/rss/search?q=economia+finanzas+chile&hl=es-419&gl=CL&ceid=CL:es-419',
-    country_code: 'cl', feed_tag: 'economia', language: 'es'
+    keywords: 'economía finanzas Chile',
+    language: 'es', country: 'CL', country_code: 'cl',
+    feed_tag: 'economia', category: 'economy_business_finance',
   },
   {
-    url: 'https://news.google.com/rss/search?q=inversiones+bolsa+mercado+chile&hl=es-419&gl=CL&ceid=CL:es-419',
-    country_code: 'cl', feed_tag: 'inversiones', language: 'es'
+    keywords: 'inversiones bolsa mercado Chile',
+    language: 'es', country: 'CL', country_code: 'cl',
+    feed_tag: 'inversiones', category: 'economy_business_finance',
   },
   {
-    url: 'https://news.google.com/rss/search?q=tecnologia+innovacion+startups+chile&hl=es-419&gl=CL&ceid=CL:es-419',
-    country_code: 'cl', feed_tag: 'tech_global', language: 'es'
+    keywords: 'tecnología innovación startups Chile',
+    language: 'es', country: 'CL', country_code: 'cl',
+    feed_tag: 'tech_global', category: 'science_technology',
   },
   {
-    url: 'https://news.google.com/rss/search?q=banco+central+politica+economica+chile&hl=es-419&gl=CL&ceid=CL:es-419',
-    country_code: 'cl', feed_tag: 'chile', language: 'es'
+    keywords: 'política económica banco central Chile',
+    language: 'es', country: 'CL', country_code: 'cl',
+    feed_tag: 'chile', category: 'politics_government',
   },
   // USA / Global (4 feeds)
   {
-    url: 'https://news.google.com/rss/search?q=finance+wall+street+markets+stocks&hl=en-US&gl=US&ceid=US:en',
-    country_code: 'us', feed_tag: 'finanzas', language: 'en'
+    keywords: 'finance wall street markets stocks',
+    language: 'en', country: 'US', country_code: 'us',
+    feed_tag: 'finanzas', category: 'economy_business_finance',
   },
   {
-    url: 'https://news.google.com/rss/search?q=economy+federal+reserve+inflation+GDP&hl=en-US&gl=US&ceid=US:en',
-    country_code: 'us', feed_tag: 'economia', language: 'en'
+    keywords: 'economy federal reserve inflation GDP',
+    language: 'en', country: 'US', country_code: 'us',
+    feed_tag: 'economia', category: 'economy_business_finance',
   },
   {
-    url: 'https://news.google.com/rss/search?q=artificial+intelligence+big+tech+startups&hl=en-US&gl=US&ceid=US:en',
-    country_code: 'us', feed_tag: 'tech_global', language: 'en'
+    keywords: 'artificial intelligence big tech startups',
+    language: 'en', country: 'US', country_code: 'us',
+    feed_tag: 'tech_global', category: 'science_technology',
   },
   {
-    url: 'https://news.google.com/rss/search?q=investments+cryptocurrency+IPO+venture+capital&hl=en-US&gl=US&ceid=US:en',
-    country_code: 'us', feed_tag: 'inversiones', language: 'en'
+    keywords: 'investments cryptocurrency IPO venture capital',
+    language: 'en', country: 'US', country_code: 'us',
+    feed_tag: 'inversiones', category: 'economy_business_finance',
   },
 ];
 
 /**
- * Parse Google News RSS XML into RawArticle[]
- * Google News RSS uses standard RSS 2.0 format
+ * Fetch news from Currents API
+ * Docs: https://currentsapi.services/en/docs/
  */
-function parseRSSXml(xml: string, feed: RSSFeed): RawArticle[] {
-  const articles: RawArticle[] = [];
-  
-  // Extract <item> blocks
-  const itemRegex = /<item>([\s\S]*?)<\/item>/g;
-  let match;
-  
-  while ((match = itemRegex.exec(xml)) !== null) {
-    const itemXml = match[1];
-    
-    const title = itemXml.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/)?.[1]
-      || itemXml.match(/<title>(.*?)<\/title>/)?.[1]
-      || '';
-    
-    const link = itemXml.match(/<link>(.*?)<\/link>/)?.[1]
-      || itemXml.match(/<link[^>]*href=["']([^"']+)["']/)?.[1]
-      || '';
-
-    const pubDate = itemXml.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] || '';
-    
-    const description = itemXml.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/)?.[1]
-      || itemXml.match(/<description>(.*?)<\/description>/)?.[1]
-      || '';
-    
-    // Extract source from Google News format
-    const sourceMatch = itemXml.match(/<source[^>]*url=["']([^"']+)["'][^>]*>(.*?)<\/source>/);
-    const sourceName = sourceMatch?.[2] || 'Google News';
-    const sourceUrl = sourceMatch?.[1] || '';
-    
-    // Try to get media:content image
-    const mediaUrl = itemXml.match(/<media:content[^>]*url=["']([^"']+)["']/)?.[1] || null;
-
-    // Clean HTML from description
-    const cleanDesc = description
-      .replace(/<[^>]+>/g, '')
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'")
-      .trim();
-
-    if (title && link) {
-      articles.push({
-        title: title.replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&quot;/g, '"'),
-        summary: cleanDesc || title,
-        url: link,
-        sourceName,
-        sourceUrl,
-        publishedAt: pubDate ? new Date(pubDate).toISOString() : new Date().toISOString(),
-        imageUrl: mediaUrl,
-        feed_tag: feed.feed_tag,
-        country_code: feed.country_code,
-        language: feed.language,
-      });
-    }
+export async function fetchFromCurrentsAPI(): Promise<RawArticle[]> {
+  const apiKey = process.env.CURRENTS_API_KEY;
+  if (!apiKey) {
+    console.error('[PIPELINE] CURRENTS_API_KEY not set!');
+    return [];
   }
-  
-  return articles;
-}
 
-/**
- * Fetch all RSS feeds in parallel
- */
-export async function fetchFromGoogleNewsRSS(): Promise<RawArticle[]> {
-  console.log(`[PIPELINE] Fetching ${RSS_FEEDS.length} Google News RSS feeds...`);
-  
+  console.log(`[PIPELINE] Fetching ${CURRENTS_FEEDS.length} Currents API feeds...`);
+
   const results = await Promise.allSettled(
-    RSS_FEEDS.map(async (feed) => {
+    CURRENTS_FEEDS.map(async (feed) => {
       try {
-        const res = await fetch(feed.url, {
-          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; RecluBot/1.0)' },
-          signal: AbortSignal.timeout(10000),
+        const params = new URLSearchParams({
+          apiKey,
+          language: feed.language,
+          country: feed.country,
+          category: feed.category,
+          keywords: feed.keywords,
+          page_size: '10',
         });
-        if (!res.ok) throw new Error(`RSS fetch failed: ${res.status}`);
-        const xml = await res.text();
-        return parseRSSXml(xml, feed);
+
+        const res = await fetch(
+          `https://api.currentsapi.services/v1/search?${params.toString()}`,
+          { signal: AbortSignal.timeout(15000) }
+        );
+
+        if (!res.ok) {
+          const errText = await res.text().catch(() => '');
+          throw new Error(`Currents API error ${res.status}: ${errText.substring(0, 200)}`);
+        }
+
+        const data = await res.json();
+
+        if (data.status !== 'ok' || !Array.isArray(data.news)) {
+          console.warn(`[PIPELINE] Currents returned non-ok for ${feed.feed_tag}:`, data.status);
+          return [];
+        }
+
+        return data.news.map((item: any): RawArticle => ({
+          title: item.title || '',
+          summary: item.description || item.title || '',
+          url: item.url || '',
+          sourceName: item.author || 'Currents',
+          sourceUrl: item.url || '',
+          publishedAt: item.published ? new Date(item.published).toISOString() : new Date().toISOString(),
+          imageUrl: item.image && item.image !== 'None' ? item.image : null,
+          feed_tag: feed.feed_tag,
+          country_code: feed.country_code,
+          language: feed.language,
+        }));
       } catch (err) {
-        console.error(`[PIPELINE] RSS error for ${feed.feed_tag}/${feed.country_code}:`, err);
+        console.error(`[PIPELINE] Currents error for ${feed.feed_tag}/${feed.country_code}:`, err);
         return [];
       }
     })
   );
-  
+
   const allArticles = results
     .filter((r): r is PromiseFulfilledResult<RawArticle[]> => r.status === 'fulfilled')
     .flatMap(r => r.value);
-  
-  console.log(`[PIPELINE] Fetched ${allArticles.length} articles from ${RSS_FEEDS.length} feeds`);
+
+  console.log(`[PIPELINE] Fetched ${allArticles.length} articles from ${CURRENTS_FEEDS.length} Currents feeds`);
   return allArticles;
+}
+
+// ─── Auto-cleanup: Delete articles older than 30 days ─────────
+
+export async function cleanupOldArticles(): Promise<number> {
+  try {
+    const supabase = getSupabaseAdmin();
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+    const { data, error } = await supabase
+      .from('news_articles')
+      .delete()
+      .lt('published_at', thirtyDaysAgo)
+      .select('id');
+
+    if (error) {
+      console.error('[CLEANUP] Error deleting old articles:', error);
+      return 0;
+    }
+
+    const count = data?.length || 0;
+    if (count > 0) {
+      console.log(`[CLEANUP] 🗑️ Deleted ${count} articles older than 30 days`);
+    }
+    return count;
+  } catch (err) {
+    console.error('[CLEANUP] Crash:', err);
+    return 0;
+  }
 }
 
 // ─── Image Extraction (og:image) ─────────────────
@@ -234,35 +246,11 @@ const USER_AGENTS = [
   'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
 ];
 
-// @ts-ignore
-import { GoogleDecoder } from 'google-news-url-decoder';
-
-/**
- * Resolve Google News redirect URLs to get the actual article URL.
- * Uses the community google-news-url-decoder package to natively parse the encoded CBMi URL.
- */
-async function resolveGoogleNewsUrl(url: string): Promise<string> {
-  if (!url.includes('news.google.com')) return url;
-  try {
-    const decoder = new GoogleDecoder();
-    const result = await decoder.decode(url);
-    if (result && result.status && result.decoded_url) {
-      return result.decoded_url;
-    }
-  } catch (err) {
-    console.warn(`[PIPELINE] Failed to decode Google News URL: ${url.substring(0, 50)}...`);
-  }
-  return url;
-}
-
 export async function extractOgImage(articleUrl: string): Promise<string | null> {
   try {
-    // Step 1: Resolve Google News redirects
-    const realUrl = await resolveGoogleNewsUrl(articleUrl);
-    
-    // Step 2: Fetch the page with a browser-like User-Agent
+    // Fetch the page with a browser-like User-Agent
     const ua = USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
-    const res = await fetch(realUrl, {
+    const res = await fetch(articleUrl, {
       headers: {
         'User-Agent': ua,
         'Accept': 'text/html,application/xhtml+xml',
@@ -517,18 +505,21 @@ export async function runNewsPipeline(): Promise<{
   stats?: { fetched: number; filtered: number; grokCalls: number; stepWrites: number; saved: number; durationMs: number };
 }> {
   const startTime = Date.now();
-  console.log("=== [PIPELINE v2] Starting Google News RSS Pipeline ===");
+  console.log("=== [PIPELINE v3] Starting Currents API Pipeline ===");
   
   const traceId = crypto.randomUUID?.() 
     || "00000000-0000-0000-0000-000000000000".replace(/0/g, () => (Math.random() * 16 | 0).toString(16));
   
   try {
-    // ─── Step 1: Fetch from Google News RSS ───
-    console.log("[PIPELINE] Step 1: Fetching Google News RSS...");
-    const rawArticles = await fetchFromGoogleNewsRSS();
+    // ─── Step 0: Auto-cleanup old articles (>30 days) ───
+    await cleanupOldArticles();
+
+    // ─── Step 1: Fetch from Currents API ───
+    console.log("[PIPELINE] Step 1: Fetching from Currents API...");
+    const rawArticles = await fetchFromCurrentsAPI();
     
     if (rawArticles.length === 0) {
-      console.warn("[PIPELINE] No articles from RSS. Exiting.");
+      console.warn("[PIPELINE] No articles from Currents API. Exiting.");
       return { success: true, articles: [], stats: { fetched: 0, filtered: 0, grokCalls: 0, stepWrites: 0, saved: 0, durationMs: Date.now() - startTime } };
     }
 

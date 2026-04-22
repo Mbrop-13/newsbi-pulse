@@ -52,11 +52,11 @@ export async function callOpenRouter(options: OpenRouterOptions): Promise<{
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(120000) // 120 second timeout
+      signal: AbortSignal.timeout(300000) // 5 minutes timeout
     });
   } catch (error: any) {
     if (error.name === 'TimeoutError' || error.message?.includes('timeout')) {
-      throw new Error(`OpenRouter API Timeout: The AI model (${options.model}) took too long to respond (>120s).`);
+      throw new Error(`OpenRouter API Timeout: The AI model (${options.model}) took too long to respond (>300s).`);
     }
     throw error;
   }
@@ -78,7 +78,7 @@ export async function callOpenRouter(options: OpenRouterOptions): Promise<{
             'Content-Type': 'application/json'
           },
           body: JSON.stringify(payload),
-          signal: AbortSignal.timeout(120000)
+          signal: AbortSignal.timeout(300000)
         });
         if (response.ok) break;
         if (response.status !== 429 && response.status !== 502 && response.status !== 503) break;

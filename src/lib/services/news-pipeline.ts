@@ -606,97 +606,10 @@ export async function runNewsPipeline(): Promise<{
     // ─── Country/Topic decode ───
     const COUNTRY_DECODE: Record<number, string> = { 1: 'cl', 2: 'us' };
     const TOPIC_DECODE: Record<number, string> = { 1: 'chile', 2: 'tech_global', 3: 'impacto_global', 4: 'finanzas', 5: 'inversiones', 6: 'economia' };
-    const stepModel = process.env.OPENROUTER_FILTER_MODEL || 'stepfun/step-3.5-flash:free';
+    const stepModel = process.env.OPENROUTER_FILTER_MODEL || 'inclusionai/ling-2.6-flash:free';
 
-    // ─── Step 4a: Convert SELF articles ───
-    const selfFinalArticles: FinalNewsArticle[] = [];
-    
-    for (const item of selfArticles) {
-      const raw = toFilter[item.index];
-      if (!raw || !item.rewritten) continue;
-      
-      const fVal = Number(item.rewritten.f) || 0;
-      const countryNum = Math.floor(fVal / 10);
-      const topicNum = fVal % 10;
-
-      selfFinalArticles.push({
-        title: item.rewritten.title,
-        content: item.rewritten.content,
-        summary: item.rewritten.summary,
-        sentiment: (item.rewritten.sentiment as any) || 'neutral',
-        category: item.rewritten.category || 'business',
-        relevance_score: item.importance,
-        city: item.rewritten.city === 'null' ? undefined : (item.rewritten.city || undefined),
-        imageUrl: raw.imageUrl || null, // Will try og:image next
-        slug: generateSlug(item.rewritten.title),
-        ai_model: stepModel,
-        sources: [{ name: raw.sourceName, url: raw.url }],
-        feed_tag: (item as any).section || TOPIC_DECODE[topicNum] || 'chile',
-        country_code: COUNTRY_DECODE[countryNum] || raw.country_code || 'cl',
-        tags: Array.isArray(item.rewritten.tags) ? item.rewritten.tags.slice(0, 5) : [],
-        views: 0,
-      });
-    }
-
-    // ─── Step 4b: Grok enrichment (PREMIUM, costs ~$0.02/article) ───
-    const grokFinalArticles: FinalNewsArticle[] = [];
-    
-    for (const item of grokArticles) {
-      const raw = toFilter[item.index];
-      if (!raw) continue;
-      
-      try {
-        const enriched = await rewriteNewsWithGrok(raw, item.section || 'finanzas', traceId);
-        grokFinalArticles.push(enriched);
-        // Rate limit: 2s between Grok calls
-        if (grokArticles.indexOf(item) < grokArticles.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        }
-      } catch (e) {
-        console.error(`[PIPELINE] Grok error on '${raw.title.substring(0, 40)}':`, e);
-      }
-    }
-
-    // ─── Step 5: Extract og:image for all publishable articles ───
-    const allFinal = [...grokFinalArticles, ...selfFinalArticles];
-    const articlesNeedingImages = allFinal.filter(a => !a.imageUrl);
-    console.log(`[PIPELINE] Step 5: Extracting images for ${articlesNeedingImages.length}/${allFinal.length} articles...`);
-    
-    if (articlesNeedingImages.length > 0) {
-      // Try og:image from source article URLs
-      const imageResults = await Promise.allSettled(
-        articlesNeedingImages.slice(0, PIPELINE_CONFIG.IMAGE_EXTRACTION_CONCURRENCY).map(a => 
-          extractOgImage(a.sources[0]?.url || '')
-        )
-      );
-      
-      let imagesFound = 0;
-      imageResults.forEach((result, idx) => {
-        if (result.status === 'fulfilled' && result.value) {
-          articlesNeedingImages[idx].imageUrl = result.value;
-          imagesFound++;
-        }
-      });
-      
-      console.log(`[PIPELINE] Step 5: Found ${imagesFound}/${articlesNeedingImages.length} images via og:image`);
-      
-      // Fallback: Generate AI images for those that still failed using Pollinations AI
-      articlesNeedingImages.forEach((article) => {
-        if (!article.imageUrl) {
-          // Remove special characters for safety and generate an image URL
-          const cleanTitle = article.title.replace(/[^a-zA-Z0-9 áéíóúÁÉÍÓÚñÑ]/g, '').trim();
-          const prompt = `Professional high quality news photography about ${cleanTitle} economy finance`;
-          article.imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=800&height=400&nologo=true`;
-          console.log(`[PIPELINE] Step 5: Applied AI image fallback for: ${article.title.substring(0, 30)}`);
-        }
-      });
-    }
-
-    // ─── Step 6: Save to Supabase ───
-    console.log(`[PIPELINE] Step 6: Saving ${allFinal.length} articles...`);
-    let savedCount = 0;
-
-    for (const a of allFinal) {
+    // ─── Helper: Save a single article to Supabase ───
+    async function saveArticle(a: FinalNewsArticle): Promise<boolean> {
       // Final dedup check
       const { data: dup } = await supabase
         .from('news_articles')
@@ -706,7 +619,21 @@ export async function runNewsPipeline(): Promise<{
       
       if (dup) {
         console.log(`[PIPELINE] Skip duplicate: ${a.slug.substring(0, 40)}`);
-        continue;
+        return false;
+      }
+
+      // Apply image fallback if missing
+      if (!a.imageUrl) {
+        // Try og:image first
+        try {
+          const ogImg = await extractOgImage(a.sources[0]?.url || '');
+          if (ogImg) { a.imageUrl = ogImg; }
+        } catch { /* ignore */ }
+      }
+      if (!a.imageUrl) {
+        const cleanTitle = a.title.replace(/[^a-zA-Z0-9 áéíóúÁÉÍÓÚñÑ]/g, '').trim();
+        const prompt = `Professional high quality news photography about ${cleanTitle} economy finance`;
+        a.imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=800&height=400&nologo=true`;
       }
 
       const fullRow: Record<string, any> = {
@@ -731,7 +658,7 @@ export async function runNewsPipeline(): Promise<{
 
       let { error } = await supabase.from('news_articles').insert(fullRow);
 
-      // Handle missing columns gracefully — retry up to 5 times removing unknown columns
+      // Handle missing columns gracefully
       let retries = 0;
       while (error?.code === 'PGRST204' && retries < 5) {
         const missingCol = error.message.match(/'(\w+)' column/)?.[1];
@@ -745,13 +672,82 @@ export async function runNewsPipeline(): Promise<{
 
       if (error) {
         console.error(`[PIPELINE] DB Error: "${a.title.substring(0, 30)}":`, JSON.stringify(error));
-      } else {
+        return false;
+      }
+      console.log(`[PIPELINE] ✅ [${a.ai_model.includes('grok') ? 'GROK' : 'FILTER'}] ${a.title.substring(0, 50)}`);
+      return true;
+    }
+
+    // ─── Step 4a: Convert SELF articles and SAVE IMMEDIATELY ───
+    // Save before Grok to survive Vercel's 60s timeout on Hobby plan
+    const selfFinalArticles: FinalNewsArticle[] = [];
+    let savedCount = 0;
+    
+    for (const item of selfArticles) {
+      const raw = toFilter[item.index];
+      if (!raw || !item.rewritten) continue;
+      
+      const fVal = Number(item.rewritten.f) || 0;
+      const countryNum = Math.floor(fVal / 10);
+      const topicNum = fVal % 10;
+
+      const article: FinalNewsArticle = {
+        title: item.rewritten.title,
+        content: item.rewritten.content,
+        summary: item.rewritten.summary,
+        sentiment: (item.rewritten.sentiment as any) || 'neutral',
+        category: item.rewritten.category || 'business',
+        relevance_score: item.importance,
+        city: item.rewritten.city === 'null' ? undefined : (item.rewritten.city || undefined),
+        imageUrl: raw.imageUrl || null,
+        slug: generateSlug(item.rewritten.title),
+        ai_model: stepModel,
+        sources: [{ name: raw.sourceName, url: raw.url }],
+        feed_tag: (item as any).section || TOPIC_DECODE[topicNum] || 'chile',
+        country_code: COUNTRY_DECODE[countryNum] || raw.country_code || 'cl',
+        tags: Array.isArray(item.rewritten.tags) ? item.rewritten.tags.slice(0, 5) : [],
+        views: 0,
+      };
+
+      selfFinalArticles.push(article);
+      
+      // Save immediately — don't wait for Grok
+      if (await saveArticle(article)) {
         savedCount++;
-        console.log(`[PIPELINE] ✅ [${a.ai_model.includes('grok') ? 'GROK' : 'STEP'}] ${a.title.substring(0, 50)}`);
       }
     }
 
-    // ─── Step 7: Log pipeline run ───
+    console.log(`[PIPELINE] Step 4a: ${savedCount} SELF articles saved to DB`);
+
+    // ─── Step 4b: Grok enrichment (PREMIUM, costs ~$0.02/article) ───
+    // This runs AFTER SELF articles are already saved safely
+    const grokFinalArticles: FinalNewsArticle[] = [];
+    
+    for (const item of grokArticles) {
+      const raw = toFilter[item.index];
+      if (!raw) continue;
+      
+      try {
+        const enriched = await rewriteNewsWithGrok(raw, item.section || 'finanzas', traceId);
+        grokFinalArticles.push(enriched);
+        
+        // Save Grok article immediately too
+        if (await saveArticle(enriched)) {
+          savedCount++;
+        }
+        
+        // Rate limit: 2s between Grok calls
+        if (grokArticles.indexOf(item) < grokArticles.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      } catch (e) {
+        console.error(`[PIPELINE] Grok error on '${raw.title.substring(0, 40)}':`, e);
+      }
+    }
+
+    const allFinal = [...grokFinalArticles, ...selfFinalArticles];
+
+    // ─── Step 5: Log pipeline run ───
     const durationMs = Date.now() - startTime;
     try {
       await supabase.from('pipeline_runs').insert({
@@ -773,7 +769,7 @@ export async function runNewsPipeline(): Promise<{
       durationMs,
     };
 
-    console.log(`=== [PIPELINE v2] Done in ${(durationMs / 1000).toFixed(1)}s — ${savedCount} articles saved ===`);
+    console.log(`=== [PIPELINE v3] Done in ${(durationMs / 1000).toFixed(1)}s — ${savedCount} articles saved ===`);
     return { success: true, articles: allFinal, stats };
 
   } catch (err: any) {

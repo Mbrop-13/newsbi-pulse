@@ -35,7 +35,7 @@ const defaultState = {
   showImages: true,
   showPredictions: true,
   articleWidth: 'normal' as ArticleWidth,
-  timePeriod: 'all' as TimePeriod,
+  timePeriod: '24h' as TimePeriod,
 };
 
 export const useViewStore = create<ViewSettingsState>()(

@@ -272,8 +272,8 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
 
         {/* ── Filter Bar ── */}
         <div className="-mx-4 px-4 pt-2 pb-3 bg-gray-50 dark:bg-[#0F172A] border-b border-gray-200/50 dark:border-white/5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide flex-nowrap">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex-1 min-w-0 flex items-center gap-2.5 overflow-x-auto scrollbar-hide flex-nowrap pr-4 pb-1">
               {/* Timing filters */}
               <button 
                 onClick={() => { triggerTransition(); setFilterMode('tendencia'); router.push('/tendencia'); }}
@@ -378,6 +378,8 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
+              {/* Invisible spacer so the last item isn't flush against the edge */}
+              <div className="w-4 shrink-0" />
             </div>
 
             {/* Right side actions */}

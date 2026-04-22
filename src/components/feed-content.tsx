@@ -52,26 +52,45 @@ export function FeedContent({ currentFeed }: { currentFeed: FeedTab }) {
 
   // Filter by feed_tag
   const feedArticles = useMemo(() => {
-    const byTag = dbArticles.filter(a => a.feed_tag === currentFeed);
-    if (byTag.length > 0) return byTag;
-
-    // Fallback: match by category for legacy articles
-    const categoryMap: Record<FeedTab, string[]> = {
-      chile: ["chile", "business"],
-      tech_global: ["tech", "technology"],
-      impacto_global: ["world", "politics"],
-      finanzas: ["business", "politics"],
-      inversiones: ["business"],
-      economia: ["business"],
-    };
-    let filtered = dbArticles.filter(a => categoryMap[currentFeed]?.includes(a.category?.toLowerCase()));
-    
-    // Sort logic based on historical viewing preference
-    if (timePeriod === "all") {
-      return filtered.sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0));
+    // 1. Time Period Filter
+    let timeFiltered = dbArticles;
+    if (timePeriod !== 'all') {
+      const now = new Date().getTime();
+      const cutoffs: Record<string, number> = {
+        'recent': 60 * 60 * 1000, // 1 hour
+        '24h': 24 * 60 * 60 * 1000, // 24 hours
+        '7d': 7 * 24 * 60 * 60 * 1000, // 7 days
+        '30d': 30 * 24 * 60 * 60 * 1000, // 30 days
+      };
+      const cutoff = cutoffs[timePeriod] || cutoffs['24h'];
+      timeFiltered = dbArticles.filter(a => {
+        const d = new Date(a.published_at).getTime();
+        return (now - d) <= cutoff;
+      });
     }
-    
-    return filtered;
+
+    // 2. Category / Tag Filter
+    let categoryFiltered = timeFiltered.filter(a => a.feed_tag === currentFeed);
+    if (categoryFiltered.length === 0) {
+      const categoryMap: Record<FeedTab, string[]> = {
+        chile: ["chile", "business"],
+        tech_global: ["tech", "technology"],
+        impacto_global: ["world", "politics"],
+        finanzas: ["business", "politics"],
+        inversiones: ["business"],
+        economia: ["business"],
+      };
+      categoryFiltered = timeFiltered.filter(a => categoryMap[currentFeed]?.includes(a.category?.toLowerCase()));
+    }
+
+    // 3. Sorting
+    if (timePeriod === "recent") {
+      // recent is strictly chronological
+      return categoryFiltered.sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime());
+    } else {
+      // 24h, 7d, 30d, and all prioritize relevance score
+      return categoryFiltered.sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0));
+    }
   }, [dbArticles, currentFeed, timePeriod]);
 
   const visibleArticles = feedArticles.slice(0, visibleCount);

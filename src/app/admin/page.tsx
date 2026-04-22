@@ -179,17 +179,17 @@ export default function AdminDashboard() {
       {/* ── Header ── */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-            <Sparkles className="w-6 h-6 text-blue-400" />
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+            <Sparkles className="w-6 h-6 text-blue-500 dark:text-blue-400" />
             Centro de Control
           </h1>
-          <p className="text-gray-500 mt-1 text-sm">
+          <p className="text-slate-500 dark:text-gray-500 mt-1 text-sm">
             Pipeline v3 · Currents API · {new Date().toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long" })}
           </p>
         </div>
         <button
           onClick={fetchStats}
-          className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all"
+          className="p-2 rounded-xl bg-slate-200/50 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white transition-all"
           title="Refrescar datos"
         >
           <RefreshCw className="w-4 h-4" />
@@ -200,25 +200,25 @@ export default function AdminDashboard() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A] border border-white/10 rounded-2xl p-6"
+        className="relative overflow-hidden bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-white/10 rounded-2xl p-6 shadow-sm dark:shadow-none"
       >
-        {/* Background glow */}
-        <div className={`absolute top-0 right-0 w-64 h-64 rounded-full blur-[120px] opacity-20 ${pipelineHealthy ? 'bg-green-500' : 'bg-orange-500'}`} />
+        {/* Background glow - subtle in light mode, pronounced in dark mode */}
+        <div className={`absolute top-0 right-0 w-64 h-64 rounded-full blur-[120px] opacity-10 dark:opacity-20 ${pipelineHealthy ? 'bg-green-500' : 'bg-orange-500'}`} />
         
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-6">
-            <div className={`p-2.5 rounded-xl ${pipelineHealthy ? 'bg-green-500/10 border border-green-500/20' : 'bg-orange-500/10 border border-orange-500/20'}`}>
-              <Activity className={`w-5 h-5 ${pipelineHealthy ? 'text-green-400' : 'text-orange-400'}`} />
+            <div className={`p-2.5 rounded-xl ${pipelineHealthy ? 'bg-green-100 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20' : 'bg-orange-100 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20'}`}>
+              <Activity className={`w-5 h-5 ${pipelineHealthy ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'}`} />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white">Pipeline Monitor</h2>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Pipeline Monitor</h2>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className={`w-2 h-2 rounded-full ${pipelineHealthy ? 'bg-green-400 animate-pulse' : 'bg-orange-400'}`} />
-                <span className={`text-xs font-semibold ${pipelineHealthy ? 'text-green-400' : 'text-orange-400'}`}>
+                <span className={`w-2 h-2 rounded-full ${pipelineHealthy ? 'bg-green-500 dark:bg-green-400 animate-pulse' : 'bg-orange-500 dark:bg-orange-400'}`} />
+                <span className={`text-xs font-semibold ${pipelineHealthy ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'}`}>
                   {pipelineHealthy ? "Operativo" : "Verificar"}
                 </span>
-                <span className="text-gray-600 text-xs">·</span>
-                <span className="text-xs text-gray-500">
+                <span className="text-slate-400 dark:text-gray-600 text-xs">·</span>
+                <span className="text-xs text-slate-500 dark:text-gray-500">
                   {stats.pipeline.scheduleLabel} · cada {stats.pipeline.intervalMinutes} min
                 </span>
               </div>
@@ -227,51 +227,51 @@ export default function AdminDashboard() {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {/* Next Run */}
-            <div className="bg-white/5 rounded-xl p-4 border border-white/5">
+            <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-4 border border-slate-100 dark:border-white/5">
               <div className="flex items-center gap-2 mb-2">
-                <Timer className="w-3.5 h-3.5 text-blue-400" />
-                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Próxima ejecución</span>
+                <Timer className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                <span className="text-[10px] text-slate-500 dark:text-gray-500 font-bold uppercase tracking-wider">Próxima ejecución</span>
               </div>
-              <p className="text-2xl font-black text-white tabular-nums">{countdown}</p>
-              <p className="text-[10px] text-gray-600 mt-1">Chile {stats.pipeline.chileHour}:00h</p>
+              <p className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{countdown}</p>
+              <p className="text-[10px] text-slate-500 dark:text-gray-600 mt-1">Chile {stats.pipeline.chileHour}:00h</p>
             </div>
 
             {/* Last Run */}
-            <div className="bg-white/5 rounded-xl p-4 border border-white/5">
+            <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-4 border border-slate-100 dark:border-white/5">
               <div className="flex items-center gap-2 mb-2">
-                <Clock className="w-3.5 h-3.5 text-green-400" />
-                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Última ejecución</span>
+                <Clock className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
+                <span className="text-[10px] text-slate-500 dark:text-gray-500 font-bold uppercase tracking-wider">Última ejecución</span>
               </div>
-              <p className="text-lg font-bold text-white">
+              <p className="text-lg font-bold text-slate-900 dark:text-white">
                 {stats.pipeline.lastRun ? formatTimeAgo(stats.pipeline.lastRun.created_at) : "—"}
               </p>
               {stats.pipeline.lastRun && (
-                <p className="text-[10px] text-gray-600 mt-1">
+                <p className="text-[10px] text-slate-500 dark:text-gray-600 mt-1">
                   {stats.pipeline.lastRun.articles_published} arts · {formatDuration(stats.pipeline.lastRun.duration_ms)}
                 </p>
               )}
             </div>
 
             {/* Runs Today */}
-            <div className="bg-white/5 rounded-xl p-4 border border-white/5">
+            <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-4 border border-slate-100 dark:border-white/5">
               <div className="flex items-center gap-2 mb-2">
-                <Zap className="w-3.5 h-3.5 text-yellow-400" />
-                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Ejecuciones hoy</span>
+                <Zap className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-400" />
+                <span className="text-[10px] text-slate-500 dark:text-gray-500 font-bold uppercase tracking-wider">Ejecuciones hoy</span>
               </div>
-              <p className="text-2xl font-black text-white tabular-nums">{stats.pipeline.runsToday}</p>
-              <p className="text-[10px] text-gray-600 mt-1">{stats.pipeline.articlesSavedToday} artículos guardados</p>
+              <p className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{stats.pipeline.runsToday}</p>
+              <p className="text-[10px] text-slate-500 dark:text-gray-600 mt-1">{stats.pipeline.articlesSavedToday} artículos guardados</p>
             </div>
 
             {/* Grok Cost */}
-            <div className="bg-white/5 rounded-xl p-4 border border-white/5">
+            <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-4 border border-slate-100 dark:border-white/5">
               <div className="flex items-center gap-2 mb-2">
-                <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Costo IA hoy</span>
+                <DollarSign className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span className="text-[10px] text-slate-500 dark:text-gray-500 font-bold uppercase tracking-wider">Costo IA hoy</span>
               </div>
-              <p className="text-2xl font-black text-white tabular-nums">
+              <p className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">
                 ${stats.ai.estimatedCostToday.toFixed(2)}
               </p>
-              <p className="text-[10px] text-gray-600 mt-1">
+              <p className="text-[10px] text-slate-500 dark:text-gray-600 mt-1">
                 {stats.ai.grokCallsToday} Grok · {stats.ai.aiCallsToday} total
               </p>
             </div>
@@ -284,8 +284,8 @@ export default function AdminDashboard() {
               disabled={runningPipeline}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
                 runningPipeline
-                  ? "bg-blue-500/20 text-blue-300 cursor-wait"
-                  : "bg-blue-500 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30"
+                  ? "bg-blue-100 dark:bg-blue-500/20 text-blue-400 dark:text-blue-300 cursor-wait"
+                  : "bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20 hover:shadow-blue-500/30"
               }`}
             >
               {runningPipeline ? (
@@ -307,7 +307,7 @@ export default function AdminDashboard() {
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0 }}
-                  className="text-xs text-gray-400"
+                  className="text-xs text-slate-500 dark:text-gray-400 font-medium"
                 >
                   {pipelineResult}
                 </motion.span>
@@ -320,25 +320,25 @@ export default function AdminDashboard() {
       {/* ── Stat Cards ── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
         {[
-          { label: "Total Noticias", value: stats.totalArticles, icon: Newspaper, color: "text-blue-400", bg: "from-blue-500/10 to-blue-600/5" },
-          { label: "Publicadas Hoy", value: stats.todayArticles, icon: CalendarDays, color: "text-green-400", bg: "from-green-500/10 to-green-600/5" },
-          { label: "Usuarios", value: stats.totalUsers, icon: Users, color: "text-violet-400", bg: "from-violet-500/10 to-violet-600/5" },
-          { label: "Tokens IA Hoy", value: stats.ai.tokensToday.toLocaleString(), icon: Cpu, color: "text-cyan-400", bg: "from-cyan-500/10 to-cyan-600/5" },
-          { label: "Ocultas", value: stats.hiddenArticles, icon: EyeOff, color: "text-orange-400", bg: "from-orange-500/10 to-orange-600/5" },
-          { label: "Fijadas", value: stats.pinnedArticles, icon: Pin, color: "text-pink-400", bg: "from-pink-500/10 to-pink-600/5" },
+          { label: "Total Noticias", value: stats.totalArticles, icon: Newspaper, color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-gradient-to-br dark:from-blue-500/10 dark:to-blue-600/5", iconBg: "bg-blue-100 dark:bg-white/5" },
+          { label: "Publicadas Hoy", value: stats.todayArticles, icon: CalendarDays, color: "text-green-600 dark:text-green-400", bg: "bg-green-50 dark:bg-gradient-to-br dark:from-green-500/10 dark:to-green-600/5", iconBg: "bg-green-100 dark:bg-white/5" },
+          { label: "Usuarios", value: stats.totalUsers, icon: Users, color: "text-violet-600 dark:text-violet-400", bg: "bg-violet-50 dark:bg-gradient-to-br dark:from-violet-500/10 dark:to-violet-600/5", iconBg: "bg-violet-100 dark:bg-white/5" },
+          { label: "Tokens IA Hoy", value: stats.ai.tokensToday.toLocaleString(), icon: Cpu, color: "text-cyan-600 dark:text-cyan-400", bg: "bg-cyan-50 dark:bg-gradient-to-br dark:from-cyan-500/10 dark:to-cyan-600/5", iconBg: "bg-cyan-100 dark:bg-white/5" },
+          { label: "Ocultas", value: stats.hiddenArticles, icon: EyeOff, color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-gradient-to-br dark:from-orange-500/10 dark:to-orange-600/5", iconBg: "bg-orange-100 dark:bg-white/5" },
+          { label: "Fijadas", value: stats.pinnedArticles, icon: Pin, color: "text-pink-600 dark:text-pink-400", bg: "bg-pink-50 dark:bg-gradient-to-br dark:from-pink-500/10 dark:to-pink-600/5", iconBg: "bg-pink-100 dark:bg-white/5" },
         ].map((card, i) => (
           <motion.div
             key={card.label}
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 + i * 0.04 }}
-            className={`bg-gradient-to-br ${card.bg} border border-white/5 rounded-2xl p-4`}
+            className={`${card.bg} border border-slate-100 dark:border-white/5 rounded-2xl p-4 shadow-sm dark:shadow-none`}
           >
-            <div className={`p-1.5 rounded-lg bg-white/5 w-fit mb-3`}>
+            <div className={`p-1.5 rounded-lg ${card.iconBg} w-fit mb-3`}>
               <card.icon className={`w-3.5 h-3.5 ${card.color}`} />
             </div>
-            <p className="text-2xl font-black text-white tabular-nums">{card.value}</p>
-            <p className="text-[10px] text-gray-500 font-semibold mt-1 uppercase tracking-wider">{card.label}</p>
+            <p className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{card.value}</p>
+            <p className="text-[10px] text-slate-500 dark:text-gray-500 font-semibold mt-1 uppercase tracking-wider">{card.label}</p>
           </motion.div>
         ))}
       </div>
@@ -350,14 +350,14 @@ export default function AdminDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="lg:col-span-2 bg-[#1E293B]/60 border border-white/5 rounded-2xl p-6"
+          className="lg:col-span-2 bg-white dark:bg-[#1E293B]/60 border border-slate-200 dark:border-white/5 rounded-2xl p-6 shadow-sm dark:shadow-none"
         >
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-blue-400" />
-              <h3 className="font-bold text-sm text-white">Actividad Semanal</h3>
+              <BarChart3 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <h3 className="font-bold text-sm text-slate-900 dark:text-white">Actividad Semanal</h3>
             </div>
-            <span className="text-[10px] font-bold text-gray-600 uppercase tracking-wider">Últimos 7 días</span>
+            <span className="text-[10px] font-bold text-slate-500 dark:text-gray-600 uppercase tracking-wider">Últimos 7 días</span>
           </div>
 
           <div className="flex items-end gap-2 h-36">
@@ -367,7 +367,7 @@ export default function AdminDashboard() {
               const isToday = idx === dailyEntries.length - 1;
               return (
                 <div key={date} className="flex-1 flex flex-col items-center gap-2 group">
-                  <span className="text-[10px] font-bold text-gray-400 tabular-nums opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="text-[10px] font-bold text-slate-500 dark:text-gray-400 tabular-nums opacity-0 group-hover:opacity-100 transition-opacity">
                     {count}
                   </span>
                   <motion.div
@@ -376,11 +376,11 @@ export default function AdminDashboard() {
                     transition={{ delay: 0.4 + idx * 0.06, duration: 0.5, ease: "easeOut" }}
                     className={`w-full rounded-lg min-h-[6px] transition-all ${
                       isToday
-                        ? "bg-gradient-to-t from-blue-600 to-blue-400 shadow-lg shadow-blue-500/20"
-                        : "bg-gradient-to-t from-gray-700 to-gray-600 group-hover:from-blue-600/60 group-hover:to-blue-400/60"
+                        ? "bg-gradient-to-t from-blue-500 to-blue-400 dark:from-blue-600 dark:to-blue-400 shadow-sm dark:shadow-lg dark:shadow-blue-500/20"
+                        : "bg-gradient-to-t from-slate-200 to-slate-100 dark:from-gray-700 dark:to-gray-600 group-hover:from-blue-400/60 group-hover:to-blue-300/60 dark:group-hover:from-blue-600/60 dark:group-hover:to-blue-400/60"
                     }`}
                   />
-                  <span className={`text-[10px] capitalize ${isToday ? "text-blue-400 font-bold" : "text-gray-600"}`}>
+                  <span className={`text-[10px] capitalize ${isToday ? "text-blue-600 dark:text-blue-400 font-bold" : "text-slate-500 dark:text-gray-600"}`}>
                     {dayLabel}
                   </span>
                 </div>
@@ -394,11 +394,11 @@ export default function AdminDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="bg-[#1E293B]/60 border border-white/5 rounded-2xl p-6"
+          className="bg-white dark:bg-[#1E293B]/60 border border-slate-200 dark:border-white/5 rounded-2xl p-6 shadow-sm dark:shadow-none"
         >
           <div className="flex items-center gap-2 mb-5">
-            <TrendingUp className="w-4 h-4 text-purple-400" />
-            <h3 className="font-bold text-sm text-white">Categorías</h3>
+            <TrendingUp className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+            <h3 className="font-bold text-sm text-slate-900 dark:text-white">Categorías</h3>
           </div>
 
           <div className="space-y-3">
@@ -406,10 +406,10 @@ export default function AdminDashboard() {
               const pct = stats.totalArticles > 0 ? (cat.count / stats.totalArticles) * 100 : 0;
               return (
                 <div key={cat.name} className="flex items-center gap-3">
-                  <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider w-20 truncate shrink-0">
+                  <span className="text-[10px] text-slate-500 dark:text-gray-500 font-bold uppercase tracking-wider w-20 truncate shrink-0">
                     {cat.name}
                   </span>
-                  <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
+                  <div className="flex-1 bg-slate-100 dark:bg-white/5 rounded-full h-1.5 overflow-hidden">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${pct}%` }}
@@ -417,7 +417,7 @@ export default function AdminDashboard() {
                       className="h-full rounded-full bg-gradient-to-r from-purple-500 to-blue-500"
                     />
                   </div>
-                  <span className="text-xs text-gray-400 font-bold tabular-nums w-8 text-right">{cat.count}</span>
+                  <span className="text-xs text-slate-600 dark:text-gray-400 font-bold tabular-nums w-8 text-right">{cat.count}</span>
                 </div>
               );
             })}
@@ -432,11 +432,11 @@ export default function AdminDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="bg-[#1E293B]/60 border border-white/5 rounded-2xl p-6"
+          className="bg-white dark:bg-[#1E293B]/60 border border-slate-200 dark:border-white/5 rounded-2xl p-6 shadow-sm dark:shadow-none"
         >
           <div className="flex items-center gap-2 mb-5">
-            <Newspaper className="w-4 h-4 text-cyan-400" />
-            <h3 className="font-bold text-sm text-white">Fuentes Principales</h3>
+            <Newspaper className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+            <h3 className="font-bold text-sm text-slate-900 dark:text-white">Fuentes Principales</h3>
           </div>
 
           <div className="space-y-3">
@@ -444,14 +444,14 @@ export default function AdminDashboard() {
               stats.topSources.map((source, i) => (
                 <div key={source.name} className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <span className="text-[10px] font-bold text-gray-600 w-4 text-right">{i + 1}</span>
-                    <span className="text-sm text-gray-300 truncate max-w-[160px]">{source.name}</span>
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-gray-600 w-4 text-right">{i + 1}</span>
+                    <span className="text-sm text-slate-700 dark:text-gray-300 truncate max-w-[160px]">{source.name}</span>
                   </div>
-                  <span className="text-xs text-gray-500 font-bold tabular-nums">{source.count}</span>
+                  <span className="text-xs text-slate-500 dark:text-gray-500 font-bold tabular-nums">{source.count}</span>
                 </div>
               ))
             ) : (
-              <p className="text-xs text-gray-600 text-center py-4">Sin datos aún</p>
+              <p className="text-xs text-slate-500 dark:text-gray-600 text-center py-4">Sin datos aún</p>
             )}
           </div>
         </motion.div>
@@ -464,26 +464,26 @@ export default function AdminDashboard() {
           className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3"
         >
           {[
-            { href: "/admin/noticias", label: "Gestionar Noticias", desc: "Editar, ocultar o eliminar", icon: Newspaper, hoverColor: "hover:border-blue-500/30", iconColor: "group-hover:text-blue-400" },
-            { href: "/admin/noticias/crear", label: "Publicar Artículo", desc: "Crear una noticia editorial", icon: PenSquare, hoverColor: "hover:border-green-500/30", iconColor: "group-hover:text-green-400" },
-            { href: "/admin/logs", label: "AI Pipeline Logs", desc: "Prompts y tokens en tiempo real", icon: Terminal, hoverColor: "hover:border-purple-500/30", iconColor: "group-hover:text-purple-400" },
-            { href: "/admin/predicciones", label: "Predicciones", desc: "Gestionar predicciones de mercado", icon: TrendingUp, hoverColor: "hover:border-yellow-500/30", iconColor: "group-hover:text-yellow-400" },
+            { href: "/admin/noticias", label: "Gestionar Noticias", desc: "Editar, ocultar o eliminar", icon: Newspaper, hoverColor: "hover:border-blue-500/30", iconColor: "group-hover:text-blue-600 dark:group-hover:text-blue-400" },
+            { href: "/admin/noticias/crear", label: "Publicar Artículo", desc: "Crear una noticia editorial", icon: PenSquare, hoverColor: "hover:border-green-500/30", iconColor: "group-hover:text-green-600 dark:group-hover:text-green-400" },
+            { href: "/admin/logs", label: "AI Pipeline Logs", desc: "Prompts y tokens en tiempo real", icon: Terminal, hoverColor: "hover:border-purple-500/30", iconColor: "group-hover:text-purple-600 dark:group-hover:text-purple-400" },
+            { href: "/admin/predicciones", label: "Predicciones", desc: "Gestionar predicciones de mercado", icon: TrendingUp, hoverColor: "hover:border-yellow-500/30", iconColor: "group-hover:text-yellow-600 dark:group-hover:text-yellow-400" },
           ].map((action) => (
             <Link
               key={action.href}
               href={action.href}
-              className={`group flex items-center justify-between bg-[#1E293B]/60 border border-white/5 rounded-2xl p-5 ${action.hoverColor} transition-all`}
+              className={`group flex items-center justify-between bg-white dark:bg-[#1E293B]/60 border border-slate-200 dark:border-white/5 rounded-2xl p-5 shadow-sm dark:shadow-none ${action.hoverColor} transition-all`}
             >
               <div className="flex items-center gap-3.5">
-                <div className="p-2 rounded-xl bg-white/5">
-                  <action.icon className={`w-4 h-4 text-gray-500 ${action.iconColor} transition-colors`} />
+                <div className="p-2 rounded-xl bg-slate-50 dark:bg-white/5">
+                  <action.icon className={`w-4 h-4 text-slate-400 dark:text-gray-500 ${action.iconColor} transition-colors`} />
                 </div>
                 <div>
-                  <h4 className="font-bold text-sm text-white">{action.label}</h4>
-                  <p className="text-[10px] text-gray-500 mt-0.5">{action.desc}</p>
+                  <h4 className="font-bold text-sm text-slate-900 dark:text-white">{action.label}</h4>
+                  <p className="text-[10px] text-slate-500 dark:text-gray-500 mt-0.5">{action.desc}</p>
                 </div>
               </div>
-              <ArrowUpRight className="w-4 h-4 text-gray-700 group-hover:text-gray-400 transition-colors" />
+              <ArrowUpRight className="w-4 h-4 text-slate-300 dark:text-gray-700 group-hover:text-slate-500 dark:group-hover:text-gray-400 transition-colors" />
             </Link>
           ))}
         </motion.div>

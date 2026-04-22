@@ -28,7 +28,7 @@ async function purge() {
     .from('news_articles')
     .delete()
     .neq('id', '00000000-0000-0000-0000-000000000000') // Match all rows
-    .select('id', { count: 'exact', head: true });
+    .select('id');
   
   if (e1) console.error('  Error:', e1.message);
   else console.log(`  ✅ Deleted articles`);

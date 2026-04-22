@@ -207,8 +207,16 @@ export default function ArticlePage() {
             </span>
             <span>{readingTime} min lectura</span>
             {article.sources && article.sources.length > 0 && (
-              <div className="border-l border-border/50 pl-4 flex items-center">
+              <div className="border-l border-border/50 pl-4 flex items-center gap-2">
                 <ExpandableSources sources={article.sources} />
+                {(article.relevance_score || 0) > 0 && (
+                  <span 
+                    className="flex shrink-0 items-center justify-center w-6 h-6 rounded-full bg-[#1890FF]/10 text-[#1890FF] border border-[#1890FF]/25 shadow-sm text-[11px] font-black"
+                    title={`${article.relevance_score > 1 ? Math.round(article.relevance_score) : Math.round(article.relevance_score * 100)}% de Importancia según Inteligencia Artificial`}
+                  >
+                    {article.relevance_score > 1 ? Math.round(article.relevance_score) : Math.round(article.relevance_score * 100)}
+                  </span>
+                )}
               </div>
             )}
           </div>

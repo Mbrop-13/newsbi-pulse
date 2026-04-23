@@ -100,11 +100,15 @@ export function Navbar() {
       }
     };
 
+    const handleOpenSearch = () => setSearchOpen(true);
+
     window.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("open-search", handleOpenSearch);
     return () => {
       window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("open-search", handleOpenSearch);
     };
   }, []);
 
@@ -303,15 +307,15 @@ export function Navbar() {
             )}
 
 
-            {/* Mobile Search Icon */}
+            {/* Mobile Search Icon - Hidden as it's moving to bottom nav */}
             <button
-              className="md:hidden flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 text-[#1890FF]"
+              className="hidden items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 text-[#1890FF]"
               onClick={() => setSearchOpen(true)}
             >
               <Search className="w-4 h-4" />
             </button>
 
-            {/* AI Chat Button (replaces old theme toggle) */}
+            {/* AI Chat Button */}
             <button
               onClick={() => {
                 if (!isAuthenticated) {
@@ -320,7 +324,7 @@ export function Navbar() {
                 }
                 useAIChatStore.getState().toggle();
               }}
-              className="relative text-purple-500 hover:bg-purple-500/10 p-2 rounded-full transition-colors focus:outline-none group"
+              className="hidden md:flex relative text-purple-500 hover:bg-purple-500/10 p-2 rounded-full transition-colors focus:outline-none group items-center justify-center"
               title="R-ai"
             >
               <Sparkles className="w-5 h-5" />

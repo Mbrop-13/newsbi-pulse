@@ -31,6 +31,14 @@ export function AIChatSidebar() {
   const MAX_AI_ARTICLES = userTier === "free" ? 1 : userTier === "pro" ? 5 : 10;
   const MAX_FILES = userTier === "free" ? 1 : userTier === "pro" ? 3 : 10;
 
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
   // Auto-scroll to bottom
   useEffect(() => {
     if (!showHistory) {
@@ -164,12 +172,31 @@ export function AIChatSidebar() {
       {isOpen && (
         <motion.aside
           ref={sidebarRef}
-          initial={{ x: "100%", opacity: 0.8 }}
-          animate={{ x: 0, opacity: 1 }}
-          exit={{ x: "100%", opacity: 0.8 }}
+          initial={isMobile ? { y: "100%", opacity: 0.8 } : { x: "100%", opacity: 0.8 }}
+          animate={isMobile ? { y: 0, opacity: 1 } : { x: 0, opacity: 1 }}
+          exit={isMobile ? { y: "100%", opacity: 0.8 } : { x: "100%", opacity: 0.8 }}
           transition={{ type: "spring", damping: 32, stiffness: 350 }}
-          className="fixed top-0 right-0 h-full w-[400px] max-w-[90vw] z-[70] flex flex-col bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-l border-gray-200/50 dark:border-white/5 shadow-2xl"
+          drag={isMobile ? "y" : false}
+          dragConstraints={{ top: 0 }}
+          dragElastic={0.2}
+          onDragEnd={(e, { offset, velocity }) => {
+            if (isMobile && (offset.y > 150 || velocity.y > 500)) {
+              close();
+            }
+          }}
+          className={`fixed z-[70] flex flex-col bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-2xl ${
+            isMobile 
+              ? "bottom-0 left-0 right-0 h-[85vh] rounded-t-3xl border-t border-gray-200/50 dark:border-white/5" 
+              : "top-0 right-0 h-full w-[400px] max-w-[90vw] border-l border-gray-200/50 dark:border-white/5"
+          }`}
         >
+          {/* Mobile Drag Handle */}
+          {isMobile && (
+            <div className="w-full flex items-center justify-center pt-3 pb-1 cursor-grab active:cursor-grabbing">
+              <div className="w-12 h-1.5 rounded-full bg-gray-300 dark:bg-gray-700" />
+            </div>
+          )}
+
           {/* Header */}
           <div className="px-5 pt-5 pb-3 border-b border-gray-200/50 dark:border-white/5">
             <div className="flex items-center justify-between">

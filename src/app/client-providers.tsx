@@ -19,11 +19,19 @@ import { ResolvedBetsPopup } from "@/components/resolved-bet-popup";
 import { PromoPopup } from "@/components/promo-popup";
 import { RegisterCornerPopup } from "@/components/register-corner-popup";
 
+import { useState, useEffect } from "react";
 export function ClientLayoutProviders({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
   const pathname = usePathname();
   const isFullscreenPage = pathname === "/mundo" || pathname === "/asistente";
   const isAssistantPage = pathname === "/asistente";
@@ -43,7 +51,7 @@ export function ClientLayoutProviders({
             }`}
             style={{
               ...((!isAdminPage && audioMode === "pinned") ? { marginRight: pinnedWidth } : {}),
-              ...((!isAdminPage && aiChatOpen) ? { marginRight: 400 } : {}),
+              ...((!isAdminPage && aiChatOpen && !isMobile) ? { marginRight: 400 } : {}),
               transition: 'margin-right 0.3s ease-in-out',
             }}
           >

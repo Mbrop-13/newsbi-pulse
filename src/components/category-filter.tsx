@@ -27,7 +27,7 @@ export function CategoryFilter({ activeCategory, onCategoryChange }: CategoryFil
         return (
           <button
             key={cat.id}
-            onClick={() => onCategoryChange(cat.slug)}
+            onClick={() => onCategoryChange(isActive && cat.id !== "all" ? "inicio" : cat.slug)}
             className={cn(
               "relative px-4 py-2 text-[13px] font-medium whitespace-nowrap transition-all duration-200",
               isActive

@@ -282,16 +282,18 @@ export function Navbar() {
             <div className="flex items-center gap-1.5 sm:gap-3 md:gap-4">
 
             {/* New Headphones Button */}
-            <button
-              onClick={toggleAudioSidebar}
-              className={`flex items-center justify-center w-9 h-9 rounded-full transition-colors focus:outline-none ${isAudioOpen
-                  ? "bg-[#1890FF] text-white shadow-lg shadow-[#1890FF]/30"
-                  : "bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-[#1890FF] hover:bg-[#1890FF]/10"
-                }`}
-              title="Reclu Radio"
-            >
-              <Headphones className="w-4 h-4" />
-            </button>
+            {isAuthenticated && (
+              <button
+                onClick={toggleAudioSidebar}
+                className={`flex items-center justify-center w-9 h-9 rounded-full transition-colors focus:outline-none ${isAudioOpen
+                    ? "bg-[#1890FF] text-white shadow-lg shadow-[#1890FF]/30"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-[#1890FF] hover:bg-[#1890FF]/10"
+                  }`}
+                title="Reclu Radio"
+              >
+                <Headphones className="w-4 h-4" />
+              </button>
+            )}
 
             {pathname === '/asistente' && (
               <>
@@ -332,7 +334,7 @@ export function Navbar() {
             </button>
 
             {/* Diamonds Reward System Toggle */}
-            {mounted && <DiamondsButton />}
+            {mounted && isAuthenticated && <DiamondsButton />}
 
             {/* Auth / Avatar */}
             {mounted && isAuthenticated && user ? (

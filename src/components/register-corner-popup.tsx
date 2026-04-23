@@ -27,7 +27,7 @@ export function RegisterCornerPopup() {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 80, scale: 0.9 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="fixed bottom-6 right-6 z-[80] w-[300px] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl shadow-black/15 dark:shadow-black/40 border border-gray-200 dark:border-gray-800 overflow-hidden"
+        className="fixed bottom-6 right-6 z-[80] w-[300px] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl shadow-black/15 dark:shadow-black/40 border border-gray-200 dark:border-gray-800 overflow-hidden hidden md:block"
       >
         {/* Gradient top bar */}
         <div className="h-1 bg-gradient-to-r from-[#1890FF] via-indigo-500 to-purple-500" />

@@ -28,8 +28,8 @@ export function MobileBottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
-      <div className="glass border-t border-border">
+    <nav className="fixed bottom-4 left-4 right-4 z-50 md:hidden pointer-events-none">
+      <div className="glass rounded-full border border-border/50 shadow-2xl bg-background/80 backdrop-blur-xl pointer-events-auto">
         <div className="flex items-center justify-around px-2 h-14">
           {tabs.map((tab) => {
             const isActive = tab.id !== "ai" && tab.id !== "search" && (pathname === tab.href || (tab.id === "home" && pathname === "/"));
@@ -69,8 +69,6 @@ export function MobileBottomNav() {
           })}
         </div>
       </div>
-      {/* Safe area spacer for iOS */}
-      <div className="h-[env(safe-area-inset-bottom)] glass" />
     </nav>
   );
 }

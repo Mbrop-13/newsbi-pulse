@@ -392,16 +392,16 @@ export function Navbar() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : mounted ? (
-              <div className="flex items-center gap-2 sm:gap-4">
+              <div className="flex items-center gap-3 sm:gap-4">
                 <button
                   onClick={() => openAuth("login")}
-                  className="text-[11px] sm:text-sm font-semibold text-[#1890FF] hover:underline transition-all"
+                  className="text-[13px] sm:text-sm font-semibold text-[#1890FF] hover:underline transition-all"
                 >
                   Entrar
                 </button>
                 <button
                   onClick={() => openAuth("register")}
-                  className="bg-[#1890FF] hover:bg-[#1890FF]/90 text-white text-[11px] sm:text-sm font-semibold px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-full transition-all shadow-md shadow-[#1890FF]/20 hover:shadow-lg hover:-translate-y-0.5 whitespace-nowrap"
+                  className="bg-[#1890FF] hover:bg-[#1890FF]/90 text-white text-[13px] sm:text-sm font-semibold px-3.5 py-2 sm:px-4 sm:py-2 rounded-full transition-all shadow-md shadow-[#1890FF]/20 hover:shadow-lg hover:-translate-y-0.5 whitespace-nowrap"
                 >
                   Registrarse
                 </button>

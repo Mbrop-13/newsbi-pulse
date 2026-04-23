@@ -51,11 +51,11 @@ export function TickerTape({ symbols = DEFAULT_SYMBOLS }: TickerTapeProps) {
     containerRef.current.appendChild(wrapper);
   }, [mounted, resolvedTheme, symbols]);
 
-  if (!mounted) return <div className="h-[46px]" />;
+  if (!mounted) return <div className="h-[60px]" />;
 
   return (
-    <div className="w-full overflow-hidden border-b border-gray-200 dark:border-white/5">
-      <div ref={containerRef} className="h-[46px]" />
+    <div className="w-full overflow-hidden border-b border-gray-200 dark:border-white/5 py-1">
+      <div ref={containerRef} className="h-[60px]" />
     </div>
   );
 }

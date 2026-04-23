@@ -44,6 +44,7 @@ export default function PrediccionesPage() {
   const [tab, setTab] = useState<"active" | "resolved">("active");
   const [category, setCategory] = useState("");
   const [sortBy, setSortBy] = useState<"volume" | "newest" | "closing">("volume");
+  const [showFiltersMobile, setShowFiltersMobile] = useState(false);
 
   const fetchPredictions = async () => {
     setLoading(true);
@@ -87,7 +88,19 @@ export default function PrediccionesPage() {
         
         {/* Left Sidebar (Categories) */}
         <aside className="w-full lg:w-64 shrink-0 mt-2">
-          <div className="lg:sticky lg:top-32 space-y-8">
+          {/* Mobile Toggle Button */}
+          <button
+            onClick={() => setShowFiltersMobile(!showFiltersMobile)}
+            className="w-full lg:hidden flex items-center justify-between px-4 py-3 bg-white dark:bg-[#1A1A1E] rounded-2xl border border-gray-200 dark:border-white/5 mb-4 shadow-sm"
+          >
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-[#1890FF]" />
+              <span className="font-bold text-sm">Filtros</span>
+            </div>
+            <ChevronDown className={`w-4 h-4 transition-transform ${showFiltersMobile ? "rotate-180" : ""}`} />
+          </button>
+
+          <div className={`lg:sticky lg:top-32 space-y-8 ${showFiltersMobile ? "block" : "hidden lg:block"}`}>
             {/* Status toggle */}
             <div>
               <h3 className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-3 px-2">Estado</h3>

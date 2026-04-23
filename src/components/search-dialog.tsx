@@ -43,9 +43,14 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
     if (typeof window !== 'undefined') return localStorage.getItem('reclu-search-predictions') === 'true';
     return false;
   });
+  const [autoFocus, setAutoFocus] = useState(false);
   const isSearching = isSearchingNews || isSearchingAssets || isSearchingPredictions;
   const router = useRouter();
   const supabase = createClient();
+
+  useEffect(() => {
+    setAutoFocus(window.innerWidth > 768);
+  }, []);
 
   // Load recents from localStorage
   useEffect(() => {
@@ -255,7 +260,7 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
             <form onSubmit={handleSearchSubmit} className="flex items-center gap-3 px-5 h-14 border-b border-border">
               <Search className="w-5 h-5 text-muted-foreground flex-shrink-0" />
               <input
-                autoFocus
+                autoFocus={autoFocus}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Buscar noticias, activos, temas o fuentes..."

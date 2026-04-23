@@ -137,6 +137,27 @@ const CURRENTS_FEEDS: CurrentsFeed[] = [
     language: 'en', country: 'US', country_code: 'us',
     feed_tag: 'inversiones', category: 'economy_business_finance',
   },
+  // ── Extra Global Feeds (more variety) ──
+  {
+    keywords: 'commodities copper lithium oil gold',
+    language: 'en', country: 'US', country_code: 'us',
+    feed_tag: 'inversiones', category: 'economy_business_finance',
+  },
+  {
+    keywords: 'geopolitics trade war tariffs sanctions',
+    language: 'en', country: 'US', country_code: 'us',
+    feed_tag: 'impacto_global', category: 'politics_government',
+  },
+  {
+    keywords: 'energy solar nuclear renewables',
+    language: 'en', country: 'US', country_code: 'us',
+    feed_tag: 'tech_global', category: 'science_technology',
+  },
+  {
+    keywords: 'minería cobre litio exportaciones',
+    language: 'es', country: 'CL', country_code: 'cl',
+    feed_tag: 'chile', category: 'economy_business_finance',
+  },
 ];
 
 /**

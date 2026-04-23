@@ -57,13 +57,7 @@ export function MobileBottomNav() {
                   <Icon className="w-5 h-5" strokeWidth={isActive ? 2.2 : 1.5} />
                   <span className="text-[10px] font-medium">{tab.label}</span>
                 </div>
-                {isActive && (
-                  <motion.div
-                    layoutId="bottomNav"
-                    className="absolute -top-px left-3 right-3 h-0.5 bg-primary rounded-full"
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
-                  />
-                )}
+
               </Link>
             );
           })}

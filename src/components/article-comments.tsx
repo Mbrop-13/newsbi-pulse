@@ -5,7 +5,7 @@ import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import { MessageSquare, Send, Heart, User, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { useAuthStore } from "@/lib/stores/auth-store";
+import { useAuthStore, useAuthModalStore } from "@/lib/stores/auth-store";
 import { useAuthToastStore } from "@/lib/stores/auth-toast-store";
 
 interface Comment {
@@ -31,6 +31,7 @@ export function ArticleComments({ articleId }: { articleId: string }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const supabase = createClient();
   const { user, isAuthenticated } = useAuthStore();
+  const { openModal } = useAuthModalStore();
   const { showToast } = useAuthToastStore();
 
   const fetchComments = useCallback(async () => {
@@ -185,7 +186,7 @@ export function ArticleComments({ articleId }: { articleId: string }) {
              <MessageSquare className="w-8 h-8 text-foreground/50 mb-3" />
              <p className="font-bold text-foreground mb-3">Únete a la conversación</p>
              <button
-                onClick={() => showToast("Inicia sesión para compartir tu opinión")}
+                onClick={() => openModal("login")}
                 className="px-6 py-2.5 bg-[#1890FF] text-white text-sm font-bold rounded-xl hover:bg-blue-600 transition-colors shadow-sm"
              >
                 Regístrate o Inicia Sesión

@@ -150,45 +150,8 @@ export function AuthModals({
             className="relative w-full max-w-[460px] overflow-hidden rounded-2xl shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* ───── Top Decorative Banner ───── */}
-            <div className="relative h-36 overflow-hidden bg-gradient-to-br from-[#0052CC] via-[#0066FF] to-[#22D3EE]">
-              {/* Animated grid pattern */}
-              <div
-                className="absolute inset-0 opacity-[0.08]"
-                style={{
-                  backgroundImage: `linear-gradient(rgba(255,255,255,.4) 1px, transparent 1px),
-                                    linear-gradient(90deg, rgba(255,255,255,.4) 1px, transparent 1px)`,
-                  backgroundSize: "32px 32px",
-                }}
-              />
-              {/* Floating orbs */}
-              <motion.div
-                animate={{ y: [-8, 8, -8], x: [-4, 4, -4] }}
-                transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute top-6 right-8 w-20 h-20 rounded-full bg-white/10 blur-xl"
-              />
-              <motion.div
-                animate={{ y: [6, -6, 6], x: [3, -3, 3] }}
-                transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute bottom-2 left-12 w-28 h-28 rounded-full bg-cyan-300/10 blur-2xl"
-              />
-              {/* Logo / Icon */}
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 z-10">
-                <motion.div
-                  initial={{ scale: 0, rotate: -180 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ type: "spring", damping: 15, stiffness: 200, delay: 0.1 }}
-                  className="w-16 h-16 rounded-2xl bg-background border-4 border-background shadow-xl flex items-center justify-center"
-                >
-                  <Newspaper className="w-7 h-7 text-accent" />
-                </motion.div>
-              </div>
-              {/* Tagline */}
-
-            </div>
-
             {/* ───── Form Body ───── */}
-            <div className="bg-background pt-12 pb-8 px-8">
+            <div className="bg-background pt-8 pb-8 px-8">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={view}

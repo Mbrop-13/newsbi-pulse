@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { PredictionCard } from "@/components/prediction-card";
-import { TrendingUp, Gem, Filter, Loader2, Zap, Clock, Flame, BarChart3, ChevronDown } from "lucide-react";
+import { TrendingUp, Gem, Filter, Loader2, Zap, Clock, Flame, BarChart3, ChevronDown, Check } from "lucide-react";
 
 interface Prediction {
   id: string;
@@ -86,21 +86,9 @@ export default function PrediccionesPage() {
     <div className="min-h-screen bg-background pt-[104px] pb-20">
       <div className="max-w-[1400px] mx-auto px-4 lg:px-8 flex flex-col lg:flex-row gap-8">
         
-        {/* Left Sidebar (Categories) */}
-        <aside className="w-full lg:w-64 shrink-0 mt-2">
-          {/* Mobile Toggle Button */}
-          <button
-            onClick={() => setShowFiltersMobile(!showFiltersMobile)}
-            className="w-full lg:hidden flex items-center justify-between px-4 py-3 bg-white dark:bg-[#1A1A1E] rounded-2xl border border-gray-200 dark:border-white/5 mb-4 shadow-sm"
-          >
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-[#1890FF]" />
-              <span className="font-bold text-sm">Filtros</span>
-            </div>
-            <ChevronDown className={`w-4 h-4 transition-transform ${showFiltersMobile ? "rotate-180" : ""}`} />
-          </button>
-
-          <div className={`lg:sticky lg:top-32 space-y-8 ${showFiltersMobile ? "block" : "hidden lg:block"}`}>
+        {/* Left Sidebar (Categories) - Desktop Only */}
+        <aside className="hidden lg:block w-64 shrink-0 mt-2">
+          <div className="sticky top-32 space-y-8">
             {/* Status toggle */}
             <div>
               <h3 className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-3 px-2">Estado</h3>
@@ -137,11 +125,11 @@ export default function PrediccionesPage() {
                         onClick={() => setCategory(c.id)}
                         className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all group ${
                           isActive 
-                            ? "bg-blue-500/10 text-blue-400 font-bold" 
+                            ? "bg-[#1890FF]/10 text-[#1890FF] font-bold" 
                             : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                         }`}
                       >
-                        <Icon className={`w-4 h-4 ${isActive ? "text-blue-400" : "text-muted-foreground group-hover:text-foreground"}`} />
+                        <Icon className={`w-4 h-4 ${isActive ? "text-[#1890FF]" : "text-muted-foreground group-hover:text-foreground"}`} />
                         {c.label}
                       </button>
                     </li>
@@ -156,18 +144,106 @@ export default function PrediccionesPage() {
         <main className="flex-1 min-w-0">
           
           {/* Top Bar (Title + Sort) */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 relative z-30">
             <h1 className="text-2xl font-bold text-foreground capitalize">
               {category === "" ? "Todos los Mercados" : CATEGORIES.find(c => c.id === category)?.label}
             </h1>
 
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground font-medium">Ordenar por:</span>
-              <div className="relative">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              {/* Mobile Filters Dropdown */}
+              <div className="relative lg:hidden flex-1 sm:flex-none">
+                <button
+                  onClick={() => setShowFiltersMobile(!showFiltersMobile)}
+                  className={`w-full flex items-center justify-center gap-2 border rounded-xl px-4 py-2.5 text-sm font-bold transition-all ${
+                    showFiltersMobile || category !== "" || tab !== "active"
+                      ? "bg-[#1890FF]/10 border-[#1890FF]/30 text-[#1890FF]"
+                      : "bg-background border-border text-foreground hover:bg-muted/50"
+                  }`}
+                >
+                  <Filter className="w-4 h-4" />
+                  Filtros
+                </button>
+                
+                <AnimatePresence>
+                  {showFiltersMobile && (
+                    <>
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm"
+                        onClick={() => setShowFiltersMobile(false)}
+                      />
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                        className="absolute right-0 sm:right-auto sm:left-0 top-[calc(100%+0.5rem)] w-[280px] bg-background/95 backdrop-blur-xl border border-border rounded-2xl shadow-2xl z-50 p-5"
+                      >
+                        {/* Status toggle */}
+                        <div className="mb-6">
+                          <h3 className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-3">Estado</h3>
+                          <div className="flex bg-muted/30 p-1 rounded-xl border border-border">
+                            <button
+                              onClick={() => { setTab("active"); setShowFiltersMobile(false); }}
+                              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                                tab === "active" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                              }`}
+                            >
+                              Activos
+                            </button>
+                            <button
+                              onClick={() => { setTab("resolved"); setShowFiltersMobile(false); }}
+                              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                                tab === "resolved" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                              }`}
+                            >
+                              Resueltos
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Categories */}
+                        <div>
+                          <h3 className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Categorías</h3>
+                          <ul className="space-y-1">
+                            {CATEGORIES.map(c => {
+                              const Icon = c.icon;
+                              const isActive = category === c.id;
+                              return (
+                                <li key={c.id}>
+                                  <button
+                                    onClick={() => { setCategory(c.id); setShowFiltersMobile(false); }}
+                                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-all group ${
+                                      isActive 
+                                        ? "bg-[#1890FF]/10 text-[#1890FF] font-bold" 
+                                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-3">
+                                      <Icon className={`w-4 h-4 ${isActive ? "text-[#1890FF]" : "text-muted-foreground"}`} />
+                                      {c.label}
+                                    </div>
+                                    {isActive && <Check className="w-4 h-4 text-[#1890FF]" />}
+                                  </button>
+                                </li>
+                              )
+                            })}
+                          </ul>
+                        </div>
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Sort By Dropdown */}
+              <div className="relative flex-1 sm:flex-none">
                 <select
                   value={sortBy}
                   onChange={(e: any) => setSortBy(e.target.value)}
-                  className="appearance-none bg-muted/20 border border-border rounded-xl pl-4 pr-10 py-2 text-sm font-bold text-foreground focus:outline-none focus:border-blue-500/50 cursor-pointer"
+                  className="w-full sm:w-auto appearance-none bg-background border border-border rounded-xl pl-4 pr-10 py-2.5 text-sm font-bold text-foreground hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-[#1890FF]/50 transition-colors cursor-pointer"
                 >
                   <option value="volume">Volumen</option>
                   <option value="newest">Más Nuevos</option>

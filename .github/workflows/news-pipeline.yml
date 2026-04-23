@@ -33,7 +33,7 @@ jobs:
           # Inyectamos los secretos desde GitHub Settings > Secrets
           CURRENTS_API_KEY: ${{ secrets.CURRENTS_API_KEY }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          OPENROUTER_FILTER_MODEL: ${{ secrets.OPENROUTER_FILTER_MODEL || 'minimax/minimax-m2.5:free' }}
+          OPENROUTER_FILTER_MODEL: ${{ secrets.OPENROUTER_FILTER_MODEL || 'x-ai/grok-4.1-fast' }}
           OPENROUTER_ENRICH_MODEL: ${{ secrets.OPENROUTER_ENRICH_MODEL || 'x-ai/grok-4.1-fast:online' }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

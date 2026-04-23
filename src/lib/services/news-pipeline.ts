@@ -354,7 +354,7 @@ IMPORTANTE: Responde ÚNICAMENTE con JSON puro. Sin explicaciones, sin markdown,
 
 f = 2 dígitos: país(1=CL,2=US) + tema(1=General,2=Tech,3=Impacto,4=Finanzas,5=Inversiones,6=Economía)`;
 
-  const model = process.env.OPENROUTER_FILTER_MODEL || 'minimax/minimax-m2.5:free';
+  const model = process.env.OPENROUTER_FILTER_MODEL || 'x-ai/grok-4.1-fast';
   console.log(`[PIPELINE] Step filter: ${articles.length} articles → ${model}`);
   
   const { content, usage } = await callOpenRouter({

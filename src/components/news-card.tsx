@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Clock, Radio, ShieldCheck } from "lucide-react";
@@ -20,6 +21,7 @@ interface NewsCardProps {
 export function NewsCard({ article, index, layout = "default" }: NewsCardProps) {
   const hasEnriched = !!(article.enriched_content && article.enriched_content.length > 50);
   const { showImages, fontSize } = useViewStore();
+  const [imgError, setImgError] = useState(false);
 
   const titleSizeClass = 
     layout === 'featured' ? 'text-2xl sm:text-3xl md:text-4xl' :
@@ -45,7 +47,12 @@ export function NewsCard({ article, index, layout = "default" }: NewsCardProps) 
 
           {showImages && article.image_url && (
             <div className="w-full mt-3 mb-2 bg-gray-100 dark:bg-gray-900">
-              <img src={article.image_url} alt={article.title} className="w-full h-auto object-cover grayscale-[30%]" />
+              <img 
+                src={imgError ? "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&auto=format&fit=crop" : article.image_url} 
+                onError={() => setImgError(true)}
+                alt={article.title} 
+                className="w-full h-auto object-cover grayscale-[30%]" 
+              />
             </div>
           )}
 
@@ -89,7 +96,8 @@ export function NewsCard({ article, index, layout = "default" }: NewsCardProps) 
              'aspect-video'
           }`}>
             <img
-              src={article.image_url}
+              src={imgError ? "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&auto=format&fit=crop" : article.image_url}
+              onError={() => setImgError(true)}
               alt={article.title}
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
             />

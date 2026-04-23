@@ -43,6 +43,7 @@ export default function ArticlePage() {
   const [matchedPredictions, setMatchedPredictions] = useState<any[]>([]);
   const [shareOpen, setShareOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [imgError, setImgError] = useState(false);
   const supabase = createClient();
   const playArticle = useAudioPlayerStore((s) => s.playArticle);
   const { articleWidth, showPredictions } = useViewStore();
@@ -262,7 +263,8 @@ export default function ArticlePage() {
             {article.image_url && (
               <div className="mb-8 rounded-xl overflow-hidden">
                 <img
-                  src={article.image_url}
+                  src={imgError ? "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&auto=format&fit=crop" : article.image_url}
+                  onError={() => setImgError(true)}
                   alt={article.title}
                   className="w-full h-auto object-cover aspect-video"
                 />

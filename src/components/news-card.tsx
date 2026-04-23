@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { Clock, Radio, ShieldCheck } from "lucide-react";
 import { NewsArticle } from "@/lib/types";
-import { formatDate } from "@/lib/utils";
+import { formatDate, getFallbackImage } from "@/lib/utils";
 import { BookmarkButton } from "./bookmark-button";
 import { ReadingListButton } from "./reading-list-button";
 import ReactMarkdown from "react-markdown";
@@ -48,7 +48,7 @@ export function NewsCard({ article, index, layout = "default" }: NewsCardProps) 
           {showImages && article.image_url && (
             <div className="w-full mt-3 mb-2 bg-gray-100 dark:bg-gray-900">
               <img 
-                src={imgError ? "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&auto=format&fit=crop" : article.image_url} 
+                src={imgError ? getFallbackImage(article.category) : article.image_url} 
                 onError={() => setImgError(true)}
                 alt={article.title} 
                 className="w-full h-auto object-cover grayscale-[30%]" 
@@ -96,7 +96,7 @@ export function NewsCard({ article, index, layout = "default" }: NewsCardProps) 
              'aspect-video'
           }`}>
             <img
-              src={imgError ? "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&auto=format&fit=crop" : article.image_url}
+              src={imgError ? getFallbackImage(article.category) : article.image_url}
               onError={() => setImgError(true)}
               alt={article.title}
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"

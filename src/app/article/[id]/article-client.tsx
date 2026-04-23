@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { formatDate } from "@/lib/utils";
+import { formatDate, getFallbackImage } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { NewsArticle } from "@/lib/types";
 import { NewsCard } from "@/components/news-card";
@@ -263,7 +263,7 @@ export default function ArticlePage() {
             {article.image_url && (
               <div className="mb-8 rounded-xl overflow-hidden">
                 <img
-                  src={imgError ? "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&auto=format&fit=crop" : article.image_url}
+                  src={imgError ? getFallbackImage(article.category) : article.image_url}
                   onError={() => setImgError(true)}
                   alt={article.title}
                   className="w-full h-auto object-cover aspect-video"

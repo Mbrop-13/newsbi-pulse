@@ -51,3 +51,33 @@ export function getCategoryColor(category: string): string {
   };
   return colors[category.toLowerCase()] || "bg-slate-500/10 text-slate-400 border-slate-500/20";
 }
+
+export function getFallbackImage(category: string): string {
+  const cat = (category || "").toLowerCase();
+  
+  if (cat.includes("finanzas") || cat.includes("mercado")) {
+    return "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&auto=format&fit=crop";
+  }
+  if (cat.includes("economia")) {
+    return "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=800&auto=format&fit=crop";
+  }
+  if (cat.includes("tech") || cat.includes("tecnologia")) {
+    return "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop";
+  }
+  if (cat.includes("inversiones") || cat.includes("bolsa")) {
+    return "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=800&auto=format&fit=crop";
+  }
+  if (cat.includes("impacto") || cat.includes("global")) {
+    return "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop";
+  }
+  if (cat.includes("mundo") || cat.includes("internacional")) {
+    return "https://images.unsplash.com/photo-1521295121783-8a321d551ad2?w=800&auto=format&fit=crop";
+  }
+  if (cat.includes("chile") || cat.includes("nacional")) {
+    // Beautiful Andes / Santiago generic vibe
+    return "https://images.unsplash.com/photo-1582200282136-1e6ea21ce2a7?w=800&auto=format&fit=crop";
+  }
+  
+  // Default generic news placeholder
+  return "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&auto=format&fit=crop";
+}

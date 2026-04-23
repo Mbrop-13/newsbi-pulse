@@ -10,14 +10,17 @@ import {
   Globe,
   TrendingUp,
   Search,
+  LineChart,
+  BarChart3,
+  MoreHorizontal
 } from "lucide-react";
 
 const tabs = [
   { id: "home", href: "/", icon: Home, label: "Inicio" },
-  { id: "trending", href: "/?category=live", icon: Flame, label: "Live" },
+  { id: "mercados", href: "/mercados", icon: LineChart, label: "Mercados" },
   { id: "search", href: "/?search=true", icon: Search, label: "Buscar" },
-  { id: "tech", href: "/?category=tech", icon: Cpu, label: "Tech" },
-  { id: "more", href: "/?category=business", icon: TrendingUp, label: "Más" },
+  { id: "predicciones", href: "/predicciones", icon: BarChart3, label: "Pronósticos" },
+  { id: "more", href: "/finanzas", icon: TrendingUp, label: "Más" },
 ];
 
 export function MobileBottomNav() {

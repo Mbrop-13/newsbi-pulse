@@ -29,7 +29,7 @@ interface ViewSettingsState {
 }
 
 const defaultState = {
-  layout: 'traditional' as ViewLayout,
+  layout: 'grid' as ViewLayout,
   density: 'comfortable' as ViewDensity,
   fontSize: 'base' as ViewFontSize,
   showImages: true,

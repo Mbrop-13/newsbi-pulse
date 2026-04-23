@@ -48,7 +48,7 @@ export function PromoPopup() {
           animate={{ opacity: 1, y: 0, scale: 1, x: 0 }}
           exit={{ opacity: 0, y: 20, scale: 0.95 }}
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
-          className="fixed bottom-6 right-6 z-[100] w-80 sm:w-96"
+          className="fixed bottom-6 right-6 z-[100] w-80 sm:w-96 hidden md:block"
         >
           <div className="absolute -inset-[2px] rounded-[26px] bg-gradient-to-br from-[#1890FF] via-indigo-500 to-purple-600 blur-xl opacity-40 group-hover:opacity-75 transition-opacity duration-1000 animate-pulse-slow"></div>
           

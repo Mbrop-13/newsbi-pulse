@@ -127,7 +127,7 @@ export function Navbar() {
             : "bg-white/80 dark:bg-slate-900/80 border-b border-transparent"
           }`}
       >
-        <div className="w-full px-6 xl:px-12 h-full flex items-center justify-between gap-4">
+        <div className="w-full px-3 md:px-6 xl:px-12 h-full flex items-center justify-between gap-2 md:gap-4">
 
           {/* Left: Logo */}
           <div className="flex-shrink-0 flex items-center gap-3 h-full overflow-visible">
@@ -275,7 +275,7 @@ export function Navbar() {
             </nav>
 
             {/* Right: Actions, Theme, Auth */}
-            <div className="flex items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-1.5 sm:gap-3 md:gap-4">
 
             {/* New Headphones Button */}
             <button
@@ -386,16 +386,16 @@ export function Navbar() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : mounted ? (
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 sm:gap-4">
                 <button
                   onClick={() => openAuth("login")}
-                  className="text-sm font-semibold text-[#1890FF] hover:underline hidden sm:block transition-all"
+                  className="text-[11px] sm:text-sm font-semibold text-[#1890FF] hover:underline transition-all"
                 >
-                  Iniciar sesión
+                  Entrar
                 </button>
                 <button
                   onClick={() => openAuth("register")}
-                  className="bg-[#1890FF] hover:bg-[#1890FF]/90 text-white text-sm font-semibold px-4 py-2 rounded-full transition-all shadow-md shadow-[#1890FF]/20 hover:shadow-lg hover:-translate-y-0.5"
+                  className="bg-[#1890FF] hover:bg-[#1890FF]/90 text-white text-[11px] sm:text-sm font-semibold px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-full transition-all shadow-md shadow-[#1890FF]/20 hover:shadow-lg hover:-translate-y-0.5 whitespace-nowrap"
                 >
                   Registrarse
                 </button>

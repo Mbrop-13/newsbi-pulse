@@ -145,8 +145,8 @@ export function Navbar() {
 
           </div>
 
-          {/* Center: Minimal Search Bar + View Settings */}
-          <div className="flex-1 max-w-sm hidden md:flex items-center gap-2 ml-2">
+          {/* Center: Minimal Search Bar */}
+          <div className="flex-1 max-w-sm hidden md:flex items-center ml-2">
             <button
               onClick={() => setSearchOpen(true)}
               className="flex-1 h-10 flex items-center bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors rounded-full px-4 text-sm text-gray-500 border border-transparent focus:border-[#1890FF] focus:ring-1 focus:ring-[#1890FF] outline-none group shadow-inner"
@@ -156,13 +156,6 @@ export function Navbar() {
               <kbd className="hidden lg:flex items-center gap-1 text-[10px] font-mono text-gray-400 bg-white/50 dark:bg-black/50 px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-700 ml-2 shrink-0">
                 <span className="text-xs">⌘</span>K
               </kbd>
-            </button>
-            <button
-              onClick={() => setViewSettingsOpen(true)}
-              className="h-10 w-10 flex flex-shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-500 hover:text-[#1890FF]"
-              title="Ajustes de Vista"
-            >
-              <Settings2 className="w-4 h-4" />
             </button>
           </div>
 
@@ -255,13 +248,7 @@ export function Navbar() {
                       </div>
 
                       {/* Bottom Bar */}
-                      <div className="mt-5 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                        <button
-                          onClick={() => { setSeccionesOpen(false); setViewSettingsOpen(true); }}
-                          className="flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-[#1890FF] transition-colors px-3 py-2 rounded-lg hover:bg-[#1890FF]/5"
-                        >
-                          <Settings2 className="w-3.5 h-3.5" /> Preferencias de Vista
-                        </button>
+                      <div className="mt-5 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-end">
                         <Link
                           href="/suscripcion"
                           onClick={() => setSeccionesOpen(false)}
@@ -373,6 +360,25 @@ export function Navbar() {
                       Suscripción Premium
                     </DropdownMenuItem>
                   </Link>
+                  <DropdownMenuSeparator className="bg-gray-100 dark:bg-gray-800 mx-1" />
+                  
+                  {/* Preferences directly opens the ViewSettingsDialog */}
+                  <DropdownMenuItem 
+                    onClick={() => setViewSettingsOpen(true)}
+                    className="text-sm py-2 px-3 cursor-pointer rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  >
+                    <Settings2 className="w-4 h-4 mr-2 text-gray-500" />
+                    Preferencias
+                  </DropdownMenuItem>
+                  
+                  {/* Support opens the new Support route */}
+                  <Link href="/soporte">
+                    <DropdownMenuItem className="text-sm py-2 px-3 cursor-pointer rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                      <Headphones className="w-4 h-4 mr-2 text-gray-500" />
+                      Soporte
+                    </DropdownMenuItem>
+                  </Link>
+
                   <DropdownMenuSeparator className="bg-gray-100 dark:bg-gray-800 mx-1" />
                   {mounted && (
                     <DropdownMenuItem

@@ -61,3 +61,21 @@ export const CATEGORIES: NewsCategory[] = [
   { id: "business", name: "Business", slug: "business", icon: "TrendingUp" },
   { id: "audio", name: "Audio", slug: "audio", icon: "Headphones" },
 ];
+
+export interface SupportTicket {
+  id: string;
+  user_id: string;
+  subject: string;
+  status: 'open' | 'closed';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SupportMessage {
+  id: string;
+  ticket_id: string;
+  user_id: string;
+  is_admin: boolean;
+  message: string;
+  created_at: string;
+}

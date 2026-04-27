@@ -18,6 +18,7 @@ import { ReadingListWidget } from "@/components/reading-list-widget";
 import { ResolvedBetsPopup } from "@/components/resolved-bet-popup";
 import { PromoPopup } from "@/components/promo-popup";
 import { RegisterCornerPopup } from "@/components/register-corner-popup";
+import { CapacitorInit } from "@/components/capacitor-init";
 
 import { useState, useEffect } from "react";
 export function ClientLayoutProviders({
@@ -60,6 +61,7 @@ export function ClientLayoutProviders({
           {!isFullscreenPage && !isAdminPage && <Footer />}
           {!isFullscreenPage && !isAdminPage && <MobileBottomNav />}
           <ServiceWorkerRegistration />
+          <CapacitorInit />
           {!isAdminPage && <PersonalizationApplier />}
           {!isAdminPage && <AudioPlayerSidebar />}
           {!isAdminPage && <AIChatSidebar />}

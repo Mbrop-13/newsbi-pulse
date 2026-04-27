@@ -35,7 +35,7 @@ export function Footer() {
           </div>
 
           {/* Link Columns — pushed right */}
-          <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-10">
+          <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
 
           {/* Secciones */}
           <div>
@@ -82,6 +82,14 @@ export function Footer() {
                   <ExternalLink className="w-3 h-3" />
                 </a>
               </li>
+            </ul>
+          </div>
+
+          {/* Legal */}
+          <div>
+            <h4 className="text-sm font-bold mb-4 text-foreground">Legal</h4>
+            <ul className="space-y-2">
+              <li><Link href="/privacidad" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Política de Privacidad</Link></li>
             </ul>
           </div>
 

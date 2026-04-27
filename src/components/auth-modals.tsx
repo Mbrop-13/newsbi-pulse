@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Mail,
@@ -354,7 +355,9 @@ export function AuthModals({
                   <p className="text-[10px] text-muted-foreground/60 text-center mt-4 leading-relaxed">
                     Al continuar, aceptas los{" "}
                     <span className="underline cursor-pointer">Términos</span> y la{" "}
-                    <span className="underline cursor-pointer">Política de Privacidad</span>
+                    <Link href="/privacidad" onClick={onClose} className="underline cursor-pointer hover:text-foreground transition-colors">
+                      Política de Privacidad
+                    </Link>
                   </p>
                 </motion.div>
               </AnimatePresence>

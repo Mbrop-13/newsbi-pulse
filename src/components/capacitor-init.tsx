@@ -9,13 +9,29 @@ export function CapacitorInit() {
       const { Capacitor } = await import("@capacitor/core");
       if (!Capacitor.isNativePlatform()) return;
 
-      // --- Status Bar ---
+      // --- Status Bar (theme-aware) ---
       try {
         const { StatusBar, Style } = await import("@capacitor/status-bar");
-        await StatusBar.setStyle({ style: Style.Dark });
-        if (Capacitor.getPlatform() === "android") {
-          await StatusBar.setBackgroundColor({ color: "#0F172A" });
-        }
+
+        const updateStatusBar = () => {
+          const isDark = document.documentElement.classList.contains("dark");
+          StatusBar.setStyle({ style: isDark ? Style.Dark : Style.Light });
+          if (Capacitor.getPlatform() === "android") {
+            StatusBar.setBackgroundColor({
+              color: isDark ? "#0F172A" : "#FFFFFF",
+            });
+          }
+        };
+
+        // Set initial state
+        updateStatusBar();
+
+        // Watch for theme changes
+        const observer = new MutationObserver(updateStatusBar);
+        observer.observe(document.documentElement, {
+          attributes: true,
+          attributeFilter: ["class"],
+        });
       } catch (e) {
         console.warn("StatusBar plugin not available:", e);
       }
@@ -39,17 +55,14 @@ export function CapacitorInit() {
           await PushNotifications.register();
         }
 
-        // Log token for debugging
         PushNotifications.addListener("registration", (token) => {
           console.log("[Reclu] Push registration token:", token.value);
-          // TODO: Save token to Supabase user_profiles table
         });
 
         PushNotifications.addListener("registrationError", (err) => {
           console.error("[Reclu] Push registration error:", err.error);
         });
 
-        // Notification received while app is open
         PushNotifications.addListener(
           "pushNotificationReceived",
           (notification) => {
@@ -57,7 +70,6 @@ export function CapacitorInit() {
           }
         );
 
-        // User tapped on notification
         PushNotifications.addListener(
           "pushNotificationActionPerformed",
           (notification) => {

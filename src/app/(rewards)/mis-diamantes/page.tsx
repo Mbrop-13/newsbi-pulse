@@ -103,7 +103,7 @@ export default function MisDiamantesPage() {
       </div>
 
       {/* Big Blue Balance Card */}
-      <div className="relative w-full h-[220px] bg-[#3B71F7] rounded-3xl p-6 sm:p-10 overflow-hidden shadow-xl mb-6 flex flex-col justify-between group">
+      <div className="relative w-full h-[180px] sm:h-[220px] bg-[#3B71F7] rounded-2xl sm:rounded-3xl p-5 sm:p-10 overflow-hidden shadow-xl mb-4 sm:mb-6 flex flex-col justify-between group">
          <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
          <div className="absolute bottom-[-20%] right-[-8%] w-80 h-80 group-hover:scale-105 transition-transform duration-700 opacity-90 pointer-events-none">
             <img 
@@ -115,17 +115,17 @@ export default function MisDiamantesPage() {
 
          <div className="relative z-10 flex flex-col items-start gap-4">
             <span className="text-white/80 font-bold text-base sm:text-lg">Mis diamantes</span>
-            <span className="text-6xl sm:text-7xl font-black text-white tracking-tight drop-shadow-lg">
+            <span className="text-5xl sm:text-7xl font-black text-white tracking-tight drop-shadow-lg">
                {isAuthenticated ? balance : '--'}
             </span>
          </div>
       </div>
 
       {/* Action Row */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-2 mt-8">
+      <div className="flex flex-col gap-4 mb-2 mt-4 sm:mt-8">
         <div>
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white">Recoge tus diamantes todos los días.</h3>
-          <p className="text-sm text-gray-400 dark:text-gray-500 min-h-[20px]">
+          <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Recoge tus diamantes todos los días.</h3>
+          <p className="text-xs sm:text-sm text-gray-400 dark:text-gray-500 min-h-[20px]">
             {isAuthenticated && !canClaimToday && timeLeftStr ? (
                <span className="text-amber-500 dark:text-amber-400 font-medium tracking-wide">
                  Siguiente recompensa en: {timeLeftStr}
@@ -143,7 +143,7 @@ export default function MisDiamantesPage() {
         <button 
           onClick={handleClaim}
           disabled={isLoading || (!canClaimToday && isAuthenticated)}
-          className={`whitespace-nowrap font-bold text-sm px-8 py-3 rounded-xl transition-all shadow-lg ${
+          className={`w-full sm:w-auto whitespace-nowrap font-bold text-sm px-8 py-3 rounded-xl transition-all shadow-lg ${
             !isAuthenticated 
               ? 'bg-[#3B71F7] hover:bg-blue-600 text-white' 
               : canClaimToday 
@@ -156,7 +156,7 @@ export default function MisDiamantesPage() {
       </div>
 
       {/* Square Timeline Map */}
-      <div className="grid grid-cols-4 sm:grid-cols-7 gap-3 mb-12">
+      <div className="grid grid-cols-4 gap-2 sm:grid-cols-7 sm:gap-3 mb-12">
         {[1, 2, 3, 4, 5, 6, 7].map((day) => {
             const reward = getRewardForDay(day);
             let isCurrent = false;
@@ -169,7 +169,7 @@ export default function MisDiamantesPage() {
               if (day <= consecutiveDays) isClaimed = true;
             }
 
-            const baseClasses = "flex flex-col items-center justify-between p-4 rounded-2xl h-32 sm:h-36 transition-all relative border border-transparent";
+            const baseClasses = "flex flex-col items-center justify-between p-2.5 sm:p-4 rounded-xl sm:rounded-2xl h-24 sm:h-36 transition-all relative border border-transparent";
             const bgClasses = isCurrent 
               ? "bg-[#3B71F7] shadow-xl shadow-blue-500/20 md:hover:-translate-y-1" 
               : isClaimed
@@ -180,13 +180,13 @@ export default function MisDiamantesPage() {
 
             return (
               <div key={day} className={`${baseClasses} ${bgClasses} ${activePulse}`}>
-                <span className={`text-xs font-black uppercase tracking-widest ${textColor}`}>Día {day}</span>
-                <div className="flex-1 flex items-center justify-center my-2 relative z-10 w-full h-12">
-                   <div className="relative w-12 h-12 flex items-center justify-center">
+                <span className={`text-[10px] sm:text-xs font-black uppercase tracking-widest ${textColor}`}>Día {day}</span>
+                <div className="flex-1 flex items-center justify-center my-1 sm:my-2 relative z-10 w-full h-10 sm:h-12">
+                   <div className="relative w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center">
                       <img 
                         src={DIAMOND_IMAGES[day-1]} 
                         alt={`Día ${day}`} 
-                        className={`absolute w-32 h-32 max-w-none object-contain transition-transform duration-300 ${isCurrent ? 'scale-110' : 'group-hover:scale-110'}`}
+                        className={`absolute w-24 h-24 sm:w-32 sm:h-32 max-w-none object-contain transition-transform duration-300 ${isCurrent ? 'scale-110' : 'group-hover:scale-110'}`}
                       />
                    </div>
                    {isClaimed && (
@@ -195,7 +195,7 @@ export default function MisDiamantesPage() {
                      </div>
                    )}
                 </div>
-                <span className={`text-base font-black ${isCurrent ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
+                <span className={`text-sm sm:text-base font-black ${isCurrent ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
                   + {reward}
                 </span>
               </div>

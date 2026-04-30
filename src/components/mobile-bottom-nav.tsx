@@ -19,7 +19,7 @@ import {
 const tabs = [
   { id: "home", href: "/", icon: Home, label: "Inicio" },
   { id: "guardados", href: "/guardados", icon: Bookmark, label: "Guardados" },
-  { id: "ai", href: "/chat", icon: Bot, label: "Asistente" },
+  { id: "ai", href: "/asistente", icon: Bot, label: "Asistente" },
   { id: "portafolio", href: "/portafolio", icon: Briefcase, label: "Portafolio" },
 ];
 

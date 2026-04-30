@@ -256,7 +256,7 @@ export function Navbar() {
                 </AnimatePresence>
               </div>
 
-              <Link href="/predicciones" className="hover:text-[#1890FF] transition-colors flex items-center gap-1">🔮 Predicciones</Link>
+              <Link href="/mundo" className="hover:text-[#1890FF] transition-colors flex items-center gap-1">🌍 Mundo</Link>
             </nav>
 
             {/* Right: Actions, Theme, Auth */}

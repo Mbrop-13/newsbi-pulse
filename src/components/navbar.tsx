@@ -173,6 +173,14 @@ export function Navbar() {
                 Portafolio
               </Link>
 
+              {/* ASISTENTE LINK */}
+              <Link 
+                href="/asistente" 
+                className="flex items-center hover:text-[#1890FF] transition-colors"
+              >
+                Asistente
+              </Link>
+
               {/* SECCIONES MEGA MENU (replaces Fuentes) */}
               <div 
                 className="relative"

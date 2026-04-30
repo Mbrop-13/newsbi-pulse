@@ -24,7 +24,7 @@ const TABS = [
 ];
 
 export default function SettingsClient() {
-  const { user, isAuthenticated, signOut } = useAuthStore();
+  const { user, isAuthenticated, logout } = useAuthStore();
   const openModal = useAuthModalStore((s) => s.openModal);
   const supabase = createClient();
   const { theme, setTheme } = useTheme();
@@ -131,6 +131,11 @@ export default function SettingsClient() {
       setResetEmailSent(true);
       setTimeout(() => setResetEmailSent(false), 5000);
     }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    logout();
   };
 
   if (!isAuthenticated) {
@@ -252,7 +257,7 @@ export default function SettingsClient() {
 
                         <div>
                           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 border-b border-gray-100 dark:border-gray-800 pb-4 text-red-500">Zona de Peligro</h2>
-                          <button onClick={signOut} className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 font-bold text-sm hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors w-full sm:w-auto justify-center">
+                          <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 font-bold text-sm hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors w-full sm:w-auto justify-center">
                             <LogOut className="w-4 h-4" /> Cerrar Sesión
                           </button>
                         </div>

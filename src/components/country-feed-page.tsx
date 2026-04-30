@@ -13,7 +13,7 @@ import { TABS, FeedTab } from "@/components/feed-content";
 import { useFilterStore } from "@/lib/stores/filter-store";
 import { useViewStore } from "@/lib/stores/use-view-store";
 import { useAuthStore } from "@/lib/stores/auth-store";
-import { PredictionsSidebar } from "@/components/predictions-sidebar";
+
 import { TraditionalNewspaper } from "@/components/traditional-newspaper";
 import { HomepageOnboarding } from "@/components/homepage-onboarding";
 import {
@@ -45,7 +45,7 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
   );
   const [isTransitioning, setIsTransitioning] = useState(true);
   const supabase = createClient();
-  const { layout: viewLayout, density, showPredictions } = useViewStore();
+  const { layout: viewLayout, density } = useViewStore();
   const userRole = useAuthStore(s => s.user?.role);
 
   const gapClass =
@@ -503,7 +503,6 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
                       <div className="lg:w-[340px] xl:w-[380px] flex-shrink-0">
                         <div className="space-y-5 lg:sticky lg:top-24">
                           <TrendingPanel articles={feedArticles} />
-                          {showPredictions && <PredictionsSidebar />}
                         </div>
                       </div>
                     )}

@@ -5,7 +5,8 @@ import { useTheme } from "next-themes";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Sun, Moon, LogIn, ChevronDown, User, Headphones, Filter, ArrowLeft, Bot, Sparkles, Layers, Settings, X, Check, Settings2, TrendingUp, Landmark, LineChart, Globe, PieChart, Cpu, BookOpen, Briefcase, Scale, Zap, BarChart3 } from "lucide-react";
-import { DiamondsButton } from "./diamonds-button";
+import { DiamondsButton } from "@/components/diamonds-button";
+import { NotificationBell } from "@/components/notification-bell";
 import { AuthModals } from "./auth-modals";
 import { SearchDialog } from "./search-dialog";
 import { ViewSettingsDialog } from "./view-settings-dialog";
@@ -292,6 +293,9 @@ export function Navbar() {
 
 
 
+            {/* Notification Bell */}
+            {mounted && isAuthenticated && <NotificationBell />}
+
             {/* AI Chat Button */}
             <button
               onClick={() => {
@@ -338,10 +342,10 @@ export function Navbar() {
                       Mi Perfil
                     </DropdownMenuItem>
                   </Link>
-                  <Link href="/mis-predicciones">
+                  <Link href="/portafolio">
                     <DropdownMenuItem className="text-sm py-2 px-3 cursor-pointer rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
-                      <TrendingUp className="w-4 h-4 mr-2 text-blue-500" />
-                      Mis Predicciones
+                      <Briefcase className="w-4 h-4 mr-2 text-blue-500" />
+                      Mi Portafolio
                     </DropdownMenuItem>
                   </Link>
                   <Link href="/suscripcion">

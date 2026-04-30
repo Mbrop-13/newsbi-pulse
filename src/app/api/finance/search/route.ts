@@ -1,31 +1,24 @@
-import { NextResponse } from 'next/server';
-const { default: YahooFinance } = require('yahoo-finance2');
-const yf = new YahooFinance();
+import { NextResponse } from "next/server";
+import yahooFinance from "yahoo-finance2";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const q = searchParams.get('q');
-  
-  if (!q) {
-    return NextResponse.json({ error: 'El parámetro "q" es requerido' }, { status: 400 });
+  const query = searchParams.get("q");
+
+  if (!query) {
+    return NextResponse.json({ error: "Missing query parameter" }, { status: 400 });
   }
 
   try {
-    const results = await yf.search(q, {
-       newsCount: 0,
-       quotesCount: 8
+    const results = await yahooFinance.search(query, {
+      quotesCount: 5,
+      newsCount: 0,
+      enableFuzzyQuery: true
     });
-    
-    // Filtramos para retornar solo entidades válidas de mercado
-    const quotes = results.quotes.filter((q: any) => q.isYahooFinance).map((q: any) => ({
-      symbol: q.symbol,
-      name: q.shortname || q.longname || q.symbol,
-      exchange: q.exchDisp || q.exchange || ''
-    }));
 
-    return NextResponse.json(quotes);
-  } catch (error: any) {
-    console.error('Yahoo Finance Search API Error:', error);
-    return NextResponse.json({ error: error.message || 'Error fetching finance data' }, { status: 500 });
+    return NextResponse.json({ quotes: results.quotes });
+  } catch (error) {
+    console.error("Yahoo Finance Search Error:", error);
+    return NextResponse.json({ error: "Search failed" }, { status: 500 });
   }
 }

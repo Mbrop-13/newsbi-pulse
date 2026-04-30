@@ -26,7 +26,7 @@ export default function PortfolioClient() {
   const { user, isAuthenticated } = useAuthStore();
   const openModal = useAuthModalStore((s) => s.openModal);
   const supabase = createClient();
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     if (!isAuthenticated) {

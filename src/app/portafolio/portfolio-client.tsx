@@ -439,7 +439,7 @@ export default function PortfolioClient() {
                           <p className="text-[10px] text-gray-500">{alert.condition === 'above' ? 'Por encima de' : 'Por debajo de'} ${alert.target_price}</p>
                         </div>
                       </div>
-                      <button onClick={() => deleteAlert(alert.id)} className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"><Trash2 className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => deleteAlert(alert.id)} className="text-gray-400 hover:text-red-500 transition-colors p-2 -mr-2"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   ))}
                 </div>
@@ -478,21 +478,33 @@ export default function PortfolioClient() {
                   </button>
                 </div>
 
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Precio objetivo (USD)</label>
-                  <input type="number" step="0.01" value={alertForm.targetPrice} onChange={(e) => setAlertForm(f => ({ ...f, targetPrice: e.target.value }))} placeholder={alertModal.price.toFixed(2)} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white text-lg font-bold outline-none focus:border-[#1890FF] focus:ring-2 focus:ring-[#1890FF]/20 transition-all" />
-                </div>
+                {(() => {
+                  const parsedTarget = parseFloat(alertForm.targetPrice);
+                  const isInvalidAbove = alertForm.condition === 'above' && parsedTarget <= alertModal.price;
+                  const isInvalidBelow = alertForm.condition === 'below' && parsedTarget >= alertModal.price;
+                  const priceError = alertForm.targetPrice && !isNaN(parsedTarget) ? (isInvalidAbove ? "El precio debe ser mayor al actual." : isInvalidBelow ? "El precio debe ser menor al actual." : null) : null;
+                  
+                  return (
+                    <>
+                      <div>
+                        <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Precio objetivo (USD)</label>
+                        <input type="number" step="0.01" value={alertForm.targetPrice} onChange={(e) => setAlertForm(f => ({ ...f, targetPrice: e.target.value }))} placeholder={alertModal.price.toFixed(2)} className={`w-full px-4 py-3 rounded-xl border bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white text-lg font-bold outline-none transition-all ${priceError ? 'border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20' : 'border-gray-200 dark:border-gray-700 focus:border-[#1890FF] focus:ring-2 focus:ring-[#1890FF]/20'}`} />
+                        {priceError && <p className="text-xs text-red-500 mt-1.5 font-medium">{priceError}</p>}
+                      </div>
 
-                {alertForm.targetPrice && (
-                  <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 text-xs text-blue-700 dark:text-blue-300">
-                    Te notificaremos cuando <strong>{alertModal.symbol}</strong> {alertForm.condition === 'above' ? 'suba por encima de' : 'baje por debajo de'} <strong>${parseFloat(alertForm.targetPrice).toFixed(2)}</strong>
-                  </div>
-                )}
+                      {alertForm.targetPrice && !priceError && (
+                        <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 text-xs text-blue-700 dark:text-blue-300">
+                          Te notificaremos cuando <strong>{alertModal.symbol}</strong> {alertForm.condition === 'above' ? 'suba por encima de' : 'baje por debajo de'} <strong>${parseFloat(alertForm.targetPrice).toFixed(2)}</strong>
+                        </div>
+                      )}
 
-                <button onClick={createAlert} disabled={!alertForm.targetPrice || alertSaving} className="w-full py-3 rounded-xl bg-[#1890FF] text-white font-bold text-sm hover:opacity-90 disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#1890FF]/25">
-                  {alertSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                  {alertSaving ? 'Guardando...' : 'Crear Alerta'}
-                </button>
+                      <button onClick={createAlert} disabled={!alertForm.targetPrice || alertSaving || !!priceError} className="w-full py-3 rounded-xl bg-[#1890FF] text-white font-bold text-sm hover:opacity-90 disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#1890FF]/25 mt-2">
+                        {alertSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                        {alertSaving ? 'Guardando...' : 'Crear Alerta'}
+                      </button>
+                    </>
+                  );
+                })()}
               </div>
             </motion.div>
           </>

@@ -28,12 +28,23 @@ export async function GET(req: NextRequest) {
             flexDirection: 'column',
             justifyContent: 'flex-end',
             backgroundColor: '#0F172A',
-            backgroundImage: `url(${bgImage})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
             position: 'relative',
+            overflow: 'hidden',
           }}
         >
+          {/* Background Image using standard img tag for Satori compatibility */}
+          <img
+            src={bgImage}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+            }}
+          />
+
           {/* Dark Overlay Gradient */}
           <div
             style={{

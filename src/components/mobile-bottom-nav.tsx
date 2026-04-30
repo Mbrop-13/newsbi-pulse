@@ -13,7 +13,8 @@ import {
   Search,
   LineChart,
   BarChart3,
-  Sparkles
+  Sparkles,
+  Briefcase
 } from "lucide-react";
 
 const tabs = [
@@ -21,7 +22,7 @@ const tabs = [
   { id: "mercados", href: "/mercados", icon: LineChart, label: "Mercados" },
   { id: "ai", href: "#", icon: Sparkles, label: "R-ai" },
   { id: "predicciones", href: "/predicciones", icon: BarChart3, label: "Pronósticos" },
-  { id: "search", href: "#", icon: Search, label: "Buscar" },
+  { id: "portafolio", href: "#", icon: Briefcase, label: "Portafolio" },
 ];
 
 export function MobileBottomNav() {

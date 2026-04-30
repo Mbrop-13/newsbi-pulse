@@ -282,6 +282,15 @@ export function Navbar() {
               </button>
             )}
 
+            {/* Mobile Search Icon */}
+            <button
+              className="flex md:hidden items-center justify-center w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-[#1890FF] hover:bg-[#1890FF]/10 transition-colors"
+              onClick={() => setSearchOpen(true)}
+              title="Buscar"
+            >
+              <Search className="w-4 h-4" />
+            </button>
+
             {pathname === '/asistente' && (
               <>
                 <div className="w-px h-5 bg-gray-200 dark:bg-gray-700" />
@@ -296,13 +305,7 @@ export function Navbar() {
             )}
 
 
-            {/* Mobile Search Icon - Hidden as it's moving to bottom nav */}
-            <button
-              className="hidden items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 text-[#1890FF]"
-              onClick={() => setSearchOpen(true)}
-            >
-              <Search className="w-4 h-4" />
-            </button>
+
 
             {/* AI Chat Button */}
             <button

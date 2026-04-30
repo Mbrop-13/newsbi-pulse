@@ -349,12 +349,21 @@ export default function PortfolioClient() {
                                   <div className="flex-1">
                                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Acciones</label>
                                     <input type="number" step="any" min="0" placeholder="0" defaultValue={asset.shares || ""}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          e.currentTarget.blur();
+                                        }
+                                      }}
                                       onBlur={(e) => {
                                         const val = parseFloat(e.target.value) || 0;
                                         supabase.from("portfolios").update({ shares: val }).eq("id", asset.id);
                                         setAssets(prev => prev.map(a => a.id === asset.id ? { ...a, shares: val } : a));
                                       }}
-                                      className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-slate-800 text-sm font-bold outline-none focus:border-[#1890FF] text-gray-900 dark:text-white" />
+                                      className={`w-full px-3 py-2 rounded-lg border text-sm font-bold outline-none transition-all ${
+                                        (asset.shares || 0) > 0 
+                                          ? "border-[#1890FF] bg-[#1890FF]/10 text-[#1890FF] focus:bg-white dark:focus:bg-slate-800 focus:text-gray-900 dark:focus:text-white focus:border-[#1890FF]" 
+                                          : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white focus:border-[#1890FF]"
+                                      }`} />
                                   </div>
                                   {(asset.shares || 0) > 0 && (asset.price || 0) > 0 && (
                                     <div className="flex-1 text-right">

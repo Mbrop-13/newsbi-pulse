@@ -10,11 +10,11 @@ export async function GET(request: Request) {
   }
 
   try {
-    const results = await yahooFinance.search(query, {
+    const results = (await yahooFinance.search(query, {
       quotesCount: 5,
       newsCount: 0,
       enableFuzzyQuery: true
-    });
+    })) as any;
 
     return NextResponse.json({ quotes: results.quotes });
   } catch (error) {

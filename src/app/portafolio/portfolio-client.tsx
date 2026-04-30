@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Search, TrendingUp, TrendingDown, Plus, Trash2, Calendar, BellRing, Briefcase, RefreshCw } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Search, TrendingUp, TrendingDown, Plus, Trash2, Calendar, BellRing, Briefcase, RefreshCw, X, AlertTriangle } from "lucide-react";
 import { useAuthStore, useAuthModalStore } from "@/lib/stores/auth-store";
 import { createClient } from "@/lib/supabase/client";
 
@@ -22,9 +22,11 @@ export default function PortfolioClient() {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState(false);
   const { user, isAuthenticated } = useAuthStore();
   const openModal = useAuthModalStore((s) => s.openModal);
   const supabase = createClient();
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -38,7 +40,6 @@ export default function PortfolioClient() {
     if (!user) return;
     setLoading(true);
     
-    // Get symbols from DB
     const { data: dbAssets } = await supabase
       .from("portfolios")
       .select("*")
@@ -46,7 +47,6 @@ export default function PortfolioClient() {
 
     if (dbAssets && dbAssets.length > 0) {
       const symbols = dbAssets.map(a => a.symbol).join(",");
-      // Fetch live prices and logos
       try {
         const res = await fetch(`/api/finance/portfolio?symbols=${symbols}`);
         if (res.ok) {
@@ -58,12 +58,12 @@ export default function PortfolioClient() {
               price: live.price || 0,
               change: live.change || 0,
               changePercent: live.changePercent || 0,
-              logo: live.logo || `https://logo.clearbit.com/${dbA.symbol.toLowerCase()}.com` // fallback heuristic
+              logo: live.logo || `https://logo.clearbit.com/${dbA.symbol.toLowerCase()}.com`
             };
           });
           setAssets(enriched);
         } else {
-          setAssets(dbAssets); // Fallback to DB only
+          setAssets(dbAssets);
         }
       } catch (e) {
         console.error(e);
@@ -75,22 +75,35 @@ export default function PortfolioClient() {
     setLoading(false);
   };
 
-  const handleSearch = async (term: string) => {
+  // Debounced search
+  const handleSearch = useCallback((term: string) => {
     setSearchTerm(term);
+    setSearchError(false);
+    
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    
     if (term.length < 2) {
       setSearchResults([]);
+      setIsSearching(false);
       return;
     }
+    
     setIsSearching(true);
-    try {
-      const res = await fetch(`/api/finance/search?q=${term}`);
-      const data = await res.json();
-      setSearchResults(data.quotes || []);
-    } catch (e) {
-      console.error(e);
-    }
-    setIsSearching(false);
-  };
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/finance/search?q=${encodeURIComponent(term)}`);
+        if (!res.ok) throw new Error("Search API failed");
+        const data = await res.json();
+        setSearchResults(data.quotes || []);
+        setSearchError(false);
+      } catch (e) {
+        console.error(e);
+        setSearchResults([]);
+        setSearchError(true);
+      }
+      setIsSearching(false);
+    }, 400);
+  }, []);
 
   const addAsset = async (symbol: string, companyName: string) => {
     if (!user) return;
@@ -113,6 +126,12 @@ export default function PortfolioClient() {
     await supabase.from("portfolios").delete().eq("user_id", user.id).eq("symbol", symbol);
     setAssets(assets.filter(a => a.symbol !== symbol));
   };
+
+  // Calculate total portfolio value
+  const totalValue = assets.reduce((sum, a) => sum + (a.price || 0), 0);
+  const totalChange = assets.length > 0
+    ? assets.reduce((sum, a) => sum + (a.changePercent || 0), 0) / assets.length
+    : 0;
 
   if (!isAuthenticated) {
     return (
@@ -146,6 +165,27 @@ export default function PortfolioClient() {
           </button>
         </div>
 
+        {/* Summary Cards */}
+        {assets.length > 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
+              <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Activos</p>
+              <p className="text-2xl font-black text-gray-900 dark:text-white">{assets.length}</p>
+            </div>
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
+              <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Valor Total</p>
+              <p className="text-2xl font-black text-gray-900 dark:text-white">${totalValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            </div>
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5 col-span-2 md:col-span-1">
+              <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Cambio Promedio</p>
+              <p className={`text-2xl font-black flex items-center gap-2 ${totalChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                {totalChange >= 0 ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
+                {totalChange.toFixed(2)}%
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* Main Portfolio Column */}
@@ -157,32 +197,75 @@ export default function PortfolioClient() {
                 <Search className="w-5 h-5 text-gray-400 mr-3" />
                 <input
                   type="text"
-                  placeholder="Buscar símbolo o empresa (ej. AAPL, Tesla)..."
+                  placeholder="Buscar símbolo o empresa (ej. AAPL, Tesla, MSFT)..."
                   value={searchTerm}
                   onChange={(e) => handleSearch(e.target.value)}
                   className="flex-1 bg-transparent text-sm outline-none text-gray-900 dark:text-white placeholder:text-gray-400"
                 />
-                {isSearching && <RefreshCw className="w-4 h-4 animate-spin text-[#1890FF]" />}
+                {isSearching && <RefreshCw className="w-4 h-4 animate-spin text-[#1890FF] ml-2" />}
+                {searchTerm.length > 0 && !isSearching && (
+                  <button onClick={() => { setSearchTerm(""); setSearchResults([]); }} className="ml-2 text-gray-400 hover:text-gray-600">
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
               </div>
               
               {/* Search Results Dropdown */}
-              {searchResults.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-xl z-20 overflow-hidden">
-                  {searchResults.map((res: any) => (
-                    <button
-                      key={res.symbol}
-                      onClick={() => addAsset(res.symbol, res.shortname || res.longname || res.symbol)}
-                      className="w-full text-left px-4 py-3 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors flex items-center justify-between group"
-                    >
-                      <div>
-                        <div className="font-bold text-gray-900 dark:text-white group-hover:text-[#1890FF] transition-colors">{res.symbol}</div>
-                        <div className="text-xs text-gray-500">{res.shortname || res.longname} • {res.exchange}</div>
+              <AnimatePresence>
+                {(searchResults.length > 0 || (searchTerm.length >= 2 && !isSearching && searchResults.length === 0)) && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl z-20 overflow-hidden"
+                  >
+                    {searchError ? (
+                      <div className="px-4 py-6 text-center text-sm text-red-500 flex flex-col items-center gap-2">
+                        <AlertTriangle className="w-5 h-5" />
+                        Error al buscar. Intenta de nuevo.
                       </div>
-                      <Plus className="w-5 h-5 text-gray-400 group-hover:text-[#1890FF]" />
-                    </button>
-                  ))}
-                </div>
-              )}
+                    ) : searchResults.length === 0 ? (
+                      <div className="px-4 py-6 text-center text-sm text-gray-500">
+                        No se encontraron resultados para "{searchTerm}"
+                      </div>
+                    ) : (
+                      searchResults.map((res: any) => {
+                        const alreadyAdded = assets.some(a => a.symbol === res.symbol);
+                        return (
+                          <button
+                            key={res.symbol}
+                            onClick={() => !alreadyAdded && addAsset(res.symbol, res.shortname || res.longname || res.symbol)}
+                            disabled={alreadyAdded}
+                            className={`w-full text-left px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between group transition-colors ${
+                              alreadyAdded ? "opacity-50 cursor-not-allowed bg-gray-50 dark:bg-slate-800" : "hover:bg-gray-50 dark:hover:bg-slate-800"
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden border border-gray-200 dark:border-gray-700 shrink-0">
+                                <img 
+                                  src={`https://logo.clearbit.com/${res.symbol.toLowerCase()}.com`}
+                                  alt=""
+                                  onError={(e) => { e.currentTarget.src = `https://ui-avatars.com/api/?name=${res.symbol}&background=1890FF&color=fff&size=36` }}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <div>
+                                <div className="font-bold text-gray-900 dark:text-white group-hover:text-[#1890FF] transition-colors text-sm">{res.symbol}</div>
+                                <div className="text-[11px] text-gray-500 line-clamp-1">{res.shortname || res.longname} • {res.exchDisp || res.exchange}</div>
+                              </div>
+                            </div>
+                            {alreadyAdded ? (
+                              <span className="text-[10px] font-bold text-green-500 bg-green-500/10 px-2 py-1 rounded-full">Agregado</span>
+                            ) : (
+                              <Plus className="w-5 h-5 text-gray-400 group-hover:text-[#1890FF] transition-colors shrink-0" />
+                            )}
+                          </button>
+                        );
+                      })
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Assets List */}
@@ -196,7 +279,7 @@ export default function PortfolioClient() {
               ) : assets.length === 0 ? (
                 <div className="p-12 text-center text-gray-500">
                   <TrendingUp className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                  <p>Aún no tienes activos en tu portafolio.</p>
+                  <p className="font-semibold">Aún no tienes activos en tu portafolio.</p>
                   <p className="text-sm mt-1">Busca una empresa arriba para agregarla.</p>
                 </div>
               ) : (

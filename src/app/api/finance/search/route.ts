@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import yahooFinance from "yahoo-finance2";
+import YahooFinance from "yahoo-finance2";
+
+const yf = new YahooFinance();
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -10,13 +12,17 @@ export async function GET(request: Request) {
   }
 
   try {
-    const results = (await yahooFinance.search(query, {
-      quotesCount: 5,
+    const results = (await yf.search(query, {
+      quotesCount: 8,
       newsCount: 0,
-      enableFuzzyQuery: true
     })) as any;
 
-    return NextResponse.json({ quotes: results.quotes });
+    // Filter only equities/ETFs with valid symbols
+    const filtered = (results.quotes || []).filter(
+      (q: any) => q.symbol && q.isYahooFinance && (q.quoteType === "EQUITY" || q.quoteType === "ETF")
+    );
+
+    return NextResponse.json({ quotes: filtered });
   } catch (error) {
     console.error("Yahoo Finance Search Error:", error);
     return NextResponse.json({ error: "Search failed" }, { status: 500 });

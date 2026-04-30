@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import yahooFinance from "yahoo-finance2";
+import YahooFinance from "yahoo-finance2";
+
+const yf = new YahooFinance();
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -16,7 +18,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const quotes = await yahooFinance.quote(symbols);
+    const quotes = await yf.quote(symbols);
     // quote returns an array if multiple, or a single object if one
     const quoteArray = Array.isArray(quotes) ? quotes : [quotes];
 
@@ -25,7 +27,7 @@ export async function GET(request: Request) {
       price: q.regularMarketPrice,
       change: q.regularMarketChange,
       changePercent: q.regularMarketChangePercent,
-      logo: `https://logo.clearbit.com/${q.symbol.toLowerCase()}.com` // Simple heuristic, works for many tech stocks, falls back on client if 404
+      logo: `https://logo.clearbit.com/${q.symbol.toLowerCase()}.com`
     }));
 
     return NextResponse.json(results);

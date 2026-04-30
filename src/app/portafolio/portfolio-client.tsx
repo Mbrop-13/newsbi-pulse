@@ -2,10 +2,19 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, TrendingUp, TrendingDown, Plus, Trash2, Calendar, BellRing, Briefcase, RefreshCw, X, AlertTriangle, ExternalLink, Bell, ChevronRight, BarChart3 } from "lucide-react";
+import { Search, TrendingUp, TrendingDown, Plus, Trash2, Calendar, BellRing, Briefcase, RefreshCw, X, AlertTriangle, ExternalLink, Bell, ChevronRight, BarChart3, ArrowUp, ArrowDown, Check } from "lucide-react";
 import { useAuthStore, useAuthModalStore } from "@/lib/stores/auth-store";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+
+interface PriceAlert {
+  id: string;
+  symbol: string;
+  target_price: number;
+  condition: "above" | "below";
+  is_active: boolean;
+  created_at: string;
+}
 
 interface PortfolioAsset {
   id: string;
@@ -34,6 +43,10 @@ export default function PortfolioClient() {
   const [searchError, setSearchError] = useState(false);
   const [addError, setAddError] = useState("");
   const [expandedAsset, setExpandedAsset] = useState<string | null>(null);
+  const [alerts, setAlerts] = useState<PriceAlert[]>([]);
+  const [alertModal, setAlertModal] = useState<{ open: boolean; symbol: string; price: number }>({ open: false, symbol: "", price: 0 });
+  const [alertForm, setAlertForm] = useState<{ targetPrice: string; condition: "above" | "below" }>({ targetPrice: "", condition: "above" });
+  const [alertSaving, setAlertSaving] = useState(false);
   const { user, isAuthenticated } = useAuthStore();
   const openModal = useAuthModalStore((s) => s.openModal);
   const supabase = createClient();
@@ -42,7 +55,14 @@ export default function PortfolioClient() {
   useEffect(() => {
     if (!isAuthenticated) { setLoading(false); return; }
     fetchPortfolio();
+    fetchAlerts();
   }, [isAuthenticated, user]);
+
+  const fetchAlerts = async () => {
+    if (!user) return;
+    const { data } = await supabase.from("price_alerts").select("*").eq("user_id", user.id).eq("is_active", true).order("created_at", { ascending: false });
+    if (data) setAlerts(data);
+  };
 
   const fetchPortfolio = async () => {
     if (!user) return;
@@ -54,10 +74,13 @@ export default function PortfolioClient() {
         const res = await fetch(`/api/finance/portfolio?symbols=${symbols}`);
         if (res.ok) {
           const liveData = await res.json();
-          setAssets(dbAssets.map(dbA => {
+          const enriched = dbAssets.map(dbA => {
             const live = liveData.find((l: any) => l.symbol === dbA.symbol) || {};
             return { ...dbA, price: live.price || 0, change: live.change || 0, changePercent: live.changePercent || 0, logo: getLogoUrl(dbA.symbol) };
-          }));
+          });
+          setAssets(enriched);
+          // Check price alerts with live data
+          checkAlerts(liveData);
         } else { setAssets(dbAssets.map(a => ({ ...a, logo: getLogoUrl(a.symbol) }))); }
       } catch { setAssets(dbAssets.map(a => ({ ...a, logo: getLogoUrl(a.symbol) }))); }
     } else { setAssets([]); }
@@ -112,6 +135,49 @@ export default function PortfolioClient() {
     if (!user) return;
     setAssets(prev => prev.filter(a => a.symbol !== symbol));
     await supabase.from("portfolios").delete().eq("user_id", user.id).eq("symbol", symbol);
+  };
+
+  const checkAlerts = async (liveData: any[]) => {
+    if (!user) return;
+    const { data: activeAlerts } = await supabase.from("price_alerts").select("*").eq("user_id", user.id).eq("is_active", true);
+    if (!activeAlerts || activeAlerts.length === 0) return;
+    for (const alert of activeAlerts) {
+      const live = liveData.find((l: any) => l.symbol === alert.symbol);
+      if (!live) continue;
+      const triggered = (alert.condition === "above" && live.price >= alert.target_price) || (alert.condition === "below" && live.price <= alert.target_price);
+      if (triggered) {
+        await supabase.from("price_alerts").update({ is_active: false }).eq("id", alert.id);
+        await supabase.from("notifications").insert({
+          user_id: user.id, type: "price_alert",
+          title: `🔔 Alerta: ${alert.symbol} ${alert.condition === "above" ? "superó" : "bajó de"} $${alert.target_price}`,
+          message: `${alert.symbol} ahora está en $${live.price.toFixed(2)}. Tu alerta de ${alert.condition === "above" ? "por encima de" : "por debajo de"} $${alert.target_price} se ha activado.`
+        });
+        setAlerts(prev => prev.filter(a => a.id !== alert.id));
+      }
+    }
+  };
+
+  const createAlert = async () => {
+    if (!user || !alertForm.targetPrice) return;
+    setAlertSaving(true);
+    const { error } = await supabase.from("price_alerts").insert({
+      user_id: user.id, symbol: alertModal.symbol,
+      target_price: parseFloat(alertForm.targetPrice), condition: alertForm.condition,
+    });
+    if (!error) {
+      setAlertModal({ open: false, symbol: "", price: 0 });
+      setAlertForm({ targetPrice: "", condition: "above" });
+      fetchAlerts();
+    } else {
+      setAddError(`Error al crear alerta: ${error.message}`);
+      setTimeout(() => setAddError(""), 4000);
+    }
+    setAlertSaving(false);
+  };
+
+  const deleteAlert = async (id: string) => {
+    setAlerts(prev => prev.filter(a => a.id !== id));
+    await supabase.from("price_alerts").delete().eq("id", id);
   };
 
   const totalValue = assets.reduce((sum, a) => sum + (a.price || 0), 0);
@@ -266,7 +332,7 @@ export default function PortfolioClient() {
                             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}>
                               <div className="px-5 pb-4 pt-1 border-t border-gray-100 dark:border-gray-800">
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3">
-                                  <button className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 text-xs font-semibold hover:bg-orange-100 dark:hover:bg-orange-500/20 transition-colors">
+                                  <button onClick={(e) => { e.stopPropagation(); setAlertModal({ open: true, symbol: asset.symbol, price: asset.price || 0 }); setAlertForm({ targetPrice: "", condition: "above" }); }} className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 text-xs font-semibold hover:bg-orange-100 dark:hover:bg-orange-500/20 transition-colors">
                                     <Bell className="w-3.5 h-3.5" /> Alerta de Precio
                                   </button>
                                   <Link href={`https://finance.yahoo.com/quote/${asset.symbol}`} target="_blank" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-semibold hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors">
@@ -311,16 +377,85 @@ export default function PortfolioClient() {
             <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center"><BellRing className="w-5 h-5 text-orange-500" /></div>
-                <div><h3 className="font-bold text-gray-900 dark:text-white">Alertas de Precio</h3><p className="text-[11px] text-gray-500">Notificaciones automáticas</p></div>
+                <div><h3 className="font-bold text-gray-900 dark:text-white">Alertas de Precio</h3><p className="text-[11px] text-gray-500">{alerts.length} activas</p></div>
               </div>
-              <div className="text-center py-6">
-                <p className="text-sm text-gray-500 mb-4">No tienes alertas configuradas.</p>
-                <button className="px-4 py-2 rounded-xl bg-gray-100 dark:bg-slate-800 text-sm font-semibold hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors text-gray-700 dark:text-gray-300">Crear Nueva Alerta</button>
-              </div>
+              {alerts.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-sm text-gray-500 mb-3">No tienes alertas configuradas.</p>
+                  <p className="text-xs text-gray-400">Abre un activo y presiona "Alerta de Precio".</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {alerts.map(alert => (
+                    <div key={alert.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-800 rounded-xl group">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center ${alert.condition === 'above' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+                          {alert.condition === 'above' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-gray-900 dark:text-white">{alert.symbol}</p>
+                          <p className="text-[10px] text-gray-500">{alert.condition === 'above' ? 'Por encima de' : 'Por debajo de'} ${alert.target_price}</p>
+                        </div>
+                      </div>
+                      <button onClick={() => deleteAlert(alert.id)} className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"><Trash2 className="w-3.5 h-3.5" /></button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Price Alert Modal */}
+      <AnimatePresence>
+        {alertModal.open && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" onClick={() => setAlertModal({ open: false, symbol: "", price: 0 })} />
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl z-50 p-6 border border-gray-200 dark:border-gray-800">
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center"><Bell className="w-5 h-5 text-orange-500" /></div>
+                  <div>
+                    <h3 className="font-bold text-gray-900 dark:text-white">Nueva Alerta</h3>
+                    <p className="text-xs text-gray-500">{alertModal.symbol} • Precio actual: ${alertModal.price.toFixed(2)}</p>
+                  </div>
+                </div>
+                <button onClick={() => setAlertModal({ open: false, symbol: "", price: 0 })} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={() => setAlertForm(f => ({ ...f, condition: "above" }))} className={`p-3 rounded-xl border-2 text-center transition-all ${alertForm.condition === 'above' ? 'border-green-500 bg-green-50 dark:bg-green-500/10' : 'border-gray-200 dark:border-gray-700'}`}>
+                    <ArrowUp className={`w-5 h-5 mx-auto mb-1 ${alertForm.condition === 'above' ? 'text-green-500' : 'text-gray-400'}`} />
+                    <p className="text-xs font-bold text-gray-900 dark:text-white">Por encima de</p>
+                  </button>
+                  <button onClick={() => setAlertForm(f => ({ ...f, condition: "below" }))} className={`p-3 rounded-xl border-2 text-center transition-all ${alertForm.condition === 'below' ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : 'border-gray-200 dark:border-gray-700'}`}>
+                    <ArrowDown className={`w-5 h-5 mx-auto mb-1 ${alertForm.condition === 'below' ? 'text-red-500' : 'text-gray-400'}`} />
+                    <p className="text-xs font-bold text-gray-900 dark:text-white">Por debajo de</p>
+                  </button>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Precio objetivo (USD)</label>
+                  <input type="number" step="0.01" value={alertForm.targetPrice} onChange={(e) => setAlertForm(f => ({ ...f, targetPrice: e.target.value }))} placeholder={alertModal.price.toFixed(2)} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white text-lg font-bold outline-none focus:border-[#1890FF] focus:ring-2 focus:ring-[#1890FF]/20 transition-all" />
+                </div>
+
+                {alertForm.targetPrice && (
+                  <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 text-xs text-blue-700 dark:text-blue-300">
+                    Te notificaremos cuando <strong>{alertModal.symbol}</strong> {alertForm.condition === 'above' ? 'suba por encima de' : 'baje por debajo de'} <strong>${parseFloat(alertForm.targetPrice).toFixed(2)}</strong>
+                  </div>
+                )}
+
+                <button onClick={createAlert} disabled={!alertForm.targetPrice || alertSaving} className="w-full py-3 rounded-xl bg-[#1890FF] text-white font-bold text-sm hover:opacity-90 disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#1890FF]/25">
+                  {alertSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                  {alertSaving ? 'Guardando...' : 'Crear Alerta'}
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

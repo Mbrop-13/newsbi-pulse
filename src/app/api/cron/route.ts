@@ -158,7 +158,7 @@ async function checkPriceAlerts(supabase: any): Promise<number> {
 
     if (!activeAlerts || activeAlerts.length === 0) return 0;
 
-    const symbolsToFetch = [...new Set(activeAlerts.map((a: any) => a.symbol))];
+    const symbolsToFetch = [...new Set(activeAlerts.map((a: any) => a.symbol))] as string[];
     const quotes = await yf.quote(symbolsToFetch);
     const quotesArray = Array.isArray(quotes) ? quotes : [quotes];
     

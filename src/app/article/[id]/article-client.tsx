@@ -26,12 +26,9 @@ import { ReadingListButton } from "@/components/reading-list-button";
 import ReactMarkdown from "react-markdown";
 import { ExpandableSources } from "@/components/expandable-sources";
 import { ShareDialog } from "@/components/share-dialog";
-import { TradingViewWidget } from "@/components/tradingview-widget";
-import { detectTicker } from "@/lib/detect-ticker";
 import { useAudioPlayerStore } from "@/lib/stores/audio-player-store";
 import { ArticleComments } from "@/components/article-comments";
 import { useViewStore } from "@/lib/stores/use-view-store";
-import { PredictionCard } from "@/components/prediction-card";
 import { useAuthStore, useAuthModalStore } from "@/lib/stores/auth-store";
 import { OnboardingModal } from "@/components/onboarding-modal";
 
@@ -40,13 +37,12 @@ export default function ArticlePage() {
   const [article, setArticle] = useState<NewsArticle | null>(null);
   const [loading, setLoading] = useState(true);
   const [relatedArticles, setRelatedArticles] = useState<NewsArticle[]>([]);
-  const [matchedPredictions, setMatchedPredictions] = useState<any[]>([]);
   const [shareOpen, setShareOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [imgError, setImgError] = useState(false);
   const supabase = createClient();
   const playArticle = useAudioPlayerStore((s) => s.playArticle);
-  const { articleWidth, showPredictions } = useViewStore();
+  const { articleWidth } = useViewStore();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   const widthClass = 
@@ -86,20 +82,7 @@ export default function ArticlePage() {
         
         if (related) setRelatedArticles(related);
 
-        // Fetch predictions matching article tags
-        if (articleData.tags && articleData.tags.length > 0) {
-          try {
-            const res = await fetch(`/api/predictions?status=active`);
-            const pData = await res.json();
-            if (pData.predictions) {
-              const articleTagsLower = articleData.tags.map((t: string) => t.toLowerCase());
-              const matched = pData.predictions.filter((p: any) =>
-                p.tags?.some((pt: string) => articleTagsLower.includes(pt.toLowerCase()))
-              );
-              setMatchedPredictions(matched);
-            }
-          } catch {}
-        }
+
       }
       
       setLoading(false);
@@ -163,7 +146,7 @@ export default function ArticlePage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className={`${showPredictions && matchedPredictions.length > 0 ? 'max-w-[1200px]' : widthClass} mx-auto px-4 pb-16 transition-all duration-300`}
+        className={`${widthClass} mx-auto px-4 pb-16 transition-all duration-300`}
       >
         {/* Back and Live badge */}
         <div className="flex items-center justify-between mb-8">
@@ -274,11 +257,7 @@ export default function ArticlePage() {
               </div>
             )}
 
-            {/* TradingView Widget (auto-detected) */}
-            {isAuthenticated && (() => {
-              const ticker = detectTicker(`${article.title} ${article.summary} ${article.enriched_content || article.content || ""}`);
-              return ticker ? <TradingViewWidget symbol={ticker.symbol} displayName={ticker.name} /> : null;
-            })()}
+
 
             {/* Article Content */}
             {isAuthenticated ? (
@@ -331,20 +310,7 @@ export default function ArticlePage() {
             )}
           </div>
 
-          {/* Right: Prediction Sidebar (sticky, next to image) */}
-          {showPredictions && matchedPredictions.length > 0 && (
-            <aside className="w-full lg:w-[340px] shrink-0">
-              <div className="lg:sticky lg:top-28 space-y-3">
-                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-2">
-                  <TrendingUp className="w-3.5 h-3.5 text-blue-500" />
-                  Mercados Relacionados
-                </h3>
-                {matchedPredictions.map((p: any) => (
-                  <PredictionCard key={p.id} prediction={p} compact />
-                ))}
-              </div>
-            </aside>
-          )}
+
         </div>
 
         {/* Tags */}

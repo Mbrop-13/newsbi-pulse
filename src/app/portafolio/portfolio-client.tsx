@@ -182,7 +182,7 @@ export default function PortfolioClient() {
     await supabase.from("price_alerts").delete().eq("id", id);
   };
 
-  const totalValue = assets.reduce((sum, a) => sum + (a.price || 0), 0);
+  const totalValue = assets.reduce((sum, a) => sum + ((a.price || 0) * (a.shares || 0)), 0);
   const totalChange = assets.length > 0 ? assets.reduce((sum, a) => sum + (a.changePercent || 0), 0) / assets.length : 0;
 
   if (!isAuthenticated) {
@@ -224,20 +224,31 @@ export default function PortfolioClient() {
 
         {/* Summary Cards */}
         {assets.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
-              <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Activos</p>
-              <p className="text-2xl font-black text-gray-900 dark:text-white">{assets.length}</p>
-            </div>
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
-              <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Último Precio</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            {/* Desktop: Two separate cards. Mobile: Hidden */}
+            <div className="hidden md:block bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
+              <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Valor Portafolio</p>
               <p className="text-2xl font-black text-gray-900 dark:text-white">${totalValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
             </div>
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5 col-span-2 md:col-span-1">
+            <div className="hidden md:block bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
               <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Cambio Promedio</p>
               <p className={`text-2xl font-black flex items-center gap-2 ${totalChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                 {totalChange >= 0 ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />} {totalChange.toFixed(2)}%
               </p>
+            </div>
+
+            {/* Mobile: One combined card */}
+            <div className="md:hidden bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5 flex justify-between items-center">
+              <div>
+                <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Valor Portafolio</p>
+                <p className="text-2xl font-black text-gray-900 dark:text-white">${totalValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Cambio Promedio</p>
+                <p className={`text-2xl font-black flex items-center justify-end gap-2 ${totalChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                  {totalChange >= 0 ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />} {totalChange.toFixed(2)}%
+                </p>
+              </div>
             </div>
           </div>
         )}
@@ -333,7 +344,7 @@ export default function PortfolioClient() {
                           {isExpanded && (
                             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}>
                               <div className="px-5 pb-4 pt-1 border-t border-gray-100 dark:border-gray-800">
-                                {/* Shares & Avg Price Row */}
+                                {/* Shares Row */}
                                 <div className="flex items-center gap-3 mt-3 mb-3">
                                   <div className="flex-1">
                                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Acciones</label>
@@ -345,25 +356,10 @@ export default function PortfolioClient() {
                                       }}
                                       className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-slate-800 text-sm font-bold outline-none focus:border-[#1890FF] text-gray-900 dark:text-white" />
                                   </div>
-                                  <div className="flex-1">
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Precio Promedio</label>
-                                    <input type="number" step="0.01" min="0" placeholder="0.00" defaultValue={asset.average_price || ""}
-                                      onBlur={(e) => {
-                                        const val = parseFloat(e.target.value) || 0;
-                                        supabase.from("portfolios").update({ average_price: val }).eq("id", asset.id);
-                                        setAssets(prev => prev.map(a => a.id === asset.id ? { ...a, average_price: val } : a));
-                                      }}
-                                      className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-slate-800 text-sm font-bold outline-none focus:border-[#1890FF] text-gray-900 dark:text-white" />
-                                  </div>
                                   {(asset.shares || 0) > 0 && (asset.price || 0) > 0 && (
                                     <div className="flex-1 text-right">
                                       <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Posición</label>
                                       <p className="text-sm font-black text-gray-900 dark:text-white">${((asset.shares || 0) * (asset.price || 0)).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                                      {(asset.average_price || 0) > 0 && (() => {
-                                        const pnl = ((asset.price || 0) - (asset.average_price || 0)) * (asset.shares || 0);
-                                        const pnlPct = ((asset.price || 0) / (asset.average_price || 1) - 1) * 100;
-                                        return <p className={`text-[10px] font-bold ${pnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>{pnl >= 0 ? '+' : ''}{pnl.toFixed(2)} ({pnlPct.toFixed(1)}%)</p>;
-                                      })()}
                                     </div>
                                   )}
                                 </div>

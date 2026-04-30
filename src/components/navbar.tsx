@@ -302,7 +302,11 @@ export function Navbar() {
 
 
             {/* Notification Bell */}
-            {mounted && isAuthenticated && <NotificationBell />}
+            {mounted && isAuthenticated && (
+              <div className="hidden md:block">
+                <NotificationBell />
+              </div>
+            )}
 
             {/* AI Chat Button */}
             <button
@@ -386,6 +390,10 @@ export function Navbar() {
                     </DropdownMenuItem>
                   </Link>
 
+                  <DropdownMenuSeparator className="bg-gray-100 dark:bg-gray-800 mx-1 md:hidden" />
+                  <div className="md:hidden px-1">
+                    <NotificationBell asMenuItem />
+                  </div>
                   <DropdownMenuSeparator className="bg-gray-100 dark:bg-gray-800 mx-1" />
                   {mounted && (
                     <DropdownMenuItem

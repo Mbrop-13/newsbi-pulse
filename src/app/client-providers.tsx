@@ -45,7 +45,11 @@ export function ClientLayoutProviders({
     <ThemeProvider>
       <TooltipProvider>
         <div className="flex flex-col min-h-screen">
-          {!isAdminPage && !isAssistantPage && <Navbar />}
+          {!isAdminPage && !isAssistantPage && (
+            <div className={pathname === "/mundo" ? "hidden md:block" : ""}>
+              <Navbar />
+            </div>
+          )}
           <main
             className={`flex-1 transition-all duration-300 ease-in-out ${
               isFullscreenPage ? "overflow-hidden" : isAdminPage ? "" : "pb-16 md:pb-0"

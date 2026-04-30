@@ -15,7 +15,7 @@ interface Notification {
   created_at: string;
 }
 
-export function NotificationBell() {
+export function NotificationBell({ asMenuItem }: { asMenuItem?: boolean }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const user = useAuthStore((s) => s.user);
@@ -72,16 +72,31 @@ export function NotificationBell() {
   return (
     <div className="relative">
       <button
-        onClick={() => {
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
           setIsOpen(!isOpen);
           if (!isOpen && unreadCount > 0) markAsRead();
         }}
-        className="relative flex items-center justify-center w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-[#1890FF] hover:bg-[#1890FF]/10 transition-colors focus:outline-none"
+        className={asMenuItem 
+          ? "w-full flex items-center justify-between py-2 px-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-sm transition-colors text-gray-900 dark:text-gray-100 cursor-pointer outline-none"
+          : "relative flex items-center justify-center w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-[#1890FF] hover:bg-[#1890FF]/10 transition-colors focus:outline-none"
+        }
         title="Notificaciones"
       >
-        <Bell className="w-4 h-4" />
+        {asMenuItem ? (
+          <div className="flex items-center">
+            <Bell className="w-4 h-4 mr-2 text-gray-500" />
+            <span className="font-medium">Notificaciones</span>
+          </div>
+        ) : (
+          <Bell className="w-4 h-4" />
+        )}
         {unreadCount > 0 && (
-          <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 rounded-full border-2 border-white dark:border-slate-900 text-[8px] font-bold text-white flex items-center justify-center animate-pulse">
+          <span className={asMenuItem
+            ? "px-1.5 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full animate-pulse"
+            : "absolute top-0 right-0 w-4 h-4 bg-red-500 rounded-full border-2 border-white dark:border-slate-900 text-[8px] font-bold text-white flex items-center justify-center animate-pulse"
+          }>
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
@@ -95,14 +110,22 @@ export function NotificationBell() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-40"
-              onClick={() => setIsOpen(false)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsOpen(false);
+              }}
             />
             <motion.div
               initial={{ opacity: 0, y: 10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.95 }}
               transition={{ duration: 0.15 }}
-              className="absolute right-0 mt-2 w-[320px] bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl z-50 overflow-hidden"
+              className={`z-50 overflow-hidden bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl ${
+                asMenuItem 
+                  ? "fixed inset-x-4 top-20 max-w-sm mx-auto"
+                  : "absolute right-0 mt-2 w-[320px]"
+              }`}
+              onClick={(e) => e.stopPropagation()}
             >
               <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50 dark:bg-slate-900">
                 <h3 className="text-sm font-bold text-gray-900 dark:text-white">Notificaciones</h3>

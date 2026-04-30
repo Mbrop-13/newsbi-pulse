@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 
 // Globe must be dynamically imported with SSR disabled because it relies on window/document.
 const GlobeMundo = dynamic(
@@ -33,6 +35,14 @@ export default function MundoPage() {
       <div className="absolute inset-0">
         {mounted ? <GlobeMundo /> : <GlobeFallback />}
       </div>
+      
+      {/* Mobile Back Button */}
+      <Link 
+        href="/" 
+        className="md:hidden absolute top-4 left-4 z-50 flex items-center justify-center w-10 h-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-full shadow-lg border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:text-[#1890FF] transition-colors"
+      >
+        <ArrowLeft className="w-5 h-5" />
+      </Link>
     </div>
   );
 }

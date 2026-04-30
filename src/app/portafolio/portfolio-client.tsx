@@ -195,10 +195,10 @@ export default function PortfolioClient() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0F172A] pt-[80px] pb-24">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0F172A] pt-[72px] md:pt-[80px] pb-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        {/* Header */}
-        <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+        {/* Header - hidden on mobile for immersive feel */}
+        <div className="hidden md:flex mb-8 flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <h1 className="text-3xl font-black text-gray-900 dark:text-white flex items-center gap-3">
               <Briefcase className="w-8 h-8 text-[#1890FF]" /> Portafolio

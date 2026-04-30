@@ -1,13 +1,19 @@
 import MarketClient from "./market-client";
 
-export async function generateMetadata({ params }: { params: { symbol: string } }) {
-  const symbol = params.symbol.toUpperCase();
+interface MarketPageProps {
+  params: Promise<{ symbol: string }>;
+}
+
+export async function generateMetadata({ params }: MarketPageProps) {
+  const { symbol } = await params;
+  const s = symbol.toUpperCase();
   return {
-    title: `${symbol} - Cotización y Gráficos en Vivo | Reclu`,
-    description: `Sigue el precio en tiempo real, gráficos avanzados y las últimas noticias de ${symbol} en Reclu.`,
+    title: `${s} - Cotización y Gráficos en Vivo | Reclu`,
+    description: `Sigue el precio en tiempo real, gráficos avanzados y las últimas noticias de ${s} en Reclu.`,
   };
 }
 
-export default function MarketPage({ params }: { params: { symbol: string } }) {
-  return <MarketClient symbol={params.symbol.toUpperCase()} />;
+export default async function MarketPage({ params }: MarketPageProps) {
+  const { symbol } = await params;
+  return <MarketClient symbol={symbol.toUpperCase()} />;
 }

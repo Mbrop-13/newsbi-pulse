@@ -18,7 +18,7 @@ import {
 
 const tabs = [
   { id: "home", href: "/", icon: Home, label: "Inicio" },
-  { id: "guardados", href: "/guardados", icon: Bookmark, label: "Guardados" },
+  { id: "mercados", href: "/inversiones", icon: TrendingUp, label: "Mercados" },
   { id: "ai", href: "/asistente", icon: Sparkles, label: "Asistente" },
   { id: "portafolio", href: "/portafolio", icon: Briefcase, label: "Portafolio" },
 ];

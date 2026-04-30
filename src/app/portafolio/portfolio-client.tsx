@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, TrendingUp, TrendingDown, Plus, Trash2, Calendar, BellRing, Briefcase, RefreshCw, X, AlertTriangle } from "lucide-react";
+import { Search, TrendingUp, TrendingDown, Plus, Trash2, Calendar, BellRing, Briefcase, RefreshCw, X, AlertTriangle, ExternalLink, Bell, ChevronRight, BarChart3 } from "lucide-react";
 import { useAuthStore, useAuthModalStore } from "@/lib/stores/auth-store";
 import { createClient } from "@/lib/supabase/client";
+import Link from "next/link";
 
 interface PortfolioAsset {
   id: string;
@@ -16,6 +17,14 @@ interface PortfolioAsset {
   logo?: string;
 }
 
+// Multiple logo sources for best coverage
+function getLogoUrl(symbol: string): string {
+  return `https://assets.parqet.com/logos/symbol/${symbol}`;
+}
+function getFallbackLogo(symbol: string): string {
+  return `https://ui-avatars.com/api/?name=${symbol}&background=1890FF&color=fff&bold=true&size=96`;
+}
+
 export default function PortfolioClient() {
   const [assets, setAssets] = useState<PortfolioAsset[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,115 +32,90 @@ export default function PortfolioClient() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState(false);
+  const [addError, setAddError] = useState("");
+  const [expandedAsset, setExpandedAsset] = useState<string | null>(null);
   const { user, isAuthenticated } = useAuthStore();
   const openModal = useAuthModalStore((s) => s.openModal);
   const supabase = createClient();
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      setLoading(false);
-      return;
-    }
+    if (!isAuthenticated) { setLoading(false); return; }
     fetchPortfolio();
   }, [isAuthenticated, user]);
 
   const fetchPortfolio = async () => {
     if (!user) return;
     setLoading(true);
-    
-    const { data: dbAssets } = await supabase
-      .from("portfolios")
-      .select("*")
-      .eq("user_id", user.id);
-
+    const { data: dbAssets } = await supabase.from("portfolios").select("*").eq("user_id", user.id);
     if (dbAssets && dbAssets.length > 0) {
       const symbols = dbAssets.map(a => a.symbol).join(",");
       try {
         const res = await fetch(`/api/finance/portfolio?symbols=${symbols}`);
         if (res.ok) {
           const liveData = await res.json();
-          const enriched = dbAssets.map(dbA => {
+          setAssets(dbAssets.map(dbA => {
             const live = liveData.find((l: any) => l.symbol === dbA.symbol) || {};
-            return {
-              ...dbA,
-              price: live.price || 0,
-              change: live.change || 0,
-              changePercent: live.changePercent || 0,
-              logo: live.logo || `https://logo.clearbit.com/${dbA.symbol.toLowerCase()}.com`
-            };
-          });
-          setAssets(enriched);
-        } else {
-          setAssets(dbAssets);
-        }
-      } catch (e) {
-        console.error(e);
-        setAssets(dbAssets);
-      }
-    } else {
-      setAssets([]);
-    }
+            return { ...dbA, price: live.price || 0, change: live.change || 0, changePercent: live.changePercent || 0, logo: getLogoUrl(dbA.symbol) };
+          }));
+        } else { setAssets(dbAssets.map(a => ({ ...a, logo: getLogoUrl(a.symbol) }))); }
+      } catch { setAssets(dbAssets.map(a => ({ ...a, logo: getLogoUrl(a.symbol) }))); }
+    } else { setAssets([]); }
     setLoading(false);
   };
 
-  // Debounced search
   const handleSearch = useCallback((term: string) => {
     setSearchTerm(term);
     setSearchError(false);
-    
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    
-    if (term.length < 2) {
-      setSearchResults([]);
-      setIsSearching(false);
-      return;
-    }
-    
+    if (term.length < 2) { setSearchResults([]); setIsSearching(false); return; }
     setIsSearching(true);
     debounceRef.current = setTimeout(async () => {
       try {
         const res = await fetch(`/api/finance/search?q=${encodeURIComponent(term)}`);
-        if (!res.ok) throw new Error("Search API failed");
+        if (!res.ok) throw new Error();
         const data = await res.json();
         setSearchResults(data.quotes || []);
-        setSearchError(false);
-      } catch (e) {
-        console.error(e);
-        setSearchResults([]);
-        setSearchError(true);
-      }
+      } catch { setSearchResults([]); setSearchError(true); }
       setIsSearching(false);
     }, 400);
   }, []);
 
   const addAsset = async (symbol: string, companyName: string) => {
     if (!user) return;
-    const { error } = await supabase.from("portfolios").insert({
-      user_id: user.id,
-      symbol,
-      company_name: companyName,
-    });
-    if (!error) {
-      setSearchTerm("");
-      setSearchResults([]);
-      fetchPortfolio();
-    } else {
-      console.error(error);
+    setAddError("");
+    // Optimistic: add immediately to UI
+    const tempAsset: PortfolioAsset = { id: `temp-${Date.now()}`, symbol, company_name: companyName, price: 0, change: 0, changePercent: 0, logo: getLogoUrl(symbol) };
+    setAssets(prev => [tempAsset, ...prev]);
+    setSearchTerm("");
+    setSearchResults([]);
+
+    const { error } = await supabase.from("portfolios").insert({ user_id: user.id, symbol, company_name: companyName });
+    if (error) {
+      // Revert optimistic add
+      setAssets(prev => prev.filter(a => a.id !== tempAsset.id));
+      if (error.code === "42P01") {
+        setAddError("La tabla 'portfolios' no existe. Ejecuta el SQL de migración en Supabase.");
+      } else if (error.code === "23505") {
+        setAddError(`${symbol} ya está en tu portafolio.`);
+      } else {
+        setAddError(`Error al agregar ${symbol}: ${error.message}`);
+      }
+      setTimeout(() => setAddError(""), 5000);
+      return;
     }
+    // Refresh with real data
+    fetchPortfolio();
   };
 
   const removeAsset = async (symbol: string) => {
     if (!user) return;
+    setAssets(prev => prev.filter(a => a.symbol !== symbol));
     await supabase.from("portfolios").delete().eq("user_id", user.id).eq("symbol", symbol);
-    setAssets(assets.filter(a => a.symbol !== symbol));
   };
 
-  // Calculate total portfolio value
   const totalValue = assets.reduce((sum, a) => sum + (a.price || 0), 0);
-  const totalChange = assets.length > 0
-    ? assets.reduce((sum, a) => sum + (a.changePercent || 0), 0) / assets.length
-    : 0;
+  const totalChange = assets.length > 0 ? assets.reduce((sum, a) => sum + (a.changePercent || 0), 0) / assets.length : 0;
 
   if (!isAuthenticated) {
     return (
@@ -139,9 +123,7 @@ export default function PortfolioClient() {
         <Briefcase className="w-16 h-16 text-[#1890FF] mb-6 opacity-20" />
         <h1 className="text-3xl font-black text-gray-900 dark:text-white mb-4">Tu Portafolio de Inversión</h1>
         <p className="text-gray-500 max-w-md mx-auto mb-8">Únete a Reclu para crear tu portafolio personalizado, recibir alertas de precio y obtener un calendario de eventos impulsado por IA.</p>
-        <button onClick={() => openModal("register")} className="px-8 py-3 rounded-full bg-[#1890FF] text-white font-bold hover:opacity-90 transition-opacity shadow-lg shadow-[#1890FF]/25">
-          Crear cuenta gratis
-        </button>
+        <button onClick={() => openModal("register")} className="px-8 py-3 rounded-full bg-[#1890FF] text-white font-bold hover:opacity-90 transition-opacity shadow-lg shadow-[#1890FF]/25">Crear cuenta gratis</button>
       </div>
     );
   }
@@ -149,21 +131,28 @@ export default function PortfolioClient() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0F172A] pt-[80px] pb-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        
         {/* Header */}
         <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <h1 className="text-3xl font-black text-gray-900 dark:text-white flex items-center gap-3">
-              <Briefcase className="w-8 h-8 text-[#1890FF]" />
-              Portafolio
+              <Briefcase className="w-8 h-8 text-[#1890FF]" /> Portafolio
             </h1>
             <p className="text-sm text-gray-500 mt-2">Monitorea tus activos y mantente un paso adelante con Reclu IA.</p>
           </div>
           <button onClick={fetchPortfolio} disabled={loading} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-800 text-sm font-semibold hover:text-[#1890FF] transition-colors disabled:opacity-50">
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            Actualizar
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Actualizar
           </button>
         </div>
+
+        {/* Error Toast */}
+        <AnimatePresence>
+          {addError && (
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400 text-sm font-medium flex items-center gap-3">
+              <AlertTriangle className="w-5 h-5 shrink-0" /> {addError}
+              <button onClick={() => setAddError("")} className="ml-auto"><X className="w-4 h-4" /></button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Summary Cards */}
         {assets.length > 0 && (
@@ -173,92 +162,54 @@ export default function PortfolioClient() {
               <p className="text-2xl font-black text-gray-900 dark:text-white">{assets.length}</p>
             </div>
             <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
-              <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Valor Total</p>
+              <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Último Precio</p>
               <p className="text-2xl font-black text-gray-900 dark:text-white">${totalValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
             </div>
             <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5 col-span-2 md:col-span-1">
               <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Cambio Promedio</p>
               <p className={`text-2xl font-black flex items-center gap-2 ${totalChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                {totalChange >= 0 ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
-                {totalChange.toFixed(2)}%
+                {totalChange >= 0 ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />} {totalChange.toFixed(2)}%
               </p>
             </div>
           </div>
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Main Portfolio Column */}
+          {/* Main Column */}
           <div className="lg:col-span-2 space-y-6">
-            
-            {/* Search and Add */}
+            {/* Search */}
             <div className="relative">
               <div className="flex items-center bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-gray-800 px-4 py-3 shadow-sm focus-within:ring-2 focus-within:ring-[#1890FF]/20 focus-within:border-[#1890FF] transition-all">
                 <Search className="w-5 h-5 text-gray-400 mr-3" />
-                <input
-                  type="text"
-                  placeholder="Buscar símbolo o empresa (ej. AAPL, Tesla, MSFT)..."
-                  value={searchTerm}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  className="flex-1 bg-transparent text-sm outline-none text-gray-900 dark:text-white placeholder:text-gray-400"
-                />
+                <input type="text" placeholder="Buscar símbolo o empresa (ej. AAPL, Tesla, MSFT)..." value={searchTerm} onChange={(e) => handleSearch(e.target.value)} className="flex-1 bg-transparent text-sm outline-none text-gray-900 dark:text-white placeholder:text-gray-400" />
                 {isSearching && <RefreshCw className="w-4 h-4 animate-spin text-[#1890FF] ml-2" />}
                 {searchTerm.length > 0 && !isSearching && (
-                  <button onClick={() => { setSearchTerm(""); setSearchResults([]); }} className="ml-2 text-gray-400 hover:text-gray-600">
-                    <X className="w-4 h-4" />
-                  </button>
+                  <button onClick={() => { setSearchTerm(""); setSearchResults([]); }} className="ml-2 text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
                 )}
               </div>
-              
-              {/* Search Results Dropdown */}
               <AnimatePresence>
                 {(searchResults.length > 0 || (searchTerm.length >= 2 && !isSearching && searchResults.length === 0)) && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -4 }}
-                    className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl z-20 overflow-hidden"
-                  >
+                  <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl z-20 overflow-hidden max-h-[320px] overflow-y-auto">
                     {searchError ? (
-                      <div className="px-4 py-6 text-center text-sm text-red-500 flex flex-col items-center gap-2">
-                        <AlertTriangle className="w-5 h-5" />
-                        Error al buscar. Intenta de nuevo.
-                      </div>
+                      <div className="px-4 py-6 text-center text-sm text-red-500 flex flex-col items-center gap-2"><AlertTriangle className="w-5 h-5" />Error al buscar.</div>
                     ) : searchResults.length === 0 ? (
-                      <div className="px-4 py-6 text-center text-sm text-gray-500">
-                        No se encontraron resultados para "{searchTerm}"
-                      </div>
+                      <div className="px-4 py-6 text-center text-sm text-gray-500">No se encontraron resultados para &quot;{searchTerm}&quot;</div>
                     ) : (
                       searchResults.map((res: any) => {
                         const alreadyAdded = assets.some(a => a.symbol === res.symbol);
                         return (
-                          <button
-                            key={res.symbol}
-                            onClick={() => !alreadyAdded && addAsset(res.symbol, res.shortname || res.longname || res.symbol)}
-                            disabled={alreadyAdded}
-                            className={`w-full text-left px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between group transition-colors ${
-                              alreadyAdded ? "opacity-50 cursor-not-allowed bg-gray-50 dark:bg-slate-800" : "hover:bg-gray-50 dark:hover:bg-slate-800"
-                            }`}
-                          >
+                          <button key={res.symbol} onClick={() => !alreadyAdded && addAsset(res.symbol, res.shortname || res.longname || res.symbol)} disabled={alreadyAdded}
+                            className={`w-full text-left px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between group transition-colors ${alreadyAdded ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-50 dark:hover:bg-slate-800"}`}>
                             <div className="flex items-center gap-3">
                               <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden border border-gray-200 dark:border-gray-700 shrink-0">
-                                <img 
-                                  src={`https://logo.clearbit.com/${res.symbol.toLowerCase()}.com`}
-                                  alt=""
-                                  onError={(e) => { e.currentTarget.src = `https://ui-avatars.com/api/?name=${res.symbol}&background=1890FF&color=fff&size=36` }}
-                                  className="w-full h-full object-cover"
-                                />
+                                <img src={getLogoUrl(res.symbol)} alt="" onError={(e) => { e.currentTarget.src = getFallbackLogo(res.symbol); }} className="w-full h-full object-contain" />
                               </div>
                               <div>
                                 <div className="font-bold text-gray-900 dark:text-white group-hover:text-[#1890FF] transition-colors text-sm">{res.symbol}</div>
                                 <div className="text-[11px] text-gray-500 line-clamp-1">{res.shortname || res.longname} • {res.exchDisp || res.exchange}</div>
                               </div>
                             </div>
-                            {alreadyAdded ? (
-                              <span className="text-[10px] font-bold text-green-500 bg-green-500/10 px-2 py-1 rounded-full">Agregado</span>
-                            ) : (
-                              <Plus className="w-5 h-5 text-gray-400 group-hover:text-[#1890FF] transition-colors shrink-0" />
-                            )}
+                            {alreadyAdded ? (<span className="text-[10px] font-bold text-green-500 bg-green-500/10 px-2 py-1 rounded-full">✓ Agregado</span>) : (<Plus className="w-5 h-5 text-gray-400 group-hover:text-[#1890FF] shrink-0" />)}
                           </button>
                         );
                       })
@@ -269,58 +220,70 @@ export default function PortfolioClient() {
             </div>
 
             {/* Assets List */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-slate-900/50 flex items-center justify-between">
-                <h2 className="font-bold text-gray-900 dark:text-white">Tus Activos ({assets.length})</h2>
-              </div>
-              
+            <div className="space-y-3">
+              <h2 className="font-bold text-gray-900 dark:text-white text-lg">Tus Activos ({assets.length})</h2>
               {loading && assets.length === 0 ? (
-                <div className="p-12 flex justify-center"><RefreshCw className="w-8 h-8 animate-spin text-[#1890FF]" /></div>
+                <div className="p-12 flex justify-center bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-gray-800"><RefreshCw className="w-8 h-8 animate-spin text-[#1890FF]" /></div>
               ) : assets.length === 0 ? (
-                <div className="p-12 text-center text-gray-500">
+                <div className="p-12 text-center text-gray-500 bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-gray-800">
                   <TrendingUp className="w-12 h-12 mx-auto mb-4 opacity-20" />
                   <p className="font-semibold">Aún no tienes activos en tu portafolio.</p>
                   <p className="text-sm mt-1">Busca una empresa arriba para agregarla.</p>
                 </div>
               ) : (
-                <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                <div className="space-y-3">
                   {assets.map((asset) => {
                     const isPositive = (asset.changePercent || 0) >= 0;
+                    const isExpanded = expandedAsset === asset.symbol;
                     return (
-                      <div key={asset.id} className="p-4 sm:px-6 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden shrink-0 border border-gray-200 dark:border-gray-700">
-                            <img 
-                              src={asset.logo || `https://logo.clearbit.com/${asset.company_name?.split(' ')[0].toLowerCase()}.com`} 
-                              alt={asset.symbol}
-                              onError={(e) => { e.currentTarget.src = `https://ui-avatars.com/api/?name=${asset.symbol}&background=random&color=fff` }}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div>
-                            <h3 className="font-bold text-gray-900 dark:text-white text-base leading-tight">{asset.symbol}</h3>
-                            <p className="text-xs text-gray-500 line-clamp-1 max-w-[150px] sm:max-w-xs">{asset.company_name}</p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-6">
-                          <div className="text-right">
-                            <div className="font-bold text-gray-900 dark:text-white">${asset.price?.toFixed(2) || "0.00"}</div>
-                            <div className={`text-xs font-semibold flex items-center justify-end gap-1 ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
-                              {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                              {asset.changePercent?.toFixed(2)}%
+                      <motion.div key={asset.id} layout className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden hover:border-[#1890FF]/30 transition-colors">
+                        {/* Main Row */}
+                        <button onClick={() => setExpandedAsset(isExpanded ? null : asset.symbol)} className="w-full p-4 sm:px-5 flex items-center justify-between text-left">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden shrink-0 border border-gray-200 dark:border-gray-700">
+                              <img src={asset.logo || getLogoUrl(asset.symbol)} alt={asset.symbol} onError={(e) => { e.currentTarget.src = getFallbackLogo(asset.symbol); }} className="w-full h-full object-contain" />
+                            </div>
+                            <div>
+                              <h3 className="font-bold text-gray-900 dark:text-white text-base leading-tight">{asset.symbol}</h3>
+                              <p className="text-xs text-gray-500 line-clamp-1 max-w-[150px] sm:max-w-xs">{asset.company_name}</p>
                             </div>
                           </div>
-                          
-                          <button 
-                            onClick={() => removeAsset(asset.symbol)}
-                            className="w-8 h-8 rounded-full hover:bg-red-500/10 flex items-center justify-center text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                            title="Eliminar"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
+                          <div className="flex items-center gap-4">
+                            <div className="text-right">
+                              <div className="font-bold text-gray-900 dark:text-white tabular-nums">${asset.price?.toFixed(2) || "0.00"}</div>
+                              <div className={`text-xs font-semibold flex items-center justify-end gap-1 ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                                {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                                {isPositive ? "+" : ""}{asset.changePercent?.toFixed(2)}%
+                              </div>
+                            </div>
+                            <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                          </div>
+                        </button>
+
+                        {/* Expanded Actions Panel */}
+                        <AnimatePresence>
+                          {isExpanded && (
+                            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}>
+                              <div className="px-5 pb-4 pt-1 border-t border-gray-100 dark:border-gray-800">
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3">
+                                  <button className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 text-xs font-semibold hover:bg-orange-100 dark:hover:bg-orange-500/20 transition-colors">
+                                    <Bell className="w-3.5 h-3.5" /> Alerta de Precio
+                                  </button>
+                                  <Link href={`https://finance.yahoo.com/quote/${asset.symbol}`} target="_blank" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-semibold hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors">
+                                    <BarChart3 className="w-3.5 h-3.5" /> Ver Mercado
+                                  </Link>
+                                  <Link href={`/?tag=${asset.symbol}`} className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 text-xs font-semibold hover:bg-purple-100 dark:hover:bg-purple-500/20 transition-colors">
+                                    <ExternalLink className="w-3.5 h-3.5" /> Noticias
+                                  </Link>
+                                  <button onClick={() => removeAsset(asset.symbol)} className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-500 text-xs font-semibold hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors">
+                                    <Trash2 className="w-3.5 h-3.5" /> Eliminar
+                                  </button>
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </motion.div>
                     );
                   })}
                 </div>
@@ -328,63 +291,34 @@ export default function PortfolioClient() {
             </div>
           </div>
 
-          {/* Right Column: AI Calendar & Alerts */}
+          {/* Right Column */}
           <div className="space-y-6">
-            
             <div className="bg-gradient-to-br from-[#1890FF]/10 to-indigo-500/10 rounded-2xl border border-[#1890FF]/20 p-6 relative overflow-hidden">
               <div className="absolute -right-4 -top-4 w-24 h-24 bg-[#1890FF]/20 blur-3xl rounded-full" />
-              
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-[#1890FF] flex items-center justify-center shadow-lg shadow-[#1890FF]/30">
-                  <Calendar className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-gray-900 dark:text-white">Calendario IA</h3>
-                  <p className="text-[11px] text-[#1890FF] font-semibold">Generado por Asistente Reclu</p>
-                </div>
+                <div className="w-10 h-10 rounded-xl bg-[#1890FF] flex items-center justify-center shadow-lg shadow-[#1890FF]/30"><Calendar className="w-5 h-5 text-white" /></div>
+                <div><h3 className="font-bold text-gray-900 dark:text-white">Calendario IA</h3><p className="text-[11px] text-[#1890FF] font-semibold">Generado por Asistente Reclu</p></div>
               </div>
-              
               <div className="space-y-3">
-                {[
-                  { date: "Hoy, 14:00", title: "Reporte IPC EE.UU.", impact: "high" },
-                  { date: "Mañana", title: "Earnings de AAPL", impact: "high" },
-                  { date: "Jueves", title: "Decisión de Tasas FED", impact: "high" },
-                ].map((event, i) => (
+                {[{ date: "Hoy, 14:00", title: "Reporte IPC EE.UU." }, { date: "Mañana", title: "Earnings de AAPL" }, { date: "Jueves", title: "Decisión de Tasas FED" }].map((event, i) => (
                   <div key={i} className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-md rounded-xl p-3 border border-white/20 dark:border-white/5 flex items-start gap-3">
                     <div className="w-2 h-2 rounded-full mt-1.5 shrink-0 bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
-                    <div>
-                      <h4 className="text-sm font-bold text-gray-900 dark:text-white leading-tight">{event.title}</h4>
-                      <p className="text-[11px] text-gray-500 mt-0.5">{event.date}</p>
-                    </div>
+                    <div><h4 className="text-sm font-bold text-gray-900 dark:text-white leading-tight">{event.title}</h4><p className="text-[11px] text-gray-500 mt-0.5">{event.date}</p></div>
                   </div>
                 ))}
               </div>
-              <button className="w-full mt-4 text-[11px] font-bold text-[#1890FF] hover:underline text-center">
-                Ver calendario completo
-              </button>
             </div>
-
             <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center">
-                  <BellRing className="w-5 h-5 text-orange-500" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-gray-900 dark:text-white">Alertas de Precio</h3>
-                  <p className="text-[11px] text-gray-500">Notificaciones automáticas</p>
-                </div>
+                <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center"><BellRing className="w-5 h-5 text-orange-500" /></div>
+                <div><h3 className="font-bold text-gray-900 dark:text-white">Alertas de Precio</h3><p className="text-[11px] text-gray-500">Notificaciones automáticas</p></div>
               </div>
-              
               <div className="text-center py-6">
                 <p className="text-sm text-gray-500 mb-4">No tienes alertas configuradas.</p>
-                <button className="px-4 py-2 rounded-xl bg-gray-100 dark:bg-slate-800 text-sm font-semibold hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors text-gray-700 dark:text-gray-300">
-                  Crear Nueva Alerta
-                </button>
+                <button className="px-4 py-2 rounded-xl bg-gray-100 dark:bg-slate-800 text-sm font-semibold hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors text-gray-700 dark:text-gray-300">Crear Nueva Alerta</button>
               </div>
             </div>
-
           </div>
-
         </div>
       </div>
     </div>

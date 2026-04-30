@@ -32,11 +32,11 @@ CREATE POLICY "Users can create their own tickets"
 -- Admins can view and manage all tickets
 CREATE POLICY "Admins can view all tickets"
     ON support_tickets FOR SELECT
-    USING (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'));
+    USING (EXISTS (SELECT 1 FROM admin_users WHERE admin_users.user_id = auth.uid() AND admin_users.role = 'admin'));
 
 CREATE POLICY "Admins can update tickets"
     ON support_tickets FOR UPDATE
-    USING (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'));
+    USING (EXISTS (SELECT 1 FROM admin_users WHERE admin_users.user_id = auth.uid() AND admin_users.role = 'admin'));
 
 
 -- RLS Policies for support_messages
@@ -53,11 +53,11 @@ CREATE POLICY "Users can insert messages for their tickets"
 -- Admins can view and insert messages to any ticket
 CREATE POLICY "Admins can view all messages"
     ON support_messages FOR SELECT
-    USING (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'));
+    USING (EXISTS (SELECT 1 FROM admin_users WHERE admin_users.user_id = auth.uid() AND admin_users.role = 'admin'));
 
 CREATE POLICY "Admins can insert messages to any ticket"
     ON support_messages FOR INSERT
-    WITH CHECK (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin') AND is_admin);
+    WITH CHECK (EXISTS (SELECT 1 FROM admin_users WHERE admin_users.user_id = auth.uid() AND admin_users.role = 'admin') AND is_admin);
 
 -- Realtime publication
 ALTER PUBLICATION supabase_realtime ADD TABLE support_tickets, support_messages;

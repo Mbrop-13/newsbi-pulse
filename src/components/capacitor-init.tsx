@@ -52,7 +52,9 @@ export function CapacitorInit() {
 
         const permResult = await PushNotifications.requestPermissions();
         if (permResult.receive === "granted") {
-          await PushNotifications.register();
+          // TEMPORARILY DISABLED: Causes app crash if google-services.json is missing
+          // await PushNotifications.register();
+          console.log("[Reclu] Push permissions granted, but registration is disabled pending Firebase setup.");
         }
 
         PushNotifications.addListener("registration", (token) => {

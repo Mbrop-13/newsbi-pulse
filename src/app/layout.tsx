@@ -10,6 +10,7 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://reclu.vercel.app"),
   title: "Reclu | Noticias y Análisis IA",
   description: "Plataforma de noticias impulsada por Inteligencia Artificial y agentes autónomos.",
   keywords: [

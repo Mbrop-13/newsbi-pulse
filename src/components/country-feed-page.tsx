@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, MessageSquare, RefreshCw, ArrowRight, TrendingUp, X, Search, Flame, Eye } from "lucide-react";
+import { Loader2, MessageSquare, RefreshCw, ArrowRight, TrendingUp, X, Search, Flame, Eye, Briefcase } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { NewsCard } from "@/components/news-card";
@@ -25,7 +25,7 @@ import {
 
 interface Props {
   initialFeed?: string;
-  initialFilter?: 'tendencia' | 'breaking' | 'nuevo';
+  initialFilter?: 'tendencia' | 'portafolio';
   searchTag?: string;
 }
 
@@ -37,7 +37,11 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [visibleCount, setVisibleCount] = useState(25);
-  const [filterMode, setFilterMode] = useState<'tendencia' | 'breaking' | 'nuevo' | null>(initialFilter || null);
+  const [filterMode, setFilterMode] = useState<'tendencia' | 'portafolio' | null>(initialFilter || null);
+  const [portfolioSymbols, setPortfolioSymbols] = useState<string[]>([]);
+  const [portfolioLoaded, setPortfolioLoaded] = useState(false);
+  const currentUser = useAuthStore(s => s.user);
+  const isAuthenticated = useAuthStore(s => s.isAuthenticated);
   const { selectedSources, setAvailableSources, toggleSource } = useFilterStore();
   const [tagSearch, setTagSearch] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>(
@@ -103,6 +107,17 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
     return () => { supabase.removeChannel(channel); };
   }, [supabase]);
 
+  // Fetch portfolio symbols for the "Portafolio" filter
+  useEffect(() => {
+    const fetchPortfolio = async () => {
+      if (!currentUser) { setPortfolioLoaded(true); return; }
+      const { data } = await supabase.from("portfolios").select("symbol").eq("user_id", currentUser.id);
+      if (data) setPortfolioSymbols(data.map(d => d.symbol));
+      setPortfolioLoaded(true);
+    };
+    fetchPortfolio();
+  }, [currentUser, supabase]);
+
   // Filter by feed_tag / searchTag
   const feedArticles = useMemo(() => {
     // When on the main "Principal" tab, show ALL articles 
@@ -161,9 +176,19 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
         Array.isArray(a.tags) && a.tags.some((t: string) => lowerSelected.includes(t.toLowerCase()))
       );
     }
+
+    // 3. Filter by Portfolio symbols when in portfolio mode
+    if (filterMode === 'portafolio' && portfolioSymbols.length > 0) {
+      const lowerSymbols = portfolioSymbols.map(s => s.toLowerCase());
+      result = result.filter(a => {
+        const tagsMatch = Array.isArray(a.tags) && a.tags.some((t: string) => lowerSymbols.includes(t.toLowerCase()));
+        const titleMatch = lowerSymbols.some(s => (a.title || '').toLowerCase().includes(s));
+        return tagsMatch || titleMatch;
+      });
+    }
     
     return result;
-  }, [feedArticles, selectedSources, selectedTags]);
+  }, [feedArticles, selectedSources, selectedTags, filterMode, portfolioSymbols]);
 
   const sortedArticles = useMemo(() => {
     return [...filteredFeedArticles].sort((a, b) => {
@@ -173,10 +198,8 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
         if (aViews !== bViews) return bViews - aViews;
         return new Date(b.published_at || 0).getTime() - new Date(a.published_at || 0).getTime();
       }
-      if (filterMode === 'breaking') {
-        const aRel = a.relevance_score || 0;
-        const bRel = b.relevance_score || 0;
-        if (aRel !== bRel) return bRel - aRel;
+      if (filterMode === 'portafolio') {
+        // For portfolio mode, just sort by date
         return new Date(b.published_at || 0).getTime() - new Date(a.published_at || 0).getTime();
       }
       return new Date(b.published_at || 0).getTime() - new Date(a.published_at || 0).getTime();
@@ -285,20 +308,13 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
                 Tendencia
               </button>
               <button 
-                onClick={() => { triggerTransition(); setFilterMode('breaking'); router.push('/breaking'); }}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors shrink-0 ${
-                  filterMode === 'breaking' ? 'bg-blue-50 dark:bg-[#1890FF]/10 text-[#1890FF]' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5'
+                onClick={() => { triggerTransition(); setFilterMode('portafolio'); }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors shrink-0 ${
+                  filterMode === 'portafolio' ? 'bg-blue-50 dark:bg-[#1890FF]/10 text-[#1890FF]' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5'
                 }`}
               >
-                Breaking
-              </button>
-              <button 
-                onClick={() => { triggerTransition(); setFilterMode('nuevo'); router.push('/nuevo'); }}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors shrink-0 ${
-                  filterMode === 'nuevo' ? 'bg-blue-50 dark:bg-[#1890FF]/10 text-[#1890FF]' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5'
-                }`}
-              >
-                Nuevo
+                {filterMode === 'portafolio' && <Briefcase className="w-3.5 h-3.5" />}
+                Portafolio
               </button>
 
               {/* Divider */}
@@ -452,6 +468,21 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
                   <NewsCardSkeleton index={4} className="h-[280px]" />
                   <NewsCardSkeleton index={5} className="h-[280px]" />
                 </div>
+              </div>
+            ) : filterMode === 'portafolio' && (!isAuthenticated || portfolioSymbols.length === 0) ? (
+              <div className="py-24 text-center w-full bg-white dark:bg-white/[0.02] rounded-3xl border border-gray-200/50 dark:border-white/5">
+                <Briefcase className="w-16 h-16 text-[#1890FF]/20 mx-auto mb-4" />
+                <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">
+                  {!isAuthenticated ? "Inicia sesión para ver tu portafolio" : "Comienza a seguir tus acciones"}
+                </h3>
+                <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto text-sm mb-6">
+                  {!isAuthenticated 
+                    ? "Regístrate o inicia sesión para agregar acciones a tu portafolio y ver las noticias más relevantes para tus inversiones."
+                    : "Agrega acciones a tu portafolio y aquí aparecerán automáticamente las noticias que afectan a tus inversiones."}
+                </p>
+                <Link href="/portafolio" className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#1890FF] text-white font-bold text-sm hover:opacity-90 transition-opacity shadow-lg shadow-[#1890FF]/25">
+                  <Briefcase className="w-4 h-4" /> Ir a Mi Portafolio
+                </Link>
               </div>
             ) : visibleArticles.length > 0 ? (
               <div className={`flex flex-col ${gapClass}`}>

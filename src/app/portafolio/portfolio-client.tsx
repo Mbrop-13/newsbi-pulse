@@ -20,6 +20,8 @@ interface PortfolioAsset {
   id: string;
   symbol: string;
   company_name: string;
+  shares?: number;
+  average_price?: number;
   price?: number;
   change?: number;
   changePercent?: number;
@@ -76,7 +78,7 @@ export default function PortfolioClient() {
           const liveData = await res.json();
           const enriched = dbAssets.map(dbA => {
             const live = liveData.find((l: any) => l.symbol === dbA.symbol) || {};
-            return { ...dbA, price: live.price || 0, change: live.change || 0, changePercent: live.changePercent || 0, logo: getLogoUrl(dbA.symbol) };
+            return { ...dbA, price: live.price || 0, change: live.change || 0, changePercent: live.changePercent || 0, shares: dbA.shares || 0, average_price: dbA.average_price || 0, logo: getLogoUrl(dbA.symbol) };
           });
           setAssets(enriched);
           // Check price alerts with live data
@@ -331,7 +333,42 @@ export default function PortfolioClient() {
                           {isExpanded && (
                             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}>
                               <div className="px-5 pb-4 pt-1 border-t border-gray-100 dark:border-gray-800">
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3">
+                                {/* Shares & Avg Price Row */}
+                                <div className="flex items-center gap-3 mt-3 mb-3">
+                                  <div className="flex-1">
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Acciones</label>
+                                    <input type="number" step="any" min="0" placeholder="0" defaultValue={asset.shares || ""}
+                                      onBlur={(e) => {
+                                        const val = parseFloat(e.target.value) || 0;
+                                        supabase.from("portfolios").update({ shares: val }).eq("id", asset.id);
+                                        setAssets(prev => prev.map(a => a.id === asset.id ? { ...a, shares: val } : a));
+                                      }}
+                                      className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-slate-800 text-sm font-bold outline-none focus:border-[#1890FF] text-gray-900 dark:text-white" />
+                                  </div>
+                                  <div className="flex-1">
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Precio Promedio</label>
+                                    <input type="number" step="0.01" min="0" placeholder="0.00" defaultValue={asset.average_price || ""}
+                                      onBlur={(e) => {
+                                        const val = parseFloat(e.target.value) || 0;
+                                        supabase.from("portfolios").update({ average_price: val }).eq("id", asset.id);
+                                        setAssets(prev => prev.map(a => a.id === asset.id ? { ...a, average_price: val } : a));
+                                      }}
+                                      className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-slate-800 text-sm font-bold outline-none focus:border-[#1890FF] text-gray-900 dark:text-white" />
+                                  </div>
+                                  {(asset.shares || 0) > 0 && (asset.price || 0) > 0 && (
+                                    <div className="flex-1 text-right">
+                                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Posición</label>
+                                      <p className="text-sm font-black text-gray-900 dark:text-white">${((asset.shares || 0) * (asset.price || 0)).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                      {(asset.average_price || 0) > 0 && (() => {
+                                        const pnl = ((asset.price || 0) - (asset.average_price || 0)) * (asset.shares || 0);
+                                        const pnlPct = ((asset.price || 0) / (asset.average_price || 1) - 1) * 100;
+                                        return <p className={`text-[10px] font-bold ${pnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>{pnl >= 0 ? '+' : ''}{pnl.toFixed(2)} ({pnlPct.toFixed(1)}%)</p>;
+                                      })()}
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                   <button onClick={(e) => { e.stopPropagation(); setAlertModal({ open: true, symbol: asset.symbol, price: asset.price || 0 }); setAlertForm({ targetPrice: "", condition: "above" }); }} className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 text-xs font-semibold hover:bg-orange-100 dark:hover:bg-orange-500/20 transition-colors">
                                     <Bell className="w-3.5 h-3.5" /> Alerta de Precio
                                   </button>

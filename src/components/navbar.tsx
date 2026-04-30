@@ -356,6 +356,12 @@ export function Navbar() {
                       Mi Portafolio
                     </DropdownMenuItem>
                   </Link>
+                  <Link href="/configuracion">
+                    <DropdownMenuItem className="text-sm py-2 px-3 cursor-pointer rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                      <Settings className="w-4 h-4 mr-2 text-gray-500" />
+                      Configuración
+                    </DropdownMenuItem>
+                  </Link>
                   <Link href="/suscripcion">
                     <DropdownMenuItem className="text-sm py-2 px-3 cursor-pointer rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-[#1890FF] font-medium">
                       Suscripción Premium

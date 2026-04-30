@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runNewsPipeline } from "@/lib/services/news-pipeline";
 import { createClient } from "@supabase/supabase-js";
+import YahooFinance from "yahoo-finance2";
+
+const yf = new YahooFinance();
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -102,12 +105,25 @@ export async function GET(request: NextRequest) {
 
     console.log(`[CRON] ✅ ${result.stats?.saved || 0} articles saved`);
 
+    // ── Check Price Alerts ──
+    let alertsTriggered = 0;
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      if (supabaseUrl && supabaseKey) {
+        const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
+        alertsTriggered = await checkPriceAlerts(supabaseAdmin);
+      }
+    } catch (err) {
+      console.error("[CRON] Failed to check price alerts:", err);
+    }
+
     return NextResponse.json({
       success: true,
       chile_hour: chileHour,
       interval_minutes: minInterval,
       timestamp: new Date().toISOString(),
-      stats: result.stats,
+      stats: { ...result.stats, alerts_triggered: alertsTriggered },
     });
   } catch (error: unknown) {
     console.error("Cron error:", error);
@@ -121,4 +137,73 @@ export async function GET(request: NextRequest) {
 // Also support POST (QStash sends POST by default)
 export async function POST(request: NextRequest) {
   return GET(request);
+}
+
+// ── Background Price Alerts Worker ─────────────────────
+async function checkPriceAlerts(supabase: any): Promise<number> {
+  try {
+    // Note: We do a simple select. user_preferences might not exist for all users if they haven't saved settings,
+    // so we handle it gracefully if the join fails.
+    const { data: alerts, error } = await supabase
+      .from("price_alerts")
+      .select("*, user_preferences(notify_email, notify_sms, notify_push)")
+      .eq("is_active", true);
+
+    // If relation error, fallback to normal select
+    let activeAlerts = alerts;
+    if (error) {
+      const { data: fallbackAlerts } = await supabase.from("price_alerts").select("*").eq("is_active", true);
+      activeAlerts = fallbackAlerts;
+    }
+
+    if (!activeAlerts || activeAlerts.length === 0) return 0;
+
+    const symbolsToFetch = [...new Set(activeAlerts.map((a: any) => a.symbol))];
+    const quotes = await yf.quote(symbolsToFetch);
+    const quotesArray = Array.isArray(quotes) ? quotes : [quotes];
+    
+    let triggeredCount = 0;
+
+    for (const alert of activeAlerts) {
+      const liveData = quotesArray.find((q: any) => q.symbol === alert.symbol);
+      if (!liveData) continue;
+
+      const currentPrice = liveData.regularMarketPrice;
+      if (!currentPrice) continue;
+
+      const triggered = 
+        (alert.condition === "above" && currentPrice >= alert.target_price) || 
+        (alert.condition === "below" && currentPrice <= alert.target_price);
+
+      if (triggered) {
+        triggeredCount++;
+        
+        // 1. Deactivate alert
+        await supabase.from("price_alerts").update({ is_active: false }).eq("id", alert.id);
+        
+        // 2. Create In-App Notification
+        const prefs = Array.isArray(alert.user_preferences) ? alert.user_preferences[0] : alert.user_preferences;
+        const pushEnabled = prefs?.notify_push !== false; // default true
+        
+        if (pushEnabled) {
+          await supabase.from("notifications").insert({
+            user_id: alert.user_id,
+            type: "price_alert",
+            title: `🔔 Alerta de Precio: ${alert.symbol}`,
+            message: `${alert.symbol} alcanzó $${currentPrice.toFixed(2)}. Tu alerta de ${alert.condition === "above" ? "por encima" : "por debajo"} de $${alert.target_price} se ha disparado.`
+          });
+        }
+        
+        // 3. AWS SES / Email Logic (Placeholder for future)
+        if (prefs?.notify_email) {
+          console.log(`[AWS SES Placeholder] Queue email for user ${alert.user_id} regarding ${alert.symbol}`);
+        }
+      }
+    }
+    
+    return triggeredCount;
+  } catch (err) {
+    console.error("[CRON] Price Alerts Logic Error:", err);
+    return 0;
+  }
 }

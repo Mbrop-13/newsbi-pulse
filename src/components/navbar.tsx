@@ -316,7 +316,7 @@ export function Navbar() {
               className="hidden md:flex relative text-gray-500 hover:text-[#1890FF] hover:bg-[#1890FF]/10 p-2 rounded-full transition-colors focus:outline-none group items-center justify-center"
               title="Asistente IA"
             >
-              <Bot className="w-5 h-5" />
+              <Sparkles className="w-5 h-5" />
               {/* Notification Indicator (Blue Blinking) */}
               <span className="absolute top-1 right-1 w-2 h-2 bg-[#1890FF] rounded-full shadow-[0_0_8px_rgba(24,144,255,0.8)] animate-pulse" />
             </button>

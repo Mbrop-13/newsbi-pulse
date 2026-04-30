@@ -11,18 +11,16 @@ import {
   Globe,
   TrendingUp,
   Search,
-  LineChart,
-  BarChart3,
-  Sparkles,
-  Briefcase
+  Briefcase,
+  Bookmark,
+  Bot
 } from "lucide-react";
 
 const tabs = [
   { id: "home", href: "/", icon: Home, label: "Inicio" },
-  { id: "mercados", href: "/mercados", icon: LineChart, label: "Mercados" },
-  { id: "ai", href: "#", icon: Sparkles, label: "R-ai" },
-  { id: "predicciones", href: "/predicciones", icon: BarChart3, label: "Pronósticos" },
-  { id: "portafolio", href: "#", icon: Briefcase, label: "Portafolio" },
+  { id: "guardados", href: "/guardados", icon: Bookmark, label: "Guardados" },
+  { id: "ai", href: "/chat", icon: Bot, label: "Asistente" },
+  { id: "portafolio", href: "/portafolio", icon: Briefcase, label: "Portafolio" },
 ];
 
 export function MobileBottomNav() {
@@ -43,19 +41,16 @@ export function MobileBottomNav() {
                   if (tab.id === "search") {
                     e.preventDefault();
                     window.dispatchEvent(new CustomEvent("open-search"));
-                  } else if (tab.id === "ai") {
-                    e.preventDefault();
-                    useAIChatStore.getState().toggle();
                   }
                 }}
                 className="relative flex flex-col items-center justify-center w-full h-full"
               >
                 <div className={`flex flex-col items-center gap-0.5 transition-colors ${
                   tab.id === "ai" 
-                    ? "text-purple-500 hover:text-purple-400" 
+                    ? "text-gray-900 dark:text-white" 
                     : isActive ? "text-[#1890FF]" : "text-muted-foreground"
                 }`}>
-                  <Icon className="w-5 h-5" strokeWidth={isActive ? 2.2 : 1.5} />
+                  <Icon className="w-5 h-5" strokeWidth={isActive || tab.id === "ai" ? 2.2 : 1.5} />
                   <span className="text-[10px] font-medium">{tab.label}</span>
                 </div>
 

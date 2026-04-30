@@ -164,26 +164,12 @@ export function Navbar() {
             {/* Nav Menu */}
             <nav className="hidden lg:flex items-center gap-6 text-sm font-semibold text-gray-600 dark:text-gray-300">
 
-              {/* ASISTENTE WAVE LINK */}
+              {/* PORTAFOLIO LINK */}
               <Link 
-                href="/asistente" 
-                className="flex items-center hover:opacity-80 transition-opacity"
-              >
-                <motion.span 
-                  animate={{ backgroundPosition: ["0% 50%", "200% 50%"] }}
-                  transition={{ repeat: Infinity, duration: 4, ease: "linear" }}
-                  className="bg-[linear-gradient(90deg,#1890FF,#60A5FA,#93C5FD,#60A5FA,#1890FF)] bg-[length:200%_auto] bg-clip-text text-transparent font-bold"
-                >
-                  Asistente
-                </motion.span>
-              </Link>
-
-              {/* MERCADOS LINK */}
-              <Link 
-                href="/mercados" 
+                href="/portafolio" 
                 className="flex items-center hover:text-[#1890FF] transition-colors"
               >
-                Mercados
+                Portafolio
               </Link>
 
               {/* SECCIONES MEGA MENU (replaces Fuentes) */}
@@ -212,8 +198,8 @@ export function Navbar() {
                           <h3 className="text-base font-black text-gray-900 dark:text-white">Explora por Sección</h3>
                           <p className="text-xs text-gray-500 mt-0.5">Navega directamente al contenido que te interesa</p>
                         </div>
-                        <Link href="/mercados" onClick={() => setSeccionesOpen(false)} className="text-[11px] font-bold text-[#1890FF] hover:underline flex items-center gap-1">
-                          Ver Mercados <TrendingUp className="w-3 h-3" />
+                        <Link href="/portafolio" onClick={() => setSeccionesOpen(false)} className="text-[11px] font-bold text-[#1890FF] hover:underline flex items-center gap-1">
+                          Ver Portafolio <TrendingUp className="w-3 h-3" />
                         </Link>
                       </div>
 
@@ -227,8 +213,7 @@ export function Navbar() {
                           { href: "/economia", icon: <PieChart className="w-5 h-5" />, label: "Economía", desc: "Macroeconomía, PIB e indicadores", color: "text-rose-500", bg: "bg-rose-500/10" },
                           { href: "/tech-global", icon: <Cpu className="w-5 h-5" />, label: "Tech Global", desc: "IA, startups, Big Tech y más", color: "text-cyan-500", bg: "bg-cyan-500/10" },
                           { href: "/mundo", icon: <Globe className="w-5 h-5" />, label: "Mundo", desc: "Noticias internacionales en el mapa", color: "text-indigo-500", bg: "bg-indigo-500/10" },
-                          { href: "/predicciones", icon: <BarChart3 className="w-5 h-5" />, label: "Predicciones", desc: "Mercados de predicción y probabilidades", color: "text-orange-500", bg: "bg-orange-500/10" },
-                          { href: "/asistente", icon: <Bot className="w-5 h-5" />, label: "Asistente IA", desc: "Tu analista personal con inteligencia artificial", color: "text-blue-500", bg: "bg-gradient-to-br from-blue-500/10 to-indigo-500/10" },
+                          { href: "/portafolio", icon: <LineChart className="w-5 h-5" />, label: "Portafolio", desc: "Tus inversiones e indicadores clave", color: "text-blue-500", bg: "bg-blue-500/10" },
                         ].map((section) => (
                           <Link
                             key={section.href}
@@ -316,11 +301,12 @@ export function Navbar() {
                 }
                 useAIChatStore.getState().toggle();
               }}
-              className="hidden md:flex relative text-purple-500 hover:bg-purple-500/10 p-2 rounded-full transition-colors focus:outline-none group items-center justify-center"
-              title="R-ai"
+              className="hidden md:flex relative text-gray-500 hover:text-[#1890FF] hover:bg-[#1890FF]/10 p-2 rounded-full transition-colors focus:outline-none group items-center justify-center"
+              title="Asistente IA"
             >
-              <Sparkles className="w-5 h-5" />
-              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full border-2 border-white dark:border-slate-900 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <Bot className="w-5 h-5" />
+              {/* Notification Indicator (Blue Blinking) */}
+              <span className="absolute top-1 right-1 w-2 h-2 bg-[#1890FF] rounded-full shadow-[0_0_8px_rgba(24,144,255,0.8)] animate-pulse" />
             </button>
 
             {/* Diamonds Reward System Toggle */}

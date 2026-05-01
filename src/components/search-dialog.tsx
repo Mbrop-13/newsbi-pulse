@@ -124,13 +124,10 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
         const q = debouncedQuery.toLowerCase();
         const assetsData = await fetch(`/api/finance/search?q=${encodeURIComponent(q)}`)
           .then(res => res.json())
-          .catch(() => []);
+          .catch(() => ({ quotes: [] }));
 
-        if (Array.isArray(assetsData)) {
-          setAssetResults(assetsData.slice(0, 3));
-        } else {
-          setAssetResults([]);
-        }
+        const quotes = assetsData?.quotes || (Array.isArray(assetsData) ? assetsData : []);
+        setAssetResults(quotes.slice(0, 3));
       } catch (err) {
         console.error("Asset search error:", err);
       } finally {

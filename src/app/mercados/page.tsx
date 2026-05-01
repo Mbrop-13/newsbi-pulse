@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
@@ -25,16 +25,16 @@ const SPOTLIGHT_GLOBAL = [
 
 /* ΓöÇΓöÇ Finance keywords for news matching ΓöÇΓöÇ */
 const FINANCE_KEYWORDS = [
-  "S&P", "Nasdaq", "IPSA", "Bitcoin", "BTC", "d├│lar", "cobre", "oro", "petr├│leo",
-  "acciones", "bolsa", "mercado", "Wall Street", "inversi├│n", "Fed", "BCE",
-  "inflaci├│n", "tasas", "bonos", "rally", "crypto", "Ethereum",
+  "S&P", "Nasdaq", "IPSA", "Bitcoin", "BTC", "dólar", "cobre", "oro", "petróleo",
+  "acciones", "bolsa", "mercado", "Wall Street", "inversión", "Fed", "BCE",
+  "inflación", "tasas", "bonos", "rally", "crypto", "Ethereum",
   "SQM", "Falabella", "Copec", "Cencosud", "Enel", "Santander",
-  "commodities", "finanzas", "econom├¡a",
+  "commodities", "finanzas", "economía",
 ];
 
 const TABS = [
-  { id: "chile" as const, label: "Chile", icon: "≡ƒç¿≡ƒç▒", showTrend: false },
-  { id: "global" as const, label: "Global", icon: "≡ƒîì", showTrend: false },
+  { id: "chile" as const, label: "Chile", icon: "🇨🇱", showTrend: false },
+  { id: "global" as const, label: "Global", icon: "🌍", showTrend: false },
   { id: "tendencia" as const, label: "Tendencia", icon: null, showTrend: true },
 ];
 type TabId = "chile" | "global" | "tendencia";
@@ -310,7 +310,7 @@ export default function MercadosPage() {
           <div>
             <div className="flex items-center gap-2 mb-5">
               <Newspaper className="w-4 h-4 text-[#1890FF]" />
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">M├ís Noticias del Mercado</h2>
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">Más Noticias del Mercado</h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {financeNews.slice(2, 8).map((article) => {

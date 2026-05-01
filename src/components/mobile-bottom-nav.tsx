@@ -18,7 +18,7 @@ import {
 
 const tabs = [
   { id: "home", href: "/", icon: Home, label: "Inicio" },
-  { id: "mercados", href: "/inversiones", icon: TrendingUp, label: "Mercados" },
+  { id: "mercados", href: "/mercados", icon: TrendingUp, label: "Mercados" },
   { id: "ai", href: "/asistente", icon: Sparkles, label: "Asistente" },
   { id: "portafolio", href: "/portafolio", icon: Briefcase, label: "Portafolio" },
   { id: "mundo", href: "/mundo", icon: Globe, label: "Mundo" },

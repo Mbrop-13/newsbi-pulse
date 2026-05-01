@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { runNewsPipeline } from "@/lib/services/news-pipeline";
 import { createClient } from "@supabase/supabase-js";
 import YahooFinance from "yahoo-finance2";
+import { sendEmail } from "@/lib/email/ses-client";
+import { priceAlertEmail } from "@/lib/email/email-templates";
 
 const yf = new YahooFinance();
 
@@ -194,9 +196,26 @@ async function checkPriceAlerts(supabase: any): Promise<number> {
           });
         }
         
-        // 3. AWS SES / Email Logic (Placeholder for future)
+        // 3. AWS SES Email Notification
         if (prefs?.notify_email) {
-          console.log(`[AWS SES Placeholder] Queue email for user ${alert.user_id} regarding ${alert.symbol}`);
+          try {
+            // Get user email from Supabase Auth
+            const { data: userData } = await supabase.auth.admin.getUserById(alert.user_id);
+            const userEmail = userData?.user?.email;
+            if (userEmail) {
+              const { subject, html } = priceAlertEmail({
+                symbol: alert.symbol,
+                currentPrice,
+                targetPrice: alert.target_price,
+                condition: alert.condition,
+                userName: userData.user?.user_metadata?.full_name || undefined,
+              });
+              await sendEmail({ to: userEmail, subject, html });
+              console.log(`[CRON] Price alert email sent to ${userEmail} for ${alert.symbol}`);
+            }
+          } catch (emailErr) {
+            console.error(`[CRON] Failed to send price alert email for ${alert.symbol}:`, emailErr);
+          }
         }
       }
     }

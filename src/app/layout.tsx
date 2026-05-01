@@ -10,7 +10,7 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://reclu.vercel.app"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://reclu.cl"),
   title: "Reclu | Noticias y Análisis IA",
   description: "Plataforma de noticias impulsada por Inteligencia Artificial y agentes autónomos.",
   keywords: [
@@ -21,11 +21,11 @@ export const metadata: Metadata = {
     "tech news",
     "business news",
   ],
-  authors: [{ name: "Reclu", url: "https://reclu.com" }],
+  authors: [{ name: "Reclu", url: "https://reclu.cl" }],
   openGraph: {
     title: "Reclu | Noticias IA en Tiempo Real",
     description: "Plataforma de noticias impulsada por IA Grok. Análisis inteligente y cobertura en vivo.",
-    url: "https://reclu.vercel.app",
+    url: "https://reclu.cl",
     siteName: "Reclu",
     type: "website",
     locale: "es_CL",

@@ -72,6 +72,8 @@ interface AIChatStore {
   deleteSavedChat: (id: string) => void;
   fetchCloudChats: () => Promise<void>;
   _saveCurrentIfPremium: () => void;
+  updateCurrentChat: () => void;
+  currentChatId: string | null;
 }
 
 export const useAIChatStore = create<AIChatStore>()(
@@ -79,6 +81,7 @@ export const useAIChatStore = create<AIChatStore>()(
     (set, get) => ({
       isOpen: false,
       messages: [],
+      currentChatId: null,
       isLoading: false,
       webSearchEnabled: false,
       attachedArticles: [],
@@ -89,7 +92,10 @@ export const useAIChatStore = create<AIChatStore>()(
       toggle: () => set((s) => ({ isOpen: !s.isOpen })),
       open: () => set({ isOpen: true }),
       close: () => set({ isOpen: false }),
-      addMessage: (msg) => set((s) => ({ messages: [...s.messages, msg] })),
+      addMessage: (msg) => {
+        set((s) => ({ messages: [...s.messages, msg] }));
+        get().updateCurrentChat();
+      },
       setLoading: (val) => set({ isLoading: val }),
       setWebSearch: (val) => set({ webSearchEnabled: val }),
       setCloudSync: (val) => {
@@ -127,17 +133,24 @@ export const useAIChatStore = create<AIChatStore>()(
         }
       },
       
-      _saveCurrentIfPremium: async () => {
-        const { messages, attachedArticles, attachedFiles, savedChats, cloudSyncEnabled } = get();
+      updateCurrentChat: async () => {
+        const { messages, attachedArticles, attachedFiles, savedChats, cloudSyncEnabled, currentChatId } = get();
         if (messages.length === 0) return;
 
         const user = useAuthStore.getState().user;
         const userTier = user?.tier || "free";
         if (userTier === "free") return;
 
+        const isNewChat = !currentChatId;
+        const chatId = currentChatId || Date.now().toString();
+        
+        if (isNewChat) {
+          set({ currentChatId: chatId });
+        }
+
         const title = messages.find(m => m.role === "user")?.content.slice(0, 40) + "..." || "Nuevo chat";
-        const chatId = Date.now().toString();
-        const newChat: SavedChat = {
+        
+        const chatData: SavedChat = {
           id: chatId,
           title,
           messages,
@@ -146,25 +159,44 @@ export const useAIChatStore = create<AIChatStore>()(
           timestamp: new Date(),
         };
 
-        const updatedChats = [newChat, ...savedChats].slice(0, 10);
+        const existingIndex = savedChats.findIndex(c => c.id === chatId);
+        let updatedChats;
+        if (existingIndex >= 0) {
+          updatedChats = [...savedChats];
+          updatedChats[existingIndex] = chatData;
+        } else {
+          updatedChats = [chatData, ...savedChats].slice(0, 10);
+        }
         set({ savedChats: updatedChats });
         
         if (cloudSyncEnabled && user) {
           const supabase = createClient();
-          await supabase.from("ai_saved_chats").insert({
-            user_id: user.id,
-            chat_id: chatId,
-            title,
-            messages,
-            attached_articles: attachedArticles,
-            attached_files: attachedFiles
-          }).catch(console.error);
+          if (isNewChat) {
+            await supabase.from("ai_saved_chats").insert({
+              user_id: user.id,
+              chat_id: chatId,
+              title,
+              messages,
+              attached_articles: attachedArticles,
+              attached_files: attachedFiles
+            }).catch(console.error);
+          } else {
+            await supabase.from("ai_saved_chats").update({
+              title,
+              messages,
+              attached_articles: attachedArticles,
+              attached_files: attachedFiles
+            }).eq("chat_id", chatId).eq("user_id", user.id).catch(console.error);
+          }
         }
       },
       
+      _saveCurrentIfPremium: () => {
+        // Deprecated, use updateCurrentChat via auto-sync
+      },
+      
       clearMessages: () => {
-        get()._saveCurrentIfPremium();
-        set({ messages: [], attachedArticles: [], attachedFiles: [] });
+        set({ messages: [], attachedArticles: [], attachedFiles: [], currentChatId: null });
       },
       attachArticle: (article) => {
         const { attachedArticles } = get();
@@ -182,8 +214,12 @@ export const useAIChatStore = create<AIChatStore>()(
         const { savedChats } = get();
         const chat = savedChats.find(c => c.id === id);
         if (chat) {
-          get()._saveCurrentIfPremium();
-          set({ messages: chat.messages, attachedArticles: chat.attachedArticles, attachedFiles: chat.attachedFiles || [] });
+          set({ 
+            messages: chat.messages, 
+            attachedArticles: chat.attachedArticles, 
+            attachedFiles: chat.attachedFiles || [],
+            currentChatId: id
+          });
         }
       },
       deleteSavedChat: async (id) => {

@@ -2,15 +2,12 @@
 
 import { useState } from "react";
 import { useAuthStore } from "@/lib/stores/auth-store";
-import { useAssistantStore } from "@/lib/stores/assistant-store";
 import { AuthModals } from "@/components/auth-modals";
 import { AssistantLanding } from "@/components/assistant/assistant-landing";
-import { AssistantSetup } from "@/components/assistant/assistant-setup";
-import { AssistantDashboard } from "@/components/assistant/assistant-dashboard";
+import { FullScreenChat } from "@/components/assistant/full-screen-chat";
 
 export default function AsistentePage() {
   const { isAuthenticated } = useAuthStore();
-  const { hasCompletedSetup } = useAssistantStore();
 
   const [authModal, setAuthModal] = useState<{ isOpen: boolean; view: "login" | "register" }>({
     isOpen: false,
@@ -29,16 +26,10 @@ export default function AsistentePage() {
         defaultView={authModal.view} 
       />
 
-      {!isAuthenticated && (
+      {!isAuthenticated ? (
         <AssistantLanding onAuthReq={handleAuthRequest} />
-      )}
-
-      {isAuthenticated && !hasCompletedSetup && (
-         <AssistantSetup />
-      )}
-
-      {isAuthenticated && hasCompletedSetup && (
-         <AssistantDashboard />
+      ) : (
+        <FullScreenChat />
       )}
     </>
   );

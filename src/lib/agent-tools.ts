@@ -6,6 +6,7 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
+import yahooFinance from "yahoo-finance2";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -69,16 +70,20 @@ export async function getPortfolioData(userId: string): Promise<ToolResult> {
   }
 
   // 2. Fetch live prices from Yahoo Finance
-  const symbols = dbAssets.map((a: any) => a.symbol).join(",");
   let liveData: any[] = [];
-
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
-    const res = await fetch(`${baseUrl}/api/finance/portfolio?symbols=${symbols}`, {
-      signal: AbortSignal.timeout(10000),
-    });
-    if (res.ok) liveData = await res.json();
-  } catch {
+    const symbolArray = dbAssets.map((a: any) => a.symbol.trim().toUpperCase());
+    const quotes = await yahooFinance.quote(symbolArray);
+    const quoteArray = Array.isArray(quotes) ? quotes : [quotes];
+    
+    liveData = quoteArray.map((q: any) => ({
+      symbol: q.symbol,
+      price: q.regularMarketPrice,
+      change: q.regularMarketChange,
+      changePercent: q.regularMarketChangePercent,
+    }));
+  } catch (error) {
+    console.error("[agent-tools] Yahoo Finance Portfolio Error:", error);
     // If Yahoo Finance fails, return DB data only
   }
 
@@ -115,13 +120,16 @@ export async function getPortfolioData(userId: string): Promise<ToolResult> {
 
 export async function getStockInfo(symbol: string): Promise<ToolResult> {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
-    const res = await fetch(`${baseUrl}/api/finance/portfolio?symbols=${symbol.toUpperCase()}`, {
-      signal: AbortSignal.timeout(10000),
-    });
-    if (!res.ok) throw new Error("Failed to fetch stock");
-    const data = await res.json();
-    const stock = Array.isArray(data) ? data[0] : data;
+    const quote = await yahooFinance.quote(symbol.toUpperCase());
+    if (!quote) throw new Error("Stock not found");
+    
+    const stock = {
+      symbol: quote.symbol,
+      price: quote.regularMarketPrice,
+      change: quote.regularMarketChange,
+      changePercent: quote.regularMarketChangePercent,
+      logo: `https://logo.clearbit.com/${quote.symbol.toLowerCase()}.com`
+    };
 
     return {
       tool: "stock_info",

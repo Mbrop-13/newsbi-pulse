@@ -659,18 +659,65 @@ function ToolResultPill({ result }: { result: ToolResultUI }) {
     alerts: <Bell className="w-4 h-4" />,
   };
 
+  const renderPillContent = () => {
+    if (result.tool === "portfolio" && Array.isArray(result.data) && result.data.length > 0) {
+      const avgChange = result.data.reduce((sum: number, s: any) => sum + (s.changePercent || 0), 0) / result.data.length;
+      return (
+        <div className="flex items-center gap-2">
+          <div className="flex -space-x-2 mr-1">
+            {result.data.slice(0, 3).map((item: any, i: number) => (
+              <div key={i} className="w-5 h-5 rounded-full bg-white dark:bg-slate-700 flex items-center justify-center shadow-sm border border-gray-100 dark:border-slate-600 font-bold text-[8px] text-gray-600 dark:text-gray-300 ring-2 ring-white dark:ring-slate-900 z-10">
+                {item.symbol.substring(0, 2)}
+              </div>
+            ))}
+          </div>
+          <span>{result.data.length} activos</span>
+          <span className="text-gray-300 dark:text-gray-600">|</span>
+          <span className={avgChange >= 0 ? "text-green-500" : "text-red-500"}>
+            {avgChange >= 0 ? "+" : ""}{avgChange.toFixed(2)}%
+          </span>
+        </div>
+      );
+    }
+
+    if (result.tool === "news" && Array.isArray(result.data) && result.data.length > 0) {
+      return (
+        <div className="flex items-center gap-2">
+          <div className="flex -space-x-2 mr-1">
+            {result.data.slice(0, 3).map((item: any, i: number) => (
+              item.image_url ? (
+                <img key={i} src={item.image_url} alt="" className="w-5 h-5 rounded-full object-cover shadow-sm ring-2 ring-white dark:ring-slate-900 z-10" />
+              ) : (
+                <div key={i} className="w-5 h-5 rounded-full bg-gray-200 dark:bg-slate-700 flex items-center justify-center shadow-sm ring-2 ring-white dark:ring-slate-900 z-10">
+                  <Newspaper className="w-2.5 h-2.5 text-gray-400" />
+                </div>
+              )
+            ))}
+          </div>
+          <span>{result.data.length} noticias analizadas</span>
+        </div>
+      );
+    }
+
+    return (
+      <>
+        {icons[result.tool] || <Sparkles className="w-4 h-4" />}
+        {result.summary}
+      </>
+    );
+  };
+
   return (
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-xs font-bold transition-all shadow-sm ${
+        className={`flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-xl border text-[11px] md:text-xs font-bold transition-all shadow-sm ${
           isOpen 
             ? "border-[#1890FF] bg-[#1890FF]/10 text-[#1890FF]" 
             : "border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 text-gray-700 dark:text-gray-300 hover:border-[#1890FF]/50 hover:bg-gray-50 dark:hover:bg-slate-800"
         }`}
       >
-        {icons[result.tool] || <Sparkles className="w-4 h-4" />}
-        {result.summary}
+        {renderPillContent()}
       </button>
 
       <AnimatePresence>

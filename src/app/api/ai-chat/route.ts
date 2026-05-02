@@ -116,9 +116,12 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Choose model ──
+    // Hardcoded verified model IDs (tested directly against OpenRouter API)
     const model = webSearch
-      ? (process.env.OPENROUTER_ENRICH_MODEL || "x-ai/grok-4.1-fast:online")
-      : (process.env.OPENROUTER_FILTER_MODEL || "google/gemini-2.5-flash");
+      ? "x-ai/grok-4.1-fast:online"
+      : "minimax/minimax-m2.5";
+
+    console.log(`[AI Chat] Using model: ${model} | webSearch: ${webSearch} | user: ${user.id}`);
 
     // ── Build system prompt ──
     let systemContent = AGENT_SYSTEM_PROMPT;

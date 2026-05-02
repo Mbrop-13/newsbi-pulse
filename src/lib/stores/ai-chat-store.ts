@@ -138,8 +138,6 @@ export const useAIChatStore = create<AIChatStore>()(
         if (messages.length === 0) return;
 
         const user = useAuthStore.getState().user;
-        const userTier = user?.tier || "free";
-        if (userTier === "free") return;
 
         const isNewChat = !currentChatId;
         const chatId = currentChatId || Date.now().toString();

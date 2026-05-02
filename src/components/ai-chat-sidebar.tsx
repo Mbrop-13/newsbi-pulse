@@ -250,16 +250,15 @@ export function AIChatSidebar() {
                   </button>
                 ) : null}
                 
-                {userTier !== "free" && (
-                  <button
-                    onClick={() => setShowHistory(!showHistory)}
-                    className={`w-7 h-7 rounded-xl flex items-center justify-center transition-colors ${
-                      showHistory ? "bg-purple-500/10 text-purple-500" : "text-muted-foreground/40 hover:bg-purple-500/10 hover:text-purple-500"
-                    }`}
-                  >
-                    <History className="w-3.5 h-3.5" />
-                  </button>
-                )}
+                <button
+                  onClick={() => setShowHistory(!showHistory)}
+                  className={`w-7 h-7 rounded-xl flex items-center justify-center transition-colors ${
+                    showHistory ? "bg-purple-500/10 text-purple-500" : "text-muted-foreground/40 hover:bg-purple-500/10 hover:text-purple-500"
+                  }`}
+                  title="Historial de Chats"
+                >
+                  <History className="w-3.5 h-3.5" />
+                </button>
                 {messages.length > 0 && !showHistory && (
                   <button onClick={clearMessages} className="w-7 h-7 rounded-xl hover:bg-red-500/10 flex items-center justify-center text-muted-foreground/40 hover:text-red-500">
                     <Trash2 className="w-3.5 h-3.5" />
@@ -281,7 +280,7 @@ export function AIChatSidebar() {
 
           {showHistory ? (
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-              <h3 className="font-bold text-sm">Historial Premium</h3>
+              <h3 className="font-bold text-sm">Historial de Chats</h3>
               {savedChats.map((chat) => (
                 <div key={chat.id} onClick={() => { loadChat(chat.id); setShowHistory(false); }} className="cursor-pointer p-3 rounded-xl bg-secondary/30 hover:bg-purple-500/5 border border-transparent hover:border-purple-500/20">
                   <p className="text-xs font-medium">{chat.title}</p>

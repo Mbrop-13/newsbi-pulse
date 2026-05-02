@@ -314,7 +314,7 @@ export default function SuscripcionesPage() {
                   className={`relative flex flex-col rounded-3xl border p-6 text-left transition-all duration-300 group hover:-translate-y-2 ${
                     isPopularActive
                       ? "border-accent bg-accent/[0.02] shadow-[0_0_40px_-10px_rgba(0,82,204,0.15)] scale-[1.02] md:scale-105 z-10 hover:shadow-[0_0_50px_-5px_rgba(0,82,204,0.3)] hover:border-[#1890FF]"
-                      : isCurrentPlan
+                      : isCurrentPlan && plan.id !== "free"
                       ? "border-emerald-500/50 bg-emerald-500/[0.02] hover:shadow-[0_0_30px_-10px_rgba(16,185,129,0.2)] hover:border-emerald-400"
                       : "border-border bg-card/50 backdrop-blur-sm hover:border-[#1890FF]/40 hover:bg-card hover:shadow-[0_0_30px_-10px_rgba(24,144,255,0.15)]"
                   }`}
@@ -327,7 +327,7 @@ export default function SuscripcionesPage() {
                   )}
                   
                   {isCurrentPlan && !plan.popular && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-emerald-500 rounded-full text-white text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-md">
+                    <div className={`absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-white text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-md ${plan.id === "free" ? "bg-slate-500" : "bg-emerald-500"}`}>
                       <Check className="w-3 h-3" />
                       Tu plan actual
                     </div>
@@ -367,8 +367,10 @@ export default function SuscripcionesPage() {
                         ? "bg-gradient-to-r from-[#0052CC] to-[#0066FF] hover:from-[#0052CC]/90 hover:to-[#0066FF]/90 text-white shadow-[0_10px_20px_-10px_rgba(0,82,204,0.5)] hover:shadow-[0_10px_20px_-10px_rgba(0,82,204,0.7)] hover:-translate-y-0.5"
                         : plan.id === "ultra"
                         ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg shadow-purple-500/25 hover:-translate-y-0.5"
-                        : isCurrentPlan
+                        : isCurrentPlan && plan.id !== "free"
                         ? "bg-emerald-500/10 text-emerald-600 cursor-default border border-emerald-500/20"
+                        : isCurrentPlan && plan.id === "free"
+                        ? "bg-secondary text-muted-foreground cursor-default border border-border"
                         : plan.id === "pro"
                         ? "bg-secondary hover:bg-secondary/80 text-foreground border border-border"
                         : "bg-secondary/50 text-muted-foreground cursor-default border border-border/50"

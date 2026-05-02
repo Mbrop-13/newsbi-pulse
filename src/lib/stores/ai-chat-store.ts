@@ -8,6 +8,15 @@ export interface ChatMessage {
   content: string;
   timestamp: Date;
   citations?: string[];
+  toolResults?: ToolResultUI[];
+  thinkingSteps?: string[];
+  model?: "deepseek" | "grok";
+}
+
+export interface ToolResultUI {
+  tool: "portfolio" | "stock_info" | "news" | "alerts";
+  data: any;
+  summary: string;
 }
 
 export interface AttachedArticle {
@@ -38,6 +47,7 @@ interface AIChatStore {
   isOpen: boolean;
   messages: ChatMessage[];
   isLoading: boolean;
+  webSearchEnabled: boolean;
   attachedArticles: AttachedArticle[];
   attachedFiles: AttachedFile[];
   savedChats: SavedChat[];
@@ -46,7 +56,8 @@ interface AIChatStore {
   close: () => void;
   addMessage: (msg: ChatMessage) => void;
   setLoading: (val: boolean) => void;
-  clearMessages: () => void; // Clears active, saves to history if Premium
+  setWebSearch: (val: boolean) => void;
+  clearMessages: () => void;
   attachArticle: (article: AttachedArticle) => void;
   removeArticle: (id: string) => void;
   clearArticles: () => void;
@@ -64,6 +75,7 @@ export const useAIChatStore = create<AIChatStore>()(
       isOpen: false,
       messages: [],
       isLoading: false,
+      webSearchEnabled: false,
       attachedArticles: [],
       attachedFiles: [],
       savedChats: [],
@@ -72,15 +84,14 @@ export const useAIChatStore = create<AIChatStore>()(
       close: () => set({ isOpen: false }),
       addMessage: (msg) => set((s) => ({ messages: [...s.messages, msg] })),
       setLoading: (val) => set({ isLoading: val }),
+      setWebSearch: (val) => set({ webSearchEnabled: val }),
       _saveCurrentIfPremium: () => {
         const { messages, attachedArticles, attachedFiles, savedChats } = get();
         if (messages.length === 0) return;
 
-        // Check if user is premium
         const userTier = useAuthStore.getState().user?.tier || "free";
-        if (userTier === "free") return; // Free users don't get saved history
+        if (userTier === "free") return;
 
-        // Save current as a chat
         const title = messages.find(m => m.role === "user")?.content.slice(0, 40) + "..." || "Nuevo chat";
         const newChat: SavedChat = {
           id: Date.now().toString(),
@@ -91,7 +102,6 @@ export const useAIChatStore = create<AIChatStore>()(
           timestamp: new Date(),
         };
 
-        // Keep at most 10 chats
         const updatedChats = [newChat, ...savedChats].slice(0, 10);
         set({ savedChats: updatedChats });
       },
@@ -123,7 +133,7 @@ export const useAIChatStore = create<AIChatStore>()(
     }),
     {
       name: "r-ai-chat-history",
-      partialize: (state) => ({ savedChats: state.savedChats }), // Only persist savedChats
+      partialize: (state) => ({ savedChats: state.savedChats }),
     }
   )
 );

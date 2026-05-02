@@ -10,7 +10,20 @@ import ReactMarkdown from "react-markdown";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 
+import { FullScreenChat as FullScreenChatInternal } from "./full-screen-chat-internal";
+
 export function FullScreenChat() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  
+  if (!mounted) {
+    return <div className="flex h-[100dvh] bg-white dark:bg-[#0a0a0a]" />;
+  }
+  
+  return <FullScreenChatInternal />;
+}
+
+function FullScreenChatInternal() {
   const {
     messages, addMessage, isLoading, setLoading, 
     attachedArticles, attachedFiles, attachFile,
@@ -327,28 +340,28 @@ export function FullScreenChat() {
           <div className={`${maxWClass} mx-auto w-full px-4 md:px-8 pt-10 pb-8 transition-all duration-300`}>
             
             {messages.length === 0 && !isLoading && (
-              <div className="flex flex-col items-center justify-center text-center mt-12 md:mt-24 mb-16">
-                <div className="relative mb-6">
+              <div className="flex flex-col items-center justify-center text-center mt-6 md:mt-24 mb-10 md:mb-16">
+                <div className="relative mb-4 md:mb-6">
                   <div className="absolute inset-0 bg-[#1890FF] blur-2xl opacity-20 rounded-full"></div>
-                  <div className="relative w-20 h-20 bg-gradient-to-br from-[#1890FF] to-indigo-600 rounded-[2rem] flex items-center justify-center shadow-2xl ring-4 ring-white dark:ring-[#0B0F1A]">
-                    <Sparkles className="w-10 h-10 text-white" />
+                  <div className="relative w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-[#1890FF] to-indigo-600 rounded-2xl md:rounded-[2rem] flex items-center justify-center shadow-2xl ring-4 ring-white dark:ring-[#0B0F1A]">
+                    <Sparkles className="w-8 h-8 md:w-10 md:h-10 text-white" />
                   </div>
                 </div>
-                <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-3 tracking-tight">R-AI Assistant</h2>
-                <p className="text-base text-gray-500 mb-10 max-w-md">Tu agente financiero autónomo. Con acceso a mercados globales y a tu portafolio personal en tiempo real.</p>
+                <h2 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white mb-2 md:mb-3 tracking-tight">R-AI Assistant</h2>
+                <p className="text-sm md:text-base text-gray-500 mb-6 md:mb-10 max-w-md px-4">Tu agente financiero autónomo. Con acceso a mercados globales y a tu portafolio personal en tiempo real.</p>
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 w-full">
                   {shortcuts.map((sc) => (
                     <button
                       key={sc.id}
                       onClick={() => sendMessage(sc.query, sc.id)}
-                      className="p-5 bg-gray-50/80 dark:bg-slate-900/50 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-3xl text-left hover:border-[#1890FF]/30 hover:bg-[#1890FF]/5 transition-all group shadow-sm hover:shadow-md hover:-translate-y-1"
+                      className="p-4 md:p-5 bg-gray-50/80 dark:bg-slate-900/50 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-2xl md:rounded-3xl text-left hover:border-[#1890FF]/30 hover:bg-[#1890FF]/5 transition-all group shadow-sm hover:shadow-md hover:-translate-y-1"
                     >
-                      <div className="w-10 h-10 rounded-2xl bg-white dark:bg-slate-800 flex items-center justify-center mb-4 shadow-sm text-[#1890FF] group-hover:scale-110 transition-transform">
-                        {sc.id.includes("portfolio") ? <BarChart3 className="w-5 h-5" /> : <Newspaper className="w-5 h-5" />}
+                      <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-white dark:bg-slate-800 flex items-center justify-center mb-3 md:mb-4 shadow-sm text-[#1890FF] group-hover:scale-110 transition-transform">
+                        {sc.id.includes("portfolio") ? <BarChart3 className="w-4 h-4 md:w-5 md:h-5" /> : <Newspaper className="w-4 h-4 md:w-5 md:h-5" />}
                       </div>
-                      <p className="text-sm font-bold text-gray-900 dark:text-white mb-1.5 group-hover:text-[#1890FF] transition-colors">{sc.label}</p>
-                      <p className="text-xs text-gray-500 font-medium line-clamp-2">{sc.query}</p>
+                      <p className="text-[13px] md:text-sm font-bold text-gray-900 dark:text-white mb-1 md:mb-1.5 group-hover:text-[#1890FF] transition-colors">{sc.label}</p>
+                      <p className="text-[11px] md:text-xs text-gray-500 font-medium line-clamp-2">{sc.query}</p>
                     </button>
                   ))}
                 </div>
@@ -365,10 +378,7 @@ export function FullScreenChat() {
                     </div>
                   ) : (
                     /* Assistant Message */
-                    <div className="flex gap-4 max-w-full">
-                      <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-[#1890FF] to-indigo-600 flex items-center justify-center shadow-md shrink-0 mt-1">
-                        <Sparkles className="w-4 h-4 text-white" />
-                      </div>
+                    <div className="flex max-w-full">
                       <div className="flex-1 space-y-3 min-w-0">
                         
                         {/* Tool Results / Thinking */}
@@ -410,13 +420,8 @@ export function FullScreenChat() {
 
               {/* Loading State */}
               {isLoading && (
-                <div className="flex gap-4">
-                  <div className="w-9 h-9 rounded-2xl bg-gray-200 dark:bg-slate-800 flex items-center justify-center shrink-0 mt-1">
-                    <Sparkles className="w-4 h-4 text-gray-400" />
-                  </div>
-                  <div className="flex items-center gap-3 pt-2">
-                    <ThinkingAnimation />
-                  </div>
+                <div className="flex pt-2">
+                  <ThinkingAnimation />
                 </div>
               )}
               
@@ -460,7 +465,7 @@ export function FullScreenChat() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
                 }}
-                placeholder={reachedQuestionLimit ? `Límite de consultas alcanzado` : "Pregúntale cualquier cosa a R-AI..."}
+                placeholder={reachedQuestionLimit ? `Límite de consultas alcanzado` : "Pregúntale a R-AI..."}
                 className="flex-1 bg-transparent text-[15px] py-3 px-2 max-h-40 min-h-[44px] resize-none outline-none disabled:cursor-not-allowed font-medium text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
                 disabled={isLoading || reachedQuestionLimit}
                 rows={1}
@@ -678,7 +683,12 @@ function ToolResultPill({ result }: { result: ToolResultUI }) {
             <div className="space-y-2">
               {result.tool === "portfolio" && Array.isArray(result.data) && result.data.map((item: any, i: number) => (
                 <div key={i} className="flex justify-between items-center p-3 rounded-xl bg-gray-50 dark:bg-slate-800/50 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors border border-transparent hover:border-gray-200 dark:hover:border-gray-700">
-                  <div className="font-bold text-sm text-gray-900 dark:text-white">{item.symbol}</div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-white dark:bg-slate-700 flex items-center justify-center shadow-sm border border-gray-100 dark:border-slate-600 font-bold text-[10px] text-gray-600 dark:text-gray-300">
+                      {item.symbol.substring(0, 2)}
+                    </div>
+                    <div className="font-bold text-sm text-gray-900 dark:text-white">{item.symbol}</div>
+                  </div>
                   <div className="text-right">
                     <div className="text-sm font-semibold text-gray-900 dark:text-white">${item.price?.toFixed(2)}</div>
                     <div className={`text-[11px] font-bold ${item.changePercent >= 0 ? "text-green-500" : "text-red-500"}`}>
@@ -689,11 +699,19 @@ function ToolResultPill({ result }: { result: ToolResultUI }) {
               ))}
 
               {result.tool === "news" && Array.isArray(result.data) && result.data.map((item: any, i: number) => (
-                <a key={i} href={item.url || `/?tag=${item.slug}`} target="_blank" rel="noopener noreferrer" className="block p-3 rounded-xl bg-gray-50 dark:bg-slate-800/50 hover:bg-[#1890FF]/5 hover:border-[#1890FF]/20 border border-transparent transition-colors group">
-                  <h4 className="text-sm font-bold line-clamp-2 leading-snug mb-2 text-gray-900 dark:text-white group-hover:text-[#1890FF]">{item.title}</h4>
-                  <div className="flex items-center justify-between text-[10px] text-gray-500 font-medium">
-                    <span className="flex items-center gap-1"><ExternalLink className="w-3 h-3 text-[#1890FF]" /> {item.source || "Reclu"}</span>
-                    <span>{new Date(item.published_at).toLocaleDateString()}</span>
+                <a key={i} href={item.url || `/?tag=${item.slug}`} target="_blank" rel="noopener noreferrer" className="flex gap-3 p-3 rounded-xl bg-gray-50 dark:bg-slate-800/50 hover:bg-[#1890FF]/5 hover:border-[#1890FF]/20 border border-transparent transition-colors group">
+                  {item.image_url ? (
+                    <img src={item.image_url} alt="" className="w-16 h-16 rounded-lg object-cover shrink-0 border border-gray-200 dark:border-gray-700" />
+                  ) : (
+                    <div className="w-16 h-16 rounded-lg bg-gray-200 dark:bg-slate-700 flex items-center justify-center shrink-0 border border-gray-200 dark:border-gray-700">
+                      <Newspaper className="w-6 h-6 text-gray-400" />
+                    </div>
+                  )}
+                  <div className="flex flex-col justify-between py-0.5">
+                    <h4 className="text-[13px] font-bold line-clamp-2 leading-snug mb-1 text-gray-900 dark:text-white group-hover:text-[#1890FF]">{item.title}</h4>
+                    <div className="flex items-center justify-between text-[10px] text-gray-500 font-medium">
+                      <span className="flex items-center gap-1"><ExternalLink className="w-3 h-3 text-[#1890FF]" /> {item.source || "Reclu"}</span>
+                    </div>
                   </div>
                 </a>
               ))}

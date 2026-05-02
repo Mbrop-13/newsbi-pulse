@@ -73,9 +73,7 @@ export async function getPortfolioData(userId: string): Promise<ToolResult> {
   let liveData: any[] = [];
 
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}` 
-      : "http://localhost:3000";
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
     const res = await fetch(`${baseUrl}/api/finance/portfolio?symbols=${symbols}`, {
       signal: AbortSignal.timeout(10000),
     });
@@ -117,9 +115,7 @@ export async function getPortfolioData(userId: string): Promise<ToolResult> {
 
 export async function getStockInfo(symbol: string): Promise<ToolResult> {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : "http://localhost:3000";
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
     const res = await fetch(`${baseUrl}/api/finance/portfolio?symbols=${symbol.toUpperCase()}`, {
       signal: AbortSignal.timeout(10000),
     });

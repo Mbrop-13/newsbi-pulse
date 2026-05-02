@@ -23,6 +23,13 @@ export function FullScreenChat() {
 }
 
 function FullScreenChatInternal() {
+  const [isStoreHydrated, setIsStoreHydrated] = useState(false);
+  useEffect(() => {
+    setIsStoreHydrated(useAIChatStore.persist.hasHydrated());
+    const unsub = useAIChatStore.persist.onFinishHydration(() => setIsStoreHydrated(true));
+    return () => unsub();
+  }, []);
+
   const {
     messages, addMessage, isLoading, setLoading, 
     attachedArticles, attachedFiles, attachFile,
@@ -338,7 +345,7 @@ function FullScreenChatInternal() {
         <div className="flex-1 overflow-y-auto hidden-scrollbar relative pb-32">
           <div className={`${maxWClass} mx-auto w-full px-4 md:px-8 pt-10 pb-8 transition-all duration-300`}>
             
-            {messages.length === 0 && !isLoading && (
+            {isStoreHydrated && messages.length === 0 && !isLoading && (
               <div className="flex flex-col items-center justify-center text-center mt-6 md:mt-24 mb-10 md:mb-16">
                 <div className="relative mb-4 md:mb-6">
                   <div className="absolute inset-0 bg-[#1890FF] blur-2xl opacity-20 rounded-full"></div>

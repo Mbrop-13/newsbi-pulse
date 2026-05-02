@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+
+export const maxDuration = 60; // Extend Vercel timeout to 60 seconds
 import { callOpenRouter } from "@/lib/openrouter";
 import { createClient } from "@/lib/supabase/server";
 import { checkLimit, incrementUsage } from "@/lib/check-limits";

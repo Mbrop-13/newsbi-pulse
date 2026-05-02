@@ -685,6 +685,27 @@ function ToolResultPill({ result }: { result: ToolResultUI }) {
       );
     }
 
+    if (result.tool === "stock_info" && result.data) {
+      const item = result.data;
+      return (
+        <div className="flex items-center gap-2">
+          <div className="relative w-5 h-5 rounded-full shadow-sm ring-2 ring-white dark:ring-slate-900 overflow-hidden bg-white dark:bg-slate-700">
+            {item.logo && (
+              <img src={item.logo} alt={item.symbol} onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} className="absolute inset-0 w-full h-full object-cover bg-white" />
+            )}
+            <div className={`${item.logo ? 'hidden' : ''} absolute inset-0 flex items-center justify-center font-bold text-[8px] text-gray-600 dark:text-gray-300`}>
+              {item.symbol.substring(0, 2)}
+            </div>
+          </div>
+          <span>{item.symbol}</span>
+          <span className="text-gray-300 dark:text-gray-600">|</span>
+          <span className={item.changePercent >= 0 ? "text-green-500" : "text-red-500"}>
+            {item.changePercent >= 0 ? "+" : ""}{item.changePercent?.toFixed(2)}%
+          </span>
+        </div>
+      );
+    }
+
     if (result.tool === "news" && Array.isArray(result.data) && result.data.length > 0) {
       return (
         <div className="flex items-center gap-2">
@@ -760,6 +781,28 @@ function ToolResultPill({ result }: { result: ToolResultUI }) {
                   </div>
                 </div>
               ))}
+
+              {result.tool === "stock_info" && result.data && (
+                <div className="flex justify-between items-center p-3 rounded-xl bg-gray-50 dark:bg-slate-800/50 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors border border-transparent hover:border-gray-200 dark:hover:border-gray-700">
+                  <div className="flex items-center gap-3">
+                    <div className="relative w-8 h-8 rounded-full shadow-sm border border-gray-100 dark:border-slate-600 overflow-hidden bg-white dark:bg-slate-700 shrink-0">
+                      {result.data.logo && (
+                        <img src={result.data.logo} alt={result.data.symbol} onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} className="absolute inset-0 w-full h-full object-cover bg-white" />
+                      )}
+                      <div className={`${result.data.logo ? 'hidden' : ''} absolute inset-0 flex items-center justify-center font-bold text-[10px] text-gray-600 dark:text-gray-300`}>
+                        {result.data.symbol.substring(0, 2)}
+                      </div>
+                    </div>
+                    <div className="font-bold text-sm text-gray-900 dark:text-white">{result.data.symbol}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-semibold text-gray-900 dark:text-white">${result.data.price?.toFixed(2)}</div>
+                    <div className={`text-[11px] font-bold ${result.data.changePercent >= 0 ? "text-green-500" : "text-red-500"}`}>
+                      {result.data.changePercent >= 0 ? "+" : ""}{result.data.changePercent?.toFixed(2)}%
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {result.tool === "news" && Array.isArray(result.data) && result.data.map((item: any, i: number) => (
                 <a key={i} href={item.url || `/?tag=${item.slug}`} target="_blank" rel="noopener noreferrer" className="flex gap-3 p-3 rounded-xl bg-gray-50 dark:bg-slate-800/50 hover:bg-[#1890FF]/5 hover:border-[#1890FF]/20 border border-transparent transition-colors group">

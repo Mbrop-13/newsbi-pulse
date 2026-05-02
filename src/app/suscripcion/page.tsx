@@ -9,142 +9,134 @@ import {
   Sparkles,
   Zap,
   Shield,
-  Globe,
-  Headphones,
-  BarChart3,
   TrendingUp,
-  Newspaper,
   ChevronDown,
   Crown,
   ArrowRight,
   Star,
   Bot,
-  Radio,
   Gem,
+  Bell,
+  FileText,
+  LineChart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuthStore } from "@/lib/stores/auth-store";
+import { useSubscriptionStore } from "@/lib/stores/subscription-store";
+import { PLAN_CONFIGS, formatCLP, getAnnualMonthlyPrice, type PlanTier } from "@/lib/plan-limits";
 
 const plans = [
   {
-    id: "free",
+    id: "free" as PlanTier,
     name: "Gratuito",
-    price: "0",
-    period: "para siempre",
-    description: "Para dar tus primeros pasos en la plataforma.",
+    description: "Para explorar la plataforma.",
     features: [
-      { text: "3 preguntas a R-ai", included: true },
-      { text: "10 audios (resúmenes)", included: true },
-      { text: "1 apuesta (Máx 10💎)", included: true },
+      { text: "5 consultas IA de por vida", included: true },
+      { text: "5 audios de noticias/día", included: true },
+      { text: "2 alertas de precio", included: true },
+      { text: "5 activos en portafolio", included: true },
+      { text: "Diamantes x0.5", included: true },
+      { text: "Soporte comunitario", included: true },
       { text: "Alertas por Email", included: false },
-      { text: "Análisis de Portafolio", included: false },
-      { text: "Reportes periódicos", included: false },
-      { text: "API Privada", included: false },
-      { text: "Soporte dedicado", included: false },
-      { text: "Alertas por WhatsApp", included: false },
+      { text: "Alertas por SMS", included: false },
+      { text: "Informe semanal", included: false },
+      { text: "Análisis de portafolio", included: false },
     ],
     cta: "Plan actual",
     popular: false,
     gradient: "from-slate-500 to-slate-600",
+    icon: Zap,
   },
   {
-    id: "pro",
+    id: "pro" as PlanTier,
     name: "Pro",
-    price: "11.99",
-    period: "/mes",
-    description: "Ideal para usuarios activos.",
+    description: "Para usuarios activos.",
     features: [
-      { text: "40 preguntas a R-ai/mes", included: true },
-      { text: "50 audios/mes", included: true },
-      { text: "Apuestas ilimitadas", included: true },
+      { text: "100 consultas IA/mes", included: true },
+      { text: "50 audios de noticias/mes", included: true },
+      { text: "5 alertas de precio", included: true },
+      { text: "25 activos en portafolio", included: true },
+      { text: "Diamantes x1", included: true },
       { text: "Alertas por Email", included: true },
-      { text: "Análisis Básico", included: true },
-      { text: "Reporte semanal", included: true },
-      { text: "API Privada", included: false },
-      { text: "Soporte dedicado", included: false },
-      { text: "Alertas por WhatsApp", included: false },
+      { text: "Historial de 10 chats", included: true },
+      { text: "Análisis básico de portafolio", included: true },
+      { text: "Sin publicidad", included: true },
+      { text: "Alertas por SMS", included: false },
     ],
     cta: "Comenzar prueba gratis",
     popular: false,
     gradient: "from-[#0052CC]/70 to-[#22D3EE]/70",
+    icon: Shield,
   },
   {
-    id: "max",
+    id: "max" as PlanTier,
     name: "Max",
-    price: "23.99",
-    period: "/mes",
-    description: "Para inversores y profesionales exigentes.",
+    description: "Para inversores exigentes.",
     features: [
-      { text: "100 preguntas a R-ai/mes", included: true },
-      { text: "100 audios/mes", included: true },
-      { text: "Apuestas ilimitadas", included: true },
-      { text: "Alertas por Email", included: true },
-      { text: "Análisis Pro", included: true },
-      { text: "Reporte diario y semanal", included: true },
-      { text: "API Privada", included: false },
-      { text: "Soporte dedicado", included: false },
-      { text: "Alertas por WhatsApp", included: false },
+      { text: "300 consultas IA/mes", included: true },
+      { text: "150 audios de noticias/mes", included: true },
+      { text: "15 alertas de precio", included: true },
+      { text: "100 activos en portafolio", included: true },
+      { text: "Diamantes x2", included: true },
+      { text: "Alertas por Email y SMS", included: true },
+      { text: "Informe semanal de noticias", included: true },
+      { text: "Cálculos avanzados de portafolio", included: true },
+      { text: "Recomendaciones de análisis", included: true },
+      { text: "IA con modelo premium", included: true },
     ],
     cta: "Elegir plan Max",
     popular: true,
     gradient: "from-[#0052CC] to-[#22D3EE]",
+    icon: Crown,
   },
   {
-    id: "ultra",
+    id: "ultra" as PlanTier,
     name: "Ultra",
-    price: "37.99",
-    period: "/mes",
-    description: "Para equipos y análisis profundo.",
+    description: "El máximo poder analítico.",
     features: [
-      { text: "Preguntas Ilimitadas", included: true },
-      { text: "Audios Ilimitados", included: true },
-      { text: "Apuestas ilimitadas", included: true },
-      { text: "Alertas por Email", included: true },
-      { text: "Alertas por WhatsApp", included: true },
-      { text: "Análisis Ultra", included: true },
-      { text: "Reporte en tiempo real", included: true },
-      { text: "API Privada & Comunidad", included: true },
+      { text: "600 consultas IA/mes", included: true },
+      { text: "300 audios de noticias/mes", included: true },
+      { text: "30 alertas de precio", included: true },
+      { text: "Activos ilimitados", included: true },
+      { text: "Diamantes x5", included: true },
+      { text: "IA con búsqueda web", included: true },
+      { text: "Análisis premium de portafolio", included: true },
+      { text: "Informes semanales + reportes", included: true },
       { text: "Soporte dedicado 24/7", included: true },
+      { text: "Historial ilimitado de chats", included: true },
     ],
     cta: "Elegir plan Ultra",
     popular: false,
     gradient: "from-purple-600 to-pink-500",
+    icon: TrendingUp,
   },
 ];
 
 const premiumFeatures = [
   {
     icon: Bot,
-    title: "IA Sin Límites",
-    desc: "Análisis de artículos, resúmenes y enriquecimiento potenciado por los mejores modelos de IA del mundo.",
+    title: "Asistente IA Avanzado",
+    desc: "Consulta tus noticias, analiza tu portafolio y recibe recomendaciones de análisis potenciadas por los mejores modelos de IA.",
     color: "text-blue-500",
     bg: "bg-blue-500/10",
   },
   {
-    icon: Headphones,
-    title: "Audio Inteligente",
-    desc: "Convierte cualquier artículo en audio de alta fidelidad con Amazon Polly. Escucha las noticias mientras te desplazas.",
-    color: "text-purple-500",
-    bg: "bg-purple-500/10",
-  },
-  {
-    icon: TrendingUp,
-    title: "Predicciones Pro",
-    desc: "Accede a mercados exclusivos, datos históricos avanzados y análisis de sentimiento de mercado en tiempo real.",
+    icon: LineChart,
+    title: "Análisis de Portafolio",
+    desc: "Cálculos avanzados de rendimiento, volatilidad, distribución de activos y resúmenes semanales automáticos.",
     color: "text-emerald-500",
     bg: "bg-emerald-500/10",
   },
   {
-    icon: BarChart3,
-    title: "Mercados Premium",
-    desc: "Widgets de TradingView avanzados, screeners financieros y alertas personalizadas para activos.",
+    icon: FileText,
+    title: "Informes Semanales",
+    desc: "Recibe cada lunes un informe con las noticias más importantes de la semana y un resumen de tu portafolio.",
     color: "text-amber-500",
     bg: "bg-amber-500/10",
   },
   {
-    icon: Globe,
-    title: "Cobertura Global",
-    desc: "Noticias de primera mano de más de 50 países con traducción automática y filtros geográficos.",
+    icon: Bell,
+    title: "Alertas Multicanal",
+    desc: "Recibe alertas de precio por email y SMS cuando tus activos alcanzan los objetivos que configuraste.",
     color: "text-cyan-500",
     bg: "bg-cyan-500/10",
   },
@@ -155,79 +147,112 @@ const premiumFeatures = [
     color: "text-rose-500",
     bg: "bg-rose-500/10",
   },
+  {
+    icon: Gem,
+    title: "Multiplicador de Diamantes",
+    desc: "Acelera tus ganancias de diamantes diarios para canjear recompensas exclusivas.",
+    color: "text-purple-500",
+    bg: "bg-purple-500/10",
+  },
 ];
 
 const faqItems = [
   {
     q: "¿Puedo cancelar en cualquier momento?",
-    a: "Sí, puedes cancelar tu suscripción Max en cualquier momento desde tu perfil. Mantendrás el acceso hasta el final del período de facturación.",
+    a: "Sí, puedes cancelar tu suscripción en cualquier momento desde tu perfil. Mantendrás el acceso hasta el final del período de facturación.",
   },
   {
     q: "¿Qué son los diamantes 💎?",
-    a: "Los diamantes son la moneda virtual de Reclu. Los usas para participar en mercados de predicción. Los usuarios Max reciben 500💎 mensuales adicionales.",
+    a: "Los diamantes son la moneda virtual de Reclu. Los ganas diariamente con un multiplicador según tu plan: Free x0.5, Pro x1, Max x2, Ultra x5.",
   },
   {
     q: "¿Hay descuento por pago anual?",
-    a: "Sí, el plan anual tiene un 20% de descuento. Pagas $95.90/año en lugar de $119.88 (ahorro de $23.98).",
+    a: "Sí, todos los planes tienen un 20% de descuento en la modalidad anual.",
   },
   {
     q: "¿Qué métodos de pago aceptan?",
-    a: "Aceptamos tarjetas de crédito/débito (Visa, Mastercard, American Express), PayPal y transferencia bancaria para planes Enterprise.",
+    a: "Aceptamos todos los medios de pago de MercadoPago: tarjetas de crédito/débito, transferencia bancaria y más.",
   },
   {
-    q: "¿Puedo probar Max gratis?",
-    a: "¡Sí! Todos los nuevos usuarios Max obtienen 7 días de prueba gratuita. Si no te convence, cancelas antes y no se te cobrará nada.",
+    q: "¿Puedo probar un plan gratis?",
+    a: "¡Sí! Todos los nuevos usuarios obtienen 7 días de prueba gratuita en cualquier plan. Si no te convence, cancelas antes y no se te cobrará nada.",
+  },
+  {
+    q: "¿Qué significa 5 consultas IA de por vida?",
+    a: "En el plan gratuito, tienes 5 consultas totales al asistente IA para que puedas probarlo. Si quieres más, puedes mejorar a Pro con 100 consultas mensuales.",
   },
 ];
 
-export default function SuscripcionPage() {
-  const { isAuthenticated } = useAuthStore();
+export default function SuscripcionesPage() {
+  const { tier: currentTier } = useSubscriptionStore();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
-  const getAnnualPrice = (monthlyStr: string) => {
-    if (monthlyStr === "0") return "0";
-    const monthly = parseFloat(monthlyStr);
-    return (monthly * 12 * 0.8 / 12).toFixed(2);
+  const getPrice = (planId: PlanTier): string => {
+    const config = PLAN_CONFIGS[planId];
+    if (config.price === 0) return "0";
+    if (billingCycle === "annual") {
+      return formatCLP(getAnnualMonthlyPrice(planId));
+    }
+    return formatCLP(config.price);
+  };
+
+  const handleSelectPlan = async (planId: PlanTier) => {
+    if (planId === "free" || planId === currentTier) return;
+    
+    // Redirect to MercadoPago checkout
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: planId, billing: billingCycle }),
+      });
+      
+      if (res.ok) {
+        const { url } = await res.json();
+        if (url) window.location.href = url;
+      }
+    } catch (err) {
+      console.error("Checkout error:", err);
+    }
   };
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Background Gradient behind everything */}
+      {/* Background Gradient */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] pointer-events-none rounded-full bg-gradient-to-br from-[#0052CC]/10 via-[#22D3EE]/5 to-transparent blur-3xl" />
 
       <div className="pt-[7rem] md:pt-[9rem] relative z-10" />
 
       {/* Hero */}
       <section className="relative pb-16">
-
         <div className="max-w-[1100px] mx-auto px-4 text-center relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-accent/10 border border-accent/20 rounded-full text-sm font-medium text-accent mb-6">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-accent/10 border border-accent/20 rounded-full text-sm font-medium text-accent mb-6 shadow-sm shadow-accent/10">
               <Sparkles className="w-4 h-4" />
-              Nuevo: 7 días de prueba gratis
+              7 días de prueba gratis
             </div>
 
-            <h1 className="font-editorial text-4xl md:text-6xl lg:text-7xl font-bold leading-[1.05] mb-5">
-              Información que
-              <span className="block gradient-text">mueve mercados</span>
+            <h1 className="font-editorial text-4xl md:text-6xl lg:text-7xl font-bold leading-[1.05] mb-5 text-foreground">
+              Suscripciones que
+              <span className="block bg-gradient-to-r from-[#0052CC] to-[#22D3EE] bg-clip-text text-transparent">potencian tu inversión</span>
             </h1>
 
             <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
-              Desbloquea el poder completo de Reclu con análisis IA ilimitados, predicciones avanzadas y una experiencia sin interrupciones.
+              Desbloquea análisis IA avanzados, alertas multicanal, cálculos de portafolio y reportes semanales para tomar mejores decisiones.
             </p>
 
             {/* Billing Toggle */}
-            <div className="inline-flex items-center gap-3 bg-secondary/50 border border-border rounded-full p-1 mb-12">
+            <div className="inline-flex items-center gap-3 bg-secondary border border-border rounded-full p-1 mb-12 shadow-inner">
               <button
                 onClick={() => setBillingCycle("monthly")}
-                className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
+                className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all ${
                   billingCycle === "monthly"
-                    ? "bg-background shadow-sm text-foreground"
+                    ? "bg-background shadow-md text-foreground"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -235,9 +260,9 @@ export default function SuscripcionPage() {
               </button>
               <button
                 onClick={() => setBillingCycle("annual")}
-                className={`px-5 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${
+                className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${
                   billingCycle === "annual"
-                    ? "bg-background shadow-sm text-foreground"
+                    ? "bg-background shadow-md text-foreground"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -250,103 +275,118 @@ export default function SuscripcionPage() {
           </motion.div>
 
           {/* Pricing Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 max-w-[1200px] xl:max-w-[1400px] mx-auto">
-            {plans.map((plan, i) => (
-              <motion.div
-                key={plan.id}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
-                className={`relative rounded-2xl border p-6 text-left transition-all ${
-                  plan.popular
-                    ? "border-accent bg-accent/[0.02] shadow-xl shadow-accent/5 scale-[1.02]"
-                    : "border-border bg-card hover:border-border/80"
-                }`}
-              >
-                {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-[#0052CC] to-[#22D3EE] rounded-full text-white text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5">
-                    <Star className="w-3 h-3" />
-                    Más popular
-                  </div>
-                )}
-
-                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${plan.gradient} flex items-center justify-center mb-4`}>
-                  {plan.id === "free" && <Zap className="w-5 h-5 text-white" />}
-                  {plan.id === "pro" && <Shield className="w-5 h-5 text-white" />}
-                  {plan.id === "max" && <Crown className="w-5 h-5 text-white" />}
-                  {plan.id === "ultra" && <TrendingUp className="w-5 h-5 text-white" />}
-                </div>
-
-                <h3 className="font-editorial text-xl font-bold mb-1">{plan.name}</h3>
-                <p className="text-xs text-muted-foreground mb-4">{plan.description}</p>
-
-                <div className="flex items-baseline gap-1 mb-6">
-                  {plan.price !== "Contacto" ? (
-                    <>
-                      <span className="font-editorial text-4xl font-bold">
-                        ${billingCycle === "annual" ? getAnnualPrice(plan.price) : plan.price}
-                      </span>
-                      <span className="text-sm text-muted-foreground">{plan.period}</span>
-                    </>
-                  ) : (
-                    <span className="font-editorial text-3xl font-bold">{plan.price}</span>
-                  )}
-                </div>
-
-                <Button
-                  className={`w-full rounded-xl h-11 font-bold text-sm mb-6 ${
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 max-w-[1200px] xl:max-w-[1400px] mx-auto">
+            {plans.map((plan, i) => {
+              const isCurrentPlan = plan.id === currentTier;
+              const PlanIcon = plan.icon;
+              
+              return (
+                <motion.div
+                  key={plan.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: i * 0.1 }}
+                  className={`relative flex flex-col rounded-3xl border p-6 text-left transition-all duration-300 ${
                     plan.popular
-                      ? "bg-gradient-to-r from-[#0052CC] to-[#0066FF] hover:from-[#0052CC]/90 hover:to-[#0066FF]/90 text-white shadow-lg shadow-accent/20"
-                      : plan.id === "ultra"
-                      ? "bg-purple-600 hover:bg-purple-700 text-white"
-                      : plan.id === "pro"
-                      ? "bg-secondary hover:bg-secondary/80 text-foreground"
-                      : "bg-secondary/50 text-muted-foreground cursor-default"
+                      ? "border-accent bg-accent/[0.02] shadow-[0_0_40px_-10px_rgba(0,82,204,0.15)] scale-[1.02] md:scale-105 z-10"
+                      : isCurrentPlan
+                      ? "border-emerald-500/50 bg-emerald-500/[0.02]"
+                      : "border-border bg-card/50 backdrop-blur-sm hover:border-border/80 hover:bg-card"
                   }`}
-                  disabled={plan.id === "free"}
                 >
-                  {plan.cta}
-                  {plan.popular && <ArrowRight className="w-4 h-4 ml-2" />}
-                </Button>
-
-                <div className="space-y-3">
-                  {plan.features.map((f, fi) => (
-                    <div key={fi} className="flex items-center gap-3 text-sm">
-                      {f.included ? (
-                        <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                      ) : (
-                        <X className="w-4 h-4 text-muted-foreground/30 shrink-0" />
-                      )}
-                      <span className={f.included ? "text-foreground" : "text-muted-foreground/50"}>
-                        {f.text}
-                      </span>
+                  {plan.popular && (
+                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-gradient-to-r from-[#0052CC] to-[#22D3EE] rounded-full text-white text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-lg shadow-[#0052CC]/30">
+                      <Star className="w-3.5 h-3.5" />
+                      Recomendado
                     </div>
-                  ))}
-                </div>
-              </motion.div>
-            ))}
+                  )}
+                  
+                  {isCurrentPlan && !plan.popular && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-emerald-500 rounded-full text-white text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-md">
+                      <Check className="w-3 h-3" />
+                      Tu plan actual
+                    </div>
+                  )}
+
+                  <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${plan.gradient} flex items-center justify-center mb-5 shadow-lg`}>
+                    <PlanIcon className="w-6 h-6 text-white" />
+                  </div>
+
+                  <h3 className="font-editorial text-2xl font-bold mb-2 text-foreground">{plan.name}</h3>
+                  <p className="text-sm text-muted-foreground mb-6 min-h-[40px]">{plan.description}</p>
+
+                  <div className="flex items-baseline gap-1 mb-8">
+                    <span className="font-editorial text-4xl font-bold text-foreground tracking-tight">
+                      {getPrice(plan.id)}
+                    </span>
+                    <span className="text-sm text-muted-foreground font-medium">
+                      {plan.id === "free" ? "para siempre" : "/mes"}
+                    </span>
+                  </div>
+
+                  <Button
+                    onClick={() => handleSelectPlan(plan.id)}
+                    className={`w-full rounded-2xl h-12 font-bold text-sm mb-8 transition-all ${
+                      plan.popular
+                        ? "bg-gradient-to-r from-[#0052CC] to-[#0066FF] hover:from-[#0052CC]/90 hover:to-[#0066FF]/90 text-white shadow-[0_10px_20px_-10px_rgba(0,82,204,0.5)] hover:shadow-[0_10px_20px_-10px_rgba(0,82,204,0.7)] hover:-translate-y-0.5"
+                        : plan.id === "ultra"
+                        ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg shadow-purple-500/25 hover:-translate-y-0.5"
+                        : isCurrentPlan
+                        ? "bg-emerald-500/10 text-emerald-600 cursor-default border border-emerald-500/20"
+                        : plan.id === "pro"
+                        ? "bg-secondary hover:bg-secondary/80 text-foreground border border-border"
+                        : "bg-secondary/50 text-muted-foreground cursor-default border border-border/50"
+                    }`}
+                    disabled={plan.id === "free" || isCurrentPlan}
+                  >
+                    {isCurrentPlan ? "Plan actual" : plan.cta}
+                    {plan.popular && !isCurrentPlan && <ArrowRight className="w-4 h-4 ml-2" />}
+                  </Button>
+
+                  <div className="space-y-3.5 flex-1">
+                    <p className="text-xs font-bold text-foreground uppercase tracking-wider mb-4">Beneficios incluidos</p>
+                    {plan.features.map((f, fi) => (
+                      <div key={fi} className="flex items-start gap-3 text-sm">
+                        {f.included ? (
+                          <div className="mt-0.5 w-5 h-5 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
+                            <Check className="w-3.5 h-3.5 text-emerald-500" />
+                          </div>
+                        ) : (
+                          <div className="mt-0.5 w-5 h-5 flex items-center justify-center shrink-0">
+                            <X className="w-3.5 h-3.5 text-muted-foreground/30" />
+                          </div>
+                        )}
+                        <span className={`leading-snug ${f.included ? "text-foreground font-medium" : "text-muted-foreground/50"}`}>
+                          {f.text}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>
 
       {/* Feature Grid */}
-      <section className="py-20 border-t border-border">
-        <div className="max-w-[1000px] mx-auto px-4">
+      <section className="py-24 border-t border-border bg-secondary/20">
+        <div className="max-w-[1100px] mx-auto px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-14"
+            className="text-center mb-16"
           >
-            <h2 className="font-editorial text-3xl md:text-4xl font-bold mb-3">
-              Todo lo que necesitas, nada que te sobre
+            <h2 className="font-editorial text-3xl md:text-5xl font-bold mb-4 text-foreground">
+              Todo lo que necesitas para invertir mejor
             </h2>
-            <p className="text-muted-foreground max-w-lg mx-auto">
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Cada función está diseñada para darte ventaja informativa en un mundo que se mueve rápido.
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {premiumFeatures.map((feat, i) => (
               <motion.div
                 key={feat.title}
@@ -354,13 +394,16 @@ export default function SuscripcionPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.08 }}
-                className="group bg-card border border-border rounded-2xl p-6 hover:border-accent/30 hover:shadow-lg hover:shadow-accent/5 transition-all duration-300"
+                className="group bg-card border border-border rounded-3xl p-8 hover:border-accent/40 hover:shadow-xl hover:shadow-accent/5 transition-all duration-300 relative overflow-hidden"
               >
-                <div className={`w-11 h-11 ${feat.bg} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                  <feat.icon className={`w-5 h-5 ${feat.color}`} />
+                {/* Decorative background blur */}
+                <div className={`absolute -right-10 -top-10 w-32 h-32 rounded-full blur-3xl opacity-20 ${feat.bg} group-hover:opacity-40 transition-opacity`} />
+                
+                <div className={`w-14 h-14 ${feat.bg} rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300 relative z-10`}>
+                  <feat.icon className={`w-7 h-7 ${feat.color}`} />
                 </div>
-                <h3 className="font-semibold text-base mb-2">{feat.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{feat.desc}</p>
+                <h3 className="font-bold text-xl mb-3 text-foreground relative z-10">{feat.title}</h3>
+                <p className="text-muted-foreground leading-relaxed relative z-10">{feat.desc}</p>
               </motion.div>
             ))}
           </div>
@@ -368,21 +411,21 @@ export default function SuscripcionPage() {
       </section>
 
       {/* FAQ */}
-      <section className="py-20 border-t border-border">
-        <div className="max-w-[650px] mx-auto px-4">
+      <section className="py-24 border-t border-border">
+        <div className="max-w-[700px] mx-auto px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-12"
+            className="text-center mb-16"
           >
-            <h2 className="font-editorial text-3xl font-bold mb-3">Preguntas frecuentes</h2>
-            <p className="text-muted-foreground text-sm">
-              ¿Tienes dudas? Aquí encontrarás las respuestas más comunes.
+            <h2 className="font-editorial text-3xl md:text-4xl font-bold mb-4 text-foreground">Preguntas frecuentes</h2>
+            <p className="text-muted-foreground text-lg">
+              Resolvemos tus dudas para que puedas empezar con confianza.
             </p>
           </motion.div>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             {faqItems.map((item, i) => (
               <motion.div
                 key={i}
@@ -390,14 +433,14 @@ export default function SuscripcionPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.05 }}
-                className="border border-border rounded-xl overflow-hidden bg-card"
+                className="border border-border/60 rounded-2xl overflow-hidden bg-card/30 hover:bg-card/80 transition-colors"
               >
                 <button
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                  className="w-full flex items-center justify-between px-5 py-4 text-left text-sm font-medium hover:bg-secondary/30 transition-colors"
+                  className="w-full flex items-center justify-between px-6 py-5 text-left text-base font-semibold text-foreground"
                 >
                   {item.q}
-                  <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform ${openFaq === i ? "rotate-180" : ""}`} />
+                  <ChevronDown className={`w-5 h-5 text-muted-foreground shrink-0 transition-transform duration-300 ${openFaq === i ? "rotate-180 text-foreground" : ""}`} />
                 </button>
                 <AnimatePresence>
                   {openFaq === i && (
@@ -405,10 +448,10 @@ export default function SuscripcionPage() {
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
                       className="overflow-hidden"
                     >
-                      <p className="px-5 pb-4 text-sm text-muted-foreground leading-relaxed">
+                      <p className="px-6 pb-6 text-muted-foreground leading-relaxed">
                         {item.a}
                       </p>
                     </motion.div>
@@ -421,34 +464,37 @@ export default function SuscripcionPage() {
       </section>
 
       {/* CTA Footer */}
-      <section className="py-20 border-t border-border">
-        <div className="max-w-[700px] mx-auto px-4 text-center">
+      <section className="py-24 border-t border-border bg-gradient-to-b from-transparent to-accent/5">
+        <div className="max-w-[800px] mx-auto px-4 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#0052CC] to-[#22D3EE] flex items-center justify-center mx-auto mb-6 shadow-lg shadow-accent/20">
-              <Gem className="w-8 h-8 text-white" />
+            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-[#0052CC] to-[#22D3EE] flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-accent/20">
+              <Gem className="w-10 h-10 text-white" />
             </div>
-            <h2 className="font-editorial text-3xl md:text-4xl font-bold mb-4">
+            <h2 className="font-editorial text-4xl md:text-5xl font-bold mb-6 text-foreground">
               ¿Listo para elevar tu juego?
             </h2>
-            <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-              Únete a miles de profesionales que ya usan Reclu Pro para tomar decisiones informadas.
+            <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
+              Únete a miles de inversores que usan Reclu para tomar decisiones informadas con Inteligencia Artificial.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Button className="bg-gradient-to-r from-[#0052CC] to-[#0066FF] hover:from-[#0052CC]/90 hover:to-[#0066FF]/90 text-white font-bold rounded-xl h-12 px-8 shadow-lg shadow-accent/20 text-base">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Button
+                onClick={() => handleSelectPlan("max")}
+                className="bg-gradient-to-r from-[#0052CC] to-[#0066FF] hover:from-[#0052CC]/90 hover:to-[#0066FF]/90 text-white font-bold rounded-2xl h-14 px-10 shadow-xl shadow-[#0052CC]/20 text-lg w-full sm:w-auto hover:-translate-y-1 transition-all"
+              >
                 Comenzar prueba gratis
-                <ArrowRight className="w-4 h-4 ml-2" />
+                <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
-              <Link href="/">
-                <Button variant="outline" className="rounded-xl h-12 px-8 font-medium text-base">
+              <Link href="/" className="w-full sm:w-auto">
+                <Button variant="outline" className="rounded-2xl h-14 px-10 font-bold text-lg w-full sm:w-auto hover:bg-secondary border-2">
                   Explorar gratis
                 </Button>
               </Link>
             </div>
-            <p className="text-[11px] text-muted-foreground mt-4">
+            <p className="text-sm text-muted-foreground mt-6 font-medium">
               7 días gratis · Sin compromiso · Cancela cuando quieras
             </p>
           </motion.div>

@@ -256,6 +256,15 @@ export function Navbar() {
                 </AnimatePresence>
               </div>
 
+              {/* SUSCRIPCIONES LINK */}
+              <Link 
+                href="/suscripcion" 
+                className="flex items-center gap-1.5 text-[#1890FF] hover:text-[#0052CC] font-bold transition-all hover:scale-105"
+              >
+                <Crown className="w-4 h-4" />
+                Suscripciones
+              </Link>
+
               <Link href="/mundo" className="hover:text-[#1890FF] transition-colors flex items-center gap-1">🌍 Mundo</Link>
             </nav>
 
@@ -366,11 +375,15 @@ export function Navbar() {
                       Configuración
                     </DropdownMenuItem>
                   </Link>
-                  <Link href="/suscripcion">
-                    <DropdownMenuItem className="text-sm py-2 px-3 cursor-pointer rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-[#1890FF] font-medium">
-                      Suscripción Premium
-                    </DropdownMenuItem>
-                  </Link>
+                  <div className="px-2 py-1">
+                    <Link href="/suscripcion">
+                      <DropdownMenuItem className="text-sm py-2 px-4 cursor-pointer rounded-full transition-all duration-300 text-[#1890FF] font-bold bg-[#1890FF]/10 hover:bg-[#1890FF]/20 hover:scale-[1.02] flex items-center justify-center gap-2 group relative overflow-hidden shadow-[0_0_15px_-3px_rgba(24,144,255,0.3)]">
+                        <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent -translate-x-[150%] group-hover:translate-x-[150%] transition-transform duration-1000 ease-in-out" />
+                        <Crown className="w-4 h-4 group-hover:-rotate-12 group-hover:scale-110 transition-all duration-300" />
+                        Suscripción Premium
+                      </DropdownMenuItem>
+                    </Link>
+                  </div>
                   <DropdownMenuSeparator className="bg-gray-100 dark:bg-gray-800 mx-1" />
                   
                   {/* Preferences directly opens the ViewSettingsDialog */}

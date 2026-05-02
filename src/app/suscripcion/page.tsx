@@ -30,19 +30,19 @@ const plans = [
     name: "Gratuito",
     description: "Para explorar la plataforma.",
     features: [
-      { text: "5 consultas IA de por vida", included: true },
-      { text: "5 audios de noticias/día", included: true },
-      { text: "2 alertas de precio", included: true },
-      { text: "5 activos en portafolio", included: true },
-      { text: "Diamantes x0.5", included: true },
-      { text: "Soporte comunitario", included: true },
-      { text: "Sin publicidad", included: false },
-      { text: "Historial de chats", included: false },
-      { text: "Alertas por Email", included: false },
-      { text: "Alertas por SMS", included: false },
-      { text: "Informe semanal", included: false },
-      { text: "Análisis de portafolio", included: false },
-      { text: "Recomendaciones IA", included: false },
+      { text: "5 consultas IA de por vida", included: true, highlight: false },
+      { text: "5 audios de noticias/día", included: true, highlight: false },
+      { text: "2 alertas de precio", included: true, highlight: false },
+      { text: "5 activos en portafolio", included: true, highlight: false },
+      { text: "Diamantes x0.5", included: true, highlight: false },
+      { text: "Soporte comunitario", included: true, highlight: false },
+      { text: "Sin publicidad", included: false, highlight: false },
+      { text: "Historial de chats", included: false, highlight: false },
+      { text: "Alertas por Email", included: false, highlight: false },
+      { text: "Análisis de portafolio", included: false, highlight: false },
+      { text: "Alertas por SMS", included: false, highlight: false },
+      { text: "Informe semanal", included: false, highlight: false },
+      { text: "Recomendaciones IA", included: false, highlight: false },
     ],
     cta: "Plan actual",
     popular: false,
@@ -54,19 +54,19 @@ const plans = [
     name: "Pro",
     description: "Para usuarios activos.",
     features: [
-      { text: "100 consultas IA/mes", included: true },
-      { text: "50 audios de noticias/mes", included: true },
-      { text: "5 alertas de precio", included: true },
-      { text: "25 activos en portafolio", included: true },
-      { text: "Diamantes x1", included: true },
-      { text: "Soporte por email", included: true },
-      { text: "Sin publicidad", included: true },
-      { text: "Historial de 10 chats", included: true },
-      { text: "Alertas por Email", included: true },
-      { text: "Alertas por SMS", included: false },
-      { text: "Informe semanal", included: false },
-      { text: "Análisis básico de portafolio", included: true },
-      { text: "Recomendaciones IA", included: false },
+      { text: "100 consultas IA/mes", included: true, highlight: true },
+      { text: "50 audios de noticias/mes", included: true, highlight: true },
+      { text: "5 alertas de precio", included: true, highlight: true },
+      { text: "25 activos en portafolio", included: true, highlight: true },
+      { text: "Diamantes x1", included: true, highlight: true },
+      { text: "Soporte por email", included: true, highlight: false },
+      { text: "Sin publicidad", included: true, highlight: true },
+      { text: "Historial de 10 chats", included: true, highlight: true },
+      { text: "Alertas por Email", included: true, highlight: true },
+      { text: "Análisis básico de portafolio", included: true, highlight: true },
+      { text: "Alertas por SMS", included: false, highlight: false },
+      { text: "Informe semanal", included: false, highlight: false },
+      { text: "Recomendaciones IA", included: false, highlight: false },
     ],
     cta: "Comenzar prueba gratis",
     popular: false,
@@ -78,19 +78,19 @@ const plans = [
     name: "Max",
     description: "Para inversores exigentes.",
     features: [
-      { text: "300 consultas IA/mes", included: true },
-      { text: "150 audios de noticias/mes", included: true },
-      { text: "15 alertas de precio", included: true },
-      { text: "100 activos en portafolio", included: true },
-      { text: "Diamantes x2", included: true },
-      { text: "Soporte prioritario", included: true },
-      { text: "Sin publicidad", included: true },
-      { text: "Historial de 50 chats", included: true },
-      { text: "Alertas por Email", included: true },
-      { text: "Alertas por SMS", included: true },
-      { text: "Informe semanal", included: true },
-      { text: "Análisis avanzado de portafolio", included: true },
-      { text: "Recomendaciones IA", included: true },
+      { text: "300 consultas IA/mes", included: true, highlight: true },
+      { text: "150 audios de noticias/mes", included: true, highlight: true },
+      { text: "15 alertas de precio", included: true, highlight: true },
+      { text: "100 activos en portafolio", included: true, highlight: true },
+      { text: "Diamantes x2", included: true, highlight: true },
+      { text: "Soporte prioritario", included: true, highlight: false },
+      { text: "Sin publicidad", included: true, highlight: false },
+      { text: "Historial de 50 chats", included: true, highlight: true },
+      { text: "Alertas por Email", included: true, highlight: false },
+      { text: "Análisis avanzado de portafolio", included: true, highlight: true },
+      { text: "Alertas por SMS", included: true, highlight: true },
+      { text: "Informe semanal", included: true, highlight: true },
+      { text: "Recomendaciones IA", included: true, highlight: true },
     ],
     cta: "Elegir plan Max",
     popular: true,
@@ -102,19 +102,19 @@ const plans = [
     name: "Ultra",
     description: "El máximo poder analítico.",
     features: [
-      { text: "600 consultas IA/mes", included: true },
-      { text: "300 audios de noticias/mes", included: true },
-      { text: "30 alertas de precio", included: true },
-      { text: "Activos ilimitados", included: true },
-      { text: "Diamantes x5", included: true },
-      { text: "Soporte dedicado 24/7", included: true },
-      { text: "Sin publicidad", included: true },
-      { text: "Historial ilimitado de chats", included: true },
-      { text: "Alertas por Email", included: true },
-      { text: "Alertas por SMS", included: true },
-      { text: "Informe semanal y reportes", included: true },
-      { text: "Análisis premium de portafolio", included: true },
-      { text: "IA con búsqueda web", included: true },
+      { text: "600 consultas IA/mes", included: true, highlight: true },
+      { text: "300 audios de noticias/mes", included: true, highlight: true },
+      { text: "30 alertas de precio", included: true, highlight: true },
+      { text: "Activos ilimitados", included: true, highlight: true },
+      { text: "Diamantes x5", included: true, highlight: true },
+      { text: "Soporte dedicado 24/7", included: true, highlight: true },
+      { text: "Sin publicidad", included: true, highlight: false },
+      { text: "Historial ilimitado de chats", included: true, highlight: true },
+      { text: "Alertas por Email", included: true, highlight: false },
+      { text: "Análisis premium de portafolio", included: true, highlight: true },
+      { text: "Alertas por SMS", included: true, highlight: false },
+      { text: "Informe semanal y reportes", included: true, highlight: true },
+      { text: "IA con búsqueda web", included: true, highlight: true },
     ],
     cta: "Elegir plan Ultra",
     popular: false,
@@ -305,12 +305,12 @@ export default function SuscripcionesPage() {
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: i * 0.1 }}
-                  className={`relative flex flex-col rounded-3xl border p-6 text-left transition-all duration-300 ${
+                  className={`relative flex flex-col rounded-3xl border p-6 text-left transition-all duration-300 group hover:-translate-y-2 ${
                     plan.popular
-                      ? "border-accent bg-accent/[0.02] shadow-[0_0_40px_-10px_rgba(0,82,204,0.15)] scale-[1.02] md:scale-105 z-10"
+                      ? "border-accent bg-accent/[0.02] shadow-[0_0_40px_-10px_rgba(0,82,204,0.15)] scale-[1.02] md:scale-105 z-10 hover:shadow-[0_0_50px_-5px_rgba(0,82,204,0.3)] hover:border-[#1890FF]"
                       : isCurrentPlan
-                      ? "border-emerald-500/50 bg-emerald-500/[0.02]"
-                      : "border-border bg-card/50 backdrop-blur-sm hover:border-border/80 hover:bg-card"
+                      ? "border-emerald-500/50 bg-emerald-500/[0.02] hover:shadow-[0_0_30px_-10px_rgba(16,185,129,0.2)] hover:border-emerald-400"
+                      : "border-border bg-card/50 backdrop-blur-sm hover:border-[#1890FF]/40 hover:bg-card hover:shadow-[0_0_30px_-10px_rgba(24,144,255,0.15)]"
                   }`}
                 >
                   {plan.popular && (
@@ -386,7 +386,7 @@ export default function SuscripcionesPage() {
                             <X className="w-3.5 h-3.5 text-muted-foreground/30" />
                           </div>
                         )}
-                        <span className={`leading-snug ${f.included ? "text-foreground font-medium" : "text-muted-foreground/50"}`}>
+                        <span className={`leading-snug transition-colors duration-300 ${f.included ? "text-foreground font-medium" : "text-muted-foreground/40"} ${f.highlight ? "group-hover:text-[#1890FF] group-hover:font-bold" : ""}`}>
                           {f.text}
                         </span>
                       </div>

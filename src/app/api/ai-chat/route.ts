@@ -190,8 +190,10 @@ export async function POST(request: NextRequest) {
 
       await incrementUsage(user.id, "ai_message").catch(console.error);
 
+      let finalCleanedContent = finalResult.content.replace(/\[TOOL:[^\]]+\](\{.*?\})?/g, "").trim();
+
       return NextResponse.json({
-        content: finalResult.content,
+        content: finalCleanedContent,
         citations: finalResult.citations || [],
         toolResults,
         thinkingSteps,
@@ -224,8 +226,10 @@ export async function POST(request: NextRequest) {
       // No tools needed — direct response
       await incrementUsage(user.id, "ai_message").catch(console.error);
 
+      let step1CleanedContent = step1Result.content.replace(/\[TOOL:[^\]]+\](\{.*?\})?/g, "").trim();
+
       return NextResponse.json({
-        content: step1Result.content,
+        content: step1CleanedContent,
         citations: step1Result.citations || [],
         toolResults: [],
         thinkingSteps: [],
@@ -264,8 +268,10 @@ export async function POST(request: NextRequest) {
 
     await incrementUsage(user.id, "ai_message").catch(console.error);
 
+    let finalCleanedContent = finalResult.content.replace(/\[TOOL:[^\]]+\](\{.*?\})?/g, "").trim();
+
     return NextResponse.json({
-      content: finalResult.content,
+      content: finalCleanedContent,
       citations: finalResult.citations || [],
       toolResults,
       thinkingSteps,

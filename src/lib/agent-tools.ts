@@ -6,7 +6,18 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
-import yahooFinance from "yahoo-finance2";
+import YahooFinance from "yahoo-finance2";
+
+// yahoo-finance2 v3+ requires instantiation before use
+const yf = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
+
+// Logo helpers (same as portfolio page)
+function getLogoUrl(symbol: string): string {
+  return `https://assets.parqet.com/logos/symbol/${symbol}`;
+}
+function getFallbackLogo(symbol: string): string {
+  return `https://ui-avatars.com/api/?name=${symbol}&background=1890FF&color=fff&bold=true&size=96`;
+}
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -73,7 +84,7 @@ export async function getPortfolioData(userId: string): Promise<ToolResult> {
   let liveData: any[] = [];
   try {
     const symbolArray = dbAssets.map((a: any) => a.symbol.trim().toUpperCase());
-    const quotes = await yahooFinance.quote(symbolArray);
+    const quotes = await yf.quote(symbolArray);
     const quoteArray = Array.isArray(quotes) ? quotes : [quotes];
     
     liveData = quoteArray.map((q: any) => ({
@@ -101,7 +112,8 @@ export async function getPortfolioData(userId: string): Promise<ToolResult> {
       change: live.change || 0,
       changePercent: live.changePercent || 0,
       positionValue: price * shares,
-      logo: `https://logo.clearbit.com/${dbA.symbol.toLowerCase()}.com`
+      logo: getLogoUrl(dbA.symbol),
+      fallbackLogo: getFallbackLogo(dbA.symbol)
     };
   });
 
@@ -121,7 +133,7 @@ export async function getPortfolioData(userId: string): Promise<ToolResult> {
 
 export async function getStockInfo(symbol: string): Promise<ToolResult> {
   try {
-    const quote = await yahooFinance.quote(symbol.toUpperCase());
+    const quote = await yf.quote(symbol.toUpperCase());
     if (!quote) throw new Error("Stock not found");
     
     const stock = {
@@ -129,7 +141,8 @@ export async function getStockInfo(symbol: string): Promise<ToolResult> {
       price: quote.regularMarketPrice,
       change: quote.regularMarketChange,
       changePercent: quote.regularMarketChangePercent,
-      logo: `https://logo.clearbit.com/${quote.symbol.toLowerCase()}.com`
+      logo: getLogoUrl(quote.symbol),
+      fallbackLogo: getFallbackLogo(quote.symbol)
     };
 
     return {

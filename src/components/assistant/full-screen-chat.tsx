@@ -184,7 +184,7 @@ export function FullScreenChat() {
   const textClass = chatPrefs.fontSize === "large" ? "text-lg" : "text-[15px]";
 
   return (
-    <div className="flex h-[calc(100vh-72px)] bg-white dark:bg-[#0a0a0a] overflow-hidden relative font-sans">
+    <div className="flex h-[100dvh] bg-white dark:bg-[#0a0a0a] overflow-hidden relative font-sans">
       
       {/* ─── LEFT SIDEBAR (HISTORY) ─── */}
       <AnimatePresence>
@@ -195,24 +195,29 @@ export function FullScreenChat() {
             exit={{ width: 0, opacity: 0 }}
             className="h-full border-r border-gray-100 dark:border-white/5 bg-[#FAFAFA] dark:bg-[#0F1117] flex flex-col flex-shrink-0 z-20 absolute md:relative shadow-2xl md:shadow-none"
           >
-            <div className="p-4 flex items-center justify-between gap-2">
-              <button 
-                onClick={() => { clearMessages(); if(window.innerWidth < 768) setIsSidebarOpen(false); }}
-                className="flex-1 flex items-center justify-between px-4 py-2.5 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:border-[#1890FF]/30 hover:bg-[#1890FF]/5 rounded-xl transition-all group"
-              >
-                <div className="flex items-center gap-2 font-bold text-sm text-gray-900 dark:text-white group-hover:text-[#1890FF]">
-                  <Plus className="w-4 h-4" /> Nuevo Chat
-                </div>
-                <Bot className="w-4 h-4 text-gray-400 group-hover:text-[#1890FF]" />
-              </button>
-              
-              <button 
-                onClick={() => setIsSidebarOpen(false)}
-                className="w-10 h-10 flex items-center justify-center rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 transition-colors"
-                title="Ocultar menú lateral"
-              >
-                <PanelLeftClose className="w-5 h-5" />
-              </button>
+            <div className="p-4 flex flex-col gap-2">
+              <Link href="/" className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 rounded-xl transition-all text-xs font-bold text-gray-600 dark:text-gray-300">
+                <ExternalLink className="w-3.5 h-3.5" /> Volver al Inicio
+              </Link>
+              <div className="flex items-center justify-between gap-2">
+                <button 
+                  onClick={() => { clearMessages(); if(window.innerWidth < 768) setIsSidebarOpen(false); }}
+                  className="flex-1 flex items-center justify-between px-4 py-2.5 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:border-[#1890FF]/30 hover:bg-[#1890FF]/5 rounded-xl transition-all group"
+                >
+                  <div className="flex items-center gap-2 font-bold text-sm text-gray-900 dark:text-white group-hover:text-[#1890FF]">
+                    <Plus className="w-4 h-4" /> Nuevo Chat
+                  </div>
+                  <Bot className="w-4 h-4 text-gray-400 group-hover:text-[#1890FF]" />
+                </button>
+                
+                <button 
+                  onClick={() => setIsSidebarOpen(false)}
+                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 transition-colors"
+                  title="Ocultar menú lateral"
+                >
+                  <PanelLeftClose className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto px-3 hidden-scrollbar mt-2">

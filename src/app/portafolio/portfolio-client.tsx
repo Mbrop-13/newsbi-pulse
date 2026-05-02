@@ -354,10 +354,10 @@ export default function PortfolioClient() {
                                           e.currentTarget.blur();
                                         }
                                       }}
-                                      onBlur={(e) => {
+                                      onBlur={async (e) => {
                                         const val = parseFloat(e.target.value) || 0;
-                                        supabase.from("portfolios").update({ shares: val }).eq("id", asset.id);
                                         setAssets(prev => prev.map(a => a.id === asset.id ? { ...a, shares: val } : a));
+                                        await supabase.from("portfolios").update({ shares: val }).eq("id", asset.id);
                                       }}
                                       className={`w-full px-3 py-2 rounded-lg border text-sm font-bold outline-none transition-all ${
                                         (asset.shares || 0) > 0 

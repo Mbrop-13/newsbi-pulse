@@ -168,14 +168,10 @@ export function FullScreenChat() {
     }
   };
 
-  const shortcuts = hasPortfolio ? [
+  const shortcuts = [
     { label: "Mi portafolio", id: "portfolio_summary", query: "¿Cómo van mis acciones hoy?" },
-    { label: "Noticias de mis activos", id: "portfolio_news", query: "¿Hay noticias de mis acciones?" },
-    { label: "Análisis de mercado", id: "market_analysis", query: "Analiza mi portafolio frente al mercado hoy." },
-  ] : [
     { label: "¿Qué pasó hoy?", id: "top_news", query: "Dame un resumen de las noticias más importantes de hoy." },
-    { label: "Noticias tech", id: "top_news", query: "Noticias de tecnología." },
-    { label: "Análisis del mercado", id: "top_news", query: "Análisis del mercado actual." },
+    { label: "Análisis de mercado", id: "market_analysis", query: "Analiza mi portafolio frente al mercado hoy." },
   ];
 
   // Dynamic classes based on preferences

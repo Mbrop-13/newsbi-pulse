@@ -115,8 +115,8 @@ export async function POST(request: NextRequest) {
 
     // ── Choose model ──
     const model = webSearch
-      ? "x-ai/grok-3-fast:online"
-      : "deepseek/deepseek-chat-v3-0324:free";
+      ? (process.env.OPENROUTER_ENRICH_MODEL || "x-ai/grok-2-1212")
+      : (process.env.OPENROUTER_FILTER_MODEL || "minimax/minimax-01-05-chat");
 
     // ── Build system prompt ──
     let systemContent = AGENT_SYSTEM_PROMPT;

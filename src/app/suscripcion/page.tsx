@@ -199,6 +199,7 @@ export default function SuscripcionesPage() {
   const { tier: currentTier } = useSubscriptionStore();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [hoveredPlan, setHoveredPlan] = useState<string | null>(null);
 
   const getPrice = (planId: PlanTier): string => {
     const config = PLAN_CONFIGS[planId];
@@ -294,9 +295,13 @@ export default function SuscripcionesPage() {
           </motion.div>
 
           {/* Pricing Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 max-w-[1200px] xl:max-w-[1400px] mx-auto">
+          <div 
+            className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 max-w-[1200px] xl:max-w-[1400px] mx-auto"
+            onMouseLeave={() => setHoveredPlan(null)}
+          >
             {plans.map((plan, i) => {
               const isCurrentPlan = plan.id === currentTier;
+              const isPopularActive = plan.popular && (hoveredPlan === null || hoveredPlan === plan.id);
               const PlanIcon = plan.icon;
               
               return (
@@ -305,8 +310,9 @@ export default function SuscripcionesPage() {
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: i * 0.1 }}
+                  onMouseEnter={() => setHoveredPlan(plan.id)}
                   className={`relative flex flex-col rounded-3xl border p-6 text-left transition-all duration-300 group hover:-translate-y-2 ${
-                    plan.popular
+                    isPopularActive
                       ? "border-accent bg-accent/[0.02] shadow-[0_0_40px_-10px_rgba(0,82,204,0.15)] scale-[1.02] md:scale-105 z-10 hover:shadow-[0_0_50px_-5px_rgba(0,82,204,0.3)] hover:border-[#1890FF]"
                       : isCurrentPlan
                       ? "border-emerald-500/50 bg-emerald-500/[0.02] hover:shadow-[0_0_30px_-10px_rgba(16,185,129,0.2)] hover:border-emerald-400"
@@ -314,7 +320,7 @@ export default function SuscripcionesPage() {
                   }`}
                 >
                   {plan.popular && (
-                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-gradient-to-r from-[#0052CC] to-[#22D3EE] rounded-full text-white text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-lg shadow-[#0052CC]/30">
+                    <div className={`absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-gradient-to-r from-[#0052CC] to-[#22D3EE] rounded-full text-white text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all duration-300 ${isPopularActive ? "shadow-lg shadow-[#0052CC]/30 opacity-100" : "opacity-60 saturate-50"}`}>
                       <Star className="w-3.5 h-3.5" />
                       Recomendado
                     </div>

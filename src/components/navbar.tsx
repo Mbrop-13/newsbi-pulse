@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Sun, Moon, LogIn, ChevronDown, User, Headphones, Filter, ArrowLeft, Bot, Sparkles, Layers, Settings, X, Check, Settings2, TrendingUp, Landmark, LineChart, Globe, PieChart, Cpu, BookOpen, Briefcase, Scale, Zap, BarChart3 } from "lucide-react";
+import { Search, Sun, Moon, LogIn, ChevronDown, User, Headphones, Filter, ArrowLeft, Bot, Sparkles, Layers, Settings, X, Check, Settings2, TrendingUp, Landmark, LineChart, Globe, PieChart, Cpu, BookOpen, Briefcase, Scale, Zap, BarChart3, Crown } from "lucide-react";
 import { DiamondsButton } from "@/components/diamonds-button";
 import { NotificationBell } from "@/components/notification-bell";
 import { AuthModals } from "./auth-modals";

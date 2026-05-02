@@ -101,6 +101,7 @@ export async function getPortfolioData(userId: string): Promise<ToolResult> {
       change: live.change || 0,
       changePercent: live.changePercent || 0,
       positionValue: price * shares,
+      logo: `https://logo.clearbit.com/${dbA.symbol.toLowerCase()}.com`
     };
   });
 

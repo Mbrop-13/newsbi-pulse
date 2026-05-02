@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { callOpenRouter } from "@/lib/openrouter";
+import { createClient } from "@/lib/supabase/server";
+import { checkLimit, incrementUsage } from "@/lib/check-limits";
 
 export async function POST(request: NextRequest) {
   try {
@@ -7,6 +9,26 @@ export async function POST(request: NextRequest) {
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return NextResponse.json({ error: "Messages are required" }, { status: 400 });
+    }
+
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Check usage limits based on subscription tier
+    const limitCheck = await checkLimit(user.id, "ai_message");
+    if (!limitCheck.allowed) {
+      return NextResponse.json(
+        { 
+          error: "Has alcanzado el límite de consultas de tu plan actual.", 
+          code: "LIMIT_REACHED",
+          details: limitCheck 
+        }, 
+        { status: 403 }
+      );
     }
 
     // Build system prompt dynamically based on attached articles
@@ -51,6 +73,9 @@ Sé amable, útil y directo. No repitas la pregunta del usuario.`;
       max_tokens: 2000,
       search: true,
     });
+
+    // Increment usage asynchronously after successful generation
+    await incrementUsage(user.id, "ai_message").catch(console.error);
 
     return NextResponse.json({
       content: result.content,

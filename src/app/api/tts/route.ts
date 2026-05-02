@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PollyClient, SynthesizeSpeechCommand } from "@aws-sdk/client-polly";
+import { createClient } from "@/lib/supabase/server";
+import { checkLimit, incrementUsage } from "@/lib/check-limits";
 
 const polly = new PollyClient({
   region: process.env.AWS_REGION || "us-east-1",
@@ -43,6 +45,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Text is required" }, { status: 400 });
     }
 
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Check TTS usage limits
+    const limitCheck = await checkLimit(user.id, "tts_audio");
+    if (!limitCheck.allowed) {
+      return NextResponse.json(
+        { 
+          error: "Has alcanzado el límite de audios de tu plan actual.", 
+          code: "LIMIT_REACHED",
+          details: limitCheck 
+        }, 
+        { status: 403 }
+      );
+    }
+
     // Optimization: For summary mode, limit to 500 chars max
     const inputText = mode === "summary" ? text.slice(0, 500) : text.slice(0, 6000);
     const chunks = splitText(inputText);
@@ -70,6 +92,9 @@ export async function POST(req: NextRequest) {
     
     // Concatenate all MP3 chunks
     const finalAudio = Buffer.concat(audioBuffers);
+    
+    // Increment usage asynchronously
+    await incrementUsage(user.id, "tts_audio").catch(console.error);
     
     return new NextResponse(finalAudio, {
       headers: {

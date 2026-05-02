@@ -115,8 +115,8 @@ export async function POST(request: NextRequest) {
 
     // ── Choose model ──
     const model = webSearch
-      ? (process.env.OPENROUTER_ENRICH_MODEL || "x-ai/grok-2-1212")
-      : (process.env.OPENROUTER_FILTER_MODEL || "minimax/minimax-01-05-chat");
+      ? (process.env.OPENROUTER_ENRICH_MODEL || "x-ai/grok-4.1-fast:online")
+      : (process.env.OPENROUTER_FILTER_MODEL || "google/gemini-2.5-flash");
 
     // ── Build system prompt ──
     let systemContent = AGENT_SYSTEM_PROMPT;

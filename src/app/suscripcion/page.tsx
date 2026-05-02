@@ -36,10 +36,13 @@ const plans = [
       { text: "5 activos en portafolio", included: true },
       { text: "Diamantes x0.5", included: true },
       { text: "Soporte comunitario", included: true },
+      { text: "Sin publicidad", included: false },
+      { text: "Historial de chats", included: false },
       { text: "Alertas por Email", included: false },
       { text: "Alertas por SMS", included: false },
       { text: "Informe semanal", included: false },
       { text: "Análisis de portafolio", included: false },
+      { text: "Recomendaciones IA", included: false },
     ],
     cta: "Plan actual",
     popular: false,
@@ -56,11 +59,14 @@ const plans = [
       { text: "5 alertas de precio", included: true },
       { text: "25 activos en portafolio", included: true },
       { text: "Diamantes x1", included: true },
-      { text: "Alertas por Email", included: true },
-      { text: "Historial de 10 chats", included: true },
-      { text: "Análisis básico de portafolio", included: true },
+      { text: "Soporte por email", included: true },
       { text: "Sin publicidad", included: true },
+      { text: "Historial de 10 chats", included: true },
+      { text: "Alertas por Email", included: true },
       { text: "Alertas por SMS", included: false },
+      { text: "Informe semanal", included: false },
+      { text: "Análisis básico de portafolio", included: true },
+      { text: "Recomendaciones IA", included: false },
     ],
     cta: "Comenzar prueba gratis",
     popular: false,
@@ -77,11 +83,14 @@ const plans = [
       { text: "15 alertas de precio", included: true },
       { text: "100 activos en portafolio", included: true },
       { text: "Diamantes x2", included: true },
-      { text: "Alertas por Email y SMS", included: true },
-      { text: "Informe semanal de noticias", included: true },
-      { text: "Cálculos avanzados de portafolio", included: true },
-      { text: "Recomendaciones de análisis", included: true },
-      { text: "IA con modelo premium", included: true },
+      { text: "Soporte prioritario", included: true },
+      { text: "Sin publicidad", included: true },
+      { text: "Historial de 50 chats", included: true },
+      { text: "Alertas por Email", included: true },
+      { text: "Alertas por SMS", included: true },
+      { text: "Informe semanal", included: true },
+      { text: "Análisis avanzado de portafolio", included: true },
+      { text: "Recomendaciones IA", included: true },
     ],
     cta: "Elegir plan Max",
     popular: true,
@@ -98,11 +107,14 @@ const plans = [
       { text: "30 alertas de precio", included: true },
       { text: "Activos ilimitados", included: true },
       { text: "Diamantes x5", included: true },
-      { text: "IA con búsqueda web", included: true },
-      { text: "Análisis premium de portafolio", included: true },
-      { text: "Informes semanales + reportes", included: true },
       { text: "Soporte dedicado 24/7", included: true },
+      { text: "Sin publicidad", included: true },
       { text: "Historial ilimitado de chats", included: true },
+      { text: "Alertas por Email", included: true },
+      { text: "Alertas por SMS", included: true },
+      { text: "Informe semanal y reportes", included: true },
+      { text: "Análisis premium de portafolio", included: true },
+      { text: "IA con búsqueda web", included: true },
     ],
     cta: "Elegir plan Ultra",
     popular: false,
@@ -195,6 +207,13 @@ export default function SuscripcionesPage() {
       return formatCLP(getAnnualMonthlyPrice(planId));
     }
     return formatCLP(config.price);
+  };
+
+  const getAnnualTotal = (planId: PlanTier): string | null => {
+    if (billingCycle !== "annual") return null;
+    const config = PLAN_CONFIGS[planId];
+    if (config.price === 0) return null;
+    return formatCLP(getAnnualMonthlyPrice(planId) * 12);
   };
 
   const handleSelectPlan = async (planId: PlanTier) => {
@@ -315,13 +334,24 @@ export default function SuscripcionesPage() {
                   <h3 className="font-editorial text-2xl font-bold mb-2 text-foreground">{plan.name}</h3>
                   <p className="text-sm text-muted-foreground mb-6 min-h-[40px]">{plan.description}</p>
 
-                  <div className="flex items-baseline gap-1 mb-8">
-                    <span className="font-editorial text-4xl font-bold text-foreground tracking-tight">
-                      {getPrice(plan.id)}
-                    </span>
-                    <span className="text-sm text-muted-foreground font-medium">
-                      {plan.id === "free" ? "para siempre" : "/mes"}
-                    </span>
+                  <div className="flex flex-col gap-1 mb-6">
+                    <div className="flex items-baseline gap-1">
+                      <span className="font-editorial text-4xl font-bold text-foreground tracking-tight">
+                        {getPrice(plan.id)}
+                      </span>
+                      <span className="text-sm text-muted-foreground font-medium">
+                        {plan.id === "free" ? "para siempre" : "/mes"}
+                      </span>
+                    </div>
+                    {billingCycle === "annual" && plan.id !== "free" ? (
+                      <span className="text-[12px] text-[#1890FF] font-bold bg-[#1890FF]/10 px-2.5 py-1 rounded-md self-start border border-[#1890FF]/20 shadow-sm">
+                        Total {getAnnualTotal(plan.id)} facturado al año
+                      </span>
+                    ) : (
+                      <span className="text-[12px] text-transparent select-none font-medium px-2.5 py-1 self-start">
+                        Espaciador
+                      </span>
+                    )}
                   </div>
 
                   <Button

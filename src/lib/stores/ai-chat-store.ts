@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { useAuthStore } from "./auth-store";
+import { createClient } from "@/lib/supabase/client";
 
 export interface ChatMessage {
   id: string;
@@ -51,12 +52,15 @@ interface AIChatStore {
   attachedArticles: AttachedArticle[];
   attachedFiles: AttachedFile[];
   savedChats: SavedChat[];
+  cloudSyncEnabled: boolean;
+  
   toggle: () => void;
   open: () => void;
   close: () => void;
   addMessage: (msg: ChatMessage) => void;
   setLoading: (val: boolean) => void;
   setWebSearch: (val: boolean) => void;
+  setCloudSync: (val: boolean) => void;
   clearMessages: () => void;
   attachArticle: (article: AttachedArticle) => void;
   removeArticle: (id: string) => void;
@@ -66,6 +70,7 @@ interface AIChatStore {
   clearFiles: () => void;
   loadChat: (id: string) => void;
   deleteSavedChat: (id: string) => void;
+  fetchCloudChats: () => Promise<void>;
   _saveCurrentIfPremium: () => void;
 }
 
@@ -79,22 +84,61 @@ export const useAIChatStore = create<AIChatStore>()(
       attachedArticles: [],
       attachedFiles: [],
       savedChats: [],
+      cloudSyncEnabled: false,
+      
       toggle: () => set((s) => ({ isOpen: !s.isOpen })),
       open: () => set({ isOpen: true }),
       close: () => set({ isOpen: false }),
       addMessage: (msg) => set((s) => ({ messages: [...s.messages, msg] })),
       setLoading: (val) => set({ isLoading: val }),
       setWebSearch: (val) => set({ webSearchEnabled: val }),
-      _saveCurrentIfPremium: () => {
-        const { messages, attachedArticles, attachedFiles, savedChats } = get();
+      setCloudSync: (val) => {
+        set({ cloudSyncEnabled: val });
+        if (val) {
+          get().fetchCloudChats();
+        }
+      },
+      
+      fetchCloudChats: async () => {
+        const { cloudSyncEnabled } = get();
+        if (!cloudSyncEnabled) return;
+        
+        const user = useAuthStore.getState().user;
+        if (!user) return;
+        
+        const supabase = createClient();
+        const { data } = await supabase
+          .from("ai_saved_chats")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(10);
+          
+        if (data && data.length > 0) {
+          const cloudChats: SavedChat[] = data.map(row => ({
+            id: row.chat_id,
+            title: row.title,
+            messages: row.messages,
+            attachedArticles: row.attached_articles || [],
+            attachedFiles: row.attached_files || [],
+            timestamp: new Date(row.created_at)
+          }));
+          set({ savedChats: cloudChats });
+        }
+      },
+      
+      _saveCurrentIfPremium: async () => {
+        const { messages, attachedArticles, attachedFiles, savedChats, cloudSyncEnabled } = get();
         if (messages.length === 0) return;
 
-        const userTier = useAuthStore.getState().user?.tier || "free";
+        const user = useAuthStore.getState().user;
+        const userTier = user?.tier || "free";
         if (userTier === "free") return;
 
         const title = messages.find(m => m.role === "user")?.content.slice(0, 40) + "..." || "Nuevo chat";
+        const chatId = Date.now().toString();
         const newChat: SavedChat = {
-          id: Date.now().toString(),
+          id: chatId,
           title,
           messages,
           attachedArticles,
@@ -104,7 +148,20 @@ export const useAIChatStore = create<AIChatStore>()(
 
         const updatedChats = [newChat, ...savedChats].slice(0, 10);
         set({ savedChats: updatedChats });
+        
+        if (cloudSyncEnabled && user) {
+          const supabase = createClient();
+          await supabase.from("ai_saved_chats").insert({
+            user_id: user.id,
+            chat_id: chatId,
+            title,
+            messages,
+            attached_articles: attachedArticles,
+            attached_files: attachedFiles
+          }).catch(console.error);
+        }
       },
+      
       clearMessages: () => {
         get()._saveCurrentIfPremium();
         set({ messages: [], attachedArticles: [], attachedFiles: [] });
@@ -129,11 +186,26 @@ export const useAIChatStore = create<AIChatStore>()(
           set({ messages: chat.messages, attachedArticles: chat.attachedArticles, attachedFiles: chat.attachedFiles || [] });
         }
       },
-      deleteSavedChat: (id) => set((s) => ({ savedChats: s.savedChats.filter(c => c.id !== id) })),
+      deleteSavedChat: async (id) => {
+        const { cloudSyncEnabled } = get();
+        set((s) => ({ savedChats: s.savedChats.filter(c => c.id !== id) }));
+        
+        if (cloudSyncEnabled) {
+          const user = useAuthStore.getState().user;
+          if (user) {
+            const supabase = createClient();
+            await supabase.from("ai_saved_chats").delete().eq("chat_id", id).eq("user_id", user.id).catch(console.error);
+          }
+        }
+      },
     }),
     {
       name: "r-ai-chat-history",
-      partialize: (state) => ({ savedChats: state.savedChats, messages: state.messages }),
+      partialize: (state) => ({ 
+        savedChats: state.savedChats, 
+        messages: state.messages,
+        cloudSyncEnabled: state.cloudSyncEnabled 
+      }),
     }
   )
 );

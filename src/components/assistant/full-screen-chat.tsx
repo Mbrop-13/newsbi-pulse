@@ -15,13 +15,15 @@ export function FullScreenChat() {
     messages, addMessage, isLoading, setLoading, 
     attachedArticles, attachedFiles, attachFile,
     webSearchEnabled, setWebSearch, clearMessages,
-    savedChats, loadChat, deleteSavedChat
+    savedChats, loadChat, deleteSavedChat,
+    cloudSyncEnabled, setCloudSync
   } = useAIChatStore();
   
   const [input, setInput] = useState("");
   const [showUpsell, setShowUpsell] = useState(false);
   const [showPreferences, setShowPreferences] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [realUsageCount, setRealUsageCount] = useState(0);
   
   // Chat Preferences
   const [chatPrefs, setChatPrefs] = useState({
@@ -40,12 +42,28 @@ export function FullScreenChat() {
 
   const isPremium = userTier === "max" || userTier === "ultra";
 
-  const userMessagesCount = messages.filter((m) => m.role === "user").length;
   const questionLimit = userTier === "free" ? 5 : userTier === "pro" ? 100 : userTier === "max" ? 300 : 999999;
-  const reachedQuestionLimit = userMessagesCount >= questionLimit;
+  const reachedQuestionLimit = realUsageCount >= questionLimit;
   const MAX_FILES = userTier === "free" ? 1 : userTier === "pro" ? 3 : 10;
 
   const [hasPortfolio, setHasPortfolio] = useState(false);
+
+  // Fetch real usage from Supabase
+  const fetchRealUsage = async () => {
+    if (!user) return;
+    if (userTier === "free") {
+      const { data } = await supabase.from("lifetime_usage").select("ai_messages_total").eq("user_id", user.id).single();
+      setRealUsageCount(data?.ai_messages_total || 0);
+    } else {
+      const currentMonth = new Date().toISOString().slice(0, 7) + "-01";
+      const { data } = await supabase.from("monthly_usage").select("ai_messages").eq("user_id", user.id).eq("month", currentMonth).single();
+      setRealUsageCount(data?.ai_messages || 0);
+    }
+  };
+
+  useEffect(() => {
+    fetchRealUsage();
+  }, [user]);
 
   // Load preferences
   useEffect(() => {
@@ -165,6 +183,7 @@ export function FullScreenChat() {
       });
     } finally {
       setLoading(false);
+      fetchRealUsage(); // Refresh usage after message
     }
   };
 
@@ -249,10 +268,10 @@ export function FullScreenChat() {
               <div className="bg-gradient-to-br from-[#1890FF]/5 to-indigo-500/5 rounded-xl p-3 border border-[#1890FF]/10 mb-2">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-xs font-bold text-gray-900 dark:text-white">Plan {userTier.charAt(0).toUpperCase() + userTier.slice(1)}</span>
-                  <span className="text-[10px] font-bold text-[#1890FF]">{userMessagesCount} / {questionLimit === 999999 ? "∞" : questionLimit}</span>
+                  <span className="text-[10px] font-bold text-[#1890FF]">{realUsageCount} / {questionLimit === 999999 ? "∞" : questionLimit}</span>
                 </div>
                 <div className="w-full h-1.5 bg-gray-200 dark:bg-slate-800 rounded-full overflow-hidden mb-2.5">
-                  <div className="h-full bg-[#1890FF] rounded-full" style={{ width: `${Math.min(100, (userMessagesCount / (questionLimit === 999999 ? userMessagesCount : questionLimit)) * 100)}%` }} />
+                  <div className="h-full bg-[#1890FF] rounded-full" style={{ width: `${Math.min(100, (realUsageCount / (questionLimit === 999999 ? realUsageCount : questionLimit)) * 100)}%` }} />
                 </div>
                 {userTier !== "ultra" && userTier !== "max" && (
                   <Link href="/suscripcion" className="block text-center py-1.5 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-white dark:bg-white/5 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition-colors border border-indigo-100 dark:border-indigo-500/20">
@@ -480,6 +499,31 @@ export function FullScreenChat() {
               
               <div className="p-6 space-y-8">
                 
+                {/* Privacy / Cloud Sync */}
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-3 block">Privacidad y Sincronización</label>
+                  <div className="bg-gray-50 dark:bg-[#0F1117] rounded-2xl p-4 border border-gray-100 dark:border-white/5">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <Globe className="w-4 h-4 text-[#1890FF]" />
+                        <span className="text-sm font-bold text-gray-900 dark:text-white">Guardar en la Nube</span>
+                      </div>
+                      <button 
+                        onClick={() => setCloudSync(!cloudSyncEnabled)}
+                        className={`w-12 h-6 rounded-full transition-colors relative flex items-center px-0.5 ${cloudSyncEnabled ? "bg-[#1890FF]" : "bg-gray-300 dark:bg-gray-700"}`}
+                      >
+                        <motion.div 
+                          animate={{ x: cloudSyncEnabled ? 24 : 0 }} 
+                          className="w-5 h-5 bg-white rounded-full shadow-sm" 
+                        />
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500 font-medium leading-relaxed">
+                      Tus chats se guardan <strong className="text-gray-700 dark:text-gray-300">localmente en este dispositivo</strong> para proteger tu privacidad. Activa esto para guardarlos de forma segura en nuestros servidores y poder verlos en tu celular u otros dispositivos.
+                    </p>
+                  </div>
+                </div>
+
                 {/* Theme */}
                 <div>
                   <label className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-3 block">Apariencia</label>

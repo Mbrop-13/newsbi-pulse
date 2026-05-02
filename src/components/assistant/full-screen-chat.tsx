@@ -248,8 +248,26 @@ export function FullScreenChat() {
               )}
             </div>
 
+            {/* User Limits at bottom of sidebar */}
+            <div className="p-4 border-t border-gray-100 dark:border-white/5 pb-2">
+              <div className="bg-gradient-to-br from-[#1890FF]/5 to-indigo-500/5 rounded-xl p-3 border border-[#1890FF]/10 mb-2">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-xs font-bold text-gray-900 dark:text-white">Plan {userTier.charAt(0).toUpperCase() + userTier.slice(1)}</span>
+                  <span className="text-[10px] font-bold text-[#1890FF]">{userMessagesCount} / {questionLimit === 999999 ? "∞" : questionLimit}</span>
+                </div>
+                <div className="w-full h-1.5 bg-gray-200 dark:bg-slate-800 rounded-full overflow-hidden mb-2.5">
+                  <div className="h-full bg-[#1890FF] rounded-full" style={{ width: `${Math.min(100, (userMessagesCount / (questionLimit === 999999 ? userMessagesCount : questionLimit)) * 100)}%` }} />
+                </div>
+                {userTier !== "ultra" && userTier !== "max" && (
+                  <Link href="/suscripcion" className="block text-center py-1.5 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-white dark:bg-white/5 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition-colors border border-indigo-100 dark:border-indigo-500/20">
+                    Sube de Nivel
+                  </Link>
+                )}
+              </div>
+            </div>
+
             {/* Bottom Profile & Preferences */}
-            <div className="p-3">
+            <div className="p-3 pt-0">
               <button 
                 onClick={() => setShowPreferences(true)}
                 className="w-full flex items-center justify-between p-3 bg-white dark:bg-white/5 hover:bg-gray-50 dark:hover:bg-white/10 border border-gray-200 dark:border-white/10 rounded-xl transition-all group"
@@ -260,7 +278,7 @@ export function FullScreenChat() {
                   </div>
                   <div className="text-left">
                     <p className="text-sm font-bold text-gray-900 dark:text-white leading-tight">{user?.name || "Usuario"}</p>
-                    <p className="text-[10px] text-gray-500 font-medium">{userTier === "free" ? "Plan Gratuito" : `Plan ${userTier.charAt(0).toUpperCase() + userTier.slice(1)}`}</p>
+                    <p className="text-[10px] text-gray-500 font-medium">Configuración</p>
                   </div>
                 </div>
                 <Settings className="w-4 h-4 text-gray-400 group-hover:text-[#1890FF] group-hover:rotate-45 transition-all" />
@@ -535,7 +553,7 @@ export function FullScreenChat() {
                 
                 <h3 className="text-3xl font-black text-gray-900 dark:text-white mb-2 tracking-tight">Internet en Vivo</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-8 max-w-[280px] mx-auto font-medium">
-                  Sube de nivel para conectar el asistente a <strong className="text-gray-900 dark:text-white">Grok 3 Fast Online</strong> y la web en tiempo real.
+                  Sube de nivel para conectar el asistente a <strong className="text-gray-900 dark:text-white">Grok 4.3</strong> y la web en tiempo real.
                 </p>
                 
                 <div className="space-y-3 text-left mb-8 bg-gray-50 dark:bg-white/5 p-5 rounded-2xl">

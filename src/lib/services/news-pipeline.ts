@@ -81,134 +81,131 @@ async function logAiStep(data: {
   }
 }
 
-// ─── Phase 1: Currents API Fetch ─────────────────
-// Real-time news · 600 req/day free · No delay
-// Returns structured JSON with images included
+// ─── Phase 1: GNews API Fetch ─────────────────
+// Real-time news · Returns structured JSON with images
 
-interface CurrentsFeed {
+interface NewsFeed {
   keywords: string;
   language: string;
   country: string;
   feed_tag: string;
   country_code: string;
-  category: string; // Currents API category
 }
 
-const CURRENTS_FEEDS: CurrentsFeed[] = [
+const GNEWS_FEEDS: NewsFeed[] = [
   // Chile (4 feeds)
   {
-    keywords: 'economía finanzas Chile',
-    language: 'es', country: 'CL', country_code: 'cl',
-    feed_tag: 'economia', category: 'economy_business_finance',
+    keywords: 'economía OR finanzas OR empresas',
+    language: 'es', country: 'cl', country_code: 'cl',
+    feed_tag: 'economia',
   },
   {
-    keywords: 'inversiones bolsa mercado Chile',
-    language: 'es', country: 'CL', country_code: 'cl',
-    feed_tag: 'inversiones', category: 'economy_business_finance',
+    keywords: 'inversiones OR bolsa OR mercado',
+    language: 'es', country: 'cl', country_code: 'cl',
+    feed_tag: 'inversiones',
   },
   {
-    keywords: 'tecnología innovación startups Chile',
-    language: 'es', country: 'CL', country_code: 'cl',
-    feed_tag: 'tech_global', category: 'science_technology',
+    keywords: 'tecnología OR innovación OR startups',
+    language: 'es', country: 'cl', country_code: 'cl',
+    feed_tag: 'tech_global',
   },
   {
-    keywords: 'política económica banco central Chile',
-    language: 'es', country: 'CL', country_code: 'cl',
-    feed_tag: 'chile', category: 'politics_government',
+    keywords: 'política económica OR banco central',
+    language: 'es', country: 'cl', country_code: 'cl',
+    feed_tag: 'chile',
   },
   // USA / Global (4 feeds)
   {
-    keywords: 'finance wall street markets stocks',
-    language: 'en', country: 'US', country_code: 'us',
-    feed_tag: 'finanzas', category: 'economy_business_finance',
+    keywords: 'finance OR "wall street" OR markets OR stocks',
+    language: 'en', country: 'us', country_code: 'us',
+    feed_tag: 'finanzas',
   },
   {
-    keywords: 'economy federal reserve inflation GDP',
-    language: 'en', country: 'US', country_code: 'us',
-    feed_tag: 'economia', category: 'economy_business_finance',
+    keywords: 'economy OR "federal reserve" OR inflation OR GDP',
+    language: 'en', country: 'us', country_code: 'us',
+    feed_tag: 'economia',
   },
   {
-    keywords: 'artificial intelligence big tech startups',
-    language: 'en', country: 'US', country_code: 'us',
-    feed_tag: 'tech_global', category: 'science_technology',
+    keywords: '"artificial intelligence" OR "big tech" OR startups',
+    language: 'en', country: 'us', country_code: 'us',
+    feed_tag: 'tech_global',
   },
   {
-    keywords: 'investments cryptocurrency IPO venture capital',
-    language: 'en', country: 'US', country_code: 'us',
-    feed_tag: 'inversiones', category: 'economy_business_finance',
+    keywords: 'investments OR cryptocurrency OR IPO OR "venture capital"',
+    language: 'en', country: 'us', country_code: 'us',
+    feed_tag: 'inversiones',
   },
   // ── Extra Global Feeds (more variety) ──
   {
-    keywords: 'commodities copper lithium oil gold',
-    language: 'en', country: 'US', country_code: 'us',
-    feed_tag: 'inversiones', category: 'economy_business_finance',
+    keywords: 'commodities OR copper OR lithium OR oil OR gold',
+    language: 'en', country: 'us', country_code: 'us',
+    feed_tag: 'inversiones',
   },
   {
-    keywords: 'geopolitics trade war tariffs sanctions',
-    language: 'en', country: 'US', country_code: 'us',
-    feed_tag: 'impacto_global', category: 'politics_government',
+    keywords: 'geopolitics OR "trade war" OR tariffs OR sanctions',
+    language: 'en', country: 'us', country_code: 'us',
+    feed_tag: 'impacto_global',
   },
   {
-    keywords: 'energy solar nuclear renewables',
-    language: 'en', country: 'US', country_code: 'us',
-    feed_tag: 'tech_global', category: 'science_technology',
+    keywords: 'energy OR solar OR nuclear OR renewables',
+    language: 'en', country: 'us', country_code: 'us',
+    feed_tag: 'tech_global',
   },
   {
-    keywords: 'minería cobre litio exportaciones',
-    language: 'es', country: 'CL', country_code: 'cl',
-    feed_tag: 'chile', category: 'economy_business_finance',
+    keywords: 'minería OR cobre OR litio OR exportaciones',
+    language: 'es', country: 'cl', country_code: 'cl',
+    feed_tag: 'chile',
   },
 ];
 
 /**
- * Fetch news from Currents API
- * Docs: https://currentsapi.services/en/docs/
+ * Fetch news from GNews API
+ * Docs: https://gnews.io/docs/v4
  */
-export async function fetchFromCurrentsAPI(): Promise<RawArticle[]> {
-  const apiKey = process.env.CURRENTS_API_KEY;
+export async function fetchFromGNewsAPI(): Promise<RawArticle[]> {
+  const apiKey = process.env.GNEWS_API_KEY;
   if (!apiKey) {
-    console.error('[PIPELINE] CURRENTS_API_KEY not set!');
+    console.error('[PIPELINE] GNEWS_API_KEY not set!');
     return [];
   }
 
-  console.log(`[PIPELINE] Fetching ${CURRENTS_FEEDS.length} Currents API feeds...`);
+  console.log(`[PIPELINE] Fetching ${GNEWS_FEEDS.length} GNews API feeds...`);
 
   const results = await Promise.allSettled(
-    CURRENTS_FEEDS.map(async (feed) => {
+    GNEWS_FEEDS.map(async (feed) => {
       try {
         const params = new URLSearchParams({
-          apiKey,
-          language: feed.language,
+          apikey: apiKey,
+          q: feed.keywords,
+          lang: feed.language,
           country: feed.country,
-          category: feed.category,
-          keywords: feed.keywords,
-          page_size: '10',
+          max: '10',
         });
 
         const res = await fetch(
-          `https://api.currentsapi.services/v1/search?${params.toString()}`,
+          `https://gnews.io/api/v4/search?${params.toString()}`,
           { signal: AbortSignal.timeout(15000) }
         );
 
         if (!res.ok) {
           const errText = await res.text().catch(() => '');
-          throw new Error(`Currents API error ${res.status}: ${errText.substring(0, 200)}`);
+          throw new Error(`GNews API error ${res.status}: ${errText.substring(0, 200)}`);
         }
 
         const data = await res.json();
 
-        if (data.status !== 'ok' || !Array.isArray(data.news)) {
-          console.warn(`[PIPELINE] Currents returned non-ok for ${feed.feed_tag}:`, data.status);
+        if (!Array.isArray(data.articles)) {
+          console.warn(`[PIPELINE] GNews returned no articles for ${feed.feed_tag}`);
           return [];
         }
 
-        return data.news.map((item: any): RawArticle => ({
+        return data.articles.map((item: any): RawArticle => ({
           title: item.title || '',
           summary: item.description || item.title || '',
           url: item.url || '',
-          sourceName: item.author || 'Currents',
-          sourceUrl: item.url || '',
-          publishedAt: item.published ? new Date(item.published).toISOString() : new Date().toISOString(),
+          sourceName: item.source?.name || 'GNews',
+          sourceUrl: item.source?.url || item.url || '',
+          publishedAt: item.publishedAt ? new Date(item.publishedAt).toISOString() : new Date().toISOString(),
           imageUrl: item.image && item.image !== 'None' ? item.image : null,
           feed_tag: feed.feed_tag,
           country_code: feed.country_code,
@@ -216,9 +213,9 @@ export async function fetchFromCurrentsAPI(): Promise<RawArticle[]> {
         }));
       } catch (err: any) {
         if (err.name === 'TimeoutError' || err.message?.includes('timeout')) {
-          console.error(`[PIPELINE] Currents API Timeout (15s) for ${feed.feed_tag}/${feed.country_code}`);
+          console.error(`[PIPELINE] GNews API Timeout (15s) for ${feed.feed_tag}/${feed.country_code}`);
         } else {
-          console.error(`[PIPELINE] Currents error for ${feed.feed_tag}/${feed.country_code}:`, err.message || err);
+          console.error(`[PIPELINE] GNews error for ${feed.feed_tag}/${feed.country_code}:`, err.message || err);
         }
         return [];
       }
@@ -229,7 +226,7 @@ export async function fetchFromCurrentsAPI(): Promise<RawArticle[]> {
     .filter((r): r is PromiseFulfilledResult<RawArticle[]> => r.status === 'fulfilled')
     .flatMap(r => r.value);
 
-  console.log(`[PIPELINE] Fetched ${allArticles.length} articles from ${CURRENTS_FEEDS.length} Currents feeds`);
+  console.log(`[PIPELINE] Fetched ${allArticles.length} articles from ${GNEWS_FEEDS.length} GNews feeds`);
   return allArticles;
 }
 
@@ -579,7 +576,7 @@ export async function runNewsPipeline(): Promise<{
   stats?: { fetched: number; filtered: number; grokCalls: number; stepWrites: number; saved: number; durationMs: number };
 }> {
   const startTime = Date.now();
-  console.log("=== [PIPELINE v3] Starting Currents API Pipeline ===");
+  console.log("=== [PIPELINE v3] Starting GNews API Pipeline ===");
   
   const traceId = crypto.randomUUID?.() 
     || "00000000-0000-0000-0000-000000000000".replace(/0/g, () => (Math.random() * 16 | 0).toString(16));
@@ -588,12 +585,12 @@ export async function runNewsPipeline(): Promise<{
     // ─── Step 0: Auto-cleanup old articles (>30 days) ───
     await cleanupOldArticles();
 
-    // ─── Step 1: Fetch from Currents API ───
-    console.log("[PIPELINE] Step 1: Fetching from Currents API...");
-    const rawArticles = await fetchFromCurrentsAPI();
+    // ─── Step 1: Fetch from GNews API ───
+    console.log("[PIPELINE] Step 1: Fetching from GNews API...");
+    const rawArticles = await fetchFromGNewsAPI();
     
     if (rawArticles.length === 0) {
-      console.warn("[PIPELINE] No articles from Currents API. Exiting.");
+      console.warn("[PIPELINE] No articles from GNews API. Exiting.");
       return { success: true, articles: [], stats: { fetched: 0, filtered: 0, grokCalls: 0, stepWrites: 0, saved: 0, durationMs: Date.now() - startTime } };
     }
 

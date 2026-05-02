@@ -10,7 +10,6 @@ import ReactMarkdown from "react-markdown";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 
-import { FullScreenChat as FullScreenChatInternal } from "./full-screen-chat-internal";
 
 export function FullScreenChat() {
   const [mounted, setMounted] = useState(false);

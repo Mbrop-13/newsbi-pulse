@@ -7,6 +7,7 @@ import { useAIChatStore, ChatMessage, ToolResultUI } from "@/lib/stores/ai-chat-
 import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 
@@ -396,9 +397,34 @@ function FullScreenChatInternal() {
                           </div>
                         )}
 
-                        {/* Content */}
-                        <div className={`prose ${fontSizeClass} dark:prose-invert max-w-none text-gray-800 dark:text-gray-200 leading-relaxed prose-p:my-3 prose-headings:my-5 prose-h1:text-2xl prose-h2:text-xl prose-a:text-[#1890FF] prose-a:font-semibold prose-a:no-underline hover:prose-a:underline prose-th:text-left prose-td:border-t border-gray-200 dark:border-gray-800 prose-table:w-full prose-table:text-sm prose-li:my-1`}>
-                          <ReactMarkdown>{msg.content}</ReactMarkdown>
+                        <div className={`prose ${fontSizeClass} dark:prose-invert max-w-none text-gray-800 dark:text-gray-200 leading-relaxed prose-p:my-3 prose-headings:my-5 prose-h1:text-2xl prose-h2:text-xl prose-a:text-[#1890FF] prose-a:font-semibold prose-a:no-underline hover:prose-a:underline prose-li:my-1`}>
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                              table: ({ children }) => (
+                                <div className="overflow-x-auto my-4 rounded-xl border border-gray-200 dark:border-gray-700/50 shadow-sm">
+                                  <table className="w-full text-sm border-collapse">{children}</table>
+                                </div>
+                              ),
+                              thead: ({ children }) => (
+                                <thead className="bg-gray-50 dark:bg-slate-800/80">{children}</thead>
+                              ),
+                              th: ({ children }) => (
+                                <th className="px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">{children}</th>
+                              ),
+                              td: ({ children }) => (
+                                <td className="px-4 py-2.5 text-sm text-gray-800 dark:text-gray-200 border-b border-gray-100 dark:border-gray-800 font-medium">{children}</td>
+                              ),
+                              tr: ({ children }) => (
+                                <tr className="hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors">{children}</tr>
+                              ),
+                              strong: ({ children }) => (
+                                <strong className="font-bold text-gray-900 dark:text-white">{children}</strong>
+                              ),
+                            }}
+                          >
+                            {msg.content}
+                          </ReactMarkdown>
                         </div>
 
                         {/* Citations */}

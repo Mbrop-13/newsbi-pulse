@@ -206,10 +206,11 @@ function FullScreenChatInternal() {
       <AnimatePresence>
         {isSidebarOpen && (
           <motion.div
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 280, opacity: 1 }}
-            exit={{ width: 0, opacity: 0 }}
-            className="h-full border-r border-gray-100 dark:border-white/5 bg-[#FAFAFA] dark:bg-[#0F1117] flex flex-col flex-shrink-0 z-30 absolute shadow-2xl"
+            initial={{ x: -280, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -280, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            className="w-[280px] h-full border-r border-gray-100 dark:border-white/5 bg-[#FAFAFA] dark:bg-[#0F1117] flex flex-col flex-shrink-0 z-30 absolute shadow-2xl"
           >
             <div className="p-4 flex flex-col gap-2">
               <Link href="/" className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-[#1890FF]/5 hover:bg-[#1890FF]/10 border border-[#1890FF]/20 hover:border-[#1890FF]/40 text-[#1890FF] rounded-xl transition-all text-xs font-bold">

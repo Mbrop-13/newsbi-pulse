@@ -37,6 +37,7 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [visibleCount, setVisibleCount] = useState(25);
+  const [currentTime, setCurrentTime] = useState(Date.now());
   const [filterMode, setFilterMode] = useState<'tendencia' | 'portafolio' | null>(initialFilter || null);
   const [portfolioSymbols, setPortfolioSymbols] = useState<string[]>([]);
   const [portfolioLoaded, setPortfolioLoaded] = useState(false);
@@ -107,6 +108,12 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
     return () => { supabase.removeChannel(channel); };
   }, [supabase]);
 
+  // Timer for drip-feed
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(Date.now()), 60000);
+    return () => clearInterval(timer);
+  }, []);
+
   // Fetch portfolio symbols for the "Portafolio" filter
   useEffect(() => {
     const fetchPortfolio = async () => {
@@ -120,13 +127,16 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
 
   // Filter by feed_tag / searchTag
   const feedArticles = useMemo(() => {
+    // 0. Publication Time Filter
+    const publishedOnly = dbArticles.filter(a => new Date(a.published_at).getTime() <= currentTime);
+
     // When on the main "Principal" tab, show ALL articles 
     if (activeTab === 'chile') {
-      return dbArticles;
+      return publishedOnly;
     }
 
     // Then filter by feed_tag for specific sections
-    const byTag = dbArticles.filter(a => a.feed_tag === activeTab);
+    const byTag = publishedOnly.filter(a => a.feed_tag === activeTab);
     if (byTag.length > 0) return byTag;
 
     // Fallback: match by category for legacy articles
@@ -138,8 +148,8 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
       inversiones: ["business"],
       economia: ["business"],
     };
-    return dbArticles.filter(a => categoryMap[activeTab]?.includes(a.category?.toLowerCase()));
-  }, [dbArticles, activeTab, searchTag]);
+    return publishedOnly.filter(a => categoryMap[activeTab]?.includes(a.category?.toLowerCase()));
+  }, [dbArticles, activeTab, searchTag, currentTime]);
 
   // Extract unique sources for the filter UI based on current feed
   const uniqueSources = useMemo(() => {

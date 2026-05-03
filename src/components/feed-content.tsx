@@ -25,6 +25,7 @@ export function FeedContent({ currentFeed }: { currentFeed: FeedTab }) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [visibleCount, setVisibleCount] = useState(12);
+  const [currentTime, setCurrentTime] = useState(Date.now());
   const supabase = createClient();
   const userRole = useAuthStore(s => s.user?.role);
   const { timePeriod } = useViewStore();
@@ -50,12 +51,20 @@ export function FeedContent({ currentFeed }: { currentFeed: FeedTab }) {
     return () => { supabase.removeChannel(channel); };
   }, [supabase]);
 
+  // Timer to update "now" every minute for drip-feed
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(Date.now()), 60000);
+    return () => clearInterval(timer);
+  }, []);
+
   // Filter by feed_tag
   const feedArticles = useMemo(() => {
+    // 0. Publication Time Filter (Drip-feed support)
+    const publishedOnly = dbArticles.filter(a => new Date(a.published_at).getTime() <= currentTime);
+
     // 1. Time Period Filter
-    let timeFiltered = dbArticles;
+    let timeFiltered = publishedOnly;
     if (timePeriod !== 'all') {
-      const now = new Date().getTime();
       const cutoffs: Record<string, number> = {
         'recent': 60 * 60 * 1000, // 1 hour
         '24h': 24 * 60 * 60 * 1000, // 24 hours

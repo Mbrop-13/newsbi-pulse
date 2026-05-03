@@ -675,10 +675,15 @@ export async function runNewsPipeline(): Promise<{
     }
 
     // ─── Step 4a: Convert SELF articles and SAVE IMMEDIATELY ───
-    // Save before Grok to survive Vercel's 60s timeout on Hobby plan
+    // We STAGGER the publication dates to ensure a continuous stream of content
     const selfFinalArticles: FinalNewsArticle[] = [];
     let savedCount = 0;
     
+    // Calculate stagger interval based on current time
+    // Default interval: 30 minutes. If we have 10 articles, we publish one every ~3 mins.
+    // To be safe, we'll use a fixed 2-minute stagger for SELF articles.
+    let staggerMinutes = 0;
+
     for (const item of selfArticles) {
       const raw = toFilter[item.index];
       if (!raw || !item.rewritten) continue;
@@ -686,6 +691,11 @@ export async function runNewsPipeline(): Promise<{
       const fVal = Number(item.rewritten.f) || 0;
       const countryNum = Math.floor(fVal / 10);
       const topicNum = fVal % 10;
+
+      // Stagger non-urgent news
+      const pubDate = new Date();
+      pubDate.setMinutes(pubDate.getMinutes() + staggerMinutes);
+      staggerMinutes += 2; // Increment by 2 minutes for each "SELF" article
 
       const article: FinalNewsArticle = {
         title: item.rewritten.title,
@@ -703,20 +713,20 @@ export async function runNewsPipeline(): Promise<{
         country_code: COUNTRY_DECODE[countryNum] || raw.country_code || 'cl',
         tags: Array.isArray(item.rewritten.tags) ? item.rewritten.tags.slice(0, 5) : [],
         views: 0,
+        published_at: pubDate.toISOString(), // Use staggered date
       };
 
       selfFinalArticles.push(article);
       
-      // Save immediately — don't wait for Grok
+      // Save immediately
       if (await saveArticle(article)) {
         savedCount++;
       }
     }
 
-    console.log(`[PIPELINE] Step 4a: ${savedCount} SELF articles saved to DB`);
+    console.log(`[PIPELINE] Step 4a: ${savedCount} SELF articles staggered and saved`);
 
-    // ─── Step 4b: Grok enrichment (PREMIUM, costs ~$0.02/article) ───
-    // This runs AFTER SELF articles are already saved safely
+    // ─── Step 4b: Grok enrichment (URGENT NEWS) ───
     const grokFinalArticles: FinalNewsArticle[] = [];
     
     for (const item of grokArticles) {
@@ -725,14 +735,16 @@ export async function runNewsPipeline(): Promise<{
       
       try {
         const enriched = await rewriteNewsWithGrok(raw, item.section || 'finanzas', traceId);
+        
+        // Grok articles are URGENT (importance >= 85), so they publish NOW
+        enriched.published_at = new Date().toISOString();
+        
         grokFinalArticles.push(enriched);
         
-        // Save Grok article immediately too
         if (await saveArticle(enriched)) {
           savedCount++;
         }
         
-        // Rate limit: 2s between Grok calls
         if (grokArticles.indexOf(item) < grokArticles.length - 1) {
           await new Promise(resolve => setTimeout(resolve, 2000));
         }

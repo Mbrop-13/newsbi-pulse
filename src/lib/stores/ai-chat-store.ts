@@ -173,21 +173,23 @@ export const useAIChatStore = create<AIChatStore>()(
         if (cloudSyncEnabled && user) {
           const supabase = createClient();
           if (isNewChat) {
-            await supabase.from("ai_saved_chats").insert({
+            const { error } = await supabase.from("ai_saved_chats").insert({
               user_id: user.id,
               chat_id: chatId,
               title,
               messages,
               attached_articles: attachedArticles,
               attached_files: attachedFiles
-            }).catch(console.error);
+            });
+            if (error) console.error(error);
           } else {
-            await supabase.from("ai_saved_chats").update({
+            const { error } = await supabase.from("ai_saved_chats").update({
               title,
               messages,
               attached_articles: attachedArticles,
               attached_files: attachedFiles
-            }).eq("chat_id", chatId).eq("user_id", user.id).catch(console.error);
+            }).eq("chat_id", chatId).eq("user_id", user.id);
+            if (error) console.error(error);
           }
         }
       },
@@ -231,7 +233,8 @@ export const useAIChatStore = create<AIChatStore>()(
           const user = useAuthStore.getState().user;
           if (user) {
             const supabase = createClient();
-            await supabase.from("ai_saved_chats").delete().eq("chat_id", id).eq("user_id", user.id).catch(console.error);
+            const { error } = await supabase.from("ai_saved_chats").delete().eq("chat_id", id).eq("user_id", user.id);
+            if (error) console.error(error);
           }
         }
       },

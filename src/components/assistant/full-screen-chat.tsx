@@ -10,7 +10,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import Link from "next/link";
 import { useTheme } from "next-themes";
-import { useChat } from '@ai-sdk/react';
+import { useChat } from 'ai/react';
 import { AnalyzedNewsCard } from './analyzed-news-card';
 
 
@@ -82,7 +82,7 @@ function FullScreenChatInternal() {
   const { theme, setTheme } = useTheme();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const supabase = createClient();
@@ -423,11 +423,11 @@ function FullScreenChatInternal() {
                         </div>
 
                         {/* Citations */}
-                        {msg.citations && msg.citations.length > 0 && (
+                        {(msg as any).citations && (msg as any).citations.length > 0 && (
                           <div className="mt-5 pt-4 border-t border-gray-100 dark:border-gray-800/50">
                             <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-3 flex items-center gap-1.5"><Globe className="w-3.5 h-3.5" /> Fuentes Citadas</p>
                             <div className="flex flex-wrap gap-2">
-                              {msg.citations.slice(0, 4).map((url, i) => {
+                              {(msg as any).citations.slice(0, 4).map((url: string, i: number) => {
                                 let hostname = url;
                                 try { hostname = new URL(url).hostname.replace("www.", ""); } catch {}
                                 return (

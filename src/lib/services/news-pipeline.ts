@@ -35,6 +35,7 @@ export interface FinalNewsArticle {
   tags: string[];
   views?: number;
   is_live?: boolean;
+  published_at?: string;
 }
 
 // ─── Helpers ─────────────────────────────────────

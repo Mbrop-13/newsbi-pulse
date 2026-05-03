@@ -74,7 +74,7 @@ export function FeedContent({ currentFeed }: { currentFeed: FeedTab }) {
       const cutoff = cutoffs[timePeriod] || cutoffs['24h'];
       timeFiltered = dbArticles.filter(a => {
         const d = new Date(a.published_at).getTime();
-        return (now - d) <= cutoff;
+        return (Date.now() - d) <= cutoff;
       });
     }
 

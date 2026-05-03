@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, Sparkles, Loader2, ExternalLink, Paperclip, BarChart3, Newspaper, Bell, TrendingUp, X, Globe, History, Trash2, Plus, MessageSquare, PanelLeftClose, PanelLeft, Settings, Moon, Sun, Monitor, Type, Maximize, CheckCircle2 } from "lucide-react";
+import { Send, Bot, Sparkles, Loader2, ExternalLink, Paperclip, BarChart3, Newspaper, Bell, TrendingUp, X, Globe, History, Trash2, Plus, MessageSquare, PanelLeftClose, PanelLeft, Settings, Moon, Sun, Monitor, Type, Maximize, CheckCircle2, Mic } from "lucide-react";
 import { useAIChatStore, ChatMessage, ToolResultUI } from "@/lib/stores/ai-chat-store";
 import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/lib/stores/auth-store";
@@ -46,7 +46,7 @@ function FullScreenChatInternal() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [realUsageCount, setRealUsageCount] = useState(0);
 
-  const { messages: aiMessages, input, handleInputChange, handleSubmit, setMessages: setAiMessages, append, isLoading: aiLoading } = useChat({
+  const { messages: aiMessages, input, handleInputChange, handleSubmit, setMessages: setAiMessages, append, isLoading: aiLoading, setInput } = useChat({
     api: "/api/ai-chat",
     body: {
       articles: attachedArticles,
@@ -113,6 +113,64 @@ function FullScreenChatInternal() {
   useEffect(() => {
     fetchRealUsage();
   }, [user]);
+
+  // Speech Recognition State & Logic
+  const [isRecording, setIsRecording] = useState(false);
+  const recognitionRef = useRef<any>(null);
+  const baseInputRef = useRef("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        recognitionRef.current = new SpeechRecognition();
+        recognitionRef.current.continuous = false; // Stops automatically when user pauses
+        recognitionRef.current.interimResults = true;
+        recognitionRef.current.lang = 'es-ES';
+
+        let finalTranscript = "";
+
+        recognitionRef.current.onstart = () => {
+          setIsRecording(true);
+          finalTranscript = "";
+        };
+
+        recognitionRef.current.onresult = (event: any) => {
+          let interimTranscript = "";
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+              finalTranscript += event.results[i][0].transcript + " ";
+            } else {
+              interimTranscript += event.results[i][0].transcript;
+            }
+          }
+          setInput(baseInputRef.current + (baseInputRef.current ? " " : "") + finalTranscript + interimTranscript);
+        };
+
+        recognitionRef.current.onerror = (event: any) => {
+          console.error("Speech recognition error", event.error);
+          setIsRecording(false);
+        };
+
+        recognitionRef.current.onend = () => {
+          setIsRecording(false);
+        };
+      }
+    }
+  }, [setInput]);
+
+  const toggleRecording = () => {
+    if (isRecording) {
+      recognitionRef.current?.stop();
+    } else {
+      if (recognitionRef.current) {
+        baseInputRef.current = input; // Store current input so we append to it
+        recognitionRef.current.start();
+      } else {
+        alert("Tu navegador no soporta reconocimiento de voz nativo.");
+      }
+    }
+  };
 
   // Load preferences
   useEffect(() => {
@@ -206,12 +264,13 @@ function FullScreenChatInternal() {
       <AnimatePresence>
         {isSidebarOpen && (
           <motion.div
-            initial={{ x: -280, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: -280, opacity: 0 }}
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 280, opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
             transition={{ type: "spring", stiffness: 400, damping: 30 }}
-            className="w-[280px] h-full border-r border-gray-100 dark:border-white/5 bg-[#FAFAFA] dark:bg-[#0F1117] flex flex-col flex-shrink-0 z-30 absolute shadow-2xl"
+            className="h-full border-r border-gray-100 dark:border-white/5 bg-[#FAFAFA] dark:bg-[#0F1117] flex flex-col flex-shrink-0 absolute md:relative z-30 shadow-2xl md:shadow-none overflow-hidden"
           >
+            <div className="w-[280px] h-full flex flex-col">
             <div className="p-4 flex flex-col gap-2">
               <Link href="/" className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-[#1890FF]/5 hover:bg-[#1890FF]/10 border border-[#1890FF]/20 hover:border-[#1890FF]/40 text-[#1890FF] rounded-xl transition-all text-xs font-bold">
                 <ExternalLink className="w-3.5 h-3.5" /> Volver al Inicio
@@ -237,12 +296,7 @@ function FullScreenChatInternal() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-3 hidden-scrollbar mt-2">
-              <div className="mb-3 px-3">
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
-                  <History className="w-3 h-3" /> Historial
-                </span>
-              </div>
+            <div className="flex-1 overflow-y-auto px-3 hidden-scrollbar mt-2 pt-2">
               
               {savedChats.length === 0 ? (
                 <div className="px-4 py-8 text-center text-gray-400 text-xs font-medium border border-dashed border-gray-200 dark:border-gray-800 rounded-xl mx-2">
@@ -253,8 +307,7 @@ function FullScreenChatInternal() {
                   {savedChats.map((chat) => (
                     <div key={chat.id} className="group flex items-center justify-between px-3 py-2.5 hover:bg-gray-200/50 dark:hover:bg-white/5 rounded-xl cursor-pointer transition-colors">
                       <div className="flex items-center gap-2.5 overflow-hidden" onClick={() => { loadChat(chat.id); if(window.innerWidth < 768) setIsSidebarOpen(false); }}>
-                        <MessageSquare className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                        <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 truncate">{chat.title}</p>
+                        <p className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 truncate pl-1">{chat.title}</p>
                       </div>
                       <button onClick={(e) => { e.stopPropagation(); deleteSavedChat(chat.id); }} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-all p-1.5">
                         <Trash2 className="w-3.5 h-3.5" />
@@ -300,6 +353,7 @@ function FullScreenChatInternal() {
                 </div>
                 <Settings className="w-4 h-4 text-gray-400 group-hover:text-[#1890FF] group-hover:rotate-45 transition-all" />
               </button>
+            </div>
             </div>
           </motion.div>
         )}
@@ -489,14 +543,44 @@ function FullScreenChatInternal() {
                 rows={1}
               />
               
-              {/* Send Button */}
-              <button
-                type="submit"
-                disabled={!input.trim() || aiLoading || reachedQuestionLimit}
-                className="w-10 h-10 mb-0.5 mr-0.5 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center disabled:opacity-30 disabled:scale-100 hover:scale-105 active:scale-95 transition-all shadow-md shrink-0"
-              >
-                <Send className="w-4 h-4 ml-0.5" />
-              </button>
+              {/* Send / Mic Button */}
+              {isRecording ? (
+                <button
+                  type="button"
+                  onClick={toggleRecording}
+                  className="w-10 h-10 mb-0.5 mr-0.5 rounded-full bg-red-500 text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-md shrink-0"
+                  title="Detener grabación"
+                >
+                  <div className="flex items-center justify-center gap-[3px] h-4">
+                    {[1, 2, 3].map((i) => (
+                      <motion.div
+                        key={i}
+                        animate={{ height: ["4px", "14px", "4px"] }}
+                        transition={{ repeat: Infinity, duration: 0.6, delay: i * 0.15, ease: "easeInOut" }}
+                        className="w-[3px] bg-white rounded-full"
+                      />
+                    ))}
+                  </div>
+                </button>
+              ) : input.trim() ? (
+                <button
+                  type="submit"
+                  disabled={aiLoading || reachedQuestionLimit}
+                  className="w-10 h-10 mb-0.5 mr-0.5 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center disabled:opacity-30 hover:scale-105 active:scale-95 transition-all shadow-md shrink-0"
+                >
+                  <Send className="w-4 h-4 ml-0.5" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={toggleRecording}
+                  disabled={aiLoading || reachedQuestionLimit}
+                  className="w-10 h-10 mb-0.5 mr-0.5 rounded-full bg-[#1890FF] text-white flex items-center justify-center disabled:opacity-30 hover:scale-105 active:scale-95 transition-all shadow-md shrink-0"
+                  title="Dictar por voz"
+                >
+                  <Mic className="w-4 h-4" />
+                </button>
+              )}
             </form>
             <div className="text-center mt-1">
               <span className="text-[10px] text-gray-400 font-medium">R-AI puede cometer errores. Verifica la información financiera.</span>

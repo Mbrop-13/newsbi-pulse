@@ -339,21 +339,17 @@ function FullScreenChatInternal() {
 
                 {/* ── Content (above canvas) ── */}
                 <div className="relative z-10 flex flex-col items-center">
-                  {/* Logo with pulsing glow */}
-                  <div className="relative mb-6 md:mb-8">
-                    <div className="absolute inset-0 w-24 h-24 md:w-28 md:h-28 bg-[#1890FF] blur-3xl opacity-30 rounded-full animate-pulse" style={{ animationDuration: '3s' }} />
-                    <div className="absolute inset-0 w-24 h-24 md:w-28 md:h-28 bg-indigo-500 blur-2xl opacity-15 rounded-full animate-pulse" style={{ animationDuration: '4s', animationDelay: '1s' }} />
-                    <div className="relative w-20 h-20 md:w-24 md:h-24 bg-gradient-to-br from-[#1890FF] via-blue-500 to-indigo-600 rounded-[1.5rem] md:rounded-[2rem] flex items-center justify-center shadow-2xl shadow-[#1890FF]/30 ring-4 ring-white/80 dark:ring-[#0B0F1A]/80">
-                      <Sparkles className="w-10 h-10 md:w-12 md:h-12 text-white drop-shadow-lg" />
+                  <div className="relative mb-8 md:mb-12 mt-4">
+                    <div className="absolute inset-0 w-32 h-32 md:w-40 md:h-40 bg-[#1890FF] blur-3xl opacity-30 rounded-full animate-pulse mx-auto" style={{ animationDuration: '3s' }} />
+                    <div className="absolute inset-0 w-32 h-32 md:w-40 md:h-40 bg-indigo-500 blur-2xl opacity-15 rounded-full animate-pulse mx-auto" style={{ animationDuration: '4s', animationDelay: '1s' }} />
+                    <div className="relative w-32 h-32 md:w-40 md:h-40 flex items-center justify-center">
+                       <img 
+                         src="https://cdn.shopify.com/s/files/1/0564/3812/8712/files/freepik__background__94196.png?v=1771922713" 
+                         alt="Reclu" 
+                         className="w-full h-full object-contain drop-shadow-2xl"
+                       />
                     </div>
                   </div>
-
-                  <h2 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white mb-3 md:mb-4 tracking-tight">
-                    R-AI <span className="bg-gradient-to-r from-[#1890FF] to-indigo-500 bg-clip-text text-transparent">Assistant</span>
-                  </h2>
-                  <p className="text-sm md:text-base text-gray-500 dark:text-gray-400 mb-8 md:mb-12 max-w-lg px-4 leading-relaxed">
-                    Tu agente financiero autónomo. Con acceso a mercados globales y a tu portafolio personal en tiempo real.
-                  </p>
 
                   {/* ── Shortcut Cards ── */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 w-full max-w-2xl px-2">

@@ -44,25 +44,32 @@ export function DotWaveBackground() {
         const dist = Math.sqrt(dx * dx + dy * dy);
         const maxDist = Math.sqrt(cx * cx + cy * cy);
 
-        // Wave: radial ripple from center
-        const wave = Math.sin(dist * 0.04 - time * 2.2) * 0.5 + 0.5;
-        // Secondary wave for complexity
-        const wave2 = Math.sin(dist * 0.025 + time * 1.1) * 0.5 + 0.5;
-        // Combined intensity
-        const intensity = wave * 0.6 + wave2 * 0.4;
+        // Wave: radial ripple from center (-1 to 1)
+        const wave = Math.sin(dist * 0.04 - time * 2.2);
+        // Secondary wave for complexity (-1 to 1)
+        const wave2 = Math.sin(dist * 0.025 + time * 1.1);
+        
+        // Combined intensity, only keeping the positive peaks to create distinct waves
+        const combined = wave * 0.6 + wave2 * 0.4;
+        const intensity = Math.max(0, combined * 1.5);
 
         // Fade at edges
         const edgeFade = 1 - Math.pow(dist / maxDist, 1.5);
         const alpha = intensity * edgeFade;
 
+        // Base opacity is 0 so they completely disappear when the wave passes
+        const opacity = alpha * 0.85;
+        
+        // Optimization: don't draw invisible dots
+        if (opacity < 0.01) continue;
+
         // Dot size pulses with wave
-        const baseSize = 1.8;
-        const size = baseSize + intensity * 1.6;
+        const baseSize = 0.5;
+        const size = baseSize + intensity * 2.5;
 
         // Color: from dim slate to vibrant blue
         const blue = Math.round(144 + alpha * 111); // 144 → 255
         const green = Math.round(100 + alpha * 93);  // subtle teal tint
-        const opacity = 0.08 + alpha * 0.55;
 
         ctx.beginPath();
         ctx.arc(x, y, size, 0, Math.PI * 2);

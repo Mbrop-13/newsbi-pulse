@@ -119,56 +119,62 @@ function FullScreenChatInternal() {
   const recognitionRef = useRef<any>(null);
   const baseInputRef = useRef("");
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        recognitionRef.current = new SpeechRecognition();
-        recognitionRef.current.continuous = false; // Stops automatically when user pauses
-        recognitionRef.current.interimResults = true;
-        recognitionRef.current.lang = 'es-ES';
-
-        let finalTranscript = "";
-
-        recognitionRef.current.onstart = () => {
-          setIsRecording(true);
-          finalTranscript = "";
-        };
-
-        recognitionRef.current.onresult = (event: any) => {
-          let interimTranscript = "";
-          for (let i = event.resultIndex; i < event.results.length; ++i) {
-            if (event.results[i].isFinal) {
-              finalTranscript += event.results[i][0].transcript + " ";
-            } else {
-              interimTranscript += event.results[i][0].transcript;
-            }
-          }
-          setInput(baseInputRef.current + (baseInputRef.current ? " " : "") + finalTranscript + interimTranscript);
-        };
-
-        recognitionRef.current.onerror = (event: any) => {
-          console.error("Speech recognition error", event.error);
-          setIsRecording(false);
-        };
-
-        recognitionRef.current.onend = () => {
-          setIsRecording(false);
-        };
-      }
-    }
-  }, [setInput]);
-
   const toggleRecording = () => {
     if (isRecording) {
       recognitionRef.current?.stop();
-    } else {
-      if (recognitionRef.current) {
-        baseInputRef.current = input; // Store current input so we append to it
-        recognitionRef.current.start();
-      } else {
-        alert("Tu navegador no soporta reconocimiento de voz nativo.");
-      }
+      setIsRecording(false);
+      return;
+    }
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Tu navegador no soporta reconocimiento de voz nativo. Por favor usa Chrome o Edge.");
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false; // Parar al hacer pausa
+      recognition.interimResults = true;
+      recognition.lang = 'es-ES';
+
+      let finalTranscript = "";
+      baseInputRef.current = input;
+
+      recognition.onstart = () => {
+        setIsRecording(true);
+      };
+
+      recognition.onresult = (event: any) => {
+        let interimTranscript = "";
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript + " ";
+          } else {
+            interimTranscript += event.results[i][0].transcript;
+          }
+        }
+        setInput(baseInputRef.current + (baseInputRef.current ? " " : "") + finalTranscript + interimTranscript);
+      };
+
+      recognition.onerror = (event: any) => {
+        console.error("Error de voz:", event.error);
+        if (event.error === 'not-allowed') {
+           alert("Permiso de micrófono denegado. Por favor permítelo en tu navegador.");
+        }
+        setIsRecording(false);
+      };
+
+      recognition.onend = () => {
+        setIsRecording(false);
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch (e) {
+      console.error(e);
+      alert("Error al iniciar el micrófono.");
+      setIsRecording(false);
     }
   };
 

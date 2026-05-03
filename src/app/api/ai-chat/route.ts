@@ -4,6 +4,7 @@ import { streamText, tool } from 'ai';
 import { z } from 'zod';
 import { createClient } from "@/lib/supabase/server";
 import { checkLimit, incrementUsage } from "@/lib/check-limits";
+import YahooFinance from "yahoo-finance2";
 
 export const maxDuration = 60;
 
@@ -50,10 +51,13 @@ Respondes SIEMPRE en español.
 Eres profesional, concisa y analítica.
 
 Tienes acceso a herramientas (tools) nativas para buscar noticias financieras y del portafolio.
+- Usa get_portfolio_summary SIEMPRE que el usuario pregunte por su portafolio o acciones. Esta herramienta te da datos en vivo (precios, cambios, posiciones). Presenta los resultados en una tabla markdown bonita.
+- Usa get_portfolio_news para complementar con noticias relevantes al portafolio del usuario.
 - Usa get_top_news_today para ver las noticias más importantes publicadas HOY (usar si el usuario dice "¿qué pasó hoy?").
-- Usa get_portfolio_news para buscar información específica sobre las inversiones/activos del usuario.
 - Usa search_general_news para buscar noticias del día o sobre temas generales.
 - Usa get_news_context si necesitas profundizar en el artículo.
+
+Cuando el usuario pregunte por su portafolio, llama PRIMERO a get_portfolio_summary para datos en vivo y DESPUÉS a get_portfolio_news para noticias relacionadas. Combina ambos en tu respuesta.
 
 NUNCA menciones que eres una IA de OpenAI, Anthropic o Google. Eres una creación pura de Reclu.`;
 
@@ -64,8 +68,80 @@ NUNCA menciones que eres una IA de OpenAI, Anthropic o Google. Eres una creació
       model: openrouter(modelStr),
       system: systemContent,
       messages: messages.map((m: any) => ({ role: m.role, content: m.content })),
-      maxSteps: 3,
+      maxSteps: 5,
       tools: {
+        get_portfolio_summary: tool({
+          description: 'Obtiene un resumen en vivo del portafolio del usuario con precios actuales, cambios del día, cantidad de acciones y valor de la posición. USAR SIEMPRE que el usuario pregunte por su portafolio o sus acciones.',
+          parameters: z.object({}),
+          execute: async () => {
+            const sc = await createClient();
+            const { data: dbAssets } = await sc.from('portfolios').select('*').eq('user_id', user.id);
+            if (!dbAssets || dbAssets.length === 0) {
+              return { error: "El usuario no tiene activos en su portafolio. Sugiérele agregar algunos en la sección Portafolio." };
+            }
+
+            const symbols = dbAssets.map((a: any) => a.symbol);
+            try {
+              const yf = new YahooFinance();
+              const quotes = await yf.quote(symbols);
+              const quoteArray = Array.isArray(quotes) ? quotes : [quotes];
+
+              const assets = dbAssets.map((dbA: any) => {
+                const live = quoteArray.find((q: any) => q.symbol === dbA.symbol) || {} as any;
+                const price = live.regularMarketPrice || 0;
+                const change = live.regularMarketChange || 0;
+                const changePercent = live.regularMarketChangePercent || 0;
+                const shares = dbA.shares || 0;
+                const avgPrice = dbA.average_price || 0;
+                const positionValue = price * shares;
+                const invested = avgPrice * shares;
+                const pnl = invested > 0 ? positionValue - invested : 0;
+
+                return {
+                  symbol: dbA.symbol,
+                  company_name: dbA.company_name,
+                  price: price,
+                  change: change,
+                  changePercent: changePercent,
+                  shares: shares,
+                  average_price: avgPrice,
+                  position_value: positionValue,
+                  pnl: pnl,
+                  currency: live.currency || 'USD'
+                };
+              });
+
+              const totalValue = assets.reduce((sum: number, a: any) => sum + a.position_value, 0);
+              const totalPnl = assets.reduce((sum: number, a: any) => sum + a.pnl, 0);
+              const avgChange = assets.length > 0 ? assets.reduce((sum: number, a: any) => sum + a.changePercent, 0) / assets.length : 0;
+
+              return {
+                assets,
+                summary: {
+                  total_assets: assets.length,
+                  total_value: totalValue,
+                  total_pnl: totalPnl,
+                  average_daily_change: avgChange
+                }
+              };
+            } catch (e) {
+              // If Yahoo Finance fails, return at least the DB data
+              return {
+                assets: dbAssets.map((a: any) => ({
+                  symbol: a.symbol,
+                  company_name: a.company_name,
+                  shares: a.shares || 0,
+                  average_price: a.average_price || 0,
+                  price: 0,
+                  change: 0,
+                  changePercent: 0
+                })),
+                summary: { total_assets: dbAssets.length, total_value: 0, total_pnl: 0, average_daily_change: 0 },
+                error_note: 'No se pudieron obtener precios en vivo. Mostrando datos guardados.'
+              };
+            }
+          }
+        }),
         get_portfolio_news: tool({
           description: 'Obtiene las noticias más recientes e importantes específicamente relacionadas a los activos (tickers) del portafolio del usuario.',
           parameters: z.object({

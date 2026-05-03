@@ -53,7 +53,7 @@ INSTRUCCIONES:
     // Actually, gemini-2.5-flash or grok-2 work great. We'll use the user's preferred model or fallback to a tool-capable one.
     const modelStr = process.env.OPENROUTER_ENRICH_MODEL || 'google/gemini-2.5-flash';
 
-    const result = streamText({
+    const result = await streamText({
       model: openrouter(modelStr),
       system: systemPrompt,
       messages,
@@ -150,7 +150,7 @@ INSTRUCCIONES:
       },
     });
 
-    return result.toDataStreamResponse();
+    return result.toAIStreamResponse();
   } catch (error: any) {
     console.error("AI Chat Stream Error:", error);
     return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });

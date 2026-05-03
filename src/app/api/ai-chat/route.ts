@@ -60,7 +60,7 @@ NUNCA menciones que eres una IA de OpenAI, Anthropic o Google. Eres una creació
     // Increment usage
     await incrementUsage(user.id, "ai_message").catch(console.error);
 
-    const result = streamText({
+    const result = await streamText({
       model: openrouter(modelStr),
       system: systemContent,
       messages: messages.map((m: any) => ({ role: m.role, content: m.content })),
@@ -147,7 +147,7 @@ NUNCA menciones que eres una IA de OpenAI, Anthropic o Google. Eres una creació
       },
     });
 
-    return result.toDataStreamResponse();
+    return result.toAIStreamResponse();
   } catch (error: any) {
     console.error("[AI Chat Stream] Error:", error);
     return new Response(JSON.stringify({ error: error.message }), { status: 500 });

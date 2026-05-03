@@ -132,7 +132,7 @@ function FullScreenChatInternal() {
     if (user) {
       supabase.from("portfolios").select("id").eq("user_id", user.id).limit(1)
         .then(({ data }) => {
-          setHasPortfolio(data && data.length > 0);
+          setHasPortfolio(data ? data.length > 0 : false);
         });
     }
     

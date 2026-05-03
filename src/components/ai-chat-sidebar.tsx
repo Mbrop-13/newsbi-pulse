@@ -19,7 +19,7 @@ export function AIChatSidebar() {
   const [input, setInput] = useState("");
   const [showHistory, setShowHistory] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
@@ -48,7 +48,7 @@ export function AIChatSidebar() {
     if (user && isOpen) {
       supabase.from("portfolios").select("id").eq("user_id", user.id).limit(1)
         .then(({ data }) => {
-          setHasPortfolio(data && data.length > 0);
+          setHasPortfolio(data ? data.length > 0 : false);
         });
     }
   }, [user, isOpen]);

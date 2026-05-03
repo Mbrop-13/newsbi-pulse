@@ -50,6 +50,7 @@ Respondes SIEMPRE en español.
 Eres profesional, concisa y analítica.
 
 Tienes acceso a herramientas (tools) nativas para buscar noticias financieras y del portafolio.
+- Usa get_top_news_today para ver las noticias más importantes publicadas HOY (usar si el usuario dice "¿qué pasó hoy?").
 - Usa get_portfolio_news para buscar información específica sobre las inversiones/activos del usuario.
 - Usa search_general_news para buscar noticias del día o sobre temas generales.
 - Usa get_news_context si necesitas profundizar en el artículo.
@@ -112,6 +113,21 @@ NUNCA menciones que eres una IA de OpenAI, Anthropic o Google. Eres una creació
               
             return { news: data || [] };
           },
+        }),
+        get_top_news_today: tool({
+          description: 'Obtiene las 10 noticias más importantes publicadas el día de hoy, ordenadas por relevancia.',
+          parameters: z.object({}),
+          execute: async () => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const { data } = await supabase
+              .from('news_articles')
+              .select('id, title, summary, published_at, relevance_score, slug')
+              .gte('published_at', today.toISOString())
+              .order('relevance_score', { ascending: false })
+              .limit(10);
+            return { news: data || [] };
+          }
         }),
         get_news_context: tool({
           description: 'Obtiene el contenido completo de una noticia específica dado su slug o id.',

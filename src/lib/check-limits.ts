@@ -65,16 +65,18 @@ export async function incrementUsage(userId: string, feature: "ai_message" | "tt
     // Increment monthly usage
     await supabase.rpc("increment_monthly_ai", { p_user_id: userId, p_month: currentMonth });
     
-    // Increment lifetime usage
-    await supabase
-      .from("lifetime_usage")
-      .upsert(
-        { user_id: userId, ai_messages_total: 1 },
-        { onConflict: "user_id" }
-      );
+    // Increment lifetime usage via RPC
+    const { error } = await supabase.rpc("increment_lifetime_ai", { p_user_id: userId });
     
-    // Use raw SQL for increment since upsert doesn't increment
-    await supabase.rpc("increment_lifetime_ai", { p_user_id: userId });
+    if (error) {
+       // Fallback if RPC fails: read, then update or insert
+       const { data } = await supabase.from("lifetime_usage").select("ai_messages_total").eq("user_id", userId).single();
+       if (data) {
+         await supabase.from("lifetime_usage").update({ ai_messages_total: data.ai_messages_total + 1 }).eq("user_id", userId);
+       } else {
+         await supabase.from("lifetime_usage").insert({ user_id: userId, ai_messages_total: 1 });
+       }
+    }
   }
   
   if (feature === "tts_audio") {

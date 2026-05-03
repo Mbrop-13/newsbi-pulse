@@ -425,7 +425,7 @@ Fuente: ${article.sourceName}
 URL: ${article.url}
 País: ${article.country_code === 'cl' ? 'Chile (f=1X)' : 'USA (f=2X)'}`;
 
-  const model = process.env.OPENROUTER_ENRICH_MODEL || 'x-ai/grok-4.1-fast:online';
+  const model = process.env.OPENROUTER_ENRICH_MODEL || 'deepseek/deepseek-v4-flash';
   
   const { content, usage, citations } = await callOpenRouter({
     model,

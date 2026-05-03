@@ -69,33 +69,67 @@ NUNCA menciones que eres una IA de OpenAI, Anthropic o Google. Eres una creació
         get_portfolio_news: tool({
           description: 'Obtiene las noticias más recientes e importantes específicamente relacionadas a los activos (tickers) del portafolio del usuario.',
           parameters: z.object({
-            limit: z.number().optional().describe('Cantidad máxima de noticias a recuperar. Por defecto 5.'),
+            limit: z.number().optional().describe('Cantidad máxima de noticias a recuperar. Por defecto 10.'),
           }),
-          execute: async ({ limit = 5 }) => {
-            const sc = await createClient(); // assuming authenticated client has access
-            const { data: portfolios } = await sc.from('portfolios').select('symbol').eq('user_id', user.id);
+          execute: async ({ limit = 10 }) => {
+            const sc = await createClient();
+            const { data: portfolios } = await sc.from('portfolios').select('symbol, company_name').eq('user_id', user.id);
             if (!portfolios || portfolios.length === 0) {
               return { error: "El usuario no tiene activos en su portafolio. Sugiérele agregar algunos en la sección Portafolio." };
             }
-            const symbols = portfolios.map((p: any) => p.symbol.toLowerCase());
             
-            // Search global news
-            const { data: allNews } = await supabase
+            // Build search terms from both symbols and company names
+            const searchTerms: string[] = [];
+            for (const p of portfolios) {
+              if (p.symbol) searchTerms.push(p.symbol.toLowerCase());
+              if (p.company_name) {
+                // Add full company name and also individual significant words (3+ chars)
+                searchTerms.push(p.company_name.toLowerCase());
+                const words = p.company_name.split(/[\s,.\-\/]+/).filter((w: string) => w.length >= 3);
+                for (const word of words) {
+                  const lower = word.toLowerCase();
+                  // Skip common words that would match too broadly
+                  if (!['inc', 'corp', 'ltd', 'llc', 'the', 'and', 'group', 'holdings', 'company', 'class'].includes(lower)) {
+                    searchTerms.push(lower);
+                  }
+                }
+              }
+            }
+            
+            // Try Supabase ilike filters — build an OR filter for title matching
+            const orFilters = searchTerms.map(t => `title.ilike.%${t}%`).join(',');
+            
+            const { data: matchedNews } = await supabase
+              .from('news_articles')
+              .select('id, title, summary, published_at, relevance_score, slug, image_url')
+              .or(orFilters)
+              .order('published_at', { ascending: false })
+              .limit(limit);
+            
+            if (matchedNews && matchedNews.length > 0) {
+              return { 
+                news: matchedNews,
+                portfolio_symbols: portfolios.map((p: any) => p.symbol)
+              };
+            }
+            
+            // Fallback: fetch recent news and do client-side fuzzy matching
+            const { data: recentNews } = await supabase
               .from('news_articles')
               .select('id, title, summary, published_at, relevance_score, slug, image_url')
               .order('published_at', { ascending: false })
-              .limit(50);
+              .limit(100);
               
-            if (!allNews) return { news: [] };
+            if (!recentNews) return { news: [], portfolio_symbols: portfolios.map((p: any) => p.symbol) };
             
-            // Filter by symbols
-            const relevantNews = allNews.filter(article => {
-              const text = (article.title + " " + article.summary).toLowerCase();
-              return symbols.some((sym: string) => text.includes(sym));
+            const relevantNews = recentNews.filter(article => {
+              const text = (article.title + " " + (article.summary || "")).toLowerCase();
+              return searchTerms.some(term => text.includes(term));
             }).slice(0, limit);
             
             return {
-              news: relevantNews
+              news: relevantNews,
+              portfolio_symbols: portfolios.map((p: any) => p.symbol)
             };
           },
         }),

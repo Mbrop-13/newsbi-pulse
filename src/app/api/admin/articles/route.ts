@@ -44,6 +44,10 @@ export async function GET(request: NextRequest) {
       query = query.eq("is_hidden", true);
     } else if (status === "pinned") {
       query = query.eq("is_pinned", true);
+    } else if (status === "scheduled") {
+      query = query.gt("published_at", new Date().toISOString());
+    } else if (status === "live") {
+      query = query.lte("published_at", new Date().toISOString()).eq("is_hidden", false);
     }
 
     query = query.range(offset, offset + limit - 1);

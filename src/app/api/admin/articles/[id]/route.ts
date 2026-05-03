@@ -53,7 +53,7 @@ export async function PATCH(
     // Only allow updating specific fields
     const allowedFields = [
       "title", "content", "enriched_content", "category", "tags",
-      "image_url", "relevance_score", "is_hidden", "is_pinned"
+      "image_url", "relevance_score", "is_hidden", "is_pinned", "published_at"
     ];
     const updates: Record<string, any> = { updated_at: new Date().toISOString() };
     for (const key of allowedFields) {

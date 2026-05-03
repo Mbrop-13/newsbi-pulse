@@ -16,6 +16,8 @@ import {
   AlertTriangle,
   X,
   Filter,
+  Clock,
+  CheckCircle2,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -98,6 +100,22 @@ export default function AdminNoticiasPage() {
     setActionLoading(null);
   };
 
+  const handlePublishNow = async (id: string) => {
+    setActionLoading(id);
+    await fetch(`/api/admin/articles/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ published_at: new Date().toISOString() }),
+    });
+    // Optimistic update
+    setArticles(prev =>
+      prev.map(a =>
+        a.id === id ? { ...a, published_at: new Date().toISOString() } : a
+      )
+    );
+    setActionLoading(null);
+  };
+
   const handleDelete = async () => {
     if (!deleteTarget) return;
     setActionLoading(deleteTarget.id);
@@ -171,6 +189,8 @@ export default function AdminNoticiasPage() {
           className="bg-[#1E293B] border border-white/5 rounded-xl px-4 py-2.5 text-sm text-gray-300 focus:outline-none focus:border-blue-500/50 appearance-none cursor-pointer"
         >
           <option value="">Todos los estados</option>
+          <option value="live">Publicadas (Live)</option>
+          <option value="scheduled">Programadas (Cola)</option>
           <option value="hidden">Ocultas</option>
           <option value="pinned">Fijadas</option>
         </select>
@@ -241,6 +261,11 @@ export default function AdminNoticiasPage() {
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center justify-center gap-1.5">
+                        {new Date(article.published_at).getTime() > Date.now() && (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-blue-500/15 text-blue-400 border border-blue-500/20 flex items-center gap-1">
+                            <Clock className="w-2.5 h-2.5" /> PROGRAMADA
+                          </span>
+                        )}
                         {article.is_pinned && (
                           <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-purple-500/15 text-purple-400 border border-purple-500/20">
                             FIJADA
@@ -251,15 +276,25 @@ export default function AdminNoticiasPage() {
                             OCULTA
                           </span>
                         )}
-                        {!article.is_pinned && !article.is_hidden && (
-                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-green-500/15 text-green-400 border border-green-500/20">
-                            VISIBLE
+                        {!article.is_pinned && !article.is_hidden && new Date(article.published_at).getTime() <= Date.now() && (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-green-500/15 text-green-400 border border-green-500/20 flex items-center gap-1">
+                            <CheckCircle2 className="w-2.5 h-2.5" /> LIVE
                           </span>
                         )}
                       </div>
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex items-center justify-end gap-1">
+                        {new Date(article.published_at).getTime() > Date.now() && (
+                          <button
+                            onClick={() => handlePublishNow(article.id)}
+                            title="Publicar ahora"
+                            disabled={actionLoading === article.id}
+                            className="p-2 rounded-lg hover:bg-green-500/10 text-green-500 transition-colors disabled:opacity-30"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                         <button
                           onClick={() => handleToggle(article.id, "is_pinned")}
                           title={article.is_pinned ? "Desfijar" : "Fijar"}

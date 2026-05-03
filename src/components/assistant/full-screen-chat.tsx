@@ -12,7 +12,6 @@ import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useChat } from 'ai/react';
 import { AnalyzedNewsCard } from './analyzed-news-card';
-import { DotWaveBackground } from './dot-wave-background';
 
 
 export function FullScreenChat() {
@@ -210,10 +209,10 @@ function FullScreenChatInternal() {
             initial={{ width: 0, opacity: 0 }}
             animate={{ width: 280, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
-            className="h-full border-r border-gray-100 dark:border-white/5 bg-[#FAFAFA] dark:bg-[#0F1117] flex flex-col flex-shrink-0 z-20 absolute md:relative shadow-2xl md:shadow-none"
+            className="h-full border-r border-gray-100 dark:border-white/5 bg-[#FAFAFA] dark:bg-[#0F1117] flex flex-col flex-shrink-0 z-30 absolute shadow-2xl"
           >
             <div className="p-4 flex flex-col gap-2">
-              <Link href="/" className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 rounded-xl transition-all text-xs font-bold text-gray-600 dark:text-gray-300">
+              <Link href="/" className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-[#1890FF]/5 hover:bg-[#1890FF]/10 border border-[#1890FF]/20 hover:border-[#1890FF]/40 text-[#1890FF] rounded-xl transition-all text-xs font-bold">
                 <ExternalLink className="w-3.5 h-3.5" /> Volver al Inicio
               </Link>
               <div className="flex items-center justify-between gap-2">
@@ -325,48 +324,34 @@ function FullScreenChatInternal() {
         )}
 
         {/* Chat Messages */}
-        <div className="flex-1 overflow-y-auto hidden-scrollbar relative pb-32">
+        <div className="flex-1 overflow-y-auto hidden-scrollbar relative pb-24">
           <div className={`${maxWClass} mx-auto w-full px-4 md:px-8 pt-10 pb-8 transition-all duration-300`}>
             
             {isStoreHydrated && aiMessages.length === 0 && !aiLoading && (
-              <div className="relative flex flex-col items-center justify-center text-center min-h-[70vh]">
-                {/* ── Animated Dot Wave Background ── */}
-                <div className="absolute inset-0 -mx-4 md:-mx-8 overflow-hidden rounded-3xl">
-                  <DotWaveBackground />
-                  {/* Radial gradient overlay so dots fade into the bg */}
-                  <div className="absolute inset-0 bg-gradient-to-b from-white/0 via-white/0 to-white dark:from-[#0a0a0a]/0 dark:via-[#0a0a0a]/0 dark:to-[#0a0a0a]" />
+              <div className="flex flex-col items-center justify-center text-center mt-6 md:mt-24 mb-10 md:mb-16">
+                <div className="relative mb-4 md:mb-6">
+                  <div className="absolute inset-0 bg-[#1890FF] blur-2xl opacity-20 rounded-full"></div>
+                  <div className="relative w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-[#1890FF] to-indigo-600 rounded-2xl md:rounded-[2rem] flex items-center justify-center shadow-2xl ring-4 ring-white dark:ring-[#0B0F1A]">
+                    <Sparkles className="w-8 h-8 md:w-10 md:h-10 text-white" />
+                  </div>
                 </div>
-
-                {/* ── Content (above canvas) ── */}
-                <div className="relative z-10 flex flex-col items-center">
-                  <div className="relative mb-8 md:mb-12 mt-4">
-                    <div className="absolute inset-0 w-32 h-32 md:w-40 md:h-40 bg-[#1890FF] blur-3xl opacity-30 rounded-full animate-pulse mx-auto" style={{ animationDuration: '3s' }} />
-                    <div className="absolute inset-0 w-32 h-32 md:w-40 md:h-40 bg-indigo-500 blur-2xl opacity-15 rounded-full animate-pulse mx-auto" style={{ animationDuration: '4s', animationDelay: '1s' }} />
-                    <div className="relative w-32 h-32 md:w-40 md:h-40 flex items-center justify-center">
-                       <img 
-                         src="https://cdn.shopify.com/s/files/1/0564/3812/8712/files/freepik__background__94196.png?v=1771922713" 
-                         alt="Reclu" 
-                         className="w-full h-full object-contain drop-shadow-2xl"
-                       />
-                    </div>
-                  </div>
-
-                  {/* ── Shortcut Cards ── */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 w-full max-w-2xl px-2">
-                    {shortcuts.map((sc) => (
-                      <button
-                        key={sc.id}
-                        onClick={() => sendMessage(sc.query, sc.id)}
-                        className="p-4 md:p-5 bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 rounded-2xl md:rounded-3xl text-left hover:border-[#1890FF]/40 hover:bg-white/90 dark:hover:bg-white/10 hover:shadow-lg hover:shadow-[#1890FF]/10 transition-all duration-300 group hover:-translate-y-1"
-                      >
-                        <div className="w-9 h-9 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-gradient-to-br from-[#1890FF]/10 to-indigo-500/10 dark:from-[#1890FF]/20 dark:to-indigo-500/20 flex items-center justify-center mb-3 md:mb-4 text-[#1890FF] group-hover:scale-110 group-hover:from-[#1890FF]/20 group-hover:to-indigo-500/20 transition-all duration-300">
-                          {sc.id.includes("portfolio") ? <BarChart3 className="w-4 h-4 md:w-5 md:h-5" /> : sc.id.includes("top_news") ? <TrendingUp className="w-4 h-4 md:w-5 md:h-5" /> : <Newspaper className="w-4 h-4 md:w-5 md:h-5" />}
-                        </div>
-                        <p className="text-[13px] md:text-sm font-bold text-gray-900 dark:text-white mb-1 md:mb-1.5 group-hover:text-[#1890FF] transition-colors">{sc.label}</p>
-                        <p className="text-[11px] md:text-xs text-gray-500 dark:text-gray-400 font-medium line-clamp-2">{sc.query}</p>
-                      </button>
-                    ))}
-                  </div>
+                <h2 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white mb-2 md:mb-3 tracking-tight">R-AI Assistant</h2>
+                <p className="text-sm md:text-base text-gray-500 mb-6 md:mb-10 max-w-md px-4">Tu agente financiero autónomo. Con acceso a mercados globales y a tu portafolio personal en tiempo real.</p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 w-full">
+                  {shortcuts.map((sc) => (
+                    <button
+                      key={sc.id}
+                      onClick={() => sendMessage(sc.query, sc.id)}
+                      className="p-4 md:p-5 bg-gray-50/80 dark:bg-slate-900/50 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-2xl md:rounded-3xl text-left hover:border-[#1890FF]/30 hover:bg-[#1890FF]/5 transition-all group shadow-sm hover:shadow-md hover:-translate-y-1"
+                    >
+                      <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-white dark:bg-slate-800 flex items-center justify-center mb-3 md:mb-4 shadow-sm text-[#1890FF] group-hover:scale-110 transition-transform">
+                        {sc.id.includes("portfolio") ? <BarChart3 className="w-4 h-4 md:w-5 md:h-5" /> : <Newspaper className="w-4 h-4 md:w-5 md:h-5" />}
+                      </div>
+                      <p className="text-[13px] md:text-sm font-bold text-gray-900 dark:text-white mb-1 md:mb-1.5 group-hover:text-[#1890FF] transition-colors">{sc.label}</p>
+                      <p className="text-[11px] md:text-xs text-gray-500 font-medium line-clamp-2">{sc.query}</p>
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
@@ -463,7 +448,7 @@ function FullScreenChatInternal() {
         </div>
 
         {/* ─── PREMIUM INPUT BAR (REPOSITIONED) ─── */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-white via-white/90 to-transparent dark:from-[#0a0a0a] dark:via-[#0a0a0a]/90 pt-8 pb-3 px-4 md:px-8 pointer-events-none">
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-white via-white/90 to-transparent dark:from-[#0a0a0a] dark:via-[#0a0a0a]/90 pt-8 pb-1 px-4 md:px-8 pointer-events-none">
           <div className={`${maxWClass} mx-auto w-full relative pointer-events-auto transition-all duration-300`}>
             
             <form onSubmit={(e) => { e.preventDefault(); sendMessage(); }} className="relative flex items-end gap-2 bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-700/50 rounded-3xl p-1.5 shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)] focus-within:ring-4 focus-within:ring-[#1890FF]/15 focus-within:border-[#1890FF]/50 transition-all">
@@ -512,7 +497,7 @@ function FullScreenChatInternal() {
                 <Send className="w-4 h-4 ml-0.5" />
               </button>
             </form>
-            <div className="text-center mt-2.5">
+            <div className="text-center mt-1">
               <span className="text-[10px] text-gray-400 font-medium">R-AI puede cometer errores. Verifica la información financiera.</span>
             </div>
           </div>

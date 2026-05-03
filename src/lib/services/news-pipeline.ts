@@ -93,68 +93,15 @@ interface NewsFeed {
 }
 
 const GNEWS_FEEDS: NewsFeed[] = [
-  // Chile (4 feeds)
   {
-    keywords: 'economía OR finanzas OR empresas',
-    language: 'es', country: 'cl', country_code: 'cl',
-    feed_tag: 'economia',
-  },
-  {
-    keywords: 'inversiones OR bolsa OR mercado',
-    language: 'es', country: 'cl', country_code: 'cl',
-    feed_tag: 'inversiones',
-  },
-  {
-    keywords: 'tecnología OR innovación OR startups',
-    language: 'es', country: 'cl', country_code: 'cl',
-    feed_tag: 'tech_global',
-  },
-  {
-    keywords: 'política económica OR banco central',
+    keywords: 'Chile AND (economía OR finanzas OR empresas OR inversiones OR bolsa OR mercado OR tecnología OR innovación OR startups OR política OR "banco central" OR minería OR cobre OR litio)',
     language: 'es', country: 'cl', country_code: 'cl',
     feed_tag: 'chile',
   },
-  // USA / Global (4 feeds)
   {
-    keywords: 'finance OR "wall street" OR markets OR stocks',
+    keywords: '(finance OR markets OR stocks OR economy OR "fed reserve" OR inflation OR "AI tech" OR startups OR investments OR crypto OR commodities OR gold OR geopolitics)',
     language: 'en', country: 'us', country_code: 'us',
     feed_tag: 'finanzas',
-  },
-  {
-    keywords: 'economy OR "federal reserve" OR inflation OR GDP',
-    language: 'en', country: 'us', country_code: 'us',
-    feed_tag: 'economia',
-  },
-  {
-    keywords: '"artificial intelligence" OR "big tech" OR startups',
-    language: 'en', country: 'us', country_code: 'us',
-    feed_tag: 'tech_global',
-  },
-  {
-    keywords: 'investments OR cryptocurrency OR IPO OR "venture capital"',
-    language: 'en', country: 'us', country_code: 'us',
-    feed_tag: 'inversiones',
-  },
-  // ── Extra Global Feeds (more variety) ──
-  {
-    keywords: 'commodities OR copper OR lithium OR oil OR gold',
-    language: 'en', country: 'us', country_code: 'us',
-    feed_tag: 'inversiones',
-  },
-  {
-    keywords: 'geopolitics OR "trade war" OR tariffs OR sanctions',
-    language: 'en', country: 'us', country_code: 'us',
-    feed_tag: 'impacto_global',
-  },
-  {
-    keywords: 'energy OR solar OR nuclear OR renewables',
-    language: 'en', country: 'us', country_code: 'us',
-    feed_tag: 'tech_global',
-  },
-  {
-    keywords: 'minería OR cobre OR litio OR exportaciones',
-    language: 'es', country: 'cl', country_code: 'cl',
-    feed_tag: 'chile',
   },
 ];
 
@@ -180,7 +127,7 @@ export async function fetchFromGNewsAPI(): Promise<RawArticle[]> {
         q: feed.keywords,
         lang: feed.language,
         country: feed.country,
-        max: '10',
+        max: '50',
       });
 
       const res = await fetch(
@@ -369,7 +316,7 @@ IMPORTANTE: Responde ÚNICAMENTE con JSON puro. Sin explicaciones, sin markdown,
 
 f = 2 dígitos: país(1=CL,2=US) + tema(1=General,2=Tech,3=Impacto,4=Finanzas,5=Inversiones,6=Economía)`;
 
-  const model = process.env.OPENROUTER_FILTER_MODEL || 'x-ai/grok-4.1-fast';
+  const model = process.env.OPENROUTER_FILTER_MODEL || 'minimax/minimax-m2.5:free';
   console.log(`[PIPELINE] Step filter: ${articles.length} articles → ${model}`);
   
   const { content, usage } = await callOpenRouter({

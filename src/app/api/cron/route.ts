@@ -29,11 +29,9 @@ function getChileHour(): number {
 }
 
 function getMinIntervalMinutes(hour: number): number {
-  if (hour >= 0 && hour < 7) return 60;     // Madrugada
-  if (hour >= 7 && hour < 9) return 15;     // Pre-apertura
-  if (hour >= 9 && hour < 17) return 10;    // Mercado abierto
-  if (hour >= 17 && hour < 21) return 20;   // Post-mercado
-  return 30;                                 // Noche
+  if (hour >= 0 && hour < 7) return 120;    // Madrugada (cada 2 horas)
+  if (hour >= 7 && hour < 18) return 30;     // Horario comercial (cada 30 min)
+  return 60;                                 // Noche (cada hora)
 }
 
 export async function GET(request: NextRequest) {

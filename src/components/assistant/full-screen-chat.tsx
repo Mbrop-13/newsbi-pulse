@@ -10,7 +10,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import Link from "next/link";
 import { useTheme } from "next-themes";
-import { useChat } from 'ai/react';
+import { useChat } from '@ai-sdk/react';
 import { AnalyzedNewsCard } from './analyzed-news-card';
 
 
@@ -41,7 +41,6 @@ function FullScreenChatInternal() {
     cloudSyncEnabled, setCloudSync
   } = useAIChatStore();
   
-  const [input, setInput] = useState("");
   const [showUpsell, setShowUpsell] = useState(false);
   const [showPreferences, setShowPreferences] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);

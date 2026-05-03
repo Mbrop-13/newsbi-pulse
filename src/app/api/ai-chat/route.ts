@@ -82,7 +82,7 @@ NUNCA menciones que eres una IA de OpenAI, Anthropic o Google. Eres una creació
             // Search global news
             const { data: allNews } = await supabase
               .from('news_articles')
-              .select('id, title, summary, published_at, relevance_score, slug')
+              .select('id, title, summary, published_at, relevance_score, slug, image_url')
               .order('published_at', { ascending: false })
               .limit(50);
               
@@ -107,7 +107,7 @@ NUNCA menciones que eres una IA de OpenAI, Anthropic o Google. Eres una creació
           execute: async ({ query }) => {
             const { data } = await supabase
               .from('news_articles')
-              .select('id, title, summary, published_at, relevance_score, slug')
+              .select('id, title, summary, published_at, relevance_score, slug, image_url')
               .ilike('title', `%${query}%`)
               .order('published_at', { ascending: false })
               .limit(5);
@@ -123,7 +123,7 @@ NUNCA menciones que eres una IA de OpenAI, Anthropic o Google. Eres una creació
             today.setHours(0, 0, 0, 0);
             const { data } = await supabase
               .from('news_articles')
-              .select('id, title, summary, published_at, relevance_score, slug')
+              .select('id, title, summary, published_at, relevance_score, slug, image_url')
               .gte('published_at', today.toISOString())
               .order('relevance_score', { ascending: false })
               .limit(10);

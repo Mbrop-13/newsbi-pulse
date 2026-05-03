@@ -169,37 +169,34 @@ export async function fetchFromGNewsAPI(): Promise<RawArticle[]> {
     return [];
   }
 
-  console.log(`[PIPELINE] Fetching ${GNEWS_FEEDS.length} GNews API feeds...`);
+  console.log(`[PIPELINE] Fetching ${GNEWS_FEEDS.length} GNews API feeds sequentially (rate-limit friendly)...`);
 
-  const results = await Promise.allSettled(
-    GNEWS_FEEDS.map(async (feed) => {
-      try {
-        const params = new URLSearchParams({
-          apikey: apiKey,
-          q: feed.keywords,
-          lang: feed.language,
-          country: feed.country,
-          max: '10',
-        });
+  const allArticles: RawArticle[] = [];
+  
+  for (const feed of GNEWS_FEEDS) {
+    try {
+      const params = new URLSearchParams({
+        apikey: apiKey,
+        q: feed.keywords,
+        lang: feed.language,
+        country: feed.country,
+        max: '10',
+      });
 
-        const res = await fetch(
-          `https://gnews.io/api/v4/search?${params.toString()}`,
-          { signal: AbortSignal.timeout(15000) }
-        );
+      const res = await fetch(
+        `https://gnews.io/api/v4/search?${params.toString()}`,
+        { signal: AbortSignal.timeout(15000) }
+      );
 
-        if (!res.ok) {
-          const errText = await res.text().catch(() => '');
-          throw new Error(`GNews API error ${res.status}: ${errText.substring(0, 200)}`);
-        }
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        throw new Error(`GNews API error ${res.status}: ${errText.substring(0, 200)}`);
+      }
 
-        const data = await res.json();
+      const data = await res.json();
 
-        if (!Array.isArray(data.articles)) {
-          console.warn(`[PIPELINE] GNews returned no articles for ${feed.feed_tag}`);
-          return [];
-        }
-
-        return data.articles.map((item: any): RawArticle => ({
+      if (Array.isArray(data.articles)) {
+        const mapped = data.articles.map((item: any): RawArticle => ({
           title: item.title || '',
           summary: item.description || item.title || '',
           url: item.url || '',
@@ -211,20 +208,20 @@ export async function fetchFromGNewsAPI(): Promise<RawArticle[]> {
           country_code: feed.country_code,
           language: feed.language,
         }));
-      } catch (err: any) {
-        if (err.name === 'TimeoutError' || err.message?.includes('timeout')) {
-          console.error(`[PIPELINE] GNews API Timeout (15s) for ${feed.feed_tag}/${feed.country_code}`);
-        } else {
-          console.error(`[PIPELINE] GNews error for ${feed.feed_tag}/${feed.country_code}:`, err.message || err);
-        }
-        return [];
+        allArticles.push(...mapped);
       }
-    })
-  );
 
-  const allArticles = results
-    .filter((r): r is PromiseFulfilledResult<RawArticle[]> => r.status === 'fulfilled')
-    .flatMap(r => r.value);
+      // Small delay to avoid 429 rate limit
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+    } catch (err: any) {
+      if (err.name === 'TimeoutError' || err.message?.includes('timeout')) {
+        console.error(`[PIPELINE] GNews API Timeout (15s) for ${feed.feed_tag}/${feed.country_code}`);
+      } else {
+        console.error(`[PIPELINE] GNews error for ${feed.feed_tag}/${feed.country_code}:`, err.message || err);
+      }
+    }
+  }
 
   console.log(`[PIPELINE] Fetched ${allArticles.length} articles from ${GNEWS_FEEDS.length} GNews feeds`);
   return allArticles;

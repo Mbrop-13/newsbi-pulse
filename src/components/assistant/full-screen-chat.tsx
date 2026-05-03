@@ -181,18 +181,8 @@ function FullScreenChatInternal() {
   const sendMessage = async (textOverride?: string, shortcutOverride?: string) => {
     const text = textOverride || input.trim();
     if (!text || aiLoading || reachedQuestionLimit) return;
-
-    const userMsg = {
-      id: Date.now().toString(),
-      role: "user" as const,
-      content: text,
-      timestamp: new Date(),
-    };
     
-    // Save locally
-    addMessage(userMsg);
-    
-    // Trigger AI Stream
+    // Use append to send the user message — this adds it to aiMessages AND triggers the API call
     append({ role: 'user', content: text });
     if (!textOverride) handleInputChange({ target: { value: '' } } as any);
     fetchRealUsage();

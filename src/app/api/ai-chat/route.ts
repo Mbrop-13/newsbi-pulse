@@ -64,6 +64,7 @@ NUNCA menciones que eres una IA de OpenAI, Anthropic o Google. Eres una creació
       model: openrouter(modelStr),
       system: systemContent,
       messages: messages.map((m: any) => ({ role: m.role, content: m.content })),
+      maxSteps: 3,
       tools: {
         get_portfolio_news: tool({
           description: 'Obtiene las noticias más recientes e importantes específicamente relacionadas a los activos (tickers) del portafolio del usuario.',
@@ -147,7 +148,7 @@ NUNCA menciones que eres una IA de OpenAI, Anthropic o Google. Eres una creació
       },
     });
 
-    return result.toAIStreamResponse();
+    return result.toDataStreamResponse();
   } catch (error: any) {
     console.error("[AI Chat Stream] Error:", error);
     return new Response(JSON.stringify({ error: error.message }), { status: 500 });

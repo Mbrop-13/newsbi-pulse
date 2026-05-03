@@ -218,7 +218,7 @@ export function AssistantSetup() {
             {step === 1 && (
               <motion.div key="s1" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="flex-1 flex flex-col items-center justify-center text-center px-4">
                 <h2 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white mb-3 tracking-tight">
-                  Ponle nombre a tu asistente
+                  Ponle nombre a tu AI
                 </h2>
                 <p className="text-gray-400 text-sm mb-10 max-w-sm">Dale una identidad única a tu analista personal de IA.</p>
                 <input

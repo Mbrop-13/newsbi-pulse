@@ -307,7 +307,7 @@ export function AssistantDashboard() {
                   </div>
                   <div className="hidden sm:block">
                     <h2 className="text-sm font-bold text-gray-900 dark:text-white leading-tight truncate max-w-[120px]">
-                      {name || "Mi Asistente"}
+                      {name || "Mi AI"}
                     </h2>
                     <span className="text-[9px] font-bold text-green-500 uppercase tracking-[0.15em]">Online</span>
                   </div>
@@ -428,7 +428,7 @@ export function AssistantDashboard() {
                     <div className="w-20 h-20 bg-gradient-to-br from-[#1890FF]/10 to-indigo-500/10 dark:from-[#1890FF]/15 dark:to-indigo-500/15 rounded-[1.8rem] flex items-center justify-center mb-5 mx-auto ring-4 ring-white dark:ring-[#0F1629] shadow-xl">
                       <Sparkles className="w-10 h-10 text-[#1890FF]" />
                     </div>
-                    <h3 className="text-xl font-black text-gray-800 dark:text-white mb-2">Hola, soy {name || "tu asistente"}</h3>
+                    <h3 className="text-xl font-black text-gray-800 dark:text-white mb-2">Hola, soy {name || "tu AI"}</h3>
                     <p className="text-xs text-gray-400 max-w-xs mx-auto leading-relaxed">
                       Monitoreando {topics.length} temáticas y {tickers.length} activos en tiempo real. ¿En qué puedo ayudarte?
                     </p>
@@ -522,7 +522,7 @@ export function AssistantDashboard() {
                   <Send className="w-4 h-4" />
                 </button>
               </form>
-              <p className="text-[9px] text-center text-gray-300 dark:text-gray-600 mt-2 font-medium">Nuestro asistente puede cometer errores. Verifica las respuestas.</p>
+              <p className="text-[9px] text-center text-gray-300 dark:text-gray-600 mt-2 font-medium">Nuestra AI puede cometer errores. Verifica las respuestas.</p>
             </div>
           </div>
 
@@ -734,7 +734,7 @@ function AssistantPreferencesOverlay() {
               Reconfigurar mi Radar Completo
             </button>
             <button onClick={() => setShowPreferences(false)} className="w-full py-4 bg-gray-100 hover:bg-gray-200 dark:bg-white/5 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 rounded-2xl font-semibold transition-all active:scale-95 text-base flex items-center justify-center gap-2">
-              <ArrowLeft className="w-4 h-4" /> Volver al Asistente
+              <ArrowLeft className="w-4 h-4" /> Volver a mi AI
             </button>
           </div>
         </div>
@@ -756,7 +756,7 @@ function AssistantSettingsOverlay() {
           <X className="w-5 h-5" />
         </button>
         <div className="p-10 md:p-14 max-h-[85vh] overflow-y-auto scrollbar-thin">
-          <h2 className="text-3xl font-black mb-8 text-gray-900 dark:text-white">ADN del Asistente</h2>
+          <h2 className="text-3xl font-black mb-8 text-gray-900 dark:text-white">ADN de mi AI</h2>
           <div className="space-y-8">
             <div>
               <label className="text-xs font-black uppercase tracking-widest text-indigo-500 mb-3 block">Identidad</label>

@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
           title: `🎉 ¡Bienvenido a Reclu ${planNames[plan]}!`,
           message: `Tu suscripción ${planNames[plan]} está activa. Disfruta de todas las funciones premium de Reclu. Tu próxima fecha de facturación es ${periodEnd.toLocaleDateString("es-CL")}.`,
           ctaText: "Explorar Reclu",
-          ctaUrl: "https://reclu.cl/asistente",
+          ctaUrl: "https://reclu.cl/ai",
         });
         await sendEmail({ to: userData.user.email, subject, html });
       }

@@ -6,7 +6,7 @@ import { AuthModals } from "@/components/auth-modals";
 import { AssistantLanding } from "@/components/assistant/assistant-landing";
 import { FullScreenChat } from "@/components/assistant/full-screen-chat";
 
-export default function AsistentePage() {
+export default function AIPage() {
   const { isAuthenticated } = useAuthStore();
 
   const [authModal, setAuthModal] = useState<{ isOpen: boolean; view: "login" | "register" }>({

@@ -34,8 +34,8 @@ export function ClientLayoutProviders({
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
   const pathname = usePathname();
-  const isFullscreenPage = pathname === "/mundo" || pathname === "/asistente";
-  const isAssistantPage = pathname === "/asistente";
+  const isFullscreenPage = pathname === "/mundo" || pathname === "/ai";
+  const isAssistantPage = pathname === "/ai";
   const isAdminPage = pathname.startsWith("/admin");
   const audioMode = useAudioPlayerStore((s) => s.mode);
   const pinnedWidth = useAudioPlayerStore((s) => s.pinnedWidth);

@@ -527,7 +527,7 @@ function FullScreenChatInternal() {
               
               <div className="px-6 py-4 border-b border-gray-100 dark:border-white/5 flex items-center justify-between bg-gray-50 dark:bg-slate-800/50">
                 <h3 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
-                  <Settings className="w-5 h-5 text-[#1890FF]" /> Preferencias del Asistente
+                  <Settings className="w-5 h-5 text-[#1890FF]" /> Preferencias de AI
                 </h3>
                 <button onClick={() => setShowPreferences(false)} className="text-gray-400 hover:text-red-500 bg-white dark:bg-slate-800 rounded-full p-1.5 shadow-sm">
                   <X className="w-4 h-4" />
@@ -630,7 +630,7 @@ function FullScreenChatInternal() {
                 
                 <h3 className="text-3xl font-black text-gray-900 dark:text-white mb-2 tracking-tight">Internet en Vivo</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-8 max-w-[280px] mx-auto font-medium">
-                  Sube de nivel para conectar el asistente a <strong className="text-gray-900 dark:text-white">Grok 4.3</strong> y la web en tiempo real.
+                  Sube de nivel para conectar tu AI a <strong className="text-gray-900 dark:text-white">Grok 4.3</strong> y la web en tiempo real.
                 </p>
                 
                 <div className="space-y-3 text-left mb-8 bg-gray-50 dark:bg-white/5 p-5 rounded-2xl">

@@ -19,7 +19,7 @@ import {
 const tabs = [
   { id: "home", href: "/", icon: Home, label: "Inicio" },
   { id: "mercados", href: "/mercados", icon: TrendingUp, label: "Mercados" },
-  { id: "ai", href: "/asistente", icon: Sparkles, label: "Asistente" },
+  { id: "ai", href: "/ai", icon: Sparkles, label: "AI" },
   { id: "portafolio", href: "/portafolio", icon: Briefcase, label: "Portafolio" },
   { id: "mundo", href: "/mundo", icon: Globe, label: "Mundo" },
 ];

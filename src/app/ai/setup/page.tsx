@@ -13,7 +13,7 @@ const PREDEFINED_TOPICS = [
   "Mercados Emergentes", "Inteligencia Artificial"
 ];
 
-export default function AssistantSetupPage() {
+export default function AISetupPage() {
   const router = useRouter();
   const { name, setName, topics, addTopic, removeTopic, tickers, addTicker, removeTicker, completeSetup } = useAssistantStore();
   
@@ -55,7 +55,7 @@ export default function AssistantSetupPage() {
       setStep(s => s + 1);
     } else {
       completeSetup();
-      router.push("/asistente");
+      router.push("/ai");
     }
   };
 
@@ -72,7 +72,7 @@ export default function AssistantSetupPage() {
 
           <div className="text-center mb-10">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">
-              Configura tu Asistente de IA
+              Configura tu AI
             </h1>
             <p className="text-gray-500 dark:text-gray-400">
               Paso {step} de 3
@@ -91,7 +91,7 @@ export default function AssistantSetupPage() {
                   className="space-y-6"
                 >
                   <label className="block text-lg font-medium text-gray-700 dark:text-gray-200 text-center">
-                    Casi listo, ¿cómo te gustaría llamar a tu asistente?
+                    Casi listo, ¿cómo te gustaría llamar a tu AI?
                   </label>
                   <input
                     type="text"

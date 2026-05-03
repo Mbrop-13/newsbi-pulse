@@ -173,12 +173,12 @@ export function Navbar() {
                 Portafolio
               </Link>
 
-              {/* ASISTENTE LINK */}
+              {/* AI LINK */}
               <Link 
-                href="/asistente" 
+                href="/ai" 
                 className="flex items-center hover:text-[#1890FF] transition-colors"
               >
-                Asistente
+                AI
               </Link>
 
               {/* SECCIONES MEGA MENU (replaces Fuentes) */}
@@ -294,13 +294,13 @@ export function Navbar() {
               <Search className="w-4 h-4" />
             </button>
 
-            {pathname === '/asistente' && (
+            {pathname === '/ai' && (
               <>
                 <div className="w-px h-5 bg-gray-200 dark:bg-gray-700" />
                 <button
                   onClick={() => useAssistantStore.getState().setShowSettings(true)}
                   className="flex items-center justify-center w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
-                  title="Ajustes del Asistente"
+                  title="Ajustes de AI"
                 >
                   <Settings className="w-4 h-4" />
                 </button>
@@ -327,7 +327,7 @@ export function Navbar() {
                 useAIChatStore.getState().toggle();
               }}
               className="hidden md:flex relative text-gray-500 hover:text-[#1890FF] hover:bg-[#1890FF]/10 p-2 rounded-full transition-colors focus:outline-none group items-center justify-center"
-              title="Asistente IA"
+              title="AI"
             >
               <Sparkles className="w-5 h-5" />
               {/* Notification Indicator (Blue Blinking) */}

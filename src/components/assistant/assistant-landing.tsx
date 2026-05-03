@@ -43,7 +43,7 @@ const SLIDES = [
     id: "filters",
     badge: "Personalización",
     title: "Filtros Quirúrgicos",
-    description: "Configura los temas, países y acciones que te interesan. Tu asistente ignora todo lo demás y vigila lo que realmente importa.",
+    description: "Configura los temas, países y acciones que te interesan. Tu AI ignora todo lo demás y vigila lo que realmente importa.",
     icon: Target,
     color: "#1890FF",
     mockup: "filters" as const,
@@ -86,7 +86,7 @@ export function AssistantLanding({ onAuthReq }: AssistantLandingProps) {
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">
           <p className="text-xs font-black uppercase tracking-[0.3em] text-gray-400 dark:text-white/30 mb-3">Reclu</p>
           <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-gray-900 dark:text-white tracking-tight">
-            Conoce tu Asistente
+            Conoce tu AI
           </h1>
         </motion.div>
 
@@ -123,7 +123,7 @@ export function AssistantLanding({ onAuthReq }: AssistantLandingProps) {
                   {isLast && (
                     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="flex flex-col sm:flex-row gap-3">
                       <button onClick={() => onAuthReq("register")} className="px-7 py-3.5 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5 shadow-lg" style={{ background: s.color }}>
-                        Crear Asistente Gratis <ArrowRight className="w-4 h-4" />
+                        Crear AI Gratis <ArrowRight className="w-4 h-4" />
                       </button>
                       <button onClick={() => onAuthReq("login")} className="px-7 py-3.5 rounded-xl font-bold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 border border-gray-200 dark:border-white/10 transition-all">
                         Iniciar Sesión

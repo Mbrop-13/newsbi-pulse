@@ -84,7 +84,7 @@ export function AssistantNavbar() {
           <button
             onClick={() => setShowSettings(true)}
             className="flex items-center justify-center w-9 h-9 rounded-full transition-colors focus:outline-none bg-gray-100 dark:bg-slate-800 text-gray-500 hover:text-[#1890FF] hover:bg-[#1890FF]/10 shadow-sm"
-            title="Ajustes del Asistente"
+            title="Ajustes de AI"
           >
             <Settings className="w-4 h-4" />
           </button>

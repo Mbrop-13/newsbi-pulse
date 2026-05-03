@@ -12,6 +12,7 @@ import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useChat } from 'ai/react';
 import { AnalyzedNewsCard } from './analyzed-news-card';
+import { DotWaveBackground } from './dot-wave-background';
 
 
 export function FullScreenChat() {
@@ -328,30 +329,48 @@ function FullScreenChatInternal() {
           <div className={`${maxWClass} mx-auto w-full px-4 md:px-8 pt-10 pb-8 transition-all duration-300`}>
             
             {isStoreHydrated && aiMessages.length === 0 && !aiLoading && (
-              <div className="flex flex-col items-center justify-center text-center mt-6 md:mt-24 mb-10 md:mb-16">
-                <div className="relative mb-4 md:mb-6">
-                  <div className="absolute inset-0 bg-[#1890FF] blur-2xl opacity-20 rounded-full"></div>
-                  <div className="relative w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-[#1890FF] to-indigo-600 rounded-2xl md:rounded-[2rem] flex items-center justify-center shadow-2xl ring-4 ring-white dark:ring-[#0B0F1A]">
-                    <Sparkles className="w-8 h-8 md:w-10 md:h-10 text-white" />
-                  </div>
+              <div className="relative flex flex-col items-center justify-center text-center min-h-[70vh]">
+                {/* ── Animated Dot Wave Background ── */}
+                <div className="absolute inset-0 -mx-4 md:-mx-8 overflow-hidden rounded-3xl">
+                  <DotWaveBackground />
+                  {/* Radial gradient overlay so dots fade into the bg */}
+                  <div className="absolute inset-0 bg-gradient-to-b from-white/0 via-white/0 to-white dark:from-[#0a0a0a]/0 dark:via-[#0a0a0a]/0 dark:to-[#0a0a0a]" />
                 </div>
-                <h2 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white mb-2 md:mb-3 tracking-tight">R-AI Assistant</h2>
-                <p className="text-sm md:text-base text-gray-500 mb-6 md:mb-10 max-w-md px-4">Tu agente financiero autónomo. Con acceso a mercados globales y a tu portafolio personal en tiempo real.</p>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 w-full">
-                  {shortcuts.map((sc) => (
-                    <button
-                      key={sc.id}
-                      onClick={() => sendMessage(sc.query, sc.id)}
-                      className="p-4 md:p-5 bg-gray-50/80 dark:bg-slate-900/50 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-2xl md:rounded-3xl text-left hover:border-[#1890FF]/30 hover:bg-[#1890FF]/5 transition-all group shadow-sm hover:shadow-md hover:-translate-y-1"
-                    >
-                      <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-white dark:bg-slate-800 flex items-center justify-center mb-3 md:mb-4 shadow-sm text-[#1890FF] group-hover:scale-110 transition-transform">
-                        {sc.id.includes("portfolio") ? <BarChart3 className="w-4 h-4 md:w-5 md:h-5" /> : <Newspaper className="w-4 h-4 md:w-5 md:h-5" />}
-                      </div>
-                      <p className="text-[13px] md:text-sm font-bold text-gray-900 dark:text-white mb-1 md:mb-1.5 group-hover:text-[#1890FF] transition-colors">{sc.label}</p>
-                      <p className="text-[11px] md:text-xs text-gray-500 font-medium line-clamp-2">{sc.query}</p>
-                    </button>
-                  ))}
+
+                {/* ── Content (above canvas) ── */}
+                <div className="relative z-10 flex flex-col items-center">
+                  {/* Logo with pulsing glow */}
+                  <div className="relative mb-6 md:mb-8">
+                    <div className="absolute inset-0 w-24 h-24 md:w-28 md:h-28 bg-[#1890FF] blur-3xl opacity-30 rounded-full animate-pulse" style={{ animationDuration: '3s' }} />
+                    <div className="absolute inset-0 w-24 h-24 md:w-28 md:h-28 bg-indigo-500 blur-2xl opacity-15 rounded-full animate-pulse" style={{ animationDuration: '4s', animationDelay: '1s' }} />
+                    <div className="relative w-20 h-20 md:w-24 md:h-24 bg-gradient-to-br from-[#1890FF] via-blue-500 to-indigo-600 rounded-[1.5rem] md:rounded-[2rem] flex items-center justify-center shadow-2xl shadow-[#1890FF]/30 ring-4 ring-white/80 dark:ring-[#0B0F1A]/80">
+                      <Sparkles className="w-10 h-10 md:w-12 md:h-12 text-white drop-shadow-lg" />
+                    </div>
+                  </div>
+
+                  <h2 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white mb-3 md:mb-4 tracking-tight">
+                    R-AI <span className="bg-gradient-to-r from-[#1890FF] to-indigo-500 bg-clip-text text-transparent">Assistant</span>
+                  </h2>
+                  <p className="text-sm md:text-base text-gray-500 dark:text-gray-400 mb-8 md:mb-12 max-w-lg px-4 leading-relaxed">
+                    Tu agente financiero autónomo. Con acceso a mercados globales y a tu portafolio personal en tiempo real.
+                  </p>
+
+                  {/* ── Shortcut Cards ── */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 w-full max-w-2xl px-2">
+                    {shortcuts.map((sc) => (
+                      <button
+                        key={sc.id}
+                        onClick={() => sendMessage(sc.query, sc.id)}
+                        className="p-4 md:p-5 bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 rounded-2xl md:rounded-3xl text-left hover:border-[#1890FF]/40 hover:bg-white/90 dark:hover:bg-white/10 hover:shadow-lg hover:shadow-[#1890FF]/10 transition-all duration-300 group hover:-translate-y-1"
+                      >
+                        <div className="w-9 h-9 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-gradient-to-br from-[#1890FF]/10 to-indigo-500/10 dark:from-[#1890FF]/20 dark:to-indigo-500/20 flex items-center justify-center mb-3 md:mb-4 text-[#1890FF] group-hover:scale-110 group-hover:from-[#1890FF]/20 group-hover:to-indigo-500/20 transition-all duration-300">
+                          {sc.id.includes("portfolio") ? <BarChart3 className="w-4 h-4 md:w-5 md:h-5" /> : sc.id.includes("top_news") ? <TrendingUp className="w-4 h-4 md:w-5 md:h-5" /> : <Newspaper className="w-4 h-4 md:w-5 md:h-5" />}
+                        </div>
+                        <p className="text-[13px] md:text-sm font-bold text-gray-900 dark:text-white mb-1 md:mb-1.5 group-hover:text-[#1890FF] transition-colors">{sc.label}</p>
+                        <p className="text-[11px] md:text-xs text-gray-500 dark:text-gray-400 font-medium line-clamp-2">{sc.query}</p>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}

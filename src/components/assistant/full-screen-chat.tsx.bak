@@ -10,8 +10,6 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import Link from "next/link";
 import { useTheme } from "next-themes";
-import { useChat } from 'ai/react';
-import { AnalyzedNewsCard } from './analyzed-news-card';
 
 
 export function FullScreenChat() {
@@ -46,34 +44,6 @@ function FullScreenChatInternal() {
   const [showPreferences, setShowPreferences] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [realUsageCount, setRealUsageCount] = useState(0);
-
-  const { messages: aiMessages, input, handleInputChange, handleSubmit, setMessages: setAiMessages, append, isLoading: aiLoading } = useChat({
-    api: "/api/ai-chat",
-    body: {
-      articles: attachedArticles,
-      files: attachedFiles,
-      webSearch: webSearchEnabled,
-    },
-    onFinish: (message) => {
-      // Keep store updated for persistence
-      useAIChatStore.setState({ messages: [...useAIChatStore.getState().messages, { id: message.id, role: 'assistant', content: message.content, timestamp: new Date() }] });
-      fetchRealUsage();
-    }
-  });
-
-  // Sync loaded chats to useChat
-  useEffect(() => {
-    if (messages.length > 0 && aiMessages.length === 0) {
-      setAiMessages(messages.map(m => ({
-        id: m.id,
-        role: m.role,
-        content: m.content,
-      })) as any);
-    } else if (messages.length === 0 && aiMessages.length > 0) {
-      // Clear chat
-      setAiMessages([]);
-    }
-  }, [messages]);
   
   // Chat Preferences
   const [chatPrefs, setChatPrefs] = useState({
@@ -146,7 +116,7 @@ function FullScreenChatInternal() {
   // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [aiMessages, aiLoading, messages]);
+  }, [messages, isLoading]);
 
   const handleWebSearchToggle = () => {
     if (isPremium) {
@@ -181,22 +151,60 @@ function FullScreenChatInternal() {
 
   const sendMessage = async (textOverride?: string, shortcutOverride?: string) => {
     const text = textOverride || input.trim();
-    if (!text || aiLoading || reachedQuestionLimit) return;
+    if (!text || isLoading || reachedQuestionLimit) return;
 
-    const userMsg = {
+    const userMsg: ChatMessage = {
       id: Date.now().toString(),
-      role: "user" as const,
+      role: "user",
       content: text,
       timestamp: new Date(),
     };
-    
-    // Save locally
     addMessage(userMsg);
-    
-    // Trigger AI Stream
-    append({ role: 'user', content: text });
-    if (!textOverride) handleInputChange({ target: { value: '' } } as any);
-    fetchRealUsage();
+    if (!textOverride) setInput("");
+    setLoading(true);
+
+    try {
+      const apiMessages = [...messages, userMsg].map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
+
+      const res = await fetch("/api/ai-chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: apiMessages,
+          articles: attachedArticles,
+          files: attachedFiles,
+          webSearch: webSearchEnabled,
+          shortcut: shortcutOverride,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error de IA");
+
+      addMessage({
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: data.content,
+        citations: data.citations,
+        toolResults: data.toolResults,
+        thinkingSteps: data.thinkingSteps,
+        model: data.model,
+        timestamp: new Date(),
+      });
+    } catch (err: any) {
+      addMessage({
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: `❌ Error: ${err.message}`,
+        timestamp: new Date(),
+      });
+    } finally {
+      setLoading(false);
+      fetchRealUsage(); // Refresh usage after message
+    }
   };
 
   const shortcuts = [
@@ -338,7 +346,7 @@ function FullScreenChatInternal() {
         <div className="flex-1 overflow-y-auto hidden-scrollbar relative pb-32">
           <div className={`${maxWClass} mx-auto w-full px-4 md:px-8 pt-10 pb-8 transition-all duration-300`}>
             
-            {isStoreHydrated && aiMessages.length === 0 && !aiLoading && (
+            {isStoreHydrated && messages.length === 0 && !isLoading && (
               <div className="flex flex-col items-center justify-center text-center mt-6 md:mt-24 mb-10 md:mb-16">
                 <div className="relative mb-4 md:mb-6">
                   <div className="absolute inset-0 bg-[#1890FF] blur-2xl opacity-20 rounded-full"></div>
@@ -368,7 +376,7 @@ function FullScreenChatInternal() {
             )}
 
             <div className="space-y-8">
-              {aiMessages.map((msg) => (
+              {messages.map((msg) => (
                 <div key={msg.id} className="w-full flex flex-col group">
                   {/* User Message */}
                   {msg.role === "user" ? (
@@ -380,18 +388,14 @@ function FullScreenChatInternal() {
                     <div className="flex max-w-full">
                       <div className="flex-1 space-y-3 min-w-0">
                         
-                        {/* Native AI SDK Tools */}
-                        {msg.toolInvocations?.map((toolInvocation) => {
-                          if (toolInvocation.state === 'result') {
-                            return <AnalyzedNewsCard key={toolInvocation.toolCallId} toolName={toolInvocation.toolName} result={toolInvocation.result} />;
-                          }
-                          return (
-                            <div key={toolInvocation.toolCallId} className="flex items-center gap-2 px-3 py-1.5 bg-[#1890FF]/5 text-[#1890FF] rounded-xl text-xs font-bold w-fit animate-pulse border border-[#1890FF]/20">
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                              Analizando datos ({toolInvocation.toolName})...
-                            </div>
-                          );
-                        })}
+                        {/* Tool Results / Thinking */}
+                        {msg.toolResults && msg.toolResults.length > 0 && (
+                          <div className="flex flex-wrap gap-2 pt-1">
+                            {msg.toolResults.map((tr, i) => (
+                              <ToolResultPill key={i} result={tr} />
+                            ))}
+                          </div>
+                        )}
 
                         <div className={`prose ${fontSizeClass} dark:prose-invert max-w-none text-gray-800 dark:text-gray-200 leading-relaxed prose-p:my-3 prose-headings:my-5 prose-h1:text-2xl prose-h2:text-xl prose-a:text-[#1890FF] prose-a:font-semibold prose-a:no-underline hover:prose-a:underline prose-li:my-1`}>
                           <ReactMarkdown
@@ -447,7 +451,7 @@ function FullScreenChatInternal() {
               ))}
 
               {/* Loading State */}
-              {aiLoading && (
+              {isLoading && (
                 <div className="flex pt-2">
                   <ThinkingAnimation />
                 </div>
@@ -489,20 +493,20 @@ function FullScreenChatInternal() {
               <textarea
                 ref={inputRef}
                 value={input}
-                onChange={handleInputChange}
+                onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
                 }}
                 placeholder={reachedQuestionLimit ? `Límite de consultas alcanzado` : "Pregúntale a R-AI..."}
                 className="flex-1 bg-transparent text-[15px] py-3 px-2 max-h-40 min-h-[44px] resize-none outline-none disabled:cursor-not-allowed font-medium text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
-                disabled={aiLoading || reachedQuestionLimit}
+                disabled={isLoading || reachedQuestionLimit}
                 rows={1}
               />
               
               {/* Send Button */}
               <button
                 type="submit"
-                disabled={!input.trim() || aiLoading || reachedQuestionLimit}
+                disabled={!input.trim() || isLoading || reachedQuestionLimit}
                 className="w-10 h-10 mb-0.5 mr-0.5 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center disabled:opacity-30 disabled:scale-100 hover:scale-105 active:scale-95 transition-all shadow-md shrink-0"
               >
                 <Send className="w-4 h-4 ml-0.5" />

@@ -91,7 +91,10 @@ export const useAIChatStore = create<AIChatStore>()(
       
       toggle: () => set((s) => ({ isOpen: !s.isOpen })),
       open: () => set({ isOpen: true }),
-      close: () => set({ isOpen: false }),
+      close: () => {
+        set({ isOpen: false });
+        get().clearMessages();
+      },
       addMessage: (msg) => {
         set((s) => ({ messages: [...s.messages, msg] }));
         get().updateCurrentChat();

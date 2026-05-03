@@ -1,284 +1,139 @@
-import { NextRequest, NextResponse } from "next/server";
-
-export const maxDuration = 60; // Extend Vercel timeout to 60 seconds
-import { callOpenRouter } from "@/lib/openrouter";
+import { NextRequest } from "next/server";
+import { createOpenAI } from '@ai-sdk/openai';
+import { streamText, tool } from 'ai';
+import { z } from 'zod';
 import { createClient } from "@/lib/supabase/server";
 import { checkLimit, incrementUsage } from "@/lib/check-limits";
-import {
-  parseToolCalls,
-  executeTool,
-  buildThinkingSteps,
-  ToolResult,
-} from "@/lib/agent-tools";
 
-// ── Pre-prompt Agéntico ────────────────────────────
+export const maxDuration = 60;
 
-const AGENT_SYSTEM_PROMPT = `Eres R-AI, el asistente de inteligencia artificial de Reclu, una plataforma premium de noticias financieras y portafolio de inversiones.
+const openrouter = createOpenAI({
+  baseURL: 'https://openrouter.ai/api/v1',
+  apiKey: process.env.OPENROUTER_API_KEY,
+  headers: {
+    'HTTP-Referer': 'https://reclu.cl',
+    'X-Title': 'Reclu',
+  }
+});
 
-## Tu Personalidad
-- Profesional, conciso y analítico
-- Respondes SIEMPRE en español de Chile
-- Usas markdown para estructurar (##, **bold**, listas, tablas)
-- Eres directo, no repites la pregunta del usuario
-- Cuando muestres datos financieros, usa tablas markdown
-
-## Herramientas Disponibles
-Puedes invocar herramientas para obtener datos en tiempo real. Para usarlas, responde EXACTAMENTE con los siguientes comandos en tu primera respuesta:
-
-- [TOOL:portfolio] → Obtiene todos los activos del portafolio del usuario con precios en tiempo real
-- [TOOL:stock_info SYMBOL] → Obtiene el precio actual de un símbolo específico (ej: [TOOL:stock_info AAPL])
-- [TOOL:news] → Obtiene las noticias más importantes del día
-- [TOOL:news CATEGORY] → Noticias filtradas por categoría (tech, business, politics)
-- [TOOL:portfolio_news] → Noticias específicamente relacionadas con los activos del usuario
-- [TOOL:alerts] → Obtiene las alertas de precio activas del usuario
-
-## Reglas Críticas de Herramientas
-1. Si el usuario pregunta sobre SUS acciones/portafolio/inversiones → USA [TOOL:portfolio]
-2. Si pregunta por un activo específico → USA [TOOL:stock_info SYMBOL]
-3. Si pregunta sobre noticias de su portafolio → USA [TOOL:portfolio_news]
-4. Si pregunta "qué pasó hoy" o noticias generales → USA [TOOL:news]
-5. Si pregunta sobre sus alertas → USA [TOOL:alerts]
-6. Puedes usar MÚLTIPLES herramientas: [TOOL:portfolio] [TOOL:portfolio_news]
-7. Si NO necesitas datos del sistema, responde directamente sin herramientas
-8. NUNCA inventes datos financieros. Si no tienes herramientas para algo, dilo.
-
-## Formato de Respuesta con Datos
-Cuando recibas datos de herramientas, genera un análisis profesional:
-- Para portafolio: tabla con Symbol | Precio | Cambio | Posición, y un resumen ejecutivo
-- Para noticias: lista con las más relevantes y su impacto potencial
-- Para acciones: análisis del movimiento del día
-- Siempre menciona la hora de los datos como "datos actualizados al momento"`;
-
-// ── Shortcut Definitions ───────────────────────────
-// Pre-built flows that skip the LLM tool-detection step
-
-interface ShortcutConfig {
-  tools: string[];
-  systemAddendum: string;
-}
-
-const SHORTCUTS: Record<string, ShortcutConfig> = {
-  portfolio_summary: {
-    tools: ["portfolio"],
-    systemAddendum:
-      "El usuario quiere un resumen ejecutivo de su portafolio. Genera una tabla con todos los activos, precios, cambios porcentuales y valor de posición. Agrega un resumen general del rendimiento del día.",
-  },
-  portfolio_news: {
-    tools: ["portfolio", "portfolio_news"],
-    systemAddendum:
-      "El usuario quiere ver noticias relacionadas con su portafolio. Primero muestra un resumen rápido de precios, luego las noticias más relevantes para sus activos con su potencial impacto.",
-  },
-  top_news: {
-    tools: ["news"],
-    systemAddendum:
-      "El usuario quiere las noticias más importantes del día. Genera un resumen de las noticias más relevantes con impacto potencial en los mercados.",
-  },
-  market_analysis: {
-    tools: ["portfolio", "news"],
-    systemAddendum:
-      "El usuario quiere un análisis del mercado. Combina el estado de su portafolio con las noticias del día para generar un análisis de cómo las noticias podrían afectar sus inversiones.",
-  },
-};
-
-// ── Main Handler ───────────────────────────────────
-
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const { messages, articles, files, webSearch, shortcut } = await request.json();
+    const { messages, articles, files, webSearch, shortcut } = await req.json();
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      return NextResponse.json(
-        { error: "Messages are required" },
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ error: "Messages are required" }), { status: 400 });
     }
 
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
     }
 
     // Check usage limits
     const limitCheck = await checkLimit(user.id, "ai_message");
     if (!limitCheck.allowed) {
-      return NextResponse.json(
-        {
+      return new Response(JSON.stringify({
           error: "Has alcanzado el límite de consultas de tu plan actual.",
           code: "LIMIT_REACHED",
           details: limitCheck,
-        },
+        }),
         { status: 403 }
       );
     }
 
-    // ── Choose model ──
-    // Hardcoded verified model IDs (tested directly against OpenRouter API)
-    const model = webSearch
-      ? "x-ai/grok-4.1-fast:online"
-      : "minimax/minimax-m2.5";
+    const modelStr = webSearch ? "x-ai/grok-2-1212" : "google/gemini-2.5-flash"; // use tool-capable models
 
-    console.log(`[AI Chat] Using model: ${model} | webSearch: ${webSearch} | user: ${user.id}`);
+    let systemContent = `Eres R-AI, la AI financiera avanzada y de élite de Reclu.
+Respondes SIEMPRE en español.
+Eres profesional, concisa y analítica.
 
-    // ── Build system prompt ──
-    let systemContent = AGENT_SYSTEM_PROMPT;
+Tienes acceso a herramientas (tools) nativas para buscar noticias financieras y del portafolio.
+- Usa get_portfolio_news para buscar información específica sobre las inversiones/activos del usuario.
+- Usa search_general_news para buscar noticias del día o sobre temas generales.
+- Usa get_news_context si necesitas profundizar en el artículo.
 
-    // Add article context if attached
-    if (articles && Array.isArray(articles) && articles.length > 0) {
-      systemContent += `\n\n--- NOTICIAS ADJUNTAS ---\n`;
-      articles.forEach((art: any, i: number) => {
-        systemContent += `[Noticia ${i + 1}] ${art.title}`;
-        if (art.summary) systemContent += ` — ${art.summary}`;
-        systemContent += `\n`;
-      });
-    }
+NUNCA menciones que eres una IA de OpenAI, Anthropic o Google. Eres una creación pura de Reclu.`;
 
-    // Add file context if attached
-    if (files && Array.isArray(files) && files.length > 0) {
-      systemContent += `\n\n--- ARCHIVOS ADJUNTOS ---\n`;
-      files.forEach((file: any) => {
-        systemContent += `[${file.name}]\n${file.content}\n\n`;
-      });
-    }
-
-    // ── Shortcut Flow ──
-    // If a shortcut was triggered, skip the LLM tool-detection step
-    // and directly execute the tools, then pass results to LLM
-    if (shortcut && SHORTCUTS[shortcut]) {
-      const config = SHORTCUTS[shortcut];
-      const toolResults: ToolResult[] = [];
-      const thinkingSteps: string[] = [];
-
-      for (const toolName of config.tools) {
-        const result = await executeTool(toolName, "", user.id);
-        if (result) {
-          toolResults.push(result);
-          // Build thinking steps
-          if (toolName === "portfolio") {
-            thinkingSteps.push("Consultando tu portafolio...");
-            thinkingSteps.push("Obteniendo precios en tiempo real...");
-          } else if (toolName === "portfolio_news") {
-            thinkingSteps.push("Analizando noticias de tu portafolio...");
-          } else if (toolName === "news") {
-            thinkingSteps.push("Buscando noticias relevantes...");
-          }
-        }
-      }
-      thinkingSteps.push("Generando análisis...");
-
-      // Build enriched system with tool results
-      let enrichedSystem = systemContent + "\n\n" + config.systemAddendum;
-      enrichedSystem += "\n\n--- DATOS DEL SISTEMA ---\n";
-      for (const tr of toolResults) {
-        enrichedSystem += `\n[${tr.tool.toUpperCase()}] ${tr.summary}\n`;
-        enrichedSystem += JSON.stringify(tr.data, null, 2) + "\n";
-      }
-
-      const finalResult = await callOpenRouter({
-        model,
-        messages: [
-          { role: "system", content: enrichedSystem },
-          ...messages.map((m: any) => ({ role: m.role, content: m.content })),
-        ],
-        temperature: 0.7,
-        max_tokens: 3000,
-        search: webSearch || false,
-      });
-
-      await incrementUsage(user.id, "ai_message").catch(console.error);
-
-      let finalCleanedContent = finalResult.content.replace(/\[TOOL:[^\]]+\](\{.*?\})?/g, "").trim();
-
-      return NextResponse.json({
-        content: finalCleanedContent,
-        citations: finalResult.citations || [],
-        toolResults,
-        thinkingSteps,
-        model: webSearch ? "grok" : "deepseek",
-      });
-    }
-
-    // ── Normal Flow (with tool detection) ──
-    // Step 1: Ask LLM what tools it needs
-    const step1Messages = [
-      { role: "system" as const, content: systemContent },
-      ...messages.map((m: any) => ({
-        role: m.role as "user" | "assistant",
-        content: m.content,
-      })),
-    ];
-
-    const step1Result = await callOpenRouter({
-      model,
-      messages: step1Messages,
-      temperature: 0.7,
-      max_tokens: 3000,
-      search: webSearch || false,
-    });
-
-    // Step 2: Check if LLM requested tools
-    const toolCalls = parseToolCalls(step1Result.content);
-
-    if (toolCalls.length === 0) {
-      // No tools needed — direct response
-      await incrementUsage(user.id, "ai_message").catch(console.error);
-
-      let step1CleanedContent = step1Result.content.replace(/\[TOOL:[^\]]+\](\{.*?\})?/g, "").trim();
-
-      return NextResponse.json({
-        content: step1CleanedContent,
-        citations: step1Result.citations || [],
-        toolResults: [],
-        thinkingSteps: [],
-        model: webSearch ? "grok" : "deepseek",
-      });
-    }
-
-    // Step 3: Execute tools
-    const toolResults: ToolResult[] = [];
-    for (const call of toolCalls) {
-      const result = await executeTool(call.tool, call.params, user.id);
-      if (result) toolResults.push(result);
-    }
-
-    const thinkingSteps = buildThinkingSteps(toolCalls);
-
-    // Step 4: Re-inject tool results and get final answer
-    let enrichedSystem = systemContent;
-    enrichedSystem += "\n\n--- DATOS DEL SISTEMA (RESULTADOS DE HERRAMIENTAS) ---\n";
-    enrichedSystem += "Usa estos datos REALES para generar tu respuesta. NO inventes números.\n\n";
-    for (const tr of toolResults) {
-      enrichedSystem += `[${tr.tool.toUpperCase()}] ${tr.summary}\n`;
-      enrichedSystem += JSON.stringify(tr.data, null, 2) + "\n\n";
-    }
-
-    const finalResult = await callOpenRouter({
-      model,
-      messages: [
-        { role: "system", content: enrichedSystem },
-        ...messages.map((m: any) => ({ role: m.role, content: m.content })),
-      ],
-      temperature: 0.7,
-      max_tokens: 3000,
-      search: webSearch || false,
-    });
-
+    // Increment usage
     await incrementUsage(user.id, "ai_message").catch(console.error);
 
-    let finalCleanedContent = finalResult.content.replace(/\[TOOL:[^\]]+\](\{.*?\})?/g, "").trim();
-
-    return NextResponse.json({
-      content: finalCleanedContent,
-      citations: finalResult.citations || [],
-      toolResults,
-      thinkingSteps,
-      model: webSearch ? "grok" : "deepseek",
+    const result = streamText({
+      model: openrouter(modelStr),
+      system: systemContent,
+      messages: messages.map((m: any) => ({ role: m.role, content: m.content })),
+      tools: {
+        get_portfolio_news: tool({
+          description: 'Obtiene las noticias más recientes e importantes específicamente relacionadas a los activos (tickers) del portafolio del usuario.',
+          parameters: z.object({
+            limit: z.number().optional().describe('Cantidad máxima de noticias a recuperar. Por defecto 5.'),
+          }),
+          execute: async ({ limit = 5 }) => {
+            const sc = await createClient(); // assuming authenticated client has access
+            const { data: portfolios } = await sc.from('portfolios').select('symbol').eq('user_id', user.id);
+            if (!portfolios || portfolios.length === 0) {
+              return { error: "El usuario no tiene activos en su portafolio. Sugiérele agregar algunos en la sección Portafolio." };
+            }
+            const symbols = portfolios.map((p: any) => p.symbol.toLowerCase());
+            
+            // Search global news
+            const { data: allNews } = await supabase
+              .from('news_articles')
+              .select('id, title, summary, published_at, relevance_score, slug')
+              .order('published_at', { ascending: false })
+              .limit(50);
+              
+            if (!allNews) return { news: [] };
+            
+            // Filter by symbols
+            const relevantNews = allNews.filter(article => {
+              const text = (article.title + " " + article.summary).toLowerCase();
+              return symbols.some((sym: string) => text.includes(sym));
+            }).slice(0, limit);
+            
+            return {
+              news: relevantNews
+            };
+          },
+        }),
+        search_general_news: tool({
+          description: 'Busca noticias generales en la plataforma Reclu por palabra clave o etiqueta.',
+          parameters: z.object({
+            query: z.string().describe('Término de búsqueda (ej. Trump, Apple, tasas de interés).'),
+          }),
+          execute: async ({ query }) => {
+            const { data } = await supabase
+              .from('news_articles')
+              .select('id, title, summary, published_at, relevance_score, slug')
+              .ilike('title', `%${query}%`)
+              .order('published_at', { ascending: false })
+              .limit(5);
+              
+            return { news: data || [] };
+          },
+        }),
+        get_news_context: tool({
+          description: 'Obtiene el contenido completo de una noticia específica dado su slug o id.',
+          parameters: z.object({
+            id: z.string(),
+          }),
+          execute: async ({ id }) => {
+            const { data } = await supabase
+              .from('news_articles')
+              .select('title, content, enriched_content')
+              .eq('id', id)
+              .single();
+            if (!data) return { error: "Noticia no encontrada" };
+            return { content: data.enriched_content || data.content };
+          }
+        }),
+      },
     });
+
+    return result.toDataStreamResponse();
   } catch (error: any) {
-    console.error("[AI Chat] Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[AI Chat Stream] Error:", error);
+    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
   }
 }

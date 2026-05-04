@@ -36,6 +36,10 @@ function scoreBg(score: number) {
 export function AnalyzedNewsCard({ toolName, result }: AnalyzedNewsCardProps) {
   const [isOpen, setIsOpen] = useState(false);
 
+  // Only render for news-related tools. Portfolio summary and news context are handled by the AI text response.
+  const newsTools = ['get_portfolio_news', 'get_top_news_today', 'search_general_news'];
+  if (!newsTools.includes(toolName)) return null;
+
   if (!result || !result.news || result.news.length === 0) {
     if (result?.error) {
       return (
@@ -45,12 +49,8 @@ export function AnalyzedNewsCard({ toolName, result }: AnalyzedNewsCardProps) {
         </div>
       );
     }
-    return (
-      <div className="flex items-center gap-2.5 px-4 py-3 bg-gray-50 dark:bg-slate-800/60 rounded-2xl text-xs font-medium text-gray-500 border border-gray-100 dark:border-gray-700/50 w-fit">
-        {toolName === 'get_portfolio_news' ? <BarChart3 className="w-4 h-4 shrink-0" /> : <Globe className="w-4 h-4 shrink-0" />}
-        Sin noticias encontradas
-      </div>
-    );
+    // Don't show "sin noticias" for empty results — the AI text response handles it
+    return null;
   }
 
   const news = result.news;

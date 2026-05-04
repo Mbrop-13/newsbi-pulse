@@ -243,7 +243,6 @@ export const useAIChatStore = create<AIChatStore>()(
       name: "r-ai-chat-history",
       partialize: (state) => ({ 
         savedChats: state.savedChats, 
-        messages: state.messages,
         cloudSyncEnabled: state.cloudSyncEnabled 
       }),
     }

@@ -12,6 +12,7 @@ import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useChat } from 'ai/react';
 import { AnalyzedNewsCard } from './analyzed-news-card';
+import { PortfolioSummaryCard } from './portfolio-summary-card';
 
 
 export function FullScreenChat() {
@@ -433,6 +434,9 @@ function FullScreenChatInternal() {
                         {/* Native AI SDK Tools */}
                         {msg.toolInvocations?.map((toolInvocation) => {
                           if (toolInvocation.state === 'result') {
+                            if (toolInvocation.toolName === 'get_portfolio_summary') {
+                              return <PortfolioSummaryCard key={toolInvocation.toolCallId} result={toolInvocation.result} />;
+                            }
                             return <AnalyzedNewsCard key={toolInvocation.toolCallId} toolName={toolInvocation.toolName} result={toolInvocation.result} />;
                           }
                           return (

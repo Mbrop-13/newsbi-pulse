@@ -2,10 +2,18 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BarChart3, ChevronDown, TrendingUp, TrendingDown, DollarSign, Briefcase } from 'lucide-react';
+import { BarChart3, ChevronDown, TrendingUp, TrendingDown, DollarSign, ExternalLink } from 'lucide-react';
+import Link from 'next/link';
 
 interface PortfolioSummaryCardProps {
   result: any;
+}
+
+function getLogoUrl(symbol: string): string {
+  return `https://assets.parqet.com/logos/symbol/${symbol}`;
+}
+function getFallbackLogo(symbol: string): string {
+  return `https://ui-avatars.com/api/?name=${symbol}&background=1890FF&color=fff&bold=true&size=96`;
 }
 
 export function PortfolioSummaryCard({ result }: PortfolioSummaryCardProps) {
@@ -15,7 +23,7 @@ export function PortfolioSummaryCard({ result }: PortfolioSummaryCardProps) {
   if (result.error) {
     return (
       <div className="flex items-center gap-2.5 px-4 py-3 bg-amber-50 dark:bg-amber-500/10 rounded-2xl text-xs font-medium text-amber-700 dark:text-amber-400 border border-amber-200/50 dark:border-amber-500/20 w-fit">
-        <Briefcase className="w-4 h-4 shrink-0" />
+        <BarChart3 className="w-4 h-4 shrink-0" />
         {result.error}
       </div>
     );
@@ -28,8 +36,8 @@ export function PortfolioSummaryCard({ result }: PortfolioSummaryCardProps) {
   const avgChange = summary.average_daily_change || 0;
   const isPositive = avgChange >= 0;
 
-  // Preview: top 3 tickers
-  const previewTickers = assets.slice(0, 4).map((a: any) => a.symbol);
+  // Preview: circular logo thumbnails for first 5 stocks
+  const previewLogos = assets.slice(0, 5);
 
   return (
     <div className="w-full max-w-md my-3">
@@ -55,11 +63,33 @@ export function PortfolioSummaryCard({ result }: PortfolioSummaryCardProps) {
           <BarChart3 className="w-4.5 h-4.5 text-white" />
         </div>
 
-        {/* Text + Tickers */}
+        {/* Text + Logo Avatars */}
         <div className="flex-1 text-left min-w-0">
           <p className="text-sm font-bold text-gray-900 dark:text-white leading-tight">Resumen del Portafolio</p>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-[11px] font-semibold text-gray-400">{assets.length} activos</span>
+          <div className="flex items-center gap-1.5 mt-1.5">
+            {/* Circular stock logo thumbnails */}
+            <div className="flex -space-x-2">
+              {previewLogos.map((asset: any, i: number) => (
+                <div
+                  key={asset.symbol}
+                  className="w-6 h-6 rounded-full border-2 border-white dark:border-[#141821] overflow-hidden bg-gray-100 dark:bg-gray-800 shrink-0"
+                  style={{ zIndex: previewLogos.length - i }}
+                >
+                  <img 
+                    src={getLogoUrl(asset.symbol)} 
+                    alt={asset.symbol} 
+                    className="w-full h-full object-contain"
+                    onError={(e) => { e.currentTarget.src = getFallbackLogo(asset.symbol); }}
+                  />
+                </div>
+              ))}
+              {assets.length > previewLogos.length && (
+                <div className="w-6 h-6 rounded-full border-2 border-white dark:border-[#141821] bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0 text-[9px] font-bold text-gray-500">
+                  +{assets.length - previewLogos.length}
+                </div>
+              )}
+            </div>
+            <span className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 ml-1">{assets.length} activos</span>
             <span className="text-[10px] text-gray-300 dark:text-gray-600">•</span>
             <span className={`text-[11px] font-bold ${isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
               {isPositive ? '+' : ''}{avgChange.toFixed(2)}% hoy
@@ -94,14 +124,14 @@ export function PortfolioSummaryCard({ result }: PortfolioSummaryCardProps) {
                     <DollarSign className="w-3.5 h-3.5 text-gray-400" />
                     <span className="text-xs font-medium text-gray-500">Valor Total</span>
                   </div>
-                  <span className="text-sm font-black text-gray-900 dark:text-white">
+                  <span className="text-sm font-black text-gray-900 dark:text-white tabular-nums">
                     ${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
                 {totalPnl !== 0 && (
                   <div className="flex items-center justify-between mt-1.5">
-                    <span className="text-[11px] text-gray-400">Ganancia/Pérdida Total</span>
-                    <span className={`text-xs font-bold ${totalPnl >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                    <span className="text-[11px] text-gray-400">Ganancia/Pérdida</span>
+                    <span className={`text-xs font-bold tabular-nums ${totalPnl >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                       {totalPnl >= 0 ? '+' : ''}${totalPnl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   </div>
@@ -110,30 +140,41 @@ export function PortfolioSummaryCard({ result }: PortfolioSummaryCardProps) {
 
               {/* Scrollable assets list */}
               <div className="max-h-[340px] overflow-y-auto hidden-scrollbar divide-y divide-gray-100 dark:divide-white/5">
-                {assets.map((asset: any) => {
+                {assets.map((asset: any, i: number) => {
                   const changePositive = (asset.changePercent || 0) >= 0;
                   return (
-                    <div key={asset.symbol} className="flex items-center gap-3 px-4 py-3 hover:bg-[#1890FF]/5 transition-colors">
-                      {/* Symbol badge */}
-                      <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0 ring-2 ring-gray-100 dark:ring-gray-800">
-                        <span className="text-[10px] font-black text-gray-600 dark:text-gray-300">{asset.symbol.slice(0, 4)}</span>
+                    <Link
+                      key={asset.symbol}
+                      href={`/mercados/${asset.symbol}`}
+                      className="flex items-center gap-3.5 px-4 py-3.5 hover:bg-[#1890FF]/5 dark:hover:bg-[#1890FF]/5 transition-colors group"
+                    >
+                      {/* Rank number */}
+                      <span className="text-xs font-black text-gray-300 dark:text-gray-700 w-4 text-right tabular-nums shrink-0">
+                        {i + 1}
+                      </span>
+
+                      {/* Circular Logo */}
+                      <div className="w-11 h-11 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 shrink-0 ring-2 ring-gray-100 dark:ring-gray-800 group-hover:ring-[#1890FF]/30 transition-all flex items-center justify-center">
+                        <img 
+                          src={getLogoUrl(asset.symbol)} 
+                          alt={asset.symbol}
+                          className="w-full h-full object-contain"
+                          onError={(e) => { e.currentTarget.src = getFallbackLogo(asset.symbol); }}
+                        />
                       </div>
 
-                      {/* Name + Shares */}
+                      {/* Name + Meta */}
                       <div className="flex-1 min-w-0">
-                        <p className="text-[13px] font-semibold text-gray-900 dark:text-white leading-snug truncate">
+                        <p className="text-[13px] font-semibold text-gray-900 dark:text-white leading-snug truncate group-hover:text-[#1890FF] transition-colors">
                           {asset.company_name || asset.symbol}
                         </p>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className="text-[10px] font-medium text-gray-400">{asset.shares} acciones</span>
-                          {asset.position_value > 0 && (
-                            <>
-                              <span className="text-[10px] text-gray-300 dark:text-gray-600">•</span>
-                              <span className="text-[10px] font-medium text-gray-400">
-                                ${asset.position_value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                              </span>
-                            </>
-                          )}
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-[10px] font-bold text-gray-400 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+                            {asset.symbol}
+                          </span>
+                          <span className="text-[10px] font-medium text-gray-400">
+                            {asset.shares > 0 ? `${asset.shares} acc.` : ''}
+                          </span>
                         </div>
                       </div>
 
@@ -149,7 +190,10 @@ export function PortfolioSummaryCard({ result }: PortfolioSummaryCardProps) {
                           </span>
                         </div>
                       </div>
-                    </div>
+
+                      {/* Arrow link */}
+                      <ExternalLink className="w-3.5 h-3.5 text-gray-300 dark:text-gray-600 group-hover:text-[#1890FF] shrink-0 transition-colors" />
+                    </Link>
                   );
                 })}
               </div>

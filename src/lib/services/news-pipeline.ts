@@ -93,22 +93,61 @@ interface NewsFeed {
   country_code: string;
 }
 
-const GNEWS_FEEDS: NewsFeed[] = [
+// ── Feed Configuration ────────────────────────────
+// We use BOTH endpoints to maximize article diversity:
+//   1. /top-headlines — curated by Google News, rotates frequently
+//   2. /search — keyword-targeted for niche financial topics
+//
+// GNews Free Plan limits: 100 req/day, max 10 articles/request
+
+interface GNewsFeedConfig {
+  endpoint: 'search' | 'top-headlines';
+  params: Record<string, string>;
+  feed_tag: string;
+  country_code: string;
+  language: string;
+}
+
+const GNEWS_FEEDS: GNewsFeedConfig[] = [
+  // ── Top Headlines (rotate naturally, high freshness) ──
   {
-    keywords: 'Chile AND (economía OR finanzas OR empresas OR inversiones OR bolsa OR mercado OR tecnología OR innovación OR startups OR política OR "banco central" OR minería OR cobre OR litio)',
-    language: 'es', country: 'cl', country_code: 'cl',
-    feed_tag: 'chile',
+    endpoint: 'top-headlines',
+    params: { category: 'business', lang: 'es', country: 'cl', max: '10' },
+    feed_tag: 'chile', country_code: 'cl', language: 'es',
   },
   {
-    keywords: '(finance OR markets OR stocks OR economy OR "fed reserve" OR inflation OR "AI tech" OR startups OR investments OR crypto OR commodities OR gold OR geopolitics)',
-    language: 'en', country: 'us', country_code: 'us',
-    feed_tag: 'finanzas',
+    endpoint: 'top-headlines',
+    params: { category: 'technology', lang: 'es', max: '10' },
+    feed_tag: 'tech_global', country_code: 'cl', language: 'es',
+  },
+  {
+    endpoint: 'top-headlines',
+    params: { category: 'business', lang: 'en', country: 'us', max: '10' },
+    feed_tag: 'finanzas', country_code: 'us', language: 'en',
+  },
+  {
+    endpoint: 'top-headlines',
+    params: { category: 'world', lang: 'es', max: '10' },
+    feed_tag: 'impacto_global', country_code: 'cl', language: 'es',
+  },
+  // ── Search (targeted financial keywords) ──
+  {
+    endpoint: 'search',
+    params: { q: 'Chile economía finanzas mercado minería cobre litio', lang: 'es', country: 'cl', max: '10' },
+    feed_tag: 'economia', country_code: 'cl', language: 'es',
+  },
+  {
+    endpoint: 'search',
+    params: { q: 'stocks markets economy inflation AI startups investments crypto', lang: 'en', country: 'us', max: '10' },
+    feed_tag: 'inversiones', country_code: 'us', language: 'en',
   },
 ];
 
 /**
- * Fetch news from GNews API
- * Docs: https://gnews.io/docs/v4
+ * Fetch news from GNews API (search + top-headlines)
+ * Free plan: 100 req/day, 10 articles/req
+ * We use 6 feeds × ~3 runs/hour = ~18 req/hour = 432/day
+ * → We must be smart: skip some feeds on overnight runs
  */
 export async function fetchFromGNewsAPI(): Promise<RawArticle[]> {
   const apiKey = process.env.GNEWS_API_KEY;
@@ -117,27 +156,29 @@ export async function fetchFromGNewsAPI(): Promise<RawArticle[]> {
     return [];
   }
 
-  console.log(`[PIPELINE] Fetching ${GNEWS_FEEDS.length} GNews API feeds sequentially (rate-limit friendly)...`);
+  // At night (Chile 0-7), only fetch top 2 feeds to save API quota
+  const chileHour = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Santiago' })).getHours();
+  const isNight = chileHour >= 0 && chileHour < 7;
+  const feedsToUse = isNight ? GNEWS_FEEDS.slice(0, 2) : GNEWS_FEEDS;
+
+  console.log(`[PIPELINE] Fetching ${feedsToUse.length} GNews feeds (Chile ${chileHour}:00, night=${isNight})...`);
 
   const allArticles: RawArticle[] = [];
   
-  for (const feed of GNEWS_FEEDS) {
+  for (const feed of feedsToUse) {
     try {
-      const params = new URLSearchParams({
-        apikey: apiKey,
-        q: feed.keywords,
-        lang: feed.language,
-        country: feed.country,
-        max: '50',
-      });
+      const params = new URLSearchParams({ ...feed.params, apikey: apiKey });
+      const url = `https://gnews.io/api/v4/${feed.endpoint}?${params.toString()}`;
 
-      const res = await fetch(
-        `https://gnews.io/api/v4/search?${params.toString()}`,
-        { signal: AbortSignal.timeout(15000) }
-      );
+      const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
 
       if (!res.ok) {
         const errText = await res.text().catch(() => '');
+        // If we hit rate limit, stop making more requests
+        if (res.status === 429) {
+          console.warn(`[PIPELINE] GNews rate limit hit! Stopping further requests.`);
+          break;
+        }
         throw new Error(`GNews API error ${res.status}: ${errText.substring(0, 200)}`);
       }
 
@@ -157,21 +198,22 @@ export async function fetchFromGNewsAPI(): Promise<RawArticle[]> {
           language: feed.language,
         }));
         allArticles.push(...mapped);
+        console.log(`[PIPELINE]   ✓ ${feed.endpoint}/${feed.feed_tag}: ${mapped.length} articles`);
       }
 
-      // Small delay to avoid 429 rate limit
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Delay between requests to stay within rate limits
+      await new Promise(resolve => setTimeout(resolve, 1200));
 
     } catch (err: any) {
       if (err.name === 'TimeoutError' || err.message?.includes('timeout')) {
-        console.error(`[PIPELINE] GNews API Timeout (15s) for ${feed.feed_tag}/${feed.country_code}`);
+        console.error(`[PIPELINE] GNews Timeout for ${feed.feed_tag}/${feed.country_code}`);
       } else {
         console.error(`[PIPELINE] GNews error for ${feed.feed_tag}/${feed.country_code}:`, err.message || err);
       }
     }
   }
 
-  console.log(`[PIPELINE] Fetched ${allArticles.length} articles from ${GNEWS_FEEDS.length} GNews feeds`);
+  console.log(`[PIPELINE] Fetched ${allArticles.length} articles from ${feedsToUse.length} GNews feeds`);
   return allArticles;
 }
 

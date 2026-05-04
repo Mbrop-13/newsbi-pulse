@@ -2,8 +2,8 @@ name: AI News Pipeline
 
 on:
   schedule:
-    # Corre cada 10 minutos
-    - cron: '*/10 * * * *'
+    # Corre cada 30 minutos (protege cuota GNews Free: 100 req/día)
+    - cron: '*/30 * * * *'
   workflow_dispatch:
     # Permite ejecutarlo manualmente desde GitHub
   repository_dispatch:

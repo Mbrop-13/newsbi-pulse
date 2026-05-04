@@ -36,6 +36,9 @@ export const metadata: Metadata = {
     description: "Plataforma de noticias IA by Reclu. Análisis inteligente y cobertura en vivo.",
   },
   manifest: "/manifest.json",
+};
+
+export const viewport = {
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#FFFFFF" },
     { media: "(prefers-color-scheme: dark)", color: "#0F172A" },

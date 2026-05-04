@@ -143,7 +143,7 @@ NUNCA menciones que eres una IA de OpenAI, Anthropic o Google. Eres una creació
           }
         }),
         get_portfolio_news: tool({
-          description: 'Obtiene las noticias más recientes e importantes específicamente relacionadas a los activos (tickers) del portafolio del usuario.',
+          description: 'Obtiene las noticias de las ÚLTIMAS 48 horas relacionadas a los activos del portafolio del usuario.',
           parameters: z.object({
             limit: z.number().optional().describe('Cantidad máxima de noticias a recuperar. Por defecto 10.'),
           }),
@@ -154,17 +154,18 @@ NUNCA menciones que eres una IA de OpenAI, Anthropic o Google. Eres una creació
               return { error: "El usuario no tiene activos en su portafolio. Sugiérele agregar algunos en la sección Portafolio." };
             }
             
+            // Only fetch news from the last 48 hours
+            const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+            
             // Build search terms from both symbols and company names
             const searchTerms: string[] = [];
             for (const p of portfolios) {
               if (p.symbol) searchTerms.push(p.symbol.toLowerCase());
               if (p.company_name) {
-                // Add full company name and also individual significant words (3+ chars)
                 searchTerms.push(p.company_name.toLowerCase());
                 const words = p.company_name.split(/[\s,.\-\/]+/).filter((w: string) => w.length >= 3);
                 for (const word of words) {
                   const lower = word.toLowerCase();
-                  // Skip common words that would match too broadly
                   if (!['inc', 'corp', 'ltd', 'llc', 'the', 'and', 'group', 'holdings', 'company', 'class'].includes(lower)) {
                     searchTerms.push(lower);
                   }
@@ -172,13 +173,14 @@ NUNCA menciones que eres una IA de OpenAI, Anthropic o Google. Eres una creació
               }
             }
             
-            // Try Supabase ilike filters — build an OR filter for title matching
+            // Try Supabase ilike filters with date cutoff
             const orFilters = searchTerms.map(t => `title.ilike.%${t}%`).join(',');
             
             const { data: matchedNews } = await supabase
               .from('news_articles')
               .select('id, title, summary, published_at, relevance_score, slug, image_url')
               .or(orFilters)
+              .gte('published_at', cutoff)
               .order('published_at', { ascending: false })
               .limit(limit);
             
@@ -189,14 +191,21 @@ NUNCA menciones que eres una IA de OpenAI, Anthropic o Google. Eres una creació
               };
             }
             
-            // Fallback: fetch recent news and do client-side fuzzy matching
+            // Fallback: fetch recent news (last 48h) and do client-side fuzzy matching
             const { data: recentNews } = await supabase
               .from('news_articles')
               .select('id, title, summary, published_at, relevance_score, slug, image_url')
+              .gte('published_at', cutoff)
               .order('published_at', { ascending: false })
               .limit(100);
               
-            if (!recentNews) return { news: [], portfolio_symbols: portfolios.map((p: any) => p.symbol) };
+            if (!recentNews || recentNews.length === 0) {
+              return { 
+                news: [], 
+                portfolio_symbols: portfolios.map((p: any) => p.symbol),
+                note: "No se encontraron noticias recientes (últimas 48h) relacionadas con el portafolio."
+              };
+            }
             
             const relevantNews = recentNews.filter(article => {
               const text = (article.title + " " + (article.summary || "")).toLowerCase();
@@ -205,7 +214,8 @@ NUNCA menciones que eres una IA de OpenAI, Anthropic o Google. Eres una creació
             
             return {
               news: relevantNews,
-              portfolio_symbols: portfolios.map((p: any) => p.symbol)
+              portfolio_symbols: portfolios.map((p: any) => p.symbol),
+              note: relevantNews.length === 0 ? "No se encontraron noticias recientes (últimas 48h) relacionadas con el portafolio." : undefined
             };
           },
         }),

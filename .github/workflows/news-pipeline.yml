@@ -31,7 +31,7 @@ jobs:
       - name: Run Pipeline
         env:
           # Inyectamos los secretos desde GitHub Settings > Secrets
-          CURRENTS_API_KEY: ${{ secrets.CURRENTS_API_KEY }}
+          GNEWS_API_KEY: ${{ secrets.GNEWS_API_KEY }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           OPENROUTER_FILTER_MODEL: ${{ secrets.OPENROUTER_FILTER_MODEL || 'x-ai/grok-4.1-fast' }}
           OPENROUTER_ENRICH_MODEL: ${{ secrets.OPENROUTER_ENRICH_MODEL || 'x-ai/grok-4.1-fast:online' }}

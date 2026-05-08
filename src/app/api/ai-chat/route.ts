@@ -29,6 +29,7 @@ REGLAS:
 6. Screener/mercado general → screen_market.
 7. Noticias de un tema → search_general_news.
 8. Profundizar noticia → get_news_context.
+9. GRÁFICOS: Cuando el usuario pida visualizar datos, comparar visualmente, o cuando tú creas que un gráfico ayudaría a entender mejor los datos, usa render_chart. Tipos: bar (comparar valores), line (tendencias), pie (distribución %), area (acumulado), radar (multi-métrica). SIEMPRE incluye un título descriptivo.
 NUNCA digas que eres de OpenAI, Anthropic o Google. Eres de Reclu.`;
 
 export async function POST(req: NextRequest) {
@@ -296,6 +297,24 @@ export async function POST(req: NextRequest) {
             } catch (e: any) {
               return { error: `Error: ${e.message}` };
             }
+          }
+        }),
+
+        // ── CHART TOOL ──
+        render_chart: tool({
+          description: 'Renderiza un gráfico interactivo en el chat. Tipos: bar, line, pie, area, radar. Usar cuando el usuario pida visualizar datos o cuando un gráfico ayude a entender mejor la información (ej: comparar precios, mostrar distribución del portafolio, tendencias).',
+          parameters: z.object({
+            type: z.enum(['bar', 'line', 'pie', 'area', 'radar']).describe('Tipo de gráfico'),
+            title: z.string().describe('Título descriptivo del gráfico'),
+            data: z.array(z.object({
+              label: z.string().describe('Etiqueta del eje X o nombre del dato'),
+              value: z.number().describe('Valor numérico principal'),
+            })).min(2).describe('Array de datos a graficar'),
+            xLabel: z.string().optional().describe('Etiqueta del eje X'),
+            yLabel: z.string().optional().describe('Etiqueta del eje Y'),
+          }),
+          execute: async ({ type, title, data, xLabel, yLabel }) => {
+            return { type, title, data, xLabel, yLabel };
           }
         }),
       },

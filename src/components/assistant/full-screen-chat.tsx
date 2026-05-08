@@ -14,6 +14,7 @@ import { useChat } from 'ai/react';
 import { AnalyzedNewsCard } from './analyzed-news-card';
 import { PortfolioSummaryCard } from './portfolio-summary-card';
 import { StockAnalysisCard } from './stock-analysis-card';
+import { AIChartCard } from './ai-chart-card';
 
 
 export function FullScreenChat() {
@@ -440,6 +441,9 @@ function FullScreenChatInternal() {
                             }
                             if (['analyze_stock', 'compare_stocks', 'screen_market', 'get_sector_performance'].includes(toolInvocation.toolName)) {
                               return <StockAnalysisCard key={toolInvocation.toolCallId} toolName={toolInvocation.toolName} result={toolInvocation.result} />;
+                            }
+                            if (toolInvocation.toolName === 'render_chart') {
+                              return <AIChartCard key={toolInvocation.toolCallId} result={toolInvocation.result} />;
                             }
                             return <AnalyzedNewsCard key={toolInvocation.toolCallId} toolName={toolInvocation.toolName} result={toolInvocation.result} />;
                           }

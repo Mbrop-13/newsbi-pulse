@@ -16,6 +16,7 @@ import { AnalyzedNewsCard } from './analyzed-news-card';
 import { PortfolioSummaryCard } from './portfolio-summary-card';
 import { StockAnalysisCard } from './stock-analysis-card';
 import { AIChartCard } from './ai-chart-card';
+import { PromptCarousel } from './prompt-carousel';
 
 
 export function FullScreenChat() {
@@ -393,36 +394,15 @@ function FullScreenChatInternal() {
 
         {/* Chat Messages */}
         <div className="flex-1 overflow-y-auto hidden-scrollbar relative pb-24">
-          <div className={`${maxWClass} mx-auto w-full px-4 md:px-8 pt-10 pb-8 transition-all duration-300`}>
-            
-            {isStoreHydrated && aiMessages.length === 0 && !aiLoading && (
-              <div className="flex flex-col items-center justify-center text-center mt-6 md:mt-24 mb-10 md:mb-16">
-                <div className="relative mb-4 md:mb-6">
-                  <div className="absolute inset-0 bg-[#1890FF] blur-2xl opacity-20 rounded-full"></div>
-                  <div className="relative w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-[#1890FF] to-indigo-600 rounded-2xl md:rounded-[2rem] flex items-center justify-center shadow-2xl ring-4 ring-white dark:ring-[#0B0F1A]">
-                    <Sparkles className="w-8 h-8 md:w-10 md:h-10 text-white" />
-                  </div>
-                </div>
-                <h2 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white mb-2 md:mb-3 tracking-tight">R-AI Assistant</h2>
-                <p className="text-sm md:text-base text-gray-500 mb-6 md:mb-10 max-w-md px-4">Tu agente financiero autónomo. Con acceso a mercados globales y a tu portafolio personal en tiempo real.</p>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 w-full">
-                  {shortcuts.map((sc) => (
-                    <button
-                      key={sc.id}
-                      onClick={() => sendMessage(sc.query, sc.id)}
-                      className="p-4 md:p-5 bg-gray-50/80 dark:bg-slate-900/50 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-2xl md:rounded-3xl text-left hover:border-[#1890FF]/30 hover:bg-[#1890FF]/5 transition-all group shadow-sm hover:shadow-md hover:-translate-y-1"
-                    >
-                      <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-white dark:bg-slate-800 flex items-center justify-center mb-3 md:mb-4 shadow-sm text-[#1890FF] group-hover:scale-110 transition-transform">
-                        {sc.id.includes("portfolio") ? <BarChart3 className="w-4 h-4 md:w-5 md:h-5" /> : <Newspaper className="w-4 h-4 md:w-5 md:h-5" />}
-                      </div>
-                      <p className="text-[13px] md:text-sm font-bold text-gray-900 dark:text-white mb-1 md:mb-1.5 group-hover:text-[#1890FF] transition-colors">{sc.label}</p>
-                      <p className="text-[11px] md:text-xs text-gray-500 font-medium line-clamp-2">{sc.query}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+          
+          {/* ── Prompt Carousel (full width, outside max-w constraint) ── */}
+          {isStoreHydrated && aiMessages.length === 0 && !aiLoading && (
+            <div className="pt-10">
+              <PromptCarousel onSend={(query) => sendMessage(query)} />
+            </div>
+          )}
+
+          <div className={`${maxWClass} mx-auto w-full px-4 md:px-8 ${aiMessages.length === 0 ? "pt-0" : "pt-10"} pb-8 transition-all duration-300`}>
 
             <div className="space-y-8">
               {aiMessages.map((msg) => (

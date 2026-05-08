@@ -217,11 +217,12 @@ export async function POST(req: NextRequest) {
         }),
 
         compare_stocks: tool({
-          description: 'Compara 2-5 acciones lado a lado con métricas fundamentales clave. Usar cuando digan "compara X con Y".',
+          description: 'Compara 2-5 acciones lado a lado con métricas fundamentales clave y rendimiento histórico. Usar cuando digan "compara X con Y" o "¿cuál subió más en el último mes?".',
           parameters: z.object({
             symbols: z.array(z.string()).min(2).max(5).describe('Array de tickers, ej: ["AAPL","MSFT","GOOGL"]'),
+            period: z.enum(['1d', '1mo', '3mo', '6mo', '1y', 'ytd', '5y']).optional().describe('Periodo histórico para comparar rendimiento. Por defecto es 1d.'),
           }),
-          execute: async ({ symbols }) => {
+          execute: async ({ symbols, period = '1d' }) => {
             const results = [];
             for (const sym of symbols) {
               try {
@@ -231,9 +232,36 @@ export async function POST(req: NextRequest) {
                 const sd = summary.summaryDetail || {} as any;
                 const ks = summary.defaultKeyStatistics || {} as any;
                 const fd = summary.financialData || {} as any;
+                
+                let historicalChangePercent = p.regularMarketChangePercent;
+                
+                if (period !== '1d') {
+                  try {
+                    const now = new Date();
+                    let period1 = new Date();
+                    if (period === '1mo') period1.setMonth(now.getMonth() - 1);
+                    else if (period === '3mo') period1.setMonth(now.getMonth() - 3);
+                    else if (period === '6mo') period1.setMonth(now.getMonth() - 6);
+                    else if (period === '1y') period1.setFullYear(now.getFullYear() - 1);
+                    else if (period === '5y') period1.setFullYear(now.getFullYear() - 5);
+                    else if (period === 'ytd') period1 = new Date(now.getFullYear(), 0, 1);
+                    
+                    const hist = await yf.historical(s, { period1: period1.toISOString().split('T')[0] });
+                    if (hist && hist.length > 0) {
+                      const startPrice = hist[0].close;
+                      const currentPrice = hist[hist.length - 1].close;
+                      historicalChangePercent = ((currentPrice - startPrice) / startPrice) * 100;
+                    }
+                  } catch (e) {
+                    console.error("Historical fetch failed for", s, e);
+                  }
+                }
+
                 results.push({
                   symbol: s, name: p.shortName || s,
-                  price: p.regularMarketPrice, changePercent: p.regularMarketChangePercent,
+                  price: p.regularMarketPrice, 
+                  changePercent: historicalChangePercent,
+                  periodoEvalado: period,
                   marketCap: p.marketCap, pe: sd.trailingPE, pb: ks.priceToBook,
                   roe: fd.returnOnEquity, profitMargin: fd.profitMargins,
                   debtToEquity: fd.debtToEquity, dividendYield: sd.dividendYield,
@@ -243,6 +271,38 @@ export async function POST(req: NextRequest) {
               await new Promise(r => setTimeout(r, 200));
             }
             return { comparison: results };
+          }
+        }),
+
+        get_earnings_calendar: tool({
+          description: 'Obtiene las próximas fechas de reportes de ganancias (earnings) para una o varias acciones. Usar cuando pregunten "cuándo reporta X" o "calendario de ganancias".',
+          parameters: z.object({
+            symbols: z.array(z.string()).min(1).max(10).describe('Array de tickers, ej: ["AAPL","MSFT"]'),
+          }),
+          execute: async ({ symbols }) => {
+            const results = [];
+            for (const sym of symbols) {
+              try {
+                const s = sym.toUpperCase();
+                const summary = await yf.quoteSummary(s, { modules: ['calendarEvents', 'price'] });
+                const earnings = summary.calendarEvents?.earnings;
+                if (earnings && earnings.earningsDate && earnings.earningsDate.length > 0) {
+                  results.push({
+                    symbol: s,
+                    name: summary.price?.shortName || s,
+                    nextEarningsDate: earnings.earningsDate[0].toISOString(),
+                    revenueEstimate: earnings.revenueAverage?.raw,
+                    earningsEstimate: earnings.earningsAverage?.raw,
+                  });
+                } else {
+                  results.push({ symbol: s, error: 'Sin fechas próximas' });
+                }
+              } catch {
+                results.push({ symbol: sym.toUpperCase(), error: 'No disponible' });
+              }
+              await new Promise(r => setTimeout(r, 200));
+            }
+            return { earningsCalendar: results };
           }
         }),
 

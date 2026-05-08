@@ -23,7 +23,7 @@ import {
 const NAV_ITEMS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/noticias", label: "Noticias", icon: Newspaper },
-  { href: "/admin/predicciones", label: "Predicciones", icon: TrendingUp },
+  { href: "/admin/usuarios", label: "Usuarios", icon: Shield },
   { href: "/admin/noticias/crear", label: "Crear Artículo", icon: PenSquare },
   { href: "/admin/soporte", label: "Soporte", icon: Headphones },
   { href: "/admin/logs", label: "AI Logs", icon: Terminal },

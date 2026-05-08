@@ -467,7 +467,7 @@ export default function AdminDashboard() {
             { href: "/admin/noticias", label: "Gestionar Noticias", desc: "Editar, ocultar o eliminar", icon: Newspaper, hoverColor: "hover:border-blue-500/30", iconColor: "group-hover:text-blue-600 dark:group-hover:text-blue-400" },
             { href: "/admin/noticias/crear", label: "Publicar Artículo", desc: "Crear una noticia editorial", icon: PenSquare, hoverColor: "hover:border-green-500/30", iconColor: "group-hover:text-green-600 dark:group-hover:text-green-400" },
             { href: "/admin/logs", label: "AI Pipeline Logs", desc: "Prompts y tokens en tiempo real", icon: Terminal, hoverColor: "hover:border-purple-500/30", iconColor: "group-hover:text-purple-600 dark:group-hover:text-purple-400" },
-            { href: "/admin/predicciones", label: "Predicciones", desc: "Gestionar predicciones de mercado", icon: TrendingUp, hoverColor: "hover:border-yellow-500/30", iconColor: "group-hover:text-yellow-600 dark:group-hover:text-yellow-400" },
+            { href: "/admin/usuarios", label: "Gestión de Usuarios", desc: "Administrar usuarios y planes", icon: Users, hoverColor: "hover:border-yellow-500/30", iconColor: "group-hover:text-yellow-600 dark:group-hover:text-yellow-400" },
           ].map((action) => (
             <Link
               key={action.href}

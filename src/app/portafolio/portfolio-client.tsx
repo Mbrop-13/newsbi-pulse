@@ -38,6 +38,8 @@ function getFallbackLogo(symbol: string): string {
 
 export default function PortfolioClient() {
   const [assets, setAssets] = useState<PortfolioAsset[]>([]);
+  const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
+  const [calendarLoading, setCalendarLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -85,7 +87,22 @@ export default function PortfolioClient() {
           checkAlerts(liveData);
         } else { setAssets(dbAssets.map(a => ({ ...a, logo: getLogoUrl(a.symbol) }))); }
       } catch { setAssets(dbAssets.map(a => ({ ...a, logo: getLogoUrl(a.symbol) }))); }
-    } else { setAssets([]); }
+      
+      // Fetch calendar events
+      setCalendarLoading(true);
+      try {
+        const calRes = await fetch(`/api/finance/calendar?symbols=${symbols}`);
+        if (calRes.ok) {
+          const calData = await calRes.json();
+          setCalendarEvents(calData.events || []);
+        }
+      } catch (e) {
+        console.error("Error fetching calendar:", e);
+      } finally {
+        setCalendarLoading(false);
+      }
+
+    } else { setAssets([]); setCalendarEvents([]); }
     setLoading(false);
   };
 
@@ -408,12 +425,28 @@ export default function PortfolioClient() {
                 <div><h3 className="font-bold text-gray-900 dark:text-white">Calendario IA</h3><p className="text-[11px] text-[#1890FF] font-semibold">Generado por Asistente Reclu</p></div>
               </div>
               <div className="space-y-3">
-                {[{ date: "Hoy, 14:00", title: "Reporte IPC EE.UU." }, { date: "Mañana", title: "Earnings de AAPL" }, { date: "Jueves", title: "Decisión de Tasas FED" }].map((event, i) => (
-                  <div key={i} className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-md rounded-xl p-3 border border-white/20 dark:border-white/5 flex items-start gap-3">
-                    <div className="w-2 h-2 rounded-full mt-1.5 shrink-0 bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
-                    <div><h4 className="text-sm font-bold text-gray-900 dark:text-white leading-tight">{event.title}</h4><p className="text-[11px] text-gray-500 mt-0.5">{event.date}</p></div>
+                {calendarLoading ? (
+                  <div className="flex justify-center p-4"><RefreshCw className="w-5 h-5 text-white animate-spin" /></div>
+                ) : calendarEvents.length > 0 ? (
+                  calendarEvents.slice(0, 5).map((event, i) => {
+                    const eventDate = new Date(event.date);
+                    const isToday = eventDate.toDateString() === new Date().toDateString();
+                    return (
+                      <div key={i} className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-md rounded-xl p-3 border border-white/20 dark:border-white/5 flex items-start gap-3">
+                        <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${isToday ? 'bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]' : 'bg-blue-500'}`} />
+                        <div>
+                          <h4 className="text-sm font-bold text-gray-900 dark:text-white leading-tight">{event.type} {event.symbol}</h4>
+                          <p className="text-[11px] text-gray-500 mt-0.5">{eventDate.toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' })}</p>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-md rounded-xl p-4 border border-white/20 dark:border-white/5 text-center">
+                    <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">No hay eventos próximos.</p>
+                    <p className="text-[10px] text-gray-500 mt-1">Agrega más activos a tu portafolio.</p>
                   </div>
-                ))}
+                )}
               </div>
             </div>
             <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">

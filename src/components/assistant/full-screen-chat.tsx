@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Bot, Sparkles, Loader2, ExternalLink, Paperclip, BarChart3, Newspaper, Bell, TrendingUp, X, Globe, History, Trash2, Plus, MessageSquare, PanelLeftClose, PanelLeft, Settings, Moon, Sun, Monitor, Type, Maximize, CheckCircle2, Mic } from "lucide-react";
 import { useAIChatStore, ChatMessage, ToolResultUI } from "@/lib/stores/ai-chat-store";
+import { getPlanConfig, PlanTier } from "@/lib/plan-limits";
 import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import ReactMarkdown from "react-markdown";
@@ -89,13 +90,16 @@ function FullScreenChatInternal() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const supabase = createClient();
-  const userTier = useAuthStore((s) => s.user?.role === "admin" ? "ultra" : (s.user?.tier || "free"));
+  const userTier = useAuthStore((s) => s.user?.role === "admin" ? "ultra" : (s.user?.tier || "free")) as PlanTier;
   const user = useAuthStore((s) => s.user);
 
   const isPremium = userTier === "max" || userTier === "ultra";
 
-  const questionLimit = userTier === "free" ? 5 : userTier === "pro" ? 100 : userTier === "max" ? 300 : 999999;
-  const reachedQuestionLimit = realUsageCount >= questionLimit;
+  const config = getPlanConfig(userTier);
+  const questionLimit = userTier === "free" ? config.aiLifetimeMessages : config.aiMessagesPerMonth;
+  const isUnlimited = questionLimit === -1;
+  const reachedQuestionLimit = !isUnlimited && realUsageCount >= questionLimit;
+  
   const MAX_FILES = userTier === "free" ? 1 : userTier === "pro" ? 3 : 10;
 
   const [hasPortfolio, setHasPortfolio] = useState(false);
@@ -332,10 +336,10 @@ function FullScreenChatInternal() {
               <div className="bg-gradient-to-br from-[#1890FF]/5 to-indigo-500/5 rounded-xl p-3 border border-[#1890FF]/10 mb-2">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-xs font-bold text-gray-900 dark:text-white">Plan {userTier.charAt(0).toUpperCase() + userTier.slice(1)}</span>
-                  <span className="text-[10px] font-bold text-[#1890FF]">{realUsageCount} / {questionLimit === 999999 ? "∞" : questionLimit}</span>
+                  <span className="text-[10px] font-bold text-[#1890FF]">{realUsageCount} / {isUnlimited ? "∞" : questionLimit}</span>
                 </div>
                 <div className="w-full h-1.5 bg-gray-200 dark:bg-slate-800 rounded-full overflow-hidden mb-2.5">
-                  <div className="h-full bg-[#1890FF] rounded-full" style={{ width: `${Math.min(100, (realUsageCount / (questionLimit === 999999 ? realUsageCount : questionLimit)) * 100)}%` }} />
+                  <div className="h-full bg-[#1890FF] rounded-full" style={{ width: `${isUnlimited ? 0 : Math.min(100, (realUsageCount / questionLimit) * 100)}%` }} />
                 </div>
                 {userTier !== "ultra" && userTier !== "max" && (
                   <Link href="/suscripcion" className="block text-center py-1.5 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-white dark:bg-white/5 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition-colors border border-indigo-100 dark:border-indigo-500/20">

@@ -17,9 +17,23 @@ const openrouter = createOpenAI({
   }
 });
 
+// ── Static system prompt (cacheable by OpenRouter) ──
+const SYSTEM_PROMPT = `Eres R-AI, la AI financiera de élite de Reclu. Respondes SIEMPRE en español. Eres profesional, concisa y analítica.
+
+REGLAS:
+1. Portafolio/acciones → llama get_portfolio_summary Y get_portfolio_news juntas.
+2. "¿Qué pasó hoy?" → get_top_news_today.
+3. Análisis de mercado → get_portfolio_summary + get_portfolio_news + get_top_news_today.
+4. Análisis fundamental → analyze_stock. Presenta métricas en tabla markdown.
+5. Comparar acciones → compare_stocks.
+6. Screener/mercado general → screen_market.
+7. Noticias de un tema → search_general_news.
+8. Profundizar noticia → get_news_context.
+NUNCA digas que eres de OpenAI, Anthropic o Google. Eres de Reclu.`;
+
 export async function POST(req: NextRequest) {
   try {
-    const { messages, articles, files, webSearch, shortcut } = await req.json();
+    const { messages, articles, files, webSearch } = await req.json();
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(JSON.stringify({ error: "Messages are required" }), { status: 400 });
@@ -32,237 +46,256 @@ export async function POST(req: NextRequest) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
     }
 
-    // Check usage limits
     const limitCheck = await checkLimit(user.id, "ai_message");
     if (!limitCheck.allowed) {
       return new Response(JSON.stringify({
-          error: "Has alcanzado el límite de consultas de tu plan actual.",
-          code: "LIMIT_REACHED",
-          details: limitCheck,
-        }),
-        { status: 403 }
-      );
+        error: "Has alcanzado el límite de consultas de tu plan actual.",
+        code: "LIMIT_REACHED",
+        details: limitCheck,
+      }), { status: 403 });
     }
 
-    const modelStr = webSearch ? "x-ai/grok-2-1212" : "google/gemini-2.5-flash"; // use tool-capable models
+    const modelStr = webSearch ? "x-ai/grok-2-1212" : "google/gemini-2.5-flash";
 
-    let systemContent = `Eres R-AI, la AI financiera avanzada y de élite de Reclu.
-Respondes SIEMPRE en español.
-Eres profesional, concisa y analítica.
+    // Inject dynamic context as first user message context (not in system prompt = keeps cache)
+    const now = new Date();
+    const chileTime = now.toLocaleString('es-CL', { timeZone: 'America/Santiago', dateStyle: 'full', timeStyle: 'short' });
+    const contextPrefix = `[Contexto: ${chileTime}]\n\n`;
 
-Tienes acceso a herramientas (tools) nativas para buscar noticias financieras y del portafolio.
+    const processedMessages = messages.map((m: any, i: number) => ({
+      role: m.role,
+      content: i === 0 && m.role === 'user' ? contextPrefix + m.content : m.content,
+    }));
 
-REGLAS DE USO DE HERRAMIENTAS:
-1. Cuando el usuario pregunte por su portafolio, acciones o inversiones: SIEMPRE llama get_portfolio_summary Y get_portfolio_news JUNTAS en el mismo paso. Presenta primero la tabla de acciones con precios en vivo, luego complementa con las noticias relacionadas.
-2. Cuando el usuario pregunte "¿qué pasó hoy?" o por noticias del día: usa get_top_news_today.
-3. Cuando el usuario pida análisis de mercado: llama get_portfolio_summary, get_portfolio_news Y get_top_news_today las tres juntas.
-4. Para buscar noticias sobre un tema específico: usa search_general_news.
-5. Para profundizar en una noticia: usa get_news_context.
-
-NUNCA menciones que eres una IA de OpenAI, Anthropic o Google. Eres una creación pura de Reclu.`;
-
-    // Increment usage
     await incrementUsage(user.id, "ai_message").catch(console.error);
+
+    const yf = new YahooFinance();
 
     const result = await streamText({
       model: openrouter(modelStr),
-      system: systemContent,
-      messages: messages.map((m: any) => ({ role: m.role, content: m.content })),
-      maxSteps: 5,
+      system: SYSTEM_PROMPT,
+      messages: processedMessages,
+      maxSteps: 8,
       tools: {
+        // ── PORTFOLIO TOOLS ──
         get_portfolio_summary: tool({
-          description: 'Obtiene un resumen en vivo del portafolio del usuario con precios actuales, cambios del día, cantidad de acciones y valor de la posición. USAR SIEMPRE que el usuario pregunte por su portafolio o sus acciones.',
+          description: 'Resumen en vivo del portafolio: precios, cambios, posiciones. Usar cuando pregunten por "mis acciones".',
           parameters: z.object({}),
           execute: async () => {
             const sc = await createClient();
             const { data: dbAssets } = await sc.from('portfolios').select('*').eq('user_id', user.id);
             if (!dbAssets || dbAssets.length === 0) {
-              return { error: "El usuario no tiene activos en su portafolio. Sugiérele agregar algunos en la sección Portafolio." };
+              return { error: "El usuario no tiene activos en su portafolio. Sugiérele agregar algunos en /portafolio." };
             }
-
             const symbols = dbAssets.map((a: any) => a.symbol);
             try {
-              const yf = new YahooFinance();
               const quotes = await yf.quote(symbols);
               const quoteArray = Array.isArray(quotes) ? quotes : [quotes];
-
               const assets = dbAssets.map((dbA: any) => {
                 const live = quoteArray.find((q: any) => q.symbol === dbA.symbol) || {} as any;
                 const price = live.regularMarketPrice || 0;
-                const change = live.regularMarketChange || 0;
-                const changePercent = live.regularMarketChangePercent || 0;
                 const shares = dbA.shares || 0;
                 const avgPrice = dbA.average_price || 0;
-                const positionValue = price * shares;
-                const invested = avgPrice * shares;
-                const pnl = invested > 0 ? positionValue - invested : 0;
-
                 return {
-                  symbol: dbA.symbol,
-                  company_name: dbA.company_name,
-                  price: price,
-                  change: change,
-                  changePercent: changePercent,
-                  shares: shares,
-                  average_price: avgPrice,
-                  position_value: positionValue,
-                  pnl: pnl,
+                  symbol: dbA.symbol, company_name: dbA.company_name,
+                  price, change: live.regularMarketChange || 0,
+                  changePercent: live.regularMarketChangePercent || 0,
+                  shares, average_price: avgPrice,
+                  position_value: price * shares,
+                  pnl: avgPrice > 0 ? (price * shares) - (avgPrice * shares) : 0,
                   currency: live.currency || 'USD'
                 };
               });
-
-              const totalValue = assets.reduce((sum: number, a: any) => sum + a.position_value, 0);
-              const totalPnl = assets.reduce((sum: number, a: any) => sum + a.pnl, 0);
-              const avgChange = assets.length > 0 ? assets.reduce((sum: number, a: any) => sum + a.changePercent, 0) / assets.length : 0;
-
+              const totalValue = assets.reduce((s: number, a: any) => s + a.position_value, 0);
+              const totalPnl = assets.reduce((s: number, a: any) => s + a.pnl, 0);
+              const avgChange = assets.length > 0 ? assets.reduce((s: number, a: any) => s + a.changePercent, 0) / assets.length : 0;
+              return { assets, summary: { total_assets: assets.length, total_value: totalValue, total_pnl: totalPnl, average_daily_change: avgChange } };
+            } catch {
               return {
-                assets,
-                summary: {
-                  total_assets: assets.length,
-                  total_value: totalValue,
-                  total_pnl: totalPnl,
-                  average_daily_change: avgChange
-                }
-              };
-            } catch (e) {
-              // If Yahoo Finance fails, return at least the DB data
-              return {
-                assets: dbAssets.map((a: any) => ({
-                  symbol: a.symbol,
-                  company_name: a.company_name,
-                  shares: a.shares || 0,
-                  average_price: a.average_price || 0,
-                  price: 0,
-                  change: 0,
-                  changePercent: 0
-                })),
+                assets: dbAssets.map((a: any) => ({ symbol: a.symbol, company_name: a.company_name, shares: a.shares || 0, average_price: a.average_price || 0, price: 0, change: 0, changePercent: 0 })),
                 summary: { total_assets: dbAssets.length, total_value: 0, total_pnl: 0, average_daily_change: 0 },
-                error_note: 'No se pudieron obtener precios en vivo. Mostrando datos guardados.'
+                error_note: 'No se pudieron obtener precios en vivo.'
               };
             }
           }
         }),
+
         get_portfolio_news: tool({
-          description: 'Obtiene las noticias de las ÚLTIMAS 48 horas relacionadas a los activos del portafolio del usuario.',
-          parameters: z.object({
-            limit: z.number().optional().describe('Cantidad máxima de noticias a recuperar. Por defecto 10.'),
-          }),
+          description: 'Noticias de las últimas 48h relacionadas al portafolio del usuario.',
+          parameters: z.object({ limit: z.number().optional() }),
           execute: async ({ limit = 10 }) => {
             const sc = await createClient();
             const { data: portfolios } = await sc.from('portfolios').select('symbol, company_name').eq('user_id', user.id);
-            if (!portfolios || portfolios.length === 0) {
-              return { error: "El usuario no tiene activos en su portafolio. Sugiérele agregar algunos en la sección Portafolio." };
-            }
-            
-            // Only fetch news from the last 48 hours
-            const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
-            
-            // Build search terms from both symbols and company names
+            if (!portfolios || portfolios.length === 0) return { error: "Sin portafolio.", news: [] };
+            const cutoff = new Date(Date.now() - 48 * 3600000).toISOString();
             const searchTerms: string[] = [];
             for (const p of portfolios) {
               if (p.symbol) searchTerms.push(p.symbol.toLowerCase());
               if (p.company_name) {
                 searchTerms.push(p.company_name.toLowerCase());
-                const words = p.company_name.split(/[\s,.\-\/]+/).filter((w: string) => w.length >= 3);
-                for (const word of words) {
-                  const lower = word.toLowerCase();
-                  if (!['inc', 'corp', 'ltd', 'llc', 'the', 'and', 'group', 'holdings', 'company', 'class'].includes(lower)) {
-                    searchTerms.push(lower);
-                  }
-                }
+                p.company_name.split(/[\s,.\-\/]+/).filter((w: string) => w.length >= 3).forEach((w: string) => {
+                  const l = w.toLowerCase();
+                  if (!['inc','corp','ltd','llc','the','and','group','holdings','company','class'].includes(l)) searchTerms.push(l);
+                });
               }
             }
-            
-            // Try Supabase ilike filters with date cutoff
             const orFilters = searchTerms.map(t => `title.ilike.%${t}%`).join(',');
-            
-            const { data: matchedNews } = await supabase
-              .from('news_articles')
-              .select('id, title, summary, published_at, relevance_score, slug, image_url')
-              .or(orFilters)
-              .gte('published_at', cutoff)
-              .order('published_at', { ascending: false })
-              .limit(limit);
-            
-            if (matchedNews && matchedNews.length > 0) {
-              return { 
-                news: matchedNews,
-                portfolio_symbols: portfolios.map((p: any) => p.symbol)
-              };
-            }
-            
-            // Fallback: fetch recent news (last 48h) and do client-side fuzzy matching
-            const { data: recentNews } = await supabase
-              .from('news_articles')
-              .select('id, title, summary, published_at, relevance_score, slug, image_url')
-              .gte('published_at', cutoff)
-              .order('published_at', { ascending: false })
-              .limit(100);
-              
-            if (!recentNews || recentNews.length === 0) {
-              return { 
-                news: [], 
-                portfolio_symbols: portfolios.map((p: any) => p.symbol),
-                note: "No se encontraron noticias recientes (últimas 48h) relacionadas con el portafolio."
-              };
-            }
-            
-            const relevantNews = recentNews.filter(article => {
-              const text = (article.title + " " + (article.summary || "")).toLowerCase();
-              return searchTerms.some(term => text.includes(term));
-            }).slice(0, limit);
-            
-            return {
-              news: relevantNews,
-              portfolio_symbols: portfolios.map((p: any) => p.symbol),
-              note: relevantNews.length === 0 ? "No se encontraron noticias recientes (últimas 48h) relacionadas con el portafolio." : undefined
-            };
+            const { data: news } = await supabase.from('news_articles').select('id, title, summary, published_at, relevance_score, slug, image_url').or(orFilters).gte('published_at', cutoff).order('published_at', { ascending: false }).limit(limit);
+            if (news && news.length > 0) return { news, portfolio_symbols: portfolios.map((p: any) => p.symbol) };
+            const { data: recent } = await supabase.from('news_articles').select('id, title, summary, published_at, relevance_score, slug, image_url').gte('published_at', cutoff).order('published_at', { ascending: false }).limit(100);
+            if (!recent || recent.length === 0) return { news: [], portfolio_symbols: portfolios.map((p: any) => p.symbol), note: "Sin noticias recientes (48h)." };
+            const relevant = recent.filter(a => { const t = (a.title + " " + (a.summary || "")).toLowerCase(); return searchTerms.some(term => t.includes(term)); }).slice(0, limit);
+            return { news: relevant, portfolio_symbols: portfolios.map((p: any) => p.symbol) };
           },
         }),
+
+        // ── NEWS TOOLS ──
         search_general_news: tool({
-          description: 'Busca noticias generales en la plataforma Reclu por palabra clave o etiqueta.',
-          parameters: z.object({
-            query: z.string().describe('Término de búsqueda (ej. Trump, Apple, tasas de interés).'),
-          }),
+          description: 'Buscar noticias en Reclu por palabra clave.',
+          parameters: z.object({ query: z.string() }),
           execute: async ({ query }) => {
-            const { data } = await supabase
-              .from('news_articles')
-              .select('id, title, summary, published_at, relevance_score, slug, image_url')
-              .ilike('title', `%${query}%`)
-              .order('published_at', { ascending: false })
-              .limit(5);
-              
+            const { data } = await supabase.from('news_articles').select('id, title, summary, published_at, relevance_score, slug, image_url').ilike('title', `%${query}%`).order('published_at', { ascending: false }).limit(5);
             return { news: data || [] };
           },
         }),
+
         get_top_news_today: tool({
-          description: 'Obtiene las 10 noticias más importantes publicadas el día de hoy, ordenadas por relevancia.',
+          description: 'Top 10 noticias de hoy ordenadas por relevancia.',
           parameters: z.object({}),
           execute: async () => {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const { data } = await supabase
-              .from('news_articles')
-              .select('id, title, summary, published_at, relevance_score, slug, image_url')
-              .gte('published_at', today.toISOString())
-              .order('relevance_score', { ascending: false })
-              .limit(10);
+            const today = new Date(); today.setHours(0, 0, 0, 0);
+            const { data } = await supabase.from('news_articles').select('id, title, summary, published_at, relevance_score, slug, image_url').gte('published_at', today.toISOString()).order('relevance_score', { ascending: false }).limit(10);
             return { news: data || [] };
           }
         }),
+
         get_news_context: tool({
-          description: 'Obtiene el contenido completo de una noticia específica dado su slug o id.',
-          parameters: z.object({
-            id: z.string(),
-          }),
+          description: 'Contenido completo de una noticia por su id.',
+          parameters: z.object({ id: z.string() }),
           execute: async ({ id }) => {
-            const { data } = await supabase
-              .from('news_articles')
-              .select('title, content, enriched_content')
-              .eq('id', id)
-              .single();
+            const { data } = await supabase.from('news_articles').select('title, content, enriched_content').eq('id', id).single();
             if (!data) return { error: "Noticia no encontrada" };
             return { content: data.enriched_content || data.content };
+          }
+        }),
+
+        // ── NEW PRO TOOLS ──
+        analyze_stock: tool({
+          description: 'Análisis fundamental completo de una acción: P/E, EPS, ROE, márgenes, deuda, dividendos, market cap, sector, 52w rango. Usar cuando pidan "analizar X" o "fundamentales de X".',
+          parameters: z.object({
+            symbol: z.string().describe('Ticker de la acción, ej: AAPL, TSLA, MSFT'),
+          }),
+          execute: async ({ symbol }) => {
+            try {
+              const s = symbol.toUpperCase();
+              const summary = await yf.quoteSummary(s, { modules: ['price', 'summaryDetail', 'defaultKeyStatistics', 'financialData', 'earningsQuarterlyGrowth', 'assetProfile'] });
+              const p = summary.price || {} as any;
+              const sd = summary.summaryDetail || {} as any;
+              const ks = summary.defaultKeyStatistics || {} as any;
+              const fd = summary.financialData || {} as any;
+              const ap = summary.assetProfile || {} as any;
+
+              return {
+                symbol: s,
+                company_name: p.shortName || p.longName || s,
+                sector: ap.sector || 'N/A',
+                industry: ap.industry || 'N/A',
+                price: { current: p.regularMarketPrice, change: p.regularMarketChange, changePercent: p.regularMarketChangePercent, currency: p.currency || 'USD', marketCap: p.marketCap },
+                valuation: { pe_trailing: sd.trailingPE, pe_forward: sd.forwardPE, pb: ks.priceToBook, ps: ks.priceToSalesTrailing12Months, peg: ks.pegRatio, ev_ebitda: ks.enterpriseToEbitda },
+                profitability: { profit_margin: fd.profitMargins, operating_margin: fd.operatingMargins, roe: fd.returnOnEquity, roa: fd.returnOnAssets, gross_margin: fd.grossMargins },
+                growth: { revenue_growth: fd.revenueGrowth, earnings_growth: fd.earningsGrowth, eps: ks.trailingEps, forward_eps: ks.forwardEps },
+                financial_health: { total_debt: fd.totalDebt, total_cash: fd.totalCash, debt_to_equity: fd.debtToEquity, current_ratio: fd.currentRatio, quick_ratio: fd.quickRatio },
+                dividends: { yield: sd.dividendYield, rate: sd.dividendRate, payout_ratio: sd.payoutRatio, ex_date: sd.exDividendDate },
+                risk: { beta: sd.beta, fifty_two_week_high: sd.fiftyTwoWeekHigh, fifty_two_week_low: sd.fiftyTwoWeekLow, avg_volume: sd.averageVolume },
+                summary: ap.longBusinessSummary ? ap.longBusinessSummary.substring(0, 300) + '...' : undefined,
+              };
+            } catch (e: any) {
+              return { error: `No se pudo analizar ${symbol}: ${e.message}` };
+            }
+          }
+        }),
+
+        compare_stocks: tool({
+          description: 'Compara 2-5 acciones lado a lado con métricas fundamentales clave. Usar cuando digan "compara X con Y".',
+          parameters: z.object({
+            symbols: z.array(z.string()).min(2).max(5).describe('Array de tickers, ej: ["AAPL","MSFT","GOOGL"]'),
+          }),
+          execute: async ({ symbols }) => {
+            const results = [];
+            for (const sym of symbols) {
+              try {
+                const s = sym.toUpperCase();
+                const summary = await yf.quoteSummary(s, { modules: ['price', 'summaryDetail', 'defaultKeyStatistics', 'financialData'] });
+                const p = summary.price || {} as any;
+                const sd = summary.summaryDetail || {} as any;
+                const ks = summary.defaultKeyStatistics || {} as any;
+                const fd = summary.financialData || {} as any;
+                results.push({
+                  symbol: s, name: p.shortName || s,
+                  price: p.regularMarketPrice, changePercent: p.regularMarketChangePercent,
+                  marketCap: p.marketCap, pe: sd.trailingPE, pb: ks.priceToBook,
+                  roe: fd.returnOnEquity, profitMargin: fd.profitMargins,
+                  debtToEquity: fd.debtToEquity, dividendYield: sd.dividendYield,
+                  beta: sd.beta, fiftyTwoWeekHigh: sd.fiftyTwoWeekHigh, fiftyTwoWeekLow: sd.fiftyTwoWeekLow,
+                });
+              } catch { results.push({ symbol: sym.toUpperCase(), error: 'No disponible' }); }
+              await new Promise(r => setTimeout(r, 200));
+            }
+            return { comparison: results };
+          }
+        }),
+
+        screen_market: tool({
+          description: 'Muestra top gainers y losers del mercado US hoy. Usar cuando pregunten "¿cómo va el mercado?" o "qué acciones subieron/bajaron hoy".',
+          parameters: z.object({}),
+          execute: async () => {
+            try {
+              const watchlist = ['AAPL','MSFT','GOOGL','AMZN','NVDA','META','TSLA','JPM','V','JNJ','WMT','PG','UNH','HD','MA','DIS','NFLX','PYPL','CRM','AMD','INTC','BA','GS','CAT','NKE','KO','PEP','MCD','COST','ABBV'];
+              const quotes = await yf.quote(watchlist);
+              const quoteArray = (Array.isArray(quotes) ? quotes : [quotes]).map((q: any) => ({
+                symbol: q.symbol, name: q.shortName,
+                price: q.regularMarketPrice, change: q.regularMarketChange,
+                changePercent: q.regularMarketChangePercent,
+                volume: q.regularMarketVolume, marketCap: q.marketCap,
+              }));
+              const sorted = quoteArray.sort((a: any, b: any) => (b.changePercent || 0) - (a.changePercent || 0));
+              return {
+                gainers: sorted.slice(0, 5),
+                losers: sorted.slice(-5).reverse(),
+                market_summary: {
+                  avg_change: sorted.reduce((s: number, q: any) => s + (q.changePercent || 0), 0) / sorted.length,
+                  positive_count: sorted.filter((q: any) => (q.changePercent || 0) > 0).length,
+                  total_tracked: sorted.length,
+                }
+              };
+            } catch (e: any) {
+              return { error: `Error al obtener datos del mercado: ${e.message}` };
+            }
+          }
+        }),
+
+        get_sector_performance: tool({
+          description: 'Rendimiento por sector del mercado usando ETFs sectoriales. Usar cuando pregunten por sectores o "qué sector va mejor".',
+          parameters: z.object({}),
+          execute: async () => {
+            try {
+              const sectorETFs: Record<string, string> = {
+                'Tecnología': 'XLK', 'Salud': 'XLV', 'Financiero': 'XLF',
+                'Consumo Discrecional': 'XLY', 'Comunicaciones': 'XLC', 'Industrial': 'XLI',
+                'Consumo Básico': 'XLP', 'Energía': 'XLE', 'Inmobiliario': 'XLRE',
+                'Materiales': 'XLB', 'Utilities': 'XLU',
+              };
+              const symbols = Object.values(sectorETFs);
+              const quotes = await yf.quote(symbols);
+              const quoteArray = Array.isArray(quotes) ? quotes : [quotes];
+              const sectors = Object.entries(sectorETFs).map(([name, sym]) => {
+                const q = quoteArray.find((q: any) => q.symbol === sym) || {} as any;
+                return { sector: name, etf: sym, price: q.regularMarketPrice, change: q.regularMarketChange, changePercent: q.regularMarketChangePercent };
+              }).sort((a: any, b: any) => (b.changePercent || 0) - (a.changePercent || 0));
+              return { sectors };
+            } catch (e: any) {
+              return { error: `Error: ${e.message}` };
+            }
           }
         }),
       },

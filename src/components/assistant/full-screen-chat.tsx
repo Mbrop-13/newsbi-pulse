@@ -13,6 +13,7 @@ import { useTheme } from "next-themes";
 import { useChat } from 'ai/react';
 import { AnalyzedNewsCard } from './analyzed-news-card';
 import { PortfolioSummaryCard } from './portfolio-summary-card';
+import { StockAnalysisCard } from './stock-analysis-card';
 
 
 export function FullScreenChat() {
@@ -437,12 +438,15 @@ function FullScreenChatInternal() {
                             if (toolInvocation.toolName === 'get_portfolio_summary') {
                               return <PortfolioSummaryCard key={toolInvocation.toolCallId} result={toolInvocation.result} />;
                             }
+                            if (['analyze_stock', 'compare_stocks', 'screen_market', 'get_sector_performance'].includes(toolInvocation.toolName)) {
+                              return <StockAnalysisCard key={toolInvocation.toolCallId} toolName={toolInvocation.toolName} result={toolInvocation.result} />;
+                            }
                             return <AnalyzedNewsCard key={toolInvocation.toolCallId} toolName={toolInvocation.toolName} result={toolInvocation.result} />;
                           }
                           return (
                             <div key={toolInvocation.toolCallId} className="flex items-center gap-2 px-3 py-1.5 bg-[#1890FF]/5 text-[#1890FF] rounded-xl text-xs font-bold w-fit animate-pulse border border-[#1890FF]/20">
                               <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                              Analizando datos ({toolInvocation.toolName})...
+                              Analizando datos...
                             </div>
                           );
                         })}

@@ -21,18 +21,23 @@ interface AdminUser {
 export default function UsuariosAdminPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [filterPlan, setFilterPlan] = useState<"all" | "free" | "premium" | "admin">("all");
 
   const fetchUsers = async () => {
     setLoading(true);
+    setErrorMsg(null);
     try {
       const res = await fetch("/api/admin/users");
+      const data = await res.json();
       if (res.ok) {
-        const data = await res.json();
         setUsers(data.users || []);
+      } else {
+        setErrorMsg(data.error || "Error desconocido al cargar usuarios");
       }
-    } catch (e) {
+    } catch (e: any) {
+      setErrorMsg(e.message || "Error de red al cargar usuarios");
       console.error(e);
     } finally {
       setLoading(false);
@@ -138,8 +143,14 @@ export default function UsuariosAdminPage() {
               {loading ? (
                 <tr>
                   <td colSpan={4} className="px-6 py-12 text-center">
-                    <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto" />
+                    <RefreshCw className="w-8 h-8 animate-spin text-blue-500 mx-auto" />
                     <p className="mt-2 text-slate-500 text-sm">Cargando usuarios...</p>
+                  </td>
+                </tr>
+              ) : errorMsg ? (
+                <tr>
+                  <td colSpan={4} className="px-6 py-12 text-center text-red-500">
+                    Error: {errorMsg}
                   </td>
                 </tr>
               ) : filteredUsers.length === 0 ? (

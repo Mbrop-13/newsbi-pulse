@@ -25,7 +25,7 @@ export async function getUserTier(userId: string): Promise<PlanTier> {
     .from("admin_users")
     .select("role")
     .eq("user_id", userId)
-    .single();
+    .maybeSingle();
 
   if (adminRow && adminRow.role === "admin") {
     return "ultra";
@@ -35,7 +35,7 @@ export async function getUserTier(userId: string): Promise<PlanTier> {
     .from("subscriptions")
     .select("tier, status")
     .eq("user_id", userId)
-    .single();
+    .maybeSingle();
   
   if (!data || data.status === "expired" || data.status === "canceled") {
     return "free";

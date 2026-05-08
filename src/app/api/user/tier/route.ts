@@ -21,7 +21,7 @@ export async function GET() {
       .from("admin_users")
       .select("role")
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
 
     return NextResponse.json({ 
       tier, 

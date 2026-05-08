@@ -21,7 +21,7 @@ export async function GET() {
       .from("admin_users")
       .select("role")
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
 
     if (!adminCheck || adminCheck.role !== "admin") {
       return NextResponse.json({ error: "Acceso denegado" }, { status: 403 });
@@ -31,7 +31,7 @@ export async function GET() {
     const { data: authUsers, error: authError } = await serviceClient.auth.admin.listUsers();
     
     if (authError) {
-      throw new Error("Error fetching users from Auth");
+      throw new Error("Error fetching users from Auth: " + authError.message);
     }
 
     // 3. Fetch all subscriptions and admin roles

@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
       tools: {
         // ── PORTFOLIO TOOLS ──
         get_portfolio_summary: tool({
-          description: 'Resumen en vivo del portafolio: precios, cambios, posiciones. Usar cuando pregunten por "mis acciones".',
+          description: 'Resumen en vivo del portafolio: precios, cambios diarios, posiciones. Usar cuando pregunten por "mis acciones". IMPORTANTE: El "changePercent" devuelto es SÓLO el cambio de hoy (1d). Si el usuario pide el rendimiento de "este mes" (1mo), "este año" (1y) u otro periodo, DEBES llamar primero a esta herramienta para saber qué símbolos tiene el usuario, y LUEGO llamar a la herramienta "compare_stocks" pasándole esos símbolos y el "period" correspondiente para obtener el crecimiento histórico real antes de responder o graficar.',
           parameters: z.object({}),
           execute: async () => {
             const sc = await createClient();

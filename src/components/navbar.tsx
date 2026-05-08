@@ -28,6 +28,7 @@ import {
 import { useAudioPlayerStore } from "@/lib/stores/audio-player-store";
 import { usePathname, useRouter } from "next/navigation";
 import { useFilterStore } from "@/lib/stores/filter-store";
+import { useSubscriptionStore } from "@/lib/stores/subscription-store";
 export function Navbar() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -69,16 +70,40 @@ export function Navbar() {
   const pathname = usePathname();
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
+        // Initial optimistic set
         setUser({
           id: session.user.id,
           email: session.user.email || "",
           name: session.user.user_metadata?.full_name || "Usuario",
           avatar: session.user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(session.user.user_metadata?.full_name || "U")}&background=1890FF&color=fff`,
         });
+
+        // Fetch actual tier and role
+        try {
+          const res = await fetch("/api/user/tier");
+          if (res.ok) {
+            const data = await res.json();
+            setUser({
+              id: session.user.id,
+              email: session.user.email || "",
+              name: session.user.user_metadata?.full_name || "Usuario",
+              avatar: session.user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(session.user.user_metadata?.full_name || "U")}&background=1890FF&color=fff`,
+              tier: data.tier,
+              role: data.role
+            });
+            
+            // Also sync tier to subscription store so usage indicators work
+            useSubscriptionStore.getState().setTier(data.tier);
+          }
+        } catch (error) {
+          console.error("Failed to fetch user tier:", error);
+        }
+
       } else {
         setUser(null);
+        useSubscriptionStore.getState().setTier("free");
       }
     });
     return () => { subscription.unsubscribe(); };

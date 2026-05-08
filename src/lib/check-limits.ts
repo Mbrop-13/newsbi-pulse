@@ -20,6 +20,17 @@ interface LimitCheckResult {
  * Get the user's current subscription tier
  */
 export async function getUserTier(userId: string): Promise<PlanTier> {
+  // Check if the user is an admin first
+  const { data: adminRow } = await supabase
+    .from("admin_users")
+    .select("role")
+    .eq("user_id", userId)
+    .single();
+
+  if (adminRow && adminRow.role === "admin") {
+    return "ultra";
+  }
+
   const { data } = await supabase
     .from("subscriptions")
     .select("tier, status")

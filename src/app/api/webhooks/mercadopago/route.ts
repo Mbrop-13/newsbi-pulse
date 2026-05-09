@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { sendEmail } from "@/lib/email/ses-client";
-import { notificationEmail } from "@/lib/email/email-templates";
+import { paymentSuccessEmail } from "@/lib/email/email-templates";
 import type { PlanTier } from "@/lib/plan-limits";
 
 const supabase = createClient(
@@ -94,12 +94,17 @@ export async function POST(request: NextRequest) {
       const { data: userData } = await supabase.auth.admin.getUserById(user_id);
       if (userData?.user?.email) {
         const planNames: Record<string, string> = { pro: "Pro", max: "Max", ultra: "Ultra" };
-        const { subject, html } = notificationEmail({
-          title: `🎉 ¡Bienvenido a Reclu ${planNames[plan]}!`,
-          message: `Tu suscripción ${planNames[plan]} está activa. Disfruta de todas las funciones premium de Reclu. Tu próxima fecha de facturación es ${periodEnd.toLocaleDateString("es-CL")}.`,
-          ctaText: "Explorar Reclu",
-          ctaUrl: "https://reclu.cl/ai",
+        const amount = payment.transaction_amount || 0;
+        
+        const { subject, html } = paymentSuccessEmail({
+          userName: userData.user.user_metadata?.full_name || undefined,
+          planName: planNames[plan] || "Pro",
+          amount: amount,
+          billingCycle: billing as "monthly" | "annual",
+          nextBillingDate: periodEnd,
+          paymentId: paymentId.toString(),
         });
+        
         await sendEmail({ to: userData.user.email, subject, html });
       }
     } catch (emailErr) {

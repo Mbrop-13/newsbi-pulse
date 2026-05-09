@@ -73,6 +73,12 @@ export async function POST(request: NextRequest) {
           billing,
         }),
         statement_descriptor: "RECLU",
+        metadata: {
+          user_id: user.id,
+          user_email: user.email,
+          plan_name: planConfig.name,
+          billing_cycle: billing,
+        },
       },
     });
 

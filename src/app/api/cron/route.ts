@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { runNewsPipeline } from "@/lib/services/news-pipeline";
 import { createClient } from "@supabase/supabase-js";
 import YahooFinance from "yahoo-finance2";
-import { sendEmail } from "@/lib/email/ses-client";
+import { sendEmail } from "@/lib/email/azure-client";
 import { priceAlertEmail } from "@/lib/email/email-templates";
 
 const yf = new YahooFinance();

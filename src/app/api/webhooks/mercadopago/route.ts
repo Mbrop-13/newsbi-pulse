@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { sendEmail } from "@/lib/email/ses-client";
+import { sendEmail } from "@/lib/email/azure-client";
 import { paymentSuccessEmail } from "@/lib/email/email-templates";
 import type { PlanTier } from "@/lib/plan-limits";
 

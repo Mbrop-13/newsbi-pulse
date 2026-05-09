@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sendEmail } from "@/lib/email/ses-client";
+import { sendEmail } from "@/lib/email/azure-client";
 import { newsletterConfirmationEmail } from "@/lib/email/email-templates";
 
 export async function POST(request: NextRequest) {

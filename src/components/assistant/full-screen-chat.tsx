@@ -50,6 +50,7 @@ function FullScreenChatInternal() {
   const [showPreferences, setShowPreferences] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [realUsageCount, setRealUsageCount] = useState(0);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
 
   const { messages: aiMessages, input, handleInputChange, handleSubmit, setMessages: setAiMessages, append, isLoading: aiLoading, setInput } = useChat({
     api: "/api/ai-chat",
@@ -397,7 +398,7 @@ function FullScreenChatInternal() {
           
           {/* ── Prompt Carousel (full width, outside max-w constraint) ── */}
           {isStoreHydrated && aiMessages.length === 0 && !aiLoading && (
-            <div className="pt-10">
+            <div className="pt-24 md:pt-40">
               <PromptCarousel onSend={(query) => sendMessage(query)} />
             </div>
           )}
@@ -512,10 +513,35 @@ function FullScreenChatInternal() {
               <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".txt,.md,.csv,.json,.ts" />
               
               {/* Left Actions */}
-              <div className="flex items-center gap-1.5 pb-0.5 pl-1 shrink-0">
-                <button type="button" onClick={() => fileInputRef.current?.click()} className="w-10 h-10 flex items-center justify-center bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 rounded-full transition-colors" title="Adjuntar Archivo">
-                  <Paperclip className="w-5 h-5" />
+              <div className="flex items-center gap-1.5 pb-0.5 pl-1 shrink-0 relative">
+                <button type="button" onClick={() => setShowAttachMenu(!showAttachMenu)} className="w-10 h-10 flex items-center justify-center bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 rounded-full transition-colors z-50" title="Más opciones">
+                  <Plus className={`w-5 h-5 transition-transform duration-200 ${showAttachMenu ? "rotate-45" : ""}`} />
                 </button>
+
+                <AnimatePresence>
+                  {showAttachMenu && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setShowAttachMenu(false)} />
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        className="absolute bottom-12 left-0 z-50 w-56 bg-white dark:bg-slate-900 border border-gray-100 dark:border-white/10 rounded-2xl shadow-xl overflow-hidden p-1.5"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => { setShowAttachMenu(false); fileInputRef.current?.click(); }}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-[#1890FF] rounded-xl transition-colors text-left"
+                        >
+                          <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center text-gray-500 shrink-0">
+                            <Paperclip className="w-4 h-4" />
+                          </div>
+                          Subir archivo
+                        </button>
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
                 
                 <button 
                   type="button" 

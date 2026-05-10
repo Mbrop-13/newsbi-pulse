@@ -28,7 +28,6 @@ import {
 import { useAudioPlayerStore } from "@/lib/stores/audio-player-store";
 import { usePathname, useRouter } from "next/navigation";
 import { useFilterStore } from "@/lib/stores/filter-store";
-import { useSubscriptionStore } from "@/lib/stores/subscription-store";
 export function Navbar() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -60,7 +59,7 @@ export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const lastScrollY = useRef(0);
 
-  const { user, isAuthenticated, setUser } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
   const { isOpen: authModalOpen, view: authModalView, openModal, closeModal } = useAuthModalStore();
   const toggleAudioSidebar = useAudioPlayerStore((s) => s.toggleSidebar);
   const isAudioOpen = useAudioPlayerStore((s) => s.isOpen);
@@ -69,45 +68,7 @@ export function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
 
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        // Initial optimistic set
-        setUser({
-          id: session.user.id,
-          email: session.user.email || "",
-          name: session.user.user_metadata?.full_name || "Usuario",
-          avatar: session.user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(session.user.user_metadata?.full_name || "U")}&background=1890FF&color=fff`,
-        });
-
-        // Fetch actual tier and role
-        try {
-          const res = await fetch("/api/user/tier");
-          if (res.ok) {
-            const data = await res.json();
-            setUser({
-              id: session.user.id,
-              email: session.user.email || "",
-              name: session.user.user_metadata?.full_name || "Usuario",
-              avatar: session.user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(session.user.user_metadata?.full_name || "U")}&background=1890FF&color=fff`,
-              tier: data.tier,
-              role: data.role
-            });
-            
-            // Also sync tier to subscription store so usage indicators work
-            useSubscriptionStore.getState().setTier(data.tier);
-          }
-        } catch (error) {
-          console.error("Failed to fetch user tier:", error);
-        }
-
-      } else {
-        setUser(null);
-        useSubscriptionStore.getState().setTier("free");
-      }
-    });
-    return () => { subscription.unsubscribe(); };
-  }, [supabase, setUser]);
+  // Auth state is now managed globally by AuthSync component
 
   useEffect(() => {
     setMounted(true);

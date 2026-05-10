@@ -19,6 +19,7 @@ import { ResolvedBetsPopup } from "@/components/resolved-bet-popup";
 import { PromoPopup } from "@/components/promo-popup";
 import { RegisterCornerPopup } from "@/components/register-corner-popup";
 import { CapacitorInit } from "@/components/capacitor-init";
+import { AuthSync } from "@/components/auth-sync";
 
 import { useState, useEffect } from "react";
 export function ClientLayoutProviders({
@@ -44,6 +45,7 @@ export function ClientLayoutProviders({
   return (
     <ThemeProvider>
       <TooltipProvider>
+        <AuthSync />
         <div className="flex flex-col min-h-screen">
           {!isAdminPage && !isAssistantPage && (
             <div className={pathname === "/mundo" ? "hidden md:block" : ""}>

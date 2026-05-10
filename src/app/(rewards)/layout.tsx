@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Diamond, Gift } from "lucide-react";
+import { Diamond, Gift, Users } from "lucide-react";
 
 export default function RewardsLayout({
   children,
@@ -12,6 +12,7 @@ export default function RewardsLayout({
   const pathname = usePathname();
   const isMisDiamantes = pathname === "/mis-diamantes";
   const isRecompensas = pathname === "/recompensas";
+  const isReferidos = pathname === "/referidos";
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0B0E11] flex flex-col pt-20 font-sans overflow-x-hidden">
@@ -39,6 +40,17 @@ export default function RewardsLayout({
           >
             <Gift className="w-4 h-4" />
             Recompensas
+          </Link>
+          <Link
+            href="/referidos"
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all ${
+              isReferidos
+                ? 'bg-[#3B71F7] text-white shadow-lg shadow-blue-500/20'
+                : 'bg-gray-100 dark:bg-[#1E2329] text-gray-500 dark:text-gray-400'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            Amigos
           </Link>
         </div>
       </div>
@@ -68,6 +80,17 @@ export default function RewardsLayout({
             >
               <Gift className={`w-5 h-5 ${isRecompensas ? 'text-[#3B71F7]' : 'text-gray-400'}`} />
               Recompensas
+            </Link>
+            <Link
+              href="/referidos"
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all ${
+                isReferidos
+                  ? 'bg-blue-50 dark:bg-[#1A202C] text-[#3B71F7] shadow-sm'
+                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#1A202C]/40 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              <Users className={`w-5 h-5 ${isReferidos ? 'text-[#3B71F7]' : 'text-gray-400'}`} />
+              Invita Amigos
             </Link>
           </nav>
         </aside>

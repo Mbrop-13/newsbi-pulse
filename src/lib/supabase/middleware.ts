@@ -6,6 +6,15 @@ export async function updateSession(request: NextRequest) {
     request,
   })
 
+  // Capture referral code if present
+  const refCode = request.nextUrl.searchParams.get('ref');
+  if (refCode) {
+    supabaseResponse.cookies.set('reclu_ref_code', refCode, { 
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/'
+    });
+  }
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co",
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-key",

@@ -13,9 +13,11 @@ export interface User {
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
+  isLoaded: boolean;
   login: (userData: User) => void;
   logout: () => void;
   setUser: (user: User | null) => void;
+  setLoaded: (loaded: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -23,12 +25,15 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       isAuthenticated: false,
+      isLoaded: false,
       login: (userData) => set({ user: userData, isAuthenticated: true }),
       logout: () => set({ user: null, isAuthenticated: false }),
       setUser: (user) => set({ user, isAuthenticated: !!user }),
+      setLoaded: (loaded) => set({ isLoaded: loaded }),
     }),
     {
       name: 'auth-storage', // name of the item in the storage (must be unique)
+      partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
     }
   )
 );

@@ -51,7 +51,7 @@ export default function PortfolioClient() {
   const [alertModal, setAlertModal] = useState<{ open: boolean; symbol: string; price: number }>({ open: false, symbol: "", price: 0 });
   const [alertForm, setAlertForm] = useState<{ targetPrice: string; condition: "above" | "below" }>({ targetPrice: "", condition: "above" });
   const [alertSaving, setAlertSaving] = useState(false);
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated, isLoaded } = useAuthStore();
   const openModal = useAuthModalStore((s) => s.openModal);
   const supabase = createClient();
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -201,6 +201,14 @@ export default function PortfolioClient() {
 
   const totalValue = assets.reduce((sum, a) => sum + ((a.price || 0) * (a.shares || 0)), 0);
   const totalChange = assets.length > 0 ? assets.reduce((sum, a) => sum + (a.changePercent || 0), 0) / assets.length : 0;
+
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] pt-24 pb-16 px-4 flex flex-col items-center justify-center text-center">
+        <div className="w-8 h-8 rounded-full border-4 border-[#1890FF]/30 border-t-[#1890FF] animate-spin" />
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return (

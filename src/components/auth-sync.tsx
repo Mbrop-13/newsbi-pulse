@@ -15,6 +15,7 @@ import { useSubscriptionStore } from "@/lib/stores/subscription-store";
  */
 export function AuthSync() {
   const setUser = useAuthStore((s) => s.setUser);
+  const setLoaded = useAuthStore((s) => s.setLoaded);
   const supabase = createClient();
   const isFetching = useRef(false);
 
@@ -61,6 +62,7 @@ export function AuthSync() {
         console.error("[AuthSync] Failed to get session:", error);
       } finally {
         isFetching.current = false;
+        setLoaded(true);
       }
     };
 

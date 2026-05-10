@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, Sparkles, Loader2, ExternalLink, Paperclip, BarChart3, Newspaper, Bell, TrendingUp, X, Globe, History, Trash2, Plus, MessageSquare, PanelLeftClose, PanelLeft, Settings, Moon, Sun, Monitor, Type, Maximize, CheckCircle2, Mic } from "lucide-react";
+import { Send, Bot, Sparkles, Loader2, ExternalLink, Paperclip, BarChart3, Newspaper, Bell, TrendingUp, X, Globe, History, Trash2, Plus, MessageSquare, PanelLeftClose, PanelLeft, Settings, Moon, Sun, Monitor, Type, Maximize, CheckCircle2, Mic, Star, LineChart, PieChart, AreaChart, Target, Scale, Layers } from "lucide-react";
 import { useAIChatStore, ChatMessage, ToolResultUI } from "@/lib/stores/ai-chat-store";
 import { getPlanConfig, PlanTier } from "@/lib/plan-limits";
 import { createClient } from "@/lib/supabase/client";
@@ -18,6 +18,16 @@ import { StockAnalysisCard } from './stock-analysis-card';
 import { AIChartCard } from './ai-chart-card';
 import { PromptCarousel } from './prompt-carousel';
 
+const ADVANCED_TOOLS = [
+  { id: 'chart_bar', label: 'Gráfico de Barras', icon: BarChart3, category: 'Gráficos' },
+  { id: 'chart_line', label: 'Gráfico de Líneas', icon: LineChart, category: 'Gráficos' },
+  { id: 'chart_pie', label: 'Gráfico Circular', icon: PieChart, category: 'Gráficos' },
+  { id: 'chart_area', label: 'Gráfico de Área', icon: AreaChart, category: 'Gráficos' },
+  { id: 'chart_radar', label: 'Gráfico de Radar', icon: Target, category: 'Gráficos' },
+  { id: 'analyze_stock', label: 'Análisis Fundamental', icon: TrendingUp, category: 'Análisis' },
+  { id: 'compare_stocks', label: 'Comparar Acciones', icon: Scale, category: 'Análisis' },
+  { id: 'get_sector_performance', label: 'Rendimiento Sectorial', icon: Layers, category: 'Análisis' },
+];
 
 export function FullScreenChat() {
   const [mounted, setMounted] = useState(false);
@@ -43,7 +53,9 @@ function FullScreenChatInternal() {
     attachedArticles, attachedFiles, attachFile,
     webSearchEnabled, setWebSearch, clearMessages,
     savedChats, loadChat, deleteSavedChat,
-    cloudSyncEnabled, setCloudSync
+    cloudSyncEnabled, setCloudSync,
+    favoriteTools, toggleFavoriteTool,
+    activeTool, setActiveTool
   } = useAIChatStore();
   
   const [showUpsell, setShowUpsell] = useState(false);
@@ -58,8 +70,10 @@ function FullScreenChatInternal() {
       articles: attachedArticles,
       files: attachedFiles,
       webSearch: webSearchEnabled,
+      activeTool: activeTool,
     },
     onFinish: (message) => {
+      setActiveTool(null);
       // Keep store updated for persistence
       useAIChatStore.setState({ messages: [...useAIChatStore.getState().messages, { id: message.id, role: 'assistant', content: message.content, timestamp: new Date() }] });
       fetchRealUsage();
@@ -512,10 +526,26 @@ function FullScreenChatInternal() {
             <form onSubmit={(e) => { e.preventDefault(); sendMessage(); }} className="relative flex items-end gap-2 bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-700/50 rounded-3xl p-1.5 shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)] focus-within:ring-4 focus-within:ring-[#1890FF]/15 focus-within:border-[#1890FF]/50 transition-all">
               <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".txt,.md,.csv,.json,.ts" />
               
+              {/* Active Tool Pill */}
+              <AnimatePresence>
+                {activeTool && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    className="absolute -top-10 left-4 bg-gradient-to-r from-[#1890FF] to-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-2 shadow-[0_4px_15px_rgba(24,144,255,0.3)]"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-white" />
+                    Forzando: {ADVANCED_TOOLS.find(t => t.id === activeTool)?.label || "Herramienta"}
+                    <button type="button" onClick={() => setActiveTool(null)} className="ml-1 hover:text-white/70 transition-colors bg-white/20 rounded-full p-0.5"><X className="w-3 h-3" /></button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               {/* Left Actions */}
               <div className="flex items-center gap-1.5 pb-0.5 pl-1 shrink-0 relative">
-                <button type="button" onClick={() => setShowAttachMenu(!showAttachMenu)} className="w-10 h-10 flex items-center justify-center bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 rounded-full transition-colors z-50" title="Más opciones">
-                  <Plus className={`w-5 h-5 transition-transform duration-200 ${showAttachMenu ? "rotate-45" : ""}`} />
+                <button type="button" onClick={() => setShowAttachMenu(!showAttachMenu)} className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors z-50 ${showAttachMenu ? "bg-[#1890FF] text-white shadow-lg" : "bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500"}`} title="Más opciones">
+                  <Plus className={`w-5 h-5 transition-transform duration-300 ${showAttachMenu ? "rotate-45" : ""}`} />
                 </button>
 
                 <AnimatePresence>
@@ -526,18 +556,101 @@ function FullScreenChatInternal() {
                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="absolute bottom-12 left-0 z-50 w-56 bg-white dark:bg-slate-900 border border-gray-100 dark:border-white/10 rounded-2xl shadow-xl overflow-hidden p-1.5"
+                        className="absolute bottom-12 left-0 z-50 w-64 bg-white dark:bg-slate-900 border border-gray-100 dark:border-white/10 rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[350px]"
                       >
-                        <button
-                          type="button"
-                          onClick={() => { setShowAttachMenu(false); fileInputRef.current?.click(); }}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-[#1890FF] rounded-xl transition-colors text-left"
-                        >
-                          <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center text-gray-500 shrink-0">
-                            <Paperclip className="w-4 h-4" />
+                        <div className="flex-1 overflow-y-auto hidden-scrollbar p-2 space-y-3">
+                          
+                          {/* Archivos */}
+                          <div>
+                            <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Archivos</div>
+                            <button
+                              type="button"
+                              onClick={() => { setShowAttachMenu(false); fileInputRef.current?.click(); }}
+                              className="w-full flex items-center gap-3 px-2 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-[#1890FF] rounded-xl transition-colors text-left"
+                            >
+                              <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center text-gray-500 shrink-0">
+                                <Paperclip className="w-4 h-4" />
+                              </div>
+                              Subir archivo
+                            </button>
                           </div>
-                          Subir archivo
-                        </button>
+
+                          {/* Favoritos */}
+                          {favoriteTools.length > 0 && (
+                            <div>
+                              <div className="px-2 py-1 text-[10px] font-bold text-amber-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                                <Star className="w-3 h-3 fill-amber-500" /> Favoritos
+                              </div>
+                              <div className="space-y-0.5">
+                                {favoriteTools.map(id => {
+                                  const tool = ADVANCED_TOOLS.find(t => t.id === id);
+                                  if (!tool) return null;
+                                  const Icon = tool.icon;
+                                  return (
+                                    <div key={id} className="w-full flex items-center justify-between px-2 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl transition-colors group">
+                                      <button type="button" onClick={() => { setActiveTool(id); setShowAttachMenu(false); }} className="flex-1 flex items-center gap-3 text-left">
+                                        <div className="w-8 h-8 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                                          <Icon className="w-4 h-4" />
+                                        </div>
+                                        {tool.label}
+                                      </button>
+                                      <button type="button" onClick={(e) => { e.stopPropagation(); toggleFavoriteTool(id); }} className="p-1.5 text-amber-500">
+                                        <Star className="w-4 h-4 fill-amber-500" />
+                                      </button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Gráficos */}
+                          <div>
+                            <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Gráficos</div>
+                            <div className="space-y-0.5">
+                              {ADVANCED_TOOLS.filter(t => t.category === 'Gráficos' && !favoriteTools.includes(t.id)).map(tool => {
+                                const Icon = tool.icon;
+                                return (
+                                  <div key={tool.id} className="w-full flex items-center justify-between px-2 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl transition-colors group">
+                                    <button type="button" onClick={() => { setActiveTool(tool.id); setShowAttachMenu(false); }} className="flex-1 flex items-center gap-3 text-left">
+                                      <div className="w-8 h-8 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                                        <Icon className="w-4 h-4" />
+                                      </div>
+                                      {tool.label}
+                                    </button>
+                                    <button type="button" onClick={(e) => { e.stopPropagation(); toggleFavoriteTool(tool.id); }} className="p-1.5 text-gray-300 hover:text-amber-500 dark:text-gray-600 dark:hover:text-amber-500 opacity-0 group-hover:opacity-100 transition-all">
+                                      <Star className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Análisis */}
+                          <div>
+                            <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Análisis</div>
+                            <div className="space-y-0.5">
+                              {ADVANCED_TOOLS.filter(t => t.category === 'Análisis' && !favoriteTools.includes(t.id)).map(tool => {
+                                const Icon = tool.icon;
+                                return (
+                                  <div key={tool.id} className="w-full flex items-center justify-between px-2 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl transition-colors group">
+                                    <button type="button" onClick={() => { setActiveTool(tool.id); setShowAttachMenu(false); }} className="flex-1 flex items-center gap-3 text-left">
+                                      <div className="w-8 h-8 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                                        <Icon className="w-4 h-4" />
+                                      </div>
+                                      {tool.label}
+                                    </button>
+                                    <button type="button" onClick={(e) => { e.stopPropagation(); toggleFavoriteTool(tool.id); }} className="p-1.5 text-gray-300 hover:text-amber-500 dark:text-gray-600 dark:hover:text-amber-500 opacity-0 group-hover:opacity-100 transition-all">
+                                      <Star className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                        </div>
                       </motion.div>
                     </>
                   )}

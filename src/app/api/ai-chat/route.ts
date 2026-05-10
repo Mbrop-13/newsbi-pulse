@@ -34,7 +34,7 @@ NUNCA digas que eres de OpenAI, Anthropic o Google. Eres de Reclu.`;
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages, articles, files, webSearch } = await req.json();
+    const { messages, articles, files, webSearch, activeTool } = await req.json();
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(JSON.stringify({ error: "Messages are required" }), { status: 400 });
@@ -61,7 +61,20 @@ export async function POST(req: NextRequest) {
     // Inject dynamic context as first user message context (not in system prompt = keeps cache)
     const now = new Date();
     const chileTime = now.toLocaleString('es-CL', { timeZone: 'America/Santiago', dateStyle: 'full', timeStyle: 'short' });
-    const contextPrefix = `[Contexto: ${chileTime}]\n\n`;
+    let contextPrefix = `[Contexto: ${chileTime}]\n\n`;
+
+    if (activeTool) {
+      if (activeTool.startsWith('chart_')) {
+        const chartType = activeTool.split('_')[1];
+        contextPrefix += `[INSTRUCCIÓN ESTRICTA: El usuario ha solicitado explícitamente visualizar su respuesta con la herramienta render_chart usando un gráfico de tipo '${chartType}'. Analiza su consulta y DEBES llamar a render_chart con type='${chartType}'.]\n\n`;
+      } else if (activeTool === 'analyze_stock') {
+        contextPrefix += `[INSTRUCCIÓN ESTRICTA: El usuario ha activado el 'Análisis Fundamental'. Si la pregunta involucra una acción o empresa, DEBES priorizar llamar a la herramienta analyze_stock.]\n\n`;
+      } else if (activeTool === 'compare_stocks') {
+        contextPrefix += `[INSTRUCCIÓN ESTRICTA: El usuario ha activado 'Comparación de Acciones'. Si menciona múltiples empresas, DEBES llamar a compare_stocks.]\n\n`;
+      } else if (activeTool === 'get_sector_performance') {
+        contextPrefix += `[INSTRUCCIÓN ESTRICTA: El usuario ha activado 'Rendimiento por Sector'. DEBES llamar a get_sector_performance para responder.]\n\n`;
+      }
+    }
 
     const processedMessages = messages.map((m: any, i: number) => ({
       role: m.role,

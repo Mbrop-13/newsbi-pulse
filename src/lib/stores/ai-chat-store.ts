@@ -54,6 +54,9 @@ interface AIChatStore {
   savedChats: SavedChat[];
   cloudSyncEnabled: boolean;
   
+  activeTool: string | null;
+  favoriteTools: string[];
+  
   toggle: () => void;
   open: () => void;
   close: () => void;
@@ -62,6 +65,8 @@ interface AIChatStore {
   setWebSearch: (val: boolean) => void;
   setCloudSync: (val: boolean) => void;
   clearMessages: () => void;
+  setActiveTool: (toolId: string | null) => void;
+  toggleFavoriteTool: (toolId: string) => void;
   attachArticle: (article: AttachedArticle) => void;
   removeArticle: (id: string) => void;
   clearArticles: () => void;
@@ -88,6 +93,8 @@ export const useAIChatStore = create<AIChatStore>()(
       attachedFiles: [],
       savedChats: [],
       cloudSyncEnabled: false,
+      activeTool: null,
+      favoriteTools: [],
       
       toggle: () => set((s) => ({ isOpen: !s.isOpen })),
       open: () => set({ isOpen: true }),
@@ -105,6 +112,15 @@ export const useAIChatStore = create<AIChatStore>()(
         set({ cloudSyncEnabled: val });
         if (val) {
           get().fetchCloudChats();
+        }
+      },
+      setActiveTool: (toolId) => set({ activeTool: toolId }),
+      toggleFavoriteTool: (toolId) => {
+        const { favoriteTools } = get();
+        if (favoriteTools.includes(toolId)) {
+          set({ favoriteTools: favoriteTools.filter(id => id !== toolId) });
+        } else {
+          set({ favoriteTools: [...favoriteTools, toolId] });
         }
       },
       
@@ -243,7 +259,8 @@ export const useAIChatStore = create<AIChatStore>()(
       name: "r-ai-chat-history",
       partialize: (state) => ({ 
         savedChats: state.savedChats, 
-        cloudSyncEnabled: state.cloudSyncEnabled 
+        cloudSyncEnabled: state.cloudSyncEnabled,
+        favoriteTools: state.favoriteTools
       }),
     }
   )

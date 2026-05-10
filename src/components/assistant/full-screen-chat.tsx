@@ -300,7 +300,7 @@ function FullScreenChatInternal() {
             animate={{ width: 280, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
             transition={{ type: "spring", stiffness: 400, damping: 30 }}
-            className="h-full border-r border-gray-100 dark:border-white/5 bg-[#FAFAFA] dark:bg-[#0F1117] flex flex-col flex-shrink-0 absolute md:relative z-30 shadow-2xl md:shadow-none overflow-hidden"
+            className="h-full border-r border-gray-100 dark:border-white/5 bg-[#FAFAFA] dark:bg-[#0F1117] flex flex-col flex-shrink-0 absolute md:relative z-50 shadow-2xl md:shadow-none overflow-hidden"
           >
             <div className="w-[280px] h-full flex flex-col">
             <div className="p-4 flex flex-col gap-2">
@@ -407,7 +407,7 @@ function FullScreenChatInternal() {
 
         {/* Close Sidebar Mobile Overlay */}
         {isSidebarOpen && (
-          <div className="md:hidden absolute inset-0 bg-black/40 backdrop-blur-sm z-10" onClick={() => setIsSidebarOpen(false)} />
+          <div className="md:hidden absolute inset-0 bg-black/40 backdrop-blur-sm z-40" onClick={() => setIsSidebarOpen(false)} />
         )}
 
         {/* Chat Messages */}
@@ -578,7 +578,7 @@ function FullScreenChatInternal() {
         </div>
 
         {/* ─── PREMIUM INPUT BAR (REPOSITIONED) ─── */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-white via-white/90 to-transparent dark:from-[#0a0a0a] dark:via-[#0a0a0a]/90 pt-8 pb-1 px-4 md:px-8 pointer-events-none">
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-white via-white/90 to-transparent dark:from-[#0a0a0a] dark:via-[#0a0a0a]/90 pt-8 pb-1 px-4 md:px-8 pointer-events-none z-30">
           <div className={`${maxWClass} mx-auto w-full relative pointer-events-auto transition-all duration-300`}>
             
             <form onSubmit={(e) => { e.preventDefault(); sendMessage(); }} className="relative flex items-end gap-2 bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-700/50 rounded-3xl p-1.5 shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)] focus-within:ring-4 focus-within:ring-[#1890FF]/15 focus-within:border-[#1890FF]/50 transition-all">
@@ -602,19 +602,19 @@ function FullScreenChatInternal() {
 
               {/* Left Actions */}
               <div className="flex items-center gap-1.5 pb-0.5 pl-1 shrink-0 relative">
-                <button type="button" onClick={() => setShowAttachMenu(!showAttachMenu)} className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors z-50 ${showAttachMenu ? "bg-[#1890FF] text-white shadow-lg" : "bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500"}`} title="Más opciones">
+                <button type="button" onClick={() => setShowAttachMenu(!showAttachMenu)} className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors z-30 ${showAttachMenu ? "bg-[#1890FF] text-white shadow-lg" : "bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500"}`} title="Más opciones">
                   <Plus className={`w-5 h-5 transition-transform duration-300 ${showAttachMenu ? "rotate-45" : ""}`} />
                 </button>
 
                 <AnimatePresence>
                   {showAttachMenu && (
                     <>
-                      <div className="fixed inset-0 z-40" onClick={() => setShowAttachMenu(false)} />
+                      <div className="fixed inset-0 z-20" onClick={() => setShowAttachMenu(false)} />
                       <motion.div
                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="absolute bottom-12 left-0 z-50 w-64 bg-white dark:bg-slate-900 border border-gray-100 dark:border-white/10 rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[350px]"
+                        className="absolute bottom-12 left-0 z-40 w-64 bg-white dark:bg-slate-900 border border-gray-100 dark:border-white/10 rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[350px]"
                       >
                         <div className="flex-1 overflow-y-auto hidden-scrollbar p-2 space-y-3">
                           

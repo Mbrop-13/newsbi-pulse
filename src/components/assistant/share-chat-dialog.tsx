@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Copy, Download, Share2, Sparkles, Image as ImageIcon, Twitter } from "lucide-react";
+import { X, Copy, Download, Share2, Sparkles, Image as ImageIcon, Twitter, Link as LinkIcon, Loader2 } from "lucide-react";
 import * as htmlToImage from "html-to-image";
 import ReactMarkdown from "react-markdown";
 
@@ -16,7 +16,9 @@ interface ShareChatDialogProps {
 export function ShareChatDialog({ isOpen, onClose, question, answer }: ShareChatDialogProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   const [copiedText, setCopiedText] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   const cleanAnswer = answer.length > 500 ? answer.substring(0, 500) + "..." : answer;
 
@@ -67,6 +69,33 @@ export function ShareChatDialog({ isOpen, onClose, question, answer }: ShareChat
     const textToShare = `💡 Pregunta:\n${question}\n\n🤖 Reclu AI:\n${cleanAnswer}\n\n✨ Generado por Reclu`;
     const url = `https://wa.me/?text=${encodeURIComponent(textToShare)}`;
     window.open(url, '_blank');
+  };
+
+  const handleGenerateLink = async () => {
+    setIsGeneratingLink(true);
+    try {
+      const res = await fetch("/api/share-chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question, answer }),
+      });
+      
+      if (!res.ok) {
+        throw new Error("Failed to generate link");
+      }
+      
+      const { id } = await res.json();
+      const shareUrl = `${window.location.origin}/share/chat/${id}`;
+      
+      await navigator.clipboard.writeText(shareUrl);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 3000);
+    } catch (err) {
+      console.error(err);
+      alert("Error al generar el enlace.");
+    } finally {
+      setIsGeneratingLink(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -143,30 +172,37 @@ export function ShareChatDialog({ isOpen, onClose, question, answer }: ShareChat
             </div>
 
             {/* Actions */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 mt-4">
+              <button
+                onClick={handleGenerateLink}
+                disabled={isGeneratingLink}
+                className="col-span-2 flex items-center justify-center gap-2 py-3 px-4 bg-[#1890FF] text-white rounded-xl font-bold text-sm hover:bg-blue-600 transition-colors shadow-lg shadow-[#1890FF]/20"
+              >
+                {isGeneratingLink ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : copiedLink ? (
+                  <Sparkles className="w-4 h-4 text-amber-300" />
+                ) : (
+                  <LinkIcon className="w-4 h-4" />
+                )}
+                {copiedLink ? "¡Enlace Copiado!" : "Generar y Copiar Enlace"}
+              </button>
+
               <button
                 onClick={handleDownload}
                 disabled={isGenerating}
-                className="flex items-center justify-center gap-2 py-3 px-4 bg-gray-900 dark:bg-white text-white dark:text-black rounded-xl font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+                className="flex items-center justify-center gap-2 py-2.5 px-4 bg-gray-900 dark:bg-white text-white dark:text-black rounded-xl font-semibold text-xs hover:opacity-90 transition-opacity disabled:opacity-50"
               >
-                {isGenerating ? <div className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" /> : <Download className="w-4 h-4" />}
-                Guardar Imagen
+                {isGenerating ? <div className="w-3.5 h-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                Descargar Imagen
               </button>
 
               <button
                 onClick={handleCopyText}
-                className="flex items-center justify-center gap-2 py-3 px-4 bg-gray-200 dark:bg-white/10 text-gray-900 dark:text-white rounded-xl font-bold text-sm hover:bg-gray-300 dark:hover:bg-white/20 transition-colors"
+                className="flex items-center justify-center gap-2 py-2.5 px-4 bg-gray-200 dark:bg-white/10 text-gray-900 dark:text-white rounded-xl font-semibold text-xs hover:bg-gray-300 dark:hover:bg-white/20 transition-colors"
               >
-                {copiedText ? <Sparkles className="w-4 h-4 text-amber-500" /> : <Copy className="w-4 h-4" />}
+                {copiedText ? <Sparkles className="w-3.5 h-3.5 text-amber-500" /> : <Copy className="w-3.5 h-3.5" />}
                 {copiedText ? "¡Copiado!" : "Copiar Texto"}
-              </button>
-
-              <button
-                onClick={shareToTwitter}
-                className="col-span-2 flex items-center justify-center gap-2 py-3 px-4 bg-[#000000] dark:bg-[#1DA1F2] text-white rounded-xl font-bold text-sm hover:opacity-90 transition-opacity"
-              >
-                <Twitter className="w-4 h-4" />
-                Compartir en X
               </button>
             </div>
           </div>

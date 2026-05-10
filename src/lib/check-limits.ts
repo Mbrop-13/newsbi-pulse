@@ -33,12 +33,24 @@ export async function getUserTier(userId: string): Promise<PlanTier> {
 
   const { data } = await supabase
     .from("subscriptions")
-    .select("tier, status")
+    .select("tier, status, current_period_end")
     .eq("user_id", userId)
     .maybeSingle();
   
   if (!data || data.status === "expired" || data.status === "canceled") {
     return "free";
+  }
+
+  // Comprobación profesional estricta: verificar si el periodo de pago expiró
+  // Damos 3 días de gracia (72 horas) para compensar demoras en webhooks o reintentos de pago
+  if (data.current_period_end) {
+    const periodEnd = new Date(data.current_period_end);
+    periodEnd.setDate(periodEnd.getDate() + 3); // +3 días de gracia
+    
+    if (new Date() > periodEnd) {
+      // Expirado
+      return "free";
+    }
   }
   
   return (data.tier as PlanTier) || "free";

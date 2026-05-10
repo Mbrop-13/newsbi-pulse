@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, Sparkles, Loader2, ExternalLink, Paperclip, BarChart3, Newspaper, Bell, TrendingUp, X, Globe, History, Trash2, Plus, MessageSquare, PanelLeftClose, PanelLeft, Settings, Moon, Sun, Monitor, Type, Maximize, CheckCircle2, Mic, Star, LineChart, PieChart, AreaChart, Target, Scale, Layers } from "lucide-react";
+import { Send, Bot, Sparkles, Loader2, ExternalLink, Paperclip, BarChart3, Newspaper, Bell, TrendingUp, X, Globe, History, Trash2, Plus, MessageSquare, PanelLeftClose, PanelLeft, Settings, Moon, Sun, Monitor, Type, Maximize, CheckCircle2, Mic, Star, LineChart, PieChart, AreaChart, Target, Scale, Layers, ThumbsUp, ThumbsDown, RefreshCw, Share2 } from "lucide-react";
 import { useAIChatStore, ChatMessage, ToolResultUI } from "@/lib/stores/ai-chat-store";
 import { getPlanConfig, PlanTier } from "@/lib/plan-limits";
 import { createClient } from "@/lib/supabase/client";
@@ -17,6 +17,7 @@ import { PortfolioSummaryCard } from './portfolio-summary-card';
 import { StockAnalysisCard } from './stock-analysis-card';
 import { AIChartCard } from './ai-chart-card';
 import { PromptCarousel } from './prompt-carousel';
+import { ShareChatDialog } from './share-chat-dialog';
 
 const ADVANCED_TOOLS = [
   { id: 'chart_bar', label: 'Gráfico de Barras', icon: BarChart3, category: 'Gráficos' },
@@ -55,7 +56,8 @@ function FullScreenChatInternal() {
     savedChats, loadChat, deleteSavedChat,
     cloudSyncEnabled, setCloudSync,
     favoriteTools, toggleFavoriteTool,
-    activeTool, setActiveTool
+    activeTool, setActiveTool,
+    messageFeedback, setFeedback
   } = useAIChatStore();
   
   const [showUpsell, setShowUpsell] = useState(false);
@@ -63,8 +65,9 @@ function FullScreenChatInternal() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [realUsageCount, setRealUsageCount] = useState(0);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [shareDialog, setShareDialog] = useState({ isOpen: false, question: "", answer: "" });
 
-  const { messages: aiMessages, input, handleInputChange, handleSubmit, setMessages: setAiMessages, append, isLoading: aiLoading, setInput } = useChat({
+  const { messages: aiMessages, input, handleInputChange, handleSubmit, setMessages: setAiMessages, append, isLoading: aiLoading, setInput, reload } = useChat({
     api: "/api/ai-chat",
     body: {
       articles: attachedArticles,
@@ -501,6 +504,61 @@ function FullScreenChatInternal() {
                             </div>
                           </div>
                         )}
+
+                        {/* Action Bar (Below message) */}
+                        <div className="flex items-center gap-1.5 mt-3 pt-2">
+                          {/* Share Button */}
+                          <button 
+                            onClick={() => {
+                              // Find previous user message
+                              const msgIndex = aiMessages.findIndex(m => m.id === msg.id);
+                              const prevUserMsg = aiMessages.slice(0, msgIndex).reverse().find(m => m.role === 'user');
+                              setShareDialog({ 
+                                isOpen: true, 
+                                question: prevUserMsg ? prevUserMsg.content : "Pregunta sobre inteligencia financiera...", 
+                                answer: msg.content 
+                              });
+                            }}
+                            className="p-1.5 text-gray-400 hover:text-[#1890FF] hover:bg-[#1890FF]/10 rounded-lg transition-colors flex items-center gap-1.5"
+                            title="Compartir"
+                          >
+                            <Share2 className="w-4 h-4" />
+                          </button>
+
+                          <div className="w-px h-4 bg-gray-200 dark:bg-gray-700/50 mx-1" />
+
+                          {/* Like */}
+                          <button 
+                            onClick={() => setFeedback(msg.id, messageFeedback[msg.id] === 'like' ? null : 'like')}
+                            className={`p-1.5 rounded-lg transition-colors ${messageFeedback[msg.id] === 'like' ? "text-green-500 bg-green-500/10" : "text-gray-400 hover:text-green-500 hover:bg-green-500/10"}`}
+                            title="Buena respuesta"
+                          >
+                            <ThumbsUp className={`w-4 h-4 ${messageFeedback[msg.id] === 'like' ? "fill-current" : ""}`} />
+                          </button>
+                          
+                          {/* Dislike */}
+                          <button 
+                            onClick={() => setFeedback(msg.id, messageFeedback[msg.id] === 'dislike' ? null : 'dislike')}
+                            className={`p-1.5 rounded-lg transition-colors ${messageFeedback[msg.id] === 'dislike' ? "text-red-500 bg-red-500/10" : "text-gray-400 hover:text-red-500 hover:bg-red-500/10"}`}
+                            title="Mala respuesta"
+                          >
+                            <ThumbsDown className={`w-4 h-4 ${messageFeedback[msg.id] === 'dislike' ? "fill-current" : ""}`} />
+                          </button>
+
+                          {/* Regenerate (Only on last AI message) */}
+                          {msg.id === aiMessages.filter(m => m.role === 'assistant').pop()?.id && !aiLoading && (
+                            <>
+                              <div className="w-px h-4 bg-gray-200 dark:bg-gray-700/50 mx-1" />
+                              <button 
+                                onClick={() => reload()}
+                                className="p-1.5 text-gray-400 hover:text-indigo-500 hover:bg-indigo-500/10 rounded-lg transition-colors flex items-center gap-1.5"
+                                title="Regenerar respuesta"
+                              >
+                                <RefreshCw className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -870,6 +928,14 @@ function FullScreenChatInternal() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Share Dialog */}
+      <ShareChatDialog 
+        isOpen={shareDialog.isOpen} 
+        onClose={() => setShareDialog({ ...shareDialog, isOpen: false })}
+        question={shareDialog.question}
+        answer={shareDialog.answer}
+      />
     </div>
   );
 }

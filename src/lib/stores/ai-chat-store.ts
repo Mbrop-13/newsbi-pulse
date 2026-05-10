@@ -57,6 +57,8 @@ interface AIChatStore {
   activeTool: string | null;
   favoriteTools: string[];
   
+  messageFeedback: Record<string, 'like' | 'dislike'>;
+
   toggle: () => void;
   open: () => void;
   close: () => void;
@@ -67,6 +69,7 @@ interface AIChatStore {
   clearMessages: () => void;
   setActiveTool: (toolId: string | null) => void;
   toggleFavoriteTool: (toolId: string) => void;
+  setFeedback: (messageId: string, feedback: 'like' | 'dislike' | null) => void;
   attachArticle: (article: AttachedArticle) => void;
   removeArticle: (id: string) => void;
   clearArticles: () => void;
@@ -95,6 +98,7 @@ export const useAIChatStore = create<AIChatStore>()(
       cloudSyncEnabled: false,
       activeTool: null,
       favoriteTools: [],
+      messageFeedback: {},
       
       toggle: () => set((s) => ({ isOpen: !s.isOpen })),
       open: () => set({ isOpen: true }),
@@ -123,6 +127,15 @@ export const useAIChatStore = create<AIChatStore>()(
           set({ favoriteTools: [...favoriteTools, toolId] });
         }
       },
+      setFeedback: (messageId, feedback) => set((state) => {
+        const newFeedback = { ...state.messageFeedback };
+        if (feedback === null) {
+          delete newFeedback[messageId];
+        } else {
+          newFeedback[messageId] = feedback;
+        }
+        return { messageFeedback: newFeedback };
+      }),
       
       fetchCloudChats: async () => {
         const { cloudSyncEnabled } = get();
@@ -260,7 +273,8 @@ export const useAIChatStore = create<AIChatStore>()(
       partialize: (state) => ({ 
         savedChats: state.savedChats, 
         cloudSyncEnabled: state.cloudSyncEnabled,
-        favoriteTools: state.favoriteTools
+        favoriteTools: state.favoriteTools,
+        messageFeedback: state.messageFeedback
       }),
     }
   )

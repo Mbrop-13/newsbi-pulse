@@ -1,88 +1,100 @@
 import { NextRequest, NextResponse } from "next/server";
-import { MercadoPagoConfig, Preference } from "mercadopago";
 import { createClient } from "@supabase/supabase-js";
-import { PLAN_CONFIGS, getAnnualMonthlyPrice, type PlanTier } from "@/lib/plan-limits";
+import { PLAN_CONFIGS, type PlanTier } from "@/lib/plan-limits";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+const ACCESS_TOKEN = process.env.MERCADOPAGO_ACCESS_TOKEN!;
+
+// Map plan tier to Mercado Pago preapproval_plan IDs
+const PLAN_IDS: Record<string, string> = {
+  pro: process.env.MERCADOPAGO_PLAN_PRO_ID || "",
+  max: process.env.MERCADOPAGO_PLAN_MAX_ID || "",
+  ultra: process.env.MERCADOPAGO_PLAN_ULTRA_ID || "",
+};
+
 export async function POST(request: NextRequest) {
   try {
-    const { plan, billing } = await request.json() as { plan: PlanTier; billing: "monthly" | "annual" };
+    const { plan } = await request.json() as { plan: PlanTier };
 
     // Validate plan
     const planConfig = PLAN_CONFIGS[plan];
-    if (!planConfig || planConfig.price === 0) {
+    if (!planConfig || planConfig.price === 0 || !PLAN_IDS[plan]) {
       return NextResponse.json({ error: "Plan inválido" }, { status: 400 });
     }
 
-    // Get authenticated user
-    const authHeader = request.headers.get("cookie") || "";
-    const { data: { user } } = await supabase.auth.getUser(
-      // Extract token from cookie if available
-      request.headers.get("authorization")?.replace("Bearer ", "") || undefined
-    );
+    // Get authenticated user from Supabase cookie
+    const authHeader = request.headers.get("authorization");
+    let user = null;
+
+    if (authHeader) {
+      const { data } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
+      user = data.user;
+    }
+
+    // Also try cookie-based auth
+    if (!user) {
+      const cookieHeader = request.headers.get("cookie") || "";
+      const sbAccessToken = cookieHeader
+        .split(";")
+        .map(c => c.trim())
+        .find(c => c.startsWith("sb-") && c.includes("-auth-token"));
+      
+      if (sbAccessToken) {
+        const tokenValue = decodeURIComponent(sbAccessToken.split("=").slice(1).join("="));
+        try {
+          const parsed = JSON.parse(tokenValue);
+          const accessToken = parsed?.[0] || parsed?.access_token;
+          if (accessToken) {
+            const { data } = await supabase.auth.getUser(accessToken);
+            user = data.user;
+          }
+        } catch {}
+      }
+    }
 
     if (!user) {
       return NextResponse.json({ error: "No autenticado" }, { status: 401 });
     }
 
-    // Calculate price
-    const monthlyPrice = billing === "annual" 
-      ? getAnnualMonthlyPrice(plan)
-      : planConfig.price;
-    
-    const totalPrice = billing === "annual" ? monthlyPrice * 12 : monthlyPrice;
-
-    // Create MercadoPago preference
-    const client = new MercadoPagoConfig({ 
-      accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN!
-    });
-
-    const preference = new Preference(client);
-
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://reclu.cl";
 
-    const result = await preference.create({
-      body: {
-        items: [
-          {
-            id: `reclu-${plan}-${billing}`,
-            title: `Reclu ${planConfig.name} — ${billing === "annual" ? "Anual" : "Mensual"}`,
-            description: `Suscripción ${planConfig.name} de Reclu. ${billing === "annual" ? "Pago anual con 20% de descuento." : "Pago mensual."}`,
-            quantity: 1,
-            unit_price: totalPrice,
-            currency_id: "CLP",
-          },
-        ],
-        payer: {
-          email: user.email || "",
-        },
-        back_urls: {
-          success: `${siteUrl}/suscripcion?status=success&plan=${plan}`,
-          failure: `${siteUrl}/suscripcion?status=failure`,
-          pending: `${siteUrl}/suscripcion?status=pending`,
-        },
-        auto_return: "approved",
-        notification_url: `${siteUrl}/api/webhooks/mercadopago`,
-        external_reference: JSON.stringify({
-          user_id: user.id,
-          plan,
-          billing,
-        }),
-        statement_descriptor: "RECLU",
-        metadata: {
-          user_id: user.id,
-          user_email: user.email,
-          plan_name: planConfig.name,
-          billing_cycle: billing,
-        },
+    // Create a preapproval (subscription) using the plan
+    const body = {
+      preapproval_plan_id: PLAN_IDS[plan],
+      payer_email: user.email,
+      external_reference: JSON.stringify({
+        user_id: user.id,
+        plan,
+      }),
+      back_url: `${siteUrl}/suscripcion?status=success&plan=${plan}`,
+    };
+
+    const res = await fetch("https://api.mercadopago.com/preapproval", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${ACCESS_TOKEN}`,
       },
+      body: JSON.stringify(body),
     });
 
-    return NextResponse.json({ url: result.init_point });
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error("[Checkout] MP Preapproval error:", res.status, errText);
+      return NextResponse.json(
+        { error: "Error al crear suscripción", details: errText },
+        { status: 500 }
+      );
+    }
+
+    const data = await res.json();
+
+    // data.init_point is the URL where the user enters payment details
+    return NextResponse.json({ url: data.init_point });
   } catch (error: any) {
     console.error("[Checkout] Error:", error);
     return NextResponse.json(

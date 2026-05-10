@@ -123,8 +123,8 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
   max: {
     id: "max",
     name: "Max",
-    price: 49990,
-    priceUSD: 54.99,
+    price: 44990,
+    priceUSD: 49.99,
     annualDiscount: 0.2,
     
     aiMessagesPerMonth: 300,

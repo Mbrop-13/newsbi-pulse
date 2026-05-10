@@ -220,20 +220,25 @@ export default function SuscripcionesPage() {
   const handleSelectPlan = async (planId: PlanTier) => {
     if (planId === "free" || planId === currentTier) return;
     
-    // Redirect to MercadoPago checkout
+    // Redirect to MercadoPago subscription checkout
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: planId, billing: billingCycle }),
+        body: JSON.stringify({ plan: planId }),
       });
       
       if (res.ok) {
         const { url } = await res.json();
         if (url) window.location.href = url;
+      } else {
+        const err = await res.json();
+        console.error("Checkout error:", err);
+        alert("Error al iniciar el pago. Intenta de nuevo.");
       }
     } catch (err) {
       console.error("Checkout error:", err);
+      alert("Error de conexión. Intenta de nuevo.");
     }
   };
 

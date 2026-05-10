@@ -135,14 +135,7 @@ export function PromptCarousel({ onSend }: PromptCarouselProps) {
     .filter(Boolean) as PromptItem[];
 
   return (
-    <div className="flex flex-col items-center justify-center w-full mt-4 md:mt-16 mb-6 md:mb-10 select-none">
-      {/* ── Logo ── */}
-      <div className="relative mb-5 md:mb-7">
-        <div className="absolute inset-0 bg-[#1890FF] blur-3xl opacity-15 rounded-full scale-150" />
-        <div className="relative w-14 h-14 md:w-[4.5rem] md:h-[4.5rem] bg-gradient-to-br from-[#1890FF] to-indigo-600 rounded-2xl md:rounded-[1.6rem] flex items-center justify-center shadow-2xl ring-4 ring-white/80 dark:ring-[#0B0F1A]/80">
-          <Sparkles className="w-7 h-7 md:w-9 md:h-9 text-white" />
-        </div>
-      </div>
+    <div className="flex flex-col items-center justify-center w-full mt-12 md:mt-28 mb-6 md:mb-10 select-none">
 
       {/* ── Rotating Greeting ── */}
       <div className="h-10 md:h-12 flex items-center justify-center mb-1 overflow-hidden">
@@ -252,8 +245,10 @@ function ScrollingRow({ items, direction, favorites, onSend, onPointerDown, onPo
     el.scrollLeft = singleWidth;
 
     const animate = () => {
-      if (!isPaused && el) {
-        el.scrollLeft += speedRef.current;
+      if (el) {
+        if (!isPaused) {
+          el.scrollLeft += speedRef.current;
+        }
 
         // Seamless loop: jump back when we've scrolled past one full set
         if (el.scrollLeft >= singleWidth * 2) {
@@ -272,7 +267,7 @@ function ScrollingRow({ items, direction, favorites, onSend, onPointerDown, onPo
   return (
     <div
       ref={scrollRef}
-      className="flex gap-2.5 overflow-x-auto hidden-scrollbar px-4 py-1"
+      className="flex gap-2.5 overflow-x-auto px-4 py-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
       style={{ scrollBehavior: "auto" }}
       onPointerEnter={() => setIsPaused(true)}
       onPointerLeave={() => { setIsPaused(false); onPointerUp(); }}

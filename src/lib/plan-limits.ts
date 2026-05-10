@@ -88,8 +88,8 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
   pro: {
     id: "pro",
     name: "Pro",
-    price: 9990,
-    priceUSD: 11.99,
+    price: 22990,
+    priceUSD: 24.99,
     annualDiscount: 0.2,
     
     aiMessagesPerMonth: 100,
@@ -123,8 +123,8 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
   max: {
     id: "max",
     name: "Max",
-    price: 19990,
-    priceUSD: 23.99,
+    price: 49990,
+    priceUSD: 54.99,
     annualDiscount: 0.2,
     
     aiMessagesPerMonth: 300,
@@ -158,8 +158,8 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
   ultra: {
     id: "ultra",
     name: "Ultra",
-    price: 34990,
-    priceUSD: 37.99,
+    price: 79990,
+    priceUSD: 89.99,
     annualDiscount: 0.2,
     
     aiMessagesPerMonth: 600,

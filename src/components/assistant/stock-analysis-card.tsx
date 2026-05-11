@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BarChart3, ChevronDown, TrendingUp, TrendingDown, ExternalLink, Activity, DollarSign, Shield, Layers } from 'lucide-react';
+import { BarChart3, ChevronDown, TrendingUp, TrendingDown, ExternalLink, Activity, DollarSign, Shield, Layers, Plus, Check, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
 
 function getLogoUrl(symbol: string): string {
   return `https://assets.parqet.com/logos/symbol/${symbol}`;
@@ -37,6 +38,58 @@ interface StockAnalysisCardProps {
 
 export function StockAnalysisCard({ toolName, result }: StockAnalysisCardProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [inPortfolio, setInPortfolio] = useState<Record<string, boolean>>({});
+  const [addingAsset, setAddingAsset] = useState<Record<string, boolean>>({});
+
+  // Check if stocks are in portfolio on mount
+  useEffect(() => {
+    const checkPortfolio = async () => {
+      if (!result || result.error) return;
+      
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const symbolsToCheck: string[] = [];
+      if (toolName === 'analyze_stock' && result.symbol) symbolsToCheck.push(result.symbol);
+      if (toolName === 'compare_stocks' && result.comparison) {
+        result.comparison.forEach((s: any) => { if (!s.error) symbolsToCheck.push(s.symbol); });
+      }
+
+      if (symbolsToCheck.length > 0) {
+        const { data } = await supabase.from('portfolios').select('symbol').eq('user_id', user.id).in('symbol', symbolsToCheck);
+        if (data) {
+          const inPort: Record<string, boolean> = {};
+          data.forEach(p => { inPort[p.symbol] = true; });
+          setInPortfolio(inPort);
+        }
+      }
+    };
+    checkPortfolio();
+  }, [result, toolName]);
+
+  const handleAddToPortfolio = async (e: React.MouseEvent, symbol: string, companyName: string) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (addingAsset[symbol]) return;
+    
+    setAddingAsset(prev => ({ ...prev, [symbol]: true }));
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (user) {
+      const { error } = await supabase.from('portfolios').insert({
+        user_id: user.id,
+        symbol,
+        company_name: companyName
+      });
+      
+      if (!error) {
+        setInPortfolio(prev => ({ ...prev, [symbol]: true }));
+      }
+    }
+    setAddingAsset(prev => ({ ...prev, [symbol]: false }));
+  };
 
   if (!result || result.error) {
     if (result?.error) {
@@ -114,10 +167,27 @@ export function StockAnalysisCard({ toolName, result }: StockAnalysisCardProps) 
                     <div className="text-center"><p className="text-[10px] text-gray-400">52w Low</p><p className="text-xs font-bold text-gray-900 dark:text-white">${risk?.fifty_two_week_low?.toFixed(2) || 'N/A'}</p></div>
                   </div>
                 </div>
-                {/* Link to market page */}
-                <Link href={`/mercados/${symbol}`} className="flex items-center justify-center gap-2 px-4 py-3 bg-[#1890FF]/5 text-[#1890FF] text-xs font-bold hover:bg-[#1890FF]/10 transition-colors border-t border-gray-100 dark:border-white/5">
-                  <BarChart3 className="w-3.5 h-3.5" /> Ver gráfico en Mercados <ExternalLink className="w-3 h-3" />
-                </Link>
+                {/* Link to market page & Add to portfolio */}
+                <div className="flex items-center gap-2 px-4 py-3 border-t border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-[#141821]/50">
+                  <Link href={`/mercados/${symbol}`} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gray-200 dark:bg-white/5 text-gray-900 dark:text-white text-xs font-bold hover:bg-gray-300 dark:hover:bg-white/10 transition-colors">
+                    <BarChart3 className="w-3.5 h-3.5" /> Ver Mercado
+                  </Link>
+                  
+                  {inPortfolio[symbol] ? (
+                    <div className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-green-500/10 text-green-600 dark:text-green-400 text-xs font-bold border border-green-500/20">
+                      <Check className="w-3.5 h-3.5" /> En tu portafolio
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={(e) => handleAddToPortfolio(e, symbol, company_name)}
+                      disabled={addingAsset[symbol]}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#1890FF] text-white text-xs font-bold hover:opacity-90 disabled:opacity-50 transition-all shadow-lg shadow-[#1890FF]/20"
+                    >
+                      {addingAsset[symbol] ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                      {addingAsset[symbol] ? 'Agregando...' : 'Agregar al portafolio'}
+                    </button>
+                  )}
+                </div>
               </div>
             </motion.div>
           )}
@@ -173,12 +243,29 @@ export function StockAnalysisCard({ toolName, result }: StockAnalysisCardProps) 
                             <span className="text-[10px] text-gray-400">ROE: {formatNum(stock.roe)}</span>
                           </div>
                         </div>
-                        <div className="text-right shrink-0">
-                          <p className="text-[13px] font-bold text-gray-900 dark:text-white tabular-nums">${stock.price?.toFixed(2)}</p>
-                          <div className={`flex items-center justify-end gap-0.5 mt-0.5 ${pos ? 'text-emerald-500' : 'text-red-500'}`}>
-                            {pos ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                            <span className="text-[10px] font-bold tabular-nums">{pos ? '+' : ''}{(stock.changePercent || 0).toFixed(2)}%</span>
+                        <div className="text-right shrink-0 flex flex-col items-end gap-2">
+                          <div>
+                            <p className="text-[13px] font-bold text-gray-900 dark:text-white tabular-nums">${stock.price?.toFixed(2)}</p>
+                            <div className={`flex items-center justify-end gap-0.5 mt-0.5 ${pos ? 'text-emerald-500' : 'text-red-500'}`}>
+                              {pos ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                              <span className="text-[10px] font-bold tabular-nums">{pos ? '+' : ''}{(stock.changePercent || 0).toFixed(2)}%</span>
+                            </div>
                           </div>
+                          {/* Add to Portfolio Mini Button */}
+                          {!inPortfolio[stock.symbol] ? (
+                            <button 
+                              onClick={(e) => handleAddToPortfolio(e, stock.symbol, stock.name || stock.symbol)}
+                              disabled={addingAsset[stock.symbol]}
+                              className="flex items-center gap-1 px-2 py-1 bg-[#1890FF]/10 text-[#1890FF] rounded-md text-[10px] font-bold hover:bg-[#1890FF]/20 transition-colors disabled:opacity-50"
+                            >
+                              {addingAsset[stock.symbol] ? <RefreshCw className="w-2.5 h-2.5 animate-spin" /> : <Plus className="w-2.5 h-2.5" />}
+                              Agregar
+                            </button>
+                          ) : (
+                            <div className="flex items-center gap-1 px-2 py-1 bg-green-500/10 text-green-500 rounded-md text-[10px] font-bold">
+                              <Check className="w-2.5 h-2.5" />
+                            </div>
+                          )}
                         </div>
                       </Link>
                     );

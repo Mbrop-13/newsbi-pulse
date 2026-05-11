@@ -2,19 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase";
 
-const MILESTONES = {
-  1: { tier: "pro", daysToAdd: 15, monthsToAdd: 0 },
+const MILESTONES_BASE = {
+  1: { tier: "pro", daysToAdd: 10, monthsToAdd: 0 },
   3: { tier: "pro", daysToAdd: 0, monthsToAdd: 1 },
   5: { tier: "max", daysToAdd: 0, monthsToAdd: 1 },
   10: { tier: "max", daysToAdd: 0, monthsToAdd: 3 },
-  25: { tier: "ultra", daysToAdd: 0, monthsToAdd: 12 },
+  25: { tier: "ultra", daysToAdd: 0, monthsToAdd: 3 },
 };
 
 export async function POST(request: NextRequest) {
   try {
     const { milestone } = await request.json();
 
-    if (![1, 3, 5, 10, 25].includes(milestone)) {
+    const baseMilestone = ((milestone - 1) % 25) + 1;
+
+    if (![1, 3, 5, 10, 25].includes(baseMilestone)) {
       return NextResponse.json({ error: "Hito inválido" }, { status: 400 });
     }
 
@@ -57,7 +59,7 @@ export async function POST(request: NextRequest) {
       .eq("user_id", user.id)
       .maybeSingle();
 
-    const reward = MILESTONES[milestone as keyof typeof MILESTONES];
+    const reward = MILESTONES_BASE[baseMilestone as keyof typeof MILESTONES_BASE];
     const now = new Date();
     
     // Calculate new period end

@@ -11,11 +11,11 @@ interface ReferralData {
   claimedMilestones: number[];
 }
 
-const MILESTONES = [
+const MILESTONES_BASE = [
   { 
     count: 1, 
-    title: "15 Días PRO", 
-    subtitle: "50% de descuento en tu primer mes", 
+    title: "10 Días PRO", 
+    subtitle: "Prueba premium gratuita", 
     tier: "pro",
     icon: Star,
     color: "from-amber-400 to-orange-500",
@@ -50,7 +50,7 @@ const MILESTONES = [
   },
   { 
     count: 25, 
-    title: "1 Año ULTRA", 
+    title: "3 Meses ULTRA", 
     subtitle: "Experiencia institucional completa", 
     tier: "ultra",
     icon: Crown,
@@ -154,6 +154,9 @@ export default function ReferralsPage() {
   }
 
   const progressCount = data?.referralsCount || 0;
+  const CYCLE_SIZE = 25;
+  const activeCycle = Math.floor(Math.max(0, progressCount - 1) / CYCLE_SIZE);
+  const currentCycleProgress = progressCount - (activeCycle * CYCLE_SIZE);
 
   return (
     <div className="w-full max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
@@ -277,15 +280,16 @@ export default function ReferralsPage() {
             className="hidden md:block absolute left-[5.5rem] top-8 w-1.5 bg-gradient-to-b from-[#1890FF] to-purple-500 rounded-full shadow-[0_0_10px_rgba(24,144,255,0.5)] origin-top"
             initial={{ scaleY: 0 }}
             animate={{ 
-              scaleY: Math.min(1, (progressCount) / MILESTONES[MILESTONES.length - 1].count) 
+              scaleY: Math.min(1, currentCycleProgress / MILESTONES_BASE[MILESTONES_BASE.length - 1].count) 
             }}
             transition={{ duration: 1.5, ease: "easeOut" }}
           />
 
-          {MILESTONES.map((milestone, index) => {
-            const isReached = progressCount >= milestone.count;
-            const isClaimed = data?.claimedMilestones.includes(milestone.count);
-            const isClaiming = claiming === milestone.count;
+          {MILESTONES_BASE.map((milestone, index) => {
+            const actualMilestoneCount = milestone.count + (activeCycle * CYCLE_SIZE);
+            const isReached = progressCount >= actualMilestoneCount;
+            const isClaimed = data?.claimedMilestones.includes(actualMilestoneCount);
+            const isClaiming = claiming === actualMilestoneCount;
             const Icon = milestone.icon;
 
             return (
@@ -309,7 +313,7 @@ export default function ReferralsPage() {
                       : "bg-gray-200 dark:bg-gray-800 text-gray-500"
                     }
                   `}>
-                    {milestone.count}
+                    {actualMilestoneCount}
                   </div>
                   <div className="md:hidden text-sm font-bold text-gray-500 uppercase tracking-widest">
                     Referidos
@@ -339,7 +343,7 @@ export default function ReferralsPage() {
                       </div>
                     ) : isReached ? (
                       <button
-                        onClick={() => handleClaim(milestone.count)}
+                        onClick={() => handleClaim(actualMilestoneCount)}
                         disabled={isClaiming}
                         className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-gradient-to-r from-[#1890FF] to-blue-600 hover:from-blue-600 hover:to-indigo-600 text-white font-bold text-sm rounded-xl transition-all shadow-[0_4px_15px_rgba(24,144,255,0.3)] hover:shadow-[0_4px_20px_rgba(24,144,255,0.4)] disabled:opacity-50 hover:-translate-y-0.5"
                       >
@@ -348,7 +352,7 @@ export default function ReferralsPage() {
                       </button>
                     ) : (
                       <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-bold text-sm rounded-xl">
-                        Faltan {milestone.count - progressCount} amigos
+                        Faltan {actualMilestoneCount - progressCount} amigos
                       </div>
                     )}
                   </div>

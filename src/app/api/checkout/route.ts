@@ -1,16 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/server";
 import { PLAN_CONFIGS, type PlanTier } from "@/lib/plan-limits";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 const ACCESS_TOKEN = process.env.MERCADOPAGO_ACCESS_TOKEN!;
-
-// We generate subscriptions dynamically to get an init_point checkout link,
-// bypassing the need for pre-existing plan IDs and card tokens.
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,43 +14,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Plan inválido" }, { status: 400 });
     }
 
-    // Get authenticated user from Supabase cookie
-    const authHeader = request.headers.get("authorization");
-    let user = null;
+    // Get authenticated user using SSR Supabase client (reads cookies automatically)
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    if (authHeader) {
-      const { data } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
-      user = data.user;
-    }
-
-    // Also try cookie-based auth
-    if (!user) {
-      const cookieHeader = request.headers.get("cookie") || "";
-      const sbAccessToken = cookieHeader
-        .split(";")
-        .map(c => c.trim())
-        .find(c => c.startsWith("sb-") && c.includes("-auth-token"));
-      
-      if (sbAccessToken) {
-        const tokenValue = decodeURIComponent(sbAccessToken.split("=").slice(1).join("="));
-        try {
-          const parsed = JSON.parse(tokenValue);
-          const accessToken = parsed?.[0] || parsed?.access_token;
-          if (accessToken) {
-            const { data } = await supabase.auth.getUser(accessToken);
-            user = data.user;
-          }
-        } catch {}
-      }
-    }
-
-    if (!user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+    if (authError || !user) {
+      console.error("[Checkout] Auth error:", authError?.message);
+      return NextResponse.json({ error: "No autenticado. Inicia sesión primero." }, { status: 401 });
     }
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://reclu.cl";
 
     // Create a preapproval (subscription) dynamically
+    // This bypasses the need for pre-existing plan IDs and card tokens
     const body = {
       reason: `Suscripción Reclu ${plan.toUpperCase()}`,
       auto_recurring: {
@@ -75,6 +43,8 @@ export async function POST(request: NextRequest) {
       back_url: `${siteUrl}/suscripcion?status=success&plan=${plan}`,
     };
 
+    console.log("[Checkout] Creating preapproval for:", user.email, "plan:", plan, "amount:", planConfig.price);
+
     const res = await fetch("https://api.mercadopago.com/preapproval", {
       method: "POST",
       headers: {
@@ -84,16 +54,17 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(body),
     });
 
+    const data = await res.json();
+
     if (!res.ok) {
-      const errText = await res.text();
-      console.error("[Checkout] MP Preapproval error:", res.status, errText);
+      console.error("[Checkout] MP Preapproval error:", res.status, JSON.stringify(data));
       return NextResponse.json(
-        { error: "Error al crear suscripción", details: errText },
+        { error: "Error al crear suscripción", details: data },
         { status: 500 }
       );
     }
 
-    const data = await res.json();
+    console.log("[Checkout] Preapproval created:", data.id, "init_point:", data.init_point);
 
     // data.init_point is the URL where the user enters payment details
     return NextResponse.json({ url: data.init_point });

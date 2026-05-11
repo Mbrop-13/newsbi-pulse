@@ -7,7 +7,6 @@ import {
   Check,
   X,
   Sparkles,
-  Zap,
   Shield,
   TrendingUp,
   ChevronDown,
@@ -175,7 +174,6 @@ export default function SuscripcionesPage() {
   const { tier: currentTier } = useSubscriptionStore();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [hoveredPlan, setHoveredPlan] = useState<string | null>(null);
 
   const getPrice = (planId: PlanTier): string => {
     const config = PLAN_CONFIGS[planId];
@@ -193,10 +191,15 @@ export default function SuscripcionesPage() {
     return formatCLP(getAnnualMonthlyPrice(planId) * 12);
   };
 
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState("");
+
   const handleSelectPlan = async (planId: PlanTier) => {
     if (planId === "free" || planId === currentTier) return;
     
-    // Redirect to MercadoPago subscription checkout
+    setLoadingPlan(planId);
+    setCheckoutError("");
+    
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
@@ -204,17 +207,19 @@ export default function SuscripcionesPage() {
         body: JSON.stringify({ plan: planId }),
       });
       
-      if (res.ok) {
-        const { url } = await res.json();
-        if (url) window.location.href = url;
+      const data = await res.json();
+      
+      if (res.ok && data.url) {
+        window.location.href = data.url;
       } else {
-        const err = await res.json();
-        console.error("Checkout error:", err);
-        alert("Error al iniciar el pago. Intenta de nuevo.");
+        console.error("Checkout error:", data);
+        setCheckoutError(data.error || "Error al iniciar el pago. Intenta de nuevo.");
       }
     } catch (err) {
       console.error("Checkout error:", err);
-      alert("Error de conexión. Intenta de nuevo.");
+      setCheckoutError("Error de conexión. Verifica tu internet e intenta de nuevo.");
+    } finally {
+      setLoadingPlan(null);
     }
   };
 
@@ -275,14 +280,29 @@ export default function SuscripcionesPage() {
             </div>
           </motion.div>
 
+          {/* Checkout Error Banner */}
+          <AnimatePresence>
+            {checkoutError && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="mb-8 max-w-xl mx-auto p-4 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-sm font-bold rounded-2xl border border-red-200 dark:border-red-500/20 flex items-center gap-3"
+              >
+                <X className="w-5 h-5 shrink-0" />
+                <span>{checkoutError}</span>
+                <button onClick={() => setCheckoutError("")} className="ml-auto p-1 hover:bg-red-100 dark:hover:bg-red-500/20 rounded-lg transition-colors">
+                  <X className="w-4 h-4" />
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Pricing Cards */}
-          <div 
-            className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-[1200px] mx-auto"
-            onMouseLeave={() => setHoveredPlan(null)}
-          >
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 max-w-[1200px] mx-auto">
             {plans.map((plan, i) => {
               const isCurrentPlan = plan.id === currentTier;
-              const isPopularActive = plan.popular && (hoveredPlan === null || hoveredPlan === plan.id);
+              const isLoading = loadingPlan === plan.id;
               const PlanIcon = plan.icon;
               
               return (
@@ -290,94 +310,108 @@ export default function SuscripcionesPage() {
                   key={plan.id}
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: i * 0.1 }}
-                  onMouseEnter={() => setHoveredPlan(plan.id)}
-                  className={`relative flex flex-col rounded-[2.5rem] border p-8 text-left transition-all duration-500 group ${
-                    isPopularActive
-                      ? "border-accent bg-accent/[0.03] shadow-[0_20px_60px_-15px_rgba(0,82,204,0.3)] md:scale-105 z-10 hover:border-[#1890FF]"
+                  transition={{ duration: 0.5, delay: i * 0.12 }}
+                  className={`relative flex flex-col rounded-3xl border text-left transition-all duration-300 group overflow-hidden ${
+                    plan.popular
+                      ? "border-[#1890FF]/30 bg-card shadow-xl shadow-[#0052CC]/10 ring-1 ring-[#1890FF]/10"
                       : isCurrentPlan
-                      ? "border-emerald-500/50 bg-emerald-500/[0.03] shadow-[0_15px_40px_-15px_rgba(16,185,129,0.2)] hover:border-emerald-400"
-                      : "border-border bg-card/40 backdrop-blur-md hover:border-[#1890FF]/40 hover:bg-card hover:shadow-[0_15px_40px_-15px_rgba(24,144,255,0.15)] hover:-translate-y-2"
+                      ? "border-emerald-500/40 bg-card shadow-lg shadow-emerald-500/5"
+                      : "border-border bg-card hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-xl hover:shadow-black/5 hover:-translate-y-1"
                   }`}
                 >
-                  {/* Glassmorphism subtle inner glow */}
-                  <div className="absolute inset-0 rounded-[2.5rem] bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
-                  {plan.popular && (
-                    <div className={`absolute -top-4 left-1/2 -translate-x-1/2 px-5 py-2 bg-gradient-to-r from-[#0052CC] to-[#22D3EE] rounded-full text-white text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all duration-500 ${isPopularActive ? "shadow-xl shadow-[#0052CC]/40 opacity-100" : "opacity-80 saturate-50"}`}>
-                      <Star className="w-4 h-4 fill-white/20" />
-                      Recomendado
-                    </div>
-                  )}
-                  
-                  {isCurrentPlan && !plan.popular && (
-                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-5 py-2 bg-emerald-500 rounded-full text-white text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-xl shadow-emerald-500/30">
-                      <Check className="w-4 h-4" />
-                      Tu plan actual
-                    </div>
-                  )}
+                  {/* Top gradient stripe */}
+                  <div className={`h-1.5 w-full bg-gradient-to-r ${plan.gradient}`} />
 
-                  <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${plan.gradient} flex items-center justify-center mb-6 shadow-xl ${isPopularActive ? 'shadow-[#0052CC]/30' : 'shadow-black/5'} relative z-10`}>
-                    <PlanIcon className="w-7 h-7 text-white" />
-                  </div>
-
-                  <h3 className="font-editorial text-2xl font-bold mb-2 text-foreground">{plan.name}</h3>
-                  <p className="text-sm text-muted-foreground mb-6 min-h-[40px]">{plan.description}</p>
-
-                  <div className="flex flex-col gap-1 mb-6">
-                    <div className="flex items-baseline gap-1">
-                      <span className="font-editorial text-4xl font-bold text-foreground tracking-tight">
-                        {getPrice(plan.id)}
-                      </span>
-                      <span className="text-sm text-muted-foreground font-medium">
-                        {plan.id === "free" ? "para siempre" : "/mes"}
-                      </span>
-                    </div>
-                    {billingCycle === "annual" && plan.id !== "free" ? (
-                      <span className="text-[12px] text-[#1890FF] font-bold bg-[#1890FF]/10 px-2.5 py-1 rounded-md self-start border border-[#1890FF]/20 shadow-sm">
-                        Total {getAnnualTotal(plan.id)} facturado al año
-                      </span>
-                    ) : (
-                      <span className="text-[12px] text-transparent select-none font-medium px-2.5 py-1 self-start">
-                        Espaciador
-                      </span>
-                    )}
-                  </div>
-
-                  <Button
-                    onClick={() => handleSelectPlan(plan.id)}
-                    className={`w-full rounded-2xl h-14 font-bold text-base mb-8 transition-all relative z-10 ${
-                      plan.popular
-                        ? "bg-gradient-to-r from-[#0052CC] to-[#0066FF] hover:from-[#0052CC]/90 hover:to-[#0066FF]/90 text-white shadow-[0_10px_30px_-10px_rgba(0,82,204,0.6)] hover:shadow-[0_15px_40px_-10px_rgba(0,82,204,0.8)] hover:-translate-y-1"
-                        : plan.id === "ultra"
-                        ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg shadow-purple-500/30 hover:-translate-y-1"
-                        : isCurrentPlan
-                        ? "bg-emerald-500/10 text-emerald-600 cursor-default border border-emerald-500/20"
-                        : "bg-secondary hover:bg-secondary/80 text-foreground border border-border shadow-sm hover:-translate-y-1"
-                    }`}
-                    disabled={isCurrentPlan}
-                  >
-                    {isCurrentPlan ? "Plan actual" : plan.cta}
-                    {plan.popular && !isCurrentPlan && <ArrowRight className="w-4 h-4 ml-2" />}
-                  </Button>
-
-                  <div className="space-y-3.5 flex-1">
-                    <p className="text-xs font-bold text-foreground uppercase tracking-wider mb-4">Beneficios incluidos</p>
-                    {plan.features.map((f, fi) => (
-                      <div key={fi} className="flex items-start gap-3 text-sm">
-                        {f.included ? (
-                          <div className="mt-0.5 w-5 h-5 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
-                            <Check className="w-3.5 h-3.5 text-emerald-500" />
-                          </div>
-                        ) : (
-                          <div className="mt-0.5 w-5 h-5 flex items-center justify-center shrink-0">
-                            <X className="w-3.5 h-3.5 text-muted-foreground/30" />
-                          </div>
-                        )}
-                        <span className={`leading-snug transition-colors duration-300 ${f.included ? "text-foreground font-medium" : "text-muted-foreground/40"} ${f.highlight ? "group-hover:text-[#1890FF] group-hover:font-bold" : ""}`}>
-                          {f.text}
-                        </span>
+                  <div className="p-8 flex flex-col flex-1">
+                    {/* Badge */}
+                    {plan.popular && (
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#1890FF]/10 border border-[#1890FF]/20 rounded-full text-[#1890FF] text-[11px] font-bold uppercase tracking-wider self-start mb-5">
+                        <Star className="w-3.5 h-3.5" />
+                        Más Popular
                       </div>
-                    ))}
+                    )}
+                    
+                    {isCurrentPlan && !plan.popular && (
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-emerald-600 dark:text-emerald-400 text-[11px] font-bold uppercase tracking-wider self-start mb-5">
+                        <Check className="w-3.5 h-3.5" />
+                        Tu plan actual
+                      </div>
+                    )}
+
+                    {!plan.popular && !isCurrentPlan && <div className="mb-5 h-[26px]" />}
+
+                    {/* Plan icon + name */}
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${plan.gradient} flex items-center justify-center shadow-lg`}>
+                        <PlanIcon className="w-5 h-5 text-white" />
+                      </div>
+                      <h3 className="text-2xl font-black text-foreground">{plan.name}</h3>
+                    </div>
+
+                    <p className="text-sm text-muted-foreground mb-6">{plan.description}</p>
+
+                    {/* Price */}
+                    <div className="mb-8">
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="text-5xl font-black text-foreground tracking-tight">
+                          {getPrice(plan.id)}
+                        </span>
+                        <span className="text-base text-muted-foreground font-medium">/mes</span>
+                      </div>
+                      {billingCycle === "annual" ? (
+                        <span className="inline-block mt-2 text-[12px] text-[#1890FF] font-bold bg-[#1890FF]/10 px-2.5 py-1 rounded-lg border border-[#1890FF]/20">
+                          Total {getAnnualTotal(plan.id)} facturado al año
+                        </span>
+                      ) : (
+                        <span className="inline-block mt-2 text-[12px] text-transparent select-none px-2.5 py-1">.</span>
+                      )}
+                    </div>
+
+                    {/* CTA Button */}
+                    <Button
+                      onClick={() => handleSelectPlan(plan.id)}
+                      className={`w-full rounded-xl h-13 font-bold text-[15px] mb-8 transition-all relative z-10 ${
+                        plan.popular
+                          ? "bg-gradient-to-r from-[#0052CC] to-[#0066FF] hover:brightness-110 text-white shadow-lg shadow-[#0052CC]/30 hover:-translate-y-0.5"
+                          : plan.id === "ultra"
+                          ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:brightness-110 text-white shadow-lg shadow-purple-500/20 hover:-translate-y-0.5"
+                          : isCurrentPlan
+                          ? "bg-emerald-500/10 text-emerald-600 cursor-default border border-emerald-500/20"
+                          : "bg-foreground text-background hover:opacity-90 shadow-sm hover:-translate-y-0.5"
+                      }`}
+                      disabled={isCurrentPlan || isLoading}
+                    >
+                      {isLoading ? (
+                        <span className="flex items-center gap-2">
+                          <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>
+                          Procesando...
+                        </span>
+                      ) : isCurrentPlan ? (
+                        "Plan actual"
+                      ) : (
+                        <>
+                          {plan.cta}
+                          <ArrowRight className="w-4 h-4 ml-2" />
+                        </>
+                      )}
+                    </Button>
+
+                    {/* Features */}
+                    <div className="space-y-3 flex-1">
+                      <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mb-4">Qué incluye</p>
+                      {plan.features.map((f, fi) => (
+                        <div key={fi} className="flex items-start gap-2.5 text-[13px]">
+                          {f.included ? (
+                            <Check className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
+                          ) : (
+                            <X className="w-4 h-4 text-muted-foreground/20 mt-0.5 shrink-0" />
+                          )}
+                          <span className={`leading-snug ${f.included ? "text-foreground" : "text-muted-foreground/40"}`}>
+                            {f.text}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </motion.div>
               );

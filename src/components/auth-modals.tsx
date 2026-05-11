@@ -7,7 +7,6 @@ import {
   Mail,
   Lock,
   User,
-  Github,
   Chrome,
   ArrowRight,
   Sparkles,
@@ -204,24 +203,15 @@ export function AuthModals({
                   </AnimatePresence>
 
                   {/* Social Login Buttons */}
-                  <div className="grid grid-cols-2 gap-3 mb-5">
+                  <div className="mb-5">
                     <Button
                       type="button"
                       onClick={signInWithGoogle}
                       variant="outline"
-                      className="h-11 border-border/80 text-[13px] font-semibold gap-2.5 rounded-xl hover:bg-secondary/60 transition-all duration-200 hover:border-border"
+                      className="w-full h-11 border-border/80 text-[13px] font-semibold gap-2.5 rounded-xl hover:bg-secondary/60 transition-all duration-200 hover:border-border"
                     >
                       <Chrome className="w-4 h-4" />
-                      Google
-                    </Button>
-                    <Button
-                      type="button"
-                      disabled
-                      variant="outline"
-                      className="h-11 border-border/80 text-[13px] font-semibold gap-2.5 rounded-xl"
-                    >
-                      <Github className="w-4 h-4" />
-                      GitHub
+                      Continuar con Google
                     </Button>
                   </div>
 

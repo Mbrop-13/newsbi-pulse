@@ -16,8 +16,6 @@ import { useAIChatStore } from "@/lib/stores/ai-chat-store";
 import { AuthToast } from "@/components/auth-toast";
 import { ReadingListWidget } from "@/components/reading-list-widget";
 import { ResolvedBetsPopup } from "@/components/resolved-bet-popup";
-import { PromoPopup } from "@/components/promo-popup";
-import { RegisterCornerPopup } from "@/components/register-corner-popup";
 import { CapacitorInit } from "@/components/capacitor-init";
 import { AuthSync } from "@/components/auth-sync";
 
@@ -74,8 +72,6 @@ export function ClientLayoutProviders({
           <AuthToast />
           {!isAdminPage && <ReadingListWidget />}
           {!isAdminPage && <ResolvedBetsPopup />}
-          {!isAdminPage && <PromoPopup />}
-          {!isAdminPage && <RegisterCornerPopup />}
         </div>
       </TooltipProvider>
     </ThemeProvider>

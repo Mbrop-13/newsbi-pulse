@@ -15,7 +15,6 @@ import { useViewStore } from "@/lib/stores/use-view-store";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
 import { TraditionalNewspaper } from "@/components/traditional-newspaper";
-import { HomepageOnboarding } from "@/components/homepage-onboarding";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -297,9 +296,7 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0F172A] text-gray-900 dark:text-gray-100 font-sans">
-      {/* Homepage onboarding for non-registered users */}
       <div className="pt-[72px]">
-        <HomepageOnboarding />
       </div>
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 pb-16">
 

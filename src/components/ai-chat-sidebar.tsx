@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { PromptCarousel } from "./assistant/prompt-carousel";
 
 const ADVANCED_TOOLS = [
   { id: 'chart_bar', label: 'Gráfico Barras', icon: BarChart3, category: 'Gráficos' },
@@ -25,13 +26,14 @@ export function AIChatSidebar() {
     isOpen, close, messages, addMessage, isLoading, setLoading, clearMessages,
     attachedArticles, attachArticle, removeArticle, savedChats, loadChat, deleteSavedChat,
     attachedFiles, attachFile, removeFile, webSearchEnabled, setWebSearch,
-    activeTool, setActiveTool, favoriteTools, toggleFavoriteTool,
+    activeTools, toggleTool, clearTools, favoriteTools, toggleFavoriteTool,
     messageFeedback, setFeedback
   } = useAIChatStore();
   
   const [input, setInput] = useState("");
   const [showHistory, setShowHistory] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [attachMenuView, setAttachMenuView] = useState<'main' | 'charts' | 'analysis'>('main');
   const [isRecording, setIsRecording] = useState(false);
   const recognitionRef = useRef<any>(null);
   const baseInputRef = useRef("");
@@ -162,10 +164,9 @@ export function AIChatSidebar() {
         body: JSON.stringify({
           messages: apiMessages,
           articles: attachedArticles,
-          files: attachedFiles,
+          files: attachedFiles.map(f => ({ name: f.name, content: f.content })),
           webSearch: webSearchEnabled,
-          shortcut: shortcutOverride,
-          activeTool: activeTool,
+          activeTools: activeTools,
         }),
       });
 
@@ -191,7 +192,7 @@ export function AIChatSidebar() {
       });
     } finally {
       setLoading(false);
-      setActiveTool(null);
+      clearTools();
     }
   };
 
@@ -265,13 +266,12 @@ export function AIChatSidebar() {
               <div className="w-12 h-1.5 rounded-full bg-gray-300 dark:bg-gray-700" />
             </div>
           )}
-
           {/* Header */}
           <div className="px-4 pt-4 pb-3 border-b border-gray-100 dark:border-white/5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-black to-gray-700 dark:from-white dark:to-gray-300 flex items-center justify-center shadow-md">
-                  <Sparkles className="w-4 h-4 text-white dark:text-black" />
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#1890FF] to-indigo-600 flex items-center justify-center shadow-md">
+                  <Bot className="w-4 h-4 text-white" />
                 </div>
                 <div>
                   <h2 className="text-sm font-black tracking-tight text-gray-900 dark:text-white">R-AI</h2>
@@ -285,15 +285,24 @@ export function AIChatSidebar() {
                 </div>
               </div>
               <div className="flex items-center gap-0.5">
-                <button onClick={() => setShowHistory(!showHistory)}
-                  className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${showHistory ? "bg-[#1890FF]/10 text-[#1890FF]" : "text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-600"}`}>
+                <button
+                  onClick={() => {
+                    clearMessages();
+                    setShowHistory(false);
+                    clearTools();
+                  }}
+                  className="w-7 h-7 rounded-lg hover:bg-[#1890FF]/10 flex items-center justify-center text-[#1890FF] transition-colors"
+                  title="Nuevo Chat"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setShowHistory(!showHistory)}
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${showHistory ? "bg-[#1890FF]/10 text-[#1890FF]" : "text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-600"}`}
+                  title="Historial"
+                >
                   <History className="w-3.5 h-3.5" />
                 </button>
-                {messages.length > 0 && !showHistory && (
-                  <button onClick={clearMessages} className="w-7 h-7 rounded-lg hover:bg-red-500/10 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                )}
                 <button onClick={close} className="w-7 h-7 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -323,28 +332,8 @@ export function AIChatSidebar() {
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
               
               {messages.length === 0 && !isLoading && (
-                <div className="flex flex-col items-center justify-center h-full text-center px-4">
-                  <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-[#0052CC]/10 to-[#22D3EE]/10 flex items-center justify-center mb-5">
-                    <Bot className="w-8 h-8 text-[#0052CC]" />
-                  </div>
-                  <h3 className="font-bold text-base mb-1">R-AI Assistant</h3>
-                  <p className="text-xs text-muted-foreground mb-6">Agente inteligente conectado a tu portafolio y noticias del mundo.</p>
-                  
-                  <div className="flex flex-col gap-2 w-full max-w-[280px]">
-                    {shortcuts.map((sc) => (
-                      <button
-                        key={sc.id}
-                        onClick={() => sendMessage(sc.query, sc.id)}
-                        className="px-4 py-3 bg-secondary/40 border border-border rounded-2xl text-xs font-medium hover:border-[#1890FF]/30 hover:bg-[#1890FF]/5 hover:text-[#1890FF] transition-all flex items-center justify-between group shadow-sm"
-                      >
-                        <div className="flex items-center gap-2">
-                          {sc.id.includes("portfolio") ? <BarChart3 className="w-4 h-4 text-purple-500" /> : <Newspaper className="w-4 h-4 text-blue-500" />}
-                          {sc.label}
-                        </div>
-                        <ChevronRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </button>
-                    ))}
-                  </div>
+                <div className="flex-1 flex flex-col items-center justify-center h-full min-h-[300px]">
+                  <PromptCarousel onSend={(query) => sendMessage(query)} />
                 </div>
               )}
 
@@ -435,15 +424,23 @@ export function AIChatSidebar() {
             <div className="p-3 border-t border-gray-100 dark:border-white/5 bg-white dark:bg-slate-900">
               <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".txt,.md,.csv,.json,.ts" />
               
-              {/* Active Tool Pill */}
+              {/* Active Tool Pills */}
               <AnimatePresence>
-                {activeTool && (
-                  <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                    className="mb-2 flex items-center gap-2 bg-gradient-to-r from-[#1890FF] to-indigo-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-full w-fit shadow-md">
-                    <Sparkles className="w-3 h-3" />
-                    {ADVANCED_TOOLS.find(t => t.id === activeTool)?.label || "Herramienta"}
-                    <button onClick={() => setActiveTool(null)} className="ml-1 bg-white/20 rounded-full p-0.5 hover:bg-white/30"><X className="w-2.5 h-2.5" /></button>
-                  </motion.div>
+                {activeTools.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2 px-1">
+                    {activeTools.map(toolId => {
+                      const tool = ADVANCED_TOOLS.find(t => t.id === toolId);
+                      if (!tool) return null;
+                      return (
+                        <motion.div key={toolId} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                          className="flex items-center gap-1.5 bg-gradient-to-r from-[#1890FF] to-indigo-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow-md">
+                          <tool.icon className="w-3 h-3" />
+                          {tool.label}
+                          <button onClick={() => toggleTool(toolId, tool.category)} className="ml-1 bg-white/20 rounded-full p-0.5 hover:bg-white/30"><X className="w-2.5 h-2.5" /></button>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
                 )}
               </AnimatePresence>
 
@@ -455,51 +452,84 @@ export function AIChatSidebar() {
                     <Plus className={`w-4 h-4 transition-transform duration-200 ${showAttachMenu ? "rotate-45" : ""}`} />
                   </button>
 
-                  {/* Attach Menu Popover */}
                   <AnimatePresence>
                     {showAttachMenu && (
                       <>
-                        <div className="fixed inset-0 z-20" onClick={() => setShowAttachMenu(false)} />
+                        <div className="fixed inset-0 z-20" onClick={() => { setShowAttachMenu(false); setTimeout(() => setAttachMenuView('main'), 200); }} />
                         <motion.div initial={{ opacity: 0, y: 8, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.95 }}
                           className="absolute bottom-10 left-0 z-40 w-56 bg-white dark:bg-slate-900 border border-gray-100 dark:border-white/10 rounded-2xl shadow-xl overflow-hidden max-h-[300px]">
                           <div className="p-2 space-y-2 overflow-y-auto max-h-[300px]">
-                            {/* Files */}
-                            <div>
-                              <div className="px-2 py-1 text-[9px] font-bold text-gray-400 uppercase tracking-wider">Archivos</div>
-                              <button onClick={() => { setShowAttachMenu(false); fileInputRef.current?.click(); }}
-                                className="w-full flex items-center gap-2.5 px-2 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-[#1890FF] rounded-xl transition-colors">
-                                <div className="w-7 h-7 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center shrink-0"><Paperclip className="w-3.5 h-3.5" /></div>
-                                Subir archivo
-                              </button>
-                            </div>
-                            {/* Charts */}
-                            <div>
-                              <div className="px-2 py-1 text-[9px] font-bold text-gray-400 uppercase tracking-wider">Gráficos</div>
-                              {ADVANCED_TOOLS.filter(t => t.category === 'Gráficos').map(tool => {
-                                const Icon = tool.icon;
-                                return (
-                                  <button key={tool.id} onClick={() => { setActiveTool(tool.id); setShowAttachMenu(false); }}
-                                    className="w-full flex items-center gap-2.5 px-2 py-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-[#1890FF] rounded-xl transition-colors">
-                                    <div className="w-7 h-7 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0"><Icon className="w-3.5 h-3.5" /></div>
-                                    {tool.label}
+                            {attachMenuView === 'main' && (
+                              <motion.div key="main" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}>
+                                <div>
+                                  <div className="px-2 py-1 text-[9px] font-bold text-gray-400 uppercase tracking-wider">Adjuntar</div>
+                                  <button onClick={() => { setShowAttachMenu(false); fileInputRef.current?.click(); }}
+                                    className="w-full flex items-center gap-2.5 px-2 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-[#1890FF] rounded-xl transition-colors">
+                                    <div className="w-7 h-7 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center shrink-0"><Paperclip className="w-3.5 h-3.5" /></div>
+                                    Subir archivo
                                   </button>
-                                );
-                              })}
-                            </div>
-                            {/* Analysis */}
-                            <div>
-                              <div className="px-2 py-1 text-[9px] font-bold text-gray-400 uppercase tracking-wider">Análisis</div>
-                              {ADVANCED_TOOLS.filter(t => t.category === 'Análisis').map(tool => {
-                                const Icon = tool.icon;
-                                return (
-                                  <button key={tool.id} onClick={() => { setActiveTool(tool.id); setShowAttachMenu(false); }}
-                                    className="w-full flex items-center gap-2.5 px-2 py-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-purple-500 rounded-xl transition-colors">
-                                    <div className="w-7 h-7 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0"><Icon className="w-3.5 h-3.5" /></div>
-                                    {tool.label}
+                                </div>
+                                <div className="mt-1">
+                                  <div className="px-2 py-1 text-[9px] font-bold text-gray-400 uppercase tracking-wider">Herramientas</div>
+                                  <button onClick={() => setAttachMenuView('charts')}
+                                    className="w-full flex items-center justify-between px-2 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-blue-500 rounded-xl transition-colors">
+                                    <div className="flex items-center gap-2.5">
+                                      <div className="w-7 h-7 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0"><PieChart className="w-3.5 h-3.5" /></div>
+                                      Gráficos
+                                    </div>
+                                    <ChevronRight className="w-4 h-4 text-gray-400" />
                                   </button>
-                                );
-                              })}
-                            </div>
+                                  <button onClick={() => setAttachMenuView('analysis')}
+                                    className="w-full flex items-center justify-between px-2 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-purple-500 rounded-xl transition-colors mt-0.5">
+                                    <div className="flex items-center gap-2.5">
+                                      <div className="w-7 h-7 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0"><TrendingUp className="w-3.5 h-3.5" /></div>
+                                      Análisis
+                                    </div>
+                                    <ChevronRight className="w-4 h-4 text-gray-400" />
+                                  </button>
+                                </div>
+                              </motion.div>
+                            )}
+
+                            {attachMenuView === 'charts' && (
+                              <motion.div key="charts" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
+                                <button onClick={() => setAttachMenuView('main')} className="flex items-center gap-1 text-[10px] font-bold text-gray-500 hover:text-gray-900 dark:hover:text-white px-2 py-1 mb-1 transition-colors">
+                                  <ChevronRight className="w-3 h-3 rotate-180" /> Volver
+                                </button>
+                                <div className="px-2 py-1 text-[9px] font-bold text-gray-400 uppercase tracking-wider">Gráficos</div>
+                                {ADVANCED_TOOLS.filter(t => t.category === 'Gráficos').map(tool => {
+                                  const Icon = tool.icon;
+                                  const isActive = activeTools.includes(tool.id);
+                                  return (
+                                    <button key={tool.id} onClick={() => { toggleTool(tool.id, tool.category); setShowAttachMenu(false); setTimeout(() => setAttachMenuView('main'), 200); }}
+                                      className={`w-full flex items-center gap-2.5 px-2 py-1.5 text-xs font-semibold rounded-xl transition-colors ${isActive ? "bg-blue-500/10 text-blue-600 dark:text-blue-400" : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-[#1890FF]"}`}>
+                                      <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${isActive ? "bg-blue-500/20 text-blue-600" : "bg-blue-500/10 text-blue-600 dark:text-blue-400"}`}><Icon className="w-3.5 h-3.5" /></div>
+                                      {tool.label}
+                                    </button>
+                                  );
+                                })}
+                              </motion.div>
+                            )}
+
+                            {attachMenuView === 'analysis' && (
+                              <motion.div key="analysis" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
+                                <button onClick={() => setAttachMenuView('main')} className="flex items-center gap-1 text-[10px] font-bold text-gray-500 hover:text-gray-900 dark:hover:text-white px-2 py-1 mb-1 transition-colors">
+                                  <ChevronRight className="w-3 h-3 rotate-180" /> Volver
+                                </button>
+                                <div className="px-2 py-1 text-[9px] font-bold text-gray-400 uppercase tracking-wider">Análisis</div>
+                                {ADVANCED_TOOLS.filter(t => t.category === 'Análisis').map(tool => {
+                                  const Icon = tool.icon;
+                                  const isActive = activeTools.includes(tool.id);
+                                  return (
+                                    <button key={tool.id} onClick={() => { toggleTool(tool.id, tool.category); setShowAttachMenu(false); setTimeout(() => setAttachMenuView('main'), 200); }}
+                                      className={`w-full flex items-center gap-2.5 px-2 py-1.5 text-xs font-semibold rounded-xl transition-colors ${isActive ? "bg-purple-500/10 text-purple-600 dark:text-purple-400" : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-purple-500"}`}>
+                                      <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${isActive ? "bg-purple-500/20 text-purple-600" : "bg-purple-500/10 text-purple-600 dark:text-purple-400"}`}><Icon className="w-3.5 h-3.5" /></div>
+                                      {tool.label}
+                                    </button>
+                                  );
+                                })}
+                              </motion.div>
+                            )}
                           </div>
                         </motion.div>
                       </>

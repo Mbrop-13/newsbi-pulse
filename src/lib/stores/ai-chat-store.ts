@@ -54,7 +54,7 @@ interface AIChatStore {
   savedChats: SavedChat[];
   cloudSyncEnabled: boolean;
   
-  activeTool: string | null;
+  activeTools: string[];
   favoriteTools: string[];
   
   messageFeedback: Record<string, 'like' | 'dislike'>;
@@ -67,7 +67,8 @@ interface AIChatStore {
   setWebSearch: (val: boolean) => void;
   setCloudSync: (val: boolean) => void;
   clearMessages: () => void;
-  setActiveTool: (toolId: string | null) => void;
+  toggleTool: (toolId: string, category: string) => void;
+  clearTools: () => void;
   toggleFavoriteTool: (toolId: string) => void;
   setFeedback: (messageId: string, feedback: 'like' | 'dislike' | null) => void;
   attachArticle: (article: AttachedArticle) => void;
@@ -96,7 +97,7 @@ export const useAIChatStore = create<AIChatStore>()(
       attachedFiles: [],
       savedChats: [],
       cloudSyncEnabled: false,
-      activeTool: null,
+      activeTools: [],
       favoriteTools: [],
       messageFeedback: {},
       
@@ -118,7 +119,35 @@ export const useAIChatStore = create<AIChatStore>()(
           get().fetchCloudChats();
         }
       },
-      setActiveTool: (toolId) => set({ activeTool: toolId }),
+      toggleTool: (toolId, category) => {
+        const currentTools = get().activeTools;
+        
+        // Find existing tool of the same category
+        // ADVANCED_TOOLS categories are 'Gráficos' and 'Análisis'
+        // Since we don't have access to ADVANCED_TOOLS array here directly, we rely on the component to pass the category
+        const isGraph = category === 'Gráficos';
+        const isAnalysis = category === 'Análisis';
+        
+        // Define prefixes based on known tool IDs to infer category safely if needed
+        const currentGraphs = currentTools.filter(id => id.startsWith('chart_'));
+        const currentAnalysis = currentTools.filter(id => !id.startsWith('chart_')); // everything else is analysis for now
+        
+        if (currentTools.includes(toolId)) {
+          // Deselect
+          set({ activeTools: currentTools.filter(id => id !== toolId) });
+        } else {
+          // Select, replacing existing of same category
+          let newTools = [...currentTools];
+          if (isGraph) {
+            newTools = newTools.filter(id => !id.startsWith('chart_'));
+          } else if (isAnalysis) {
+            newTools = newTools.filter(id => id.startsWith('chart_'));
+          }
+          newTools.push(toolId);
+          set({ activeTools: newTools });
+        }
+      },
+      clearTools: () => set({ activeTools: [] }),
       toggleFavoriteTool: (toolId) => {
         const { favoriteTools } = get();
         if (favoriteTools.includes(toolId)) {
@@ -228,7 +257,7 @@ export const useAIChatStore = create<AIChatStore>()(
       },
       
       clearMessages: () => {
-        set({ messages: [], attachedArticles: [], attachedFiles: [], currentChatId: null });
+        set({ messages: [], attachedArticles: [], attachedFiles: [], activeTools: [], currentChatId: null });
       },
       attachArticle: (article) => {
         const { attachedArticles } = get();

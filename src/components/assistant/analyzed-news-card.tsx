@@ -61,7 +61,6 @@ export function AnalyzedNewsCard({ toolName, result }: AnalyzedNewsCardProps) {
   // Circular thumbnail avatars for the collapsed preview (show first 5)
   const previewImages = news.filter((n: any) => n.image_url).slice(0, 5);
 
-  return (
     <div className="w-full my-3">
       {/* ── Sources Pill Button ── */}
       <button 

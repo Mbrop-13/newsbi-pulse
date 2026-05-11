@@ -11,14 +11,6 @@ export const maxDuration = 60;
 const mimo = createOpenAI({
   baseURL: 'https://api.xiaomimimo.com/v1',
   apiKey: process.env.MIMO_API_KEY,
-  fetch: async (url, options) => {
-    if (options && options.body) {
-      const body = JSON.parse(options.body as string);
-      body.web_search = true; // Activa web search nativo de Mimo
-      options.body = JSON.stringify(body);
-    }
-    return fetch(url, options);
-  }
 });
 
 // ── Static system prompt (cacheable by OpenRouter) ──
@@ -60,7 +52,7 @@ export async function POST(req: NextRequest) {
       }), { status: 403 });
     }
 
-    const modelStr = modelId === "pro" ? "xiaomi/mimo-v2.5" : "xiaomi/mimo-v2-flash";
+    const modelStr = modelId === "pro" ? "xiaomi/mimo-v2.5-pro" : "xiaomi/mimo-v2.5";
 
     // Inject dynamic context as first user message context (not in system prompt = keeps cache)
     const now = new Date();

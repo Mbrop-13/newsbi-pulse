@@ -418,22 +418,24 @@ export function AIChatSidebar() {
                       )}
 
                       {/* Action bar */}
-                      <div className="flex items-center gap-1 mt-2 opacity-0 group-hover/msg:opacity-100 transition-opacity">
-                        <button onClick={() => setFeedback(msg.id, messageFeedback[msg.id] === 'like' ? null : 'like')}
-                          className={`p-1 rounded-md transition-colors ${messageFeedback[msg.id] === 'like' ? "text-green-500 bg-green-500/10" : "text-gray-400 hover:text-green-500 hover:bg-green-500/10"}`}>
-                          <ThumbsUp className={`w-3 h-3 ${messageFeedback[msg.id] === 'like' ? "fill-current" : ""}`} />
-                        </button>
-                        <button onClick={() => setFeedback(msg.id, messageFeedback[msg.id] === 'dislike' ? null : 'dislike')}
-                          className={`p-1 rounded-md transition-colors ${messageFeedback[msg.id] === 'dislike' ? "text-red-500 bg-red-500/10" : "text-gray-400 hover:text-red-500 hover:bg-red-500/10"}`}>
-                          <ThumbsDown className={`w-3 h-3 ${messageFeedback[msg.id] === 'dislike' ? "fill-current" : ""}`} />
-                        </button>
-                        {msg.id === messages.filter(m => m.role === 'assistant').pop()?.id && !isLoading && (
-                          <button onClick={() => { /* regenerate last */ const lastUser = messages.filter(m => m.role === 'user').pop(); if (lastUser) sendMessage(lastUser.content); }}
-                            className="p-1 rounded-md text-gray-400 hover:text-indigo-500 hover:bg-indigo-500/10 transition-colors">
-                            <RefreshCw className="w-3 h-3" />
+                      {(!messages[msgIndex + 1] || messages[msgIndex + 1].role === 'user') && (
+                        <div className="flex items-center gap-1 mt-2 opacity-0 group-hover/msg:opacity-100 transition-opacity">
+                          <button onClick={() => setFeedback(msg.id, messageFeedback[msg.id] === 'like' ? null : 'like')}
+                            className={`p-1 rounded-md transition-colors ${messageFeedback[msg.id] === 'like' ? "text-green-500 bg-green-500/10" : "text-gray-400 hover:text-green-500 hover:bg-green-500/10"}`}>
+                            <ThumbsUp className={`w-3 h-3 ${messageFeedback[msg.id] === 'like' ? "fill-current" : ""}`} />
                           </button>
-                        )}
-                      </div>
+                          <button onClick={() => setFeedback(msg.id, messageFeedback[msg.id] === 'dislike' ? null : 'dislike')}
+                            className={`p-1 rounded-md transition-colors ${messageFeedback[msg.id] === 'dislike' ? "text-red-500 bg-red-500/10" : "text-gray-400 hover:text-red-500 hover:bg-red-500/10"}`}>
+                            <ThumbsDown className={`w-3 h-3 ${messageFeedback[msg.id] === 'dislike' ? "fill-current" : ""}`} />
+                          </button>
+                          {msg.id === messages.filter(m => m.role === 'assistant').pop()?.id && !isLoading && (
+                            <button onClick={() => { /* regenerate last */ const lastUser = messages.filter(m => m.role === 'user').pop(); if (lastUser) sendMessage(lastUser.content); }}
+                              className="p-1 rounded-md text-gray-400 hover:text-indigo-500 hover:bg-indigo-500/10 transition-colors">
+                              <RefreshCw className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -457,16 +459,19 @@ export function AIChatSidebar() {
               {/* Active Tool Pills */}
               <AnimatePresence>
                 {activeTools.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-2 px-1">
+                  <div className="flex flex-col sm:flex-row flex-wrap gap-2 mb-2 px-1">
                     {activeTools.map(toolId => {
                       const tool = ADVANCED_TOOLS.find(t => t.id === toolId);
                       if (!tool) return null;
                       return (
                         <motion.div key={toolId} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                          className="flex items-center gap-1.5 bg-gradient-to-r from-[#1890FF] to-indigo-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow-md">
-                          <tool.icon className="w-3 h-3" />
+                          className="bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 text-[10px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm"
+                        >
+                          <div className="w-4 h-4 rounded-full bg-blue-50 dark:bg-[#1890FF]/10 flex items-center justify-center">
+                            <tool.icon className="w-2.5 h-2.5 text-[#1890FF]" />
+                          </div>
                           {tool.label}
-                          <button onClick={() => toggleTool(toolId, tool.category)} className="ml-1 bg-white/20 rounded-full p-0.5 hover:bg-white/30"><X className="w-2.5 h-2.5" /></button>
+                          <button type="button" onClick={() => toggleTool(toolId, tool.category)} className="ml-1 text-gray-400 hover:text-red-500 transition-colors rounded-full p-0.5 hover:bg-red-50 dark:hover:bg-red-500/10"><X className="w-3 h-3" /></button>
                         </motion.div>
                       );
                     })}

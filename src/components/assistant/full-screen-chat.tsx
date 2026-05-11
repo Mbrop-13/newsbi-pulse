@@ -79,7 +79,7 @@ function FullScreenChatInternal() {
     onFinish: (message) => {
       clearTools();
       // Keep store updated for persistence
-      useAIChatStore.setState({ messages: [...useAIChatStore.getState().messages, { id: message.id, role: 'assistant', content: message.content, timestamp: new Date() }] });
+      useAIChatStore.setState({ messages: [...useAIChatStore.getState().messages, { id: message.id, role: 'assistant', content: message.content, timestamp: new Date(), toolInvocations: message.toolInvocations }] });
       fetchRealUsage();
     }
   });
@@ -91,6 +91,7 @@ function FullScreenChatInternal() {
         id: m.id,
         role: m.role,
         content: m.content,
+        toolInvocations: m.toolInvocations,
       })) as any);
     } else if (messages.length === 0 && aiMessages.length > 0) {
       // Clear chat
@@ -507,59 +508,60 @@ function FullScreenChatInternal() {
                         )}
 
                         {/* Action Bar (Below message) */}
-                        <div className="flex items-center gap-1.5 mt-3 pt-2">
-                          {/* Share Button */}
-                          <button 
-                            onClick={() => {
-                              // Find previous user message
-                              const msgIndex = aiMessages.findIndex(m => m.id === msg.id);
-                              const prevUserMsg = aiMessages.slice(0, msgIndex).reverse().find(m => m.role === 'user');
-                              setShareDialog({ 
-                                isOpen: true, 
-                                question: prevUserMsg ? prevUserMsg.content : "Pregunta sobre inteligencia financiera...", 
-                                answer: msg.content 
-                              });
-                            }}
-                            className="p-1.5 text-gray-400 hover:text-[#1890FF] hover:bg-[#1890FF]/10 rounded-lg transition-colors flex items-center gap-1.5"
-                            title="Compartir"
-                          >
-                            <Share2 className="w-4 h-4" />
-                          </button>
+                        {(!aiMessages[msgIndex + 1] || aiMessages[msgIndex + 1].role === 'user') && (
+                          <div className="flex items-center gap-1.5 mt-3 pt-2">
+                            {/* Share Button */}
+                            <button 
+                              onClick={() => {
+                                // Find previous user message
+                                const prevUserMsg = aiMessages.slice(0, msgIndex).reverse().find(m => m.role === 'user');
+                                setShareDialog({ 
+                                  isOpen: true, 
+                                  question: prevUserMsg ? prevUserMsg.content : "Pregunta sobre inteligencia financiera...", 
+                                  answer: msg.content 
+                                });
+                              }}
+                              className="p-1.5 text-gray-400 hover:text-[#1890FF] hover:bg-[#1890FF]/10 rounded-lg transition-colors flex items-center gap-1.5"
+                              title="Compartir"
+                            >
+                              <Share2 className="w-4 h-4" />
+                            </button>
 
-                          <div className="w-px h-4 bg-gray-200 dark:bg-gray-700/50 mx-1" />
+                            <div className="w-px h-4 bg-gray-200 dark:bg-gray-700/50 mx-1" />
 
-                          {/* Like */}
-                          <button 
-                            onClick={() => setFeedback(msg.id, messageFeedback[msg.id] === 'like' ? null : 'like')}
-                            className={`p-1.5 rounded-lg transition-colors ${messageFeedback[msg.id] === 'like' ? "text-green-500 bg-green-500/10" : "text-gray-400 hover:text-green-500 hover:bg-green-500/10"}`}
-                            title="Buena respuesta"
-                          >
-                            <ThumbsUp className={`w-4 h-4 ${messageFeedback[msg.id] === 'like' ? "fill-current" : ""}`} />
-                          </button>
-                          
-                          {/* Dislike */}
-                          <button 
-                            onClick={() => setFeedback(msg.id, messageFeedback[msg.id] === 'dislike' ? null : 'dislike')}
-                            className={`p-1.5 rounded-lg transition-colors ${messageFeedback[msg.id] === 'dislike' ? "text-red-500 bg-red-500/10" : "text-gray-400 hover:text-red-500 hover:bg-red-500/10"}`}
-                            title="Mala respuesta"
-                          >
-                            <ThumbsDown className={`w-4 h-4 ${messageFeedback[msg.id] === 'dislike' ? "fill-current" : ""}`} />
-                          </button>
+                            {/* Like */}
+                            <button 
+                              onClick={() => setFeedback(msg.id, messageFeedback[msg.id] === 'like' ? null : 'like')}
+                              className={`p-1.5 rounded-lg transition-colors ${messageFeedback[msg.id] === 'like' ? "text-green-500 bg-green-500/10" : "text-gray-400 hover:text-green-500 hover:bg-green-500/10"}`}
+                              title="Buena respuesta"
+                            >
+                              <ThumbsUp className={`w-4 h-4 ${messageFeedback[msg.id] === 'like' ? "fill-current" : ""}`} />
+                            </button>
+                            
+                            {/* Dislike */}
+                            <button 
+                              onClick={() => setFeedback(msg.id, messageFeedback[msg.id] === 'dislike' ? null : 'dislike')}
+                              className={`p-1.5 rounded-lg transition-colors ${messageFeedback[msg.id] === 'dislike' ? "text-red-500 bg-red-500/10" : "text-gray-400 hover:text-red-500 hover:bg-red-500/10"}`}
+                              title="Mala respuesta"
+                            >
+                              <ThumbsDown className={`w-4 h-4 ${messageFeedback[msg.id] === 'dislike' ? "fill-current" : ""}`} />
+                            </button>
 
-                          {/* Regenerate (Only on last AI message) */}
-                          {msg.id === aiMessages.filter(m => m.role === 'assistant').pop()?.id && !aiLoading && (
-                            <>
-                              <div className="w-px h-4 bg-gray-200 dark:bg-gray-700/50 mx-1" />
-                              <button 
-                                onClick={() => reload()}
-                                className="p-1.5 text-gray-400 hover:text-indigo-500 hover:bg-indigo-500/10 rounded-lg transition-colors flex items-center gap-1.5"
-                                title="Regenerar respuesta"
-                              >
-                                <RefreshCw className="w-4 h-4" />
-                              </button>
-                            </>
-                          )}
-                        </div>
+                            {/* Regenerate (Only on last AI message) */}
+                            {msg.id === aiMessages.filter(m => m.role === 'assistant').pop()?.id && !aiLoading && (
+                              <>
+                                <div className="w-px h-4 bg-gray-200 dark:bg-gray-700/50 mx-1" />
+                                <button 
+                                  onClick={() => reload()}
+                                  className="p-1.5 text-gray-400 hover:text-indigo-500 hover:bg-indigo-500/10 rounded-lg transition-colors flex items-center gap-1.5"
+                                  title="Regenerar respuesta"
+                                >
+                                  <RefreshCw className="w-4 h-4" />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -588,7 +590,7 @@ function FullScreenChatInternal() {
               {/* Active Tool Pills */}
               <AnimatePresence>
                 {activeTools.length > 0 && (
-                  <div className="absolute -top-10 left-4 flex gap-2">
+                  <div className="absolute bottom-full left-4 mb-2 flex flex-col sm:flex-row gap-2">
                     {activeTools.map(toolId => {
                       const tool = ADVANCED_TOOLS.find(t => t.id === toolId);
                       if (!tool) return null;
@@ -598,11 +600,13 @@ function FullScreenChatInternal() {
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, scale: 0.9 }}
-                          className="bg-gradient-to-r from-[#1890FF] to-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-2 shadow-[0_4px_15px_rgba(24,144,255,0.3)]"
+                          className="bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 text-[11px] font-bold px-3 py-1.5 rounded-full flex items-center gap-2 shadow-sm"
                         >
-                          <tool.icon className="w-3.5 h-3.5 text-white" />
-                          Forzando: {tool.label}
-                          <button type="button" onClick={() => toggleTool(toolId, tool.category)} className="ml-1 hover:text-white/70 transition-colors bg-white/20 rounded-full p-0.5"><X className="w-3 h-3" /></button>
+                          <div className="w-5 h-5 rounded-full bg-blue-50 dark:bg-[#1890FF]/10 flex items-center justify-center">
+                            <tool.icon className="w-3 h-3 text-[#1890FF]" />
+                          </div>
+                          {tool.label}
+                          <button type="button" onClick={() => toggleTool(toolId, tool.category)} className="ml-1 text-gray-400 hover:text-red-500 transition-colors rounded-full p-0.5 hover:bg-red-50 dark:hover:bg-red-500/10"><X className="w-3.5 h-3.5" /></button>
                         </motion.div>
                       );
                     })}

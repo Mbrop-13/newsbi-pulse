@@ -12,6 +12,7 @@ export interface ChatMessage {
   toolResults?: ToolResultUI[];
   thinkingSteps?: string[];
   model?: "deepseek" | "grok";
+  toolInvocations?: any[];
 }
 
 export interface ToolResultUI {

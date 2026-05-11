@@ -135,7 +135,7 @@ export function PromptCarousel({ onSend }: PromptCarouselProps) {
     .filter(Boolean) as PromptItem[];
 
   return (
-    <div className="flex flex-col items-center justify-center w-full mt-12 md:mt-28 mb-6 md:mb-10 select-none">
+    <div className="flex flex-col items-center justify-center w-full mt-12 md:mt-12 mb-6 md:mb-8 select-none">
 
       {/* ── Rotating Greeting ── */}
       <div className="h-10 md:h-12 flex items-center justify-center mb-1 overflow-hidden">

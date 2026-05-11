@@ -10,7 +10,7 @@ export const maxDuration = 60;
 
 const mimo = createOpenAI({
   baseURL: 'https://api.xiaomimimo.com/v1',
-  apiKey: 'sk-s90dnuvy85boyz4fe941w17jyvc7lyuqrf1jjo5v0vmc1eut',
+  apiKey: process.env.MIMO_API_KEY,
 });
 
 // ── Static system prompt (cacheable by OpenRouter) ──

@@ -74,7 +74,6 @@ function FullScreenChatInternal() {
 
   const { messages: aiMessages, input, handleInputChange, handleSubmit, setMessages: setAiMessages, append, isLoading: aiLoading, setInput, reload } = useChat({
     api: "/api/ai-chat",
-    id: currentChatId || Date.now().toString(),
     body: {
       articles: attachedArticles,
       files: attachedFiles,

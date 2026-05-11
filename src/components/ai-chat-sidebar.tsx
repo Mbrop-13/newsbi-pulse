@@ -3,12 +3,17 @@
 import { useState, useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Send, Bot, Sparkles, Loader2, ExternalLink, Trash2, History, ChevronRight, Paperclip, Globe, BarChart3, Newspaper, Bell, TrendingUp, TrendingDown, Mic, Plus, Share2, ThumbsUp, ThumbsDown, RefreshCw, LineChart, PieChart, AreaChart, Target, Scale, Layers, Star } from "lucide-react";
+import { X, Send, Bot, Sparkles, Loader2, ExternalLink, Trash2, History, ChevronRight, Paperclip, Globe, BarChart3, Newspaper, Bell, TrendingUp, TrendingDown, Mic, Plus, Share2, ThumbsUp, ThumbsDown, RefreshCw, LineChart, PieChart, AreaChart, Target, Scale, Layers, Star, Maximize } from "lucide-react";
 import { useAIChatStore, ChatMessage, AttachedArticle, ToolResultUI } from "@/lib/stores/ai-chat-store";
 import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import Link from "next/link";
+import { AnalyzedNewsCard } from './assistant/analyzed-news-card';
+import { PortfolioSummaryCard } from './assistant/portfolio-summary-card';
+import { StockAnalysisCard } from './assistant/stock-analysis-card';
+import { AIChartCard } from './assistant/ai-chart-card';
 import { PromptCarousel } from "./assistant/prompt-carousel";
 
 const ADVANCED_TOOLS = [
@@ -303,6 +308,14 @@ export function AIChatSidebar() {
                 >
                   <History className="w-3.5 h-3.5" />
                 </button>
+                <Link
+                  href="/asistente"
+                  onClick={close}
+                  className="w-7 h-7 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 flex items-center justify-center text-gray-400 hover:text-[#1890FF] transition-colors"
+                  title="Pantalla Completa"
+                >
+                  <Maximize className="w-3.5 h-3.5" />
+                </Link>
                 <button onClick={close} className="w-7 h-7 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -339,11 +352,28 @@ export function AIChatSidebar() {
 
               {messages.map((msg, msgIndex) => (
                 <div key={msg.id} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"} w-full group/msg`}>
-                  {msg.role === "assistant" && msg.toolResults && msg.toolResults.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-2 w-full justify-start">
-                      {msg.toolResults.map((tr, i) => (
-                        <ToolResultPill key={i} result={tr} />
-                      ))}
+                  {msg.role === "assistant" && (
+                    <div className="flex flex-col gap-2 mb-2 w-full">
+                      {msg.toolInvocations?.map((toolInvocation) => {
+                        if (toolInvocation.state === 'result') {
+                          if (toolInvocation.toolName === 'get_portfolio_summary') {
+                            return <PortfolioSummaryCard key={toolInvocation.toolCallId} result={toolInvocation.result} />;
+                          }
+                          if (['analyze_stock', 'compare_stocks', 'screen_market', 'get_sector_performance'].includes(toolInvocation.toolName)) {
+                            return <StockAnalysisCard key={toolInvocation.toolCallId} toolName={toolInvocation.toolName} result={toolInvocation.result} />;
+                          }
+                          if (toolInvocation.toolName === 'render_chart') {
+                            return <AIChartCard key={toolInvocation.toolCallId} result={toolInvocation.result} />;
+                          }
+                          return <AnalyzedNewsCard key={toolInvocation.toolCallId} toolName={toolInvocation.toolName} result={toolInvocation.result} />;
+                        }
+                        return (
+                          <div key={toolInvocation.toolCallId} className="flex items-center gap-2 px-3 py-1.5 bg-[#1890FF]/5 text-[#1890FF] rounded-xl text-[10px] font-bold w-fit animate-pulse border border-[#1890FF]/20">
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            Procesando datos...
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
 
@@ -587,7 +617,7 @@ export function AIChatSidebar() {
   );
 }
 
-// ── Thinking Steps Animation ───────────────────────
+
 
 function ThinkingSteps({ steps }: { steps: string[] }) {
   const [currentStep, setCurrentStep] = useState(0);

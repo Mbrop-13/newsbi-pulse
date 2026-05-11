@@ -309,7 +309,7 @@ export function AIChatSidebar() {
                   <History className="w-3.5 h-3.5" />
                 </button>
                 <Link
-                  href="/asistente"
+                  href="/ai"
                   onClick={close}
                   className="w-7 h-7 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 flex items-center justify-center text-gray-400 hover:text-[#1890FF] transition-colors"
                   title="Pantalla Completa"

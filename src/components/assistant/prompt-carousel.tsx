@@ -157,16 +157,12 @@ export function PromptCarousel({ onSend }: PromptCarouselProps) {
       </p>
 
       {/* ── Scrolling Row A (→ direction) ── */}
-      <div className="w-full overflow-hidden mb-3 relative">
-        <div className="pointer-events-none absolute inset-y-0 left-0 w-12 md:w-20 bg-gradient-to-r from-white dark:from-[#0a0a0a] to-transparent z-10" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-12 md:w-20 bg-gradient-to-l from-white dark:from-[#0a0a0a] to-transparent z-10" />
+      <div className="w-full max-w-4xl mx-auto overflow-hidden mb-3 relative [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
         <ScrollingRow items={ROW_A} direction="left" favorites={favorites} onSend={onSend} onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onClick={handleClick} showFavToast={showFavToast} />
       </div>
 
       {/* ── Scrolling Row B (← direction) ── */}
-      <div className="w-full overflow-hidden mb-6 relative">
-        <div className="pointer-events-none absolute inset-y-0 left-0 w-12 md:w-20 bg-gradient-to-r from-white dark:from-[#0a0a0a] to-transparent z-10" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-12 md:w-20 bg-gradient-to-l from-white dark:from-[#0a0a0a] to-transparent z-10" />
+      <div className="w-full max-w-4xl mx-auto overflow-hidden mb-6 relative [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
         <ScrollingRow items={ROW_B} direction="right" favorites={favorites} onSend={onSend} onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onClick={handleClick} showFavToast={showFavToast} />
       </div>
 
@@ -229,7 +225,7 @@ interface ScrollingRowProps {
 
 function ScrollingRow({ items, direction, favorites, onSend, onPointerDown, onPointerUp, onClick, showFavToast }: ScrollingRowProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [isPaused, setIsPaused] = useState(false);
+  const isPausedRef = useRef(false);
   const animRef = useRef<number>(0);
   const speedRef = useRef(direction === "left" ? 0.4 : -0.4);
 
@@ -246,7 +242,7 @@ function ScrollingRow({ items, direction, favorites, onSend, onPointerDown, onPo
 
     const animate = () => {
       if (el) {
-        if (!isPaused) {
+        if (!isPausedRef.current) {
           el.scrollLeft += speedRef.current;
         }
 
@@ -262,17 +258,17 @@ function ScrollingRow({ items, direction, favorites, onSend, onPointerDown, onPo
 
     animRef.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animRef.current);
-  }, [isPaused, direction]);
+  }, [direction]);
 
   return (
     <div
       ref={scrollRef}
       className="flex gap-2.5 overflow-x-auto px-4 py-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
       style={{ scrollBehavior: "auto" }}
-      onPointerEnter={() => setIsPaused(true)}
-      onPointerLeave={() => { setIsPaused(false); onPointerUp(); }}
-      onTouchStart={() => setIsPaused(true)}
-      onTouchEnd={() => { setIsPaused(false); onPointerUp(); }}
+      onPointerEnter={() => { isPausedRef.current = true; }}
+      onPointerLeave={() => { isPausedRef.current = false; onPointerUp(); }}
+      onTouchStart={() => { isPausedRef.current = true; }}
+      onTouchEnd={() => { isPausedRef.current = false; onPointerUp(); }}
     >
       {displayItems.map((item, idx) => {
         const isFav = favorites.includes(item.id);

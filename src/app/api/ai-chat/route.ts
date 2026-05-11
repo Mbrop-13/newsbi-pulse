@@ -8,13 +8,9 @@ import YahooFinance from "yahoo-finance2";
 
 export const maxDuration = 60;
 
-const openrouter = createOpenAI({
-  baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.OPENROUTER_API_KEY,
-  headers: {
-    'HTTP-Referer': 'https://reclu.cl',
-    'X-Title': 'Reclu',
-  }
+const mimo = createOpenAI({
+  baseURL: 'https://api.xiaomimimo.com/v1',
+  apiKey: 'sk-s90dnuvy85boyz4fe941w17jyvc7lyuqrf1jjo5v0vmc1eut',
 });
 
 // ── Static system prompt (cacheable by OpenRouter) ──
@@ -34,7 +30,7 @@ NUNCA digas que eres de OpenAI, Anthropic o Google. Eres de Reclu.`;
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages, articles, files, webSearch, activeTools } = await req.json();
+    const { messages, articles, files, modelId, activeTools } = await req.json();
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(JSON.stringify({ error: "Messages are required" }), { status: 400 });
@@ -56,7 +52,7 @@ export async function POST(req: NextRequest) {
       }), { status: 403 });
     }
 
-    const modelStr = webSearch ? "x-ai/grok-2-1212" : "google/gemini-2.5-flash";
+    const modelStr = modelId === "pro" ? "mimo-v2.5-pro" : "mimo-v2.5-fast";
 
     // Inject dynamic context as first user message context (not in system prompt = keeps cache)
     const now = new Date();
@@ -88,10 +84,11 @@ export async function POST(req: NextRequest) {
     const yf = new YahooFinance();
 
     const result = await streamText({
-      model: openrouter(modelStr),
+      model: mimo(modelStr),
       system: SYSTEM_PROMPT,
       messages: processedMessages,
       maxSteps: 8,
+      toolChoice: 'auto',
       tools: {
         // ── PORTFOLIO TOOLS ──
         get_portfolio_summary: tool({

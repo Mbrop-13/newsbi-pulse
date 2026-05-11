@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, Sparkles, Loader2, ExternalLink, Paperclip, BarChart3, Newspaper, Bell, TrendingUp, X, Globe, History, Trash2, Plus, MessageSquare, PanelLeftClose, PanelLeft, Settings, Moon, Sun, Monitor, Type, Maximize, CheckCircle2, Mic, Star, LineChart, PieChart, AreaChart, Target, Scale, Layers, ThumbsUp, ThumbsDown, RefreshCw, Share2, ChevronRight, Clock } from "lucide-react";
+import { Send, Bot, Sparkles, Loader2, ExternalLink, Paperclip, BarChart3, Newspaper, Bell, TrendingUp, X, Globe, History, Trash2, Plus, MessageSquare, PanelLeftClose, PanelLeft, Settings, Moon, Sun, Monitor, Type, Maximize, CheckCircle2, Mic, Star, LineChart, PieChart, AreaChart, Target, Scale, Layers, ThumbsUp, ThumbsDown, RefreshCw, Share2, ChevronRight, Clock, Zap } from "lucide-react";
 import { useAIChatStore, ChatMessage, ToolResultUI } from "@/lib/stores/ai-chat-store";
 import { getPlanConfig, PlanTier } from "@/lib/plan-limits";
 import { createClient } from "@/lib/supabase/client";
@@ -50,14 +50,14 @@ function FullScreenChatInternal() {
   }, []);
 
   const {
-    messages, addMessage, isLoading, setLoading, 
+    messages, addMessage, isLoading, 
     attachedArticles, attachedFiles, attachFile,
-    webSearchEnabled, setWebSearch, clearMessages,
+    selectedModel, setModel, clearMessages,
     savedChats, loadChat, deleteSavedChat,
     cloudSyncEnabled, setCloudSync,
     favoriteTools, toggleFavoriteTool,
     activeTools, toggleTool, clearTools,
-    messageFeedback, setFeedback
+    messageFeedback, setFeedback, currentChatId
   } = useAIChatStore();
   
   const [showUpsell, setShowUpsell] = useState(false);
@@ -66,6 +66,7 @@ function FullScreenChatInternal() {
   const [realUsageCount, setRealUsageCount] = useState(0);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [attachMenuView, setAttachMenuView] = useState<'main' | 'charts' | 'analysis'>('main');
+  const [showModelMenu, setShowModelMenu] = useState(false);
   const [shareDialog, setShareDialog] = useState({ isOpen: false, question: "", answer: "" });
 
   // Ref to always have the latest aiMessages available in callbacks
@@ -73,10 +74,11 @@ function FullScreenChatInternal() {
 
   const { messages: aiMessages, input, handleInputChange, handleSubmit, setMessages: setAiMessages, append, isLoading: aiLoading, setInput, reload } = useChat({
     api: "/api/ai-chat",
+    id: currentChatId || Date.now().toString(),
     body: {
       articles: attachedArticles,
       files: attachedFiles,
-      webSearch: webSearchEnabled,
+      modelId: selectedModel,
       activeTools: activeTools,
     },
     onFinish: (message) => {
@@ -105,7 +107,6 @@ function FullScreenChatInternal() {
 
   // Track the last loaded chat to detect switches
   const lastLoadedChatIdRef = useRef<string | null>(null);
-  const currentChatId = useAIChatStore((s) => s.currentChatId);
 
   // Sync store → aiMessages ONLY when a chat is explicitly loaded or cleared
   useEffect(() => {
@@ -266,12 +267,14 @@ function FullScreenChatInternal() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [aiMessages, aiLoading, messages]);
 
-  const handleWebSearchToggle = () => {
-    if (isPremium) {
-      setWebSearch(!webSearchEnabled);
-    } else {
+  const handleModelSelect = (mId: 'fast' | 'pro') => {
+    if (mId === 'pro' && !isPremium) {
       setShowUpsell(true);
+      setShowModelMenu(false);
+      return;
     }
+    setModel(mId);
+    setShowModelMenu(false);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -790,18 +793,70 @@ function FullScreenChatInternal() {
                   )}
                 </AnimatePresence>
                 
-                <button 
-                  type="button" 
-                  onClick={handleWebSearchToggle} 
-                  className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${
-                    webSearchEnabled 
-                      ? "bg-[#1890FF]/10 text-[#1890FF]" 
-                      : "bg-gray-50 dark:bg-white/5 text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10"
-                  }`} 
-                  title={webSearchEnabled ? "Búsqueda Web (Grok) Activa" : "Activar Búsqueda Web"}
-                >
-                  <Globe className={`w-5 h-5 ${webSearchEnabled ? "animate-pulse" : ""}`} />
-                </button>
+                {/* Model Selector */}
+                <div className="relative">
+                  <button 
+                    type="button" 
+                    onClick={() => setShowModelMenu(!showModelMenu)} 
+                    className={`h-10 px-3 flex items-center justify-center gap-2 rounded-full transition-colors ${
+                      selectedModel === 'pro'
+                        ? "bg-amber-500/10 text-amber-500 font-bold" 
+                        : "bg-gray-50 dark:bg-white/5 text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10"
+                    }`} 
+                    title="Seleccionar Modelo AI"
+                  >
+                    {selectedModel === 'fast' ? <Zap className="w-4 h-4" /> : <Star className="w-4 h-4" />}
+                    <span className="text-xs font-semibold hidden sm:inline">
+                      {selectedModel === 'fast' ? 'V2.5 Fast' : 'V2.5 Pro'}
+                    </span>
+                  </button>
+
+                  <AnimatePresence>
+                    {showModelMenu && (
+                      <>
+                        <div className="fixed inset-0 z-20" onClick={() => setShowModelMenu(false)} />
+                        <motion.div
+                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                          className="absolute bottom-12 left-0 z-40 w-56 bg-white dark:bg-slate-900 border border-gray-100 dark:border-white/10 rounded-2xl shadow-xl overflow-hidden flex flex-col p-2 space-y-1"
+                        >
+                          <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Modelo de IA</div>
+                          <button
+                            type="button"
+                            onClick={() => handleModelSelect('fast')}
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold rounded-xl transition-colors text-left ${selectedModel === 'fast' ? 'bg-[#1890FF]/10 text-[#1890FF]' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'}`}
+                          >
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${selectedModel === 'fast' ? 'bg-[#1890FF]/20 text-[#1890FF]' : 'bg-gray-100 dark:bg-slate-800 text-gray-500'}`}>
+                              <Zap className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <div className="leading-none">Reclu v2.5 Fast</div>
+                              <div className="text-[10px] text-gray-400 font-normal mt-1">Rápido e Inteligente (Por defecto)</div>
+                            </div>
+                          </button>
+                          
+                          <button
+                            type="button"
+                            onClick={() => handleModelSelect('pro')}
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold rounded-xl transition-colors text-left ${selectedModel === 'pro' ? 'bg-amber-500/10 text-amber-500' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'}`}
+                          >
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${selectedModel === 'pro' ? 'bg-amber-500/20 text-amber-500' : 'bg-gray-100 dark:bg-slate-800 text-gray-500'}`}>
+                              <Star className="w-4 h-4" />
+                            </div>
+                            <div className="flex-1">
+                              <div className="leading-none flex items-center justify-between">
+                                Reclu v2.5 Pro
+                                {!isPremium && <span className="text-[9px] bg-amber-500 text-white px-1.5 py-0.5 rounded ml-2 uppercase">Pro</span>}
+                              </div>
+                              <div className="text-[10px] text-gray-400 font-normal mt-1">Razonamiento profundo avanzado</div>
+                            </div>
+                          </button>
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
               
               {/* Text Input */}
@@ -975,7 +1030,7 @@ function FullScreenChatInternal() {
                 
                 <h3 className="text-3xl font-black text-gray-900 dark:text-white mb-2 tracking-tight">Internet en Vivo</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-8 max-w-[280px] mx-auto font-medium">
-                  Sube de nivel para conectar tu AI a <strong className="text-gray-900 dark:text-white">Grok 4.3</strong> y la web en tiempo real.
+                  Sube de nivel para usar <strong className="text-gray-900 dark:text-white">Reclu v2.5 Pro</strong> y búsqueda web avanzada.
                 </p>
                 
                 <div className="space-y-3 text-left mb-8 bg-gray-50 dark:bg-white/5 p-5 rounded-2xl">

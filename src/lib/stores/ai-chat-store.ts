@@ -49,7 +49,7 @@ interface AIChatStore {
   isOpen: boolean;
   messages: ChatMessage[];
   isLoading: boolean;
-  webSearchEnabled: boolean;
+  selectedModel: "fast" | "pro";
   attachedArticles: AttachedArticle[];
   attachedFiles: AttachedFile[];
   savedChats: SavedChat[];
@@ -65,7 +65,7 @@ interface AIChatStore {
   close: () => void;
   addMessage: (msg: ChatMessage) => void;
   setLoading: (val: boolean) => void;
-  setWebSearch: (val: boolean) => void;
+  setModel: (val: "fast" | "pro") => void;
   setCloudSync: (val: boolean) => void;
   clearMessages: () => void;
   toggleTool: (toolId: string, category: string) => void;
@@ -93,7 +93,7 @@ export const useAIChatStore = create<AIChatStore>()(
       messages: [],
       currentChatId: null,
       isLoading: false,
-      webSearchEnabled: false,
+      selectedModel: "fast",
       attachedArticles: [],
       attachedFiles: [],
       savedChats: [],
@@ -113,7 +113,7 @@ export const useAIChatStore = create<AIChatStore>()(
         get().updateCurrentChat();
       },
       setLoading: (val) => set({ isLoading: val }),
-      setWebSearch: (val) => set({ webSearchEnabled: val }),
+      setModel: (val) => set({ selectedModel: val }),
       setCloudSync: (val) => {
         set({ cloudSyncEnabled: val });
         if (val) {

@@ -78,9 +78,15 @@ function FullScreenChatInternal() {
     },
     onFinish: (message) => {
       clearTools();
-      // Keep store updated for persistence
-      useAIChatStore.setState({ messages: [...useAIChatStore.getState().messages, { id: message.id, role: 'assistant', content: message.content, timestamp: new Date(), toolInvocations: message.toolInvocations }] });
-      fetchRealUsage();
+      // Sync the COMPLETE conversation (user + assistant messages) to Zustand for persistence + sidebar
+      const store = useAIChatStore.getState();
+      const assistantMsg: ChatMessage = { id: message.id, role: 'assistant', content: message.content, timestamp: new Date(), toolInvocations: message.toolInvocations };
+      const updatedMessages = [...store.messages, assistantMsg];
+      useAIChatStore.setState({ messages: updatedMessages });
+      // Trigger updateCurrentChat to persist to savedChats + cloud
+      useAIChatStore.getState().updateCurrentChat();
+      // Delay fetching usage to ensure the server-side increment has committed
+      setTimeout(() => fetchRealUsage(), 800);
     }
   });
 
@@ -274,10 +280,18 @@ function FullScreenChatInternal() {
     const text = textOverride || input.trim();
     if (!text || aiLoading || reachedQuestionLimit) return;
     
-    // Use append to send the user message — this adds it to aiMessages AND triggers the API call
+    // 1. Add user message to Zustand store for persistence + sidebar history
+    const userMsg: ChatMessage = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: text,
+      timestamp: new Date(),
+    };
+    addMessage(userMsg); // This triggers updateCurrentChat() -> savedChats update
+    
+    // 2. Use append to send the user message to Vercel AI SDK (triggers the API call)
     append({ role: 'user', content: text });
     if (!textOverride) handleInputChange({ target: { value: '' } } as any);
-    fetchRealUsage();
   };
 
   const shortcuts = [

@@ -510,20 +510,35 @@ function FullScreenChatInternal() {
                             if (toolInvocation.toolName === 'render_chart') {
                               return <AIChartCard key={toolInvocation.toolCallId} result={toolInvocation.result} />;
                             }
+                            if (toolInvocation.toolName === 'search_web') {
+                              return null; // Rendered by CitationsPill below
+                            }
                             return <AnalyzedNewsCard key={toolInvocation.toolCallId} toolName={toolInvocation.toolName} result={toolInvocation.result} />;
                           }
                           return (
-                            <div key={toolInvocation.toolCallId} className="flex items-center gap-2 px-3 py-1.5 bg-[#1890FF]/5 text-[#1890FF] rounded-xl text-xs font-bold w-fit animate-pulse border border-[#1890FF]/20">
+                            <div key={toolInvocation.toolCallId} className="flex items-center gap-2 px-3 py-1.5 bg-[#1890FF]/5 text-[#1890FF] rounded-xl text-xs font-bold w-fit animate-pulse border border-[#1890FF]/20 my-1">
                               <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                              Analizando datos...
+                              {toolInvocation.toolName === 'search_web' ? 'Buscando en la web...' : 'Analizando datos...'}
                             </div>
                           );
                         })}
 
                         {/* Citations Pill (Web Sources) */}
-                        {(msg as any).citations && (msg as any).citations.length > 0 && (
-                          <CitationsPill citations={(msg as any).citations} />
-                        )}
+                        {(() => {
+                          let searchUrls: string[] = [];
+                          msg.toolInvocations?.forEach(t => {
+                            if (t.toolName === 'search_web' && t.state === 'result' && t.result?.results) {
+                              searchUrls.push(...t.result.results.map((r: any) => r.url).filter(Boolean));
+                            }
+                          });
+                          const nativeCitations = (msg as any).citations || [];
+                          const allCitations = Array.from(new Set([...nativeCitations, ...searchUrls]));
+                          
+                          if (allCitations.length > 0) {
+                            return <CitationsPill citations={allCitations} />;
+                          }
+                          return null;
+                        })()}
 
                         <div className={`prose ${fontSizeClass} dark:prose-invert max-w-none text-gray-800 dark:text-gray-200 leading-relaxed prose-p:my-3 prose-headings:my-5 prose-h1:text-2xl prose-h2:text-xl prose-a:text-[#1890FF] prose-a:font-semibold prose-a:no-underline hover:prose-a:underline prose-li:my-1`}>
                           <ReactMarkdown

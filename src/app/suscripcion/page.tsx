@@ -26,30 +26,6 @@ import { PLAN_CONFIGS, formatCLP, getAnnualMonthlyPrice, type PlanTier } from "@
 
 const plans = [
   {
-    id: "free" as PlanTier,
-    name: "Gratuito",
-    description: "Para explorar la plataforma.",
-    features: [
-      { text: "5 consultas IA de por vida", included: true, highlight: false },
-      { text: "5 audios de noticias/día", included: true, highlight: false },
-      { text: "2 alertas de precio", included: true, highlight: false },
-      { text: "5 activos en portafolio", included: true, highlight: false },
-      { text: "Diamantes x0.5", included: true, highlight: false },
-      { text: "Soporte comunitario", included: true, highlight: false },
-      { text: "Sin publicidad", included: false, highlight: false },
-      { text: "Historial de chats", included: false, highlight: false },
-      { text: "Alertas por Email", included: false, highlight: false },
-      { text: "Análisis de portafolio", included: false, highlight: false },
-      { text: "Alertas por SMS", included: false, highlight: false },
-      { text: "Informe semanal", included: false, highlight: false },
-      { text: "Recomendaciones IA", included: false, highlight: false },
-    ],
-    cta: "Plan actual",
-    popular: false,
-    gradient: "from-slate-500 to-slate-600",
-    icon: Zap,
-  },
-  {
     id: "pro" as PlanTier,
     name: "Pro",
     description: "Para usuarios activos.",
@@ -301,7 +277,7 @@ export default function SuscripcionesPage() {
 
           {/* Pricing Cards */}
           <div 
-            className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 max-w-[1200px] xl:max-w-[1400px] mx-auto"
+            className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-[1200px] mx-auto"
             onMouseLeave={() => setHoveredPlan(null)}
           >
             {plans.map((plan, i) => {
@@ -316,30 +292,32 @@ export default function SuscripcionesPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: i * 0.1 }}
                   onMouseEnter={() => setHoveredPlan(plan.id)}
-                  className={`relative flex flex-col rounded-3xl border p-6 text-left transition-all duration-300 group hover:-translate-y-2 ${
+                  className={`relative flex flex-col rounded-[2.5rem] border p-8 text-left transition-all duration-500 group ${
                     isPopularActive
-                      ? "border-accent bg-accent/[0.02] shadow-[0_0_40px_-10px_rgba(0,82,204,0.15)] scale-[1.02] md:scale-105 z-10 hover:shadow-[0_0_50px_-5px_rgba(0,82,204,0.3)] hover:border-[#1890FF]"
-                      : isCurrentPlan && plan.id !== "free"
-                      ? "border-emerald-500/50 bg-emerald-500/[0.02] hover:shadow-[0_0_30px_-10px_rgba(16,185,129,0.2)] hover:border-emerald-400"
-                      : "border-border bg-card/50 backdrop-blur-sm hover:border-[#1890FF]/40 hover:bg-card hover:shadow-[0_0_30px_-10px_rgba(24,144,255,0.15)]"
+                      ? "border-accent bg-accent/[0.03] shadow-[0_20px_60px_-15px_rgba(0,82,204,0.3)] md:scale-105 z-10 hover:border-[#1890FF]"
+                      : isCurrentPlan
+                      ? "border-emerald-500/50 bg-emerald-500/[0.03] shadow-[0_15px_40px_-15px_rgba(16,185,129,0.2)] hover:border-emerald-400"
+                      : "border-border bg-card/40 backdrop-blur-md hover:border-[#1890FF]/40 hover:bg-card hover:shadow-[0_15px_40px_-15px_rgba(24,144,255,0.15)] hover:-translate-y-2"
                   }`}
                 >
+                  {/* Glassmorphism subtle inner glow */}
+                  <div className="absolute inset-0 rounded-[2.5rem] bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
                   {plan.popular && (
-                    <div className={`absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-gradient-to-r from-[#0052CC] to-[#22D3EE] rounded-full text-white text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all duration-300 ${isPopularActive ? "shadow-lg shadow-[#0052CC]/30 opacity-100" : "opacity-60 saturate-50"}`}>
-                      <Star className="w-3.5 h-3.5" />
+                    <div className={`absolute -top-4 left-1/2 -translate-x-1/2 px-5 py-2 bg-gradient-to-r from-[#0052CC] to-[#22D3EE] rounded-full text-white text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all duration-500 ${isPopularActive ? "shadow-xl shadow-[#0052CC]/40 opacity-100" : "opacity-80 saturate-50"}`}>
+                      <Star className="w-4 h-4 fill-white/20" />
                       Recomendado
                     </div>
                   )}
                   
                   {isCurrentPlan && !plan.popular && (
-                    <div className={`absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-white text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-md ${plan.id === "free" ? "bg-slate-500" : "bg-emerald-500"}`}>
-                      <Check className="w-3 h-3" />
+                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-5 py-2 bg-emerald-500 rounded-full text-white text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-xl shadow-emerald-500/30">
+                      <Check className="w-4 h-4" />
                       Tu plan actual
                     </div>
                   )}
 
-                  <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${plan.gradient} flex items-center justify-center mb-5 shadow-lg`}>
-                    <PlanIcon className="w-6 h-6 text-white" />
+                  <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${plan.gradient} flex items-center justify-center mb-6 shadow-xl ${isPopularActive ? 'shadow-[#0052CC]/30' : 'shadow-black/5'} relative z-10`}>
+                    <PlanIcon className="w-7 h-7 text-white" />
                   </div>
 
                   <h3 className="font-editorial text-2xl font-bold mb-2 text-foreground">{plan.name}</h3>
@@ -367,20 +345,16 @@ export default function SuscripcionesPage() {
 
                   <Button
                     onClick={() => handleSelectPlan(plan.id)}
-                    className={`w-full rounded-2xl h-12 font-bold text-sm mb-8 transition-all ${
+                    className={`w-full rounded-2xl h-14 font-bold text-base mb-8 transition-all relative z-10 ${
                       plan.popular
-                        ? "bg-gradient-to-r from-[#0052CC] to-[#0066FF] hover:from-[#0052CC]/90 hover:to-[#0066FF]/90 text-white shadow-[0_10px_20px_-10px_rgba(0,82,204,0.5)] hover:shadow-[0_10px_20px_-10px_rgba(0,82,204,0.7)] hover:-translate-y-0.5"
+                        ? "bg-gradient-to-r from-[#0052CC] to-[#0066FF] hover:from-[#0052CC]/90 hover:to-[#0066FF]/90 text-white shadow-[0_10px_30px_-10px_rgba(0,82,204,0.6)] hover:shadow-[0_15px_40px_-10px_rgba(0,82,204,0.8)] hover:-translate-y-1"
                         : plan.id === "ultra"
-                        ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg shadow-purple-500/25 hover:-translate-y-0.5"
-                        : isCurrentPlan && plan.id !== "free"
+                        ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg shadow-purple-500/30 hover:-translate-y-1"
+                        : isCurrentPlan
                         ? "bg-emerald-500/10 text-emerald-600 cursor-default border border-emerald-500/20"
-                        : isCurrentPlan && plan.id === "free"
-                        ? "bg-secondary text-muted-foreground cursor-default border border-border"
-                        : plan.id === "pro"
-                        ? "bg-secondary hover:bg-secondary/80 text-foreground border border-border"
-                        : "bg-secondary/50 text-muted-foreground cursor-default border border-border/50"
+                        : "bg-secondary hover:bg-secondary/80 text-foreground border border-border shadow-sm hover:-translate-y-1"
                     }`}
-                    disabled={plan.id === "free" || isCurrentPlan}
+                    disabled={isCurrentPlan}
                   >
                     {isCurrentPlan ? "Plan actual" : plan.cta}
                     {plan.popular && !isCurrentPlan && <ArrowRight className="w-4 h-4 ml-2" />}

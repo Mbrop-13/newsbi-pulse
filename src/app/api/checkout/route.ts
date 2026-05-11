@@ -9,12 +9,8 @@ const supabase = createClient(
 
 const ACCESS_TOKEN = process.env.MERCADOPAGO_ACCESS_TOKEN!;
 
-// Map plan tier to Mercado Pago preapproval_plan IDs
-const PLAN_IDS: Record<string, string> = {
-  pro: process.env.MERCADOPAGO_PLAN_PRO_ID || "",
-  max: process.env.MERCADOPAGO_PLAN_MAX_ID || "",
-  ultra: process.env.MERCADOPAGO_PLAN_ULTRA_ID || "",
-};
+// We generate subscriptions dynamically to get an init_point checkout link,
+// bypassing the need for pre-existing plan IDs and card tokens.
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,7 +18,7 @@ export async function POST(request: NextRequest) {
 
     // Validate plan
     const planConfig = PLAN_CONFIGS[plan];
-    if (!planConfig || planConfig.price === 0 || !PLAN_IDS[plan]) {
+    if (!planConfig || planConfig.price === 0) {
       return NextResponse.json({ error: "Plan inválido" }, { status: 400 });
     }
 
@@ -62,9 +58,15 @@ export async function POST(request: NextRequest) {
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://reclu.cl";
 
-    // Create a preapproval (subscription) using the plan
+    // Create a preapproval (subscription) dynamically
     const body = {
-      preapproval_plan_id: PLAN_IDS[plan],
+      reason: `Suscripción Reclu ${plan.toUpperCase()}`,
+      auto_recurring: {
+        frequency: 1,
+        frequency_type: "months",
+        transaction_amount: planConfig.price,
+        currency_id: "CLP",
+      },
       payer_email: user.email,
       external_reference: JSON.stringify({
         user_id: user.id,

@@ -313,15 +313,12 @@ export default function SuscripcionesPage() {
                   transition={{ duration: 0.5, delay: i * 0.12 }}
                   className={`relative flex flex-col rounded-3xl border text-left transition-all duration-300 group overflow-hidden ${
                     plan.popular
-                      ? "border-[#1890FF]/30 bg-card shadow-xl shadow-[#0052CC]/10 ring-1 ring-[#1890FF]/10"
+                      ? "border-[#1890FF]/30 bg-card shadow-xl shadow-[#0052CC]/10 ring-1 ring-[#1890FF]/10 hover:-translate-y-1"
                       : isCurrentPlan
-                      ? "border-emerald-500/40 bg-card shadow-lg shadow-emerald-500/5"
+                      ? "border-emerald-500/40 bg-card shadow-lg shadow-emerald-500/5 hover:-translate-y-1"
                       : "border-border bg-card hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-xl hover:shadow-black/5 hover:-translate-y-1"
                   }`}
                 >
-                  {/* Top gradient stripe */}
-                  <div className={`h-1.5 w-full bg-gradient-to-r ${plan.gradient}`} />
-
                   <div className="p-8 flex flex-col flex-1">
                     {/* Badge */}
                     {plan.popular && (

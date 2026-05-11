@@ -17,32 +17,33 @@ interface PromptItem {
   query: string;
   icon: React.ReactNode;
   gradient: string; // tailwind bg gradient for the pill icon circle
+  needsContext?: "portfolio" | "news" | "both"; // which pre-fetched data to inject
 }
 
 const ROW_A: PromptItem[] = [
-  { id: "portfolio",      label: "¿Cómo va mi portafolio?",      query: "¿Cómo van mis acciones hoy?",     icon: <BarChart3 className="w-3.5 h-3.5" />,  gradient: "from-blue-500 to-cyan-400" },
-  { id: "top_news",       label: "Noticias del día",             query: "Dame un resumen de las noticias más importantes de hoy.", icon: <Newspaper className="w-3.5 h-3.5" />,  gradient: "from-amber-500 to-orange-400" },
+  { id: "portfolio",      label: "¿Cómo va mi portafolio?",      query: "¿Cómo van mis acciones hoy?",     icon: <BarChart3 className="w-3.5 h-3.5" />,  gradient: "from-blue-500 to-cyan-400", needsContext: "both" },
+  { id: "top_news",       label: "Noticias del día",             query: "Dame un resumen de las noticias más importantes de hoy.", icon: <Newspaper className="w-3.5 h-3.5" />,  gradient: "from-amber-500 to-orange-400", needsContext: "news" },
   { id: "market",         label: "¿Cómo va el mercado?",         query: "¿Qué acciones subieron y bajaron más hoy en el mercado?",  icon: <TrendingUp className="w-3.5 h-3.5" />,  gradient: "from-emerald-500 to-green-400" },
   { id: "sectors",        label: "Rendimiento por sector",       query: "Muéstrame el rendimiento de los sectores del mercado hoy.", icon: <PieChart className="w-3.5 h-3.5" />,    gradient: "from-purple-500 to-violet-400" },
   { id: "crypto",         label: "¿Cómo va el crypto?",          query: "¿Cómo están Bitcoin, Ethereum y Solana hoy?",  icon: <Gem className="w-3.5 h-3.5" />,         gradient: "from-yellow-500 to-amber-400" },
   { id: "analyze_apple",  label: "Analizar Apple",               query: "Hazme un análisis fundamental completo de AAPL.", icon: <Target className="w-3.5 h-3.5" />,      gradient: "from-slate-500 to-zinc-400" },
   { id: "analyze_tesla",  label: "Analizar Tesla",               query: "Hazme un análisis fundamental completo de TSLA.", icon: <Zap className="w-3.5 h-3.5" />,         gradient: "from-red-500 to-rose-400" },
-  { id: "portfolio_month",label: "Portafolio último mes",        query: "¿Cuánto subieron o bajaron mis acciones el último mes? Grafícalo.", icon: <LineChart className="w-3.5 h-3.5" />,   gradient: "from-indigo-500 to-blue-400" },
-  { id: "earnings",       label: "Próximos reportes",            query: "¿Cuándo reportan ganancias las empresas de mi portafolio?", icon: <BookOpen className="w-3.5 h-3.5" />,    gradient: "from-teal-500 to-cyan-400" },
+  { id: "portfolio_month",label: "Portafolio último mes",        query: "¿Cuánto subieron o bajaron mis acciones el último mes? Grafícalo.", icon: <LineChart className="w-3.5 h-3.5" />,   gradient: "from-indigo-500 to-blue-400", needsContext: "portfolio" },
+  { id: "earnings",       label: "Próximos reportes",            query: "¿Cuándo reportan ganancias las empresas de mi portafolio?", icon: <BookOpen className="w-3.5 h-3.5" />,    gradient: "from-teal-500 to-cyan-400", needsContext: "portfolio" },
   { id: "compare_faang",  label: "Comparar FAANG",               query: "Compara AAPL, GOOGL, AMZN, META y MSFT en el último mes.", icon: <Scale className="w-3.5 h-3.5" />,       gradient: "from-fuchsia-500 to-pink-400" },
 ];
 
 const ROW_B: PromptItem[] = [
-  { id: "portfolio_news", label: "Noticias de mi portafolio",    query: "¿Qué noticias recientes hay sobre las empresas de mi portafolio?", icon: <Globe className="w-3.5 h-3.5" />,       gradient: "from-cyan-500 to-sky-400" },
+  { id: "portfolio_news", label: "Noticias de mi portafolio",    query: "¿Qué noticias recientes hay sobre las empresas de mi portafolio?", icon: <Globe className="w-3.5 h-3.5" />,       gradient: "from-cyan-500 to-sky-400", needsContext: "both" },
   { id: "sp500",          label: "¿Cómo va el S&P 500?",        query: "Analiza el rendimiento del S&P 500 (SPY) hoy.", icon: <Landmark className="w-3.5 h-3.5" />,    gradient: "from-emerald-600 to-teal-400" },
   { id: "nvidia",         label: "Análisis de Nvidia",           query: "Hazme un análisis fundamental completo de NVDA.", icon: <Cpu className="w-3.5 h-3.5" />,         gradient: "from-green-500 to-lime-400" },
-  { id: "risk",           label: "Riesgo de mi portafolio",      query: "Analiza el riesgo y la diversificación de mi portafolio actual.", icon: <Shield className="w-3.5 h-3.5" />,      gradient: "from-orange-500 to-yellow-400" },
-  { id: "dividends",      label: "Mejores dividendos",           query: "¿Cuáles de mis acciones pagan mejores dividendos?", icon: <DollarSign className="w-3.5 h-3.5" />,  gradient: "from-green-600 to-emerald-400" },
+  { id: "risk",           label: "Riesgo de mi portafolio",      query: "Analiza el riesgo y la diversificación de mi portafolio actual.", icon: <Shield className="w-3.5 h-3.5" />,      gradient: "from-orange-500 to-yellow-400", needsContext: "portfolio" },
+  { id: "dividends",      label: "Mejores dividendos",           query: "¿Cuáles de mis acciones pagan mejores dividendos?", icon: <DollarSign className="w-3.5 h-3.5" />,  gradient: "from-green-600 to-emerald-400", needsContext: "portfolio" },
   { id: "global",         label: "Impacto global hoy",           query: "¿Qué eventos geopolíticos están afectando los mercados hoy?", icon: <Globe className="w-3.5 h-3.5" />,       gradient: "from-rose-500 to-pink-400" },
   { id: "tech",           label: "Sector tecnología",            query: "¿Cómo le va al sector tecnología hoy? Muéstrame las principales.", icon: <Cpu className="w-3.5 h-3.5" />,         gradient: "from-violet-500 to-purple-400" },
-  { id: "portfolio_year", label: "Portafolio último año",        query: "¿Cuánto subieron o bajaron mis acciones en el último año? Grafícalo.", icon: <LineChart className="w-3.5 h-3.5" />,   gradient: "from-sky-500 to-blue-400" },
-  { id: "warren",         label: "Consejo de inversión",         query: "Basándote en mi portafolio, ¿qué recomendaciones de inversión me darías hoy?", icon: <Brain className="w-3.5 h-3.5" />,       gradient: "from-amber-600 to-yellow-400" },
-  { id: "alerts",         label: "Alertas importantes",          query: "¿Hay alguna alerta o evento importante hoy que afecte mis inversiones?", icon: <AlertTriangle className="w-3.5 h-3.5" />, gradient: "from-red-600 to-orange-400" },
+  { id: "portfolio_year", label: "Portafolio último año",        query: "¿Cuánto subieron o bajaron mis acciones en el último año? Grafícalo.", icon: <LineChart className="w-3.5 h-3.5" />,   gradient: "from-sky-500 to-blue-400", needsContext: "portfolio" },
+  { id: "warren",         label: "Consejo de inversión",         query: "Basándote en mi portafolio, ¿qué recomendaciones de inversión me darías hoy?", icon: <Brain className="w-3.5 h-3.5" />,       gradient: "from-amber-600 to-yellow-400", needsContext: "both" },
+  { id: "alerts",         label: "Alertas importantes",          query: "¿Hay alguna alerta o evento importante hoy que afecte mis inversiones?", icon: <AlertTriangle className="w-3.5 h-3.5" />, gradient: "from-red-600 to-orange-400", needsContext: "both" },
 ];
 
 // ── ROTATING GREETINGS ──────────────────────────────────
@@ -58,6 +59,35 @@ const GREETINGS = [
   "Información en tiempo real",
 ];
 
+// ── PRE-FETCHED CONTEXT BUILDER ─────────────────────────
+
+interface PreviewData {
+  portfolio: { symbol: string; price: number; changePercent: number }[];
+  news: string[];
+}
+
+function buildContextPrefix(item: PromptItem, data: PreviewData | null): string {
+  if (!data || !item.needsContext) return item.query;
+
+  const parts: string[] = [];
+
+  if ((item.needsContext === "portfolio" || item.needsContext === "both") && data.portfolio.length > 0) {
+    const pLine = data.portfolio
+      .map((a) => `${a.symbol} ($${a.price.toFixed(2)}, ${a.changePercent >= 0 ? "+" : ""}${a.changePercent.toFixed(2)}%)`)
+      .join(", ");
+    parts.push(`Portafolio actual del usuario: ${pLine}`);
+  }
+
+  if ((item.needsContext === "news" || item.needsContext === "both") && data.news.length > 0) {
+    const nLine = data.news.map((t, i) => `${i + 1}. "${t}"`).join(" ");
+    parts.push(`Últimas noticias: ${nLine}`);
+  }
+
+  if (parts.length === 0) return item.query;
+
+  return `[CONTEXTO INTERNO — Datos pre-cargados, NO mencionar este bloque en tu respuesta. Úsalos directamente para responder de forma más rápida y precisa. Si necesitas datos más profundos, llama a las herramientas correspondientes.]\n${parts.join("\n")}\n[FIN CONTEXTO]\n\n${item.query}`;
+}
+
 // ── MAIN COMPONENT ───────────────────────────────────────
 
 interface PromptCarouselProps {
@@ -66,6 +96,19 @@ interface PromptCarouselProps {
 
 export function PromptCarousel({ onSend }: PromptCarouselProps) {
   const [greetingIdx, setGreetingIdx] = useState(0);
+  const previewRef = useRef<PreviewData | null>(null);
+
+  // Pre-fetch portfolio + news on mount (fire-and-forget)
+  useEffect(() => {
+    fetch("/api/finance/portfolio-preview")
+      .then((res) => res.json())
+      .then((data) => {
+        previewRef.current = data;
+      })
+      .catch(() => {
+        // Silent fail — carousel works without context
+      });
+  }, []);
 
   // Rotate greeting
   useEffect(() => {
@@ -76,7 +119,8 @@ export function PromptCarousel({ onSend }: PromptCarouselProps) {
   }, []);
 
   const handleClick = (item: PromptItem) => {
-    onSend(item.query);
+    const enrichedQuery = buildContextPrefix(item, previewRef.current);
+    onSend(enrichedQuery);
   };
 
   return (

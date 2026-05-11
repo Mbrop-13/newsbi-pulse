@@ -106,6 +106,8 @@ function FullScreenChatInternal() {
 
   // Track the last loaded chat to detect switches
   const lastLoadedChatIdRef = useRef<string | null>(null);
+  // Track whether the current chat was loaded from history (for timestamp display)
+  const isLoadedChatRef = useRef(false);
 
   // Sync store → aiMessages ONLY when a chat is explicitly loaded or cleared
   useEffect(() => {
@@ -113,6 +115,7 @@ function FullScreenChatInternal() {
       lastLoadedChatIdRef.current = currentChatId;
       if (currentChatId && messages.length > 0) {
         // A saved chat was loaded — sync to useChat
+        isLoadedChatRef.current = true;
         setAiMessages(messages.map(m => ({
           id: m.id,
           role: m.role,
@@ -121,6 +124,7 @@ function FullScreenChatInternal() {
         })) as any);
       } else if (!currentChatId) {
         // New chat / cleared
+        isLoadedChatRef.current = false;
         setAiMessages([]);
       }
     }
@@ -468,14 +472,14 @@ function FullScreenChatInternal() {
 
             <div className="space-y-8">
               {aiMessages.map((msg, msgIndex) => {
-                // Show timestamp between messages when there's a time gap or at conversation start
-                const showTimestamp = msgIndex === 0 || (msg.role === 'user' && (msgIndex === 0 || aiMessages[msgIndex - 1]?.role === 'assistant'));
+                // Show timestamp ONLY for chats loaded from history, not new conversations
+                const showTimestamp = isLoadedChatRef.current && msgIndex === 0 && msg.role === 'user';
                 const msgTime = (msg as any).createdAt ? new Date((msg as any).createdAt) : new Date();
                 
                 return (
                 <div key={msg.id} className="w-full flex flex-col group">
-                  {/* Timestamp */}
-                  {showTimestamp && msg.role === 'user' && (
+                  {/* Timestamp — only shown when viewing a previously saved chat */}
+                  {showTimestamp && (
                     <div className="flex items-center justify-center mb-3">
                       <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500 bg-gray-100/80 dark:bg-white/5 px-3 py-1 rounded-full">
                         {msgTime.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })} · {msgTime.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}

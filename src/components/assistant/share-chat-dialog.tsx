@@ -146,10 +146,14 @@ export function ShareChatDialog({ isOpen, onClose, question, answer }: ShareChat
 
                   {/* Header / Logo */}
                   <div className="flex items-center gap-2 mb-4 relative z-10">
-                    <div className="w-6 h-6 rounded-md bg-gradient-to-br from-[#1890FF] to-indigo-600 flex items-center justify-center shadow-md shrink-0">
-                      <Sparkles className="w-3.5 h-3.5 text-white" />
-                    </div>
-                    <span className="font-extrabold text-[13px] tracking-wide text-gray-900 dark:text-white">RECLU <span className="text-[#1890FF]">AI</span></span>
+                    <img 
+                      src="https://cdn.shopify.com/s/files/1/0564/3812/8712/files/freepik__background__94196.png?v=1771922713" 
+                      alt="Reclu" 
+                      className="h-6 w-auto object-contain"
+                    />
+                    <span className="text-xl font-black tracking-tighter text-[#1890FF] italic leading-none">
+                      RECLU
+                    </span>
                   </div>
 
                   {/* Question */}

@@ -62,68 +62,47 @@ export function AnalyzedNewsCard({ toolName, result }: AnalyzedNewsCardProps) {
   const previewImages = news.filter((n: any) => n.image_url).slice(0, 5);
 
   return (
-    <div className="w-full max-w-md my-3">
-      {/* ── Collapsed Toggle Button ── */}
+    <div className="w-full my-3">
+      {/* ── Sources Pill Button ── */}
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className={`
-          flex items-center gap-3 w-full px-4 py-3.5
-          bg-white dark:bg-[#141821]
-          border border-gray-200/80 dark:border-white/10
-          rounded-2xl shadow-sm
-          hover:shadow-md hover:border-[#1890FF]/30 dark:hover:border-[#1890FF]/30
-          transition-all duration-200
-          ${isOpen ? 'rounded-b-none border-b-0 shadow-none' : ''}
-        `}
+        className="flex items-center gap-2 w-fit px-2 py-1.5 bg-gray-50 hover:bg-gray-100 dark:bg-white/[0.03] dark:hover:bg-white/[0.08] border border-gray-200/60 dark:border-white/10 rounded-full transition-all cursor-pointer group shadow-sm"
       >
-        {/* Icon */}
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1890FF] to-indigo-600 flex items-center justify-center shadow-md shrink-0">
-          <Icon className="w-4.5 h-4.5 text-white" />
-        </div>
-
-        {/* Text + Avatars */}
-        <div className="flex-1 text-left min-w-0">
-          <p className="text-sm font-bold text-gray-900 dark:text-white leading-tight">{label}</p>
-          <div className="flex items-center gap-1.5 mt-1.5">
-            {/* Circular news thumbnails */}
-            <div className="flex -space-x-2">
-              {previewImages.map((item: any, i: number) => (
-                <div
-                  key={item.id}
-                  className="w-6 h-6 rounded-full border-2 border-white dark:border-[#141821] overflow-hidden bg-gray-200 dark:bg-gray-700 shrink-0"
-                  style={{ zIndex: previewImages.length - i }}
-                >
-                  <img src={item.image_url} alt="" className="w-full h-full object-cover" />
-                </div>
-              ))}
-              {news.length > previewImages.length && (
-                <div className="w-6 h-6 rounded-full border-2 border-white dark:border-[#141821] bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0 text-[9px] font-bold text-gray-500">
-                  +{news.length - previewImages.length}
-                </div>
+        <div className="flex -space-x-1.5 pl-0.5">
+          {previewImages.map((item: any, i: number) => (
+            <div
+              key={item.id}
+              className="w-[22px] h-[22px] rounded-full border border-white dark:border-gray-900 bg-white dark:bg-gray-800 overflow-hidden shrink-0 shadow-sm flex items-center justify-center"
+              style={{ zIndex: previewImages.length - i }}
+            >
+              {item.image_url ? (
+                <img src={item.image_url} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <Globe className="w-3 h-3 text-gray-400" />
               )}
             </div>
-            <span className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 ml-1">{news.length} artículos</span>
-          </div>
+          ))}
         </div>
-
-        {/* Chevron */}
-        <ChevronDown className={`w-5 h-5 text-gray-400 shrink-0 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`} />
+        <span className="text-[13px] font-semibold text-gray-600 dark:text-gray-300 pr-1 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+          {news.length} fuentes
+        </span>
       </button>
 
       {/* ── Expanded Panel ── */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
+            initial={{ opacity: 0, height: 0, marginTop: 0 }}
+            animate={{ opacity: 1, height: 'auto', marginTop: 8 }}
+            exit={{ opacity: 0, height: 0, marginTop: 0 }}
             transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
             className="overflow-hidden"
           >
             <div className="
+              w-full max-w-sm
               bg-white dark:bg-[#141821]
-              border border-t-0 border-gray-200/80 dark:border-white/10
-              rounded-b-2xl shadow-sm
+              border border-gray-200/80 dark:border-white/10
+              rounded-2xl shadow-sm
               overflow-hidden
             ">
               {/* Scrollable news list with bounded height */}

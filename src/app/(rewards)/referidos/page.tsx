@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users, Copy, Sparkles, CheckCircle2, ChevronRight, Share2, Loader2, Trophy, ArrowRight } from "lucide-react";
+import { Users, Copy, Sparkles, CheckCircle2, Share2, Loader2, Trophy, Medal, Star, Crown, Gift, Rocket, ShieldAlert } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTheme } from "next-themes";
 
 interface ReferralData {
   code: string | null;
@@ -11,10 +12,62 @@ interface ReferralData {
 }
 
 const MILESTONES = [
-  { count: 2, title: "1 Mes PRO", subtitle: "Acceso gratuito", tier: "pro" },
-  { count: 5, title: "3 Meses MAX", subtitle: "Herramientas avanzadas", tier: "max" },
-  { count: 10, title: "1 Año ULTRA", subtitle: "Experiencia completa", tier: "ultra" },
+  { 
+    count: 1, 
+    title: "15 Días PRO", 
+    subtitle: "50% de descuento en tu primer mes", 
+    tier: "pro",
+    icon: Star,
+    color: "from-amber-400 to-orange-500",
+    shadow: "shadow-orange-500/30"
+  },
+  { 
+    count: 3, 
+    title: "1 Mes PRO", 
+    subtitle: "Acceso estándar gratuito", 
+    tier: "pro",
+    icon: Medal,
+    color: "from-slate-400 to-slate-600",
+    shadow: "shadow-slate-500/30"
+  },
+  { 
+    count: 5, 
+    title: "1 Mes MAX", 
+    subtitle: "Herramientas avanzadas desbloqueadas", 
+    tier: "max",
+    icon: Trophy,
+    color: "from-yellow-400 to-amber-600",
+    shadow: "shadow-yellow-500/30"
+  },
+  { 
+    count: 10, 
+    title: "3 Meses MAX", 
+    subtitle: "Un trimestre entero gratis", 
+    tier: "max",
+    icon: GemIcon, // Custom component defined below
+    color: "from-emerald-400 to-teal-600",
+    shadow: "shadow-emerald-500/30"
+  },
+  { 
+    count: 25, 
+    title: "1 Año ULTRA", 
+    subtitle: "Experiencia institucional completa", 
+    tier: "ultra",
+    icon: Crown,
+    color: "from-fuchsia-500 to-purple-600",
+    shadow: "shadow-purple-500/30"
+  },
 ];
+
+function GemIcon(props: any) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M6 3h12l4 6-10 13L2 9Z" />
+      <path d="M11 3 8 9l4 13 4-13-3-6" />
+      <path d="M2 9h20" />
+    </svg>
+  );
+}
 
 export default function ReferralsPage() {
   const [data, setData] = useState<ReferralData | null>(null);
@@ -22,6 +75,7 @@ export default function ReferralsPage() {
   const [claiming, setClaiming] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
+  const { theme } = useTheme();
 
   useEffect(() => {
     fetchData();
@@ -52,7 +106,7 @@ export default function ReferralsPage() {
   const shareToWhatsApp = () => {
     if (!data?.code) return;
     const link = `${window.location.origin}/registro?ref=${data.code}`;
-    const text = `¡Únete a Reclu, la mejor IA financiera, y analicemos el mercado juntos! Usa mi enlace: ${link}`;
+    const text = `¡Únete a Reclu, la mejor IA financiera, y analicemos el mercado juntos! Usa mi enlace y obtén beneficios exclusivos: ${link}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
   };
 
@@ -89,151 +143,222 @@ export default function ReferralsPage() {
 
   if (loading) {
     return (
-      <div className="w-full h-64 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-[#1890FF]" />
+      <div className="w-full h-[60vh] flex flex-col items-center justify-center gap-4">
+        <div className="relative w-16 h-16">
+          <div className="absolute inset-0 rounded-full border-4 border-[#1890FF]/20" />
+          <div className="absolute inset-0 rounded-full border-4 border-[#1890FF] border-t-transparent animate-spin" />
+        </div>
+        <p className="text-gray-500 font-medium animate-pulse">Cargando tus recompensas...</p>
       </div>
     );
   }
 
   const progressCount = data?.referralsCount || 0;
-  const maxMilestone = MILESTONES[MILESTONES.length - 1].count;
-  const progressPercent = Math.min(100, (progressCount / maxMilestone) * 100);
 
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="w-full max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
       
-      {/* Header */}
-      <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/10 rounded-3xl p-6 md:p-10 shadow-sm relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-[#1890FF]/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+      {/* ─── PREMIUM HERO SECTION ─── */}
+      <div className="relative overflow-hidden rounded-[2.5rem] bg-gray-900 dark:bg-black border border-gray-800 shadow-2xl p-8 md:p-12">
+        {/* Animated Background Elements */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-[#1890FF]/20 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3 animate-pulse duration-10000" />
+        <div className="absolute bottom-0 left-0 w-80 h-80 bg-purple-500/20 rounded-full blur-[80px] translate-y-1/3 -translate-x-1/3" />
+        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.03] mix-blend-overlay" />
         
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-lg">
-            <h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white flex items-center gap-3">
-              Invita a tus amigos <span className="text-2xl">🤝</span>
+        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10">
+          <div className="flex-1 space-y-6 text-center md:text-left">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-white text-xs font-bold uppercase tracking-wider backdrop-blur-md w-max mx-auto md:mx-0">
+              <Sparkles className="w-3.5 h-3.5 text-[#1890FF]" />
+              Programa de Recompensas
+            </div>
+            
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white leading-[1.1] tracking-tight">
+              Invita Amigos. <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#1890FF] to-purple-500">
+                Gana Acceso Premium.
+              </span>
             </h1>
-            <p className="text-gray-500 dark:text-gray-400 text-lg">
-              Regala acceso a la mejor IA financiera y gana meses de suscripción <span className="text-[#1890FF] font-bold">gratis</span> cuando se registren.
+            
+            <p className="text-gray-400 text-lg md:text-xl max-w-xl font-medium leading-relaxed mx-auto md:mx-0">
+              Construye tu red. Por cada amigo que se una con tu enlace, desbloquearás meses gratis de nuestras mejores herramientas financieras.
             </p>
           </div>
           
-          <div className="flex-shrink-0 flex items-center gap-3 bg-[#1890FF]/5 dark:bg-[#1890FF]/10 text-[#1890FF] px-6 py-4 rounded-2xl border border-[#1890FF]/20">
-            <Users className="w-8 h-8" />
-            <div>
-              <div className="text-3xl font-black">{progressCount}</div>
-              <div className="text-xs font-bold uppercase tracking-wider opacity-80">Amigos unidos</div>
-            </div>
+          {/* Dynamic Progress Orb */}
+          <div className="shrink-0 relative group perspective-1000">
+            <motion.div 
+              initial={{ scale: 0.8, opacity: 0, rotateY: 90 }}
+              animate={{ scale: 1, opacity: 1, rotateY: 0 }}
+              transition={{ type: "spring", duration: 1.5, bounce: 0.4 }}
+              className="relative w-48 h-48 md:w-56 md:h-56 rounded-full bg-gradient-to-br from-gray-800 to-black border border-gray-700 shadow-2xl flex flex-col items-center justify-center transform-style-3d group-hover:rotate-y-12 transition-transform duration-500"
+            >
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#1890FF]/20 to-transparent blur-xl" />
+              <Users className="w-10 h-10 text-[#1890FF] mb-2 opacity-80" />
+              <div className="text-6xl md:text-7xl font-black text-white tracking-tighter drop-shadow-lg relative z-10">
+                {progressCount}
+              </div>
+              <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">
+                Referidos
+              </div>
+            </motion.div>
           </div>
         </div>
       </div>
 
-      {/* Share Link Section */}
-      <div className="bg-gray-900 dark:bg-black border border-gray-800 rounded-3xl p-6 md:p-8 text-center relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
+      {/* ─── SHARE LINK MODULE ─── */}
+      <motion.div 
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.2 }}
+        className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 rounded-3xl p-6 md:p-8 shadow-sm flex flex-col items-center text-center relative overflow-hidden"
+      >
+        <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl" />
         
-        <h3 className="text-white text-xl font-bold mb-6">Tu enlace único de invitación</h3>
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 relative z-10">Tu enlace único de invitación</h3>
+        <p className="text-gray-500 text-sm mb-6 max-w-md relative z-10">
+          Cópialo o compártelo directamente. Tus amigos deben registrarse usándolo para que cuente tu progreso.
+        </p>
         
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-2xl mx-auto relative z-10">
-          <div className="flex-1 w-full bg-black/50 dark:bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 flex items-center justify-between group">
-            <span className="text-gray-300 font-mono text-sm truncate">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full max-w-2xl mx-auto relative z-10">
+          <div className="flex-1 w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl px-5 py-4 flex items-center justify-between group hover:border-[#1890FF]/50 transition-colors">
+            <span className="text-gray-600 dark:text-gray-300 font-mono text-sm sm:text-base truncate select-all">
               {window.location.origin}/registro?ref={data?.code}
             </span>
             <button 
               onClick={handleCopy}
-              className="text-gray-400 hover:text-white transition-colors p-1"
+              className="ml-3 shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-white dark:bg-white/10 text-gray-500 dark:text-gray-400 hover:text-[#1890FF] hover:bg-[#1890FF]/10 dark:hover:text-[#1890FF] transition-all shadow-sm"
+              title="Copiar enlace"
             >
-              {copied ? <CheckCircle2 className="w-5 h-5 text-green-400" /> : <Copy className="w-5 h-5" />}
+              <AnimatePresence mode="wait">
+                {copied ? (
+                  <motion.div key="check" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
+                    <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                  </motion.div>
+                ) : (
+                  <motion.div key="copy" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
+                    <Copy className="w-5 h-5" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </button>
           </div>
           
           <button 
             onClick={shareToWhatsApp}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3.5 bg-[#25D366] text-white font-bold rounded-xl hover:bg-[#20bd5a] transition-all shrink-0 shadow-[0_4px_14px_rgba(37,211,102,0.3)]"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-[#25D366] text-white font-bold rounded-2xl hover:bg-[#20bd5a] transition-all shrink-0 shadow-[0_8px_20px_rgba(37,211,102,0.3)] hover:shadow-[0_8px_25px_rgba(37,211,102,0.4)] hover:-translate-y-1"
           >
             <Share2 className="w-5 h-5" />
-            Compartir
+            Compartir en WhatsApp
           </button>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Rewards Progress Timeline */}
-      <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/10 rounded-3xl p-6 md:p-10 shadow-sm relative">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Tus Recompensas</h2>
-        <p className="text-gray-500 dark:text-gray-400 mb-10">Desbloquea premios automáticos al alcanzar las metas.</p>
+      {/* ─── MILESTONES BATTLE-PASS STYLE ─── */}
+      <div className="pt-8">
+        <div className="flex items-center gap-3 mb-8">
+          <Gift className="w-8 h-8 text-[#1890FF]" />
+          <div>
+            <h2 className="text-2xl font-black text-gray-900 dark:text-white">Camino de Recompensas</h2>
+            <p className="text-gray-500 text-sm">Desbloquea niveles automáticamente</p>
+          </div>
+        </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-sm font-bold rounded-xl border border-red-200 dark:border-red-500/20">
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8 p-4 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-sm font-bold rounded-xl border border-red-200 dark:border-red-500/20 flex items-center gap-2">
+            <ShieldAlert className="w-5 h-5" />
             {error}
-          </div>
+          </motion.div>
         )}
 
-        <div className="relative pt-8 pb-4">
-          {/* Main Progress Bar Background */}
-          <div className="absolute top-12 left-0 right-0 h-3 bg-gray-100 dark:bg-gray-800 rounded-full" />
-          
-          {/* Main Progress Bar Fill */}
+        <div className="relative space-y-6">
+          {/* Vertical Progress Line (Desktop) */}
+          <div className="hidden md:block absolute left-[5.5rem] top-8 bottom-8 w-1.5 bg-gray-100 dark:bg-gray-800 rounded-full" />
           <motion.div 
-            className="absolute top-12 left-0 h-3 bg-gradient-to-r from-[#1890FF] to-indigo-500 rounded-full shadow-[0_0_15px_rgba(24,144,255,0.5)]"
-            initial={{ width: 0 }}
-            animate={{ width: `${progressPercent}%` }}
-            transition={{ duration: 1, ease: "easeOut" }}
+            className="hidden md:block absolute left-[5.5rem] top-8 w-1.5 bg-gradient-to-b from-[#1890FF] to-purple-500 rounded-full shadow-[0_0_10px_rgba(24,144,255,0.5)] origin-top"
+            initial={{ scaleY: 0 }}
+            animate={{ 
+              scaleY: Math.min(1, (progressCount) / MILESTONES[MILESTONES.length - 1].count) 
+            }}
+            transition={{ duration: 1.5, ease: "easeOut" }}
           />
 
-          <div className="relative flex justify-between">
-            {MILESTONES.map((milestone, index) => {
-              const isReached = progressCount >= milestone.count;
-              const isClaimed = data?.claimedMilestones.includes(milestone.count);
-              const isClaiming = claiming === milestone.count;
+          {MILESTONES.map((milestone, index) => {
+            const isReached = progressCount >= milestone.count;
+            const isClaimed = data?.claimedMilestones.includes(milestone.count);
+            const isClaiming = claiming === milestone.count;
+            const Icon = milestone.icon;
 
-              return (
-                <div key={index} className="flex flex-col items-center w-1/3 text-center">
-                  
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center z-10 transition-all duration-500 border-4 border-white dark:border-slate-900 ${
-                    isReached 
-                      ? "bg-gradient-to-br from-[#1890FF] to-indigo-500 text-white shadow-lg scale-110" 
-                      : "bg-gray-200 dark:bg-gray-700 text-gray-400"
-                  }`}>
-                    {isClaimed ? <CheckCircle2 className="w-5 h-5" /> : <Trophy className="w-4 h-4" />}
+            return (
+              <motion.div 
+                key={index}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 + index * 0.1 }}
+                className={`relative flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-8 p-6 rounded-3xl border transition-all duration-300
+                  ${isReached 
+                    ? "bg-white dark:bg-[#0f1117] border-gray-200 dark:border-white/10 shadow-xl" 
+                    : "bg-gray-50/50 dark:bg-white/[0.02] border-gray-100 dark:border-white/5 opacity-70 grayscale"
+                  }
+                `}
+              >
+                {/* Milestone Counter */}
+                <div className="flex items-center gap-4 md:w-32 shrink-0 z-10">
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xl shrink-0 transition-colors
+                    ${isReached 
+                      ? `bg-gradient-to-br ${milestone.color} text-white shadow-lg ${milestone.shadow}` 
+                      : "bg-gray-200 dark:bg-gray-800 text-gray-500"
+                    }
+                  `}>
+                    {milestone.count}
+                  </div>
+                  <div className="md:hidden text-sm font-bold text-gray-500 uppercase tracking-widest">
+                    Referidos
+                  </div>
+                </div>
+
+                {/* Card Content */}
+                <div className="flex-1 flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Icon className={`w-5 h-5 ${isReached ? "text-[#1890FF]" : "text-gray-400"}`} />
+                      <h3 className={`text-xl font-black ${isReached ? "text-gray-900 dark:text-white" : "text-gray-500 dark:text-gray-400"}`}>
+                        {milestone.title}
+                      </h3>
+                    </div>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
+                      {milestone.subtitle}
+                    </p>
                   </div>
 
-                  <div className="mt-4 flex flex-col items-center">
-                    <span className={`text-sm font-black ${isReached ? "text-gray-900 dark:text-white" : "text-gray-400 dark:text-gray-600"}`}>
-                      {milestone.count} Amigos
-                    </span>
-                    <span className={`text-[11px] font-bold uppercase tracking-wider mt-1 ${isReached ? "text-[#1890FF]" : "text-gray-400"}`}>
-                      {milestone.title}
-                    </span>
-                    <span className="text-xs text-gray-500 dark:text-gray-500 mt-1 hidden md:block">
-                      {milestone.subtitle}
-                    </span>
-
-                    {/* Claim Button */}
-                    <AnimatePresence>
-                      {isReached && !isClaimed && (
-                        <motion.button
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          onClick={() => handleClaim(milestone.count)}
-                          disabled={isClaiming}
-                          className="mt-4 flex items-center gap-1.5 px-4 py-1.5 bg-[#1890FF] text-white text-xs font-bold rounded-full hover:bg-blue-600 transition-colors shadow-md disabled:opacity-50"
-                        >
-                          {isClaiming ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                          Reclamar
-                        </motion.button>
-                      )}
-                    </AnimatePresence>
-
-                    {isClaimed && (
-                      <div className="mt-4 flex items-center gap-1 px-3 py-1 bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 text-xs font-bold rounded-full border border-green-200 dark:border-green-500/20">
-                        ¡Cobrado!
+                  {/* Actions */}
+                  <div className="shrink-0 mt-2 sm:mt-0">
+                    {isClaimed ? (
+                      <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold text-sm rounded-xl">
+                        <CheckCircle2 className="w-4 h-4" />
+                        Reclamado
+                      </div>
+                    ) : isReached ? (
+                      <button
+                        onClick={() => handleClaim(milestone.count)}
+                        disabled={isClaiming}
+                        className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-gradient-to-r from-[#1890FF] to-blue-600 hover:from-blue-600 hover:to-indigo-600 text-white font-bold text-sm rounded-xl transition-all shadow-[0_4px_15px_rgba(24,144,255,0.3)] hover:shadow-[0_4px_20px_rgba(24,144,255,0.4)] disabled:opacity-50 hover:-translate-y-0.5"
+                      >
+                        {isClaiming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Rocket className="w-4 h-4" />}
+                        Reclamar Premio
+                      </button>
+                    ) : (
+                      <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-bold text-sm rounded-xl">
+                        Faltan {milestone.count - progressCount} amigos
                       </div>
                     )}
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              </motion.div>
+            );
+          })}
         </div>
       </div>
+
     </div>
   );
 }

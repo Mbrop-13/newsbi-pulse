@@ -3,16 +3,18 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase";
 
 const MILESTONES = {
-  2: { tier: "pro", monthsToAdd: 1 },
-  5: { tier: "max", monthsToAdd: 3 },
-  10: { tier: "ultra", monthsToAdd: 12 },
+  1: { tier: "pro", daysToAdd: 15, monthsToAdd: 0 },
+  3: { tier: "pro", daysToAdd: 0, monthsToAdd: 1 },
+  5: { tier: "max", daysToAdd: 0, monthsToAdd: 1 },
+  10: { tier: "max", daysToAdd: 0, monthsToAdd: 3 },
+  25: { tier: "ultra", daysToAdd: 0, monthsToAdd: 12 },
 };
 
 export async function POST(request: NextRequest) {
   try {
     const { milestone } = await request.json();
 
-    if (![2, 5, 10].includes(milestone)) {
+    if (![1, 3, 5, 10, 25].includes(milestone)) {
       return NextResponse.json({ error: "Hito inválido" }, { status: 400 });
     }
 
@@ -66,8 +68,13 @@ export async function POST(request: NextRequest) {
       currentEnd = now;
     }
     
-    // Add reward months
-    currentEnd.setMonth(currentEnd.getMonth() + reward.monthsToAdd);
+    // Add reward time
+    if (reward.monthsToAdd > 0) {
+      currentEnd.setMonth(currentEnd.getMonth() + reward.monthsToAdd);
+    }
+    if (reward.daysToAdd > 0) {
+      currentEnd.setDate(currentEnd.getDate() + reward.daysToAdd);
+    }
 
     // Give them the highest tier (don't downgrade them if they already have Ultra and claim a Pro reward)
     let newTier = reward.tier;

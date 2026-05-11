@@ -5,7 +5,6 @@ import { z } from 'zod';
 import { createClient } from "@/lib/supabase/server";
 import { checkLimit, incrementUsage } from "@/lib/check-limits";
 import YahooFinance from "yahoo-finance2";
-import { search } from "duck-duck-scrape";
 
 export const maxDuration = 60;
 
@@ -190,32 +189,6 @@ export async function POST(req: NextRequest) {
             const { data } = await supabase.from('news_articles').select('title, content, enriched_content').eq('id', id).single();
             if (!data) return { error: "Noticia no encontrada" };
             return { content: data.enriched_content || data.content };
-          }
-        }),
-
-        search_web: tool({
-          description: 'Busca información general en internet en tiempo real. Úsala SIEMPRE que el usuario pregunte por eventos actuales, biografías, análisis de empresas no cubiertas, o cualquier dato reciente que desconozcas. Visita múltiples sitios web.',
-          parameters: z.object({
-            query: z.string().describe('La consulta de búsqueda a realizar en internet. Debe ser precisa.')
-          }),
-          execute: async ({ query }) => {
-            try {
-              const res = await search(query, { safeSearch: 1 });
-              if (!res.results || res.results.length === 0) {
-                return { error: 'No se encontraron resultados en la web para esta consulta.' };
-              }
-              const topResults = res.results.slice(0, 15).map((r: any) => ({
-                title: r.title,
-                snippet: r.description,
-                url: r.url
-              }));
-              return { 
-                results: topResults, 
-                note: "Analiza el 'snippet' de cada resultado para formular tu respuesta. La UI renderizará automáticamente las URLs que visitaste como una píldora de fuentes." 
-              };
-            } catch (error: any) {
-              return { error: `Error en la búsqueda web: ${error.message}` };
-            }
           }
         }),
 

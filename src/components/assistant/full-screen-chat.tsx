@@ -425,7 +425,7 @@ function FullScreenChatInternal() {
           <div className={`${maxWClass} mx-auto w-full px-4 md:px-8 ${aiMessages.length === 0 ? "pt-0" : "pt-10"} pb-8 transition-all duration-300`}>
 
             <div className="space-y-8">
-              {aiMessages.map((msg) => (
+              {aiMessages.map((msg, msgIndex) => (
                 <div key={msg.id} className="w-full flex flex-col group">
                   {/* User Message */}
                   {msg.role === "user" ? (

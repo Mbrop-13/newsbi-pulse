@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Sun, Moon, LogIn, ChevronDown, User, Headphones, Filter, ArrowLeft, Bot, Sparkles, Layers, Settings, X, Check, Settings2, TrendingUp, Landmark, LineChart, Globe, PieChart, Cpu, BookOpen, Briefcase, Scale, Zap, BarChart3, Crown } from "lucide-react";
+import { Search, Sun, Moon, LogIn, ChevronDown, User, Users, Headphones, Filter, ArrowLeft, Bot, Sparkles, Layers, Settings, X, Check, Settings2, TrendingUp, Landmark, LineChart, Globe, PieChart, Cpu, BookOpen, Briefcase, Scale, Zap, BarChart3, Crown } from "lucide-react";
 import { DiamondsButton } from "@/components/diamonds-button";
 import { NotificationBell } from "@/components/notification-bell";
 import { AuthModals } from "./auth-modals";
@@ -353,6 +353,12 @@ export function Navbar() {
                     <DropdownMenuItem className="text-sm py-2 px-3 cursor-pointer rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
                       <Briefcase className="w-4 h-4 mr-2 text-blue-500" />
                       Mi Portafolio
+                    </DropdownMenuItem>
+                  </Link>
+                  <Link href="/referidos">
+                    <DropdownMenuItem className="text-sm py-2 px-3 cursor-pointer rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                      <Users className="w-4 h-4 mr-2 text-emerald-500" />
+                      Invitar Amigos
                     </DropdownMenuItem>
                   </Link>
                   <Link href="/configuracion">

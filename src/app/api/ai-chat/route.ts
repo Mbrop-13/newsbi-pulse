@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
       }), { status: 403 });
     }
 
-    const modelStr = modelId === "pro" ? "mimo-v2.5-pro" : "mimo-v2.5-fast";
+    const modelStr = modelId === "pro" ? "xiaomi/mimo-v2.5-pro" : "xiaomi/mimo-v2.5";
 
     // Inject dynamic context as first user message context (not in system prompt = keeps cache)
     const now = new Date();

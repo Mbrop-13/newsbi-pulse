@@ -30,7 +30,7 @@ export function ShareChatDialog({ isOpen, onClose, question, answer }: ShareChat
       const dataUrl = await htmlToImage.toPng(cardRef.current, {
         quality: 1,
         pixelRatio: 2,
-        backgroundColor: "#0B0F1A",
+        backgroundColor: "#ffffff",
       });
       return dataUrl;
     } catch (err) {
@@ -118,75 +118,48 @@ export function ShareChatDialog({ isOpen, onClose, question, answer }: ShareChat
           </div>
 
           <div className="flex-1 overflow-y-auto hidden-scrollbar p-6 bg-gray-50 dark:bg-[#0a0a0a]">
-            {/* ─── PREMIUM CARD ─── */}
+            {/* ─── CARD TO RENDER ─── */}
             <div className="flex justify-center mb-6">
               <div 
                 ref={cardRef} 
-                className="w-full max-w-[420px] rounded-[20px] overflow-hidden shadow-2xl relative"
-                style={{ fontFamily: "Inter, system-ui, sans-serif" }}
+                className="w-full max-w-[400px] rounded-2xl overflow-hidden bg-gradient-to-br from-[#1890FF] to-indigo-600 p-[2px] shadow-2xl relative"
+                style={{ fontFamily: "Inter, sans-serif" }}
               >
-                {/* Dark premium background */}
-                <div className="bg-[#0B0F1A] w-full relative overflow-hidden">
-                  
-                  {/* Ambient glow effects */}
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[300px] h-[120px] bg-[#1890FF]/15 rounded-full blur-[80px] pointer-events-none" />
-                  <div className="absolute bottom-0 right-0 w-[200px] h-[100px] bg-indigo-500/10 rounded-full blur-[60px] pointer-events-none" />
+                <div className="bg-white dark:bg-[#0F1117] w-full h-full rounded-[14px] p-5 relative overflow-hidden flex flex-col">
+                  {/* Background decoration */}
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-[#1890FF]/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none" />
+                  <div className="absolute bottom-0 left-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl -ml-10 -mb-10 pointer-events-none" />
 
-                  {/* ── Top: Logo centered ── */}
-                  <div className="flex items-center justify-center pt-6 pb-4 relative z-10">
+                  {/* Header / Logo — bigger, no text */}
+                  <div className="flex items-center gap-2 mb-4 relative z-10">
                     <img 
                       src="https://cdn.shopify.com/s/files/1/0564/3812/8712/files/freepik__background__94196.png?v=1771922713" 
                       alt="Reclu" 
-                      className="h-10 w-auto object-contain drop-shadow-lg"
+                      className="h-9 w-auto object-contain"
                     />
                   </div>
 
-                  {/* Thin separator line */}
-                  <div className="mx-6 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-
-                  {/* ── Question bubble ── */}
-                  <div className="px-5 pt-4 pb-3 relative z-10">
-                    <div className="flex items-start gap-2.5">
-                      <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center shrink-0 mt-0.5">
-                        <MessageSquare className="w-3 h-3 text-white/60" />
-                      </div>
-                      <p className="text-[13px] font-semibold text-white/90 leading-snug">
-                        {question.length > 120 ? question.substring(0, 120) + "..." : question}
-                      </p>
-                    </div>
+                  {/* Question */}
+                  <div className="mb-4 relative z-10">
+                    <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 bg-gray-100/80 dark:bg-white/5 rounded-xl px-3 py-2 w-fit max-w-[90%] shadow-sm">
+                      {question.length > 100 ? question.substring(0, 100) + "..." : question}
+                    </p>
                   </div>
 
-                  {/* ── Answer area ── */}
-                  <div className="px-5 pb-2 relative z-10">
-                    <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-4 relative overflow-hidden">
-                      {/* Small AI badge */}
-                      <div className="flex items-center gap-1.5 mb-2.5">
-                        <div className="w-4 h-4 rounded-full bg-gradient-to-br from-[#1890FF] to-indigo-500 flex items-center justify-center">
-                          <Sparkles className="w-2.5 h-2.5 text-white" />
-                        </div>
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-[#1890FF]/80">Reclu AI</span>
-                      </div>
-
-                      {/* Content with clean fade */}
-                      <div className="relative max-h-[180px] overflow-hidden">
-                        <div className="prose prose-sm prose-invert prose-p:my-1 prose-p:leading-relaxed prose-p:text-[13px] prose-headings:text-white prose-strong:text-white/90 max-w-none text-white/70">
-                          <ReactMarkdown>
-                            {cleanAnswer}
-                          </ReactMarkdown>
-                        </div>
-                        {/* Clean fade to card background */}
-                        <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#0B1018] via-[#0B1018]/80 to-transparent pointer-events-none" />
-                      </div>
-                    </div>
+                  {/* Answer Preview */}
+                  <div className="relative z-10 w-full prose prose-sm dark:prose-invert prose-p:leading-snug max-h-[180px] overflow-hidden text-gray-600 dark:text-gray-400">
+                    <ReactMarkdown>
+                      {cleanAnswer}
+                    </ReactMarkdown>
+                    {/* Seamless fade — matches inner card bg exactly */}
+                    <div className="absolute bottom-0 left-0 right-0 h-20 pointer-events-none" style={{ background: 'linear-gradient(to top, var(--card-bg) 0%, var(--card-bg) 20%, transparent 100%)' }} />
+                    <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-white dark:from-[#0F1117] via-white/80 dark:via-[#0F1117]/80 to-transparent pointer-events-none" />
                   </div>
 
-                  {/* ── Footer watermark ── */}
-                  <div className="flex items-center justify-center gap-2 py-4 relative z-10">
-                    <div className="h-px w-8 bg-gradient-to-r from-transparent to-white/10" />
-                    <span className="text-[10px] font-medium tracking-wider text-white/25 uppercase">reclu.cl</span>
-                    <div className="h-px w-8 bg-gradient-to-l from-transparent to-white/10" />
+                  {/* Footer watermark */}
+                  <div className="flex items-center justify-center gap-2 pt-3 mt-2 relative z-10 border-t border-gray-100 dark:border-white/5">
+                    <span className="text-[10px] font-semibold tracking-wider text-gray-300 dark:text-gray-600 uppercase">reclu.cl</span>
                   </div>
-
                 </div>
               </div>
             </div>

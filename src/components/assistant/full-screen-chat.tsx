@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, Sparkles, Loader2, ExternalLink, Paperclip, BarChart3, Newspaper, Bell, TrendingUp, X, Globe, History, Trash2, Plus, MessageSquare, PanelLeftClose, PanelLeft, Settings, Moon, Sun, Monitor, Type, Maximize, CheckCircle2, Mic, Star, LineChart, PieChart, AreaChart, Target, Scale, Layers, ThumbsUp, ThumbsDown, RefreshCw, Share2, ChevronRight } from "lucide-react";
+import { Send, Bot, Sparkles, Loader2, ExternalLink, Paperclip, BarChart3, Newspaper, Bell, TrendingUp, X, Globe, History, Trash2, Plus, MessageSquare, PanelLeftClose, PanelLeft, Settings, Moon, Sun, Monitor, Type, Maximize, CheckCircle2, Mic, Star, LineChart, PieChart, AreaChart, Target, Scale, Layers, ThumbsUp, ThumbsDown, RefreshCw, Share2, ChevronRight, Clock } from "lucide-react";
 import { useAIChatStore, ChatMessage, ToolResultUI } from "@/lib/stores/ai-chat-store";
 import { getPlanConfig, PlanTier } from "@/lib/plan-limits";
 import { createClient } from "@/lib/supabase/client";
@@ -68,6 +68,9 @@ function FullScreenChatInternal() {
   const [attachMenuView, setAttachMenuView] = useState<'main' | 'charts' | 'analysis'>('main');
   const [shareDialog, setShareDialog] = useState({ isOpen: false, question: "", answer: "" });
 
+  // Ref to always have the latest aiMessages available in callbacks
+  const aiMessagesRef = useRef<any[]>([]);
+
   const { messages: aiMessages, input, handleInputChange, handleSubmit, setMessages: setAiMessages, append, isLoading: aiLoading, setInput, reload } = useChat({
     api: "/api/ai-chat",
     body: {
@@ -78,32 +81,50 @@ function FullScreenChatInternal() {
     },
     onFinish: (message) => {
       clearTools();
-      // Sync the COMPLETE conversation (user + assistant messages) to Zustand for persistence + sidebar
-      const store = useAIChatStore.getState();
-      const assistantMsg: ChatMessage = { id: message.id, role: 'assistant', content: message.content, timestamp: new Date(), toolInvocations: message.toolInvocations };
-      const updatedMessages = [...store.messages, assistantMsg];
-      useAIChatStore.setState({ messages: updatedMessages });
-      // Trigger updateCurrentChat to persist to savedChats + cloud
-      useAIChatStore.getState().updateCurrentChat();
-      // Delay fetching usage to ensure the server-side increment has committed
-      setTimeout(() => fetchRealUsage(), 800);
+      // Use requestAnimationFrame to ensure aiMessages state has been flushed by React
+      requestAnimationFrame(() => {
+        const latestMessages = aiMessagesRef.current;
+        const storeMessages: ChatMessage[] = latestMessages.map((m: any) => ({
+          id: m.id,
+          role: m.role as 'user' | 'assistant',
+          content: m.content,
+          timestamp: new Date(),
+          toolInvocations: m.toolInvocations,
+        }));
+        useAIChatStore.setState({ messages: storeMessages });
+        useAIChatStore.getState().updateCurrentChat();
+        setTimeout(() => fetchRealUsage(), 800);
+      });
     }
   });
 
-  // Sync loaded chats to useChat
+  // Keep the ref always up to date
   useEffect(() => {
-    if (messages.length > 0 && aiMessages.length === 0) {
-      setAiMessages(messages.map(m => ({
-        id: m.id,
-        role: m.role,
-        content: m.content,
-        toolInvocations: m.toolInvocations,
-      })) as any);
-    } else if (messages.length === 0 && aiMessages.length > 0) {
-      // Clear chat
-      setAiMessages([]);
+    aiMessagesRef.current = aiMessages;
+  }, [aiMessages]);
+
+  // Track the last loaded chat to detect switches
+  const lastLoadedChatIdRef = useRef<string | null>(null);
+  const currentChatId = useAIChatStore((s) => s.currentChatId);
+
+  // Sync store → aiMessages ONLY when a chat is explicitly loaded or cleared
+  useEffect(() => {
+    if (currentChatId !== lastLoadedChatIdRef.current) {
+      lastLoadedChatIdRef.current = currentChatId;
+      if (currentChatId && messages.length > 0) {
+        // A saved chat was loaded — sync to useChat
+        setAiMessages(messages.map(m => ({
+          id: m.id,
+          role: m.role,
+          content: m.content,
+          toolInvocations: m.toolInvocations,
+        })) as any);
+      } else if (!currentChatId) {
+        // New chat / cleared
+        setAiMessages([]);
+      }
     }
-  }, [messages]);
+  }, [currentChatId, messages]);
   
   // Chat Preferences
   const [chatPrefs, setChatPrefs] = useState({
@@ -280,16 +301,8 @@ function FullScreenChatInternal() {
     const text = textOverride || input.trim();
     if (!text || aiLoading || reachedQuestionLimit) return;
     
-    // 1. Add user message to Zustand store for persistence + sidebar history
-    const userMsg: ChatMessage = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: text,
-      timestamp: new Date(),
-    };
-    addMessage(userMsg); // This triggers updateCurrentChat() -> savedChats update
-    
-    // 2. Use append to send the user message to Vercel AI SDK (triggers the API call)
+    // ONLY use append — this adds the user message to aiMessages AND triggers the API call.
+    // The store sync happens in onFinish after the AI responds.
     append({ role: 'user', content: text });
     if (!textOverride) handleInputChange({ target: { value: '' } } as any);
   };
@@ -325,7 +338,7 @@ function FullScreenChatInternal() {
               </Link>
               <div className="flex items-center justify-between gap-2">
                 <button 
-                  onClick={() => { clearMessages(); if(window.innerWidth < 768) setIsSidebarOpen(false); }}
+                  onClick={() => { clearMessages(); setAiMessages([]); if(window.innerWidth < 768) setIsSidebarOpen(false); }}
                   className="flex-1 flex items-center justify-between px-4 py-2.5 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:border-[#1890FF]/30 hover:bg-[#1890FF]/5 rounded-xl transition-all group"
                 >
                   <div className="flex items-center gap-2 font-bold text-sm text-gray-900 dark:text-white group-hover:text-[#1890FF]">
@@ -351,17 +364,30 @@ function FullScreenChatInternal() {
                   Tus chats recientes aparecerán aquí
                 </div>
               ) : (
-                <div className="space-y-1">
-                  {savedChats.map((chat) => (
-                    <div key={chat.id} className="group flex items-center justify-between px-3 py-2.5 hover:bg-gray-200/50 dark:hover:bg-white/5 rounded-xl cursor-pointer transition-colors">
-                      <div className="flex items-center gap-2.5 overflow-hidden" onClick={() => { loadChat(chat.id); if(window.innerWidth < 768) setIsSidebarOpen(false); }}>
-                        <p className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 truncate pl-1">{chat.title}</p>
+                <div className="space-y-0.5">
+                  {savedChats.map((chat) => {
+                    const chatDate = new Date(chat.timestamp);
+                    const timeStr = chatDate.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+                    const isActive = currentChatId === chat.id;
+                    return (
+                      <div 
+                        key={chat.id} 
+                        className={`group flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-colors ${
+                          isActive 
+                            ? 'bg-[#1890FF]/10 border border-[#1890FF]/20' 
+                            : 'hover:bg-gray-200/50 dark:hover:bg-white/5'
+                        }`}
+                      >
+                        <div className="flex-1 overflow-hidden" onClick={() => { loadChat(chat.id); if(window.innerWidth < 768) setIsSidebarOpen(false); }}>
+                          <p className={`text-[13px] font-semibold truncate pl-1 ${isActive ? 'text-[#1890FF]' : 'text-gray-700 dark:text-gray-300'}`}>{chat.title}</p>
+                          <p className="text-[10px] text-gray-400 dark:text-gray-500 pl-1 mt-0.5 font-medium">{timeStr}</p>
+                        </div>
+                        <button onClick={(e) => { e.stopPropagation(); deleteSavedChat(chat.id); }} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-all p-1.5 shrink-0">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
-                      <button onClick={(e) => { e.stopPropagation(); deleteSavedChat(chat.id); }} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-all p-1.5">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -439,8 +465,22 @@ function FullScreenChatInternal() {
           <div className={`${maxWClass} mx-auto w-full px-4 md:px-8 ${aiMessages.length === 0 ? "pt-0" : "pt-10"} pb-8 transition-all duration-300`}>
 
             <div className="space-y-8">
-              {aiMessages.map((msg, msgIndex) => (
+              {aiMessages.map((msg, msgIndex) => {
+                // Show timestamp between messages when there's a time gap or at conversation start
+                const showTimestamp = msgIndex === 0 || (msg.role === 'user' && (msgIndex === 0 || aiMessages[msgIndex - 1]?.role === 'assistant'));
+                const msgTime = (msg as any).createdAt ? new Date((msg as any).createdAt) : new Date();
+                
+                return (
                 <div key={msg.id} className="w-full flex flex-col group">
+                  {/* Timestamp */}
+                  {showTimestamp && msg.role === 'user' && (
+                    <div className="flex items-center justify-center mb-3">
+                      <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500 bg-gray-100/80 dark:bg-white/5 px-3 py-1 rounded-full">
+                        {msgTime.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })} · {msgTime.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  )}
+
                   {/* User Message */}
                   {msg.role === "user" ? (
                     <div className="self-end max-w-[85%] bg-gray-100 dark:bg-slate-800 rounded-[2rem] rounded-tr-sm px-6 py-4 shadow-sm border border-black/5 dark:border-white/5">
@@ -580,7 +620,8 @@ function FullScreenChatInternal() {
                     </div>
                   )}
                 </div>
-              ))}
+                );
+              })}
 
               {/* Loading State */}
               {aiLoading && (

@@ -136,6 +136,7 @@ function FullScreenChatInternal() {
     width: "standard" // standard, wide
   });
   const { theme, setTheme } = useTheme();
+  const [openCitations, setOpenCitations] = useState<Record<string, boolean>>({});
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -570,50 +571,67 @@ function FullScreenChatInternal() {
                           </ReactMarkdown>
                         </div>
 
-                        {/* Citations */}
-                        {(() => {
-                          const citationAnnotation = msg.annotations?.find((a: any) => a?.type === 'citations');
-                          const citationsList = citationAnnotation?.urls || (msg as any).citations;
-                          
-                          if (!citationsList || citationsList.length === 0) return null;
-                          
-                          return (
-                            <div className="mt-5 pt-4 border-t border-gray-100 dark:border-gray-800/50">
-                              <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-3 flex items-center gap-1.5"><Globe className="w-3.5 h-3.5" /> Fuentes Citadas</p>
-                              <div className="flex flex-wrap gap-2">
-                                {citationsList.slice(0, 4).map((url: string, i: number) => {
-                                  let hostname = url;
-                                  try { hostname = new URL(url).hostname.replace("www.", ""); } catch {}
-                                  return (
-                                    <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs text-gray-700 dark:text-gray-300 hover:text-[#1890FF] dark:hover:text-[#1890FF] transition-colors bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-800 py-1.5 px-3 rounded-xl shadow-sm hover:shadow-md hover:border-[#1890FF]/30">
-                                      <ExternalLink className="w-3 h-3 shrink-0 text-[#1890FF]" /> <span className="truncate max-w-[180px] font-bold">{hostname}</span>
-                                    </a>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          );
-                        })()}
-
-                        {/* Action Bar (Below message) */}
+                        {/* Action Bar & Expandable Citations */}
                         {(!aiMessages[msgIndex + 1] || aiMessages[msgIndex + 1].role === 'user') && (
-                          <div className="flex items-center gap-1.5 mt-3 pt-2">
-                            {/* Share Button */}
-                            <button 
-                              onClick={() => {
-                                // Find previous user message
-                                const prevUserMsg = aiMessages.slice(0, msgIndex).reverse().find(m => m.role === 'user');
-                                setShareDialog({ 
-                                  isOpen: true, 
-                                  question: prevUserMsg ? prevUserMsg.content : "Pregunta sobre inteligencia financiera...", 
-                                  answer: msg.content 
-                                });
-                              }}
-                              className="p-1.5 text-gray-400 hover:text-[#1890FF] hover:bg-[#1890FF]/10 rounded-lg transition-colors flex items-center gap-1.5"
-                              title="Compartir"
-                            >
-                              <Share2 className="w-4 h-4" />
-                            </button>
+                          <div className="flex flex-col gap-2 mt-3 pt-2">
+                            <div className="flex items-center flex-wrap gap-1.5">
+                              
+                              {/* Sources Pill Widget */}
+                              {(() => {
+                                const citationAnnotation = msg.annotations?.find((a: any) => a?.type === 'citations');
+                                const citationsList = citationAnnotation?.urls || (msg as any).citations;
+                                if (!citationsList || citationsList.length === 0) return null;
+                                
+                                const isOpen = openCitations[msg.id];
+                                
+                                return (
+                                  <button 
+                                    onClick={() => setOpenCitations(prev => ({ ...prev, [msg.id]: !isOpen }))}
+                                    className="flex items-center gap-1.5 w-fit pl-1.5 pr-2.5 py-1 bg-white hover:bg-gray-50 dark:bg-[#1A1A1A] dark:hover:bg-[#222] border border-gray-200 dark:border-gray-800 rounded-full transition-all cursor-pointer group shadow-sm mr-1.5"
+                                  >
+                                    <div className="flex -space-x-2">
+                                      {citationsList.slice(0, 3).map((url: string, i: number) => {
+                                        let hostname = "globe";
+                                        try { hostname = new URL(url).hostname; } catch {}
+                                        return (
+                                          <div
+                                            key={i}
+                                            className="w-[18px] h-[18px] rounded-full border-[1.5px] border-white dark:border-[#0a0a0a] bg-gray-100 dark:bg-gray-800 overflow-hidden shrink-0 flex items-center justify-center relative"
+                                            style={{ zIndex: 3 - i }}
+                                          >
+                                            <img 
+                                              src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=32`} 
+                                              alt="" 
+                                              className="w-full h-full object-cover bg-white" 
+                                              onError={(e) => { e.currentTarget.style.display='none'; }}
+                                            />
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                    <span className="text-[12px] font-medium text-gray-700 dark:text-gray-300 group-hover:text-black dark:group-hover:text-white transition-colors">
+                                      {citationsList.length} sources
+                                    </span>
+                                  </button>
+                                );
+                              })()}
+
+                              {/* Share Button */}
+                              <button 
+                                onClick={() => {
+                                  // Find previous user message
+                                  const prevUserMsg = aiMessages.slice(0, msgIndex).reverse().find(m => m.role === 'user');
+                                  setShareDialog({ 
+                                    isOpen: true, 
+                                    question: prevUserMsg ? prevUserMsg.content : "Pregunta sobre inteligencia financiera...", 
+                                    answer: msg.content 
+                                  });
+                                }}
+                                className="p-1.5 text-gray-400 hover:text-[#1890FF] hover:bg-[#1890FF]/10 rounded-lg transition-colors flex items-center gap-1.5"
+                                title="Compartir"
+                              >
+                                <Share2 className="w-4 h-4" />
+                              </button>
 
                             <div className="w-px h-4 bg-gray-200 dark:bg-gray-700/50 mx-1" />
 
@@ -648,6 +666,39 @@ function FullScreenChatInternal() {
                                 </button>
                               </>
                             )}
+                          </div>
+
+                          {/* Expanded Citations List */}
+                          {(() => {
+                            const citationAnnotation = msg.annotations?.find((a: any) => a?.type === 'citations');
+                            const citationsList = citationAnnotation?.urls || (msg as any).citations;
+                            if (!citationsList || citationsList.length === 0 || !openCitations[msg.id]) return null;
+                            
+                            return (
+                              <AnimatePresence>
+                                <motion.div
+                                  initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                                  animate={{ opacity: 1, height: 'auto', marginTop: 8 }}
+                                  exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                                  transition={{ duration: 0.2 }}
+                                  className="overflow-hidden"
+                                >
+                                  <div className="bg-gray-50 dark:bg-slate-800/30 border border-gray-200/60 dark:border-gray-800/60 rounded-xl p-3 flex flex-wrap gap-2">
+                                    <p className="w-full text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1 flex items-center gap-1.5"><Globe className="w-3 h-3" /> Fuentes Citadas</p>
+                                    {citationsList.map((url: string, i: number) => {
+                                      let hostname = url;
+                                      try { hostname = new URL(url).hostname.replace("www.", ""); } catch {}
+                                      return (
+                                        <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-[11px] text-gray-600 dark:text-gray-400 hover:text-[#1890FF] dark:hover:text-[#1890FF] transition-colors bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 py-1 px-2.5 rounded-lg shadow-sm hover:shadow-md hover:border-[#1890FF]/30">
+                                          <ExternalLink className="w-2.5 h-2.5 shrink-0 text-[#1890FF]" /> <span className="truncate max-w-[150px] font-bold">{hostname}</span>
+                                        </a>
+                                      );
+                                    })}
+                                  </div>
+                                </motion.div>
+                              </AnimatePresence>
+                            );
+                          })()}
                           </div>
                         )}
                       </div>

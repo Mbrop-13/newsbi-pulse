@@ -808,7 +808,7 @@ function FullScreenChatInternal() {
                     }`} 
                     title="Seleccionar Modelo AI"
                   >
-                    {selectedModel === 'fast' ? <Zap className="w-4 h-4" /> : <Star className="w-4 h-4" />}
+                    {selectedModel === 'fast' ? <Zap className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
                     <span className="text-xs font-semibold hidden sm:inline">
                       {selectedModel === 'fast' ? 'V2.5 Fast' : 'V2.5 Pro'}
                     </span>
@@ -845,7 +845,7 @@ function FullScreenChatInternal() {
                             className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold rounded-xl transition-colors text-left ${selectedModel === 'pro' ? 'bg-amber-500/10 text-amber-500' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'}`}
                           >
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${selectedModel === 'pro' ? 'bg-amber-500/20 text-amber-500' : 'bg-gray-100 dark:bg-slate-800 text-gray-500'}`}>
-                              <Star className="w-4 h-4" />
+                              <Sparkles className="w-4 h-4" />
                             </div>
                             <div className="flex-1">
                               <div className="leading-none flex items-center justify-between">

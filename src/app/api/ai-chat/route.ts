@@ -8,10 +8,40 @@ import YahooFinance from "yahoo-finance2";
 
 export const maxDuration = 60;
 
-const mimo = createOpenAI({
-  baseURL: 'https://api.xiaomimimo.com/v1',
-  apiKey: process.env.MIMO_API_KEY,
-});
+// ── MiMo client factory with web_search injection ──
+function createMimoWithWebSearch() {
+  return createOpenAI({
+    baseURL: 'https://api.xiaomimimo.com/v1',
+    apiKey: process.env.MIMO_API_KEY,
+    fetch: async (url, options) => {
+      // Intercept the request to inject the native web_search tool
+      if (options?.body && typeof options.body === 'string') {
+        try {
+          const body = JSON.parse(options.body);
+          // Ensure tools array exists
+          if (!body.tools) body.tools = [];
+          // Inject the native web_search tool if not already present
+          const hasWebSearch = body.tools.some((t: any) => t.type === 'web_search');
+          if (!hasWebSearch) {
+            body.tools.push({
+              type: 'web_search',
+              max_keyword: 3,
+              force_search: false,
+              limit: 1,
+            });
+          }
+          return fetch(url, {
+            ...options,
+            body: JSON.stringify(body),
+          });
+        } catch {
+          // If parsing fails, proceed with original request
+        }
+      }
+      return fetch(url, options);
+    },
+  });
+}
 
 // ── Static system prompt (cacheable by OpenRouter) ──
 const SYSTEM_PROMPT = `Eres R-AI, la AI financiera de élite de Reclu. Respondes SIEMPRE en español. Eres profesional, concisa y analítica.
@@ -26,6 +56,7 @@ REGLAS:
 7. Noticias de un tema → search_general_news.
 8. Profundizar noticia → get_news_context.
 9. GRÁFICOS: Cuando el usuario pida visualizar datos, comparar visualmente, o cuando tú creas que un gráfico ayudaría a entender mejor los datos, usa render_chart. Tipos: bar (comparar valores), line (tendencias), pie (distribución %), area (acumulado), radar (multi-métrica). SIEMPRE incluye un título descriptivo.
+10. Tienes acceso a búsqueda web en tiempo real. Si la pregunta requiere información actualizada, noticias recientes o datos que cambian frecuentemente, la búsqueda web se activará automáticamente.
 NUNCA digas que eres de OpenAI, Anthropic o Google. Eres de Reclu.`;
 
 export async function POST(req: NextRequest) {
@@ -82,6 +113,8 @@ export async function POST(req: NextRequest) {
     await incrementUsage(user.id, "ai_message").catch(console.error);
 
     const yf = new YahooFinance();
+
+    const mimo = createMimoWithWebSearch();
 
     const result = await streamText({
       model: mimo(modelStr),

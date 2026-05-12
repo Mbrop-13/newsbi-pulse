@@ -571,22 +571,29 @@ function FullScreenChatInternal() {
                         </div>
 
                         {/* Citations */}
-                        {(msg as any).citations && (msg as any).citations.length > 0 && (
-                          <div className="mt-5 pt-4 border-t border-gray-100 dark:border-gray-800/50">
-                            <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-3 flex items-center gap-1.5"><Globe className="w-3.5 h-3.5" /> Fuentes Citadas</p>
-                            <div className="flex flex-wrap gap-2">
-                              {(msg as any).citations.slice(0, 4).map((url: string, i: number) => {
-                                let hostname = url;
-                                try { hostname = new URL(url).hostname.replace("www.", ""); } catch {}
-                                return (
-                                  <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs text-gray-700 dark:text-gray-300 hover:text-[#1890FF] dark:hover:text-[#1890FF] transition-colors bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-800 py-1.5 px-3 rounded-xl shadow-sm hover:shadow-md hover:border-[#1890FF]/30">
-                                    <ExternalLink className="w-3 h-3 shrink-0 text-[#1890FF]" /> <span className="truncate max-w-[180px] font-bold">{hostname}</span>
-                                  </a>
-                                );
-                              })}
+                        {(() => {
+                          const citationAnnotation = msg.annotations?.find((a: any) => a?.type === 'citations');
+                          const citationsList = citationAnnotation?.urls || (msg as any).citations;
+                          
+                          if (!citationsList || citationsList.length === 0) return null;
+                          
+                          return (
+                            <div className="mt-5 pt-4 border-t border-gray-100 dark:border-gray-800/50">
+                              <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-3 flex items-center gap-1.5"><Globe className="w-3.5 h-3.5" /> Fuentes Citadas</p>
+                              <div className="flex flex-wrap gap-2">
+                                {citationsList.slice(0, 4).map((url: string, i: number) => {
+                                  let hostname = url;
+                                  try { hostname = new URL(url).hostname.replace("www.", ""); } catch {}
+                                  return (
+                                    <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs text-gray-700 dark:text-gray-300 hover:text-[#1890FF] dark:hover:text-[#1890FF] transition-colors bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-800 py-1.5 px-3 rounded-xl shadow-sm hover:shadow-md hover:border-[#1890FF]/30">
+                                      <ExternalLink className="w-3 h-3 shrink-0 text-[#1890FF]" /> <span className="truncate max-w-[180px] font-bold">{hostname}</span>
+                                    </a>
+                                  );
+                                })}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          );
+                        })()}
 
                         {/* Action Bar (Below message) */}
                         {(!aiMessages[msgIndex + 1] || aiMessages[msgIndex + 1].role === 'user') && (

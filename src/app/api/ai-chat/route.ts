@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { createOpenAI } from '@ai-sdk/openai';
-import { streamText, tool } from 'ai';
+import { streamText, tool, StreamData } from 'ai';
 import { z } from 'zod';
 import { createClient } from "@/lib/supabase/server";
 import { checkLimit, incrementUsage } from "@/lib/check-limits";
@@ -9,7 +9,7 @@ import YahooFinance from "yahoo-finance2";
 export const maxDuration = 60;
 
 // ── MiMo client factory with web_search injection ──
-function createMimoWithWebSearch() {
+function createMimoWithWebSearch(streamData?: StreamData) {
   return createOpenAI({
     baseURL: 'https://api.xiaomimimo.com/v1',
     apiKey: process.env.MIMO_API_KEY,
@@ -30,15 +30,35 @@ function createMimoWithWebSearch() {
               limit: 1,
             });
           }
-          return fetch(url, {
-            ...options,
-            body: JSON.stringify(body),
-          });
+          options.body = JSON.stringify(body);
         } catch {
           // If parsing fails, proceed with original request
         }
       }
-      return fetch(url, options);
+      const res = await fetch(url, options);
+
+      // If it's a stream, intercept chunks to extract MiMo's native web search annotations
+      if (res.body && streamData) {
+        const transformStream = new TransformStream({
+          transform(chunk, controller) {
+            const str = new TextDecoder().decode(chunk);
+            // Look for url_citations in the chunk (MiMo sends them at the end of the stream)
+            const citationMatches = Array.from(str.matchAll(/"type":\s*"url_citation",\s*"url":\s*"([^"]+)"/g));
+            if (citationMatches.length > 0) {
+              const citations = citationMatches.map(m => m[1]);
+              streamData.append({ type: 'citations', urls: citations });
+            }
+            controller.enqueue(chunk);
+          }
+        });
+        return new Response(res.body.pipeThrough(transformStream), {
+          headers: res.headers,
+          status: res.status,
+          statusText: res.statusText
+        });
+      }
+
+      return res;
     },
   });
 }
@@ -114,7 +134,8 @@ export async function POST(req: NextRequest) {
 
     const yf = new YahooFinance();
 
-    const mimo = createMimoWithWebSearch();
+    const streamData = new StreamData();
+    const mimo = createMimoWithWebSearch(streamData);
 
     const result = await streamText({
       model: mimo(modelStr),
@@ -425,7 +446,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return result.toDataStreamResponse();
+    return result.toDataStreamResponse({ data: streamData });
   } catch (error: any) {
     console.error("[AI Chat Stream] Error:", error);
     return new Response(JSON.stringify({ error: error.message }), { status: 500 });

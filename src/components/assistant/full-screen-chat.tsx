@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, Sparkles, Loader2, ExternalLink, Paperclip, BarChart3, Newspaper, Bell, TrendingUp, X, Globe, History, Trash2, Plus, MessageSquare, PanelLeftClose, PanelLeft, Settings, Moon, Sun, Monitor, Type, Maximize, CheckCircle2, Mic, Star, LineChart, PieChart, AreaChart, Target, Scale, Layers, ThumbsUp, ThumbsDown, RefreshCw, Share2, ChevronRight, Clock, Zap } from "lucide-react";
+import { Send, Bot, Sparkles, Loader2, ExternalLink, Paperclip, BarChart3, Newspaper, Bell, TrendingUp, X, Globe, History, Trash2, Plus, MessageSquare, PanelLeftClose, PanelLeft, Settings, Moon, Sun, Monitor, Type, Maximize, CheckCircle2, Mic, Star, LineChart, PieChart, AreaChart, Target, Scale, Layers, ThumbsUp, ThumbsDown, RefreshCw, Share2, ChevronRight, Clock, Zap, ArrowDown } from "lucide-react";
 import { useAIChatStore, ChatMessage, ToolResultUI } from "@/lib/stores/ai-chat-store";
 import { getPlanConfig, PlanTier } from "@/lib/plan-limits";
 import { createClient } from "@/lib/supabase/client";
@@ -494,8 +494,9 @@ function FullScreenChatInternal() {
 
             <div className="space-y-8">
               {aiMessages.map((msg, msgIndex) => {
-                // Show timestamp ONLY for chats loaded from history, not new conversations
-                const showTimestamp = isLoadedChatRef.current && msgIndex === 0 && msg.role === 'user';
+                // Show timestamp ONLY for chats loaded from history
+                // isLoadedChatRef.current is true only when navigating to a previously saved chat
+                const showTimestamp = isLoadedChatRef.current && msgIndex === 0 && msg.role === 'user' && (msg as any).createdAt;
                 const msgTime = (msg as any).createdAt ? new Date((msg as any).createdAt) : new Date();
                 
                 return (
@@ -736,6 +737,26 @@ function FullScreenChatInternal() {
             </div>
           </div>
         </div>
+
+        {/* ─── SCROLL TO BOTTOM BUTTON ─── */}
+        <AnimatePresence>
+          {!isUserAtBottom && aiMessages.length > 0 && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{ duration: 0.15 }}
+              onClick={() => {
+                messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+                setIsUserAtBottom(true);
+              }}
+              className="absolute bottom-28 right-6 md:right-10 z-40 w-9 h-9 bg-white dark:bg-[#1A1A1A] border border-gray-200 dark:border-gray-700 rounded-full shadow-lg flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-[#1890FF] hover:border-[#1890FF]/40 hover:shadow-xl transition-all cursor-pointer"
+              title="Ir al final"
+            >
+              <ArrowDown className="w-4 h-4" />
+            </motion.button>
+          )}
+        </AnimatePresence>
 
         {/* ─── PREMIUM INPUT BAR (REPOSITIONED) ─── */}
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-white via-white/90 to-transparent dark:from-[#0a0a0a] dark:via-[#0a0a0a]/90 pt-8 pb-1 px-4 md:px-8 pointer-events-none z-30">

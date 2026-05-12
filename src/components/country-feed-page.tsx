@@ -645,11 +645,6 @@ function TrendingPanel({ articles }: { articles: any[] }) {
               <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 line-clamp-2 group-hover:text-[#1890FF] transition-colors leading-snug">{article.title}</p>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-[10px] text-gray-400">{fmtDate(article.published_at)}</span>
-                {article.relevance_score > 0 && (
-                  <span className="text-[10px] font-bold text-orange-500/70 flex items-center gap-0.5">
-                    <Eye className="w-3 h-3" /> {Math.round(article.relevance_score * 100)}%
-                  </span>
-                )}
               </div>
             </div>
             {article.image_url && (

@@ -142,14 +142,6 @@ export function AnalyzedNewsCard({ toolName, result }: AnalyzedNewsCardProps) {
                             {timeAgo(item.published_at)}
                           </span>
                         )}
-                        {item.relevance_score > 0 && (
-                          <span className={`flex items-center gap-0.5 text-[10px] font-bold ${scoreColor(item.relevance_score)} ${scoreBg(item.relevance_score)} px-1.5 py-0.5 rounded-md border`}>
-                            <Sparkles className="w-2.5 h-2.5" />
-                            {typeof item.relevance_score === 'number' && item.relevance_score <= 10
-                              ? `${item.relevance_score}/10`
-                              : `${Math.round(item.relevance_score * 100)}%`}
-                          </span>
-                        )}
                       </div>
                     </div>
 

@@ -193,14 +193,6 @@ export default function ArticlePage() {
             {article.sources && article.sources.length > 0 && (
               <div className="border-l border-border/50 pl-4 flex items-center gap-2">
                 <ExpandableSources sources={article.sources} />
-                {(article.relevance_score || 0) > 0 && (
-                  <span 
-                    className="flex shrink-0 items-center justify-center w-6 h-6 rounded-full bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-[10px] font-bold tracking-tight shadow-sm"
-                    title="Porcentaje de Importancia asignado por Inteligencia Artificial"
-                  >
-                    {article.relevance_score > 1 ? Math.round(article.relevance_score) : Math.round(article.relevance_score * 100)}
-                  </span>
-                )}
               </div>
             )}
           </div>

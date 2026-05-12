@@ -472,19 +472,19 @@ f = 2 dígitos: país(1=CL,2=US) + tema(1=General,2=Tech,3=Impacto,4=Finanzas,5=
   }
 }
 
-// ─── Phase 3: Grok 4.1 Fast :online — Premium Research ──────────
+// ─── Phase 3: DeepSeek V4 Flash — Premium Research + Web Search ──────────
 // 
 // COST OPTIMIZATIONS applied:
-// 1. reasoning: 'none' — no chain-of-thought (already set in openrouter.ts)
-// 2. max_tokens: 1500 — hard cap on output (article doesn't need more)
-// 3. Compact prompt — minimal instructions, max info density
-// 4. Only 1-2 source URLs — less web search tokens
-// 5. temperature: 0.2 — less creative = fewer tokens
+// 1. max_tokens: 1500 — hard cap on output (article doesn't need more)
+// 2. Compact prompt — minimal instructions, max info density
+// 3. Only 1-2 source URLs — less web search tokens
+// 4. temperature: 0.2 — less creative = fewer tokens
+// 5. Web search via OpenRouter plugins API
 
-// ── Static system prompt for Grok (cacheable by OpenRouter) ──
+// ── Static system prompt for enrichment (cacheable by OpenRouter) ──
 // Placed outside the function so it's byte-identical across all calls.
 // OpenRouter auto-caches stable system prefixes → 50-90% cheaper on input tokens.
-const GROK_SYSTEM_PROMPT = `Eres un periodista senior de "Reclu", portal PREMIUM de noticias financieras en ESPAÑOL.
+const ENRICH_SYSTEM_PROMPT = `Eres un periodista senior de "Reclu", portal PREMIUM de noticias financieras en ESPAÑOL.
 
 Tu trabajo: recibir una URL de noticia, investigarla en la web, y producir un artículo profesional.
 
@@ -518,7 +518,7 @@ País: ${article.country_code === 'cl' ? 'Chile (f=1X)' : 'USA (f=2X)'}`;
   const { content, usage, citations } = await callOpenRouter({
     model,
     messages: [
-      { role: 'system', content: GROK_SYSTEM_PROMPT },  // Static → cached
+      { role: 'system', content: ENRICH_SYSTEM_PROMPT },  // Static → cached
       { role: 'user', content: userPrompt },              // Dynamic → minimal
     ],
     temperature: 0.2,

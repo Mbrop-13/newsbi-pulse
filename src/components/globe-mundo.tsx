@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { Search, Loader2, PlayCircle, Newspaper, X, ChevronRight, KeyRound, Globe2, Map as MapIcon, Settings, Hexagon, Mountain } from "lucide-react";
+import { Search, Loader2, ExternalLink, X, ChevronRight, KeyRound, Globe2, Map as MapIcon, Settings, Hexagon, Mountain } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,7 +50,7 @@ export function GlobeMundo() {
       let fetchedPoints: any[] = [];
       const { data, error } = await supabase
         .from("news_articles")
-        .select("id, title, category, published_at, is_live, lat, lng, city")
+        .select("id, title, summary, category, published_at, is_live, lat, lng, city, slug, image_url")
         .order("published_at", { ascending: false })
         .limit(100);
 
@@ -274,7 +274,8 @@ export function GlobeMundo() {
     );
   }, [searchQuery, points]);
 
-  const showLeftPanel = searchQuery.length >= 3 || activePoint;
+  const showLeftPanel = activePoint;
+  const showSearchBar = searchQuery.length >= 3 || showLeftPanel;
 
   if (tokenMissing) {
     return (
@@ -297,9 +298,77 @@ export function GlobeMundo() {
       {/* ─── MAPBOX CONTAINER ─── */}
       <div ref={mapContainerRef} className="absolute inset-0 w-full h-full" />
 
-      {/* ─── LEFT PANEL: Search + Results + Article ─── */}
+      {/* ─── FLOATING SEARCH BAR (centered top) ─── */}
       <AnimatePresence>
-        {showLeftPanel && (
+        {(showSearchBar || searchQuery.length > 0) && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            className="absolute top-20 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-[420px]"
+          >
+            <div className="relative flex items-center bg-white/95 backdrop-blur-xl border border-slate-200/80 rounded-2xl overflow-hidden focus-within:ring-2 focus-within:ring-accent/40 focus-within:border-accent transition-all shadow-xl">
+              <Search className="w-4 h-4 text-slate-400 absolute left-4" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Buscar noticias o ciudad..."
+                className="w-full bg-transparent text-slate-800 placeholder:text-slate-400 pl-11 pr-10 py-3 outline-none text-sm font-medium"
+                autoFocus
+              />
+              {isSearching && (
+                <Loader2 className="w-4 h-4 text-accent absolute right-4 animate-spin" />
+              )}
+              {searchQuery && !isSearching && (
+                <button onClick={() => { setSearchQuery(""); setActivePoint(null); }} className="absolute right-4">
+                  <X className="w-4 h-4 text-slate-400 hover:text-slate-600" />
+                </button>
+              )}
+            </div>
+
+            {/* Search Results Dropdown */}
+            {!activePoint && searchQuery.length >= 3 && filteredPoints.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-2 bg-white/95 backdrop-blur-xl border border-slate-200/80 rounded-2xl shadow-xl overflow-hidden max-h-[300px] overflow-y-auto custom-scrollbar"
+              >
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-4 pt-3 pb-1">
+                  {filteredPoints.length} resultado{filteredPoints.length !== 1 ? 's' : ''}
+                </p>
+                {filteredPoints.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => handlePointClick(p)}
+                    className="flex items-center gap-3 px-4 py-2.5 text-left group hover:bg-slate-50 transition-all w-full"
+                  >
+                    <div className="flex flex-col min-w-0">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        {p.is_live && (
+                          <span className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-pulse flex-shrink-0" />
+                        )}
+                        <span className="text-[10px] text-accent font-semibold uppercase tracking-wider truncate">
+                          {p.city}
+                        </span>
+                      </div>
+                      <span className="text-xs font-semibold text-slate-800 leading-snug line-clamp-1 group-hover:text-accent transition-colors">
+                        {p.title}
+                      </span>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-accent flex-shrink-0 ml-auto transition-colors" />
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ─── LEFT PANEL: Article Detail (only when a point is selected) ─── */}
+      <AnimatePresence>
+        {activePoint && (
           <motion.div
             initial={{ x: -380, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
@@ -307,137 +376,59 @@ export function GlobeMundo() {
             transition={{ type: "spring", stiffness: 350, damping: 35 }}
             className="absolute left-0 top-0 bottom-0 w-[360px] bg-white/95 backdrop-blur-2xl border-r border-slate-200/60 shadow-2xl z-40 flex flex-col"
           >
-            {/* Search Input inside the panel */}
-            <div className="px-5 pt-20 pb-3 flex-shrink-0">
-              <div className="relative flex items-center bg-slate-50 border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-accent/40 focus-within:border-accent transition-all">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Buscar noticias o ciudad..."
-                  className="w-full bg-transparent text-slate-800 placeholder:text-slate-400 pl-10 pr-10 py-2.5 outline-none text-sm font-medium"
-                />
-                {isSearching && (
-                  <Loader2 className="w-4 h-4 text-accent absolute right-3 animate-spin" />
-                )}
-                {searchQuery && !isSearching && (
-                  <button onClick={() => { setSearchQuery(""); setActivePoint(null); }} className="absolute right-3">
-                    <X className="w-4 h-4 text-slate-400 hover:text-slate-600" />
-                  </button>
-                )}
-              </div>
-            </div>
+            <div className="flex-1 overflow-y-auto custom-scrollbar px-5 pt-20 pb-6">
+              <button 
+                onClick={() => setActivePoint(null)}
+                className="flex items-center gap-1 text-xs text-slate-400 hover:text-accent transition-colors mb-3"
+              >
+                ← Volver al mapa
+              </button>
 
-            {/* Active Article Detail */}
-            <AnimatePresence mode="wait">
-              {activePoint && (
-                <motion.div
-                  key="article"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="flex-1 overflow-y-auto custom-scrollbar px-5 pb-6"
-                >
-                  <button 
-                    onClick={() => setActivePoint(null)}
-                    className="flex items-center gap-1 text-xs text-slate-400 hover:text-accent transition-colors mb-3"
-                  >
-                    ← Volver a resultados
-                  </button>
-
-                  {activePoint.imageUrl && (
-                    <div className="w-full h-48 rounded-xl overflow-hidden mb-4">
-                      <img src={activePoint.imageUrl} alt={activePoint.title} className="w-full h-full object-cover" />
-                    </div>
-                  )}
-                  
-                  <div className="flex items-center gap-2 mb-3">
-                    {activePoint.is_live ? (
-                      <span className="flex items-center gap-1.5 px-2 py-0.5 bg-purple-100 text-purple-600 text-[10px] font-bold uppercase tracking-wider rounded-md">
-                        <span className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-pulse" />
-                        Urgente
-                      </span>
-                    ) : (
-                      <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold uppercase tracking-wider rounded-md">
-                        {activePoint.category}
-                      </span>
-                    )}
-                    <span className="text-[10px] text-slate-400 font-medium ml-auto">
-                      {activePoint.city}
-                    </span>
-                  </div>
-                  
-                  <h2 className="text-lg font-editorial font-bold text-slate-900 leading-snug mb-4">
-                    {activePoint.title}
-                  </h2>
-                  
-                  <p className="text-sm text-slate-600 leading-relaxed mb-6">
-                    Resumen generado por IA de este suceso importante que está en desarrollo. Información recopilada de múltiples fuentes confiables en tiempo real. Este artículo es monitoreado continuamente y actualizado con los últimos datos disponibles de agencias internacionales.
-                  </p>
-                  
-                  <div className="flex items-center gap-2">
-                    <button className="flex-1 flex items-center justify-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs py-2.5 rounded-lg transition-colors font-medium">
-                      <PlayCircle className="w-4 h-4" />
-                      Escuchar
-                    </button>
-                    <button className="flex-1 flex items-center justify-center gap-1.5 bg-accent hover:bg-accent/90 text-white text-xs py-2.5 rounded-lg transition-colors font-medium">
-                      <Newspaper className="w-4 h-4" />
-                      Leer Completo
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Search Results List (only when no article is open) */}
-            {!activePoint && searchQuery.length >= 3 && (
-              <div className="flex-1 overflow-y-auto custom-scrollbar px-5 pb-6">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">
-                  {filteredPoints.length} resultado{filteredPoints.length !== 1 ? 's' : ''}
-                </p>
-                <div className="flex flex-col gap-2">
-                  {filteredPoints.map((p) => (
-                    <button
-                      key={p.id}
-                      onClick={() => handlePointClick(p)}
-                      className="flex items-center gap-3 bg-white border border-slate-100 rounded-xl p-3 text-left group hover:shadow-md hover:border-accent/30 transition-all w-full"
-                    >
-                      {p.imageUrl && (
-                        <img src={p.imageUrl} alt={p.title} className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
-                      )}
-                      <div className="flex flex-col min-w-0">
-                        <div className="flex items-center gap-1.5 mb-1">
-                          {p.is_live && (
-                            <span className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-pulse flex-shrink-0" />
-                          )}
-                          <span className="text-[10px] text-accent font-semibold uppercase tracking-wider truncate">
-                            {p.city}
-                          </span>
-                        </div>
-                        <span className="text-xs font-semibold text-slate-800 leading-snug line-clamp-2 group-hover:text-accent transition-colors">
-                          {p.title}
-                        </span>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-accent flex-shrink-0 ml-auto transition-colors" />
-                    </button>
-                  ))}
-                  
-                  {filteredPoints.length === 0 && (
-                    <div className="text-center text-slate-400 text-sm py-8">
-                      No hay resultados para &ldquo;{searchQuery}&rdquo;
-                    </div>
-                  )}
+              {(activePoint.image_url || activePoint.imageUrl) && (
+                <div className="w-full h-48 rounded-xl overflow-hidden mb-4">
+                  <img src={activePoint.image_url || activePoint.imageUrl} alt={activePoint.title} className="w-full h-full object-cover" />
                 </div>
+              )}
+              
+              <div className="flex items-center gap-2 mb-3">
+                {activePoint.is_live ? (
+                  <span className="flex items-center gap-1.5 px-2 py-0.5 bg-purple-100 text-purple-600 text-[10px] font-bold uppercase tracking-wider rounded-md">
+                    <span className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-pulse" />
+                    Urgente
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold uppercase tracking-wider rounded-md">
+                    {activePoint.category}
+                  </span>
+                )}
+                <span className="text-[10px] text-slate-400 font-medium ml-auto">
+                  {activePoint.city}
+                </span>
               </div>
-            )}
+              
+              <h2 className="text-lg font-editorial font-bold text-slate-900 leading-snug mb-2">
+                {activePoint.title}
+              </h2>
+              
+              <p className="text-sm text-slate-600 leading-relaxed mb-6">
+                {activePoint.summary || 'Sin resumen disponible para este artículo.'}
+              </p>
+              
+              <a
+                href={activePoint.slug ? `/articulo/${activePoint.slug}` : '#'}
+                className="flex items-center justify-center gap-2 w-full bg-accent hover:bg-accent/90 text-white text-sm py-3 rounded-xl transition-colors font-semibold shadow-md hover:shadow-lg"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Ir al artículo
+              </a>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ─── FLOATING SEARCH BUTTON (when panel is closed) ─── */}
+      {/* ─── FLOATING SEARCH BUTTON (when search bar is closed) ─── */}
       <AnimatePresence>
-        {!showLeftPanel && (
+        {!showSearchBar && searchQuery.length === 0 && (
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -445,7 +436,7 @@ export function GlobeMundo() {
             className="absolute top-20 left-6 z-50 pointer-events-auto"
           >
             <button
-              onClick={() => setSearchQuery("   ")} // trigger panel open with spaces
+              onClick={() => setSearchQuery(" ")}
               className="w-12 h-12 rounded-full bg-white/90 backdrop-blur-md border border-slate-200 shadow-xl flex items-center justify-center hover:bg-white hover:shadow-2xl hover:scale-105 transition-all group"
             >
               <Search className="w-5 h-5 text-slate-500 group-hover:text-accent transition-colors" />
@@ -487,71 +478,75 @@ export function GlobeMundo() {
         )}
       </AnimatePresence>
 
-      {/* Zoom Controls */}
-      <div className="absolute bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-auto">
-        <button 
-          onClick={() => mapRef.current?.zoomIn()}
-          className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-md border border-slate-200 text-slate-700 flex items-center justify-center hover:bg-white transition-all shadow-md text-lg"
-        >
-          +
-        </button>
-        <button 
-          onClick={() => mapRef.current?.zoomOut()}
-          className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-md border border-slate-200 text-slate-700 flex items-center justify-center hover:bg-white transition-all shadow-md text-lg"
-        >
-          −
-        </button>
-      </div>
+      {/* Zoom Controls — hidden when sidebar is open */}
+      {!activePoint && (
+        <div className="absolute bottom-6 right-6 z-30 flex flex-col gap-2 pointer-events-auto">
+          <button 
+            onClick={() => mapRef.current?.zoomIn()}
+            className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-md border border-slate-200 text-slate-700 flex items-center justify-center hover:bg-white transition-all shadow-md text-lg"
+          >
+            +
+          </button>
+          <button 
+            onClick={() => mapRef.current?.zoomOut()}
+            className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-md border border-slate-200 text-slate-700 flex items-center justify-center hover:bg-white transition-all shadow-md text-lg"
+          >
+            −
+          </button>
+        </div>
+      )}
 
-      {/* Settings Toggle UI (Style & Projection) */}
-      <div className="absolute top-20 right-6 z-50 pointer-events-auto">
-        <DropdownMenu>
-          <DropdownMenuTrigger className="w-10 h-10 outline-none rounded-full bg-white/90 backdrop-blur-md border border-slate-200 shadow-xl flex items-center justify-center hover:bg-white hover:shadow-2xl transition-all">
-            <Settings className="w-5 h-5 text-slate-600" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56 p-2 rounded-xl">
-            {/* Styles Section */}
-            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 px-2 mt-1">
-              Estilo de Mapa
-            </div>
-            <DropdownMenuItem 
-              className={`flex items-center gap-2 cursor-pointer rounded-lg py-2 ${mapStyle === 'light-v11' ? 'bg-accent/10 text-accent font-medium' : ''}`}
-              onClick={() => setMapStyle('light-v11')}
-            >
-              <Hexagon className="w-4 h-4" />
-              Minimalista (Monochrome)
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              className={`flex items-center gap-2 cursor-pointer rounded-lg py-2 ${mapStyle === 'outdoors-v12' ? 'bg-accent/10 text-accent font-medium' : ''}`}
-              onClick={() => setMapStyle('outdoors-v12')}
-            >
-              <Mountain className="w-4 h-4" />
-              Realista (Outdoors)
-            </DropdownMenuItem>
+      {/* Settings Toggle UI (Style & Projection) — hidden when sidebar is open */}
+      {!activePoint && (
+        <div className="absolute top-20 right-6 z-30 pointer-events-auto">
+          <DropdownMenu>
+            <DropdownMenuTrigger className="w-10 h-10 outline-none rounded-full bg-white/90 backdrop-blur-md border border-slate-200 shadow-xl flex items-center justify-center hover:bg-white hover:shadow-2xl transition-all">
+              <Settings className="w-5 h-5 text-slate-600" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 p-2 rounded-xl">
+              {/* Styles Section */}
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 px-2 mt-1">
+                Estilo de Mapa
+              </div>
+              <DropdownMenuItem 
+                className={`flex items-center gap-2 cursor-pointer rounded-lg py-2 ${mapStyle === 'light-v11' ? 'bg-accent/10 text-accent font-medium' : ''}`}
+                onClick={() => setMapStyle('light-v11')}
+              >
+                <Hexagon className="w-4 h-4" />
+                Minimalista (Monochrome)
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                className={`flex items-center gap-2 cursor-pointer rounded-lg py-2 ${mapStyle === 'outdoors-v12' ? 'bg-accent/10 text-accent font-medium' : ''}`}
+                onClick={() => setMapStyle('outdoors-v12')}
+              >
+                <Mountain className="w-4 h-4" />
+                Realista (Outdoors)
+              </DropdownMenuItem>
 
-            <DropdownMenuSeparator className="my-2" />
+              <DropdownMenuSeparator className="my-2" />
 
-            {/* Projection Section */}
-            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 px-2">
-              Proyección
-            </div>
-            <DropdownMenuItem 
-              className={`flex items-center gap-2 cursor-pointer rounded-lg py-2 ${projection === 'globe' ? 'bg-accent/10 text-accent font-medium' : ''}`}
-              onClick={() => setProjection('globe')}
-            >
-              <Globe2 className="w-4 h-4" />
-              Vista 3D (Globo)
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              className={`flex items-center gap-2 cursor-pointer rounded-lg py-2 ${projection === 'mercator' ? 'bg-accent/10 text-accent font-medium' : ''}`}
-              onClick={() => setProjection('mercator')}
-            >
-              <MapIcon className="w-4 h-4" />
-              Vista 2D (Plano)
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+              {/* Projection Section */}
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 px-2">
+                Proyección
+              </div>
+              <DropdownMenuItem 
+                className={`flex items-center gap-2 cursor-pointer rounded-lg py-2 ${projection === 'globe' ? 'bg-accent/10 text-accent font-medium' : ''}`}
+                onClick={() => setProjection('globe')}
+              >
+                <Globe2 className="w-4 h-4" />
+                Vista 3D (Globo)
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                className={`flex items-center gap-2 cursor-pointer rounded-lg py-2 ${projection === 'mercator' ? 'bg-accent/10 text-accent font-medium' : ''}`}
+                onClick={() => setProjection('mercator')}
+              >
+                <MapIcon className="w-4 h-4" />
+                Vista 2D (Plano)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
 
     </div>
   );

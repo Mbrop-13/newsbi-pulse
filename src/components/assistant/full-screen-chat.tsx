@@ -265,10 +265,22 @@ function FullScreenChatInternal() {
     }
   }, [user]);
 
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [isUserAtBottom, setIsUserAtBottom] = useState(true);
+
+  const handleScroll = () => {
+    if (scrollContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+      setIsUserAtBottom(scrollHeight - scrollTop - clientHeight < 150);
+    }
+  };
+
   // Auto-scroll
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [aiMessages, aiLoading, messages]);
+    if (isUserAtBottom) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [aiMessages, aiLoading, isUserAtBottom]);
 
   const handleModelSelect = (mId: 'fast' | 'pro') => {
     if (mId === 'pro' && !isPremium) {
@@ -303,13 +315,22 @@ function FullScreenChatInternal() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const sendMessage = async (textOverride?: string, shortcutOverride?: string) => {
+  const sendMessage = async (textOverride?: string, contextOverride?: string) => {
     const text = textOverride || input.trim();
     if (!text || aiLoading || reachedQuestionLimit) return;
     
+    setIsUserAtBottom(true);
     // ONLY use append — this adds the user message to aiMessages AND triggers the API call.
     // The store sync happens in onFinish after the AI responds.
-    append({ role: 'user', content: text });
+    append({ role: 'user', content: text }, {
+      body: {
+        articles: attachedArticles,
+        files: attachedFiles,
+        modelId: selectedModel,
+        activeTools: activeTools,
+        contextOverride: contextOverride || undefined
+      }
+    });
     if (!textOverride) handleInputChange({ target: { value: '' } } as any);
   };
 
@@ -459,12 +480,12 @@ function FullScreenChatInternal() {
         )}
 
         {/* Chat Messages */}
-        <div className="flex-1 overflow-y-auto hidden-scrollbar relative pb-24">
+        <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto hidden-scrollbar relative pb-24">
           
           {/* ── Prompt Carousel (full width, outside max-w constraint) ── */}
           {isStoreHydrated && aiMessages.length === 0 && !aiLoading && (
             <div className="pt-24 md:pt-40">
-              <PromptCarousel onSend={(query) => sendMessage(query)} />
+              <PromptCarousel onSend={(query, contextOverride) => sendMessage(query, contextOverride)} />
             </div>
           )}
 

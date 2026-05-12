@@ -61,7 +61,7 @@ NUNCA digas que eres de OpenAI, Anthropic o Google. Eres de Reclu.`;
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages, articles, files, modelId, activeTools } = await req.json();
+    const { messages, articles, files, modelId, activeTools, contextOverride } = await req.json();
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(JSON.stringify({ error: "Messages are required" }), { status: 400 });
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
 
     const processedMessages = messages.map((m: any, i: number) => ({
       role: m.role,
-      content: i === 0 && m.role === 'user' ? contextPrefix + m.content : m.content,
+      content: i === 0 && m.role === 'user' ? contextPrefix + (contextOverride || m.content) : m.content,
     }));
 
     await incrementUsage(user.id, "ai_message").catch(console.error);

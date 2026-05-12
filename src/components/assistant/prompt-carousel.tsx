@@ -91,7 +91,7 @@ function buildContextPrefix(item: PromptItem, data: PreviewData | null): string 
 // ── MAIN COMPONENT ───────────────────────────────────────
 
 interface PromptCarouselProps {
-  onSend: (query: string) => void;
+  onSend: (query: string, contextOverride?: string) => void;
 }
 
 export function PromptCarousel({ onSend }: PromptCarouselProps) {
@@ -120,7 +120,8 @@ export function PromptCarousel({ onSend }: PromptCarouselProps) {
 
   const handleClick = (item: PromptItem) => {
     const enrichedQuery = buildContextPrefix(item, previewRef.current);
-    onSend(enrichedQuery);
+    const hasContext = enrichedQuery !== item.query;
+    onSend(item.query, hasContext ? enrichedQuery : undefined);
   };
 
   return (
@@ -163,7 +164,7 @@ export function PromptCarousel({ onSend }: PromptCarouselProps) {
 interface ScrollingRowProps {
   items: PromptItem[];
   direction: "left" | "right";
-  onSend: (query: string) => void;
+  onSend: (query: string, contextOverride?: string) => void;
   onClick: (item: PromptItem) => void;
 }
 

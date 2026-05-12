@@ -72,7 +72,7 @@ function FullScreenChatInternal() {
   // Ref to always have the latest aiMessages available in callbacks
   const aiMessagesRef = useRef<any[]>([]);
 
-  const { messages: aiMessages, input, handleInputChange, handleSubmit, setMessages: setAiMessages, append, isLoading: aiLoading, setInput, reload } = useChat({
+  const { messages: aiMessages, input, handleInputChange, handleSubmit, setMessages: setAiMessages, append, isLoading: aiLoading, setInput, reload, data: streamData } = useChat({
     api: "/api/ai-chat",
     body: {
       articles: attachedArticles,
@@ -578,8 +578,17 @@ function FullScreenChatInternal() {
                               
                               {/* Sources Pill Widget */}
                               {(() => {
+                                // Check per-message annotations first
                                 const citationAnnotation = msg.annotations?.find((a: any) => a?.type === 'citations');
-                                const citationsList = citationAnnotation?.urls || (msg as any).citations;
+                                let citationsList = citationAnnotation?.urls || (msg as any).citations;
+                                // Fallback: check streamData (useChat data) for the last assistant message
+                                if ((!citationsList || citationsList.length === 0) && streamData && streamData.length > 0) {
+                                  const isLastAssistant = msg.id === aiMessages.filter(m => m.role === 'assistant').pop()?.id;
+                                  if (isLastAssistant) {
+                                    const sdCitation = (streamData as any[]).find((d: any) => d?.type === 'citations');
+                                    if (sdCitation?.urls) citationsList = sdCitation.urls;
+                                  }
+                                }
                                 if (!citationsList || citationsList.length === 0) return null;
                                 
                                 const isOpen = openCitations[msg.id];
@@ -610,7 +619,7 @@ function FullScreenChatInternal() {
                                       })}
                                     </div>
                                     <span className="text-[12px] font-medium text-gray-700 dark:text-gray-300 group-hover:text-black dark:group-hover:text-white transition-colors">
-                                      {citationsList.length} sources
+                                      {citationsList.length} Sitios
                                     </span>
                                   </button>
                                 );
@@ -671,7 +680,15 @@ function FullScreenChatInternal() {
                           {/* Expanded Citations List */}
                           {(() => {
                             const citationAnnotation = msg.annotations?.find((a: any) => a?.type === 'citations');
-                            const citationsList = citationAnnotation?.urls || (msg as any).citations;
+                            let citationsList = citationAnnotation?.urls || (msg as any).citations;
+                            // Fallback: check streamData for the last assistant message
+                            if ((!citationsList || citationsList.length === 0) && streamData && streamData.length > 0) {
+                              const isLastAssistant = msg.id === aiMessages.filter(m => m.role === 'assistant').pop()?.id;
+                              if (isLastAssistant) {
+                                const sdCitation = (streamData as any[]).find((d: any) => d?.type === 'citations');
+                                if (sdCitation?.urls) citationsList = sdCitation.urls;
+                              }
+                            }
                             if (!citationsList || citationsList.length === 0 || !openCitations[msg.id]) return null;
                             
                             return (

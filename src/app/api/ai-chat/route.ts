@@ -39,16 +39,28 @@ function createMimoWithWebSearch(streamData?: StreamData) {
 
       // If it's a stream, intercept chunks to extract MiMo's native web search annotations
       if (res.body && streamData) {
+        const collectedUrls = new Set<string>();
         const transformStream = new TransformStream({
           transform(chunk, controller) {
             const str = new TextDecoder().decode(chunk);
-            // Look for url_citations in the chunk (MiMo sends them at the end of the stream)
-            const citationMatches = Array.from(str.matchAll(/"type":\s*"url_citation",\s*"url":\s*"([^"]+)"/g));
-            if (citationMatches.length > 0) {
-              const citations = citationMatches.map(m => m[1]);
-              streamData.append({ type: 'citations', urls: citations });
-            }
+            // MiMo sends annotations inside delta with varying key order
+            // Match any url_citation block and extract its url field
+            const urlMatches = Array.from(str.matchAll(/"type"\s*:\s*"url_citation"[^}]*"url"\s*:\s*"([^"]+)"/g));
+            for (const m of urlMatches) collectedUrls.add(m[1]);
+            // Also try reversed key order (url before type)
+            const urlMatchesRev = Array.from(str.matchAll(/"url"\s*:\s*"([^"]+)"[^}]*"type"\s*:\s*"url_citation"/g));
+            for (const m of urlMatchesRev) collectedUrls.add(m[1]);
             controller.enqueue(chunk);
+          },
+          flush() {
+            try {
+              if (collectedUrls.size > 0) {
+                streamData.append({ type: 'citations', urls: Array.from(collectedUrls) });
+              }
+              streamData.close();
+            } catch {
+              // StreamData may already be closed by toDataStreamResponse
+            }
           }
         });
         return new Response(res.body.pipeThrough(transformStream), {

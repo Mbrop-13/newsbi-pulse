@@ -690,7 +690,7 @@ export async function runNewsPipeline(): Promise<{
     // ─── Country/Topic decode ───
     const COUNTRY_DECODE: Record<number, string> = { 1: 'cl', 2: 'us' };
     const TOPIC_DECODE: Record<number, string> = { 1: 'chile', 2: 'tech_global', 3: 'impacto_global', 4: 'finanzas', 5: 'inversiones', 6: 'economia' };
-    const stepModel = process.env.OPENROUTER_FILTER_MODEL || 'inclusionai/ling-2.6-flash:free';
+    const stepModel = process.env.OPENROUTER_FILTER_MODEL || 'minimax/minimax-m2.5:free';
 
     // ─── Helper: Save a single article to Supabase ───
     async function saveArticle(a: FinalNewsArticle): Promise<boolean> {

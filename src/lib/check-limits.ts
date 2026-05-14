@@ -81,37 +81,89 @@ export async function checkLimit(userId: string, feature: FeatureType): Promise<
  * Increment usage counter after an action is performed
  */
 export async function incrementUsage(userId: string, feature: "ai_message" | "tts_audio"): Promise<void> {
-  // Skip tracking for ultra/admin users — they have unlimited access
-  const tier = await getUserTier(userId);
-  if (tier === "ultra") return;
-
   const currentMonth = new Date().toISOString().slice(0, 7) + "-01"; // YYYY-MM-01
   const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
   
   if (feature === "ai_message") {
-    // Increment monthly usage
-    await supabase.rpc("increment_monthly_ai", { p_user_id: userId, p_month: currentMonth });
+    // Increment monthly usage (direct upsert — works even without RPCs)
+    const { data: existing } = await supabase
+      .from("monthly_usage")
+      .select("ai_messages")
+      .eq("user_id", userId)
+      .eq("month", currentMonth)
+      .maybeSingle();
+
+    if (existing) {
+      await supabase
+        .from("monthly_usage")
+        .update({ ai_messages: (existing.ai_messages || 0) + 1 })
+        .eq("user_id", userId)
+        .eq("month", currentMonth);
+    } else {
+      await supabase
+        .from("monthly_usage")
+        .insert({ user_id: userId, month: currentMonth, ai_messages: 1 });
+    }
     
-    // Increment lifetime usage via RPC
-    const { error } = await supabase.rpc("increment_lifetime_ai", { p_user_id: userId });
-    
-    if (error) {
-       // Fallback if RPC fails: read, then update or insert
-       const { data } = await supabase.from("lifetime_usage").select("ai_messages_total").eq("user_id", userId).single();
-       if (data) {
-         await supabase.from("lifetime_usage").update({ ai_messages_total: data.ai_messages_total + 1 }).eq("user_id", userId);
-       } else {
-         await supabase.from("lifetime_usage").insert({ user_id: userId, ai_messages_total: 1 });
-       }
+    // Increment lifetime usage
+    const { data: lifeData } = await supabase
+      .from("lifetime_usage")
+      .select("ai_messages_total")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (lifeData) {
+      await supabase
+        .from("lifetime_usage")
+        .update({ ai_messages_total: (lifeData.ai_messages_total || 0) + 1 })
+        .eq("user_id", userId);
+    } else {
+      await supabase
+        .from("lifetime_usage")
+        .insert({ user_id: userId, ai_messages_total: 1 });
     }
   }
   
   if (feature === "tts_audio") {
     // Increment monthly
-    await supabase.rpc("increment_monthly_tts", { p_user_id: userId, p_month: currentMonth });
+    const { data: existing } = await supabase
+      .from("monthly_usage")
+      .select("tts_audios")
+      .eq("user_id", userId)
+      .eq("month", currentMonth)
+      .maybeSingle();
+
+    if (existing) {
+      await supabase
+        .from("monthly_usage")
+        .update({ tts_audios: (existing.tts_audios || 0) + 1 })
+        .eq("user_id", userId)
+        .eq("month", currentMonth);
+    } else {
+      await supabase
+        .from("monthly_usage")
+        .insert({ user_id: userId, month: currentMonth, tts_audios: 1 });
+    }
     
     // Increment daily
-    await supabase.rpc("increment_daily_tts", { p_user_id: userId, p_date: today });
+    const { data: dailyData } = await supabase
+      .from("daily_usage")
+      .select("tts_audios")
+      .eq("user_id", userId)
+      .eq("date", today)
+      .maybeSingle();
+
+    if (dailyData) {
+      await supabase
+        .from("daily_usage")
+        .update({ tts_audios: (dailyData.tts_audios || 0) + 1 })
+        .eq("user_id", userId)
+        .eq("date", today);
+    } else {
+      await supabase
+        .from("daily_usage")
+        .insert({ user_id: userId, date: today, tts_audios: 1 });
+    }
   }
 }
 

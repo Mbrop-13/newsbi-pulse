@@ -162,7 +162,7 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     priceUSD: 89.99,
     annualDiscount: 0.2,
     
-    aiMessagesPerMonth: -1, // Ilimitado
+    aiMessagesPerMonth: 600,
     aiLifetimeMessages: -1,
     aiModel: "x-ai/grok-4.1-fast:online",
     aiChatHistory: -1,
@@ -170,10 +170,10 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     aiAdvancedAnalysis: true,
     aiWebSearch: true,
     
-    ttsAudiosPerMonth: -1, // Ilimitado
+    ttsAudiosPerMonth: 300,
     ttsDailyLimit: -1,
     
-    maxActiveAlerts: -1, // Ilimitado
+    maxActiveAlerts: 30,
     emailAlerts: true,
     smsAlerts: true,
     

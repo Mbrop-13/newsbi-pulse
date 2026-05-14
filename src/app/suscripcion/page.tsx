@@ -18,10 +18,11 @@ import {
   Bell,
   FileText,
   LineChart,
+  Gift,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSubscriptionStore } from "@/lib/stores/subscription-store";
-import { PLAN_CONFIGS, formatCLP, getAnnualMonthlyPrice, type PlanTier } from "@/lib/plan-limits";
+import { PLAN_CONFIGS, formatCLP, getAnnualMonthlyPrice, isPromoX2Active, type PlanTier } from "@/lib/plan-limits";
 
 const plans = [
   {
@@ -97,6 +98,26 @@ const plans = [
     icon: TrendingUp,
   },
 ];
+
+// Helper to double texts if promo active
+function applyPromoToPlans(basePlans: typeof plans) {
+  if (!isPromoX2Active()) return basePlans;
+  
+  return basePlans.map(plan => ({
+    ...plan,
+    features: plan.features.map(f => {
+      if (f.text.includes("consultas IA/mes")) {
+        const num = parseInt(f.text.split(" ")[0]) * 2;
+        return { ...f, text: `${num} consultas IA/mes (Promo x2)`, isPromo: true };
+      }
+      if (f.text.includes("audios de noticias/mes") || f.text.includes("audios al mes")) {
+        const num = parseInt(f.text.split(" ")[0]) * 2;
+        return { ...f, text: `${num} audios al mes (Promo x2)`, isPromo: true };
+      }
+      return f;
+    })
+  }));
+}
 
 const premiumFeatures = [
   {
@@ -174,6 +195,7 @@ export default function SuscripcionesPage() {
   const { tier: currentTier } = useSubscriptionStore();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const activePlans = applyPromoToPlans(plans);
 
   const getPrice = (planId: PlanTier): string => {
     const config = PLAN_CONFIGS[planId];
@@ -248,6 +270,15 @@ export default function SuscripcionesPage() {
               <span className="block bg-gradient-to-r from-[#0052CC] to-[#22D3EE] bg-clip-text text-transparent">potencian tu inversión</span>
             </h1>
 
+            {isPromoX2Active() && (
+              <div className="inline-block mt-2 mb-8 px-6 py-2 rounded-2xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 shadow-xl shadow-amber-500/5">
+                <span className="font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">
+                  <Gift className="w-5 h-5" />
+                  ¡PROMO ACTIVA! Doble de consultas IA y audios en planes de pago este mes.
+                </span>
+              </div>
+            )}
+
             <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
               Desbloquea análisis IA avanzados, alertas multicanal, cálculos de portafolio y reportes semanales para tomar mejores decisiones.
             </p>
@@ -300,7 +331,7 @@ export default function SuscripcionesPage() {
 
           {/* Pricing Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 max-w-[1200px] mx-auto">
-            {plans.map((plan, i) => {
+            {activePlans.map((plan, i) => {
               const isCurrentPlan = plan.id === currentTier;
               const isLoading = loadingPlan === plan.id;
               const PlanIcon = plan.icon;
@@ -396,14 +427,14 @@ export default function SuscripcionesPage() {
                     {/* Features */}
                     <div className="space-y-3 flex-1">
                       <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mb-4">Qué incluye</p>
-                      {plan.features.map((f, fi) => (
+                      {plan.features.map((f: any, fi) => (
                         <div key={fi} className="flex items-start gap-2.5 text-[13px]">
                           {f.included ? (
                             <Check className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
                           ) : (
                             <X className="w-4 h-4 text-muted-foreground/20 mt-0.5 shrink-0" />
                           )}
-                          <span className={`leading-snug ${f.included ? "text-foreground" : "text-muted-foreground/40"}`}>
+                          <span className={`leading-snug flex-1 ${f.included ? "text-foreground" : "text-muted-foreground/40"} ${f.isPromo ? "font-bold text-amber-600 dark:text-amber-400" : ""}`}>
                             {f.text}
                           </span>
                         </div>

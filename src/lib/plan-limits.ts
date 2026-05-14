@@ -192,10 +192,29 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
 };
 
 /**
+ * Check if the end-of-month Promo X2 is active
+ */
+export function isPromoX2Active(): boolean {
+  // Activa promoción temporalmente (por ejemplo, hasta fin de mes de Mayo 2026)
+  return new Date() < new Date("2026-06-01T00:00:00Z");
+}
+
+/**
  * Get the plan config for a tier
  */
 export function getPlanConfig(tier: PlanTier): PlanConfig {
-  return PLAN_CONFIGS[tier] || PLAN_CONFIGS.free;
+  const baseConfig = PLAN_CONFIGS[tier] || PLAN_CONFIGS.free;
+  
+  // Si la promoción X2 está activa, duplicamos los beneficios de los planes de pago
+  if (isPromoX2Active() && tier !== "free") {
+    return {
+      ...baseConfig,
+      aiMessagesPerMonth: baseConfig.aiMessagesPerMonth * 2,
+      ttsAudiosPerMonth: baseConfig.ttsAudiosPerMonth * 2,
+    };
+  }
+  
+  return baseConfig;
 }
 
 /**

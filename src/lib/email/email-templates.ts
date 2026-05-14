@@ -372,3 +372,182 @@ export function paymentSuccessEmail({
     html: baseLayout(content, `Tu pago por ${formattedAmount} para el plan Reclu ${planName} ha sido procesado exitosamente.`),
   };
 }
+
+// ═══════════════════════════════════════════════════
+// TRIAL EXPIRING EMAIL
+// ═══════════════════════════════════════════════════
+export function trialExpiringEmail({
+  userName,
+  planName,
+  daysLeft,
+  aiMessagesUsed,
+  ttsUsed,
+  price,
+}: {
+  userName?: string;
+  planName: string;
+  daysLeft: number;
+  aiMessagesUsed: number;
+  ttsUsed: number;
+  price: string;
+}): { subject: string; html: string } {
+  const content = `
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg, #f59e0b, #ef4444);color:#fff;font-size:28px;box-shadow:0 8px 16px rgba(245,158,11,0.25);">
+        ⏳
+      </div>
+    </div>
+    <h1 style="margin:0 0 8px;font-size:24px;font-weight:900;color:${BRAND.dark};text-align:center;letter-spacing:-0.5px;">
+      Tu Trial ${planName} expira en ${daysLeft} día${daysLeft > 1 ? "s" : ""}
+    </h1>
+    <p style="margin:0 0 28px;font-size:15px;color:${BRAND.gray};text-align:center;line-height:1.6;">
+      ${userName ? `Hola ${userName}, d` : "D"}urante tu prueba gratuita aprovechaste funciones premium. No pierdas acceso.
+    </p>
+    
+    <div style="background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:24px;margin-bottom:28px;">
+      <h2 style="margin:0 0 16px;font-size:13px;font-weight:800;color:${BRAND.dark};text-transform:uppercase;letter-spacing:1px;">Lo que usaste en tu trial</h2>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="padding:10px 0;border-bottom:1px solid #e2e8f0;">
+            <span style="font-size:14px;color:${BRAND.gray};">🤖 Consultas IA</span>
+          </td>
+          <td style="padding:10px 0;text-align:right;border-bottom:1px solid #e2e8f0;">
+            <span style="font-size:18px;font-weight:900;color:${BRAND.primary};">${aiMessagesUsed}</span>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:10px 0;">
+            <span style="font-size:14px;color:${BRAND.gray};">🔊 Audios escuchados</span>
+          </td>
+          <td style="padding:10px 0;text-align:right;">
+            <span style="font-size:18px;font-weight:900;color:${BRAND.primary};">${ttsUsed}</span>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <div style="background:linear-gradient(135deg, rgba(24,144,255,0.08), rgba(139,92,246,0.08));border:1px solid rgba(24,144,255,0.2);border-radius:16px;padding:20px;text-align:center;margin-bottom:28px;">
+      <p style="margin:0 0 4px;font-size:13px;color:${BRAND.gray};">Continúa con ${planName} por solo</p>
+      <p style="margin:0;font-size:28px;font-weight:900;color:${BRAND.dark};">${price}<span style="font-size:14px;color:${BRAND.gray};font-weight:500;">/mes</span></p>
+    </div>
+    
+    <div style="text-align:center;">
+      <a href="${BRAND.url}/suscripcion" style="display:inline-block;padding:16px 40px;background:linear-gradient(135deg, ${BRAND.primary}, #6366f1);color:#ffffff;font-size:15px;font-weight:800;text-decoration:none;border-radius:12px;box-shadow:0 8px 16px -4px rgba(24,144,255,0.3);">
+        Conservar mi plan ${planName} →
+      </a>
+    </div>
+    <p style="margin:16px 0 0;font-size:12px;color:${BRAND.gray};text-align:center;">
+      Si no deseas continuar, tu plan volverá a Gratuito automáticamente.
+    </p>
+  `;
+
+  return {
+    subject: `⏳ Tu trial ${planName} en Reclu expira en ${daysLeft} día${daysLeft > 1 ? "s" : ""}`,
+    html: baseLayout(content, `Tu prueba gratuita de Reclu ${planName} está por terminar. Conserva tus funciones premium.`),
+  };
+}
+
+// ═══════════════════════════════════════════════════
+// ACTIVATION / NUDGE EMAIL (Day 2)
+// ═══════════════════════════════════════════════════
+export function activationEmail({
+  userName,
+}: {
+  userName?: string;
+}): { subject: string; html: string } {
+  const content = `
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg, ${BRAND.primary}, #22d3ee);color:#fff;font-size:28px;box-shadow:0 8px 16px rgba(24,144,255,0.25);">
+        🤖
+      </div>
+    </div>
+    <h1 style="margin:0 0 8px;font-size:24px;font-weight:900;color:${BRAND.dark};text-align:center;letter-spacing:-0.5px;">
+      ¿Ya probaste R-AI?
+    </h1>
+    <p style="margin:0 0 28px;font-size:15px;color:${BRAND.gray};text-align:center;line-height:1.6;">
+      ${userName ? `Hola ${userName}, t` : "T"}u asistente financiero con IA está listo para responder cualquier pregunta sobre mercados, empresas o tu portafolio.
+    </p>
+    
+    <div style="background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:20px;padding:24px;margin-bottom:28px;">
+      <h2 style="margin:0 0 20px;font-size:13px;font-weight:800;color:${BRAND.gray};text-transform:uppercase;letter-spacing:1px;text-align:center;">Prueba preguntarle:</h2>
+      
+      <div style="background:white;border:1px solid #e2e8f0;border-radius:12px;padding:14px 18px;margin-bottom:10px;">
+        <p style="margin:0;font-size:14px;color:${BRAND.dark};font-weight:600;">💬 "¿Cómo le fue al S&P 500 esta semana?"</p>
+      </div>
+      <div style="background:white;border:1px solid #e2e8f0;border-radius:12px;padding:14px 18px;margin-bottom:10px;">
+        <p style="margin:0;font-size:14px;color:${BRAND.dark};font-weight:600;">📊 "Analiza las acciones de Tesla y Apple"</p>
+      </div>
+      <div style="background:white;border:1px solid #e2e8f0;border-radius:12px;padding:14px 18px;">
+        <p style="margin:0;font-size:14px;color:${BRAND.dark};font-weight:600;">🔍 "¿Qué noticias impactan al dólar hoy?"</p>
+      </div>
+    </div>
+    
+    <div style="text-align:center;">
+      <a href="${BRAND.url}/ai" style="display:inline-block;padding:16px 40px;background-color:${BRAND.primary};color:#ffffff;font-size:15px;font-weight:800;text-decoration:none;border-radius:12px;box-shadow:0 8px 16px -4px rgba(24,144,255,0.3);">
+        Conversar con R-AI →
+      </a>
+    </div>
+  `;
+
+  return {
+    subject: "🤖 Tu asistente financiero te espera — Prueba R-AI ahora",
+    html: baseLayout(content, "R-AI está listo para analizar mercados, empresas y tu portafolio. Haz tu primera pregunta."),
+  };
+}
+
+// ═══════════════════════════════════════════════════
+// WEEKLY DIGEST EMAIL
+// ═══════════════════════════════════════════════════
+export function weeklyDigestEmail({
+  userName,
+  topArticles,
+}: {
+  userName?: string;
+  topArticles: { title: string; category: string; slug: string }[];
+}): { subject: string; html: string } {
+  const today = new Date();
+  const weekStr = today.toLocaleDateString("es-CL", { day: "numeric", month: "long", year: "numeric" });
+
+  const articleRows = topArticles.slice(0, 5).map((a, i) => `
+    <tr>
+      <td style="padding:14px 0;${i < topArticles.length - 1 ? `border-bottom:1px solid #e2e8f0;` : ""}">
+        <a href="${BRAND.url}/article/${a.slug}" style="text-decoration:none;">
+          <span style="display:inline-block;padding:2px 8px;background-color:rgba(24,144,255,0.08);color:${BRAND.primary};font-size:10px;font-weight:800;border-radius:4px;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">${a.category}</span>
+          <p style="margin:4px 0 0;font-size:15px;font-weight:700;color:${BRAND.dark};line-height:1.4;">${a.title}</p>
+        </a>
+      </td>
+    </tr>
+  `).join("");
+
+  const content = `
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg, #8b5cf6, ${BRAND.primary});color:#fff;font-size:28px;box-shadow:0 8px 16px rgba(139,92,246,0.25);">
+        📰
+      </div>
+    </div>
+    <h1 style="margin:0 0 4px;font-size:22px;font-weight:900;color:${BRAND.dark};text-align:center;letter-spacing:-0.3px;">
+      Tu Resumen Semanal
+    </h1>
+    <p style="margin:0 0 28px;font-size:13px;color:${BRAND.gray};text-align:center;">
+      Semana del ${weekStr}
+    </p>
+    
+    <div style="background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:24px;margin-bottom:28px;">
+      <h2 style="margin:0 0 16px;font-size:13px;font-weight:800;color:${BRAND.gray};text-transform:uppercase;letter-spacing:1px;">Top 5 Noticias</h2>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        ${articleRows}
+      </table>
+    </div>
+    
+    <div style="text-align:center;">
+      <a href="${BRAND.url}" style="display:inline-block;padding:14px 32px;background-color:${BRAND.primary};color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;border-radius:10px;box-shadow:0 4px 6px -1px rgba(24,144,255,0.2);">
+        Ver todas las noticias →
+      </a>
+    </div>
+  `;
+
+  return {
+    subject: `📰 Resumen Semanal Reclu — ${weekStr}`,
+    html: baseLayout(content, `Las 5 noticias más importantes de la semana en Reclu.`),
+  };
+}

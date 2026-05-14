@@ -25,20 +25,27 @@ export async function POST(request: NextRequest) {
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://reclu.cl";
 
-    // Create a preapproval (subscription) dynamically
-    // This bypasses the need for pre-existing plan IDs and card tokens
+    const trialEnd = new Date();
+    trialEnd.setDate(trialEnd.getDate() + 7);
+
+    // Create a preapproval (subscription) with 7-day free trial
     const body = {
-      reason: `Suscripción Reclu ${plan.toUpperCase()}`,
+      reason: `Suscripción Reclu ${plan.toUpperCase()} — 7 días gratis`,
       auto_recurring: {
         frequency: 1,
         frequency_type: "months",
         transaction_amount: planConfig.price,
         currency_id: "CLP",
+        free_trial: {
+          frequency: 7,
+          frequency_type: "days",
+        },
       },
       payer_email: user.email,
       external_reference: JSON.stringify({
         user_id: user.id,
         plan,
+        trial_end: trialEnd.toISOString(),
       }),
       back_url: `${siteUrl}/suscripcion?status=success&plan=${plan}`,
     };

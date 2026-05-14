@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Crown, Zap, Sparkles, ArrowRight, Check, TrendingUp } from "lucide-react";
+import { X, Crown, Zap, Sparkles, ArrowRight, Check, TrendingUp, Users, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSubscriptionStore } from "@/lib/stores/subscription-store";
 import { PLAN_CONFIGS, getNextTier, formatCLP, type PlanTier } from "@/lib/plan-limits";
@@ -10,30 +10,31 @@ import Link from "next/link";
 interface UpgradeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  feature?: string; // "ai_message" | "tts_audio" | "price_alert" | "portfolio_asset"
+  feature?: string;
   customTitle?: string;
   customMessage?: string;
+  usage?: { used: number; limit: number };
 }
 
 const FEATURE_MESSAGES: Record<string, { title: string; message: string; icon: React.ReactNode }> = {
   ai_message: {
     title: "Límite de IA alcanzado",
-    message: "Has usado todas tus consultas al asistente IA. Mejora tu plan para seguir conversando.",
+    message: "Has usado todas tus consultas al asistente IA este mes.",
     icon: <Sparkles className="w-6 h-6" />,
   },
   tts_audio: {
     title: "Límite de audio alcanzado",
-    message: "Has alcanzado tu límite de resúmenes de audio. Mejora tu plan para escuchar más noticias.",
+    message: "Has alcanzado tu límite de resúmenes de audio.",
     icon: <Zap className="w-6 h-6" />,
   },
   price_alert: {
     title: "Límite de alertas alcanzado",
-    message: "Has alcanzado el máximo de alertas de precio activas para tu plan.",
+    message: "Has alcanzado el máximo de alertas de precio activas.",
     icon: <TrendingUp className="w-6 h-6" />,
   },
   portfolio_asset: {
     title: "Límite de portafolio alcanzado",
-    message: "Has alcanzado el máximo de activos en tu portafolio. Mejora tu plan para agregar más.",
+    message: "Has alcanzado el máximo de activos en tu portafolio.",
     icon: <Crown className="w-6 h-6" />,
   },
 };
@@ -44,29 +45,23 @@ const TIER_BENEFITS: Record<PlanTier, string[]> = {
     "100 consultas IA al mes",
     "50 audios de noticias al mes",
     "5 alertas de precio",
-    "25 activos en portafolio",
-    "Alertas por email",
     "Sin publicidad",
   ],
   max: [
     "300 consultas IA al mes",
     "150 audios al mes",
-    "15 alertas de precio",
-    "Alertas por SMS",
-    "Informe semanal de noticias",
-    "Análisis avanzado de portafolio",
+    "15 alertas + SMS",
+    "Informe semanal IA",
   ],
   ultra: [
     "600 consultas IA al mes",
     "300 audios al mes",
-    "30 alertas de precio",
     "IA con búsqueda web",
-    "Análisis premium de portafolio",
     "Soporte dedicado 24/7",
   ],
 };
 
-export function UpgradeModal({ isOpen, onClose, feature, customTitle, customMessage }: UpgradeModalProps) {
+export function UpgradeModal({ isOpen, onClose, feature, customTitle, customMessage, usage }: UpgradeModalProps) {
   const { tier } = useSubscriptionStore();
   const nextTier = getNextTier(tier);
   
@@ -116,12 +111,28 @@ export function UpgradeModal({ isOpen, onClose, feature, customTitle, customMess
                 </div>
                 <h2 className="text-xl font-bold mb-1">{title}</h2>
                 <p className="text-sm text-muted-foreground">{message}</p>
+
+                {/* Usage bar */}
+                {usage && (
+                  <div className="mt-4 bg-background/60 backdrop-blur-sm rounded-xl p-3 border border-border/50">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-xs font-bold text-muted-foreground">Uso este mes</span>
+                      <span className="text-xs font-bold text-foreground">{usage.used}/{usage.limit}</span>
+                    </div>
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-red-500 to-orange-500 rounded-full transition-all" 
+                        style={{ width: `${Math.min(100, (usage.used / usage.limit) * 100)}%` }} 
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             
             {/* Plan info */}
             <div className="px-6 pb-6">
-              <div className="bg-secondary/30 border border-border rounded-2xl p-5 mb-5">
+              <div className="bg-secondary/30 border border-border rounded-2xl p-5 mb-4">
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Plan recomendado</span>
@@ -152,14 +163,28 @@ export function UpgradeModal({ isOpen, onClose, feature, customTitle, customMess
               
               <Link href="/suscripcion" onClick={onClose}>
                 <Button className="w-full h-12 bg-gradient-to-r from-accent to-purple-600 hover:from-accent/90 hover:to-purple-700 text-white font-bold rounded-xl text-sm shadow-lg shadow-accent/20 group">
-                  Mejorar a {nextConfig.name}
+                  Prueba 7 días gratis
                   <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-0.5 transition-transform" />
                 </Button>
+              </Link>
+
+              {/* Referral alternative */}
+              <div className="mt-4 relative">
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
+                <div className="relative flex justify-center"><span className="bg-background px-3 text-xs text-muted-foreground font-medium">o gratis</span></div>
+              </div>
+
+              <Link href="/referidos" onClick={onClose}>
+                <button className="w-full mt-3 py-3 px-4 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-xl text-sm font-bold text-emerald-600 dark:text-emerald-400 transition-all flex items-center justify-center gap-2 group">
+                  <Gift className="w-4 h-4" />
+                  Refiere 1 amigo y obtén 10 días Pro gratis
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </button>
               </Link>
               
               <button
                 onClick={onClose}
-                className="w-full mt-3 py-2.5 text-sm text-muted-foreground hover:text-foreground transition-colors font-medium"
+                className="w-full mt-2 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors font-medium"
               >
                 Ahora no
               </button>
@@ -170,3 +195,4 @@ export function UpgradeModal({ isOpen, onClose, feature, customTitle, customMess
     </AnimatePresence>
   );
 }
+

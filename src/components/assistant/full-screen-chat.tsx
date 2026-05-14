@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, Sparkles, Loader2, ExternalLink, Paperclip, BarChart3, Newspaper, Bell, TrendingUp, X, Globe, History, Trash2, Plus, MessageSquare, PanelLeftClose, PanelLeft, Settings, Moon, Sun, Monitor, Type, Maximize, CheckCircle2, Mic, Star, LineChart, PieChart, AreaChart, Target, Scale, Layers, ThumbsUp, ThumbsDown, RefreshCw, Share2, ChevronRight, Clock, Zap, ArrowDown } from "lucide-react";
+import { Send, Bot, Sparkles, Loader2, ExternalLink, Paperclip, BarChart3, Newspaper, Bell, TrendingUp, X, Globe, History, Trash2, Plus, MessageSquare, PanelLeftClose, PanelLeft, Settings, Moon, Sun, Monitor, Type, Maximize, CheckCircle2, Mic, Star, LineChart, PieChart, AreaChart, Target, Scale, Layers, ThumbsUp, ThumbsDown, RefreshCw, Share2, ChevronRight, Clock, Zap, ArrowDown, Lock, Crown, Gift, ArrowRight } from "lucide-react";
 import { useAIChatStore, ChatMessage, ToolResultUI } from "@/lib/stores/ai-chat-store";
 import { getPlanConfig, PlanTier } from "@/lib/plan-limits";
 import { createClient } from "@/lib/supabase/client";
@@ -147,11 +147,14 @@ function FullScreenChatInternal() {
   const user = useAuthStore((s) => s.user);
 
   const isPremium = userTier === "max" || userTier === "ultra";
+  const canUsePro = userTier !== "free"; // Only paid users can use Pro model
 
   const config = getPlanConfig(userTier);
+  const proConfig = getPlanConfig("pro");
   const questionLimit = userTier === "free" ? config.aiLifetimeMessages : config.aiMessagesPerMonth;
   const isUnlimited = questionLimit === -1;
   const reachedQuestionLimit = !isUnlimited && realUsageCount >= questionLimit;
+  const nearLimit = !isUnlimited && realUsageCount >= Math.floor(questionLimit * 0.8) && !reachedQuestionLimit;
   
   const MAX_FILES = userTier === "free" ? 1 : userTier === "pro" ? 3 : 10;
 
@@ -284,7 +287,7 @@ function FullScreenChatInternal() {
   }, [aiMessages, aiLoading, isUserAtBottom]);
 
   const handleModelSelect = (mId: 'fast' | 'pro') => {
-    if (mId === 'pro' && !isPremium) {
+    if (mId === 'pro' && !canUsePro) {
       setShowUpsell(true);
       setShowModelMenu(false);
       return;
@@ -762,6 +765,23 @@ function FullScreenChatInternal() {
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-white via-white/90 to-transparent dark:from-[#0a0a0a] dark:via-[#0a0a0a]/90 pt-8 pb-1 px-4 md:px-8 pointer-events-none z-30">
           <div className={`${maxWClass} mx-auto w-full relative pointer-events-auto transition-all duration-300`}>
             
+            {/* Near Limit Warning */}
+            <AnimatePresence>
+              {nearLimit && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="mb-2">
+                  <div className="bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 rounded-2xl px-4 py-2.5 flex items-center justify-between text-xs font-semibold shadow-sm backdrop-blur-md">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 shrink-0" />
+                      <span>Has usado {realUsageCount} de {questionLimit} consultas gratuitas.</span>
+                    </div>
+                    <button onClick={() => setShowUpsell(true)} className="px-3 py-1 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors shrink-0 shadow-sm shadow-amber-500/20">
+                      Ver Opciones
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <form onSubmit={(e) => { e.preventDefault(); sendMessage(); }} className="relative flex items-end gap-2 bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-700/50 rounded-3xl p-1.5 shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)] focus-within:ring-4 focus-within:ring-[#1890FF]/15 focus-within:border-[#1890FF]/50 transition-all">
               <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".txt,.md,.csv,.json,.ts" />
               
@@ -959,17 +979,17 @@ function FullScreenChatInternal() {
                           <button
                             type="button"
                             onClick={() => handleModelSelect('pro')}
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold rounded-xl transition-colors text-left ${selectedModel === 'pro' ? 'bg-amber-500/10 text-amber-500' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'}`}
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold rounded-xl transition-colors text-left ${selectedModel === 'pro' ? 'bg-amber-500/10 text-amber-500' : !canUsePro ? 'text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-white/5' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'}`}
                           >
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${selectedModel === 'pro' ? 'bg-amber-500/20 text-amber-500' : 'bg-gray-100 dark:bg-slate-800 text-gray-500'}`}>
-                              <Sparkles className="w-4 h-4" />
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${selectedModel === 'pro' ? 'bg-amber-500/20 text-amber-500' : !canUsePro ? 'bg-gray-100 dark:bg-slate-800 text-gray-400' : 'bg-gray-100 dark:bg-slate-800 text-gray-500'}`}>
+                              {!canUsePro ? <Lock className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
                             </div>
                             <div className="flex-1">
                               <div className="leading-none flex items-center justify-between">
                                 Reclu v2.5 Pro
-                                {!isPremium && <span className="text-[9px] bg-amber-500 text-white px-1.5 py-0.5 rounded ml-2 uppercase">Pro</span>}
+                                {!canUsePro && <span className="text-[9px] bg-amber-500 text-white px-1.5 py-0.5 rounded ml-2 uppercase flex items-center gap-1"><Lock className="w-2.5 h-2.5" />Pro</span>}
                               </div>
-                              <div className="text-[10px] text-gray-400 font-normal mt-1">Razonamiento profundo avanzado</div>
+                              <div className="text-[10px] text-gray-400 font-normal mt-1">{!canUsePro ? 'Requiere plan Pro o superior' : 'Razonamiento profundo avanzado'}</div>
                             </div>
                           </button>
                         </motion.div>
@@ -1129,11 +1149,11 @@ function FullScreenChatInternal() {
         )}
       </AnimatePresence>
 
-      {/* ─── UPSELL MODAL (REDESIGNED) ─── */}
+      {/* ─── UPSELL MODAL (TRIAL FOCUSED) ─── */}
       <AnimatePresence>
         {showUpsell && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="bg-white dark:bg-[#0F1117] rounded-[2.5rem] p-8 max-w-md w-full shadow-[0_20px_50px_rgba(0,0,0,0.3)] relative border border-gray-100 dark:border-white/10 text-center overflow-hidden">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md" onClick={() => setShowUpsell(false)}>
+            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} onClick={(e) => e.stopPropagation()} className="bg-white dark:bg-[#0F1117] rounded-[2.5rem] p-8 max-w-md w-full shadow-[0_20px_50px_rgba(0,0,0,0.3)] relative border border-gray-100 dark:border-white/10 text-center overflow-hidden">
               
               {/* Background Glow */}
               <div className="absolute -top-20 -right-20 w-60 h-60 bg-[#1890FF]/20 blur-[60px] rounded-full pointer-events-none" />
@@ -1144,35 +1164,69 @@ function FullScreenChatInternal() {
               </button>
               
               <div className="relative z-10">
-                <div className="w-24 h-24 bg-gradient-to-br from-[#1890FF] to-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl ring-8 ring-[#1890FF]/10">
-                  <Globe className="w-12 h-12 text-white" />
+                <div className="w-20 h-20 bg-gradient-to-br from-[#1890FF] to-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-5 shadow-2xl ring-8 ring-[#1890FF]/10">
+                  <Crown className="w-10 h-10 text-white" />
                 </div>
                 
-                <h3 className="text-3xl font-black text-gray-900 dark:text-white mb-2 tracking-tight">Internet en Vivo</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-8 max-w-[280px] mx-auto font-medium">
-                  Sube de nivel para usar <strong className="text-gray-900 dark:text-white">Reclu v2.5 Pro</strong> y búsqueda web avanzada.
+                <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-1 tracking-tight">
+                  {reachedQuestionLimit ? "Límite de IA alcanzado" : "Desbloquea R-AI Pro"}
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-[300px] mx-auto font-medium">
+                  {reachedQuestionLimit 
+                    ? `Has usado tus ${questionLimit} consultas. Prueba Pro gratis y obtén ${proConfig.aiMessagesPerMonth} al mes.`
+                    : "Activa el modo Pro con razonamiento avanzado y búsqueda web. 7 días gratis."
+                  }
                 </p>
+
+                {/* Limit comparison */}
+                <div className="bg-gray-50 dark:bg-white/5 rounded-2xl p-4 mb-5">
+                  <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">Tu plan actual vs Pro</div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-white dark:bg-white/5 rounded-xl p-3 border border-gray-100 dark:border-white/10">
+                      <div className="text-[10px] font-bold text-gray-400 uppercase">Gratuito</div>
+                      <div className="text-lg font-black text-gray-900 dark:text-white">{questionLimit}</div>
+                      <div className="text-[10px] text-gray-400">consultas</div>
+                    </div>
+                    <div className="bg-gradient-to-br from-[#1890FF]/10 to-indigo-500/10 rounded-xl p-3 border border-[#1890FF]/20">
+                      <div className="text-[10px] font-bold text-[#1890FF] uppercase">Pro</div>
+                      <div className="text-lg font-black text-[#1890FF]">{proConfig.aiMessagesPerMonth}</div>
+                      <div className="text-[10px] text-[#1890FF]/70">consultas/mes</div>
+                    </div>
+                  </div>
+                </div>
                 
-                <div className="space-y-3 text-left mb-8 bg-gray-50 dark:bg-white/5 p-5 rounded-2xl">
+                <div className="space-y-2.5 text-left mb-6 px-1">
                   <div className="flex items-center gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
-                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Búsqueda web sin censura</span>
+                    <CheckCircle2 className="w-4.5 h-4.5 text-green-500 shrink-0" />
+                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Modelo Pro con razonamiento avanzado</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
-                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Datos financieros al milisegundo</span>
+                    <CheckCircle2 className="w-4.5 h-4.5 text-green-500 shrink-0" />
+                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">50 audios de noticias al mes</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
-                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Límites expandidos (Hasta 600 msgs)</span>
+                    <CheckCircle2 className="w-4.5 h-4.5 text-green-500 shrink-0" />
+                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Sin publicidad + 5 alertas de precio</span>
                   </div>
                 </div>
                 
                 <Link href="/suscripcion" onClick={() => setShowUpsell(false)} className="block w-full py-4 rounded-2xl bg-gradient-to-r from-[#1890FF] to-indigo-600 text-white font-black text-base hover:shadow-lg hover:shadow-[#1890FF]/30 hover:scale-[1.02] active:scale-[0.98] transition-all">
-                  Actualizar a Premium
+                  Prueba 7 días gratis →
                 </Link>
-                <button onClick={() => setShowUpsell(false)} className="mt-4 text-xs font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                  Quizás más tarde
+
+                {/* Referral alternative */}
+                <div className="mt-4 relative">
+                  <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200 dark:border-gray-800" /></div>
+                  <div className="relative flex justify-center"><span className="bg-white dark:bg-[#0F1117] px-3 text-[10px] text-gray-400 font-bold">o gratis</span></div>
+                </div>
+                <Link href="/referidos" onClick={() => setShowUpsell(false)} className="mt-3 w-full flex items-center justify-center gap-2 py-3 px-4 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-xl text-sm font-bold text-emerald-600 dark:text-emerald-400 transition-all group">
+                  <Gift className="w-4 h-4" />
+                  Refiere 1 amigo = 10 días Pro
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </Link>
+
+                <button onClick={() => setShowUpsell(false)} className="mt-3 text-xs font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                  Ahora no
                 </button>
               </div>
             </motion.div>

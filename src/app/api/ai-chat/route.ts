@@ -3,7 +3,7 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { streamText, tool, StreamData } from 'ai';
 import { z } from 'zod';
 import { createClient } from "@/lib/supabase/server";
-import { checkLimit, incrementUsage } from "@/lib/check-limits";
+import { checkLimit, incrementUsage, getUserTier } from "@/lib/check-limits";
 import { rateLimit, rateLimitResponse, AI_CHAT_LIMIT } from "@/lib/rate-limit";
 import YahooFinance from "yahoo-finance2";
 
@@ -120,7 +120,19 @@ export async function POST(req: NextRequest) {
       }), { status: 403 });
     }
 
-    const modelStr = modelId === "pro" ? "xiaomi/mimo-v2.5-pro" : "xiaomi/mimo-v2.5";
+    const tier = await getUserTier(user.id);
+    const isPremium = tier !== "free";
+
+    // Enforce model restrictions
+    let finalModelStr = "xiaomi/mimo-v2.5";
+    if (modelId === "pro") {
+      if (isPremium) {
+        finalModelStr = "xiaomi/mimo-v2.5-pro";
+      } else {
+        // Fallback to fast model if user is free and somehow requested pro
+        finalModelStr = "xiaomi/mimo-v2.5";
+      }
+    }
 
     // Inject dynamic context as first user message context (not in system prompt = keeps cache)
     const now = new Date();
@@ -155,7 +167,7 @@ export async function POST(req: NextRequest) {
     const mimo = createMimoWithWebSearch(streamData);
 
     const result = await streamText({
-      model: mimo(modelStr),
+      model: mimo(finalModelStr),
       system: SYSTEM_PROMPT,
       messages: processedMessages,
       maxSteps: 8,

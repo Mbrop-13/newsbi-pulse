@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback, useMemo } from "react";
+import { useEffect, useRef, useCallback, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { useAudioPlayerStore, AudioTrack } from "@/lib/stores/audio-player-store";
 import { createClient } from "@/lib/supabase/client";
+import { UpgradeModal } from "@/components/upgrade-modal";
 
 export function AudioPlayerSidebar() {
   const store = useAudioPlayerStore();
@@ -64,6 +65,7 @@ export function AudioPlayerSidebar() {
   const sidebarRef = useRef<HTMLDivElement | null>(null);
   const supabase = createClient();
   const pathname = usePathname();
+  const [showUpsell, setShowUpsell] = useState(false);
 
   // ── Category detect from URL ──
   useEffect(() => {
@@ -161,7 +163,12 @@ export function AudioPlayerSidebar() {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text, mode: readMode }),
       });
-      if (!res.ok) throw new Error(`TTS failed: ${res.status}`);
+      if (!res.ok) {
+        if (res.status === 403) {
+          setShowUpsell(true);
+        }
+        throw new Error(`TTS failed: ${res.status}`);
+      }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       setTrackAudioUrl(track.id, url);
@@ -574,6 +581,11 @@ export function AudioPlayerSidebar() {
         {(mode === "full" || mode === "pinned") && renderFullSidebar()}
         {mode === "mini" && renderMiniPlayer()}
       </AnimatePresence>
+      <UpgradeModal 
+        isOpen={showUpsell} 
+        onClose={() => setShowUpsell(false)} 
+        feature="tts_audio" 
+      />
     </>
   );
 }

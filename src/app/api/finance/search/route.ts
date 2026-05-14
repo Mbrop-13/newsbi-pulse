@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
 import YahooFinance from "yahoo-finance2";
+import { rateLimit, rateLimitResponse, GENERAL_API_LIMIT } from "@/lib/rate-limit";
 
 const yf = new YahooFinance();
 
 export async function GET(request: Request) {
+  // Burst protection
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  const rl = rateLimit(`finance-search:${ip}`, GENERAL_API_LIMIT);
+  if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
+
   const { searchParams } = new URL(request.url);
   const query = searchParams.get("q");
 

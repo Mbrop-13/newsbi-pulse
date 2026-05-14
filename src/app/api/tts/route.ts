@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { PollyClient, SynthesizeSpeechCommand } from "@aws-sdk/client-polly";
 import { createClient } from "@/lib/supabase/server";
 import { checkLimit, incrementUsage } from "@/lib/check-limits";
+import { rateLimit, rateLimitResponse, TTS_LIMIT } from "@/lib/rate-limit";
 
 const polly = new PollyClient({
   region: process.env.AWS_REGION || "us-east-1",
@@ -51,6 +52,10 @@ export async function POST(req: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Burst protection
+    const rl = rateLimit(`tts:${user.id}`, TTS_LIMIT);
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
 
     // Check TTS usage limits
     const limitCheck = await checkLimit(user.id, "tts_audio");

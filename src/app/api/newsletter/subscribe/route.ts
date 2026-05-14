@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendEmail } from "@/lib/email/azure-client";
 import { newsletterConfirmationEmail } from "@/lib/email/email-templates";
+import { rateLimit, rateLimitResponse, NEWSLETTER_LIMIT } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
+    // IP-based burst protection
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const rl = rateLimit(`newsletter:${ip}`, NEWSLETTER_LIMIT);
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
+
     const { email } = await request.json();
 
     if (!email || !email.includes("@")) {

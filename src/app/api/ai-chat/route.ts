@@ -4,6 +4,7 @@ import { streamText, tool, StreamData } from 'ai';
 import { z } from 'zod';
 import { createClient } from "@/lib/supabase/server";
 import { checkLimit, incrementUsage } from "@/lib/check-limits";
+import { rateLimit, rateLimitResponse, AI_CHAT_LIMIT } from "@/lib/rate-limit";
 import YahooFinance from "yahoo-finance2";
 
 export const maxDuration = 60;
@@ -105,6 +106,10 @@ export async function POST(req: NextRequest) {
     if (!user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
     }
+
+    // Burst protection — prevents rapid-fire abuse
+    const rl = rateLimit(`ai:${user.id}`, AI_CHAT_LIMIT);
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
 
     const limitCheck = await checkLimit(user.id, "ai_message");
     if (!limitCheck.allowed) {

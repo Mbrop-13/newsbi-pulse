@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { createOpenAI } from '@ai-sdk/openai';
 import { streamText, tool } from 'ai';
 import { z } from 'zod';
+import { rateLimit, rateLimitResponse, AI_CHAT_LIMIT } from '@/lib/rate-limit';
 
 export const maxDuration = 60;
 
@@ -22,6 +23,11 @@ const openrouter = createOpenAI({
 export async function POST(req: Request) {
   try {
     const { messages, profile } = await req.json();
+
+    // IP-based burst protection for this endpoint
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const rl = rateLimit(`ai-legacy:${ip}`, AI_CHAT_LIMIT);
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
 
     if (!messages || !Array.isArray(messages)) {
       return new Response('Messages array required', { status: 400 });

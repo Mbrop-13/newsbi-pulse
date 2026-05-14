@@ -8,6 +8,7 @@ interface ReferralData {
   code: string | null;
   referralsCount: number;
   claimedMilestones: number[];
+  referredUsers?: { id: string; name: string; date: string; avatar: string | null }[];
 }
 
 const MILESTONES = [
@@ -342,6 +343,60 @@ export default function ReferralsPage() {
               </motion.div>
             );
           })}
+        </div>
+      </div>
+
+      {/* ═══ MIS REFERIDOS ═══ */}
+      <div>
+        <div className="flex items-center gap-3 mb-6">
+          <Users className="w-7 h-7 text-accent" />
+          <div>
+            <h2 className="text-2xl font-black text-foreground">Mis Referidos</h2>
+            <p className="text-sm text-muted-foreground">Personas que se han unido con tu enlace</p>
+          </div>
+        </div>
+
+        <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+          {(!data?.referredUsers || data.referredUsers.length === 0) ? (
+            <div className="p-12 text-center flex flex-col items-center">
+              <div className="w-16 h-16 rounded-2xl bg-accent/10 text-accent flex items-center justify-center mb-4">
+                <Users className="w-8 h-8" />
+              </div>
+              <h3 className="text-lg font-bold text-foreground mb-2">Aún no tienes referidos</h3>
+              <p className="text-muted-foreground max-w-sm mb-6">
+                Comparte tu enlace con tus amigos. Cuando se registren, aparecerán aquí y ambos ganarán beneficios.
+              </p>
+              <button 
+                onClick={handleCopy}
+                className="px-6 py-2.5 bg-foreground text-background font-bold text-sm rounded-xl hover:opacity-90 transition-all shadow-sm"
+              >
+                Copiar mi enlace
+              </button>
+            </div>
+          ) : (
+            <div className="divide-y divide-border">
+              {data.referredUsers.map((user) => (
+                <div key={user.id} className="p-4 sm:p-5 flex items-center gap-4 hover:bg-muted/30 transition-colors">
+                  <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent shrink-0 overflow-hidden">
+                    {user.avatar ? (
+                      <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="font-bold text-sm">{user.name.charAt(0).toUpperCase()}</span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-foreground truncate">{user.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Se unió el {new Date(user.date).toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' })}
+                    </p>
+                  </div>
+                  <div className="shrink-0 px-3 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                    Registrado
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

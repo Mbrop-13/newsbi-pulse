@@ -28,13 +28,26 @@ export async function POST(request: NextRequest) {
     const trialEnd = new Date();
     trialEnd.setDate(trialEnd.getDate() + 7);
 
+    // Check if the user was referred by someone (20% discount)
+    const { data: referralData } = await supabase
+      .from("referrals")
+      .select("id")
+      .eq("referred_id", user.id)
+      .maybeSingle();
+
+    const isReferred = !!referralData;
+    const finalPrice = isReferred ? Math.round(planConfig.price * 0.8) : planConfig.price;
+    const planReason = isReferred 
+      ? `Suscripción Reclu ${plan.toUpperCase()} — 7 días gratis + 20% Dscto Referido`
+      : `Suscripción Reclu ${plan.toUpperCase()} — 7 días gratis`;
+
     // Create a preapproval (subscription) with 7-day free trial
     const body = {
-      reason: `Suscripción Reclu ${plan.toUpperCase()} — 7 días gratis`,
+      reason: planReason,
       auto_recurring: {
         frequency: 1,
         frequency_type: "months",
-        transaction_amount: planConfig.price,
+        transaction_amount: finalPrice,
         currency_id: "CLP",
         free_trial: {
           frequency: 7,
@@ -50,7 +63,7 @@ export async function POST(request: NextRequest) {
       back_url: `${siteUrl}/suscripcion?status=success&plan=${plan}`,
     };
 
-    console.log("[Checkout] Creating preapproval for:", user.email, "plan:", plan, "amount:", planConfig.price);
+    console.log("[Checkout] Creating preapproval for:", user.email, "plan:", plan, "amount:", finalPrice, "isReferred:", isReferred);
 
     const res = await fetch("https://api.mercadopago.com/preapproval", {
       method: "POST",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import {
@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSubscriptionStore } from "@/lib/stores/subscription-store";
+import { createClient } from "@/lib/supabase/client";
 import { PLAN_CONFIGS, formatCLP, getAnnualMonthlyPrice, isPromoX2Active, type PlanTier } from "@/lib/plan-limits";
 
 const plans = [
@@ -195,14 +196,39 @@ export default function SuscripcionesPage() {
   const { tier: currentTier } = useSubscriptionStore();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [isReferred, setIsReferred] = useState(false);
   const activePlans = applyPromoToPlans(plans);
+
+  useEffect(() => {
+    async function checkReferred() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase.from("referrals").select("id").eq("referred_id", user.id).maybeSingle();
+      if (data) setIsReferred(true);
+    }
+    checkReferred();
+  }, []);
 
   const getPrice = (planId: PlanTier): string => {
     const config = PLAN_CONFIGS[planId];
     if (config.price === 0) return "0";
+    
+    let basePrice = config.price;
+    if (isReferred) basePrice = Math.round(basePrice * 0.8);
+    
     if (billingCycle === "annual") {
-      return formatCLP(getAnnualMonthlyPrice(planId));
+      const annualPrice = getAnnualMonthlyPrice(planId);
+      return formatCLP(isReferred ? Math.round(annualPrice * 0.8) : annualPrice);
     }
+    return formatCLP(basePrice);
+  };
+
+  const getOriginalPrice = (planId: PlanTier): string | null => {
+    if (!isReferred) return null;
+    const config = PLAN_CONFIGS[planId];
+    if (config.price === 0) return null;
+    if (billingCycle === "annual") return formatCLP(getAnnualMonthlyPrice(planId));
     return formatCLP(config.price);
   };
 
@@ -210,7 +236,9 @@ export default function SuscripcionesPage() {
     if (billingCycle !== "annual") return null;
     const config = PLAN_CONFIGS[planId];
     if (config.price === 0) return null;
-    return formatCLP(getAnnualMonthlyPrice(planId) * 12);
+    const baseMonthly = getAnnualMonthlyPrice(planId);
+    const finalMonthly = isReferred ? Math.round(baseMonthly * 0.8) : baseMonthly;
+    return formatCLP(finalMonthly * 12);
   };
 
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
@@ -269,6 +297,15 @@ export default function SuscripcionesPage() {
               Suscripciones que
               <span className="block bg-gradient-to-r from-[#0052CC] to-[#22D3EE] bg-clip-text text-transparent">potencian tu inversión</span>
             </h1>
+
+            {isReferred && (
+              <div className="inline-block mt-2 mb-8 px-6 py-2 rounded-2xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 shadow-xl shadow-emerald-500/5 mr-4">
+                <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+                  <Gift className="w-5 h-5" />
+                  ¡Descuento de referido aplicado! 20% OFF en todos los planes.
+                </span>
+              </div>
+            )}
 
             {isPromoX2Active() && (
               <div className="inline-block mt-2 mb-8 px-6 py-2 rounded-2xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 shadow-xl shadow-amber-500/5">
@@ -380,8 +417,13 @@ export default function SuscripcionesPage() {
 
                     {/* Price */}
                     <div className="mb-8">
+                      {isReferred && getOriginalPrice(plan.id) && (
+                        <div className="text-sm text-muted-foreground/60 line-through mb-1 font-bold">
+                          {getOriginalPrice(plan.id)}
+                        </div>
+                      )}
                       <div className="flex items-baseline gap-1.5">
-                        <span className="text-5xl font-black text-foreground tracking-tight">
+                        <span className="text-5xl font-black text-foreground tracking-tight flex items-center gap-2">
                           {getPrice(plan.id)}
                         </span>
                         <span className="text-base text-muted-foreground font-medium">/mes</span>

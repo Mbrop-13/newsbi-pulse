@@ -6,6 +6,7 @@ import { Loader2, MessageSquare, RefreshCw, ArrowRight, TrendingUp, X, Search, F
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { NewsCard } from "@/components/news-card";
+import { PromoBanner } from "@/components/promo-banner";
 import { NewsCardSkeleton } from "@/components/news-card-skeleton";
 import { TagSkeleton } from "@/components/tag-skeleton";
 import { createClient } from "@/lib/supabase/client";
@@ -546,6 +547,9 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
                     )}
                   </div>
                 )}
+
+                {/* ── PROMO BANNER (between sections, free users only) ── */}
+                <PromoBanner variant={Math.random() > 0.5 ? "referral" : "upgrade"} className="my-2" />
 
                 {/* ── FULL WIDTH BOTTOM GRID ── */}
                 {viewLayout !== 'traditional' && visibleArticles.length > 9 && (

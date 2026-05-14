@@ -81,6 +81,10 @@ export async function checkLimit(userId: string, feature: FeatureType): Promise<
  * Increment usage counter after an action is performed
  */
 export async function incrementUsage(userId: string, feature: "ai_message" | "tts_audio"): Promise<void> {
+  // Skip tracking for ultra/admin users — they have unlimited access
+  const tier = await getUserTier(userId);
+  if (tier === "ultra") return;
+
   const currentMonth = new Date().toISOString().slice(0, 7) + "-01"; // YYYY-MM-01
   const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
   

@@ -85,11 +85,12 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Legal */}
           <div>
             <h4 className="text-sm font-bold mb-4 text-foreground">Legal</h4>
             <ul className="space-y-2">
               <li><Link href="/privacidad" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Política de Privacidad</Link></li>
+              <li><Link href="/terminos" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Términos y Condiciones</Link></li>
+              <li><Link href="/soporte" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Soporte</Link></li>
             </ul>
           </div>
 

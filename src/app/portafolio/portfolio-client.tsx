@@ -454,12 +454,12 @@ export default function PortfolioClient() {
 
           {/* Right Column */}
           <div className="space-y-6">
-            <div className="bg-gradient-to-br from-[#1890FF]/10 to-indigo-500/10 rounded-2xl border border-[#1890FF]/20 p-6 relative overflow-hidden flex flex-col h-full">
+            <div className="bg-gradient-to-br from-[#1890FF]/10 to-indigo-500/10 rounded-2xl border border-[#1890FF]/20 p-6 relative overflow-hidden flex flex-col h-[400px]">
               <div className="absolute -right-4 -top-4 w-24 h-24 bg-[#1890FF]/20 blur-3xl rounded-full" />
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 relative z-10">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-[#1890FF] flex items-center justify-center shadow-lg shadow-[#1890FF]/30 shrink-0"><Calendar className="w-5 h-5 text-white" /></div>
-                  <div><h3 className="font-bold text-gray-900 dark:text-white">Calendario IA</h3><p className="text-[11px] text-[#1890FF] font-semibold">Generado con DeepSeek V4</p></div>
+                  <div><h3 className="font-bold text-gray-900 dark:text-white">Calendario IA</h3><p className="text-[11px] text-[#1890FF] font-semibold">Eventos de tus activos</p></div>
                 </div>
                 
                 {/* Generate AI Calendar Button */}
@@ -489,11 +489,11 @@ export default function PortfolioClient() {
                 })()}
               </div>
 
-              <div className="space-y-3 flex-1 overflow-y-auto hidden-scrollbar">
+              <div className="space-y-3 flex-1 overflow-y-auto hidden-scrollbar pb-2">
                 {calendarLoading ? (
                   <div className="flex justify-center p-4"><RefreshCw className="w-5 h-5 text-[#1890FF] animate-spin" /></div>
                 ) : calendarEvents.length > 0 ? (
-                  calendarEvents.slice(0, 8).map((event, i) => {
+                  calendarEvents.map((event, i) => {
                     const eventDate = new Date(event.date);
                     const isToday = eventDate.toDateString() === new Date().toDateString();
                     return (

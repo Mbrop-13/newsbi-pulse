@@ -58,14 +58,15 @@ export async function POST(req: NextRequest) {
           description: z.string().optional()
         }))
       }),
-      prompt: `Eres un analista financiero. Tu tarea es encontrar eventos corporativos importantes programados entre ${now.toISOString()} y ${futureDate.toISOString()} para las siguientes empresas: ${symbols.join(', ')}.
-Usa tu conocimiento y búsqueda web para identificar:
-1. Fechas de reportes de ganancias (Earnings)
-2. Fechas ex-dividendo
-3. Splits de acciones anunciados
-4. Conferencias importantes o días de inversores
-5. Aprobaciones regulatorias esperadas (ej. FDA)
-Responde ÚNICAMENTE en JSON usando el esquema provisto.`
+      prompt: `Eres un analista financiero experto. Tu tarea es encontrar eventos corporativos reales y confirmados programados entre ${now.toISOString()} y ${futureDate.toISOString()} para estas empresas: ${symbols.join(', ')}.
+Reglas estrictas:
+1. NO inventes fechas. Si no hay un evento oficial anunciado en ese periodo para una empresa, NO devuelvas nada para esa empresa.
+2. Solo debes proveer eventos reales y verificables, como:
+   - Reportes de ganancias (Earnings) confirmados
+   - Fechas ex-dividendo
+   - Splits de acciones
+   - Conferencias o eventos de inversores oficiales
+3. Responde ÚNICAMENTE en JSON válido usando el esquema provisto.`
     });
 
     // Validar y ordenar los eventos
@@ -106,8 +107,27 @@ export async function GET(req: NextRequest) {
 
     const { data } = await supabase.from('user_ai_calendar').select('*').eq('user_id', user.id).single();
     
+    // Auto-clean past events
+    let currentEvents = data?.events || [];
+    if (currentEvents.length > 0) {
+      const now = new Date();
+      // Keep events that are from today onwards (we set time to start of day to avoid deleting events happening today)
+      now.setHours(0, 0, 0, 0);
+      
+      const filteredEvents = currentEvents.filter((e: any) => {
+        const eventDate = new Date(e.date);
+        return eventDate >= now;
+      });
+
+      if (filteredEvents.length !== currentEvents.length) {
+        // Save cleaned events back to DB
+        await supabase.from('user_ai_calendar').update({ events: filteredEvents }).eq('user_id', user.id);
+        currentEvents = filteredEvents;
+      }
+    }
+
     return NextResponse.json({ 
-      events: data?.events || [], 
+      events: currentEvents, 
       last_updated: data?.last_updated || null 
     });
   } catch (error: any) {

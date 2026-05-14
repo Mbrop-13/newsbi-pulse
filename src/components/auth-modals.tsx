@@ -13,6 +13,9 @@ import {
   Eye,
   EyeOff,
   Newspaper,
+  ArrowLeft,
+  KeyRound,
+  CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +25,7 @@ import { createClient } from "@/lib/supabase/client";
 interface AuthModalsProps {
   isOpen: boolean;
   onClose: () => void;
-  defaultView?: "login" | "register";
+  defaultView?: "login" | "register" | "forgot";
 }
 
 export function AuthModals({
@@ -30,10 +33,11 @@ export function AuthModals({
   onClose,
   defaultView = "login",
 }: AuthModalsProps) {
-  const [view, setView] = useState<"login" | "register">(defaultView);
+  const [view, setView] = useState<"login" | "register" | "forgot">(defaultView === "forgot" ? "forgot" : defaultView);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
 
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
@@ -116,6 +120,44 @@ export function AuthModals({
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+
+    if (!email) {
+      setErrorMsg("Por favor ingresa tu correo electrónico.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/reset-password`,
+      });
+
+      if (error) {
+        // Don't reveal if email exists or not for security
+        if (error.message.includes("rate")) {
+          setErrorMsg("Has enviado demasiadas solicitudes. Intenta de nuevo en unos minutos.");
+        } else {
+          // Always show success for security (don't reveal if email exists)
+          setResetEmailSent(true);
+        }
+      } else {
+        setResetEmailSent(true);
+      }
+    } catch {
+      setErrorMsg("Ocurrió un error inesperado. Intenta de nuevo.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const signInWithGoogle = async () => {
     await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -163,6 +205,120 @@ export function AuthModals({
                   exit={{ opacity: 0, x: view === "login" ? 20 : -20 }}
                   transition={{ duration: 0.25 }}
                 >
+                  {/* ═══════ FORGOT PASSWORD VIEW ═══════ */}
+                  {view === "forgot" ? (
+                    <div>
+                      {/* Title */}
+                      <div className="text-center mb-6">
+                        <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-4">
+                          <KeyRound className="w-7 h-7 text-accent" />
+                        </div>
+                        <h2 className="font-editorial text-2xl font-bold mb-1.5">
+                          {resetEmailSent ? "Revisa tu correo" : "Recuperar contraseña"}
+                        </h2>
+                        <p className="text-muted-foreground text-sm">
+                          {resetEmailSent
+                            ? "Te hemos enviado un enlace seguro para restablecer tu contraseña."
+                            : "Ingresa tu correo y te enviaremos un enlace para restablecer tu contraseña."}
+                        </p>
+                      </div>
+
+                      {/* Error Banner */}
+                      <AnimatePresence>
+                        {errorMsg && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="bg-destructive/10 border border-destructive/30 text-destructive text-xs font-semibold px-4 py-2.5 rounded-lg mb-5 flex items-center gap-2"
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-destructive animate-pulse flex-shrink-0" />
+                            {errorMsg}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      {resetEmailSent ? (
+                        /* Success state */
+                        <div>
+                          <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-5 mb-6">
+                            <div className="flex items-start gap-3">
+                              <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                              <div>
+                                <p className="text-sm font-semibold text-green-600 dark:text-green-400 mb-1">Enlace enviado exitosamente</p>
+                                <p className="text-xs text-muted-foreground leading-relaxed">
+                                  Si existe una cuenta con ese correo, recibirás un enlace en los próximos minutos. 
+                                  Revisa también tu carpeta de spam.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            onClick={() => { setView("login"); setResetEmailSent(false); setErrorMsg(null); }}
+                            className="w-full h-12 bg-accent hover:bg-accent/90 text-white font-bold text-sm tracking-wide rounded-xl transition-all duration-200 group shadow-lg shadow-accent/20"
+                          >
+                            <ArrowLeft className="w-4 h-4 mr-2" />
+                            Volver a Iniciar Sesión
+                          </Button>
+                        </div>
+                      ) : (
+                        /* Email input form */
+                        <form onSubmit={handleForgotPassword} className="space-y-4">
+                          <div>
+                            <label className="text-[11px] font-semibold text-muted-foreground block mb-1.5 ml-0.5">
+                              Correo electrónico
+                            </label>
+                            <div className="relative">
+                              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
+                              <Input
+                                type="email"
+                                name="email"
+                                placeholder="name@company.com"
+                                className="h-11 pl-10 bg-secondary/30 border-border/50 rounded-xl text-sm placeholder:text-muted-foreground/40 focus-visible:ring-accent/30 focus-visible:border-accent/50 transition-colors"
+                                required
+                                autoFocus
+                              />
+                            </div>
+                          </div>
+
+                          <motion.div whileTap={{ scale: 0.98 }}>
+                            <Button
+                              type="submit"
+                              className="w-full h-12 bg-accent hover:bg-accent/90 text-white font-bold text-sm tracking-wide rounded-xl transition-all duration-200 group shadow-lg shadow-accent/20 hover:shadow-accent/30"
+                              disabled={loading}
+                            >
+                              {loading ? (
+                                <div className="flex items-center gap-2.5">
+                                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                  Enviando...
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <Mail className="w-4 h-4" />
+                                  Enviar Enlace de Recuperación
+                                </div>
+                              )}
+                            </Button>
+                          </motion.div>
+                        </form>
+                      )}
+
+                      {/* Back to login */}
+                      {!resetEmailSent && (
+                        <div className="mt-6 text-center">
+                          <button
+                            onClick={() => { setView("login"); setErrorMsg(null); setSuccessMsg(null); }}
+                            className="text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5 mx-auto"
+                          >
+                            <ArrowLeft className="w-3.5 h-3.5" />
+                            Volver a Iniciar Sesión
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                  <>
                   {/* Title */}
                   <div className="text-center mb-6">
                     <h2 className="font-editorial text-2xl font-bold mb-1.5">
@@ -277,6 +433,7 @@ export function AuthModals({
                         {view === "login" && (
                           <button
                             type="button"
+                            onClick={() => { setView("forgot"); setErrorMsg(null); setSuccessMsg(null); }}
                             className="text-[11px] font-semibold text-accent hover:text-accent/80 transition-colors"
                           >
                             ¿Olvidaste tu clave?
@@ -352,6 +509,8 @@ export function AuthModals({
                       Política de Privacidad
                     </Link>
                   </p>
+                  </>
+                  )}
                 </motion.div>
               </AnimatePresence>
             </div>

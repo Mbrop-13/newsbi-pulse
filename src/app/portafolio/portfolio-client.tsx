@@ -228,7 +228,29 @@ export default function PortfolioClient() {
   };
 
   const totalValue = assets.reduce((sum, a) => sum + ((a.price || 0) * (a.shares || 0)), 0);
-  const totalChange = assets.length > 0 ? assets.reduce((sum, a) => sum + (a.changePercent || 0), 0) / assets.length : 0;
+  
+  let hasShares = false;
+  assets.forEach(a => { if ((a.shares || 0) > 0) hasShares = true; });
+  let totalChange = 0;
+
+  if (hasShares) {
+    let prevTotalValue = 0;
+    let totalAbsoluteChange = 0;
+    assets.forEach(a => {
+      const shares = a.shares || 0;
+      if (shares > 0) {
+        const currentPosValue = (a.price || 0) * shares;
+        const prevPrice = (a.price || 0) - (a.change || 0);
+        const prevPosValue = prevPrice * shares;
+        prevTotalValue += prevPosValue;
+        totalAbsoluteChange += (a.change || 0) * shares;
+      }
+    });
+    totalChange = prevTotalValue > 0 ? (totalAbsoluteChange / prevTotalValue) * 100 : 0;
+  } else {
+    // Si no hay acciones (solo en seguimiento), calculamos un promedio simple
+    totalChange = assets.length > 0 ? assets.reduce((sum, a) => sum + (a.changePercent || 0), 0) / assets.length : 0;
+  }
 
   if (!isLoaded) {
     return (
@@ -252,18 +274,7 @@ export default function PortfolioClient() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0F172A] pt-[72px] md:pt-[80px] pb-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        {/* Header - hidden on mobile for immersive feel */}
-        <div className="hidden md:flex mb-8 flex-col md:flex-row md:items-end justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-black text-gray-900 dark:text-white flex items-center gap-3">
-              <Briefcase className="w-8 h-8 text-[#1890FF]" /> Portafolio
-            </h1>
-            <p className="text-sm text-gray-500 mt-2">Monitorea tus activos y mantente un paso adelante con Reclu IA.</p>
-          </div>
-          <button onClick={fetchPortfolio} disabled={loading} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-800 text-sm font-semibold hover:text-[#1890FF] transition-colors disabled:opacity-50">
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Actualizar
-          </button>
-        </div>
+        {/* Header removed as requested to clean up UI */}
 
         {/* Error Toast */}
         <AnimatePresence>

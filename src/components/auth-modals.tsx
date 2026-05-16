@@ -45,6 +45,7 @@ export function AuthModals({
   const [otpCode, setOtpCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [countdown, setCountdown] = useState(0);
 
   const login = useAuthStore((state) => state.login);
   const supabase = createClient();
@@ -58,8 +59,17 @@ export function AuthModals({
       setOtpCode("");
       setNewPassword("");
       setConfirmPassword("");
+      setCountdown(0);
     }
   }, [isOpen, defaultView]);
+
+  // Countdown timer effect
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [countdown]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -100,13 +110,13 @@ export function AuthModals({
         }
         onClose();
       } else if (view === "register") {
-        const { data, error } = await supabase.auth.signUp({
+        const { error } = await supabase.auth.signUp({
           email: formEmail,
           password: formPassword,
           options: {
             data: {
               full_name: formFullName,
-              avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(formFullName)}&background=0066FF&color=fff&bold=true`,
+              avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(formFullName)}&background=1890FF&color=fff`,
             },
           },
         });
@@ -117,6 +127,7 @@ export function AuthModals({
         // Change view to OTP verification
         setOtpCode("");
         setView("verify-signup");
+        setCountdown(300); // 5 minutes
         setSuccessMsg("Código enviado a tu correo. Por favor ingresalo abajo.");
       }
     } catch {
@@ -152,10 +163,39 @@ export function AuthModals({
         // Change view to OTP verification for password recovery
         setOtpCode("");
         setView("verify-forgot");
+        setCountdown(300); // 5 minutes
         setSuccessMsg("Código de recuperación enviado a tu correo.");
       }
     } catch {
       setErrorMsg("Ocurrió un error inesperado. Intenta de nuevo.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    setLoading(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    try {
+      if (view === "verify-signup") {
+        const { error } = await supabase.auth.resend({
+          type: 'signup',
+          email: email
+        });
+        if (error) throw error;
+      } else if (view === "verify-forgot") {
+        const { error } = await supabase.auth.resetPasswordForEmail(email);
+        if (error) throw error;
+      }
+      setCountdown(300); // 5 minutes
+      setSuccessMsg("Código reenviado exitosamente.");
+    } catch (err: any) {
+      if (err?.message?.includes("rate")) {
+        setErrorMsg("Demasiados intentos. Por favor espera unos minutos.");
+      } else {
+        setErrorMsg("Error al reenviar el código. Intenta nuevamente.");
+      }
     } finally {
       setLoading(false);
     }
@@ -174,7 +214,9 @@ export function AuthModals({
       });
 
       if (error) {
-        setErrorMsg("Código inválido o expirado. Intenta nuevamente.");
+        setErrorMsg(error.message === "Token has expired or is invalid" 
+          ? "Código inválido o expirado. (Si pediste varios, usa el último que te llegó)" 
+          : error.message);
         return;
       }
 
@@ -211,7 +253,9 @@ export function AuthModals({
       });
 
       if (error) {
-        setErrorMsg("Código inválido o expirado. Intenta nuevamente.");
+        setErrorMsg(error.message === "Token has expired or is invalid" 
+          ? "Código inválido o expirado. (Si pediste varios, usa el último que te llegó)" 
+          : error.message);
         return;
       }
 
@@ -465,7 +509,7 @@ export function AuthModals({
                           />
                         </div>
 
-                        <motion.div whileTap={{ scale: 0.98 }}>
+                        <motion.div whileTap={{ scale: countdown > 0 || otpCode.length !== 6 ? 1 : 0.98 }}>
                           <Button
                             type="submit"
                             className="w-full h-12 bg-accent hover:bg-accent/90 text-white font-bold text-sm tracking-wide rounded-xl transition-all duration-200 group shadow-lg shadow-accent/20 hover:shadow-accent/30"
@@ -486,14 +530,31 @@ export function AuthModals({
                         </motion.div>
                       </form>
 
-                      <div className="mt-6 text-center">
+                      {/* Resend Code Section */}
+                      <div className="mt-8 text-center space-y-4">
+                        {countdown > 0 ? (
+                          <p className="text-sm font-medium text-muted-foreground">
+                            Podrás reenviar el código en <span className="font-bold text-foreground">{Math.floor(countdown / 60)}:{(countdown % 60).toString().padStart(2, '0')}</span>
+                          </p>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={handleResendCode}
+                            disabled={loading}
+                            className="text-sm font-bold text-accent hover:text-accent/80 transition-colors flex items-center justify-center gap-1.5 mx-auto"
+                          >
+                            <Mail className="w-4 h-4" />
+                            Reenviar código de verificación
+                          </button>
+                        )}
+                        
                         <button
                           type="button"
-                          onClick={() => { setView(view === "verify-signup" ? "register" : "forgot"); setErrorMsg(null); setSuccessMsg(null); }}
-                          className="text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5 mx-auto"
+                          onClick={() => { setView(view === "verify-signup" ? "register" : "forgot"); setErrorMsg(null); setSuccessMsg(null); setCountdown(0); }}
+                          className="text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5 mx-auto pt-2 border-t border-border/50 w-full justify-center"
                         >
                           <ArrowLeft className="w-3.5 h-3.5" />
-                          Cambiar de correo electrónico
+                          Ingresar otro correo
                         </button>
                       </div>
                     </div>

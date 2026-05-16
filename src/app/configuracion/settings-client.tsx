@@ -123,14 +123,12 @@ export default function SettingsClient() {
   };
 
   const handlePasswordReset = async () => {
-    if (!user?.email) return;
-    const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-      redirectTo: `${window.location.origin}/configuracion`,
-    });
-    if (!error) {
-      setResetEmailSent(true);
-      setTimeout(() => setResetEmailSent(false), 5000);
-    }
+    // Open the auth modal directly in "forgot" view
+    // so the user can enter their email, receive the OTP, and type the code
+    handleLogout();
+    setTimeout(() => {
+      openModal("forgot");
+    }, 100);
   };
 
   const handleLogout = async () => {
@@ -384,14 +382,14 @@ export default function SettingsClient() {
                                 <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                   <Key className="w-4 h-4 text-[#1890FF]" /> Contraseña
                                 </h3>
-                                <p className="text-xs text-gray-500 mt-1">Te enviaremos un enlace seguro a {user?.email} para restablecerla.</p>
+                                <p className="text-xs text-gray-500 mt-1">Te enviaremos un código de seguridad a {user?.email} para cambiarla.</p>
                               </div>
                               <button 
                                 onClick={handlePasswordReset}
                                 disabled={resetEmailSent}
                                 className="px-4 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-semibold hover:border-[#1890FF] hover:text-[#1890FF] transition-all whitespace-nowrap disabled:opacity-50"
                               >
-                                {resetEmailSent ? "Enlace Enviado ✓" : "Cambiar Contraseña"}
+                                {resetEmailSent ? "Código Enviado ✓" : "Cambiar Contraseña"}
                               </button>
                             </div>
                           </div>

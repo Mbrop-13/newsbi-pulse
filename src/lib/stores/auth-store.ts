@@ -40,8 +40,8 @@ export const useAuthStore = create<AuthState>()(
 
 interface AuthModalState {
   isOpen: boolean;
-  view: "login" | "register";
-  openModal: (view?: "login" | "register") => void;
+  view: "login" | "register" | "forgot";
+  openModal: (view?: "login" | "register" | "forgot") => void;
   closeModal: () => void;
 }
 

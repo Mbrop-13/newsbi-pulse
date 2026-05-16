@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -9,18 +9,19 @@ import {
   User,
   Chrome,
   ArrowRight,
-  Sparkles,
   Eye,
   EyeOff,
-  Newspaper,
   ArrowLeft,
   KeyRound,
   CheckCircle2,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { createClient } from "@/lib/supabase/client";
+
+type AuthView = "login" | "register" | "forgot" | "verify-signup" | "verify-forgot" | "new-password";
 
 interface AuthModalsProps {
   isOpen: boolean;
@@ -33,16 +34,32 @@ export function AuthModals({
   onClose,
   defaultView = "login",
 }: AuthModalsProps) {
-  const [view, setView] = useState<"login" | "register" | "forgot">(defaultView === "forgot" ? "forgot" : defaultView);
+  const [view, setView] = useState<AuthView>(defaultView === "forgot" ? "forgot" : defaultView);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
-  const [resetEmailSent, setResetEmailSent] = useState(false);
-
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  
+  // State for forms
+  const [email, setEmail] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const login = useAuthStore((state) => state.login);
   const supabase = createClient();
+
+  // Reset state when modal opens/closes
+  useEffect(() => {
+    if (isOpen) {
+      setView(defaultView === "forgot" ? "forgot" : defaultView);
+      setErrorMsg(null);
+      setSuccessMsg(null);
+      setOtpCode("");
+      setNewPassword("");
+      setConfirmPassword("");
+    }
+  }, [isOpen, defaultView]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -51,20 +68,21 @@ export function AuthModals({
     setSuccessMsg(null);
 
     const formData = new FormData(e.currentTarget);
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-    const fullName = formData.get("fullName") as string;
+    const formEmail = formData.get("email") as string;
+    const formPassword = formData.get("password") as string;
+    const formFullName = formData.get("fullName") as string;
+    
+    if (formEmail) setEmail(formEmail);
 
     try {
       if (view === "login") {
         const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
+          email: formEmail,
+          password: formPassword,
         });
-        console.log("[Auth] Login result:", { data, error });
         if (error) {
           if (error.message === "Email not confirmed") {
-            setErrorMsg("Tu correo electrónico aún no ha sido confirmado. Revisa tu bandeja de entrada.");
+            setErrorMsg("Tu correo electrónico aún no ha sido confirmado.");
           } else if (error.message === "Invalid login credentials") {
             setErrorMsg("Correo o contraseña incorrectos.");
           } else {
@@ -81,37 +99,25 @@ export function AuthModals({
           });
         }
         onClose();
-      } else {
+      } else if (view === "register") {
         const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
+          email: formEmail,
+          password: formPassword,
           options: {
             data: {
-              full_name: fullName,
-              avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=0066FF&color=fff&bold=true`,
+              full_name: formFullName,
+              avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(formFullName)}&background=0066FF&color=fff&bold=true`,
             },
           },
         });
-        console.log("[Auth] SignUp result:", { data, error });
         if (error) {
           setErrorMsg(error.message);
           return;
         }
-        // Check if email confirmation is required
-        if (data.user && !data.session) {
-          setSuccessMsg("¡Cuenta creada! Revisa tu correo electrónico para confirmar tu cuenta antes de iniciar sesión.");
-        } else if (data.session) {
-          // Auto-confirmed, log in directly
-          if (data.user) {
-            login({
-              id: data.user.id,
-              email: data.user.email || "",
-              name: data.user.user_metadata?.full_name || fullName,
-              avatar: data.user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=0066FF&color=fff&bold=true`,
-            });
-          }
-          onClose();
-        }
+        // Change view to OTP verification
+        setOtpCode("");
+        setView("verify-signup");
+        setSuccessMsg("Código enviado a tu correo. Por favor ingresalo abajo.");
       }
     } catch {
       setErrorMsg("Ocurrió un error inesperado.");
@@ -127,32 +133,143 @@ export function AuthModals({
     setSuccessMsg(null);
 
     const formData = new FormData(e.currentTarget);
-    const email = formData.get("email") as string;
+    const formEmail = formData.get("email") as string;
 
-    if (!email) {
+    if (!formEmail) {
       setErrorMsg("Por favor ingresa tu correo electrónico.");
       setLoading(false);
       return;
     }
+    
+    setEmail(formEmail);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
-      });
+      const { error } = await supabase.auth.resetPasswordForEmail(formEmail);
 
-      if (error) {
-        // Don't reveal if email exists or not for security
-        if (error.message.includes("rate")) {
-          setErrorMsg("Has enviado demasiadas solicitudes. Intenta de nuevo en unos minutos.");
-        } else {
-          // Always show success for security (don't reveal if email exists)
-          setResetEmailSent(true);
-        }
+      if (error && error.message.includes("rate")) {
+        setErrorMsg("Has enviado demasiadas solicitudes. Intenta de nuevo en unos minutos.");
       } else {
-        setResetEmailSent(true);
+        // Change view to OTP verification for password recovery
+        setOtpCode("");
+        setView("verify-forgot");
+        setSuccessMsg("Código de recuperación enviado a tu correo.");
       }
     } catch {
       setErrorMsg("Ocurrió un error inesperado. Intenta de nuevo.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifySignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMsg(null);
+
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email,
+        token: otpCode,
+        type: 'signup'
+      });
+
+      if (error) {
+        setErrorMsg("Código inválido o expirado. Intenta nuevamente.");
+        return;
+      }
+
+      if (data.user && data.session) {
+        login({
+          id: data.user.id,
+          email: data.user.email || "",
+          name: data.user.user_metadata?.full_name || "Usuario",
+          avatar: data.user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=U&background=1890FF&color=fff`,
+        });
+        onClose();
+      } else {
+        // Sometimes session is not immediately returned depending on settings
+        setView("login");
+        setSuccessMsg("Cuenta verificada exitosamente. Ahora puedes iniciar sesión.");
+      }
+    } catch {
+      setErrorMsg("Error al verificar el código.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyForgot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMsg(null);
+
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email,
+        token: otpCode,
+        type: 'recovery'
+      });
+
+      if (error) {
+        setErrorMsg("Código inválido o expirado. Intenta nuevamente.");
+        return;
+      }
+
+      if (data.session) {
+        // OTP valid, user has session, proceed to set new password
+        setView("new-password");
+        setSuccessMsg("Código verificado correctamente.");
+        setNewPassword("");
+        setConfirmPassword("");
+      } else {
+         setErrorMsg("Error de sesión. Intenta iniciar el proceso nuevamente.");
+      }
+    } catch {
+      setErrorMsg("Error al verificar el código.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg(null);
+
+    if (newPassword.length < 8) {
+      setErrorMsg("La contraseña debe tener al menos 8 caracteres.");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setErrorMsg("Las contraseñas no coinciden.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) {
+        setErrorMsg(error.message);
+        return;
+      }
+
+      // Password updated successfully
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        login({
+          id: user.id,
+          email: user.email || "",
+          name: user.user_metadata?.full_name || "Usuario",
+          avatar: user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=U&background=1890FF&color=fff`,
+        });
+      }
+      onClose();
+    } catch {
+      setErrorMsg("Ocurrió un error inesperado.");
     } finally {
       setLoading(false);
     }
@@ -200,13 +317,13 @@ export function AuthModals({
               <AnimatePresence mode="wait">
                 <motion.div
                   key={view}
-                  initial={{ opacity: 0, x: view === "login" ? -20 : 20 }}
+                  initial={{ opacity: 0, x: (view === "login" || view === "forgot") ? -20 : 20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: view === "login" ? 20 : -20 }}
+                  exit={{ opacity: 0, x: (view === "login" || view === "forgot") ? 20 : -20 }}
                   transition={{ duration: 0.25 }}
                 >
                   {/* ═══════ FORGOT PASSWORD VIEW ═══════ */}
-                  {view === "forgot" ? (
+                  {view === "forgot" && (
                     <div>
                       {/* Title */}
                       <div className="text-center mb-6">
@@ -214,12 +331,10 @@ export function AuthModals({
                           <KeyRound className="w-7 h-7 text-accent" />
                         </div>
                         <h2 className="font-editorial text-2xl font-bold mb-1.5">
-                          {resetEmailSent ? "Revisa tu correo" : "Recuperar contraseña"}
+                          Recuperar contraseña
                         </h2>
                         <p className="text-muted-foreground text-sm">
-                          {resetEmailSent
-                            ? "Te hemos enviado un enlace seguro para restablecer tu contraseña."
-                            : "Ingresa tu correo y te enviaremos un enlace para restablecer tu contraseña."}
+                          Ingresa tu correo y te enviaremos un código para restablecer tu contraseña.
                         </p>
                       </div>
 
@@ -238,86 +353,266 @@ export function AuthModals({
                         )}
                       </AnimatePresence>
 
-                      {resetEmailSent ? (
-                        /* Success state */
+                      {/* Email input form */}
+                      <form onSubmit={handleForgotPassword} className="space-y-4">
                         <div>
-                          <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-5 mb-6">
-                            <div className="flex items-start gap-3">
-                              <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                              <div>
-                                <p className="text-sm font-semibold text-green-600 dark:text-green-400 mb-1">Enlace enviado exitosamente</p>
-                                <p className="text-xs text-muted-foreground leading-relaxed">
-                                  Si existe una cuenta con ese correo, recibirás un enlace en los próximos minutos. 
-                                  Revisa también tu carpeta de spam.
-                                </p>
-                              </div>
-                            </div>
+                          <label className="text-[11px] font-semibold text-muted-foreground block mb-1.5 ml-0.5">
+                            Correo electrónico
+                          </label>
+                          <div className="relative">
+                            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
+                            <Input
+                              type="email"
+                              name="email"
+                              placeholder="name@company.com"
+                              className="h-11 pl-10 bg-secondary/30 border-border/50 rounded-xl text-sm placeholder:text-muted-foreground/40 focus-visible:ring-accent/30 focus-visible:border-accent/50 transition-colors"
+                              required
+                              autoFocus
+                            />
                           </div>
-                          <Button
-                            type="button"
-                            onClick={() => { setView("login"); setResetEmailSent(false); setErrorMsg(null); }}
-                            className="w-full h-12 bg-accent hover:bg-accent/90 text-white font-bold text-sm tracking-wide rounded-xl transition-all duration-200 group shadow-lg shadow-accent/20"
-                          >
-                            <ArrowLeft className="w-4 h-4 mr-2" />
-                            Volver a Iniciar Sesión
-                          </Button>
                         </div>
-                      ) : (
-                        /* Email input form */
-                        <form onSubmit={handleForgotPassword} className="space-y-4">
-                          <div>
-                            <label className="text-[11px] font-semibold text-muted-foreground block mb-1.5 ml-0.5">
-                              Correo electrónico
-                            </label>
-                            <div className="relative">
-                              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
-                              <Input
-                                type="email"
-                                name="email"
-                                placeholder="name@company.com"
-                                className="h-11 pl-10 bg-secondary/30 border-border/50 rounded-xl text-sm placeholder:text-muted-foreground/40 focus-visible:ring-accent/30 focus-visible:border-accent/50 transition-colors"
-                                required
-                                autoFocus
-                              />
-                            </div>
-                          </div>
 
-                          <motion.div whileTap={{ scale: 0.98 }}>
-                            <Button
-                              type="submit"
-                              className="w-full h-12 bg-accent hover:bg-accent/90 text-white font-bold text-sm tracking-wide rounded-xl transition-all duration-200 group shadow-lg shadow-accent/20 hover:shadow-accent/30"
-                              disabled={loading}
-                            >
-                              {loading ? (
-                                <div className="flex items-center gap-2.5">
-                                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                  Enviando...
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-2">
-                                  <Mail className="w-4 h-4" />
-                                  Enviar Enlace de Recuperación
-                                </div>
-                              )}
-                            </Button>
-                          </motion.div>
-                        </form>
-                      )}
+                        <motion.div whileTap={{ scale: 0.98 }}>
+                          <Button
+                            type="submit"
+                            className="w-full h-12 bg-accent hover:bg-accent/90 text-white font-bold text-sm tracking-wide rounded-xl transition-all duration-200 group shadow-lg shadow-accent/20 hover:shadow-accent/30"
+                            disabled={loading}
+                          >
+                            {loading ? (
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                Enviando...
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <Mail className="w-4 h-4" />
+                                Enviar Código de Recuperación
+                              </div>
+                            )}
+                          </Button>
+                        </motion.div>
+                      </form>
 
                       {/* Back to login */}
-                      {!resetEmailSent && (
-                        <div className="mt-6 text-center">
-                          <button
-                            onClick={() => { setView("login"); setErrorMsg(null); setSuccessMsg(null); }}
-                            className="text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5 mx-auto"
-                          >
-                            <ArrowLeft className="w-3.5 h-3.5" />
-                            Volver a Iniciar Sesión
-                          </button>
-                        </div>
-                      )}
+                      <div className="mt-6 text-center">
+                        <button
+                          onClick={() => { setView("login"); setErrorMsg(null); setSuccessMsg(null); }}
+                          className="text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5 mx-auto"
+                        >
+                          <ArrowLeft className="w-3.5 h-3.5" />
+                          Volver a Iniciar Sesión
+                        </button>
+                      </div>
                     </div>
-                  ) : (
+                  )}
+
+                  {/* ═══════ VERIFY OTP VIEWS ═══════ */}
+                  {(view === "verify-signup" || view === "verify-forgot") && (
+                    <div>
+                      {/* Title */}
+                      <div className="text-center mb-6">
+                        <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-4">
+                          <CheckCircle2 className="w-7 h-7 text-accent" />
+                        </div>
+                        <h2 className="font-editorial text-2xl font-bold mb-1.5">
+                          Verifica tu correo
+                        </h2>
+                        <p className="text-muted-foreground text-sm">
+                          Ingresa el código de 6 dígitos que enviamos a<br/>
+                          <span className="font-semibold text-foreground">{email}</span>
+                        </p>
+                      </div>
+
+                      <AnimatePresence>
+                        {successMsg && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="bg-green-500/10 border border-green-500/30 text-green-600 dark:text-green-400 text-xs font-semibold px-4 py-2.5 rounded-lg mb-5 flex items-center gap-2"
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse flex-shrink-0" />
+                            {successMsg}
+                          </motion.div>
+                        )}
+                        {errorMsg && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="bg-destructive/10 border border-destructive/30 text-destructive text-xs font-semibold px-4 py-2.5 rounded-lg mb-5 flex items-center gap-2"
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-destructive animate-pulse flex-shrink-0" />
+                            {errorMsg}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      <form onSubmit={view === "verify-signup" ? handleVerifySignup : handleVerifyForgot} className="space-y-6">
+                        <div className="flex justify-center">
+                          <Input
+                            type="text"
+                            inputMode="numeric"
+                            autoComplete="one-time-code"
+                            pattern="\d{6}"
+                            maxLength={6}
+                            value={otpCode}
+                            onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                            placeholder="000000"
+                            className="h-16 w-full text-center text-3xl tracking-[0.5em] font-mono bg-secondary/30 border-border/50 rounded-xl focus-visible:ring-accent/30 focus-visible:border-accent/50 transition-colors"
+                            required
+                            autoFocus
+                          />
+                        </div>
+
+                        <motion.div whileTap={{ scale: 0.98 }}>
+                          <Button
+                            type="submit"
+                            className="w-full h-12 bg-accent hover:bg-accent/90 text-white font-bold text-sm tracking-wide rounded-xl transition-all duration-200 group shadow-lg shadow-accent/20 hover:shadow-accent/30"
+                            disabled={loading || otpCode.length !== 6}
+                          >
+                            {loading ? (
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                Verificando...
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                Verificar Código
+                                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                              </div>
+                            )}
+                          </Button>
+                        </motion.div>
+                      </form>
+
+                      <div className="mt-6 text-center">
+                        <button
+                          type="button"
+                          onClick={() => { setView(view === "verify-signup" ? "register" : "forgot"); setErrorMsg(null); setSuccessMsg(null); }}
+                          className="text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5 mx-auto"
+                        >
+                          <ArrowLeft className="w-3.5 h-3.5" />
+                          Cambiar de correo electrónico
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ═══════ NEW PASSWORD VIEW ═══════ */}
+                  {view === "new-password" && (
+                    <div>
+                      <div className="text-center mb-6">
+                        <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-4">
+                          <Lock className="w-7 h-7 text-accent" />
+                        </div>
+                        <h2 className="font-editorial text-2xl font-bold mb-1.5">
+                          Nueva contraseña
+                        </h2>
+                        <p className="text-muted-foreground text-sm">
+                          Crea una contraseña segura para tu cuenta.
+                        </p>
+                      </div>
+
+                      <AnimatePresence>
+                        {successMsg && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="bg-green-500/10 border border-green-500/30 text-green-600 dark:text-green-400 text-xs font-semibold px-4 py-2.5 rounded-lg mb-5 flex items-center gap-2"
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse flex-shrink-0" />
+                            {successMsg}
+                          </motion.div>
+                        )}
+                        {errorMsg && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="bg-destructive/10 border border-destructive/30 text-destructive text-xs font-semibold px-4 py-2.5 rounded-lg mb-5 flex items-center gap-2"
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-destructive animate-pulse flex-shrink-0" />
+                            {errorMsg}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      <form onSubmit={handleUpdatePassword} className="space-y-4">
+                        <div>
+                          <label className="text-[11px] font-semibold text-muted-foreground block mb-1.5 ml-0.5">
+                            Nueva contraseña
+                          </label>
+                          <div className="relative">
+                            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
+                            <Input
+                              type={showPassword ? "text" : "password"}
+                              value={newPassword}
+                              onChange={(e) => setNewPassword(e.target.value)}
+                              placeholder="••••••••"
+                              className="h-11 pl-10 pr-10 bg-secondary/30 border-border/50 rounded-xl text-sm placeholder:text-muted-foreground/40 focus-visible:ring-accent/30 focus-visible:border-accent/50 transition-colors"
+                              required
+                              autoFocus
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword(!showPassword)}
+                              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+                            >
+                              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-semibold text-muted-foreground block mb-1.5 ml-0.5">
+                            Confirmar contraseña
+                          </label>
+                          <div className="relative">
+                            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
+                            <Input
+                              type={showPassword ? "text" : "password"}
+                              value={confirmPassword}
+                              onChange={(e) => setConfirmPassword(e.target.value)}
+                              placeholder="••••••••"
+                              className={`h-11 pl-10 pr-10 bg-secondary/30 border-border/50 rounded-xl text-sm placeholder:text-muted-foreground/40 focus-visible:ring-accent/30 focus-visible:border-accent/50 transition-colors ${
+                                confirmPassword.length > 0
+                                  ? newPassword === confirmPassword
+                                    ? "border-green-500/50 focus-visible:border-green-500"
+                                    : "border-destructive/50 focus-visible:border-destructive"
+                                  : ""
+                              }`}
+                              required
+                            />
+                          </div>
+                        </div>
+
+                        <motion.div whileTap={{ scale: 0.98 }} className="pt-2">
+                          <Button
+                            type="submit"
+                            className="w-full h-12 bg-accent hover:bg-accent/90 text-white font-bold text-sm tracking-wide rounded-xl transition-all duration-200 group shadow-lg shadow-accent/20 hover:shadow-accent/30"
+                            disabled={loading || newPassword.length < 8 || newPassword !== confirmPassword}
+                          >
+                            {loading ? (
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                Actualizando...
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <ShieldCheck className="w-4 h-4" />
+                                Guardar y Entrar
+                              </div>
+                            )}
+                          </Button>
+                        </motion.div>
+                      </form>
+                    </div>
+                  )}
+
+                  {/* ═══════ LOGIN & REGISTER VIEWS ═══════ */}
+                  {(view === "login" || view === "register") && (
                   <>
                   {/* Title */}
                   <div className="text-center mb-6">

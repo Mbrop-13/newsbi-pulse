@@ -400,7 +400,7 @@ ARTÍCULOS:
 ${articleList}
 
 IMPORTANTE: Responde ÚNICAMENTE con JSON puro. Sin explicaciones, sin markdown, sin texto antes o después del JSON:
-{"articles":[{"index":0,"title_original":"...","importance":85,"route":"GROK","section":"finanzas","reason":"..."},{"index":1,"title_original":"...","importance":70,"route":"SELF","section":"economia","reason":"...","rewritten":{"title":"Título SEO español max 90 chars","summary":"1 oración","content":"2-3 párrafos con **negritas** en datos clave","tags":["Tag1","Tag2","Tag3"],"category":"economia","sentiment":"neutral","city":null,"f":14}}]}
+{"articles":[{"index":0,"title_original":"...","importance":85,"route":"GROK","section":"finanzas","reason":"..."},{"index":1,"title_original":"...","importance":70,"route":"SELF","section":"economia","reason":"...","rewritten":{"title":"Título SEO español max 90 chars","summary":"1 oración","content":"2-3 párrafos con **negritas** en datos clave","tags":["Tag1","Tag2","Tag3"],"category":"economia","sentiment":"neutral","city":"Santiago","lat":-33.4489,"lng":-70.6693,"f":14}}]}
 
 f = 2 dígitos: país(1=CL,2=US) + tema(1=General,2=Tech,3=Impacto,4=Finanzas,5=Inversiones,6=Economía)`;
 
@@ -496,7 +496,7 @@ REGLAS OBLIGATORIAS:
 - Si no encuentras imagen, devuelve image_url como null
 
 RESPONDE ÚNICAMENTE con JSON puro (sin markdown):
-{"title":"Título SEO max 90 chars","summary":"1 oración de resumen","content":"Artículo completo 3-4 párrafos","tags":["T1","T2","T3","T4"],"relevance_score":85,"category":"finanzas","sentiment":"neutral","city":null,"image_url":"https://...","f":14}
+{"title":"Título SEO max 90 chars","summary":"1 oración de resumen","content":"Artículo completo 3-4 párrafos","tags":["T1","T2","T3","T4"],"relevance_score":85,"category":"finanzas","sentiment":"neutral","city":"Nueva York","lat":40.7128,"lng":-74.006,"image_url":"https://...","f":14}
 
 Campo f = 2 dígitos: país(1=CL,2=US) + tema(1=General,2=Tech,3=Impacto,4=Finanzas,5=Inversiones,6=Economía)`;
 
@@ -570,6 +570,8 @@ País: ${article.country_code === 'cl' ? 'Chile (f=1X)' : 'USA (f=2X)'}`;
     category: data.category || section,
     relevance_score: Number(data.relevance_score) || 80,
     city: data.city === 'null' || data.city === null ? undefined : data.city,
+    lat: typeof data.lat === 'number' ? data.lat : (Number(data.lat) || null),
+    lng: typeof data.lng === 'number' ? data.lng : (Number(data.lng) || null),
     imageUrl: data.image_url || article.imageUrl || null,
     slug: generateSlug(data.title),
     ai_model: model,
@@ -730,6 +732,8 @@ export async function runNewsPipeline(): Promise<{
         sentiment: a.sentiment,
         relevance_score: a.relevance_score,
         city: a.city,
+        lat: a.lat,
+        lng: a.lng,
         image_url: a.imageUrl,
         slug: a.slug,
         feed_tag: a.feed_tag || null,
@@ -793,6 +797,8 @@ export async function runNewsPipeline(): Promise<{
         category: item.rewritten.category || 'business',
         relevance_score: item.importance,
         city: item.rewritten.city === 'null' ? undefined : (item.rewritten.city || undefined),
+        lat: typeof item.rewritten.lat === 'number' ? item.rewritten.lat : (Number(item.rewritten.lat) || null),
+        lng: typeof item.rewritten.lng === 'number' ? item.rewritten.lng : (Number(item.rewritten.lng) || null),
         imageUrl: raw.imageUrl || null,
         slug: generateSlug(item.rewritten.title),
         ai_model: stepModel,

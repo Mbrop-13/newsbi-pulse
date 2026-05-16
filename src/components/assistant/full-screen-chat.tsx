@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Bot, Sparkles, Loader2, ExternalLink, Paperclip, BarChart3, Newspaper, Bell, TrendingUp, X, Globe, History, Trash2, Plus, MessageSquare, PanelLeftClose, PanelLeft, Settings, Moon, Sun, Monitor, Type, Maximize, CheckCircle2, Mic, Star, LineChart, PieChart, AreaChart, Target, Scale, Layers, ThumbsUp, ThumbsDown, RefreshCw, Share2, ChevronRight, Clock, Zap, ArrowDown, Lock, Crown, Gift, ArrowRight, FileText, CalendarDays } from "lucide-react";
-import { ReportViewer } from './report-viewer';
+
 import { useAIChatStore, ChatMessage, ToolResultUI } from "@/lib/stores/ai-chat-store";
 import { getPlanConfig, PlanTier } from "@/lib/plan-limits";
 import { createClient } from "@/lib/supabase/client";
@@ -74,8 +74,21 @@ function FullScreenChatInternal() {
   const [sidebarTab, setSidebarTab] = useState<'chats' | 'reports'>('chats');
   const [reports, setReports] = useState<any[]>([]);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
-  const [selectedReport, setSelectedReport] = useState<any>(null);
   const [reportError, setReportError] = useState<string | null>(null);
+  const [reportLoadingStep, setReportLoadingStep] = useState(0);
+
+  const REPORT_LOADING_MESSAGES = [
+    "Conectando con mercados financieros...",
+    "Obteniendo cotizaciones en tiempo real...",
+    "Calculando indicadores técnicos (RSI, MACD, Bollinger)...",
+    "Analizando métricas fundamentales...",
+    "Calculando volatilidad y riesgo...",
+    "Evaluando valoración Graham...",
+    "Consultando noticias recientes...",
+    "Generando análisis con IA...",
+    "Preparando recomendaciones...",
+    "Finalizando informe profesional...",
+  ];
 
   // Ref to always have the latest aiMessages available in callbacks
   const aiMessagesRef = useRef<any[]>([]);
@@ -292,6 +305,15 @@ function FullScreenChatInternal() {
     if (user && sidebarTab === 'reports') fetchReports();
   }, [user, sidebarTab]);
 
+  // Rotate loading messages while generating
+  useEffect(() => {
+    if (!isGeneratingReport) { setReportLoadingStep(0); return; }
+    const interval = setInterval(() => {
+      setReportLoadingStep(prev => (prev + 1) % REPORT_LOADING_MESSAGES.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [isGeneratingReport]);
+
   const generateReport = async () => {
     if (isGeneratingReport) return;
     setIsGeneratingReport(true);
@@ -317,11 +339,17 @@ function FullScreenChatInternal() {
       const { data } = await supabaseClient.from('portfolio_reports')
         .select('*').eq('id', reportId).single();
       if (data) {
-        setSelectedReport(data);
         // Mark as read
         await supabaseClient.from('portfolio_reports').update({ is_read: true }).eq('id', reportId);
-        // Refresh list to update unread indicators
         fetchReports();
+        // Open as interactive chat with report context
+        clearMessages();
+        setAiMessages([]);
+        setSidebarTab('chats');
+        if (window.innerWidth < 768) setIsSidebarOpen(false);
+        const reportDate = new Date(data.created_at).toLocaleDateString('es-CL', { dateStyle: 'long' });
+        const reportContext = `INFORME DE PORTAFOLIO GENERADO (${reportDate}):\n${JSON.stringify(data.report_data, null, 2)}\n\nINSTRUCCIÓN: El usuario acaba de abrir su informe de portafolio. Preséntale el informe completo de forma profesional usando formato markdown con tablas, encabezados y emojis. Estructura: 1) Resumen ejecutivo, 2) Alertas importantes, 3) Análisis por acción con veredictos y fórmulas, 4) Tabla de recomendaciones, 5) Métricas del portafolio, 6) Disclaimer legal completo. El usuario podrá hacerte preguntas de seguimiento sobre este informe.`;
+        setTimeout(() => sendMessage("Muéstrame mi informe de portafolio", reportContext), 300);
       }
     } catch {}
   };
@@ -533,8 +561,12 @@ function FullScreenChatInternal() {
                         </div>
                       </div>
                       <div className="text-center">
-                        <p className="text-xs font-bold text-gray-900 dark:text-white">Analizando portafolio...</p>
-                        <p className="text-[10px] text-gray-400 mt-0.5">Yahoo Finance + DeepSeek AI + Web Search</p>
+                        <p className="text-xs font-bold text-gray-900 dark:text-white animate-pulse">{REPORT_LOADING_MESSAGES[reportLoadingStep]}</p>
+                        <div className="flex items-center gap-1 mt-1">
+                          {REPORT_LOADING_MESSAGES.map((_, i) => (
+                            <div key={i} className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${i <= reportLoadingStep ? 'bg-[#1890FF]' : 'bg-gray-300 dark:bg-gray-700'}`} />
+                          ))}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -1387,12 +1419,7 @@ function FullScreenChatInternal() {
         )}
       </AnimatePresence>
 
-      {/* Report Viewer Modal */}
-      <AnimatePresence>
-        {selectedReport && (
-          <ReportViewer report={selectedReport} onClose={() => setSelectedReport(null)} />
-        )}
-      </AnimatePresence>
+
 
       {/* Share Dialog */}
       <ShareChatDialog 

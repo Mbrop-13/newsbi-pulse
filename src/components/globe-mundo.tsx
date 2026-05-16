@@ -48,9 +48,12 @@ export function GlobeMundo() {
   useEffect(() => {
     const fetchPoints = async () => {
       let fetchedPoints: any[] = [];
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      
       const { data, error } = await supabase
         .from("news_articles")
         .select("id, title, summary, category, published_at, is_live, lat, lng, city, slug, image_url")
+        .gte("published_at", twentyFourHoursAgo)
         .order("published_at", { ascending: false })
         .limit(100);
 
@@ -162,7 +165,10 @@ export function GlobeMundo() {
     if (!mapRef.current) return;
     const map = mapRef.current;
 
-    points.forEach(p => {
+    const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000;
+    const activePoints = points.filter(p => new Date(p.published_at).getTime() >= twentyFourHoursAgo);
+
+    activePoints.forEach(p => {
       if (!markersRef.current[p.id]) {
         // Create outer container element so Mapbox can freely manipulate the position
         // without our scale transform overwriting it.
@@ -221,9 +227,9 @@ export function GlobeMundo() {
       }
     });
 
-    // Cleanup removed points
+    // Cleanup removed or expired points
     Object.keys(markersRef.current).forEach(id => {
-      if (!points.find(p => p.id === id)) {
+      if (!activePoints.find(p => p.id === id)) {
         markersRef.current[id].remove();
         delete markersRef.current[id];
       }

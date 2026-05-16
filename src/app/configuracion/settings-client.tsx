@@ -311,7 +311,7 @@ export default function SettingsClient() {
                                 <div className="flex items-center gap-2 mb-1">
                                   <Mail className="w-4 h-4 text-gray-500" />
                                   <h3 className="font-bold text-gray-900 dark:text-white">Correos Electrónicos</h3>
-                                  <span className="text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300 px-2 py-0.5 rounded-full font-bold">AWS SES Integrado</span>
+                                  <span className="text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300 px-2 py-0.5 rounded-full font-bold">Microsoft Integrado</span>
                                 </div>
                                 <p className="text-xs text-gray-500">Recibe resúmenes y alertas críticas directamente en {user?.email}.</p>
                               </div>

@@ -194,7 +194,7 @@ async function checkPriceAlerts(supabase: any): Promise<number> {
           });
         }
         
-        // 3. AWS SES Email Notification
+        // 3. Microsoft Azure Email Notification
         if (prefs?.notify_email) {
           try {
             // Get user email from Supabase Auth

@@ -493,20 +493,44 @@ export function AuthModals({
                       </AnimatePresence>
 
                       <form onSubmit={view === "verify-signup" ? handleVerifySignup : handleVerifyForgot} className="space-y-6">
-                        <div className="flex justify-center">
-                          <Input
+                        <div className="relative flex justify-center gap-2 sm:gap-3 my-8">
+                          {/* Invisible Input for robust mobile support & pasting */}
+                          <input
                             type="text"
                             inputMode="numeric"
                             autoComplete="one-time-code"
-                            pattern="\d{6}"
                             maxLength={6}
                             value={otpCode}
-                            onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                            placeholder="000000"
-                            className="h-16 w-full text-center text-3xl tracking-[0.5em] font-mono bg-secondary/30 border-border/50 rounded-xl focus-visible:ring-accent/30 focus-visible:border-accent/50 transition-colors"
+                            onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-text z-10"
                             required
                             autoFocus
                           />
+                          
+                          {/* 6 Visual Boxes */}
+                          {[...Array(6)].map((_, i) => (
+                            <div 
+                              key={i} 
+                              className={`w-10 h-14 sm:w-12 sm:h-16 flex items-center justify-center text-2xl font-bold font-mono rounded-xl border-2 transition-all duration-200 ${
+                                otpCode.length === i 
+                                  ? "border-[#1890FF] ring-4 ring-[#1890FF]/20 scale-105 shadow-sm" 
+                                  : otpCode[i] 
+                                    ? "border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-[#1890FF] dark:text-white scale-100" 
+                                    : "border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-slate-900/50 text-transparent scale-100"
+                              }`}
+                            >
+                              {otpCode[i] || ""}
+                              {/* Blinking cursor for the active box */}
+                              {otpCode.length === i && (
+                                <motion.div 
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}
+                                  className="w-[2px] h-6 bg-[#1890FF] rounded-full absolute"
+                                />
+                              )}
+                            </div>
+                          ))}
                         </div>
 
                         <motion.div whileTap={{ scale: countdown > 0 || otpCode.length !== 6 ? 1 : 0.98 }}>

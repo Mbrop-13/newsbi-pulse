@@ -18,6 +18,7 @@ import {
   Moon,
   Sun,
   Headphones,
+  Megaphone,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -25,6 +26,7 @@ const NAV_ITEMS = [
   { href: "/admin/noticias", label: "Noticias", icon: Newspaper },
   { href: "/admin/usuarios", label: "Usuarios", icon: Shield },
   { href: "/admin/noticias/crear", label: "Crear Artículo", icon: PenSquare },
+  { href: "/admin/marketing", label: "Marketing", icon: Megaphone },
   { href: "/admin/soporte", label: "Soporte", icon: Headphones },
   { href: "/admin/logs", label: "AI Logs", icon: Terminal },
 ];

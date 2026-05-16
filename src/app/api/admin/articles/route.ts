@@ -27,11 +27,12 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search") || "";
     const category = searchParams.get("category") || "";
     const status = searchParams.get("status") || ""; // all | hidden | pinned
+    const enrichedOnly = searchParams.get("enrichedOnly") === "true";
     const offset = (page - 1) * limit;
 
     let query = auth.sc
       .from("news_articles")
-      .select("id, title, slug, category, tags, image_url, published_at, is_hidden, is_pinned, relevance_score, sources", { count: "exact" })
+      .select("id, title, slug, category, tags, image_url, published_at, is_hidden, is_pinned, relevance_score, sources, content, enriched_content", { count: "exact" })
       .order("published_at", { ascending: false });
 
     if (search) {
@@ -48,6 +49,10 @@ export async function GET(request: NextRequest) {
       query = query.gt("published_at", new Date().toISOString());
     } else if (status === "live") {
       query = query.lte("published_at", new Date().toISOString()).eq("is_hidden", false);
+    }
+
+    if (enrichedOnly) {
+      query = query.not("enriched_content", "is", null).neq("enriched_content", "");
     }
 
     query = query.range(offset, offset + limit - 1);

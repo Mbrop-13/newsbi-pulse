@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, Sparkles, Loader2, ExternalLink, Paperclip, BarChart3, Newspaper, Bell, TrendingUp, X, Globe, History, Trash2, Plus, MessageSquare, PanelLeftClose, PanelLeft, Settings, Moon, Sun, Monitor, Type, Maximize, CheckCircle2, Mic, Star, LineChart, PieChart, AreaChart, Target, Scale, Layers, ThumbsUp, ThumbsDown, RefreshCw, Share2, ChevronRight, Clock, Zap, ArrowDown, Lock, Crown, Gift, ArrowRight } from "lucide-react";
+import { Send, Bot, Sparkles, Loader2, ExternalLink, Paperclip, BarChart3, Newspaper, Bell, TrendingUp, X, Globe, History, Trash2, Plus, MessageSquare, PanelLeftClose, PanelLeft, Settings, Moon, Sun, Monitor, Type, Maximize, CheckCircle2, Mic, Star, LineChart, PieChart, AreaChart, Target, Scale, Layers, ThumbsUp, ThumbsDown, RefreshCw, Share2, ChevronRight, Clock, Zap, ArrowDown, Lock, Crown, Gift, ArrowRight, FileText, CalendarDays } from "lucide-react";
+import { ReportViewer } from './report-viewer';
 import { useAIChatStore, ChatMessage, ToolResultUI } from "@/lib/stores/ai-chat-store";
 import { getPlanConfig, PlanTier } from "@/lib/plan-limits";
 import { createClient } from "@/lib/supabase/client";
@@ -68,6 +69,13 @@ function FullScreenChatInternal() {
   const [attachMenuView, setAttachMenuView] = useState<'main' | 'charts' | 'analysis'>('main');
   const [showModelMenu, setShowModelMenu] = useState(false);
   const [shareDialog, setShareDialog] = useState({ isOpen: false, question: "", answer: "" });
+
+  // ── Reports State ──
+  const [sidebarTab, setSidebarTab] = useState<'chats' | 'reports'>('chats');
+  const [reports, setReports] = useState<any[]>([]);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [selectedReport, setSelectedReport] = useState<any>(null);
+  const [reportError, setReportError] = useState<string | null>(null);
 
   // Ref to always have the latest aiMessages available in callbacks
   const aiMessagesRef = useRef<any[]>([]);
@@ -269,6 +277,55 @@ function FullScreenChatInternal() {
     }
   }, [user]);
 
+  // ── Reports Functions ──
+  const fetchReports = async () => {
+    try {
+      const res = await fetch('/api/portfolio-report');
+      if (res.ok) {
+        const data = await res.json();
+        setReports(data.reports || []);
+      }
+    } catch {}
+  };
+
+  useEffect(() => {
+    if (user && sidebarTab === 'reports') fetchReports();
+  }, [user, sidebarTab]);
+
+  const generateReport = async () => {
+    if (isGeneratingReport) return;
+    setIsGeneratingReport(true);
+    setReportError(null);
+    try {
+      const res = await fetch('/api/portfolio-report', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) {
+        setReportError(data.error || 'Error al generar el informe');
+        return;
+      }
+      await fetchReports();
+    } catch (e: any) {
+      setReportError(e.message || 'Error de conexión');
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
+
+  const openReport = async (reportId: string) => {
+    try {
+      const supabaseClient = createClient();
+      const { data } = await supabaseClient.from('portfolio_reports')
+        .select('*').eq('id', reportId).single();
+      if (data) {
+        setSelectedReport(data);
+        // Mark as read
+        await supabaseClient.from('portfolio_reports').update({ is_read: true }).eq('id', reportId);
+        // Refresh list to update unread indicators
+        fetchReports();
+      }
+    } catch {}
+  };
+
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isUserAtBottom, setIsUserAtBottom] = useState(true);
 
@@ -388,37 +445,133 @@ function FullScreenChatInternal() {
               </div>
             </div>
 
+            {/* ── Sidebar Tabs ── */}
+            <div className="flex items-center mx-4 mt-1 bg-gray-100 dark:bg-white/5 rounded-lg p-0.5">
+              <button onClick={() => setSidebarTab('chats')} className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-bold transition-all ${sidebarTab === 'chats' ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+                <MessageSquare className="w-3.5 h-3.5" /> Chats
+              </button>
+              <button onClick={() => setSidebarTab('reports')} className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-bold transition-all relative ${sidebarTab === 'reports' ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+                <FileText className="w-3.5 h-3.5" /> Informes
+                {reports.some(r => !r.is_read) && <span className="absolute top-1 right-2 w-2 h-2 bg-[#1890FF] rounded-full animate-pulse" />}
+              </button>
+            </div>
+
             <div className="flex-1 overflow-y-auto px-3 hidden-scrollbar mt-2 pt-2">
               
-              {savedChats.length === 0 ? (
-                <div className="px-4 py-8 text-center text-gray-400 text-xs font-medium border border-dashed border-gray-200 dark:border-gray-800 rounded-xl mx-2">
-                  Tus chats recientes aparecerán aquí
-                </div>
+              {sidebarTab === 'chats' ? (
+                /* ── Chats Tab ── */
+                <>
+                  {savedChats.length === 0 ? (
+                    <div className="px-4 py-8 text-center text-gray-400 text-xs font-medium border border-dashed border-gray-200 dark:border-gray-800 rounded-xl mx-2">
+                      Tus chats recientes aparecerán aquí
+                    </div>
+                  ) : (
+                    <div className="space-y-0.5">
+                      {savedChats.map((chat) => {
+                        const chatDate = new Date(chat.timestamp);
+                        const timeStr = chatDate.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+                        const isActive = currentChatId === chat.id;
+                        return (
+                          <div 
+                            key={chat.id} 
+                            className={`group flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-colors ${
+                              isActive 
+                                ? 'bg-[#1890FF]/10 border border-[#1890FF]/20' 
+                                : 'hover:bg-gray-200/50 dark:hover:bg-white/5'
+                            }`}
+                          >
+                            <div className="flex-1 overflow-hidden" onClick={() => { loadChat(chat.id); if(window.innerWidth < 768) setIsSidebarOpen(false); }}>
+                              <p className={`text-[13px] font-semibold truncate pl-1 ${isActive ? 'text-[#1890FF]' : 'text-gray-700 dark:text-gray-300'}`}>{chat.title}</p>
+                              <p className="text-[10px] text-gray-400 dark:text-gray-500 pl-1 mt-0.5 font-medium">{timeStr}</p>
+                            </div>
+                            <button onClick={(e) => { e.stopPropagation(); deleteSavedChat(chat.id); }} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-all p-1.5 shrink-0">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
               ) : (
-                <div className="space-y-0.5">
-                  {savedChats.map((chat) => {
-                    const chatDate = new Date(chat.timestamp);
-                    const timeStr = chatDate.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
-                    const isActive = currentChatId === chat.id;
-                    return (
-                      <div 
-                        key={chat.id} 
-                        className={`group flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-colors ${
-                          isActive 
-                            ? 'bg-[#1890FF]/10 border border-[#1890FF]/20' 
-                            : 'hover:bg-gray-200/50 dark:hover:bg-white/5'
-                        }`}
-                      >
-                        <div className="flex-1 overflow-hidden" onClick={() => { loadChat(chat.id); if(window.innerWidth < 768) setIsSidebarOpen(false); }}>
-                          <p className={`text-[13px] font-semibold truncate pl-1 ${isActive ? 'text-[#1890FF]' : 'text-gray-700 dark:text-gray-300'}`}>{chat.title}</p>
-                          <p className="text-[10px] text-gray-400 dark:text-gray-500 pl-1 mt-0.5 font-medium">{timeStr}</p>
+                /* ── Reports Tab ── */
+                <div className="space-y-3 px-1">
+                  {/* Generate Button */}
+                  {userTier !== 'free' ? (
+                    <button
+                      onClick={generateReport}
+                      disabled={isGeneratingReport}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-[#1890FF] to-indigo-600 text-white rounded-xl text-xs font-bold hover:opacity-90 disabled:opacity-50 transition-all shadow-lg shadow-[#1890FF]/20"
+                    >
+                      {isGeneratingReport ? (
+                        <><Loader2 className="w-4 h-4 animate-spin" /> Generando informe...</>
+                      ) : (
+                        <><FileText className="w-4 h-4" /> Generar Informe Ahora</>
+                      )}
+                    </button>
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 px-3 py-4 bg-gray-50 dark:bg-white/[0.02] border border-dashed border-gray-200 dark:border-gray-800 rounded-xl text-center">
+                      <Lock className="w-5 h-5 text-gray-400" />
+                      <p className="text-xs text-gray-500 font-medium">Informes disponibles desde el plan Pro</p>
+                      <Link href="/suscripcion" className="text-[10px] font-bold text-[#1890FF] hover:underline">Actualizar Plan →</Link>
+                    </div>
+                  )}
+
+                  {reportError && (
+                    <div className="px-3 py-2 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-xl text-xs text-red-600 dark:text-red-400 font-medium">
+                      {reportError}
+                    </div>
+                  )}
+
+                  {isGeneratingReport && (
+                    <div className="flex flex-col items-center gap-3 py-6">
+                      <div className="relative w-14 h-14">
+                        <div className="absolute inset-0 rounded-full border-2 border-[#1890FF]/20" />
+                        <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-[#1890FF] animate-spin" />
+                        <div className="absolute inset-2 rounded-full bg-[#1890FF]/10 flex items-center justify-center">
+                          <BarChart3 className="w-5 h-5 text-[#1890FF] animate-pulse" />
                         </div>
-                        <button onClick={(e) => { e.stopPropagation(); deleteSavedChat(chat.id); }} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-all p-1.5 shrink-0">
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
                       </div>
-                    );
-                  })}
+                      <div className="text-center">
+                        <p className="text-xs font-bold text-gray-900 dark:text-white">Analizando portafolio...</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">Yahoo Finance + DeepSeek AI + Web Search</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Report List */}
+                  {reports.length === 0 && !isGeneratingReport ? (
+                    <div className="px-4 py-8 text-center text-gray-400 text-xs font-medium border border-dashed border-gray-200 dark:border-gray-800 rounded-xl">
+                      Aún no has generado informes
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {reports.map((r) => {
+                        const rDate = new Date(r.created_at);
+                        const dateLabel = rDate.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
+                        const timeLabel = rDate.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+                        return (
+                          <button
+                            key={r.id}
+                            onClick={() => openReport(r.id)}
+                            className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-[#1890FF]/5 transition-colors text-left group border border-transparent hover:border-[#1890FF]/20"
+                          >
+                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${!r.is_read ? 'bg-[#1890FF]/10 text-[#1890FF]' : 'bg-gray-100 dark:bg-white/5 text-gray-400'}`}>
+                              <FileText className="w-4 h-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-xs font-semibold truncate ${!r.is_read ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>{r.title}</p>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-[10px] text-gray-400">{dateLabel} · {timeLabel}</span>
+                                <span className="text-[10px] text-gray-400">{r.symbols?.length || 0} activos</span>
+                              </div>
+                            </div>
+                            {!r.is_read && <span className="w-2 h-2 bg-[#1890FF] rounded-full shrink-0 animate-pulse" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1231,6 +1384,13 @@ function FullScreenChatInternal() {
               </div>
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Report Viewer Modal */}
+      <AnimatePresence>
+        {selectedReport && (
+          <ReportViewer report={selectedReport} onClose={() => setSelectedReport(null)} />
         )}
       </AnimatePresence>
 

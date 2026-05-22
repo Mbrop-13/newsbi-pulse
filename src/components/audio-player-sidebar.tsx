@@ -25,7 +25,9 @@ import {
 } from "lucide-react";
 import { useAudioPlayerStore, AudioTrack } from "@/lib/stores/audio-player-store";
 import { createClient } from "@/lib/supabase/client";
-import { UpgradeModal } from "@/components/upgrade-modal";
+import { useSubscriptionStore } from "@/lib/stores/subscription-store";
+import { useConversionStore } from "@/lib/stores/conversion-store";
+import { toast } from "sonner";
 
 export function AudioPlayerSidebar() {
   const store = useAudioPlayerStore();
@@ -65,7 +67,8 @@ export function AudioPlayerSidebar() {
   const sidebarRef = useRef<HTMLDivElement | null>(null);
   const supabase = createClient();
   const pathname = usePathname();
-  const [showUpsell, setShowUpsell] = useState(false);
+  const { openModal } = useConversionStore();
+  const { tier, dailyTtsAudios, incrementTtsAudios } = useSubscriptionStore();
 
   // ── Category detect from URL ──
   useEffect(() => {
@@ -156,6 +159,20 @@ export function AudioPlayerSidebar() {
 
   const generateAudio = useCallback(async (track: AudioTrack) => {
     if (track.audioUrl || track.isLoading) return track.audioUrl;
+    
+    // Check limits before making request
+    if (tier === "free") {
+      if (dailyTtsAudios >= 3) {
+        openModal("audio");
+        return null;
+      } else if (dailyTtsAudios === 2) {
+        toast("Último audio gratuito de hoy", {
+          description: "Prueba el plan Pro para escuchar sin límites.",
+          icon: <Headphones className="w-4 h-4 text-[#1890FF]" />,
+        });
+      }
+    }
+
     setTrackLoading(track.id, true);
     try {
       const text = track.summary || track.title;
@@ -165,10 +182,16 @@ export function AudioPlayerSidebar() {
       });
       if (!res.ok) {
         if (res.status === 403) {
-          setShowUpsell(true);
+          openModal("audio");
         }
         throw new Error(`TTS failed: ${res.status}`);
       }
+      
+      // Increment usage in local store to keep UI in sync
+      if (tier === "free") {
+        incrementTtsAudios();
+      }
+
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       setTrackAudioUrl(track.id, url);
@@ -182,7 +205,7 @@ export function AudioPlayerSidebar() {
       setTrackLoading(track.id, false);
       return null;
     }
-  }, [readMode, setTrackAudioUrl, setTrackLoading]);
+  }, [readMode, setTrackAudioUrl, setTrackLoading, tier, dailyTtsAudios, incrementTtsAudios, openModal]);
 
   // ── Playback ──
   useEffect(() => {
@@ -581,11 +604,6 @@ export function AudioPlayerSidebar() {
         {(mode === "full" || mode === "pinned") && renderFullSidebar()}
         {mode === "mini" && renderMiniPlayer()}
       </AnimatePresence>
-      <UpgradeModal 
-        isOpen={showUpsell} 
-        onClose={() => setShowUpsell(false)} 
-        feature="tts_audio" 
-      />
     </>
   );
 }

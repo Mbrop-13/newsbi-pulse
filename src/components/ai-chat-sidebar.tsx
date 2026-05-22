@@ -7,6 +7,8 @@ import { X, Send, Bot, Sparkles, Loader2, ExternalLink, Trash2, History, Chevron
 import { useAIChatStore, ChatMessage, AttachedArticle, ToolResultUI } from "@/lib/stores/ai-chat-store";
 import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { useConversionStore } from "@/lib/stores/conversion-store";
+import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import Link from "next/link";
@@ -51,6 +53,7 @@ export function AIChatSidebar() {
   const userTier = useAuthStore((s) => s.user?.role === "admin" ? "ultra" : (s.user?.tier || "free"));
   const user = useAuthStore((s) => s.user);
   const isPremium = userTier === "max" || userTier === "ultra";
+  const { openModal } = useConversionStore();
 
   const userMessagesCount = messages.filter((m) => m.role === "user").length;
   const questionLimit = userTier === "free" ? 5 : userTier === "pro" ? 100 : userTier === "max" ? 300 : 999999;
@@ -145,7 +148,19 @@ export function AIChatSidebar() {
 
   const sendMessage = async (textOverride?: string, shortcutOverride?: string) => {
     const text = textOverride || input.trim();
-    if (!text || isLoading || reachedQuestionLimit) return;
+    if (!text || isLoading) return;
+
+    if (reachedQuestionLimit && userTier === "free") {
+      openModal("ai_chat");
+      return;
+    }
+
+    if (userMessagesCount === questionLimit - 1 && userTier === "free") {
+      toast("Última consulta de IA", {
+        description: "Este es tu último mensaje. Suscríbete a Pro para consultas ilimitadas.",
+        icon: <Sparkles className="w-4 h-4 text-[#1890FF]" />,
+      });
+    }
 
     const userMsg: ChatMessage = {
       id: Date.now().toString(),
@@ -586,7 +601,7 @@ export function AIChatSidebar() {
                   onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
                   placeholder={reachedQuestionLimit ? "Límite alcanzado" : "Pregúntale a R-AI..."}
                   className="flex-1 bg-transparent text-[13px] py-2.5 px-1 max-h-28 min-h-[40px] resize-none outline-none disabled:cursor-not-allowed font-medium text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
-                  disabled={isLoading || reachedQuestionLimit}
+                  disabled={isLoading}
                   rows={1}
                 />
 
@@ -600,12 +615,12 @@ export function AIChatSidebar() {
                     </div>
                   </button>
                 ) : input.trim() ? (
-                  <button onClick={() => sendMessage()} disabled={isLoading || reachedQuestionLimit}
+                  <button onClick={() => sendMessage()} disabled={isLoading}
                     className="w-8 h-8 mb-0.5 mr-0.5 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center disabled:opacity-30 hover:scale-105 active:scale-95 transition-all shadow-md shrink-0">
                     <Send className="w-3.5 h-3.5 ml-0.5" />
                   </button>
                 ) : (
-                  <button onClick={toggleRecording} disabled={isLoading || reachedQuestionLimit}
+                  <button onClick={toggleRecording} disabled={isLoading}
                     className="w-8 h-8 mb-0.5 mr-0.5 rounded-full bg-[#1890FF] text-white flex items-center justify-center disabled:opacity-30 hover:scale-105 active:scale-95 transition-all shadow-md shrink-0">
                     <Mic className="w-3.5 h-3.5" />
                   </button>

@@ -4,7 +4,10 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, TrendingUp, TrendingDown, Plus, Trash2, Calendar, BellRing, Briefcase, RefreshCw, X, AlertTriangle, ExternalLink, Bell, ChevronRight, BarChart3, ArrowUp, ArrowDown, Check, Sparkles } from "lucide-react";
 import { useAuthStore, useAuthModalStore } from "@/lib/stores/auth-store";
+import { useSubscriptionStore } from "@/lib/stores/subscription-store";
+import { useConversionStore } from "@/lib/stores/conversion-store";
 import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 import Link from "next/link";
 
 interface PriceAlert {
@@ -52,7 +55,9 @@ export default function PortfolioClient() {
   const [alertForm, setAlertForm] = useState<{ targetPrice: string; condition: "above" | "below" }>({ targetPrice: "", condition: "above" });
   const [alertSaving, setAlertSaving] = useState(false);
   const { user, isAuthenticated, isLoaded } = useAuthStore();
-  const openModal = useAuthModalStore((s) => s.openModal);
+  const openAuthModal = useAuthModalStore((s) => s.openModal);
+  const { tier } = useSubscriptionStore();
+  const { openModal: openConversionModal } = useConversionStore();
   const supabase = createClient();
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -154,6 +159,20 @@ export default function PortfolioClient() {
   const addAsset = async (symbol: string, companyName: string) => {
     if (!user) return;
     setAddError("");
+
+    // Check portfolio limit for free tier
+    const PORTFOLIO_LIMIT = tier === "free" ? 5 : tier === "pro" ? 25 : tier === "max" ? 100 : 9999;
+    if (assets.length >= PORTFOLIO_LIMIT) {
+      openConversionModal("portfolio");
+      return;
+    }
+    if (tier === "free" && assets.length === PORTFOLIO_LIMIT - 1) {
+      toast("Último activo gratuito", {
+        description: "Prueba el plan Pro para seguir hasta 25 activos.",
+        icon: <Briefcase className="w-4 h-4 text-[#1890FF]" />,
+      });
+    }
+
     // Optimistic: add immediately to UI
     const tempAsset: PortfolioAsset = { id: `temp-${Date.now()}`, symbol, company_name: companyName, price: 0, change: 0, changePercent: 0, logo: getLogoUrl(symbol) };
     setAssets(prev => [tempAsset, ...prev]);
@@ -266,7 +285,7 @@ export default function PortfolioClient() {
         <Briefcase className="w-16 h-16 text-[#1890FF] mb-6 opacity-20" />
         <h1 className="text-3xl font-black text-gray-900 dark:text-white mb-4">Tu Portafolio de Inversión</h1>
         <p className="text-gray-500 max-w-md mx-auto mb-8">Únete a Reclu para crear tu portafolio personalizado, recibir alertas de precio y obtener un calendario de eventos impulsado por IA.</p>
-        <button onClick={() => openModal("register")} className="px-8 py-3 rounded-full bg-[#1890FF] text-white font-bold hover:opacity-90 transition-opacity shadow-lg shadow-[#1890FF]/25">Crear cuenta gratis</button>
+        <button onClick={() => openAuthModal("register")} className="px-8 py-3 rounded-full bg-[#1890FF] text-white font-bold hover:opacity-90 transition-opacity shadow-lg shadow-[#1890FF]/25">Crear cuenta gratis</button>
       </div>
     );
   }

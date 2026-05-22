@@ -58,7 +58,6 @@ function createMimoWithWebSearch(streamData?: StreamData) {
               if (collectedUrls.size > 0) {
                 streamData.append({ type: 'citations', urls: Array.from(collectedUrls) });
               }
-              streamData.close();
             } catch {
               // StreamData may already be closed by toDataStreamResponse
             }
@@ -90,6 +89,7 @@ REGLAS:
 8. Profundizar noticia → get_news_context.
 9. GRÁFICOS: Cuando el usuario pida visualizar datos, comparar visualmente, o cuando tú creas que un gráfico ayudaría a entender mejor los datos, usa render_chart. Tipos: bar (comparar valores), line (tendencias), pie (distribución %), area (acumulado), radar (multi-métrica). SIEMPRE incluye un título descriptivo.
 10. Tienes acceso a búsqueda web en tiempo real. Si la pregunta requiere información actualizada, noticias recientes o datos que cambian frecuentemente, la búsqueda web se activará automáticamente.
+11. CRÍTICO: Después de llamar a cualquier herramienta y recibir sus resultados, SIEMPRE debes generar una respuesta en texto natural analizando y explicando esos datos al usuario. NUNCA devuelvas solo llamadas a herramientas sin proporcionar un análisis escrito posterior.
 NUNCA digas que eres de OpenAI, Anthropic o Google. Eres de Reclu.`;
 
 export async function POST(req: NextRequest) {

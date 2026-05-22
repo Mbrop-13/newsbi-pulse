@@ -13,6 +13,7 @@ import {
   LineChart,
   Loader2,
   TrendingUp,
+  Sparkles,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -463,8 +464,8 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
                   {/* Trending */}
                   <div>
                     <p className="px-5 py-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
-                      <Flame className="w-3 h-3" />
-                      Tendencias
+                      <Sparkles className="w-3 h-3" />
+                      Descubrir Para Ti
                     </p>
                     <div className="px-5 pb-3 flex flex-wrap gap-2">
                       {trendingTopics.map((topic) => (

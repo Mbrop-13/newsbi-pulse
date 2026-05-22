@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, MessageSquare, RefreshCw, ArrowRight, TrendingUp, X, Search, Flame, Eye, Briefcase } from "lucide-react";
+import { Loader2, MessageSquare, RefreshCw, ArrowRight, TrendingUp, X, Search, Flame, Eye, Briefcase, Sparkles, Clock as ClockIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { NewsCard } from "@/components/news-card";
@@ -14,6 +14,7 @@ import { TABS, FeedTab } from "@/components/feed-content";
 import { useFilterStore } from "@/lib/stores/filter-store";
 import { useViewStore } from "@/lib/stores/use-view-store";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { useInterestStore } from "@/lib/stores/interest-store";
 
 import { TraditionalNewspaper } from "@/components/traditional-newspaper";
 import {
@@ -25,7 +26,7 @@ import {
 
 interface Props {
   initialFeed?: string;
-  initialFilter?: 'tendencia' | 'portafolio';
+  initialFilter?: 'para_ti' | 'nuevo' | 'portafolio';
   searchTag?: string;
 }
 
@@ -38,7 +39,7 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
   const [syncStatus, setSyncStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [visibleCount, setVisibleCount] = useState(25);
   const [currentTime, setCurrentTime] = useState(Date.now());
-  const [filterMode, setFilterMode] = useState<'tendencia' | 'portafolio' | null>(initialFilter || null);
+  const [filterMode, setFilterMode] = useState<'para_ti' | 'nuevo' | 'portafolio' | null>(initialFilter || null);
   const [portfolioSymbols, setPortfolioSymbols] = useState<string[]>([]);
   const [portfolioLoaded, setPortfolioLoaded] = useState(false);
   const currentUser = useAuthStore(s => s.user);
@@ -52,6 +53,7 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
   const supabase = createClient();
   const { layout: viewLayout, density } = useViewStore();
   const userRole = useAuthStore(s => s.user?.role);
+  const getInterestScore = useInterestStore(state => state.getInterestScore);
 
   const gapClass =
     density === 'compact' ? 'gap-3' :
@@ -202,19 +204,48 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
 
   const sortedArticles = useMemo(() => {
     return [...filteredFeedArticles].sort((a, b) => {
-      if (filterMode === 'tendencia') {
-        const aViews = a.views || 0;
-        const bViews = b.views || 0;
-        if (aViews !== bViews) return bViews - aViews;
-        return new Date(b.published_at || 0).getTime() - new Date(a.published_at || 0).getTime();
+      const aDate = new Date(a.published_at || 0).getTime();
+      const bDate = new Date(b.published_at || 0).getTime();
+
+      if (filterMode === 'nuevo' || filterMode === 'portafolio') {
+        // Chronological order for Nuevo and Portafolio
+        return bDate - aDate;
       }
-      if (filterMode === 'portafolio') {
-        // For portfolio mode, just sort by date
-        return new Date(b.published_at || 0).getTime() - new Date(a.published_at || 0).getTime();
+
+      if (filterMode === 'para_ti') {
+        const now = Date.now();
+        const aAgeHours = (now - aDate) / (1000 * 60 * 60);
+        const bAgeHours = (now - bDate) / (1000 * 60 * 60);
+
+        // 1. Base Score from AI
+        let aScore = a.relevance_score || 50;
+        let bScore = b.relevance_score || 50;
+
+        // 2. Personalization: Interests (Tags & Categories)
+        aScore += getInterestScore(a.category, a.tags || []);
+        bScore += getInterestScore(b.category, b.tags || []);
+
+        // 3. Personalization: Portfolio Boost (+50 points)
+        if (portfolioSymbols.length > 0) {
+          const lowerSymbols = portfolioSymbols.map(s => s.toLowerCase());
+          const aMatch = (Array.isArray(a.tags) && a.tags.some((t: string) => lowerSymbols.includes(t.toLowerCase()))) || lowerSymbols.some(s => (a.title || '').toLowerCase().includes(s));
+          const bMatch = (Array.isArray(b.tags) && b.tags.some((t: string) => lowerSymbols.includes(t.toLowerCase()))) || lowerSymbols.some(s => (b.title || '').toLowerCase().includes(s));
+          
+          if (aMatch) aScore += 50;
+          if (bMatch) bScore += 50;
+        }
+
+        // 4. Time Decay (-2 points per hour old)
+        aScore -= aAgeHours * 2;
+        bScore -= bAgeHours * 2;
+
+        return bScore - aScore;
       }
-      return new Date(b.published_at || 0).getTime() - new Date(a.published_at || 0).getTime();
+
+      // Default fallback chronological
+      return bDate - aDate;
     });
-  }, [filteredFeedArticles, filterMode]);
+  }, [filteredFeedArticles, filterMode, getInterestScore, portfolioSymbols]);
 
   const { topTags, remainingTags } = useMemo(() => {
     const tagMap = new Map<string, number>();
@@ -307,13 +338,22 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
             <div className="flex-1 min-w-0 flex items-center gap-2.5 overflow-x-auto hide-scrollbar flex-nowrap pr-4 pb-1">
               {/* Timing filters */}
               <button 
-                onClick={() => { triggerTransition(); setFilterMode('tendencia'); router.push('/tendencia'); }}
+                onClick={() => { triggerTransition(); setFilterMode('para_ti'); router.push('/para-ti'); }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors shrink-0 ${
-                  filterMode === 'tendencia' ? 'bg-blue-50 dark:bg-[#1890FF]/10 text-[#1890FF]' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5'
+                  filterMode === 'para_ti' ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5'
                 }`}
               >
-                {filterMode === 'tendencia' && <TrendingUp className="w-3.5 h-3.5" />}
-                Tendencia
+                {filterMode === 'para_ti' && <Sparkles className="w-3.5 h-3.5" />}
+                Para Ti
+              </button>
+              <button 
+                onClick={() => { triggerTransition(); setFilterMode('nuevo'); router.push('/nuevo'); }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors shrink-0 ${
+                  filterMode === 'nuevo' ? 'bg-blue-50 dark:bg-[#1890FF]/10 text-[#1890FF]' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5'
+                }`}
+              >
+                {filterMode === 'nuevo' && <ClockIcon className="w-3.5 h-3.5" />}
+                Nuevo
               </button>
               <button 
                 onClick={() => { triggerTransition(); setFilterMode('portafolio'); }}
@@ -463,7 +503,7 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
                   </div>
                   <div className="lg:col-span-4 hidden lg:flex flex-col gap-6">
                     <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4" /> En Tendencia
+                      <Sparkles className="w-4 h-4" /> Recomendados
                     </h3>
                     <div className="flex flex-col gap-4">
                       <NewsCardSkeleton index={1} className="h-[120px]" />

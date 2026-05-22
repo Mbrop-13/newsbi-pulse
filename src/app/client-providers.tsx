@@ -18,6 +18,8 @@ import { ReadingListWidget } from "@/components/reading-list-widget";
 import { ResolvedBetsPopup } from "@/components/resolved-bet-popup";
 import { CapacitorInit } from "@/components/capacitor-init";
 import { AuthSync } from "@/components/auth-sync";
+import { PremiumConversionModal } from "@/components/premium-conversion-modal";
+import { Toaster } from "sonner";
 
 import { useState, useEffect } from "react";
 export function ClientLayoutProviders({
@@ -72,6 +74,8 @@ export function ClientLayoutProviders({
           <AuthToast />
           {!isAdminPage && <ReadingListWidget />}
           {!isAdminPage && <ResolvedBetsPopup />}
+          <PremiumConversionModal />
+          <Toaster richColors position="top-right" />
         </div>
       </TooltipProvider>
     </ThemeProvider>

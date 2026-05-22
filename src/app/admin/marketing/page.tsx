@@ -12,7 +12,14 @@ import {
   CheckCircle2,
   TrendingUp,
   AlertTriangle,
-  Clock
+  Clock,
+  Users,
+  Crown,
+  Sparkles,
+  Headphones,
+  BarChart3,
+  ArrowUpRight,
+  ArrowDownRight
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -26,10 +33,12 @@ interface Article {
 }
 
 export default function MarketingAdminPage() {
-  const [activeTab, setActiveTab] = useState<"news" | "config">("news");
+  const [activeTab, setActiveTab] = useState<"news" | "config" | "conversions">("conversions");
   const [news, setNews] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [metrics, setMetrics] = useState<any>(null);
+  const [metricsLoading, setMetricsLoading] = useState(true);
 
   // Configuration States
   const [newsletterEnabled, setNewsletterEnabled] = useState(true);
@@ -39,7 +48,17 @@ export default function MarketingAdminPage() {
 
   useEffect(() => {
     fetchEnrichedNews();
+    fetchMetrics();
   }, []);
+
+  const fetchMetrics = async () => {
+    setMetricsLoading(true);
+    try {
+      const res = await fetch("/api/admin/conversion-metrics");
+      if (res.ok) setMetrics(await res.json());
+    } catch (e) { console.error(e); }
+    setMetricsLoading(false);
+  };
 
   const fetchEnrichedNews = async () => {
     setLoading(true);
@@ -81,29 +100,16 @@ export default function MarketingAdminPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-white/10 pb-px">
-        <button
-          onClick={() => setActiveTab("news")}
-          className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-colors ${
-            activeTab === "news"
-              ? "border-indigo-500 text-indigo-600 dark:text-indigo-400"
-              : "border-transparent text-slate-500 hover:text-slate-900 dark:text-gray-400 dark:hover:text-white"
-          }`}
-        >
-          <TrendingUp className="w-4 h-4" />
-          Noticias Enriquecidas (Listas para enviar)
-        </button>
-        <button
-          onClick={() => setActiveTab("config")}
-          className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-colors ${
-            activeTab === "config"
-              ? "border-indigo-500 text-indigo-600 dark:text-indigo-400"
-              : "border-transparent text-slate-500 hover:text-slate-900 dark:text-gray-400 dark:hover:text-white"
-          }`}
-        >
-          <Mail className="w-4 h-4" />
-          Configuración de Campañas
-        </button>
+      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-white/10 pb-px overflow-x-auto">
+        {(["conversions","news","config"] as const).map(tab => {
+          const labels = { conversions: "📊 Conversiones", news: "📰 Noticias Enriquecidas", config: "⚙️ Config Campañas" };
+          return (
+            <button key={tab} onClick={() => setActiveTab(tab)}
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
+                activeTab === tab ? "border-indigo-500 text-indigo-600 dark:text-indigo-400" : "border-transparent text-slate-500 hover:text-slate-900 dark:text-gray-400 dark:hover:text-white"
+              }`}>{labels[tab]}</button>
+          );
+        })}
       </div>
 
       {/* Tab Content: News */}

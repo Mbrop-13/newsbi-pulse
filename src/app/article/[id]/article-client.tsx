@@ -31,6 +31,7 @@ import { ArticleComments } from "@/components/article-comments";
 import { useViewStore } from "@/lib/stores/use-view-store";
 import { useAuthStore, useAuthModalStore } from "@/lib/stores/auth-store";
 import { OnboardingModal } from "@/components/onboarding-modal";
+import { useInterestStore } from "@/lib/stores/interest-store";
 
 export default function ArticlePage() {
   const params = useParams();
@@ -44,6 +45,7 @@ export default function ArticlePage() {
   const playArticle = useAudioPlayerStore((s) => s.playArticle);
   const { articleWidth } = useViewStore();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const trackInteraction = useInterestStore(state => state.trackInteraction);
 
   const widthClass = 
     articleWidth === 'wide' ? 'max-w-4xl' : 
@@ -94,11 +96,19 @@ export default function ArticlePage() {
 
   // Show onboarding if not authenticated after article loads
   useEffect(() => {
-    if (!loading && article && !isAuthenticated) {
-      const timer = setTimeout(() => setOnboardingOpen(true), 800);
-      return () => clearTimeout(timer);
+    if (!loading && article) {
+      // Track Interest for "Para Ti" Algorithm
+      if (article.category || article.tags?.length > 0) {
+        trackInteraction(article.category, article.tags || []);
+      }
+      
+      // Onboarding popup
+      if (!isAuthenticated) {
+        const timer = setTimeout(() => setOnboardingOpen(true), 800);
+        return () => clearTimeout(timer);
+      }
     }
-  }, [loading, article, isAuthenticated]);
+  }, [loading, article, isAuthenticated, trackInteraction]);
 
   if (loading) {
     return (

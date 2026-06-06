@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 
 const tabs = [
-  { id: "home", href: "/", icon: Home, label: "Inicio" },
+  { id: "home", href: "/noticias", icon: Home, label: "Inicio" },
   { id: "mercados", href: "/mercados", icon: TrendingUp, label: "Mercados" },
   { id: "ai", href: "/ai", icon: Sparkles, label: "AI" },
   { id: "portafolio", href: "/portafolio", icon: Briefcase, label: "Portafolio" },

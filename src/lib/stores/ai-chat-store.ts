@@ -11,6 +11,7 @@ export interface ChatMessage {
   citations?: string[];
   toolResults?: ToolResultUI[];
   thinkingSteps?: string[];
+  reasoning?: string;
   model?: "deepseek" | "grok";
   toolInvocations?: any[];
 }

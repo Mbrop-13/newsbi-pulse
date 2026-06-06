@@ -41,7 +41,7 @@ export function Footer() {
           <div>
             <h4 className="text-sm font-bold mb-4 text-foreground">Secciones</h4>
             <ul className="space-y-2">
-              <li><Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Principal</Link></li>
+              <li><Link href="/noticias" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Principal</Link></li>
               <li><Link href="/finanzas" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Finanzas</Link></li>
               <li><Link href="/inversiones" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Inversiones</Link></li>
               <li><Link href="/economia" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Economía</Link></li>

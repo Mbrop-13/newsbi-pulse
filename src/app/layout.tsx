@@ -12,20 +12,21 @@ const playfair = Playfair_Display({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://reclu.cl"),
-  title: "Reclu | Noticias y Análisis IA",
-  description: "Plataforma de noticias impulsada por Inteligencia Artificial y agentes autónomos.",
+  title: "Reclu | Copiloto e Inteligencia Artificial",
+  description: "Plataforma avanzada de Inteligencia Artificial para análisis de noticias, portafolio y toma de decisiones en tiempo real.",
   keywords: [
-    "noticias IA",
+    "inteligencia artificial",
+    "asistente IA",
+    "analisis financiero",
     "Reclu",
-    "Grok",
-    "noticias Chile",
+    "noticias IA",
+    "agente autonomo",
     "tech news",
-    "business news",
   ],
   authors: [{ name: "Reclu", url: "https://reclu.cl" }],
   openGraph: {
-    title: "Reclu | Noticias IA en Tiempo Real",
-    description: "Plataforma de noticias impulsada por IA Grok. Análisis inteligente y cobertura en vivo.",
+    title: "Reclu | Inteligencia Artificial y Toma de Decisiones",
+    description: "Plataforma avanzada de Inteligencia Artificial para análisis de noticias, portafolio y toma de decisiones en tiempo real.",
     url: "https://reclu.cl",
     siteName: "Reclu",
     type: "website",
@@ -33,8 +34,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Reclu | Noticias IA en Tiempo Real",
-    description: "Plataforma de noticias IA by Reclu. Análisis inteligente y cobertura en vivo.",
+    title: "Reclu | Inteligencia Artificial y Toma de Decisiones",
+    description: "Plataforma avanzada de Inteligencia Artificial para análisis de noticias, portafolio y toma de decisiones en tiempo real.",
   },
   manifest: "/manifest.json",
 };

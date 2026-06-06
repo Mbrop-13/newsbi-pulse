@@ -1,10 +1,18 @@
 import { NextResponse } from 'next/server';
 import { callOpenRouter } from '@/lib/openrouter';
+import { createClient } from "@/lib/supabase/server";
 
 export const maxDuration = 60; // Allow enough time for AI response
 
 export async function POST(req: Request) {
   try {
+    // Verify user is authenticated
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
+
     const { articles, userProfile } = await req.json();
 
     if (!articles || !Array.isArray(articles) || articles.length === 0) {

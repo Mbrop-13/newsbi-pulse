@@ -1,9 +1,17 @@
 import { NextResponse } from "next/server";
 import YahooFinance from "yahoo-finance2";
+import { createClient } from "@/lib/supabase/server";
 
 const yf = new YahooFinance();
 
 export async function GET(request: Request) {
+  // Verify user is authenticated
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(request.url);
   const symbolsParam = searchParams.get("symbols");
 

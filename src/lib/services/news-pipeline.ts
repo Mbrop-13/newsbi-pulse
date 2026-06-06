@@ -233,7 +233,7 @@ async function fetchFromGNewsLegacy(apiKey: string, chileHour: number, isNight: 
   const allArticles: RawArticle[] = [];
   for (const feed of feedsToUse) {
     try {
-      const params = new URLSearchParams({ ...feed.params, apikey: apiKey });
+      const params = new URLSearchParams({ ...(feed.params as any), apikey: apiKey });
       const url = `https://gnews.io/api/v4/${feed.endpoint}?${params.toString()}`;
       const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
       if (!res.ok) {
@@ -367,6 +367,8 @@ interface StepFilterResult {
     category: string;
     sentiment: string;
     city: string | null;
+    lat?: number | null;
+    lng?: number | null;
     f: number;
   };
 }

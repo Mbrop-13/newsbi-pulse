@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 
 // ── Audio Generation API Route ───────────────────
 // Generates MP3 audio using Hugging Face XTTS-v2
 
 export async function POST(request: NextRequest) {
   try {
+    // Verify user is authenticated
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
+
     const apiKey = process.env.HF_API_KEY;
     if (!apiKey) {
       return NextResponse.json(

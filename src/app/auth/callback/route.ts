@@ -6,7 +6,13 @@ export async function GET(request: Request) {
   const code = searchParams.get('code')
   
   // if "next" is in param, use it as the redirect URL
-  const next = searchParams.get('next') ?? '/'
+  const nextParam = searchParams.get('next') ?? '/ai'
+  
+  // Validate next path to prevent Open Redirect attacks
+  // Must start with a single '/' and cannot start with '//' or contain '\'
+  const next = (nextParam.startsWith('/') && !nextParam.startsWith('//') && !nextParam.includes('\\'))
+    ? nextParam
+    : '/ai'
 
   if (code) {
     const supabase = await createClient()
@@ -36,11 +42,25 @@ export async function GET(request: Request) {
       }
       const forwardedHost = request.headers.get('x-forwarded-host') 
       const isLocalEnv = process.env.NODE_ENV === 'development'
-      const response = isLocalEnv
-        ? NextResponse.redirect(`${origin}${next}`)
-        : forwardedHost
-          ? NextResponse.redirect(`https://${forwardedHost}${next}`)
-          : NextResponse.redirect(`${origin}${next}`);
+      
+      // Prevent Host Header Injection: define trusted site URL and validate forwardedHost
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || origin
+      const isSafeHost = forwardedHost && (
+        forwardedHost === 'localhost:3000' || 
+        forwardedHost === 'newsbi-pulse.vercel.app' || 
+        forwardedHost === 'reclu.cl' || 
+        forwardedHost === 'reclu.com' ||
+        forwardedHost.endsWith('.reclu.cl') || 
+        forwardedHost.endsWith('.reclu.com')
+      )
+      
+      const redirectUrl = isLocalEnv
+        ? `${origin}${next}`
+        : isSafeHost
+          ? `https://${forwardedHost}${next}`
+          : `${siteUrl}${next}`
+          
+      const response = NextResponse.redirect(redirectUrl)
           
       // Delete the referral cookie
       response.cookies.delete('reclu_ref_code');

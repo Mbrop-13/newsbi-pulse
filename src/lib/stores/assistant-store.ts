@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { create } from 'zustand';
 import { createClient } from '@/lib/supabase/client';
 
@@ -124,7 +125,8 @@ export const useAssistantStore = create<AssistantState>()(
           .single();
 
         if (error && error.code !== 'PGRST116') {
-          console.error('Error loading config:', error);
+          console.warn('Error loading config (table may not exist yet):', error);
+          set({ isLoadingConfig: false });
           return;
         }
 

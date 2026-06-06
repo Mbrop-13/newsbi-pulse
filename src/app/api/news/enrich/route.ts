@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase";
 
 // ── Grok AI Enrichment API Route ──────────────────
 // Uses xAI Grok API with tool calling for:
@@ -9,6 +11,25 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
+    // 1. Verify caller is an admin
+    const supabaseServer = await createClient();
+    const { data: { user } } = await supabaseServer.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
+
+    const supabase = createServiceClient();
+    const { data: adminCheck } = await supabase
+      .from("admin_users")
+      .select("role")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!adminCheck || adminCheck.role !== "admin") {
+      return NextResponse.json({ error: "Acceso denegado" }, { status: 403 });
+    }
+
     const apiKey = process.env.XAI_API_KEY;
     if (!apiKey) {
       return NextResponse.json(

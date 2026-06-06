@@ -6,9 +6,9 @@ import ReactMarkdown from "react-markdown";
 import { createServiceClient } from "@/lib/supabase";
 
 interface PageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 // Fetch chat data on the server
@@ -27,7 +27,8 @@ async function getSharedChat(id: string) {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const chat = await getSharedChat(params.id);
+  const { id } = await params;
+  const chat = await getSharedChat(id);
   
   if (!chat) {
     return {
@@ -44,7 +45,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function SharedChatPage({ params }: PageProps) {
-  const chat = await getSharedChat(params.id);
+  const { id } = await params;
+  const chat = await getSharedChat(id);
 
   if (!chat) {
     notFound();

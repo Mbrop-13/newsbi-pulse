@@ -172,7 +172,11 @@ export default function UsuariosAdminPage() {
                         <div>
                           <p className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
                             {u.name}
-                            {u.isAdmin && <Shield className="w-3.5 h-3.5 text-blue-500" title="Administrador" />}
+                            {u.isAdmin && (
+                              <span title="Administrador">
+                                <Shield className="w-3.5 h-3.5 text-blue-500" />
+                              </span>
+                            )}
                           </p>
                           <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
                             <Mail className="w-3 h-3" /> {u.email}

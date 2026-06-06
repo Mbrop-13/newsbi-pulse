@@ -19,6 +19,8 @@ import { ResolvedBetsPopup } from "@/components/resolved-bet-popup";
 import { CapacitorInit } from "@/components/capacitor-init";
 import { AuthSync } from "@/components/auth-sync";
 import { PremiumConversionModal } from "@/components/premium-conversion-modal";
+import { AuthModals } from "@/components/auth-modals";
+import { useAuthModalStore } from "@/lib/stores/auth-store";
 import { Toaster } from "sonner";
 
 import { useState, useEffect } from "react";
@@ -27,6 +29,7 @@ export function ClientLayoutProviders({
 }: {
   children: React.ReactNode;
 }) {
+  const { isOpen: authModalOpen, view: authModalView, closeModal } = useAuthModalStore();
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -35,8 +38,9 @@ export function ClientLayoutProviders({
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
   const pathname = usePathname();
-  const isFullscreenPage = pathname === "/mundo" || pathname === "/ai";
-  const isAssistantPage = pathname === "/ai";
+  const isLandingPage = pathname === "/";
+  const isFullscreenPage = pathname === "/mundo" || pathname === "/ai" || pathname === "/ai/agentes";
+  const isAssistantPage = pathname === "/ai" || pathname === "/ai/agentes";
   const isAdminPage = pathname.startsWith("/admin");
   const audioMode = useAudioPlayerStore((s) => s.mode);
   const pinnedWidth = useAudioPlayerStore((s) => s.pinnedWidth);
@@ -47,10 +51,8 @@ export function ClientLayoutProviders({
       <TooltipProvider>
         <AuthSync />
         <div className="flex flex-col min-h-screen">
-          {!isAdminPage && !isAssistantPage && (
-            <div className={pathname === "/mundo" ? "hidden md:block" : ""}>
-              <Navbar />
-            </div>
+          {!isAdminPage && !isLandingPage && !pathname.startsWith("/ai") && pathname !== "/mundo" && (
+            <Navbar />
           )}
           <main
             className={`flex-1 transition-all duration-300 ease-in-out ${
@@ -64,8 +66,8 @@ export function ClientLayoutProviders({
           >
             {children}
           </main>
-          {!isFullscreenPage && !isAdminPage && <Footer />}
-          {!isFullscreenPage && !isAdminPage && <MobileBottomNav />}
+          {!isFullscreenPage && !isAdminPage && !isLandingPage && <Footer />}
+          {!isFullscreenPage && !isAdminPage && !isLandingPage && <MobileBottomNav />}
           <ServiceWorkerRegistration />
           <CapacitorInit />
           {!isAdminPage && <PersonalizationApplier />}
@@ -75,6 +77,11 @@ export function ClientLayoutProviders({
           {!isAdminPage && <ReadingListWidget />}
           {!isAdminPage && <ResolvedBetsPopup />}
           <PremiumConversionModal />
+          <AuthModals 
+            isOpen={authModalOpen}
+            onClose={closeModal}
+            defaultView={authModalView}
+          />
           <Toaster richColors position="top-right" />
         </div>
       </TooltipProvider>

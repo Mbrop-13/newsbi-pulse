@@ -32,12 +32,13 @@ export function AIChatSidebar() {
   const {
     isOpen, close, messages, addMessage, isLoading, setLoading, clearMessages,
     attachedArticles, attachArticle, removeArticle, savedChats, loadChat, deleteSavedChat,
-    attachedFiles, attachFile, removeFile, webSearchEnabled, setWebSearch,
+    attachedFiles, attachFile, removeFile,
     activeTools, toggleTool, clearTools, favoriteTools, toggleFavoriteTool,
     messageFeedback, setFeedback
   } = useAIChatStore();
   
   const [input, setInput] = useState("");
+  const [webSearchEnabled, setWebSearch] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [attachMenuView, setAttachMenuView] = useState<'main' | 'charts' | 'analysis'>('main');
@@ -157,7 +158,7 @@ export function AIChatSidebar() {
 
     if (userMessagesCount === questionLimit - 1 && userTier === "free") {
       toast("Última consulta de IA", {
-        description: "Este es tu último mensaje. Suscríbete a Pro para consultas ilimitadas.",
+        description: "Este es tu último mensaje. Actualiza tu plan para obtener más tokens de IA.",
         icon: <Sparkles className="w-4 h-4 text-[#1890FF]" />,
       });
     }

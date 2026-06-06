@@ -63,7 +63,15 @@ export async function POST(request: NextRequest) {
       back_url: `${siteUrl}/suscripcion?status=success&plan=${plan}`,
     };
 
-    console.log("[Checkout] Creating preapproval for:", user.email, "plan:", plan, "amount:", finalPrice, "isReferred:", isReferred);
+    // Mask email for PII logs protection (GDPR compliance)
+    const maskEmail = (email?: string) => {
+      if (!email) return "anonymous";
+      const [local, domain] = email.split("@");
+      if (!domain) return "anonymous";
+      return `${local[0]}***@${domain}`;
+    };
+
+    console.log("[Checkout] Creating preapproval for:", maskEmail(user.email), "plan:", plan, "amount:", finalPrice, "isReferred:", isReferred);
 
     const res = await fetch("https://api.mercadopago.com/preapproval", {
       method: "POST",

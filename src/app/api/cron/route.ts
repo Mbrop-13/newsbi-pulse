@@ -36,18 +36,49 @@ function getMinIntervalMinutes(hour: number): number {
 
 export async function GET(request: NextRequest) {
   try {
-    // ── Auth: Accept QStash signature, cron secret, or manual trigger ──
+    // ── Auth: Accept QStash signature, cron secret, or authenticated Admin session ──
     const authHeader = request.headers.get("authorization");
     const upstashSignature = request.headers.get("upstash-signature");
     const cronSecret = process.env.CRON_SECRET;
     const isManual = request.nextUrl.searchParams.get("manual") === "true";
 
-    // Verify authorization
-    if (!isManual && !upstashSignature) {
-      if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-        console.warn("[CRON] Unauthorized");
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    let isAuthorized = false;
+
+    // 1. If manual trigger, verify the user is a logged-in Administrator
+    if (isManual) {
+      try {
+        const { createClient: createSupabaseServerClient } = await import("@/lib/supabase/server");
+        const { createServiceClient } = await import("@/lib/supabase");
+        const supabaseServer = await createSupabaseServerClient();
+        const { data: { user } } = await supabaseServer.auth.getUser();
+
+        if (user) {
+          const supabase = createServiceClient();
+          const { data: adminCheck } = await supabase
+            .from("admin_users")
+            .select("role")
+            .eq("user_id", user.id)
+            .maybeSingle();
+
+          if (adminCheck && adminCheck.role === "admin") {
+            isAuthorized = true;
+          }
+        }
+      } catch (err) {
+        console.error("[CRON] Failed to verify manual admin trigger:", err);
       }
+    }
+
+    // 2. Otherwise, check for external cron secret Bearer token
+    if (!isAuthorized) {
+      if (cronSecret && authHeader === `Bearer ${cronSecret}`) {
+        isAuthorized = true;
+      }
+    }
+
+    if (!isAuthorized) {
+      console.warn("[CRON] Unauthorized access attempt");
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // ── Adaptive frequency check ──

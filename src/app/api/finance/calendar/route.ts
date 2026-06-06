@@ -15,7 +15,7 @@ export async function GET(req: Request) {
 
     for (const symbol of symbols) {
       try {
-        const summary = await yahooFinance.quoteSummary(symbol, { modules: ['calendarEvents', 'price'] });
+        const summary = await yahooFinance.quoteSummary(symbol, { modules: ['calendarEvents', 'price'] }) as any;
         const calendar = summary.calendarEvents;
         const price = summary.price;
         

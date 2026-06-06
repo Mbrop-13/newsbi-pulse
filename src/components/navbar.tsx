@@ -68,6 +68,29 @@ export function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
 
+  const renderNavLink = (href: string, label: string) => {
+    const isActive = pathname === href;
+    return (
+      <Link 
+        href={href} 
+        className={`relative flex items-center gap-1.5 py-1 px-1.5 transition-all duration-300 text-sm font-bold tracking-tight ${
+          isActive 
+            ? "text-[#1890FF]" 
+            : "text-gray-600 dark:text-gray-300 hover:text-[#1890FF]"
+        }`}
+      >
+        <span>{label}</span>
+        {isActive && (
+          <motion.span 
+            layoutId="activeNavIndicator"
+            className="absolute -bottom-5 left-0 right-0 h-0.5 bg-[#1890FF] rounded-full"
+            transition={{ type: "spring", stiffness: 380, damping: 30 }}
+          />
+        )}
+      </Link>
+    );
+  };
+
   // Auth state is now managed globally by AuthSync component
 
   useEffect(() => {
@@ -151,105 +174,35 @@ export function Navbar() {
             {/* Nav Menu */}
             <nav className="hidden lg:flex items-center gap-6 text-sm font-semibold text-gray-600 dark:text-gray-300">
 
-              {/* PORTAFOLIO LINK */}
-              <Link 
-                href="/portafolio" 
-                className="flex items-center hover:text-[#1890FF] transition-colors"
-              >
-                Portafolio
-              </Link>
+              {isAuthenticated ? (
+                <>
+                  {renderNavLink("/noticias", "Noticias")}
+                  {renderNavLink("/ai", "Copiloto IA")}
+                  {renderNavLink("/portafolio", "Portafolio")}
+                  {renderNavLink("/mercados", "Mercados")}
+                </>
+              ) : (
+                <>
+                  {renderNavLink("/noticias", "Noticias")}
+                  {renderNavLink("/mercados", "Mercados")}
+                  
+                  {/* PORTAFOLIO LINK (Not Authenticated) */}
+                  <button 
+                    onClick={() => openModal("login")}
+                    className="flex items-center hover:text-[#1890FF] transition-colors cursor-pointer text-sm font-bold text-gray-600 dark:text-gray-300 outline-none"
+                  >
+                    Portafolio
+                  </button>
 
-              {/* AI LINK */}
-              <Link 
-                href="/ai" 
-                className="flex items-center hover:text-[#1890FF] transition-colors"
-              >
-                AI
-              </Link>
-
-              {/* SECCIONES MEGA MENU (replaces Fuentes) */}
-              <div 
-                className="relative"
-                onMouseEnter={() => { if(seccionesTimer.current) clearTimeout(seccionesTimer.current); setSeccionesOpen(true); }}
-                onMouseLeave={() => { seccionesTimer.current = setTimeout(() => setSeccionesOpen(false), 200); }}
-              >
-                <button className="flex items-center gap-1 hover:text-[#1890FF] transition-colors outline-none">
-                  Secciones
-                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${seccionesOpen ? 'rotate-180' : ''}`} />
-                </button>
-
-                <AnimatePresence>
-                  {seccionesOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 8, scale: 0.97 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 8, scale: 0.97 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute left-1/2 -translate-x-1/2 top-full mt-4 w-[680px] bg-white/98 dark:bg-slate-900/98 backdrop-blur-2xl border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl shadow-black/10 dark:shadow-black/40 p-6 z-50"
-                    >
-                      {/* Header */}
-                      <div className="flex items-center justify-between mb-5">
-                        <div>
-                          <h3 className="text-base font-black text-gray-900 dark:text-white">Explora por Sección</h3>
-                          <p className="text-xs text-gray-500 mt-0.5">Navega directamente al contenido que te interesa</p>
-                        </div>
-                        <Link href="/portafolio" onClick={() => setSeccionesOpen(false)} className="text-[11px] font-bold text-[#1890FF] hover:underline flex items-center gap-1">
-                          Ver Portafolio <TrendingUp className="w-3 h-3" />
-                        </Link>
-                      </div>
-
-                      {/* Sections Grid */}
-                      <div className="grid grid-cols-3 gap-3">
-                        {[
-                          { href: "/", icon: <Zap className="w-5 h-5" />, label: "Principal", desc: "Las noticias más importantes del momento", color: "text-blue-500", bg: "bg-blue-500/10" },
-                          { href: "/finanzas", icon: <Landmark className="w-5 h-5" />, label: "Finanzas", desc: "Corporativo, bancos y fusiones globales", color: "text-emerald-500", bg: "bg-emerald-500/10" },
-                          { href: "/inversiones", icon: <LineChart className="w-5 h-5" />, label: "Inversiones", desc: "Bolsa, cripto y mercados de capitales", color: "text-amber-500", bg: "bg-amber-500/10" },
-                          { href: "/impacto-global", icon: <Globe className="w-5 h-5" />, label: "Impacto Global", desc: "Eventos que afectan economías locales", color: "text-purple-500", bg: "bg-purple-500/10" },
-                          { href: "/economia", icon: <PieChart className="w-5 h-5" />, label: "Economía", desc: "Macroeconomía, PIB e indicadores", color: "text-rose-500", bg: "bg-rose-500/10" },
-                          { href: "/tech-global", icon: <Cpu className="w-5 h-5" />, label: "Tech Global", desc: "IA, startups, Big Tech y más", color: "text-cyan-500", bg: "bg-cyan-500/10" },
-                          { href: "/mundo", icon: <Globe className="w-5 h-5" />, label: "Mundo", desc: "Noticias internacionales en el mapa", color: "text-indigo-500", bg: "bg-indigo-500/10" },
-                          { href: "/portafolio", icon: <LineChart className="w-5 h-5" />, label: "Portafolio", desc: "Tus inversiones e indicadores clave", color: "text-blue-500", bg: "bg-blue-500/10" },
-                        ].map((section) => (
-                          <Link
-                            key={section.href}
-                            href={section.href}
-                            onClick={() => setSeccionesOpen(false)}
-                            className="group flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-all"
-                          >
-                            <div className={`p-2 rounded-xl ${section.bg} ${section.color} shrink-0 group-hover:scale-110 transition-transform`}>
-                              {section.icon}
-                            </div>
-                            <div className="min-w-0">
-                              <h4 className="text-sm font-bold text-gray-900 dark:text-white group-hover:text-[#1890FF] transition-colors">{section.label}</h4>
-                              <p className="text-[11px] text-gray-500 line-clamp-2 leading-relaxed mt-0.5">{section.desc}</p>
-                            </div>
-                          </Link>
-                        ))}
-                      </div>
-
-                      {/* Bottom Bar */}
-                      <div className="mt-5 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-end">
-                        <Link
-                          href="/suscripcion"
-                          onClick={() => setSeccionesOpen(false)}
-                          className="flex items-center gap-2 text-xs font-bold text-[#1890FF] bg-[#1890FF]/5 hover:bg-[#1890FF]/10 px-4 py-2 rounded-lg transition-colors"
-                        >
-                          <Sparkles className="w-3.5 h-3.5" /> Reclu Max
-                        </Link>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* SUSCRIPCIONES LINK */}
-              <Link 
-                href="/suscripcion" 
-                className="flex items-center gap-1.5 text-[#1890FF] hover:text-[#0052CC] font-bold transition-all hover:scale-105"
-              >
-                <Crown className="w-4 h-4" />
-                Suscripciones
-              </Link>
+                  {/* AI LINK (Not Authenticated) */}
+                  <button 
+                    onClick={() => openModal("login")}
+                    className="flex items-center hover:text-[#1890FF] transition-colors cursor-pointer text-sm font-bold text-gray-600 dark:text-gray-300 outline-none"
+                  >
+                    AI Copiloto
+                  </button>
+                </>
+              )}
 
               <Link href="/mundo" className="hover:text-[#1890FF] transition-colors flex items-center gap-1">🌍 Mundo</Link>
             </nav>
@@ -439,11 +392,6 @@ export function Navbar() {
         </div>
       </motion.header>
 
-      <AuthModals
-        isOpen={authModalOpen}
-        onClose={closeModal}
-        defaultView={authModalView}
-      />
       <SearchDialog
         isOpen={searchOpen}
         onClose={() => setSearchOpen(false)}

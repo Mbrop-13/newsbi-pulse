@@ -181,28 +181,46 @@ function ScrollingRow({ items, direction, onSend, onClick }: ScrollingRowProps) 
     const el = scrollRef.current;
     if (!el) return;
 
-    // Initialize scroll position to the middle set for seamless looping
-    const singleWidth = el.scrollWidth / 3;
-    el.scrollLeft = singleWidth;
+    let singleWidth = el.scrollWidth / 3;
+    if (singleWidth > 0) {
+      el.scrollLeft = singleWidth;
+    }
+
+    const handleResize = () => {
+      singleWidth = 0; // Trigger recalculation
+    };
+    window.addEventListener("resize", handleResize);
 
     const animate = () => {
       if (el) {
-        if (!isPausedRef.current) {
+        if (singleWidth === 0) {
+          singleWidth = el.scrollWidth / 3;
+          if (singleWidth > 0) {
+            el.scrollLeft = singleWidth;
+          }
+        }
+
+        if (!isPausedRef.current && singleWidth > 0) {
           el.scrollLeft += speedRef.current;
         }
 
         // Seamless loop: jump back when we've scrolled past one full set
-        if (el.scrollLeft >= singleWidth * 2) {
-          el.scrollLeft -= singleWidth;
-        } else if (el.scrollLeft <= 0) {
-          el.scrollLeft += singleWidth;
+        if (singleWidth > 0) {
+          if (el.scrollLeft >= singleWidth * 2) {
+            el.scrollLeft -= singleWidth;
+          } else if (el.scrollLeft <= 0) {
+            el.scrollLeft += singleWidth;
+          }
         }
       }
       animRef.current = requestAnimationFrame(animate);
     };
 
     animRef.current = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animRef.current);
+    return () => {
+      cancelAnimationFrame(animRef.current);
+      window.removeEventListener("resize", handleResize);
+    };
   }, [direction]);
 
   return (

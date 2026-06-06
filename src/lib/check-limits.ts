@@ -315,3 +315,110 @@ async function checkPortfolioLimit(userId: string, tier: PlanTier): Promise<Limi
     upgradeRequired: used >= limit ? (tier === "free" ? "pro" : tier === "pro" ? "max" : "ultra") : undefined,
   };
 }
+
+/**
+ * Check if user has enough tokens remaining
+ */
+export async function checkTokenLimit(userId: string): Promise<{ allowed: boolean; remaining: number; limit: number; tier: PlanTier }> {
+  const tier = await getUserTier(userId);
+  const config = getPlanConfig(tier);
+  
+  if (tier === "free") {
+    const limit = config.aiLifetimeTokens;
+    try {
+      const { data, error } = await supabase
+        .from("lifetime_usage")
+        .select("ai_tokens_total")
+        .eq("user_id", userId)
+        .maybeSingle();
+      
+      if (error) throw error;
+      const used = data?.ai_tokens_total || 0;
+      return { allowed: used < limit, remaining: Math.max(0, limit - used), limit, tier };
+    } catch (dbErr) {
+      console.warn("[checkTokenLimit] Column ai_tokens_total might not exist yet, skipping DB check:", dbErr);
+      return { allowed: true, remaining: limit, limit, tier };
+    }
+  }
+  
+  const limit = config.aiTokensPerMonth;
+  if (limit === -1) {
+    return { allowed: true, remaining: 9999999, limit: -1, tier };
+  }
+
+  const currentMonth = new Date().toISOString().slice(0, 7) + "-01";
+  try {
+    const { data, error } = await supabase
+      .from("monthly_usage")
+      .select("ai_tokens")
+      .eq("user_id", userId)
+      .eq("month", currentMonth)
+      .maybeSingle();
+    
+    if (error) throw error;
+    const used = data?.ai_tokens || 0;
+    return { allowed: used < limit, remaining: Math.max(0, limit - used), limit, tier };
+  } catch (dbErr) {
+    console.warn("[checkTokenLimit] Column ai_tokens might not exist yet, skipping DB check:", dbErr);
+    return { allowed: true, remaining: limit, limit, tier };
+  }
+}
+
+/**
+ * Increment user's token usage in database
+ */
+export async function incrementTokenUsage(userId: string, tokens: number): Promise<void> {
+  const currentMonth = new Date().toISOString().slice(0, 7) + "-01";
+  
+  // 1. Monthly usage tokens
+  try {
+    const { data: existingMonthly, error: selectErr } = await supabase
+      .from("monthly_usage")
+      .select("ai_tokens")
+      .eq("user_id", userId)
+      .eq("month", currentMonth)
+      .maybeSingle();
+
+    if (selectErr) throw selectErr;
+
+    if (existingMonthly) {
+      const currentTokens = (existingMonthly.ai_tokens || 0);
+      await supabase
+        .from("monthly_usage")
+        .update({ ai_tokens: currentTokens + tokens })
+        .eq("user_id", userId)
+        .eq("month", currentMonth);
+    } else {
+      await supabase
+        .from("monthly_usage")
+        .insert({ user_id: userId, month: currentMonth, ai_tokens: tokens });
+    }
+  } catch (dbErr) {
+    console.warn("[incrementTokenUsage] Failed to update monthly ai_tokens, column might be missing:", dbErr);
+  }
+
+  // 2. Lifetime usage tokens
+  try {
+    const { data: existingLifetime, error: selectErr } = await supabase
+      .from("lifetime_usage")
+      .select("ai_tokens_total")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (selectErr) throw selectErr;
+
+    if (existingLifetime) {
+      const currentTokensTotal = (existingLifetime.ai_tokens_total || 0);
+      await supabase
+        .from("lifetime_usage")
+        .update({ ai_tokens_total: currentTokensTotal + tokens })
+        .eq("user_id", userId);
+    } else {
+      await supabase
+        .from("lifetime_usage")
+        .insert({ user_id: userId, ai_tokens_total: tokens });
+    }
+  } catch (dbErr) {
+    console.warn("[incrementTokenUsage] Failed to update lifetime ai_tokens_total, column might be missing:", dbErr);
+  }
+}

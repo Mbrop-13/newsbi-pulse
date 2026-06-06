@@ -49,7 +49,8 @@ export function AIChartCard({ result }: ChartCardProps) {
     if (result?.error) {
       return (
         <div className="flex items-center gap-2.5 px-4 py-3 bg-amber-50 dark:bg-amber-500/10 rounded-2xl text-xs font-medium text-amber-700 dark:text-amber-400 border border-amber-200/50 dark:border-amber-500/20 w-fit">
-          <BarChart3 className="w-4 h-4 shrink-0" />{result.error}
+          <BarChart3 className="w-4 h-4 shrink-0" />
+          {typeof result.error === 'string' ? result.error : (result.error?.message || JSON.stringify(result.error))}
         </div>
       );
     }
@@ -162,13 +163,14 @@ export function AIChartCard({ result }: ChartCardProps) {
     }
   };
 
-  const iconGradient = {
+  const gradients: Record<string, string> = {
     bar: 'from-[#1890FF] to-indigo-600',
     line: 'from-emerald-500 to-teal-600',
     pie: 'from-violet-500 to-purple-600',
     area: 'from-cyan-500 to-blue-600',
     radar: 'from-amber-500 to-orange-600',
-  }[type] || 'from-[#1890FF] to-indigo-600';
+  };
+  const iconGradient = gradients[type] || 'from-[#1890FF] to-indigo-600';
 
   return (
     <div className={`w-full ${isExpanded ? 'max-w-2xl' : 'max-w-md'} my-3 transition-all duration-300`}>

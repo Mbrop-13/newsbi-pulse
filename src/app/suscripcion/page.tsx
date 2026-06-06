@@ -31,7 +31,7 @@ const plans = [
     name: "Pro",
     description: "Para usuarios activos.",
     features: [
-      { text: "100 consultas IA/mes", included: true, highlight: true },
+      { text: "20x más tokens IA que Plan Free", included: true, highlight: true },
       { text: "50 audios de noticias/mes", included: true, highlight: true },
       { text: "5 alertas de precio", included: true, highlight: true },
       { text: "25 activos en portafolio", included: true, highlight: true },
@@ -55,7 +55,7 @@ const plans = [
     name: "Max",
     description: "Para inversores exigentes.",
     features: [
-      { text: "300 consultas IA/mes", included: true, highlight: true },
+      { text: "90x más tokens IA que Plan Free", included: true, highlight: true },
       { text: "150 audios de noticias/mes", included: true, highlight: true },
       { text: "15 alertas de precio", included: true, highlight: true },
       { text: "100 activos en portafolio", included: true, highlight: true },
@@ -79,7 +79,7 @@ const plans = [
     name: "Ultra",
     description: "El máximo poder analítico.",
     features: [
-      { text: "600 consultas IA/mes", included: true, highlight: true },
+      { text: "200x más tokens IA que Plan Free", included: true, highlight: true },
       { text: "300 audios de noticias/mes", included: true, highlight: true },
       { text: "30 alertas de precio", included: true, highlight: true },
       { text: "Activos ilimitados", included: true, highlight: true },
@@ -107,9 +107,12 @@ function applyPromoToPlans(basePlans: typeof plans) {
   return basePlans.map(plan => ({
     ...plan,
     features: plan.features.map(f => {
-      if (f.text.includes("consultas IA/mes")) {
-        const num = parseInt(f.text.split(" ")[0]) * 2;
-        return { ...f, text: `${num} consultas IA/mes (Promo x2)`, isPromo: true };
+      if (f.text.includes("tokens IA")) {
+        const match = f.text.match(/(\d+)x/);
+        if (match) {
+          const num = parseInt(match[1]) * 2;
+          return { ...f, text: `${num}x más tokens IA que Plan Free (Promo x2)`, isPromo: true };
+        }
       }
       if (f.text.includes("audios de noticias/mes") || f.text.includes("audios al mes")) {
         const num = parseInt(f.text.split(" ")[0]) * 2;
@@ -187,8 +190,8 @@ const faqItems = [
     a: "¡Sí! Todos los nuevos usuarios obtienen 7 días de prueba gratuita en cualquier plan. Si no te convence, cancelas antes y no se te cobrará nada.",
   },
   {
-    q: "¿Qué significa 5 consultas IA de por vida?",
-    a: "En el plan gratuito, tienes 5 consultas totales al asistente IA para que puedas probarlo. Si quieres más, puedes mejorar a Pro con 100 consultas mensuales.",
+    q: "¿Qué significa 50.000 tokens IA de por vida?",
+    a: "En el plan gratuito, tienes 50.000 tokens de por vida para interactuar con el asistente R-AI. Si necesitas más capacidad para realizar consultas complejas y análisis profundos, puedes suscribirte a Pro para obtener 20 veces más tokens al mes.",
   },
 ];
 

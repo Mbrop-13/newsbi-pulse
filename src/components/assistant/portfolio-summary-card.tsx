@@ -19,12 +19,12 @@ function getFallbackLogo(symbol: string): string {
 export function PortfolioSummaryCard({ result }: PortfolioSummaryCardProps) {
   const [isOpen, setIsOpen] = useState(false);
 
-  if (!result || (!result.assets && !result.summary)) return null;
+  if (!result || (!result.assets && !result.summary && !result.error)) return null;
   if (result.error) {
     return (
       <div className="flex items-center gap-2.5 px-4 py-3 bg-amber-50 dark:bg-amber-500/10 rounded-2xl text-xs font-medium text-amber-700 dark:text-amber-400 border border-amber-200/50 dark:border-amber-500/20 w-fit">
         <BarChart3 className="w-4 h-4 shrink-0" />
-        {result.error}
+        {typeof result.error === 'string' ? result.error : (result.error?.message || JSON.stringify(result.error))}
       </div>
     );
   }

@@ -2,6 +2,8 @@
 
 - [x] 1. Install Dependencies
   - [x] Run `npm install ai @ai-sdk/openai`
+  - [x] Develop high-fidelity HTML5 Canvas overlapping sinewave ribbon generator with dynamic gradients for the stats block
+  - [x] Run `npm run build` to verify Next.js build compilation with new mockups
 - [x] 2. Update Chat State & Reset Logic
   - [x] Modify `src/lib/stores/ai-chat-store.ts` to clear messages when closed.
 - [x] 3. Refactor API Route for Streaming & Tools
@@ -16,4 +18,13 @@
 - [x] 5. Verification
   - [x] Verify chat reset behavior.
   - [x] Verify live text streaming.
-  - [x] Test `get_portfolio_news` invocation. and UI rendering.
+  - [x] Test `get_portfolio_news` invocation and UI rendering.
+- [x] 6. Portfolio Summary & News Crash Fixes
+  - [x] Add try/catch blocks to `get_portfolio_summary` and `get_portfolio_news` tool executions in backend (`src/app/api/ai-chat/route.ts`).
+  - [x] Safeguard React component rendering by sanitizing `result.error` values in `PortfolioSummaryCard`, `AnalyzedNewsCard`, `StockAnalysisCard`, and `AIChartCard`.
+  - [x] Resolve logic issue in `PortfolioSummaryCard` where error output was preemptively returning `null`.
+- [x] 7. Reasoning Process (Thoughts) Streaming & UI
+  - [x] Add JSON escaped string decoder (`decodeJsonString`) and intercept `reasoning_content` chunks in backend SSE transform stream (`src/app/api/ai-chat/route.ts`).
+  - [x] Add `reasoning` field to the Zustand store `ChatMessage` interface (`src/lib/stores/ai-chat-store.ts`) for database serialization.
+  - [x] Integrate `streamDataRef` to collect reasoning tokens in frontend.
+  - [x] Build collapsible `Proceso de Pensamiento` (accordion details block) in message list with Lucide `Brain` icon, auto-opening while thinking, auto-closing when the text response starts, and remaining togglable (`src/components/assistant/full-screen-chat.tsx`).

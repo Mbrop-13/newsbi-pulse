@@ -2,10 +2,12 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, Sparkles, Loader2, ExternalLink, Paperclip, BarChart3, Newspaper, Bell, TrendingUp, X, Globe, History, Trash2, Plus, MessageSquare, PanelLeftClose, PanelLeft, Settings, Moon, Sun, Monitor, Type, Maximize, CheckCircle2, Mic, Star, LineChart, PieChart, AreaChart, Target, Scale, Layers, ThumbsUp, ThumbsDown, RefreshCw, Share2, ChevronRight, Clock, Zap, ArrowDown, Lock, Crown, Gift, ArrowRight, FileText, CalendarDays } from "lucide-react";
+import { Send, Bot, Brain, Sparkles, Loader2, ExternalLink, Paperclip, BarChart3, Newspaper, Bell, TrendingUp, X, Globe, History, Trash2, Plus, MessageSquare, PanelLeftClose, PanelLeft, Settings, Moon, Sun, Monitor, Type, Maximize, CheckCircle2, Mic, Star, LineChart, PieChart, AreaChart, Target, Scale, Layers, ThumbsUp, ThumbsDown, RefreshCw, Share2, ChevronRight, Clock, Zap, ArrowDown, Lock, Crown, Gift, ArrowRight, FileText, CalendarDays, Briefcase } from "lucide-react";
 
 import { useAIChatStore, ChatMessage, ToolResultUI } from "@/lib/stores/ai-chat-store";
-import { getPlanConfig, PlanTier } from "@/lib/plan-limits";
+import { useAssistantStore } from "@/lib/stores/assistant-store";
+import { PREDEFINED_TOPICS } from "./assistant-setup";
+import { getPlanConfig, PlanTier, getNextTier } from "@/lib/plan-limits";
 import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import ReactMarkdown from "react-markdown";
@@ -19,6 +21,7 @@ import { StockAnalysisCard } from './stock-analysis-card';
 import { AIChartCard } from './ai-chart-card';
 import { PromptCarousel } from './prompt-carousel';
 import { ShareChatDialog } from './share-chat-dialog';
+import { MiroFishSandbox } from "./mirofish-sandbox";
 
 const ADVANCED_TOOLS = [
   { id: 'chart_bar', label: 'Gráfico de Barras', icon: BarChart3, category: 'Gráficos' },
@@ -31,7 +34,11 @@ const ADVANCED_TOOLS = [
   { id: 'get_sector_performance', label: 'Rendimiento Sectorial', icon: Layers, category: 'Análisis' },
 ];
 
-export function FullScreenChat() {
+interface FullScreenChatProps {
+  initialMode?: 'chat' | 'mirofish';
+}
+
+export function FullScreenChat({ initialMode = 'chat' }: FullScreenChatProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   
@@ -39,10 +46,13 @@ export function FullScreenChat() {
     return <div className="flex h-[100dvh] bg-white dark:bg-[#0a0a0a]" />;
   }
   
-  return <FullScreenChatInternal />;
+  return <FullScreenChatInternal initialMode={initialMode} />;
 }
 
-function FullScreenChatInternal() {
+function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofish' }) {
+  const user = useAuthStore((s) => s.user);
+  const userTier = useAuthStore((s) => s.user?.role === "admin" ? "ultra" : (s.user?.tier || "free")) as PlanTier;
+
   const [isStoreHydrated, setIsStoreHydrated] = useState(false);
   useEffect(() => {
     setIsStoreHydrated(useAIChatStore.persist.hasHydrated());
@@ -63,15 +73,151 @@ function FullScreenChatInternal() {
   
   const [showUpsell, setShowUpsell] = useState(false);
   const [showPreferences, setShowPreferences] = useState(false);
+  const [prefTab, setPrefTab] = useState<'apariencia' | 'asistente' | 'datos' | 'cuenta'>('cuenta');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [realUsageCount, setRealUsageCount] = useState(0);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [attachMenuView, setAttachMenuView] = useState<'main' | 'charts' | 'analysis'>('main');
   const [showModelMenu, setShowModelMenu] = useState(false);
   const [shareDialog, setShareDialog] = useState({ isOpen: false, question: "", answer: "" });
+  const [openReasoning, setOpenReasoning] = useState<Record<string, boolean>>({});
+
+  // ── Mode and Agent states ──
+  const [activeChatMode, setActiveChatMode] = useState<'chat' | 'mirofish'>(initialMode);
+  const [isMirofishActive, setIsMirofishActive] = useState(false);
+  const [selectedSimulation, setSelectedSimulation] = useState<any | null>(null);
+  const [savedSimulations, setSavedSimulations] = useState<any[]>([]);
+
+  // Custom Platform Settings States
+  const [userMetadata, setUserMetadata] = useState<any>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [isDeletingProfile, setIsDeletingProfile] = useState(false);
+  const [soundEffectsEnabled, setSoundEffectsEnabled] = useState(true);
+  const [selectedLanguage, setSelectedLanguage] = useState("es");
+  const [swarmDefaultModel, setSwarmDefaultModel] = useState<"fast" | "pro">("fast");
+  const [swarmDefaultAgents, setSwarmDefaultAgents] = useState(4);
 
   // ── Reports State ──
-  const [sidebarTab, setSidebarTab] = useState<'chats' | 'reports'>('chats');
+  const [sidebarTab, setSidebarTab] = useState<'chats' | 'reports' | 'agents'>('chats');
+
+  useEffect(() => {
+    if (activeChatMode !== 'mirofish') {
+      setIsMirofishActive(false);
+    }
+  }, [activeChatMode]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const currentPath = window.location.pathname;
+      const targetPath = activeChatMode === 'mirofish' ? '/ai/agentes' : '/ai';
+      if (currentPath !== targetPath) {
+        window.history.pushState(null, '', targetPath);
+      }
+    }
+  }, [activeChatMode]);
+
+  const loadSimulations = () => {
+    if (typeof window !== "undefined") {
+      const loaded = localStorage.getItem("r_swarm_simulations");
+      if (loaded) {
+        try {
+          const parsed = JSON.parse(loaded);
+          if (Array.isArray(parsed)) {
+            setSavedSimulations(parsed);
+            return;
+          }
+        } catch {}
+      }
+      setSavedSimulations([]);
+    }
+  };
+
+  useEffect(() => {
+    loadSimulations();
+  }, [sidebarTab, activeChatMode]);
+
+  useEffect(() => {
+    if (activeChatMode === 'mirofish') {
+      setSidebarTab('agents');
+    }
+  }, [activeChatMode]);
+
+  // Sync custom settings from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedSound = localStorage.getItem("r_sound_effects");
+      if (savedSound !== null) setSoundEffectsEnabled(savedSound === "true");
+      
+      const savedLang = localStorage.getItem("r_language");
+      if (savedLang) setSelectedLanguage(savedLang);
+
+      const savedSwarmModel = localStorage.getItem("r_swarm_default_model");
+      if (savedSwarmModel) setSwarmDefaultModel(savedSwarmModel as "fast" | "pro");
+
+      const savedSwarmAgents = localStorage.getItem("r_swarm_default_agents");
+      if (savedSwarmAgents) setSwarmDefaultAgents(parseInt(savedSwarmAgents) || 4);
+    }
+  }, []);
+
+  const updateSoundEffects = (val: boolean) => {
+    setSoundEffectsEnabled(val);
+    localStorage.setItem("r_sound_effects", val ? "true" : "false");
+  };
+
+  const updateLanguage = (val: string) => {
+    setSelectedLanguage(val);
+    localStorage.setItem("r_language", val);
+  };
+
+  const updateSwarmDefaultModel = (val: "fast" | "pro") => {
+    setSwarmDefaultModel(val);
+    localStorage.setItem("r_swarm_default_model", val);
+  };
+
+  const updateSwarmDefaultAgents = (val: number) => {
+    setSwarmDefaultAgents(val);
+    localStorage.setItem("r_swarm_default_agents", val.toString());
+  };
+
+  // Fetch Supabase Auth user metadata for creation date
+  useEffect(() => {
+    if (user) {
+      supabase.auth.getUser().then(({ data }) => {
+        if (data?.user) {
+          setUserMetadata(data.user);
+        }
+      });
+    }
+  }, [user]);
+
+  const handleDeleteProfile = async () => {
+    if (deleteConfirmText !== user?.email) {
+      alert("Por favor escribe tu correo electrónico correctamente para confirmar.");
+      return;
+    }
+    setIsDeletingProfile(true);
+    try {
+      const response = await fetch("/api/user/delete", {
+        method: "POST",
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Error al eliminar el perfil");
+      }
+      
+      // Successfully deleted on server, sign out locally
+      useAuthStore.getState().logout();
+      setShowDeleteConfirm(false);
+      setShowPreferences(false);
+      alert("Tu perfil y todos tus datos asociados han sido eliminados de forma permanente.");
+      window.location.href = "/";
+    } catch (err: any) {
+      alert("Ocurrió un error: " + err.message);
+    } finally {
+      setIsDeletingProfile(false);
+    }
+  };
   const [reports, setReports] = useState<any[]>([]);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [reportError, setReportError] = useState<string | null>(null);
@@ -164,8 +310,6 @@ function FullScreenChatInternal() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const supabase = createClient();
-  const userTier = useAuthStore((s) => s.user?.role === "admin" ? "ultra" : (s.user?.tier || "free")) as PlanTier;
-  const user = useAuthStore((s) => s.user);
 
   const isPremium = userTier === "max" || userTier === "ultra";
   const canUsePro = userTier !== "free"; // Only paid users can use Pro model
@@ -406,7 +550,12 @@ function FullScreenChatInternal() {
 
   const sendMessage = async (textOverride?: string, contextOverride?: string) => {
     const text = textOverride || input.trim();
-    if (!text || aiLoading || reachedQuestionLimit) return;
+    if (!text || aiLoading) return;
+    
+    if (reachedQuestionLimit) {
+      setShowUpsell(true);
+      return;
+    }
     
     setIsUserAtBottom(true);
     // ONLY use append — this adds the user message to aiMessages AND triggers the API call.
@@ -474,19 +623,27 @@ function FullScreenChatInternal() {
             </div>
 
             {/* ── Sidebar Tabs ── */}
+            {/* ── Sidebar Tabs ── */}
             <div className="flex items-center mx-4 mt-1 bg-gray-100 dark:bg-white/5 rounded-lg p-0.5">
-              <button onClick={() => setSidebarTab('chats')} className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-bold transition-all ${sidebarTab === 'chats' ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+              <button onClick={() => { setSidebarTab('chats'); setActiveChatMode('chat'); }} className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-bold transition-all ${sidebarTab === 'chats' && activeChatMode !== 'mirofish' ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
                 <MessageSquare className="w-3.5 h-3.5" /> Chats
               </button>
-              <button onClick={() => setSidebarTab('reports')} className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-bold transition-all relative ${sidebarTab === 'reports' ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+              <button onClick={() => { setSidebarTab('reports'); setActiveChatMode('chat'); }} className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-bold transition-all relative ${sidebarTab === 'reports' && activeChatMode !== 'mirofish' ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
                 <FileText className="w-3.5 h-3.5" /> Informes
                 {reports.some(r => !r.is_read) && <span className="absolute top-1 right-2 w-2 h-2 bg-[#1890FF] rounded-full animate-pulse" />}
               </button>
             </div>
 
+            {/* ── Agents Tab (Similar Oval) ── */}
+            <div className="flex items-center mx-4 mt-2 bg-gray-100 dark:bg-white/5 rounded-lg p-0.5">
+              <button onClick={() => { setSidebarTab('agents'); setActiveChatMode('mirofish'); }} className={`w-full flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-bold transition-all ${activeChatMode === 'mirofish' ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+                Agentes
+              </button>
+            </div>
+
             <div className="flex-1 overflow-y-auto px-3 hidden-scrollbar mt-2 pt-2">
               
-              {sidebarTab === 'chats' ? (
+              {sidebarTab === 'chats' && (
                 /* ── Chats Tab ── */
                 <>
                   {savedChats.length === 0 ? (
@@ -508,7 +665,7 @@ function FullScreenChatInternal() {
                                 : 'hover:bg-gray-200/50 dark:hover:bg-white/5'
                             }`}
                           >
-                            <div className="flex-1 overflow-hidden" onClick={() => { loadChat(chat.id); if(window.innerWidth < 768) setIsSidebarOpen(false); }}>
+                            <div className="flex-1 overflow-hidden" onClick={() => { loadChat(chat.id); setActiveChatMode('chat'); if(window.innerWidth < 768) setIsSidebarOpen(false); }}>
                               <p className={`text-[13px] font-semibold truncate pl-1 ${isActive ? 'text-[#1890FF]' : 'text-gray-700 dark:text-gray-300'}`}>{chat.title}</p>
                               <p className="text-[10px] text-gray-400 dark:text-gray-500 pl-1 mt-0.5 font-medium">{timeStr}</p>
                             </div>
@@ -521,7 +678,9 @@ function FullScreenChatInternal() {
                     </div>
                   )}
                 </>
-              ) : (
+              )}
+
+              {sidebarTab === 'reports' && (
                 /* ── Reports Tab ── */
                 <div className="space-y-3 px-1">
                   {/* Generate Button */}
@@ -606,6 +765,62 @@ function FullScreenChatInternal() {
                   )}
                 </div>
               )}
+
+              {sidebarTab === 'agents' && (
+                /* ── Agents Tab ── */
+                <>
+                  {!Array.isArray(savedSimulations) || savedSimulations.length === 0 ? (
+                    <div className="px-4 py-8 text-center text-gray-400 text-xs font-medium border border-dashed border-gray-200 dark:border-gray-800 rounded-xl mx-2">
+                      Tus debates de agentes aparecerán aquí
+                    </div>
+                  ) : (
+                    <div className="space-y-0.5">
+                      {savedSimulations.map((sim: any) => {
+                        const dateObj = new Date(sim.timestamp);
+                        const timeStr = dateObj.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+                        const dateStr = dateObj.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
+                        const isActive = selectedSimulation?.id === sim.id;
+                        return (
+                          <div 
+                            key={sim.id} 
+                            className={`group flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-colors ${
+                              isActive 
+                                ? 'bg-[#1890FF]/10 border border-[#1890FF]/20' 
+                                : 'hover:bg-gray-200/50 dark:hover:bg-white/5'
+                            }`}
+                          >
+                            <div 
+                              className="flex-1 overflow-hidden" 
+                              onClick={() => {
+                                setSelectedSimulation(sim);
+                                setActiveChatMode('mirofish');
+                                if (window.innerWidth < 768) setIsSidebarOpen(false);
+                              }}
+                            >
+                              <p className={`text-[13px] font-semibold truncate pl-1 ${isActive ? 'text-[#1890FF]' : 'text-gray-700 dark:text-gray-300'}`}>{sim.title}</p>
+                              <p className="text-[10px] text-gray-400 dark:text-gray-500 pl-1 mt-0.5 font-medium">{dateStr} · {timeStr} · {sim.swarmSize} agentes</p>
+                            </div>
+                            <button 
+                              onClick={(e) => { 
+                                e.stopPropagation(); 
+                                const list = savedSimulations.filter(s => s.id !== sim.id);
+                                localStorage.setItem("r_swarm_simulations", JSON.stringify(list));
+                                loadSimulations();
+                                if (selectedSimulation?.id === sim.id) {
+                                  setSelectedSimulation(null);
+                                }
+                              }} 
+                              className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-all p-1.5 shrink-0"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
+              )}
             </div>
 
             {/* User Limits at bottom of sidebar */}
@@ -652,11 +867,37 @@ function FullScreenChatInternal() {
       {/* ─── MAIN CHAT AREA ─── */}
       <div className="flex-1 flex flex-col h-full overflow-hidden relative bg-white dark:bg-[#0a0a0a]">
         
+        {/* Floating Quick Navigation Circles (Noticias, Mercados, Portafolio) */}
+        {!isMirofishActive && activeChatMode !== 'mirofish' && (
+          <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
+            <Link 
+              href="/noticias"
+              className="w-10 h-10 rounded-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-gray-200/80 dark:border-gray-800/80 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-[#1890FF] hover:scale-105 shadow-sm hover:shadow-md hover:border-[#1890FF]/30 transition-all"
+              title="Noticias"
+            >
+              <Newspaper className="w-4 h-4" />
+            </Link>
+            <Link 
+              href="/mercados"
+              className="w-10 h-10 rounded-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-gray-200/80 dark:border-gray-800/80 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-amber-500 dark:hover:text-amber-400 hover:scale-105 shadow-sm hover:shadow-md hover:border-amber-500/30 transition-all"
+              title="Mercados"
+            >
+              <TrendingUp className="w-4 h-4" />
+            </Link>
+            <Link 
+              href="/portafolio"
+              className="w-10 h-10 rounded-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-gray-200/80 dark:border-gray-800/80 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-emerald-500 dark:hover:text-emerald-400 hover:scale-105 shadow-sm hover:shadow-md hover:border-emerald-500/30 transition-all"
+              title="Portafolio"
+            >
+              <Briefcase className="w-4 h-4" />
+            </Link>
+          </div>
+        )}
         {/* Toggle Sidebar Button (Floating) */}
-        {!isSidebarOpen && (
+        {!isSidebarOpen && (activeChatMode !== 'mirofish' || !isMirofishActive) && (
           <button 
             onClick={() => setIsSidebarOpen(true)}
-            className="absolute top-4 left-4 z-20 w-10 h-10 rounded-xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-500 hover:text-[#1890FF] shadow-sm hover:shadow-md transition-all"
+            className="absolute top-4 left-4 z-50 w-10 h-10 rounded-xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-500 hover:text-[#1890FF] shadow-sm hover:shadow-md transition-all"
             title="Abrir menú lateral"
           >
             <PanelLeft className="w-5 h-5" />
@@ -668,8 +909,29 @@ function FullScreenChatInternal() {
           <div className="md:hidden absolute inset-0 bg-black/40 backdrop-blur-sm z-40" onClick={() => setIsSidebarOpen(false)} />
         )}
 
-        {/* Chat Messages */}
-        <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto hidden-scrollbar relative pb-24">
+        {/* Main Content Area based on Mode */}
+        {activeChatMode === 'mirofish' ? (
+          <div className="flex-1 flex flex-col h-full overflow-hidden relative bg-transparent">
+            <MiroFishSandbox 
+              selectedSimulation={selectedSimulation} 
+              onClearSelected={() => setSelectedSimulation(null)} 
+              onSimulationSaved={loadSimulations}
+              onSimulationActiveChange={(isActive) => {
+                setIsSidebarOpen(!isActive);
+                setIsMirofishActive(isActive);
+              }}
+              onGoBack={() => {
+                setActiveChatMode('chat');
+                setSelectedSimulation(null);
+                setSidebarTab('chats');
+                setIsSidebarOpen(true);
+              }}
+            />
+          </div>
+        ) : (
+          <>
+            {/* Chat Messages */}
+            <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto hidden-scrollbar relative pb-24">
           
           {/* ── Prompt Carousel (full width, outside max-w constraint) ── */}
           {isStoreHydrated && aiMessages.length === 0 && !aiLoading && (
@@ -770,7 +1032,7 @@ function FullScreenChatInternal() {
                               {/* Sources Pill Widget */}
                               {(() => {
                                 // Check per-message annotations first
-                                const citationAnnotation = msg.annotations?.find((a: any) => a?.type === 'citations');
+                                const citationAnnotation = msg.annotations?.find((a: any) => a?.type === 'citations') as any;
                                 let citationsList = citationAnnotation?.urls || (msg as any).citations;
                                 // Fallback: check streamData (useChat data) for the last assistant message
                                 if ((!citationsList || citationsList.length === 0) && streamData && streamData.length > 0) {
@@ -870,13 +1132,13 @@ function FullScreenChatInternal() {
 
                           {/* Expanded Citations List */}
                           {(() => {
-                            const citationAnnotation = msg.annotations?.find((a: any) => a?.type === 'citations');
+                            const citationAnnotation = msg.annotations?.find((a: any) => a?.type === 'citations') as any;
                             let citationsList = citationAnnotation?.urls || (msg as any).citations;
                             // Fallback: check streamData for the last assistant message
                             if ((!citationsList || citationsList.length === 0) && streamData && streamData.length > 0) {
                               const isLastAssistant = msg.id === aiMessages.filter(m => m.role === 'assistant').pop()?.id;
                               if (isLastAssistant) {
-                                const sdCitation = (streamData as any[]).find((d: any) => d?.type === 'citations');
+                                const sdCitation = (streamData as any[]).find((d: any) => d?.type === 'citations') as any;
                                 if (sdCitation?.urls) citationsList = sdCitation.urls;
                               }
                             }
@@ -1244,7 +1506,9 @@ function FullScreenChatInternal() {
             </div>
           </div>
         </div>
-      </div>
+      </>
+    )}
+  </div>
 
       {/* ─── PREFERENCES MODAL ─── */}
       <AnimatePresence>

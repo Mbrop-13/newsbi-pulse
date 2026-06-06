@@ -11,7 +11,10 @@ export async function updateSession(request: NextRequest) {
   if (refCode) {
     supabaseResponse.cookies.set('reclu_ref_code', refCode, { 
       maxAge: 60 * 60 * 24 * 7, // 7 days
-      path: '/'
+      path: '/',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax'
     });
   }
 
@@ -49,6 +52,11 @@ export async function updateSession(request: NextRequest) {
   // Protect /admin routes: require authentication
   if (request.nextUrl.pathname.startsWith('/admin') && !user) {
     return NextResponse.redirect(new URL('/', request.url));
+  }
+
+  // Protect /api/admin API routes: require authentication
+  if (request.nextUrl.pathname.startsWith('/api/admin') && !user) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
   return supabaseResponse

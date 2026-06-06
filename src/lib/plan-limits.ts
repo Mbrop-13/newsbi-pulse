@@ -17,11 +17,14 @@ export interface PlanConfig {
   // ── Asistente IA ──
   aiMessagesPerMonth: number; // -1 = sin límite (en free se usa aiLifetimeMessages)
   aiLifetimeMessages: number; // Solo aplica a free (total de por vida)
+  aiTokensPerMonth: number; // Límite de tokens mensuales (-1 = sin límite)
+  aiLifetimeTokens: number; // Límite de tokens de por vida (solo free)
   aiModel: string; // Modelo de IA a usar
   aiChatHistory: number; // Cantidad de chats guardados (-1 = ilimitado)
   aiFileAttachments: boolean;
   aiAdvancedAnalysis: boolean;
   aiWebSearch: boolean;
+  maxAgents: number; // Límite de agentes configurables
   
   // ── Audio TTS ──
   ttsAudiosPerMonth: number; // -1 = sin límite (en free es por día)
@@ -59,11 +62,14 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     
     aiMessagesPerMonth: 0, // No usa mensual, usa lifetime
     aiLifetimeMessages: 5,
+    aiTokensPerMonth: 0,
+    aiLifetimeTokens: 50000,
     aiModel: "x-ai/grok-4.1-fast",
     aiChatHistory: 0,
     aiFileAttachments: false,
     aiAdvancedAnalysis: false,
     aiWebSearch: false,
+    maxAgents: 6,
     
     ttsAudiosPerMonth: 0, // No usa mensual, usa diario
     ttsDailyLimit: 5,
@@ -94,11 +100,14 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     
     aiMessagesPerMonth: 100,
     aiLifetimeMessages: -1,
+    aiTokensPerMonth: 1000000,
+    aiLifetimeTokens: -1,
     aiModel: "x-ai/grok-4.1-fast",
     aiChatHistory: 10,
     aiFileAttachments: true,
     aiAdvancedAnalysis: false,
     aiWebSearch: false,
+    maxAgents: 20,
     
     ttsAudiosPerMonth: 50,
     ttsDailyLimit: -1,
@@ -129,11 +138,14 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     
     aiMessagesPerMonth: 300,
     aiLifetimeMessages: -1,
+    aiTokensPerMonth: 4500000,
+    aiLifetimeTokens: -1,
     aiModel: "x-ai/grok-4.1-fast:online",
     aiChatHistory: 50,
     aiFileAttachments: true,
     aiAdvancedAnalysis: true,
     aiWebSearch: false,
+    maxAgents: 50,
     
     ttsAudiosPerMonth: 150,
     ttsDailyLimit: -1,
@@ -164,11 +176,14 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     
     aiMessagesPerMonth: 600,
     aiLifetimeMessages: -1,
+    aiTokensPerMonth: 10000000,
+    aiLifetimeTokens: -1,
     aiModel: "x-ai/grok-4.1-fast:online",
     aiChatHistory: -1,
     aiFileAttachments: true,
     aiAdvancedAnalysis: true,
     aiWebSearch: true,
+    maxAgents: 100,
     
     ttsAudiosPerMonth: 300,
     ttsDailyLimit: -1,
@@ -210,6 +225,7 @@ export function getPlanConfig(tier: PlanTier): PlanConfig {
     return {
       ...baseConfig,
       aiMessagesPerMonth: baseConfig.aiMessagesPerMonth * 2,
+      aiTokensPerMonth: baseConfig.aiTokensPerMonth * 2,
       ttsAudiosPerMonth: baseConfig.ttsAudiosPerMonth * 2,
     };
   }

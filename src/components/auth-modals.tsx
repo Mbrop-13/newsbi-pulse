@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Mail,
@@ -34,6 +35,8 @@ export function AuthModals({
   onClose,
   defaultView = "login",
 }: AuthModalsProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [view, setView] = useState<AuthView>(defaultView === "forgot" ? "forgot" : defaultView);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -109,6 +112,9 @@ export function AuthModals({
           });
         }
         onClose();
+        if (pathname === "/") {
+          router.push("/ai");
+        }
       } else if (view === "register") {
         const { error } = await supabase.auth.signUp({
           email: formEmail,
@@ -228,6 +234,9 @@ export function AuthModals({
           avatar: data.user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=U&background=1890FF&color=fff`,
         });
         onClose();
+        if (pathname === "/") {
+          router.push("/ai");
+        }
       } else {
         // Sometimes session is not immediately returned depending on settings
         setView("login");

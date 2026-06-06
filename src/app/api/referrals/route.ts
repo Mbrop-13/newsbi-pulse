@@ -38,14 +38,19 @@ export async function GET() {
       // Get emails from auth.admin
       // Note: Supabase admin listUsers doesn't support easy filtering by multiple IDs,
       // but we can query profiles if they exist, or just use listUsers for small scale.
-      const { data: profilesData } = await adminAuth
-        .from("profiles")
-        .select("id, full_name, avatar_url")
-        .in("id", referredIds)
-        .catch(() => ({ data: [] })); // fail gracefully if profiles doesn't exist
+      let profilesData: any[] | null = null;
+      try {
+        const res = await adminAuth
+          .from("profiles")
+          .select("id, full_name, avatar_url")
+          .in("id", referredIds);
+        profilesData = res.data;
+      } catch (err) {
+        profilesData = [];
+      }
         
       referredUsers = referrals.map(r => {
-        const profile = profilesData?.find(p => p.id === r.referred_id);
+        const profile = profilesData?.find((p: any) => p.id === r.referred_id);
         return {
           id: r.id,
           date: r.created_at,

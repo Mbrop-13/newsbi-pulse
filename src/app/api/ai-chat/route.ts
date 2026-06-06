@@ -235,6 +235,7 @@ export async function POST(req: NextRequest) {
       model: mimo(finalModelStr),
       system: getSystemPrompt(assistantName, assistantTone, assistantRole, assistantTopics),
       messages: processedMessages,
+      maxTokens: 8192, // MiMo is a reasoning model — needs enough budget for thinking + response
       maxSteps: 8,
       toolChoice: 'auto',
       tools: {

@@ -22,6 +22,7 @@ import { AIChartCard } from './ai-chart-card';
 import { PromptCarousel } from './prompt-carousel';
 import { ShareChatDialog } from './share-chat-dialog';
 import { MiroFishSandbox } from "./mirofish-sandbox";
+import { toast } from "sonner";
 
 const ADVANCED_TOOLS = [
   { id: 'chart_bar', label: 'Gráfico de Barras', icon: BarChart3, category: 'Gráficos' },
@@ -81,6 +82,9 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
   const [showModelMenu, setShowModelMenu] = useState(false);
   const [shareDialog, setShareDialog] = useState({ isOpen: false, question: "", answer: "" });
   const [openReasoning, setOpenReasoning] = useState<Record<string, boolean>>({});
+  const [showPortfolioDropdown, setShowPortfolioDropdown] = useState(false);
+  const [portfolioDetails, setPortfolioDetails] = useState<any[]>([]);
+  const [loadingPortfolio, setLoadingPortfolio] = useState(false);
 
   // ── Mode and Agent states ──
   const [activeChatMode, setActiveChatMode] = useState<'chat' | 'mirofish'>(initialMode);
@@ -276,6 +280,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
     },
     onError: (error) => {
       console.error("[AI Chat] Stream error:", error);
+      toast.error(error.message || "Ocurrió un error al procesar tu solicitud. Por favor intenta nuevamente.");
       // Re-fetch usage to keep client in sync (server only increments on success now)
       setTimeout(() => fetchRealUsage(), 500);
     }
@@ -434,13 +439,55 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
     localStorage.setItem("r_ai_prefs", JSON.stringify(chatPrefs));
   }, [chatPrefs]);
 
-  // Check if user has portfolio
+  // Fetch portfolio details with real-time quotes
+  const fetchPortfolioDetails = async () => {
+    if (!user) return;
+    setLoadingPortfolio(true);
+    try {
+      const { data: dbAssets, error } = await supabase
+        .from("portfolios")
+        .select("symbol, company_name, shares")
+        .eq("user_id", user.id);
+      
+      if (error) throw error;
+      if (dbAssets && dbAssets.length > 0) {
+        const symbols = dbAssets.map((a: any) => a.symbol).filter(Boolean);
+        if (symbols.length > 0) {
+          const res = await fetch(`/api/finance/portfolio?symbols=${symbols.join(",")}`);
+          if (res.ok) {
+            const data = await res.json();
+            // Merge shares and company name
+            const merged = data.map((quote: any) => {
+              const dbAsset = dbAssets.find((a: any) => a.symbol.toUpperCase() === quote.symbol.toUpperCase());
+              return {
+                ...quote,
+                shares: dbAsset?.shares || 0,
+                companyName: dbAsset?.company_name || quote.symbol
+              };
+            });
+            setPortfolioDetails(merged);
+          }
+        } else {
+          setPortfolioDetails([]);
+        }
+      } else {
+        setPortfolioDetails([]);
+      }
+    } catch (err) {
+      console.error("Error fetching portfolio details:", err);
+    } finally {
+      setLoadingPortfolio(false);
+    }
+  };
+
+  // Check if user has portfolio and load initial details
   useEffect(() => {
     if (user) {
       supabase.from("portfolios").select("id").eq("user_id", user.id).limit(1)
         .then(({ data }) => {
           setHasPortfolio(data ? data.length > 0 : false);
         });
+      fetchPortfolioDetails();
     }
     
     // Auto-collapse sidebar on mobile
@@ -613,9 +660,6 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
           >
             <div className="w-[280px] h-full flex flex-col">
             <div className="p-4 flex flex-col gap-2">
-              <Link href="/" className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-[#1890FF]/5 hover:bg-[#1890FF]/10 border border-[#1890FF]/20 hover:border-[#1890FF]/40 text-[#1890FF] rounded-xl transition-all text-xs font-bold">
-                <ExternalLink className="w-3.5 h-3.5" /> Volver al Inicio
-              </Link>
               <div className="flex items-center justify-between gap-2">
                 <button 
                   onClick={() => { clearMessages(); setAiMessages([]); if(window.innerWidth < 768) setIsSidebarOpen(false); }}
@@ -899,13 +943,99 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
             >
               <TrendingUp className="w-4 h-4" />
             </Link>
-            <Link 
-              href="/portafolio"
-              className="w-10 h-10 rounded-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-gray-200/80 dark:border-gray-800/80 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-emerald-500 dark:hover:text-emerald-400 hover:scale-105 shadow-sm hover:shadow-md hover:border-emerald-500/30 transition-all"
-              title="Portafolio"
+            <div 
+              className="relative"
+              onMouseEnter={() => {
+                setShowPortfolioDropdown(true);
+                fetchPortfolioDetails();
+              }}
+              onMouseLeave={() => setShowPortfolioDropdown(false)}
             >
-              <Briefcase className="w-4 h-4" />
-            </Link>
+              <Link 
+                href="/portafolio"
+                className="w-10 h-10 rounded-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-gray-200/80 dark:border-gray-800/80 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-emerald-500 dark:hover:text-emerald-400 hover:scale-105 shadow-sm hover:shadow-md hover:border-emerald-500/30 transition-all"
+                title="Portafolio"
+              >
+                <Briefcase className="w-4 h-4" />
+              </Link>
+
+              <AnimatePresence>
+                {showPortfolioDropdown && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute top-12 right-0 w-80 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-gray-200 dark:border-slate-800 rounded-2xl shadow-2xl z-50 p-4"
+                  >
+                    <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-150 dark:border-slate-800">
+                      <span className="text-xs font-bold text-gray-850 dark:text-white flex items-center gap-1.5">
+                        <Briefcase className="w-3.5 h-3.5 text-emerald-500" />
+                        Mi Portafolio
+                      </span>
+                      {portfolioDetails.length > 0 && (
+                        <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold px-2 py-0.5 rounded-full">
+                          {portfolioDetails.length} Activos
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="space-y-2 max-h-60 overflow-y-auto hidden-scrollbar">
+                      {loadingPortfolio && portfolioDetails.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-6 gap-2">
+                          <Loader2 className="w-5 h-5 animate-spin text-emerald-500" />
+                          <span className="text-[10px] text-gray-400 font-medium">Cargando portafolio...</span>
+                        </div>
+                      ) : portfolioDetails.length === 0 ? (
+                        <div className="text-center py-6 px-4">
+                          <p className="text-[11px] text-gray-400 font-medium leading-relaxed">Tu portafolio está vacío. Agrega tus acciones para verlas aquí en tiempo real.</p>
+                          <Link href="/portafolio" className="inline-block mt-2 text-[10px] font-bold text-emerald-500 hover:underline">Ir a Portafolio →</Link>
+                        </div>
+                      ) : (
+                        portfolioDetails.map((asset) => {
+                          const isPositive = asset.changePercent >= 0;
+                          return (
+                            <div key={asset.symbol} className="flex items-center justify-between p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-800/40 border border-transparent hover:border-gray-100 dark:hover:border-slate-800/40 transition-all">
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className="w-8 h-8 rounded-lg bg-gray-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700/60 overflow-hidden flex items-center justify-center shrink-0">
+                                  <img 
+                                    src={asset.logo} 
+                                    alt={asset.symbol}
+                                    onError={(e) => {
+                                      e.currentTarget.src = `https://ui-avatars.com/api/?name=${asset.symbol}&background=10B981&color=fff&bold=true&size=64`;
+                                    }}
+                                    className="w-6 h-6 object-contain"
+                                  />
+                                </div>
+                                <div className="truncate">
+                                  <p className="text-xs font-bold text-gray-900 dark:text-white leading-none">{asset.symbol}</p>
+                                  <p className="text-[9px] text-gray-400 dark:text-gray-500 font-medium truncate mt-0.5 max-w-[120px]">{asset.companyName}</p>
+                                </div>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <p className="text-xs font-bold text-gray-900 dark:text-white leading-none">${asset.price?.toFixed(2)}</p>
+                                <p className={`text-[10px] font-bold mt-0.5 leading-none ${isPositive ? "text-green-500" : "text-red-500"}`}>
+                                  {isPositive ? "+" : ""}{asset.changePercent?.toFixed(2)}%
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    <div className="mt-3 pt-2 border-t border-gray-150 dark:border-slate-800">
+                      <Link 
+                        href="/portafolio"
+                        className="w-full flex items-center justify-center gap-1.5 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-colors shadow-sm shadow-emerald-500/10"
+                      >
+                        Ver Detalle Completo
+                      </Link>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         )}
         {/* Toggle Sidebar Button (Floating) */}
@@ -1030,7 +1160,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                                 className="flex items-center justify-between w-full text-left text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                               >
                                 <div className="flex items-center gap-2">
-                                  <Brain className={`w-4 h-4 text-purple-500 ${aiLoading && isLastAssistant ? 'animate-pulse' : ''}`} />
+                                  <Brain className="w-4 h-4 text-purple-500" />
                                   <span>Pensamiento de la IA</span>
                                 </div>
                                 <ChevronRight className={`w-4 h-4 text-gray-400 transform transition-transform duration-200 ${isReasoningOpen ? "rotate-90" : ""}`} />
@@ -1245,7 +1375,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
               {aiLoading && (
                 <div className="flex justify-center py-6 w-full">
                   <div className="bg-gray-50/80 dark:bg-slate-900/60 border border-gray-200/60 dark:border-slate-800/60 px-5 py-3 rounded-full shadow-sm backdrop-blur-md flex items-center gap-3">
-                    <Brain className="w-4 h-4 text-purple-500 animate-pulse" />
+                    <Brain className="w-4 h-4 text-purple-500" />
                     <span className="text-xs font-bold text-gray-500 dark:text-gray-400 mr-1">R-AI está pensando...</span>
                     <ThinkingAnimation />
                   </div>

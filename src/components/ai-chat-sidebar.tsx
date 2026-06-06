@@ -205,6 +205,7 @@ export function AIChatSidebar() {
         model: data.model,
       });
     } catch (err: any) {
+      toast.error(err.message || "Error al conectar con R-AI");
       addMessage({
         id: (Date.now() + 1).toString(),
         role: "assistant",
@@ -477,7 +478,7 @@ export function AIChatSidebar() {
               {isLoading && (
                 <div className="flex justify-center py-4 w-full">
                   <div className="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 px-4 py-2.5 rounded-full shadow-sm flex items-center gap-2">
-                    <Brain className="w-3.5 h-3.5 text-purple-500 animate-pulse" />
+                    <Brain className="w-3.5 h-3.5 text-purple-500" />
                     <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400">Pensando...</span>
                     <ThinkingAnimation />
                   </div>

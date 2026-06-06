@@ -223,7 +223,8 @@ export async function POST(req: NextRequest) {
       content: i === 0 && m.role === 'user' ? contextPrefix + (contextOverride || m.content) : m.content,
     }));
 
-    await incrementUsage(user.id, "ai_message").catch(console.error);
+    // NOTE: Usage is incremented in onFinish (after successful response), NOT here.
+    // This prevents counting a question if the AI fails to respond.
 
     const yf = new YahooFinance();
 
@@ -571,7 +572,18 @@ export async function POST(req: NextRequest) {
           }
         }),
       },
-      onFinish: async ({ text, usage }) => {
+      onFinish: async ({ text, usage, finishReason }) => {
+        // Only count usage if the model actually produced a response
+        const hasContent = text && text.trim().length > 0;
+        const isValidFinish = finishReason !== 'error';
+
+        if (hasContent && isValidFinish) {
+          // Increment message count only on successful response
+          await incrementUsage(user.id, "ai_message").catch(console.error);
+        } else {
+          console.warn(`[AI Chat] Skipping usage increment for user ${user.id}: finishReason=${finishReason}, hasContent=${hasContent}`);
+        }
+
         if (usage && usage.totalTokens) {
           await incrementTokenUsage(user.id, usage.totalTokens).catch(console.error);
           console.log(`[AI Chat] Saved token usage for user ${user.id}: ${usage.totalTokens} tokens.`);

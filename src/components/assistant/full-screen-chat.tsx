@@ -263,6 +263,11 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
         useAIChatStore.getState().updateCurrentChat();
         setTimeout(() => fetchRealUsage(), 800);
       });
+    },
+    onError: (error) => {
+      console.error("[AI Chat] Stream error:", error);
+      // Re-fetch usage to keep client in sync (server only increments on success now)
+      setTimeout(() => fetchRealUsage(), 500);
     }
   });
 

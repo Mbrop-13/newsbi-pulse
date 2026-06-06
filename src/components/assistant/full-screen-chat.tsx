@@ -249,16 +249,26 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
     },
     onFinish: (message) => {
       clearTools();
+      // Extract reasoning tokens from current streamData session
+      const currentReasoning = streamData
+        ?.filter((d: any) => d?.type === 'reasoning')
+        ?.map((d: any) => d?.text)
+        ?.join('') || '';
+
       // Use requestAnimationFrame to ensure aiMessages state has been flushed by React
       requestAnimationFrame(() => {
         const latestMessages = aiMessagesRef.current;
-        const storeMessages: ChatMessage[] = latestMessages.map((m: any) => ({
-          id: m.id,
-          role: m.role as 'user' | 'assistant',
-          content: m.content,
-          timestamp: new Date(),
-          toolInvocations: m.toolInvocations,
-        }));
+        const storeMessages: ChatMessage[] = latestMessages.map((m: any, idx: number) => {
+          const isLastAssistant = m.role === 'assistant' && idx === latestMessages.length - 1;
+          return {
+            id: m.id,
+            role: m.role as 'user' | 'assistant',
+            content: m.content,
+            timestamp: new Date(),
+            toolInvocations: m.toolInvocations,
+            reasoning: isLastAssistant ? currentReasoning : (m.reasoning || undefined),
+          };
+        });
         useAIChatStore.setState({ messages: storeMessages });
         useAIChatStore.getState().updateCurrentChat();
         setTimeout(() => fetchRealUsage(), 800);
@@ -997,6 +1007,54 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                           );
                         })}
 
+                        {/* Reasoning / CoT Collapse Box */}
+                        {(() => {
+                          const isLastAssistant = msg.id === aiMessages.filter(m => m.role === 'assistant').pop()?.id;
+                          // Extract reasoning from streamData if it is actively streaming
+                          let streamReasoning = "";
+                          if (isLastAssistant && streamData && streamData.length > 0) {
+                            streamReasoning = (streamData as any[])
+                              .filter((d: any) => d?.type === 'reasoning')
+                              .map((d: any) => d?.text)
+                              .join('');
+                          }
+                          const reasoningText = (msg as any).reasoning || msg.reasoning || streamReasoning;
+                          if (!reasoningText) return null;
+
+                          const isReasoningOpen = openReasoning[msg.id] !== false; // open by default
+
+                          return (
+                            <div className="border border-gray-200/60 dark:border-slate-800/60 bg-gray-50/50 dark:bg-slate-900/40 rounded-2xl p-3.5 mb-2.5 transition-all">
+                              <button 
+                                onClick={() => setOpenReasoning(prev => ({ ...prev, [msg.id]: !isReasoningOpen }))}
+                                className="flex items-center justify-between w-full text-left text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <Brain className={`w-4 h-4 text-purple-500 ${aiLoading && isLastAssistant ? 'animate-pulse' : ''}`} />
+                                  <span>Pensamiento de la IA</span>
+                                </div>
+                                <ChevronRight className={`w-4 h-4 text-gray-400 transform transition-transform duration-200 ${isReasoningOpen ? "rotate-90" : ""}`} />
+                              </button>
+                              
+                              <AnimatePresence initial={false}>
+                                {isReasoningOpen && (
+                                  <motion.div
+                                    initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                                    animate={{ opacity: 1, height: 'auto', marginTop: 10 }}
+                                    exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="overflow-hidden"
+                                  >
+                                    <div className="text-xs text-gray-600 dark:text-gray-400 whitespace-pre-wrap leading-relaxed border-l-2 border-purple-500/30 pl-3.5">
+                                      {reasoningText}
+                                    </div>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
+                          );
+                        })()}
+
                         {msg.content && (
                           <div className={`prose ${fontSizeClass} dark:prose-invert max-w-none text-gray-800 dark:text-gray-200 leading-relaxed prose-p:my-3 prose-headings:my-5 prose-h1:text-2xl prose-h2:text-xl prose-a:text-[#1890FF] prose-a:font-semibold prose-a:no-underline hover:prose-a:underline prose-li:my-1`}>
                             <ReactMarkdown
@@ -1185,8 +1243,12 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
 
               {/* Loading State */}
               {aiLoading && (
-                <div className="flex pt-2">
-                  <ThinkingAnimation />
+                <div className="flex justify-center py-6 w-full">
+                  <div className="bg-gray-50/80 dark:bg-slate-900/60 border border-gray-200/60 dark:border-slate-800/60 px-5 py-3 rounded-full shadow-sm backdrop-blur-md flex items-center gap-3">
+                    <Brain className="w-4 h-4 text-purple-500 animate-pulse" />
+                    <span className="text-xs font-bold text-gray-500 dark:text-gray-400 mr-1">R-AI está pensando...</span>
+                    <ThinkingAnimation />
+                  </div>
                 </div>
               )}
               

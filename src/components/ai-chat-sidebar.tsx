@@ -399,6 +399,23 @@ export function AIChatSidebar() {
                     </div>
                   ) : (
                     <div className="max-w-full w-full">
+                      {/* Reasoning Box */}
+                      {(() => {
+                        const reasoningText = msg.reasoning;
+                        if (!reasoningText) return null;
+                        return (
+                          <div className="border border-gray-200/60 dark:border-slate-800/60 bg-gray-50/50 dark:bg-slate-900/40 rounded-xl p-2.5 mb-2.5 w-full">
+                            <div className="flex items-center gap-2 text-[10px] font-bold text-gray-500 dark:text-gray-400 mb-1">
+                              <Brain className="w-3.5 h-3.5 text-purple-500" />
+                              <span>Pensamiento de la IA</span>
+                            </div>
+                            <div className="text-[11px] text-gray-600 dark:text-gray-400 whitespace-pre-wrap leading-relaxed border-l border-purple-500/30 pl-2">
+                              {reasoningText}
+                            </div>
+                          </div>
+                        );
+                      })()}
+
                       <div className="prose prose-sm dark:prose-invert max-w-none text-[13px] leading-relaxed prose-p:my-2 prose-headings:my-3 prose-a:text-[#1890FF] prose-a:font-semibold prose-a:no-underline hover:prose-a:underline">
                         <ReactMarkdown
                           remarkPlugins={[remarkGfm]}
@@ -458,8 +475,12 @@ export function AIChatSidebar() {
               ))}
 
               {isLoading && (
-                <div className="flex pt-1">
-                  <ThinkingAnimation />
+                <div className="flex justify-center py-4 w-full">
+                  <div className="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 px-4 py-2.5 rounded-full shadow-sm flex items-center gap-2">
+                    <Brain className="w-3.5 h-3.5 text-purple-500 animate-pulse" />
+                    <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400">Pensando...</span>
+                    <ThinkingAnimation />
+                  </div>
                 </div>
               )}
 

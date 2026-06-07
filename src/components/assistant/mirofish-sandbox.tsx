@@ -403,6 +403,9 @@ export function MiroFishSandbox({ selectedSimulation, onClearSelected, onSimulat
   const [upgradeModalCustomTitle, setUpgradeModalCustomTitle] = useState<string | undefined>(undefined);
   const [upgradeModalCustomMessage, setUpgradeModalCustomMessage] = useState<string | undefined>(undefined);
 
+  // Warning Modal State (First-time Multi-Agent usage)
+  const [showWarningModal, setShowWarningModal] = useState(false);
+
   const [presets, setPresets] = useState<typeof PRESETS>([]);
 
   // Pick 3 random general presets on mount
@@ -972,6 +975,22 @@ export function MiroFishSandbox({ selectedSimulation, onClearSelected, onSimulat
     setInputQuery("");
   };
 
+  const handleTryStartSimulation = () => {
+    if (!inputQuery.trim()) return;
+    const warningShown = localStorage.getItem("r_swarm_first_time_warning_shown");
+    if (!warningShown) {
+      setShowWarningModal(true);
+    } else {
+      startSimulation();
+    }
+  };
+
+  const handleConfirmWarning = () => {
+    localStorage.setItem("r_swarm_first_time_warning_shown", "true");
+    setShowWarningModal(false);
+    startSimulation();
+  };
+
   const startSimulation = async () => {
     if (!inputQuery.trim()) return;
 
@@ -1242,7 +1261,7 @@ export function MiroFishSandbox({ selectedSimulation, onClearSelected, onSimulat
               </AnimatePresence>
 
               <form
-                onSubmit={(e) => { e.preventDefault(); startSimulation(); }}
+                onSubmit={(e) => { e.preventDefault(); handleTryStartSimulation(); }}
                 className="relative flex items-end gap-2 bg-white dark:bg-[#111827] border border-gray-250/60 dark:border-gray-700/50 rounded-2xl p-1.5 shadow-md focus-within:ring-4 focus-within:ring-[#1890FF]/15 focus-within:border-[#1890FF]/50 transition-all w-full text-left"
               >
                 <div className="flex items-center gap-1.5 pb-0.5 pl-1 shrink-0 relative">
@@ -1422,7 +1441,7 @@ export function MiroFishSandbox({ selectedSimulation, onClearSelected, onSimulat
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
-                      startSimulation();
+                      handleTryStartSimulation();
                     }
                   }}
                   placeholder="Escribe tu consulta financiera o tema a debatir..."
@@ -2211,6 +2230,69 @@ export function MiroFishSandbox({ selectedSimulation, onClearSelected, onSimulat
                 >
                   Volver al Lienzo
                 </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* First-time Warning Modal */}
+      <AnimatePresence>
+        {showWarningModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex justify-center items-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="bg-white dark:bg-[#0f1420] w-full max-w-md rounded-3xl shadow-2xl p-6 border border-gray-150/80 dark:border-white/5 relative text-left"
+            >
+              {/* Close button */}
+              <button
+                type="button"
+                onClick={() => setShowWarningModal(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+                  <Brain className="w-6 h-6 animate-pulse" />
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="text-base font-black text-gray-900 dark:text-white uppercase tracking-wider">
+                    ¿Iniciar Debate Multi-Agente?
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed font-medium">
+                    Esta herramienta inicia una mesa redonda interactiva con múltiples agentes expertos de IA y búsqueda en tiempo real.
+                    <br />
+                    <br />
+                    <span className="font-bold text-amber-600 dark:text-amber-400">Nota de consumo:</span> Este proceso ejecuta simulaciones complejas que consumen significativamente más tokens de tu plan de IA (y requiere más tiempo de procesamiento) en comparación con un mensaje de chat tradicional.
+                  </p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2 w-full pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowWarningModal(false)}
+                    className="flex-1 py-3 px-4 rounded-xl border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-55 dark:hover:bg-white/5 text-[10px] font-black uppercase tracking-widest transition-colors cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfirmWarning}
+                    className="flex-1 py-3 px-4 rounded-xl bg-[#1890FF] hover:bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 cursor-pointer"
+                  >
+                    Entendido, iniciar
+                  </button>
+                </div>
               </div>
             </motion.div>
           </motion.div>

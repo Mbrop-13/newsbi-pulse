@@ -360,7 +360,7 @@ Devuelve estrictamente un objeto JSON con este formato exacto:
           { role: "user", content: preProcessorPrompt }
         ],
         temperature: 0.3,
-        max_tokens: 4500,
+        max_tokens: 6000,
         search: true, // Enable web search for the pre-processor!
         user: user.id
       });
@@ -408,7 +408,7 @@ Ejecuta el enjambre de debate y genera el reporte JSON.`;
         { role: "user", content: userPrompt }
       ],
       temperature: 0.7,
-      max_tokens: 6000,
+      max_tokens: 10000,
       search: true, // Enable web search for live market grounding!
       user: user.id
     });

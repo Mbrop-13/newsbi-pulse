@@ -169,16 +169,17 @@ export function LandingUseCases() {
           ref={carouselRef}
           className="flex gap-8 overflow-x-auto py-10 px-4 -mx-4 scrollbar-none hide-scrollbar scroll-smooth"
         >
-          {USE_CASES.map((uc) => (
+          {USE_CASES.map((uc, index) => (
             <Link 
               key={uc.slug}
               href={`/casos-de-uso/${uc.slug}`}
-              className="min-w-[280px] sm:min-w-[320px] max-w-[320px] flex-shrink-0 flex origin-center"
+              className="min-w-[280px] sm:min-w-[320px] max-w-[320px] flex-shrink-0 flex"
             >
               <motion.div
                 whileHover={{ scale: 1.10, y: -8 }}
                 whileTap={{ scale: 1.10, y: -8 }}
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                style={{ originX: index === 0 ? 0 : index === USE_CASES.length - 1 ? 1 : 0.5 }}
                 className="group w-full h-full flex flex-col justify-between"
               >
                 {/* Card Image area with Unsplash image */}

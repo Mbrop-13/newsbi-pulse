@@ -5,7 +5,7 @@ import { Play, Sparkles, Brain, Network, Terminal } from "lucide-react";
 
 export function LandingMobileMockup() {
   return (
-    <section className="py-20 bg-transparent text-white overflow-hidden">
+    <section className="w-full py-20 bg-transparent text-white overflow-hidden">
       <div className="max-w-6xl mx-auto px-6">
         
         {/* Split Layout Container */}

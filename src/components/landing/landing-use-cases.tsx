@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { ArrowLeft, ArrowRight, ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 
 const USE_CASES = [
   {
@@ -172,39 +173,46 @@ export function LandingUseCases() {
             <Link 
               key={uc.slug}
               href={`/casos-de-uso/${uc.slug}`}
-              className="group min-w-[280px] sm:min-w-[320px] max-w-[320px] flex-shrink-0 flex flex-col justify-between transition-all duration-500 ease-out hover:scale-[1.10] hover:-translate-y-2 origin-center"
+              className="min-w-[280px] sm:min-w-[320px] max-w-[320px] flex-shrink-0 flex origin-center"
             >
-              {/* Card Image area with Unsplash image */}
-              <div className="relative aspect-square w-full rounded-3xl overflow-hidden bg-slate-100 border border-slate-200/40 shadow-sm transition-all duration-300 group-hover:shadow-md mb-5">
-                <img 
-                  src={uc.image} 
-                  alt={uc.title}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60" />
-                
-                {/* Badge Overlay at the top right */}
-                <div className="absolute top-4 right-4 text-white font-sans font-bold text-[11px] bg-black/60 px-3 py-1 rounded-full border border-white/10 backdrop-blur-xs tracking-wider">
-                  {uc.badge}
+              <motion.div
+                whileHover={{ scale: 1.10, y: -8 }}
+                whileTap={{ scale: 1.10, y: -8 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                className="group w-full h-full flex flex-col justify-between"
+              >
+                {/* Card Image area with Unsplash image */}
+                <div className="relative aspect-square w-full rounded-3xl overflow-hidden bg-slate-100 border border-slate-200/40 shadow-sm transition-all duration-300 group-hover:shadow-md mb-5">
+                  <img 
+                    src={uc.image} 
+                    alt={uc.title}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60" />
+                  
+                  {/* Badge Overlay at the top right */}
+                  <div className="absolute top-4 right-4 text-white font-sans font-bold text-[11px] bg-black/60 px-3 py-1 rounded-full border border-white/10 backdrop-blur-xs tracking-wider">
+                    {uc.badge}
+                  </div>
                 </div>
-              </div>
 
-              {/* Title & Link below */}
-              <div className="flex flex-col items-start px-1">
-                <span className="text-[11px] font-extrabold tracking-widest text-[#1890FF] uppercase mb-2">
-                  {uc.category}
-                </span>
-                <h3 className="text-slate-950 font-black text-lg md:text-xl mb-2 leading-snug tracking-tight transition-all duration-300 group-hover:text-blue-600">
-                  {uc.title}
-                </h3>
-                <p className="text-slate-500 text-[13px] font-medium mb-4 leading-relaxed min-h-[64px] transition-all duration-300 group-hover:text-slate-700">
-                  {uc.desc}
-                </p>
-                <span className="inline-flex items-center gap-1 text-blue-600 text-xs font-bold">
-                  {uc.cta} <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
-                </span>
-              </div>
+                {/* Title & Link below */}
+                <div className="flex flex-col items-start px-1">
+                  <span className="text-[11px] font-extrabold tracking-widest text-[#1890FF] uppercase mb-2">
+                    {uc.category}
+                  </span>
+                  <h3 className="text-slate-950 font-black text-lg md:text-xl mb-2 leading-snug tracking-tight transition-all duration-300 group-hover:text-blue-600">
+                    {uc.title}
+                  </h3>
+                  <p className="text-slate-500 text-[13px] font-medium mb-4 leading-relaxed min-h-[64px] transition-all duration-300 group-hover:text-slate-700">
+                    {uc.desc}
+                  </p>
+                  <span className="inline-flex items-center gap-1 text-blue-600 text-xs font-bold">
+                    {uc.cta} <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
+                  </span>
+                </div>
+              </motion.div>
             </Link>
           ))}
         </div>

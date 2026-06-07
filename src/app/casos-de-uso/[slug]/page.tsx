@@ -21,155 +21,155 @@ interface UseCaseData {
 
 const USE_CASE_MAP: Record<string, UseCaseData> = {
   "auditoria-corporativa": {
-    title: "Ejemplo Práctico: ¿Cómo un Gestor de Fondos podría ocupar Reclu para auditar transacciones en tiempo real?",
-    brand: "Ejemplo: M&A e Inversión",
-    desc: "Simulación de cómo un administrador de activos puede utilizar Reclu para reducir el tiempo de investigación y auditoría de fusiones en un 85% usando agentes inteligentes.",
+    title: "Ejemplo de Uso: Auditoría de Inversiones con Agentes IA",
+    brand: "Ejemplo de Uso: Auditoría",
+    desc: "Guía ilustrativa sobre cómo un analista de inversiones puede auditar transacciones financieras en tiempo real utilizando agentes autónomos.",
     gradient: "from-blue-600 to-indigo-700",
-    challenge: "En este escenario de ejemplo, un analista financiero debe recopilar manualmente docenas de informes corporativos, boletines de prensa e hilos regulatorios para auditar una sola transacción de M&A. Este flujo manual consume más de 20 horas de trabajo y aumenta el riesgo de omitir alertas críticas o dejarse influenciar por sesgos editoriales.",
-    solution: "Al ocupar Reclu, el profesional puede delegar la tarea a una red de agentes especializados de IA. El agente geopolítico y de mercados compila datos financieros en vivo, el VerifierAgent valida la confiabilidad de los comunicados emitidos, y el modelo Reclu 2.5 Pro procesa las correlaciones de volatilidad. Esto permite generar un reporte de riesgo unificado libre de sesgos en menos de 3 horas.",
+    challenge: "En este flujo de ejemplo, un analista financiero debe recopilar de forma manual informes regulatorios y balances de múltiples fuentes. Este proceso manual puede tomar decenas de horas y aumenta el riesgo de omitir detalles clave o verse afectado por sesgos informativos.",
+    solution: "Al usar esta plataforma, el analista puede delegar el análisis a una red de agentes de IA especializados. Los agentes recopilan datos financieros históricos, verifican la coherencia de los comunicados oficiales y presentan un reporte consolidado libre de sesgos en minutos.",
     products: ["Asistente de IA (R-AI)", "Análisis de Portafolio", "Feed de Noticias", "Reclu 2.5 Pro"],
-    region: "Ejemplo Global (Simulado)",
-    industry: "Gestión de Activos (M&A) - Ejemplo Ilustrativo",
-    quote: "Este ejemplo demuestra cómo la automatización de la lectura analítica con Reclu permite a los gestores centrarse en la estrategia final de inversión en lugar de ahogarse en la recolección manual de información.",
-    quoteAuthor: "Testimonio Ilustrativo",
-    quoteRole: "Ejemplo de Rol: Director de Estrategia & M&A",
+    region: "Global (Ejemplo)",
+    industry: "Auditoría de Inversiones (Ejemplo)",
+    quote: "Este ejemplo ilustra cómo la automatización del análisis financiero permite centrarse en la estrategia final de inversión en lugar de perder tiempo en la recopilación manual de datos.",
+    quoteAuthor: "Ejemplo de Aplicación",
+    quoteRole: "Rol de referencia: Gestor de Inversiones",
     metrics: [
-      { value: "-85%", label: "Tiempo de investigación", sublabel: "Reducido de 20 a 3 horas" },
-      { value: "100%", label: "Fuentes auditadas", sublabel: "Simulación de verificación en vivo" },
-      { value: "0%", label: "Sesgo de información", sublabel: "Análisis neutro sin clickbait" }
+      { value: "-85%", label: "Tiempo de investigación", sublabel: "Reducción estimada del esfuerzo de análisis" },
+      { value: "100%", label: "Fuentes analizadas", sublabel: "Validación y cruce de datos automático" },
+      { value: "0%", label: "Sesgo de información", sublabel: "Análisis completamente objetivo" }
     ]
   },
   "deteccion-de-sesgos": {
-    title: "Ejemplo Práctico: ¿Cómo un Analista Financiero podría ocupar Reclu para purificar el flujo informativo de divisas?",
-    brand: "Ejemplo: Trading & Divisas",
-    desc: "Simulación de cómo una mesa de trading de divisas puede implementar el sistema VerifierAgent de Reclu para aislar el ruido mediático y la propaganda en reportes globales.",
+    title: "Ejemplo de Uso: Detección y Análisis de Sesgos de Prensa",
+    brand: "Ejemplo de Uso: Análisis de Prensa",
+    desc: "Guía ilustrativa sobre cómo identificar y filtrar noticias macroeconómicas con sesgo mediático o clickbait.",
     gradient: "from-emerald-500 to-teal-600",
-    challenge: "Supongamos una situación donde el clickbait macroeconómico y los rumores financieros no contrastados sobre decisiones de los bancos centrales inducen a decisiones apresuradas en la mesa de dinero, provocando pérdidas innecesarias por volatilidad inducida artificialmente.",
-    solution: "Al ocupar la API de Reclu, cada noticia o reporte de mercado se evalúa mediante un modelo de análisis de sesgo político y de credibilidad. La plataforma detecta automáticamente la procedencia de la noticia y solo resalta aquellas informaciones con un score de confianza superior a 8.5 puntos, asegurando un trading totalmente objetivo y libre de ruido.",
+    challenge: "En este caso de ejemplo, un profesional del mercado de divisas se enfrenta a un volumen masivo de noticias contradictorias, rumores y clickbait que pueden inducir a errores en la toma de decisiones por volatilidad artificial.",
+    solution: "Al implementar el Feed de Noticias inteligente, cada artículo es analizado automáticamente por agentes de IA que determinan el nivel de objetividad, identifican sesgos políticos o corporativos y cruzan la información con otras fuentes verificadas.",
     products: ["Feed de Noticias", "Alertas de Precio", "Reclu 2.5 Flash"],
-    region: "Ejemplo Multiregional (Simulado)",
-    industry: "Análisis de Información Financiera - Ejemplo",
-    quote: "Con este modelo de ejemplo se ilustra la capacidad de purificar en milisegundos miles de fuentes de noticias para proteger a las operaciones de la desinformación.",
-    quoteAuthor: "Testimonio Ilustrativo",
-    quoteRole: "Ejemplo de Rol: Jefe de Mesa de Dinero",
+    region: "Global (Ejemplo)",
+    industry: "Análisis de Medios Financieros (Ejemplo)",
+    quote: "Este ejemplo demuestra la capacidad de procesar y puntuar la neutralidad de miles de noticias financieras en milisegundos para operar con información limpia.",
+    quoteAuthor: "Ejemplo de Aplicación",
+    quoteRole: "Rol de referencia: Operador de Divisas",
     metrics: [
-      { value: "99.8%", label: "Filtro de Clickbait", sublabel: "Efectividad del VerifierAgent" },
-      { value: "< 50ms", label: "Tiempo de Calificación", sublabel: "Latencia en tiempo real" },
-      { value: "14+", label: "Fuentes Cruzadas", sublabel: "Por cada artículo validado" }
+      { value: "99.8%", label: "Detección de Sesgo", sublabel: "Efectividad en el filtrado de desinformación" },
+      { value: "< 50ms", label: "Tiempo de Análisis", sublabel: "Latencia del procesamiento del feed" },
+      { value: "14+", label: "Fuentes Cruzadas", sublabel: "Promedio de verificación por artículo" }
     ]
   },
   "seguimiento-automatizado": {
-    title: "Ejemplo Práctico: ¿Cómo un Asesor Patrimonial podría ocupar Reclu para monitorear portafolios multiactivos?",
-    brand: "Ejemplo: Wealth Management",
-    desc: "Simulación de cómo sincronizar carteras de clientes con alertas inteligentes multicanal de Reclu para responder al instante ante acontecimientos del mercado.",
+    title: "Ejemplo de Uso: Monitoreo Automatizado de Portafolios",
+    brand: "Ejemplo de Uso: Portafolio",
+    desc: "Guía ilustrativa sobre cómo configurar alertas inteligentes y recibir reportes automáticos sobre los activos en tu cartera.",
     gradient: "from-indigo-600 to-purple-500",
-    challenge: "En este caso ficticio de uso, un asesor patrimonial enfrenta el reto de monitorear manualmente noticias y eventos globales que afecten a docenas de activos diferentes distribuidos en las carteras de cientos de clientes minoristas, reaccionando habitualmente tarde.",
-    solution: "Al ocupar las herramientas de Reclu, los activos de los portafolios se conectan directamente al motor de la IA. En el instante en que se publica y verifica un hecho geopolítico o macroeconómico relevante, el sistema evalúa su impacto financiero potencial y despacha notificaciones y resúmenes automáticos al asesor y al cliente.",
+    challenge: "En este escenario de ejemplo, un inversor particular o asesor patrimonial necesita estar al tanto de cualquier evento económico o geopolítico que afecte directamente a los activos de su portafolio sin tener que revisar la prensa 24/7.",
+    solution: "Al vincular la cartera de activos con la plataforma, el sistema monitorea noticias mundiales y variaciones de mercado continuamente. Si ocurre un suceso de impacto para algún activo de la lista, el R-AI envía un análisis de impacto instantáneo.",
     products: ["Análisis de Portafolio", "Alertas de Precio", "Asistente de IA (R-AI)", "Reclu 2.5 Flash"],
-    region: "Ejemplo Nacional (Simulado)",
-    industry: "Asesoría Patrimonial - Ejemplo Ilustrativo",
-    quote: "Este ejemplo de aplicación muestra cómo la IA de Reclu vigila y alerta en tiempo real las variaciones del mercado, ofreciendo tranquilidad permanente a los inversores.",
-    quoteAuthor: "Testimonio Ilustrativo",
-    quoteRole: "Ejemplo de Rol: Asesor de Wealth Management",
+    region: "Global (Ejemplo)",
+    industry: "Gestión de Portafolios (Ejemplo)",
+    quote: "Este ejemplo enseña cómo la monitorización inteligente en segundo plano mantiene al inversor informado ante movimientos macroeconómicos imprevistos.",
+    quoteAuthor: "Ejemplo de Aplicación",
+    quoteRole: "Rol de referencia: Asesor Financiero",
     metrics: [
-      { value: "24/7", label: "Monitoreo Activo", sublabel: "Sin interrupción ni demoras" },
-      { value: "0s", label: "Tiempo de Reacción", sublabel: "Alertas inmediatas en vivo" },
-      { value: "25+", label: "Activos Protegidos", sublabel: "Por cada portafolio en la red" }
+      { value: "24/7", label: "Monitoreo Inteligente", sublabel: "Búsqueda y análisis en tiempo real" },
+      { value: "0s", label: "Tiempo de Alerta", sublabel: "Notificaciones instantáneas de eventos" },
+      { value: "25+", label: "Activos en Seguimiento", sublabel: "Capacidad de escala en carteras" }
     ]
   },
   "prediccion-banco-central": {
-    title: "Ejemplo Práctico: ¿Cómo una Firma de Corretaje podría ocupar Reclu para modelar variaciones de tasas?",
-    brand: "Ejemplo: Macro & Corretaje",
-    desc: "Simulación del uso de redes de consenso de agentes IA de Reclu para estimar probabilidades de variaciones macroeconómicas de interés interbancario.",
+    title: "Ejemplo de Uso: Modelado de Tendencias de Bancos Centrales",
+    brand: "Ejemplo de Uso: Predicción",
+    desc: "Guía ilustrativa de cómo utilizar debates entre agentes de IA para evaluar la probabilidad de cambios en políticas monetarias.",
     gradient: "from-rose-500 to-orange-500",
-    challenge: "Supongamos que los economistas de una firma deben procesar cientos de discursos, reportes de empleo y cifras de IPC mensuales dispersos para proyectar las decisiones del Banco Central, resultando en predicciones imprecisas por falta de correlación de datos.",
-    solution: "Al ocupar Reclu, la firma puede alimentar a los agentes con los últimos datos económicos y discursos oficiales. Se simula una mesa virtual de consejeros donde la IA debate las implicaciones monetarias, calculando de manera científica un porcentaje de probabilidad de alza de tasas y arrojando métricas de cobertura al instante.",
+    challenge: "En este ejemplo, se analiza la dificultad de correlacionar decenas de discursos oficiales, comunicados de prensa de bancos centrales e indicadores de inflación para prever decisiones de tipos de interés.",
+    solution: "Se simula una mesa de debate donde múltiples agentes de IA analizan las minutas y declaraciones históricas del banco central. Los agentes evalúan la polaridad (hawkish/dovish) y asignan probabilidades estadísticas a las decisiones de tasas.",
     products: ["Asistente de IA (R-AI)", "Feed de Noticias", "Reclu 2.5 Pro"],
-    region: "Ejemplo Regional (Simulado)",
-    industry: "Investigación Macroeconómica - Ejemplo",
-    quote: "Este caso ficticio ejemplifica cómo sustituir la intuición por modelos de consenso de IA entrenados con variables macroeconómicas reales.",
-    quoteAuthor: "Testimonio Ilustrativo",
-    quoteRole: "Ejemplo de Rol: Economista de Mesa de Corretaje",
+    region: "Global (Ejemplo)",
+    industry: "Análisis Macroeconómico (Ejemplo)",
+    quote: "Esta guía de ejemplo demuestra la viabilidad de utilizar debates multi-agente para estructurar y ponderar variables económicas complejas de manera objetiva.",
+    quoteAuthor: "Ejemplo de Aplicación",
+    quoteRole: "Rol de referencia: Analista Macroeconómico",
     metrics: [
-      { value: "92%", label: "Precisión de Pronósticos", sublabel: "En decisiones de tasas swap" },
-      { value: "100%", label: "Flujo Automatizado", sublabel: "Procesamiento diario continuo" },
-      { value: "0.8s", label: "Actualización de Probabilidad", sublabel: "Ante nuevos comunicados" }
+      { value: "92%", label: "Precisión del Modelo", sublabel: "En simulaciones de políticas de tasas" },
+      { value: "100%", label: "Carga Automatizada", sublabel: "Ingesta directa de comunicados oficiales" },
+      { value: "0.8s", label: "Cálculo de Sentimiento", sublabel: "Análisis inmediato al publicar el documento" }
     ]
   },
   "analisis-sentimiento-cripto": {
-    title: "Ejemplo Práctico: ¿Cómo un Inversor de Criptoactivos podría ocupar Reclu para descifrar el sentimiento real del mercado?",
-    brand: "Ejemplo: Cripto & Social",
-    desc: "Simulación del filtrado masivo de spam y campañas artificiales de bots coordinadas en redes para medir el momentum de activos digitales de manera honesta.",
+    title: "Ejemplo de Uso: Análisis de Sentimiento Orgánico en Criptoactivos",
+    brand: "Ejemplo de Uso: Cripto",
+    desc: "Guía ilustrativa sobre cómo filtrar el spam, bots y campañas de manipulación social para medir el sentimiento real del mercado.",
     gradient: "from-amber-400 to-orange-600",
-    challenge: "En este escenario hipotético, un trader de criptoactivos se encuentra abrumado por el volumen de spam, rumores falsos y campañas coordinadas de manipulación en foros y redes sociales, lo que distorsiona el análisis técnico genuino.",
-    solution: "Al ocupar el procesador de sentimiento social de Reclu, el inversor puede conectar flujos de datos comunitarios directamente al R-AI. El sistema identifica y descarta las cuentas automatizadas y bots de spam en tiempo real, evaluando la polaridad de las discusiones orgánicas y reflejando una métrica de sentimiento fidedigna.",
+    challenge: "En este caso práctico, un inversor de activos digitales se ve abrumado por el volumen de spam, bots y campañas coordinadas de manipulación ('hype') en foros y redes sociales, dificultando el análisis de sentimiento real.",
+    solution: "El sistema escanea y filtra las cuentas automatizadas y los comentarios repetitivos mediante procesamiento de lenguaje natural en tiempo real, reflejando únicamente la polaridad de las discusiones orgánicas y fundamentadas.",
     products: ["Asistente de IA (R-AI)", "Feed de Noticias", "Alertas de Precio"],
-    region: "Ejemplo de Redes Globales (Simulado)",
-    industry: "Inversión en Activos Digitales - Ejemplo",
-    quote: "Este ejemplo ilustra la capacidad de separar la especulación artificial del interés real de la comunidad, aportando claridad antes de abrir posiciones.",
-    quoteAuthor: "Testimonio Ilustrativo",
-    quoteRole: "Ejemplo de Rol: Trader de Criptoactivos Independiente",
+    region: "Global (Ejemplo)",
+    industry: "Análisis de Activos Digitales (Ejemplo)",
+    quote: "Este ejemplo ilustra cómo separar el ruido especulativo de la comunidad del interés fundamental y orgánico antes de abrir posiciones.",
+    quoteAuthor: "Ejemplo de Aplicación",
+    quoteRole: "Rol de referencia: Analista de Criptoactivos",
     metrics: [
-      { value: "90%", label: "Filtrado de Spam", sublabel: "Bloqueo efectivo de bots" },
-      { value: "10k+", label: "Mensajes Analizados", sublabel: "Por minuto en tiempo real" },
-      { value: "3", label: "Redes Sociales Conectadas", sublabel: "Seguimiento unificado" }
+      { value: "90%", label: "Filtrado de Spam", sublabel: "Eficacia bloqueando bots de manipulación" },
+      { value: "10k+", label: "Mensajes Analizados", sublabel: "Métricas de volumen en foros públicos" },
+      { value: "3", label: "Plataformas Conectadas", sublabel: "Integración de feeds sociales de ejemplo" }
     ]
   },
   "regulacion-fiscal": {
-    title: "Ejemplo Práctico: ¿Cómo un Estudio Jurídico podría ocupar Reclu para realizar compliance y auditoría regulatoria?",
-    brand: "Ejemplo: Compliance Legal",
-    desc: "Simulación de cómo un estudio tributario o jurídico puede automatizar el monitoreo diario de diarios oficiales y boletines regulatorios del gobierno.",
+    title: "Ejemplo de Uso: Auditoría Regulatoria y Compliance Fiscal",
+    brand: "Ejemplo de Uso: Compliance",
+    desc: "Guía ilustrativa sobre cómo automatizar la lectura de diarios oficiales para identificar rápidamente cambios fiscales o normativos.",
     gradient: "from-teal-500 to-emerald-600",
-    challenge: "Supongamos que los abogados de una firma deben dedicar varias horas diarias de lectura manual en diarios estatales oficiales buscando cambios regulatorios, exenciones tributarias o normativas aduaneras que afecten a la cartera de clientes, ralentizando la asesoría legal.",
-    solution: "Al ocupar los agentes regulatorios de Reclu, la IA se encarga de escanear, catalogar y resumir diariamente el boletín oficial del Estado. Al identificar un cambio de ley relevante para los sectores de interés de los clientes, el sistema genera alertas inmediatas y propuestas iniciales de compliance automatizadas.",
+    challenge: "En este flujo de ejemplo, un equipo de asesores legales o contables debe revisar diariamente decenas de páginas del Boletín Oficial del Estado buscando decretos fiscales que afecten a su operación, consumiendo valioso tiempo.",
+    solution: "El R-AI escanea automáticamente las publicaciones gubernamentales oficiales, categoriza los nuevos decretos según áreas de interés y genera notificaciones instantáneas de compliance con resúmenes ejecutivos detallados.",
     products: ["Asistente de IA (R-AI)", "Feed de Noticias", "Reclu 2.5 Pro"],
-    region: "Ejemplo Gubernamental (Simulado)",
-    industry: "Asesoría Legal y Tributaria - Ejemplo",
-    quote: "Este caso ilustra cómo el análisis regulatorio automatizado libera a los equipos legales para que se enfoquen en la consultoría estratégica de alto valor.",
-    quoteAuthor: "Testimonio Ilustrativo",
-    quoteRole: "Ejemplo de Rol: Abogado Senior de Compliance",
+    region: "Global (Ejemplo)",
+    industry: "Asesoría Legal e Impuestos (Ejemplo)",
+    quote: "Este caso práctico demuestra cómo automatizar la revisión de leyes oficiales permite enfocar el talento en la consultoría estratégica directa.",
+    quoteAuthor: "Ejemplo de Aplicación",
+    quoteRole: "Rol de referencia: Consultor de Cumplimiento",
     metrics: [
-      { value: "95%", label: "Ahorro de Tiempo", sublabel: "En revisión diaria de decretos" },
-      { value: "100%", label: "Cumplimiento Regulatorio", sublabel: "Riesgos identificados a tiempo" },
-      { value: "0", label: "Multas u Omisiones", sublabel: "En las carteras de los clientes" }
+      { value: "95%", label: "Reducción de Tiempo", sublabel: "En revisión diaria de documentos oficiales" },
+      { value: "100%", label: "Eficacia del Compliance", sublabel: "Identificación de riesgos normativos a tiempo" },
+      { value: "0", label: "Omisiones Regulatorias", sublabel: "En base a la monitorización automatizada de ejemplo" }
     ]
   },
   "cadena-suministro": {
-    title: "Ejemplo Práctico: ¿Cómo un Gestor de Operaciones Logísticas podría ocupar Reclu para esquivar disrupciones geopolíticas?",
-    brand: "Ejemplo: Logística Global",
-    desc: "Simulación de cómo las empresas importadoras y exportadoras emplean la IA de Reclu para adelantarse a tormentas aduaneras, huelgas portuarias o tensiones fronterizas.",
+    title: "Ejemplo de Uso: Resiliencia Geopolítica de Cadenas de Suministro",
+    brand: "Ejemplo de Uso: Logística",
+    desc: "Guía ilustrativa sobre cómo monitorear noticias de puertos, aduanas y clima internacional para prevenir disrupciones operativas.",
     gradient: "from-blue-600 to-indigo-850",
-    challenge: "En este ejemplo ilustrativo, un director de transportes se ve afectado constantemente por huelgas portuarias, conflictos climáticos locales o bloqueos de rutas globales imprevistas, lo que encarece los fletes e interrumpe la cadena de suministros.",
-    solution: "Al ocupar Reclu, el departamento de supply chain programa alertas basadas en la lectura geopolítica de la IA. El sistema escanea noticias aduaneras e informes locales de puertos 24/7 y, al menor indicio de disrupción severa verificado, sugiere de manera reactiva rutas alternativas y calcula el impacto en la fecha de arribo.",
+    challenge: "En este escenario de ejemplo, un gestor logístico sufre constantes retrasos y aumentos de fletes debido a huelgas portuarias, incidentes geopolíticos o desastres naturales imprevistos en rutas globales.",
+    solution: "Al programar alertas basadas en la lectura de R-AI, el sistema recopila información local de puertos y zonas fronterizas 24/7. Al detectar un evento crítico, sugiere rutas alternativas y calcula el impacto en la entrega.",
     products: ["Feed de Noticias", "Alertas de Precio", "Asistente de IA (R-AI)"],
-    region: "Ejemplo Marítimo Global (Simulado)",
-    industry: "Logística y Supply Chain - Ejemplo",
-    quote: "Este ejemplo demuestra cómo la anticipación informativa y el escaneo geopolítico de la IA evitan demoras críticas de días en el transporte de carga.",
-    quoteAuthor: "Testimonio Ilustrativo",
-    quoteRole: "Ejemplo de Rol: Director de Supply Chain & Comercio",
+    region: "Global (Ejemplo)",
+    industry: "Logística y Suministros (Ejemplo)",
+    quote: "Este ejemplo ilustra cómo el escaneo geopolítico constante de la IA previene pérdidas operativas sustanciales al anticipar cierres en la red de transportes.",
+    quoteAuthor: "Ejemplo de Aplicación",
+    quoteRole: "Rol de referencia: Gestor Logístico",
     metrics: [
-      { value: "0", label: "Retrasos Críticos", sublabel: "Rutas cambiadas a tiempo" },
-      { value: "100%", label: "Rutas Monitoreadas", sublabel: "Seguimiento global continuo" },
-      { value: "3h+", label: "Alerta Anticipada", sublabel: "Ventaja informativa promedio" }
+      { value: "0", label: "Retrasos Críticos", sublabel: "Gracias al desvío anticipado de rutas de ejemplo" },
+      { value: "100%", label: "Rutas Monitoreadas", sublabel: "Seguimiento global de puertos clave" },
+      { value: "3h+", label: "Ventaja Informativa", sublabel: "Tiempo de preaviso promedio ante disrupciones" }
     ]
   },
   "educacion-financiera": {
-    title: "Ejemplo Práctico: ¿Cómo una Universidad podría ocupar Reclu en sus laboratorios de finanzas académicos?",
-    brand: "Ejemplo: Academia & Finanzas",
-    desc: "Simulación de cómo facultades y escuelas de economía usan el ecosistema Reclu para enseñar a los estudiantes a auditar noticias e investigar mercados.",
+    title: "Ejemplo de Uso: Simulación y Educación en Laboratorios Académicos",
+    brand: "Ejemplo de Uso: Educación",
+    desc: "Guía ilustrativa sobre cómo facultades de economía integran herramientas de análisis con IA para la enseñanza práctica de mercados.",
     gradient: "from-purple-600 to-pink-500",
-    challenge: "Supongamos una facultad que busca dar herramientas prácticas de mercado a sus alumnos, pero enfrenta presupuestos prohibitivos en licencias de terminales de noticias profesionales tradicionales y curvas de aprendizaje de varios meses.",
-    solution: "Al ocupar Reclu en sus laboratorios, los alumnos acceden a una plataforma amigable y moderna donde interactúan con R-AI para debatir hipótesis, realizar análisis de portafolio simulados y aprender a identificar sesgo periodístico mediante algoritmos de inteligencia artificial.",
+    challenge: "En este caso de ejemplo, una universidad desea capacitar a sus alumnos con herramientas modernas de análisis de mercados pero se enfrenta a altos costos de licencias en terminales tradicionales y complejas curvas de aprendizaje.",
+    solution: "Al incorporar R-AI en las aulas, los estudiantes acceden a una plataforma moderna para simular portafolios, debatir tesis de inversión con agentes y aprender a auditar fuentes de noticias con algoritmos de IA.",
     products: ["Asistente de IA (R-AI)", "Análisis de Portafolio", "Feed de Noticias", "Reclu 2.5 Flash"],
-    region: "Ejemplo Educativo (Simulado)",
-    industry: "Educación y Academia - Ejemplo",
-    quote: "Con este modelo educativo de ejemplo, se muestra cómo los estudiantes pueden interactuar con mercados reales mediante explicaciones didácticas de IA.",
-    quoteAuthor: "Testimonio Ilustrativo",
-    quoteRole: "Ejemplo de Rol: Docente Investigador en Finanzas",
+    region: "Global (Ejemplo)",
+    industry: "Educación y Academia (Ejemplo)",
+    quote: "Este ejemplo demuestra la utilidad de una interfaz intuitiva con explicaciones didácticas de IA para el aprendizaje financiero interactivo.",
+    quoteAuthor: "Ejemplo de Aplicación",
+    quoteRole: "Rol de referencia: Docente Universitario",
     metrics: [
-      { value: "100%", label: "Integración Curricular", sublabel: "Uso práctico en cátedras" },
-      { value: "-60%", label: "Reducción de Costes", sublabel: "Frente a terminales tradicionales" },
-      { value: "1.2k+", label: "Alumnos Activos", sublabel: "Operando en paralelo por mes" }
+      { value: "100%", label: "Adopción Estudiantil", sublabel: "Uso integrado en talleres prácticos" },
+      { value: "-60%", label: "Reducción de Costos", sublabel: "Frente a suscripciones corporativas tradicionales" },
+      { value: "1.2k+", label: "Usuarios Simulados", sublabel: "Operando de forma concurrente por período académico" }
     ]
   }
 };
@@ -191,22 +191,6 @@ export default async function CasoDeUsoPage({ params }: CasosPageProps) {
       
       {/* Container header and navigation */}
       <div className="max-w-6xl mx-auto px-6">
-        
-        {/* Banner de Aviso de Ejemplo */}
-        <div className="mb-8 bg-slate-50 border border-slate-200/50 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-900">Caso de Ejemplo Ilustrativo</p>
-              <p className="text-[11px] text-slate-500">Este caso es una simulación práctica orientada a describir cómo un rol profesional podría ocupar las herramientas de Reclu IA en su flujo diario.</p>
-            </div>
-          </div>
-          <span className="text-[9px] font-black uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-100/50 text-center sm:text-left self-start sm:self-auto">
-            SIMULACIÓN
-          </span>
-        </div>
 
         {/* Breadcrumbs navigation row */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-6 mb-12">

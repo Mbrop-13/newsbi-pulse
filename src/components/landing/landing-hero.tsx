@@ -84,13 +84,13 @@ export function LandingHero({ onScrollToFeatures }: LandingHeroProps) {
 
         {/* Right: CTA Button with Dropdown */}
         <div 
-          className="flex items-center relative py-2"
+          className="flex items-stretch h-9 md:h-10 relative"
           onMouseLeave={() => setIsDropdownOpen(false)}
         >
           {/* Main Comenzar Button */}
           <button
             onClick={() => isAuthenticated ? router.push("/ai") : openModal("login")}
-            className="flex items-center gap-1 text-xs md:text-sm font-extrabold bg-[#1890FF] text-white hover:bg-[#1890FF]/90 px-5 py-2.5 rounded-l-xl border-r border-[#1890FF]/25 shadow-sm shadow-[#1890FF]/10 transition-all select-none cursor-pointer"
+            className="flex items-center gap-1 text-xs md:text-sm font-extrabold bg-[#1890FF] text-white hover:bg-[#1890FF]/90 px-5 rounded-l-xl border-r border-[#1890FF]/25 shadow-sm shadow-[#1890FF]/10 transition-all select-none cursor-pointer"
           >
             Comenzar
           </button>
@@ -99,7 +99,7 @@ export function LandingHero({ onScrollToFeatures }: LandingHeroProps) {
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             onMouseEnter={() => setIsDropdownOpen(true)}
-            className="flex items-center justify-center w-9 h-[38px] md:h-[40px] bg-[#1890FF] text-white hover:bg-[#1890FF]/90 rounded-r-xl shadow-sm shadow-[#1890FF]/10 transition-all select-none cursor-pointer"
+            className="flex items-center justify-center w-9 bg-[#1890FF] text-white hover:bg-[#1890FF]/90 rounded-r-xl shadow-sm shadow-[#1890FF]/10 transition-all select-none cursor-pointer"
             aria-label="Opciones de la Plataforma"
           >
             <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isDropdownOpen ? "rotate-180" : ""}`} />
@@ -113,7 +113,7 @@ export function LandingHero({ onScrollToFeatures }: LandingHeroProps) {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 8, scale: 0.95 }}
                 transition={{ duration: 0.2 }}
-                className="absolute top-[38px] md:top-[40px] right-0 w-[260px] bg-[#FAF9F5] border border-[#E9E8E4] rounded-2xl p-5 shadow-2xl z-50 font-sans text-left flex flex-col gap-5"
+                className="absolute top-full mt-1 right-0 w-[260px] bg-[#FAF9F5] border border-[#E9E8E4] rounded-2xl p-5 shadow-2xl z-50 font-sans text-left flex flex-col gap-5"
               >
                 {/* Products Section */}
                 <div>

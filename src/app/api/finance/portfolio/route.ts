@@ -35,7 +35,7 @@ export async function GET(request: Request) {
       price: q.regularMarketPrice,
       change: q.regularMarketChange,
       changePercent: q.regularMarketChangePercent,
-      logo: `https://logo.clearbit.com/${q.symbol.toLowerCase()}.com`
+      logo: `https://assets.parqet.com/logos/symbol/${q.symbol.toUpperCase()}`
     }));
 
     return NextResponse.json(results);

@@ -12,7 +12,6 @@ import { PersonalizationApplier } from "@/components/personalization-applier";
 import { AudioPlayerSidebar } from "@/components/audio-player-sidebar";
 import { AIChatSidebar } from "@/components/ai-chat-sidebar";
 import { useAudioPlayerStore } from "@/lib/stores/audio-player-store";
-import { useAIChatStore } from "@/lib/stores/ai-chat-store";
 import { AuthToast } from "@/components/auth-toast";
 import { ReadingListWidget } from "@/components/reading-list-widget";
 import { ResolvedBetsPopup } from "@/components/resolved-bet-popup";
@@ -44,7 +43,6 @@ export function ClientLayoutProviders({
   const isAdminPage = pathname.startsWith("/admin");
   const audioMode = useAudioPlayerStore((s) => s.mode);
   const pinnedWidth = useAudioPlayerStore((s) => s.pinnedWidth);
-  const aiChatOpen = useAIChatStore((s) => s.isOpen);
 
   return (
     <ThemeProvider>
@@ -60,7 +58,6 @@ export function ClientLayoutProviders({
             }`}
             style={{
               ...((!isAdminPage && audioMode === "pinned") ? { marginRight: pinnedWidth } : {}),
-              ...((!isAdminPage && aiChatOpen && !isMobile) ? { marginRight: 400 } : {}),
               transition: 'margin-right 0.3s ease-in-out',
             }}
           >

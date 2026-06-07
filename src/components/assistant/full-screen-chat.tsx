@@ -1076,7 +1076,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
         ) : (
           <>
             {/* Chat Messages */}
-            <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto hidden-scrollbar relative pb-24">
+            <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto hidden-scrollbar relative pb-6">
           
           {/* ── Prompt Carousel (full width, outside max-w constraint) ── */}
           {isStoreHydrated && aiMessages.length === 0 && !aiLoading && (
@@ -1408,8 +1408,8 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
         </AnimatePresence>
 
         {/* ─── PREMIUM INPUT BAR (REPOSITIONED) ─── */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-white via-white/90 to-transparent dark:from-[#0a0a0a] dark:via-[#0a0a0a]/90 pt-8 pb-1 px-4 md:px-8 pointer-events-none z-30">
-          <div className={`${maxWClass} mx-auto w-full relative pointer-events-auto transition-all duration-300`}>
+        <div className="bg-white dark:bg-[#0a0a0a] border-t border-gray-100 dark:border-white/5 pt-4 pb-4 px-4 md:px-8 z-30 shrink-0">
+          <div className={`${maxWClass} mx-auto w-full relative transition-all duration-300`}>
             
             {/* Near Limit Warning */}
             <AnimatePresence>

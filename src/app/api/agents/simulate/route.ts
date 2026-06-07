@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { checkTokenLimit, incrementTokenUsage } from "@/lib/check-limits";
 
+export const maxDuration = 300; // 5 minutes (requires Pro plan on Vercel)
+
 // ── Helper to extract JSON block between the first '{' and the last '}'
 function extractJsonObject(str: string): string {
   const firstBrace = str.indexOf("{");
@@ -358,7 +360,7 @@ Devuelve estrictamente un objeto JSON con este formato exacto:
           { role: "user", content: preProcessorPrompt }
         ],
         temperature: 0.3,
-        max_tokens: 1500,
+        max_tokens: 4500,
         search: true, // Enable web search for the pre-processor!
         user: user.id
       });
@@ -406,7 +408,7 @@ Ejecuta el enjambre de debate y genera el reporte JSON.`;
         { role: "user", content: userPrompt }
       ],
       temperature: 0.7,
-      max_tokens: 3000,
+      max_tokens: 6000,
       search: true, // Enable web search for live market grounding!
       user: user.id
     });

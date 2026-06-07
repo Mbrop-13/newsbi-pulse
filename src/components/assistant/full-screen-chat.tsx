@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, Brain, Sparkles, Loader2, ExternalLink, Paperclip, BarChart3, Newspaper, Bell, TrendingUp, X, Globe, History, Trash2, Plus, MessageSquare, PanelLeftClose, PanelLeft, Settings, Moon, Sun, Monitor, Type, Maximize, CheckCircle2, Mic, Star, LineChart, PieChart, AreaChart, Target, Scale, Layers, ThumbsUp, ThumbsDown, RefreshCw, Share2, ChevronRight, Clock, Zap, ArrowDown, Lock, Crown, Gift, ArrowRight, FileText, CalendarDays, Briefcase } from "lucide-react";
+import { Send, Bot, Brain, Sparkles, Loader2, ExternalLink, Paperclip, BarChart3, Newspaper, Bell, TrendingUp, X, Globe, History, Trash2, Plus, MessageSquare, PanelLeftClose, PanelLeft, Settings, Moon, Sun, Monitor, Type, Maximize, CheckCircle2, Mic, Star, LineChart, PieChart, AreaChart, Target, Scale, Layers, ThumbsUp, ThumbsDown, RefreshCw, Share2, ChevronRight, Clock, Zap, ArrowDown, Lock, Crown, Gift, ArrowRight, FileText, CalendarDays, Briefcase, Users } from "lucide-react";
 
 import { useAIChatStore, ChatMessage, ToolResultUI } from "@/lib/stores/ai-chat-store";
 import { useAssistantStore } from "@/lib/stores/assistant-store";
@@ -34,6 +34,16 @@ const ADVANCED_TOOLS = [
   { id: 'compare_stocks', label: 'Comparar Acciones', icon: Scale, category: 'Análisis' },
   { id: 'get_sector_performance', label: 'Rendimiento Sectorial', icon: Layers, category: 'Análisis' },
 ];
+
+function getGenericAgentName(index: number): string {
+  return `Agente ${index + 1}`;
+}
+
+function sentimentColor(s: string) {
+  if (s === 'bullish') return { bg: 'bg-emerald-500/10', text: 'text-emerald-500', border: 'border-emerald-500/20', hex: '#10b981' };
+  if (s === 'bearish') return { bg: 'bg-red-500/10', text: 'text-red-500', border: 'border-red-500/20', hex: '#ef4444' };
+  return { bg: 'bg-slate-500/10', text: 'text-slate-400', border: 'border-slate-500/20', hex: '#64748b' };
+}
 
 interface FullScreenChatProps {
   initialMode?: 'chat' | 'mirofish';
@@ -85,6 +95,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
   const [showPortfolioDropdown, setShowPortfolioDropdown] = useState(false);
   const [portfolioDetails, setPortfolioDetails] = useState<any[]>([]);
   const [loadingPortfolio, setLoadingPortfolio] = useState(false);
+  const [swarmLoading, setSwarmLoading] = useState(false);
 
   // ── Mode and Agent states ──
   const [activeChatMode, setActiveChatMode] = useState<'chat' | 'mirofish'>(initialMode);
@@ -577,7 +588,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
     }
   }, [aiMessages, aiLoading, isUserAtBottom]);
 
-  const handleModelSelect = (mId: 'fast' | 'pro') => {
+  const handleModelSelect = (mId: 'fast' | 'pro' | 'agent') => {
     if (mId === 'pro' && !canUsePro) {
       setShowUpsell(true);
       setShowModelMenu(false);
@@ -610,9 +621,160 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const sendSwarmAgentMessage = async (text: string) => {
+    if (swarmLoading || aiLoading) return;
+    setSwarmLoading(true);
+    setIsUserAtBottom(true);
+
+    const userMsgId = `user-${Date.now()}`;
+    const userMsg = {
+      id: userMsgId,
+      role: 'user' as const,
+      content: text,
+      timestamp: new Date()
+    };
+    setAiMessages(prev => [...prev, userMsg as any]);
+    setInput("");
+
+    const briefingMsgId = `briefing-${Date.now()}`;
+    const initialSteps: { label: string; status: 'pending' | 'running' | 'done' }[] = [
+      { label: "Optimización de consulta con terminología de Wall Street", status: 'running' },
+      { label: "Consolidación e historial de activos del portafolio", status: 'pending' },
+      { label: "Sincronización de búsquedas web y cotizaciones en vivo", status: 'pending' },
+      { label: "Conexión y preparación de la mesa de debate experto", status: 'pending' }
+    ];
+    let currentSteps = [...initialSteps];
+    const briefingMsg = {
+      id: briefingMsgId,
+      role: 'assistant' as const,
+      content: "",
+      isBriefing: true,
+      briefingSteps: currentSteps,
+      timestamp: new Date()
+    };
+    setAiMessages(prev => [...prev, briefingMsg as any]);
+
+    let step = 0;
+    const stepInterval = setInterval(() => {
+      step++;
+      if (step === 1) {
+        currentSteps[0] = { ...currentSteps[0], status: 'done' };
+        currentSteps[1] = { ...currentSteps[1], status: 'running' };
+      } else if (step === 2) {
+        currentSteps[1] = { ...currentSteps[1], status: 'done' };
+        currentSteps[2] = { ...currentSteps[2], status: 'running' };
+      } else if (step === 3) {
+        currentSteps[2] = { ...currentSteps[2], status: 'done' };
+        currentSteps[3] = { ...currentSteps[3], status: 'running' };
+      } else {
+        clearInterval(stepInterval);
+      }
+      setAiMessages(prev => prev.map(m => m.id === briefingMsgId ? { ...m, briefingSteps: [...currentSteps] } as any : m));
+    }, 700);
+
+    try {
+      const res = await fetch("/api/agents/simulate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          articleTitle: text,
+          articleContent: attachedFiles.length > 0 ? attachedFiles[0].content : "",
+          modelId: 'pro',
+          rounds: 5,
+          agentType: 'financial',
+          agentCount: 4
+        })
+      });
+      clearInterval(stepInterval);
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to simulate");
+      }
+
+      currentSteps = currentSteps.map(s => ({ ...s, status: 'done' }));
+      setAiMessages(prev => prev.map(m => m.id === briefingMsgId ? { ...m, briefingSteps: [...currentSteps] } as any : m));
+
+      const dialogueList = data.simulation.dialogue || [];
+      let currentMsgIndex = 0;
+      
+      const playNextMessage = () => {
+        if (currentMsgIndex >= dialogueList.length) {
+          setSwarmLoading(false);
+          requestAnimationFrame(() => {
+            const finalMessages = aiMessagesRef.current;
+            const storeMessages = finalMessages.map((m: any) => ({
+              id: m.id,
+              role: m.role,
+              content: m.content,
+              timestamp: new Date(),
+              isBriefing: m.isBriefing || undefined,
+              briefingSteps: m.briefingSteps || undefined,
+              isDebateMsg: m.isDebateMsg || undefined,
+              agentName: m.agentName || undefined,
+              agentRole: m.agentRole || undefined,
+              agentAvatar: m.agentAvatar || undefined,
+              sentiment: m.sentiment || undefined,
+            }));
+            useAIChatStore.setState({ messages: storeMessages as any });
+            useAIChatStore.getState().updateCurrentChat();
+            setTimeout(() => fetchRealUsage(), 800);
+          });
+          return;
+        }
+
+        const currentMsg = dialogueList[currentMsgIndex];
+        const thinkingMsgId = `thinking-${Date.now()}`;
+        const thinkingMsg = {
+          id: thinkingMsgId,
+          role: 'assistant' as const,
+          content: "",
+          isThinking: true,
+          agentName: getGenericAgentName(currentMsgIndex),
+          agentRole: `${currentMsg.agentName} · ${currentMsg.role}`,
+          agentAvatar: currentMsg.avatar || "🤖",
+          timestamp: new Date()
+        };
+        setAiMessages(prev => [...prev, thinkingMsg as any]);
+        setIsUserAtBottom(true);
+
+        setTimeout(() => {
+          const finalMsg = {
+            id: currentMsg.id || `agent-msg-${Date.now()}-${currentMsgIndex}`,
+            role: 'assistant' as const,
+            content: currentMsg.message,
+            isDebateMsg: true,
+            agentName: getGenericAgentName(currentMsgIndex),
+            agentRole: `${currentMsg.agentName} · ${currentMsg.role}`,
+            agentAvatar: currentMsg.avatar || "🤖",
+            sentiment: currentMsg.sentiment,
+            timestamp: new Date()
+          };
+          setAiMessages(prev => prev.map(m => m.id === thinkingMsgId ? finalMsg as any : m));
+          setIsUserAtBottom(true);
+
+          currentMsgIndex++;
+          setTimeout(playNextMessage, 2500);
+        }, 2200);
+      };
+
+      setTimeout(playNextMessage, 1000);
+
+    } catch (e: any) {
+      clearInterval(stepInterval);
+      setSwarmLoading(false);
+      toast.error(e.message || "Error al simular agentes");
+      setAiMessages(prev => prev.filter(m => m.id !== briefingMsgId));
+    }
+  };
+
   const sendMessage = async (textOverride?: string, contextOverride?: string) => {
     const text = textOverride || input.trim();
     if (!text || aiLoading) return;
+
+    if (selectedModel === 'agent') {
+      sendSwarmAgentMessage(textOverride || input.trim());
+      return;
+    }
     
     if (reachedQuestionLimit) {
       setShowUpsell(true);
@@ -1105,12 +1267,89 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                     </div>
                   )}
 
+                  {/* Briefing step logs */}
+                  {(msg as any).isBriefing && (
+                    <div className="self-start w-full bg-gray-55 dark:bg-slate-900/40 border border-gray-200 dark:border-slate-800/60 rounded-3xl p-5 mb-4 max-w-xl text-left">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Loader2 className="w-4 h-4 animate-spin text-[#1890FF]" />
+                        <span className="text-xs font-black uppercase tracking-widest text-gray-500">Mesa Redonda: Análisis de Escenario</span>
+                      </div>
+                      <div className="space-y-2.5">
+                        {(msg as any).briefingSteps?.map((step: any, sIdx: number) => (
+                          <div key={sIdx} className="flex items-center gap-3 text-xs font-semibold text-gray-650 dark:text-gray-450">
+                            {step.status === 'done' ? (
+                              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                            ) : step.status === 'running' ? (
+                              <Loader2 className="w-4 h-4 animate-spin text-[#1890FF] shrink-0" />
+                            ) : (
+                              <div className="w-4 h-4 rounded-full border border-gray-300 dark:border-gray-700 shrink-0" />
+                            )}
+                            <span className={step.status === 'running' ? 'text-gray-900 dark:text-white font-bold' : ''}>{step.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Thinking agent log */}
+                  {(msg as any).isThinking && (
+                    <div className="self-start flex gap-4 mb-4 items-start w-full text-left">
+                      <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-slate-850 flex items-center justify-center shrink-0 border border-gray-200 dark:border-slate-800 text-lg shadow-sm">
+                        {(msg as any).agentAvatar}
+                      </div>
+                      <div className="flex-1 bg-gray-55 dark:bg-slate-900/30 border border-gray-200 dark:border-slate-800/60 rounded-3xl p-4 max-w-xl animate-pulse">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-black text-gray-950 dark:text-white">
+                            {(msg as any).agentName}
+                          </span>
+                          <span className="text-[8px] font-bold text-gray-450 dark:text-gray-550 uppercase tracking-wider">
+                            {(msg as any).agentRole}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-2 text-gray-500 dark:text-gray-450 text-xs font-semibold">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-[#1890FF]" />
+                          <span>Analizando escenario y formulando argumento...</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Resolved Agent Debate Message */}
+                  {(msg as any).isDebateMsg && (
+                    <div className="self-start flex gap-4 mb-4 items-start group w-full text-left">
+                      <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-slate-850 flex items-center justify-center shrink-0 border border-gray-200/80 dark:border-slate-800 text-lg shadow-sm">
+                        {(msg as any).agentAvatar}
+                      </div>
+                      <div className="flex-grow bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-850 rounded-3xl px-5 py-4 max-w-2xl relative shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <span className="text-[10px] font-black text-gray-900 dark:text-white leading-none block">{(msg as any).agentName}</span>
+                            <span className="text-[7.5px] text-gray-400 dark:text-gray-550 font-bold block uppercase mt-0.5 tracking-wider">{(msg as any).agentRole}</span>
+                          </div>
+                          {(() => {
+                            const sc = sentimentColor((msg as any).sentiment || 'neutral');
+                            return (
+                              <span className={`text-[7.5px] font-black uppercase px-1.5 py-0.5 rounded leading-none border ${sc.bg} ${sc.text} ${sc.border}`}>
+                                {(msg as any).sentiment}
+                              </span>
+                            );
+                          })()}
+                        </div>
+                        <div className="prose prose-sm dark:prose-invert max-w-none text-gray-800 dark:text-gray-200 leading-relaxed font-medium">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {msg.content}
+                          </ReactMarkdown>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* User Message */}
-                  {msg.role === "user" ? (
+                  {msg.role === "user" && !(msg as any).isBriefing && !(msg as any).isThinking && !(msg as any).isDebateMsg ? (
                     <div className="self-end max-w-[85%] bg-gray-100 dark:bg-slate-800 rounded-[2rem] rounded-tr-sm px-6 py-4 shadow-sm border border-black/5 dark:border-white/5">
                       <p className={`${textClass} text-gray-900 dark:text-gray-100 font-medium whitespace-pre-wrap leading-relaxed`}>{msg.content}</p>
                     </div>
-                  ) : (
+                  ) : msg.role === "assistant" && !(msg as any).isBriefing && !(msg as any).isThinking && !(msg as any).isDebateMsg ? (
                     /* Assistant Message */
                     <div className="flex max-w-full">
                       <div className="flex-1 space-y-3 min-w-0">
@@ -1148,7 +1387,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                               .map((d: any) => d?.text)
                               .join('');
                           }
-                          const reasoningText = (msg as any).reasoning || msg.reasoning || streamReasoning;
+                          const reasoningText = (msg as any).reasoning || streamReasoning;
                           if (!reasoningText) return null;
 
                           const isReasoningOpen = openReasoning[msg.id] !== false; // open by default
@@ -1366,13 +1605,12 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                         )}
                       </div>
                     </div>
-                  )}
+                  ) : null}
                 </div>
                 );
               })}
-
               {/* Loading State */}
-              {aiLoading && (
+              {(aiLoading || swarmLoading) && (
                 <div className="flex justify-center py-6 w-full">
                   <div className="bg-gray-50/80 dark:bg-slate-900/60 border border-gray-200/60 dark:border-slate-800/60 px-5 py-3 rounded-full shadow-sm backdrop-blur-md flex items-center gap-3">
                     <Brain className="w-4 h-4 text-purple-500" />
@@ -1587,13 +1825,15 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                     className={`h-10 px-3 flex items-center justify-center gap-2 rounded-full transition-colors ${
                       selectedModel === 'pro'
                         ? "bg-amber-500/10 text-amber-500 font-bold" 
+                        : selectedModel === 'agent'
+                        ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold border border-purple-500/25"
                         : "bg-gray-50 dark:bg-white/5 text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10"
                     }`} 
                     title="Seleccionar Modelo AI"
                   >
-                    {selectedModel === 'fast' ? <Zap className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
+                    {selectedModel === 'fast' ? <Zap className="w-4 h-4" /> : selectedModel === 'pro' ? <Sparkles className="w-4 h-4" /> : <Users className="w-4 h-4" />}
                     <span className="text-xs font-semibold hidden sm:inline">
-                      {selectedModel === 'fast' ? 'V2.5 Fast' : 'V2.5 Pro'}
+                      {selectedModel === 'fast' ? 'V2.5 Fast' : selectedModel === 'pro' ? 'V2.5 Pro' : 'V2.6 Agent'}
                     </span>
                   </button>
 
@@ -1616,7 +1856,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${selectedModel === 'fast' ? 'bg-[#1890FF]/20 text-[#1890FF]' : 'bg-gray-100 dark:bg-slate-800 text-gray-500'}`}>
                               <Zap className="w-4 h-4" />
                             </div>
-                            <div>
+                            <div className="flex-1">
                               <div className="leading-none">Reclu v2.5 Fast</div>
                               <div className="text-[10px] text-gray-400 font-normal mt-1">Rápido e Inteligente (Por defecto)</div>
                             </div>
@@ -1625,7 +1865,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                           <button
                             type="button"
                             onClick={() => handleModelSelect('pro')}
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold rounded-xl transition-colors text-left ${selectedModel === 'pro' ? 'bg-amber-500/10 text-amber-500' : !canUsePro ? 'text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-white/5' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'}`}
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold rounded-xl transition-colors text-left ${selectedModel === 'pro' ? 'bg-amber-500/10 text-amber-500' : !canUsePro ? 'text-gray-400 dark:text-gray-550 hover:bg-gray-50 dark:hover:bg-white/5' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'}`}
                           >
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${selectedModel === 'pro' ? 'bg-amber-500/20 text-amber-500' : !canUsePro ? 'bg-gray-100 dark:bg-slate-800 text-gray-400' : 'bg-gray-100 dark:bg-slate-800 text-gray-500'}`}>
                               {!canUsePro ? <Lock className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
@@ -1636,6 +1876,23 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                                 {!canUsePro && <span className="text-[9px] bg-amber-500 text-white px-1.5 py-0.5 rounded ml-2 uppercase flex items-center gap-1"><Lock className="w-2.5 h-2.5" />Pro</span>}
                               </div>
                               <div className="text-[10px] text-gray-400 font-normal mt-1">{!canUsePro ? 'Requiere plan Pro o superior' : 'Razonamiento profundo avanzado'}</div>
+                            </div>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleModelSelect('agent')}
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold rounded-xl transition-colors text-left ${selectedModel === 'agent' ? 'bg-purple-500/10 text-purple-500' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'}`}
+                          >
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${selectedModel === 'agent' ? 'bg-purple-500/20 text-purple-500' : 'bg-gray-100 dark:bg-slate-800 text-gray-500'}`}>
+                              <Users className="w-4 h-4" />
+                            </div>
+                            <div className="flex-1">
+                              <div className="leading-none flex items-center justify-between">
+                                Reclu v2.6 Agent
+                                <span className="text-[9px] bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-1.5 py-0.5 rounded ml-2 uppercase font-black tracking-wider shadow-sm">Swarm</span>
+                              </div>
+                              <div className="text-[10px] text-gray-400 font-normal mt-1">Mesa Redonda Multi-Agente con Mimo v2.5</div>
                             </div>
                           </button>
                         </motion.div>
@@ -1655,7 +1912,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                 }}
                 placeholder={reachedQuestionLimit ? `Límite de consultas alcanzado` : "Pregúntale a R-AI..."}
                 className="flex-1 bg-transparent text-[15px] py-3 px-2 max-h-40 min-h-[44px] resize-none outline-none disabled:cursor-not-allowed font-medium text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
-                disabled={aiLoading || reachedQuestionLimit}
+                disabled={aiLoading || swarmLoading || reachedQuestionLimit}
                 rows={1}
               />
               
@@ -1681,7 +1938,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
               ) : input.trim() ? (
                 <button
                   type="submit"
-                  disabled={aiLoading || reachedQuestionLimit}
+                  disabled={aiLoading || swarmLoading || reachedQuestionLimit}
                   className="w-10 h-10 mb-0.5 mr-0.5 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center disabled:opacity-30 hover:scale-105 active:scale-95 transition-all shadow-md shrink-0"
                 >
                   <Send className="w-4 h-4 ml-0.5" />
@@ -1690,7 +1947,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                 <button
                   type="button"
                   onClick={toggleRecording}
-                  disabled={aiLoading || reachedQuestionLimit}
+                  disabled={aiLoading || swarmLoading || reachedQuestionLimit}
                   className="w-10 h-10 mb-0.5 mr-0.5 rounded-full bg-[#1890FF] text-white flex items-center justify-center disabled:opacity-30 hover:scale-105 active:scale-95 transition-all shadow-md shrink-0"
                   title="Dictar por voz"
                 >

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Send, Bot, Sparkles, Loader2, ExternalLink, Trash2, History, ChevronRight, Paperclip, Globe, BarChart3, Newspaper, Bell, TrendingUp, TrendingDown, Mic, Plus, Share2, ThumbsUp, ThumbsDown, RefreshCw, LineChart, PieChart, AreaChart, Target, Scale, Layers, Star, Maximize } from "lucide-react";
+import { X, Send, Bot, Brain, Sparkles, Loader2, ExternalLink, Trash2, History, ChevronRight, Paperclip, Globe, BarChart3, Newspaper, Bell, TrendingUp, TrendingDown, Mic, Plus, Share2, ThumbsUp, ThumbsDown, RefreshCw, LineChart, PieChart, AreaChart, Target, Scale, Layers, Star, Maximize } from "lucide-react";
 import { useAIChatStore, ChatMessage, AttachedArticle, ToolResultUI } from "@/lib/stores/ai-chat-store";
 import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/lib/stores/auth-store";

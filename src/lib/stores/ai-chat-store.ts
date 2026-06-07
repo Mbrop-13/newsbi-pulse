@@ -50,7 +50,7 @@ interface AIChatStore {
   isOpen: boolean;
   messages: ChatMessage[];
   isLoading: boolean;
-  selectedModel: "fast" | "pro";
+  selectedModel: "fast" | "pro" | "agent";
   attachedArticles: AttachedArticle[];
   attachedFiles: AttachedFile[];
   savedChats: SavedChat[];
@@ -66,7 +66,7 @@ interface AIChatStore {
   close: () => void;
   addMessage: (msg: ChatMessage) => void;
   setLoading: (val: boolean) => void;
-  setModel: (val: "fast" | "pro") => void;
+  setModel: (val: "fast" | "pro" | "agent") => void;
   setCloudSync: (val: boolean) => void;
   clearMessages: () => void;
   toggleTool: (toolId: string, category: string) => void;

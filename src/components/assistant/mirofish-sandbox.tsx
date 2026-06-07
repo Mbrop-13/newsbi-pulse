@@ -203,6 +203,10 @@ function sentimentColor(s: string) {
   return { bg: 'bg-slate-500/10', text: 'text-slate-400', border: 'border-slate-500/20', hex: '#64748b' };
 }
 
+function getGenericAgentName(index: number): string {
+  return `Agente ${index + 1}`;
+}
+
 // ── Dot Grid SVG Pattern Component (High density grid) ──
 function DotGrid() {
   return (
@@ -513,8 +517,8 @@ export function MiroFishSandbox({ selectedSimulation, onClearSelected, onSimulat
     }
   }, [user]);
 
-  // View state: 'canvas' | 'report'
-  const [activeView, setActiveView] = useState<'canvas' | 'report'>('canvas');
+  // View state: 'chat' | 'canvas' | 'report'
+  const [activeView, setActiveView] = useState<'chat' | 'canvas' | 'report'>('chat');
   const [showExportModal, setShowExportModal] = useState(false);
 
   const [fullSimulation, setFullSimulation] = useState<SimulationResult | null>(null);
@@ -1003,7 +1007,7 @@ export function MiroFishSandbox({ selectedSimulation, onClearSelected, onSimulat
     setVisibleDialogue([]);
     setSimulationIndex(0);
     setThinkingAgent(null);
-    setActiveView('canvas');
+    setActiveView('chat');
     setPan({ x: 0, y: 0 });
     setZoom(1);
     setNodeOffsets({});
@@ -1103,7 +1107,7 @@ export function MiroFishSandbox({ selectedSimulation, onClearSelected, onSimulat
     setFusionComplete(false);
     setSelectedCardIndex(null);
     setIsPlaying(true);
-    setActiveView('canvas');
+    setActiveView('chat');
     setPan({ x: 0, y: 0 });
     setZoom(1);
     setNodeOffsets({});
@@ -1348,40 +1352,47 @@ export function MiroFishSandbox({ selectedSimulation, onClearSelected, onSimulat
                               </div>
                             </div>
 
-                            {/* Rounds slider */}
+                            {/* Depth presets */}
                             <div className="space-y-1.5">
-                              <div className="flex justify-between items-center text-[8px] font-bold text-gray-400 dark:text-gray-550 uppercase tracking-widest">
-                                <span>Rondas de Debate</span>
-                                <span className="text-[#1890FF] font-black">{rounds} Rondas</span>
+                              <span className="text-[8px] font-bold text-gray-400 dark:text-gray-550 uppercase tracking-widest block">Profundidad del Análisis</span>
+                              <div className="grid grid-cols-3 gap-1.5">
+                                {([{ label: 'Rápido', value: 3 }, { label: 'Estándar', value: 5 }, { label: 'Exhaustivo', value: 8 }] as const).map((opt) => (
+                                  <button
+                                    key={opt.value}
+                                    type="button"
+                                    onClick={() => setRounds(opt.value)}
+                                    className={`py-2 text-[9px] font-black rounded-xl transition-all cursor-pointer ${
+                                      rounds === opt.value
+                                        ? 'bg-[#1890FF]/10 text-[#1890FF] border border-[#1890FF]/25 shadow-sm'
+                                        : 'bg-gray-50 dark:bg-white/5 text-gray-500 border border-transparent hover:bg-gray-100 dark:hover:bg-white/10'
+                                    }`}
+                                  >
+                                    {opt.label}
+                                  </button>
+                                ))}
                               </div>
-                              <input
-                                  type="range"
-                                  min="2"
-                                  max="10"
-                                  value={rounds}
-                                  onChange={(e) => setRounds(parseInt(e.target.value))}
-                                  className="w-full accent-[#1890FF] h-1 bg-gray-100 dark:bg-slate-800 rounded-lg cursor-pointer"
-                              />
                             </div>
 
-                            {/* Agent count slider */}
+                            {/* Agent count presets */}
                             {selectedAgentType !== 'custom' && (
                               <div className="space-y-1.5">
-                                <div className="flex justify-between items-center text-[8px] font-bold text-gray-400 dark:text-gray-550 uppercase tracking-widest">
-                                  <span>Cantidad de Agentes</span>
-                                  <span className="text-[#1890FF] font-black">{agentCount} / {maxAgentsAllowed}</span>
+                                <span className="text-[8px] font-bold text-gray-400 dark:text-gray-550 uppercase tracking-widest block">Panel de Expertos</span>
+                                <div className="grid grid-cols-3 gap-1.5">
+                                  {([{ label: 'Compacto', value: 3 }, { label: 'Estándar', value: 4 }, { label: 'Ampliado', value: 6 }] as const).map((opt) => (
+                                    <button
+                                      key={opt.value}
+                                      type="button"
+                                      onClick={() => setAgentCount(opt.value)}
+                                      className={`py-2 text-[9px] font-black rounded-xl transition-all cursor-pointer ${
+                                        agentCount === opt.value
+                                          ? 'bg-[#1890FF]/10 text-[#1890FF] border border-[#1890FF]/25 shadow-sm'
+                                          : 'bg-gray-50 dark:bg-white/5 text-gray-500 border border-transparent hover:bg-gray-100 dark:hover:bg-white/10'
+                                      }`}
+                                    >
+                                      {opt.label}
+                                    </button>
+                                  ))}
                                 </div>
-                                <input
-                                  type="range"
-                                  min="2"
-                                  max={maxAgentsAllowed}
-                                  value={agentCount}
-                                  onChange={(e) => setAgentCount(parseInt(e.target.value))}
-                                  className="w-full accent-[#1890FF] h-1 bg-gray-100 dark:bg-slate-800 rounded-lg cursor-pointer"
-                                />
-                                <span className="text-[7.5px] font-bold text-gray-400 dark:text-gray-500 block text-right leading-none mt-1">
-                                  Tu nivel {userTier.toUpperCase()} te permite hasta {maxAgentsAllowed} agentes.
-                                </span>
                               </div>
                             )}
 
@@ -1512,9 +1523,59 @@ export function MiroFishSandbox({ selectedSimulation, onClearSelected, onSimulat
               </button>
             </div>
 
+            {/* View Toggle */}
+            <div className="px-3 pb-2 border-b border-gray-100 dark:border-white/5 shrink-0 flex justify-center">
+              <div className="inline-flex bg-gray-50 dark:bg-white/5 rounded-xl p-0.5 border border-gray-100 dark:border-white/5">
+                {([{ id: 'chat' as const, label: '💬 Chat' }, { id: 'canvas' as const, label: '🧩 Board' }, { id: 'report' as const, label: '📄 Reporte' }]).map((v) => (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={() => setActiveView(v.id)}
+                    className={`px-3 py-1.5 text-[9px] font-black rounded-lg transition-all cursor-pointer ${
+                      activeView === v.id
+                        ? 'bg-white dark:bg-[#1c2436] text-[#1890FF] shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700 dark:hover:text-white'
+                    }`}
+                  >
+                    {v.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Chat Feed */}
             <div className="flex-grow flex flex-col h-full overflow-hidden relative">
               <div className="flex-grow overflow-y-auto hidden-scrollbar p-3.5 pb-24 space-y-3">
+
+                {/* Agent Chips Bar */}
+                {(simulationState === 'running' || simulationState === 'completed') && fullSimulation && (
+                  <div className="flex gap-2 flex-wrap pb-3 mb-3 border-b border-gray-100 dark:border-white/5">
+                    {(fullSimulation.dialogue || []).filter(Boolean).slice(0, agentCount)
+                      .filter((msg, i, arr) => arr.findIndex(m => m.agentName === msg.agentName) === i)
+                      .map((agent, i) => {
+                        const isThinking = thinkingAgent?.agentName === agent.agentName;
+                        const hasSpoken = visibleDialogue.some(m => m.agentName === agent.agentName);
+                        return (
+                          <div
+                            key={agent.agentName}
+                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-bold border transition-all ${
+                              isThinking
+                                ? 'bg-[#1890FF]/10 border-[#1890FF]/30 text-[#1890FF]'
+                                : hasSpoken
+                                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                                : 'bg-gray-50 dark:bg-white/5 border-gray-150 dark:border-white/10 text-gray-400'
+                            }`}
+                          >
+                            <span className="text-sm">{agent.avatar}</span>
+                            <span>{getGenericAgentName(i)}</span>
+                            <span className={`w-1.5 h-1.5 rounded-full ${
+                              isThinking ? 'bg-[#1890FF] animate-pulse' : hasSpoken ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'
+                            }`} />
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
 
                 {/* Progressive Briefing Steps Logs inside dialogue feed */}
                 <div className="space-y-2.5">
@@ -1585,8 +1646,8 @@ export function MiroFishSandbox({ selectedSimulation, onClearSelected, onSimulat
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between items-start">
                             <div>
-                              <span className="text-[10px] font-black text-gray-900 dark:text-white leading-none block">{msg.agentName}</span>
-                              <span className="text-[7.5px] text-gray-400 dark:text-gray-555 font-bold block uppercase mt-0.5 tracking-wider">{msg.role}</span>
+                              <span className="text-[10px] font-black text-gray-900 dark:text-white leading-none block">{getGenericAgentName(idx)}</span>
+                              <span className="text-[7.5px] text-gray-400 dark:text-gray-555 font-bold block uppercase mt-0.5 tracking-wider">{msg.agentName} · {msg.role}</span>
                             </div>
                             <span className={`text-[7.5px] font-black uppercase px-1.5 py-0.5 rounded leading-none ${sc.bg} ${sc.text} ${sc.border}`}>
                               {msg.sentiment}
@@ -1614,8 +1675,8 @@ export function MiroFishSandbox({ selectedSimulation, onClearSelected, onSimulat
 
                       <div className="flex-1 min-w-0 flex flex-col justify-center">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] font-black text-gray-900 dark:text-white leading-none">{thinkingAgent.agentName}</span>
-                          <span className="text-[7.5px] text-gray-400 dark:text-gray-555 font-bold uppercase tracking-wider">{thinkingAgent.role}</span>
+                          <span className="text-[10px] font-black text-gray-900 dark:text-white leading-none">{getGenericAgentName(simulationIndex)}</span>
+                          <span className="text-[7.5px] text-gray-400 dark:text-gray-555 font-bold uppercase tracking-wider">{thinkingAgent.agentName} · {thinkingAgent.role}</span>
                         </div>
 
                         <div className="flex items-center gap-1.5 mt-2 text-gray-500 dark:text-gray-400">
@@ -1743,33 +1804,43 @@ export function MiroFishSandbox({ selectedSimulation, onClearSelected, onSimulat
                                   </div>
 
                                   <div className="space-y-2">
-                                    <div className="flex justify-between items-center text-[9px] font-bold text-gray-400 uppercase tracking-widest">
-                                      <span>Cantidad de Agentes</span>
-                                      <span className="text-[#1890FF] font-black">{agentCount} Agentes</span>
+                                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest block">Panel de Expertos</span>
+                                    <div className="grid grid-cols-3 gap-1.5">
+                                      {([{ label: 'Compacto', value: 3 }, { label: 'Estándar', value: 4 }, { label: 'Ampliado', value: 6 }] as const).map((opt) => (
+                                        <button
+                                          key={opt.value}
+                                          type="button"
+                                          onClick={() => setAgentCount(opt.value)}
+                                          className={`py-2 text-[9px] font-black rounded-xl transition-all cursor-pointer ${
+                                            agentCount === opt.value
+                                              ? 'bg-[#1890FF]/10 text-[#1890FF] border border-[#1890FF]/25 shadow-sm'
+                                              : 'bg-gray-50 dark:bg-white/5 text-gray-500 border border-transparent hover:bg-gray-100 dark:hover:bg-white/10'
+                                          }`}
+                                        >
+                                          {opt.label}
+                                        </button>
+                                      ))}
                                     </div>
-                                    <input
-                                      type="range"
-                                      min="2"
-                                      max="10"
-                                      value={agentCount}
-                                      onChange={(e) => setAgentCount(parseInt(e.target.value))}
-                                      className="w-full accent-[#1890FF] h-1.5 bg-gray-200 rounded-lg cursor-pointer"
-                                    />
                                   </div>
 
                                   <div className="space-y-2">
-                                    <div className="flex justify-between items-center text-[9px] font-bold text-gray-400 uppercase tracking-widest">
-                                      <span>Rondas de Debate</span>
-                                      <span className="text-[#1890FF] font-black">{rounds} Rondas</span>
+                                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest block">Profundidad del Análisis</span>
+                                    <div className="grid grid-cols-3 gap-1.5">
+                                      {([{ label: 'Rápido', value: 3 }, { label: 'Estándar', value: 5 }, { label: 'Exhaustivo', value: 8 }] as const).map((opt) => (
+                                        <button
+                                          key={opt.value}
+                                          type="button"
+                                          onClick={() => setRounds(opt.value)}
+                                          className={`py-2 text-[9px] font-black rounded-xl transition-all cursor-pointer ${
+                                            rounds === opt.value
+                                              ? 'bg-[#1890FF]/10 text-[#1890FF] border border-[#1890FF]/25 shadow-sm'
+                                              : 'bg-gray-50 dark:bg-white/5 text-gray-500 border border-transparent hover:bg-gray-100 dark:hover:bg-white/10'
+                                          }`}
+                                        >
+                                          {opt.label}
+                                        </button>
+                                      ))}
                                     </div>
-                                    <input
-                                      type="range"
-                                      min="2"
-                                      max="10"
-                                      value={rounds}
-                                      onChange={(e) => setRounds(parseInt(e.target.value))}
-                                      className="w-full accent-[#1890FF] h-1.5 bg-gray-200 rounded-lg cursor-pointer"
-                                    />
                                   </div>
                                 </motion.div>
                               </>
@@ -1908,6 +1979,14 @@ export function MiroFishSandbox({ selectedSimulation, onClearSelected, onSimulat
             <AnimatePresence mode="wait">
               {activeView === 'canvas' ? (
                 <div className="flex-grow w-full h-full pointer-events-none" />
+              ) : activeView === 'chat' ? (
+                <div className="flex-grow w-full h-full pointer-events-none hidden md:flex items-center justify-center">
+                  <div className="text-center space-y-3 opacity-40">
+                    <Bot className="w-12 h-12 mx-auto text-gray-300" />
+                    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Vista de Chat Activa</p>
+                    <p className="text-[10px] text-gray-400">Cambia a 🧩 Board para ver la cuadrícula</p>
+                  </div>
+                </div>
               ) : (
                 <motion.div
                   key="reportView"

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, Brain, Sparkles, Loader2, ExternalLink, Paperclip, BarChart3, Newspaper, Bell, TrendingUp, X, Globe, History, Trash2, Plus, MessageSquare, PanelLeftClose, PanelLeft, Settings, Moon, Sun, Monitor, Type, Maximize, CheckCircle2, Mic, Star, LineChart, PieChart, AreaChart, Target, Scale, Layers, ThumbsUp, ThumbsDown, RefreshCw, Share2, ChevronRight, Clock, Zap, ArrowDown, Lock, Crown, Gift, ArrowRight, FileText, CalendarDays, Briefcase, Users, Search, GripVertical } from "lucide-react";
+import { Send, Bot, Sparkles, Loader2, ExternalLink, Paperclip, BarChart3, Newspaper, Bell, TrendingUp, X, Globe, History, Trash2, Plus, MessageSquare, PanelLeftClose, PanelLeft, Settings, Moon, Sun, Monitor, Type, Maximize, CheckCircle2, Mic, Star, LineChart, PieChart, AreaChart, Target, Scale, Layers, ThumbsUp, ThumbsDown, RefreshCw, Share2, ChevronRight, Clock, Zap, ArrowDown, Lock, Crown, Gift, ArrowRight, FileText, CalendarDays, Briefcase, Users, Search, GripVertical } from "lucide-react";
 
 import { useAIChatStore, ChatMessage, ToolResultUI } from "@/lib/stores/ai-chat-store";
 
@@ -1489,7 +1489,6 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                                 className="flex items-center justify-between w-full text-left text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                               >
                                 <div className="flex items-center gap-2">
-                                  <Brain className="w-4 h-4 text-purple-500" />
                                   <span>Pensamiento de la IA</span>
                                 </div>
                                 <ChevronRight className={`w-4 h-4 text-gray-400 transform transition-transform duration-200 ${isReasoningOpen ? "rotate-90" : ""}`} />
@@ -1504,7 +1503,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                                     transition={{ duration: 0.2 }}
                                     className="overflow-hidden"
                                   >
-                                    <div className="text-xs text-gray-600 dark:text-gray-400 whitespace-pre-wrap leading-relaxed border-l-2 border-purple-500/30 pl-3.5">
+                                    <div className="text-xs text-gray-600 dark:text-gray-400 whitespace-pre-wrap leading-relaxed border-l-2 border-gray-200 dark:border-slate-800 pl-3.5">
                                       {reasoningText}
                                     </div>
                                   </motion.div>

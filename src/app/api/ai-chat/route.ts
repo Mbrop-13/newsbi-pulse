@@ -327,14 +327,14 @@ export async function POST(req: NextRequest) {
               const orFilters = cleanTerms.map(t => `title.ilike.%${t}%`).join(',');
               let news: any[] = [];
               try {
-                const { data } = await supabase.from('news_articles').select('id, title, summary, published_at, relevance_score, slug, image_url').or(orFilters).gte('published_at', cutoff).order('published_at', { ascending: false }).limit(limit);
+                const { data } = await sc.from('news_articles').select('id, title, summary, published_at, relevance_score, slug, image_url').or(orFilters).gte('published_at', cutoff).order('published_at', { ascending: false }).limit(limit);
                 news = data || [];
               } catch (e) {
                 console.error("[get_portfolio_news] error querying Supabase .or(orFilters):", e);
               }
               if (news && news.length > 0) return { news, portfolio_symbols: portfolios.map((p: any) => p.symbol) };
               
-              const { data: recent } = await supabase.from('news_articles').select('id, title, summary, published_at, relevance_score, slug, image_url').gte('published_at', cutoff).order('published_at', { ascending: false }).limit(100);
+              const { data: recent } = await sc.from('news_articles').select('id, title, summary, published_at, relevance_score, slug, image_url').gte('published_at', cutoff).order('published_at', { ascending: false }).limit(100);
               if (!recent || recent.length === 0) return { news: [], portfolio_symbols: portfolios.map((p: any) => p.symbol), note: "Sin noticias recientes (48h)." };
               const relevant = recent.filter(a => { const t = (a.title + " " + (a.summary || "")).toLowerCase(); return cleanTerms.some(term => t.includes(term)); }).slice(0, limit);
               return { news: relevant, portfolio_symbols: portfolios.map((p: any) => p.symbol) };
@@ -350,7 +350,8 @@ export async function POST(req: NextRequest) {
           description: 'Buscar noticias en Reclu por palabra clave.',
           parameters: z.object({ query: z.string() }),
           execute: async ({ query }) => {
-            const { data } = await supabase.from('news_articles').select('id, title, summary, published_at, relevance_score, slug, image_url').ilike('title', `%${query}%`).order('published_at', { ascending: false }).limit(5);
+            const sc = await createClient();
+            const { data } = await sc.from('news_articles').select('id, title, summary, published_at, relevance_score, slug, image_url').ilike('title', `%${query}%`).order('published_at', { ascending: false }).limit(5);
             return { news: data || [] };
           },
         }),
@@ -359,8 +360,9 @@ export async function POST(req: NextRequest) {
           description: 'Top 10 noticias de hoy ordenadas por relevancia.',
           parameters: z.object({}),
           execute: async () => {
+            const sc = await createClient();
             const today = new Date(); today.setHours(0, 0, 0, 0);
-            const { data } = await supabase.from('news_articles').select('id, title, summary, published_at, relevance_score, slug, image_url').gte('published_at', today.toISOString()).order('relevance_score', { ascending: false }).limit(10);
+            const { data } = await sc.from('news_articles').select('id, title, summary, published_at, relevance_score, slug, image_url').gte('published_at', today.toISOString()).order('relevance_score', { ascending: false }).limit(10);
             return { news: data || [] };
           }
         }),
@@ -369,7 +371,8 @@ export async function POST(req: NextRequest) {
           description: 'Contenido completo de una noticia por su id.',
           parameters: z.object({ id: z.string() }),
           execute: async ({ id }) => {
-            const { data } = await supabase.from('news_articles').select('title, content, enriched_content').eq('id', id).single();
+            const sc = await createClient();
+            const { data } = await sc.from('news_articles').select('title, content, enriched_content').eq('id', id).single();
             if (!data) return { error: "Noticia no encontrada" };
             return { content: data.enriched_content || data.content };
           }

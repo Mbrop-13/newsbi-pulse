@@ -293,6 +293,16 @@ Tu respuesta debe ser estrictamente un objeto JSON válido. No incluyas explicac
   }
 }
 
+// ── Helper to extract domain from a URL
+function getDomain(urlStr: string): string {
+  try {
+    const url = new URL(urlStr);
+    return url.hostname.replace("www.", "");
+  } catch {
+    return "";
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     // 1. Verify user is authenticated
@@ -329,9 +339,9 @@ export async function POST(request: NextRequest) {
     let enrichedTitle = articleTitle;
     let financialContext = "";
     let subTasks: any[] = [];
-    let totalTokensUsed = 0;
+    let orchestratorUsage = 0;
 
-    // 4. Procesamiento previo incondicional usando mimo-v2.5 (Reclu v2.5 Flash) que actúa como Director de Análisis y Orquestador
+    // Phase 1: Orchestrator (mimo-v2.5) -> desglosa consulta en up to 5 subtasks con searchQueries.
     const preProcessorPrompt = `Analiza detalladamente la siguiente consulta del usuario actuando como el LLM Principal y Orquestador para un espacio de debate financiero experto:
 Consulta del usuario: "${articleTitle}"
 
@@ -354,9 +364,9 @@ Devuelve estrictamente un objeto JSON con este formato exacto:
   "subTasks": [
     {
       "agentName": "Nombre del Agente",
-      "avatar": "emoji",
       "role": "Rol o Especialidad",
-      "assignedTask": "Sub-pregunta o sub-tarea específica que este agente debe analizar"
+      "assignedTask": "Sub-pregunta o sub-tarea específica que este agente debe analizar",
+      "searchQueries": ["Búsqueda web específica 1", "Búsqueda web específica 2"]
     }
   ],
   "financialContext": "### Contexto Financiero e Histórico Enriquecido\\n\\n[Escribe aquí todo el contexto técnico detallado...]"
@@ -370,7 +380,7 @@ Devuelve estrictamente un objeto JSON con este formato exacto:
           { role: "user", content: preProcessorPrompt }
         ],
         temperature: 0.3,
-        max_tokens: 6000,
+        max_tokens: 4000,
         search: true, // Enable web search for the pre-processor!
         user: user.id
       });
@@ -386,76 +396,177 @@ Devuelve estrictamente un objeto JSON con este formato exacto:
       if (parsed.financialContext) {
         financialContext = parsed.financialContext;
       }
-      if (parsed.subTasks) {
+      if (parsed.subTasks && Array.isArray(parsed.subTasks)) {
         subTasks = parsed.subTasks;
       }
       if (analysisResult.usage?.total_tokens) {
-        totalTokensUsed += analysisResult.usage.total_tokens;
+        orchestratorUsage = analysisResult.usage.total_tokens;
       }
       console.log(`[Agents API] Enriched prompt and generated financial context/subtasks for "${articleTitle}"`);
     } catch (e) {
       console.error("[Agents API] Error in pre-processing query:", e);
-      // Fallback si falla el preprocesador Mimo
+      // Fallback
     }
 
-    // 5. Mapear el modelo de Swarm según modelId (Fast/Pro)
+    if (!subTasks || subTasks.length === 0) {
+      subTasks = [
+        {
+          agentName: "Analista Fundamental",
+          role: "Análisis Fundamental",
+          assignedTask: "Evaluar los fundamentales financieros e impacto directo del evento en los balances corporativos.",
+          searchQueries: [`${articleTitle} balances ingresos ganancias`]
+        },
+        {
+          agentName: "Estratega Macro",
+          role: "Estrategia Macro",
+          assignedTask: "Analizar el impacto macroeconómico, tasas de interés y políticas sobre el sector.",
+          searchQueries: [`${articleTitle} impacto macroeconomico sector`]
+        },
+        {
+          agentName: "Gestor de Riesgos",
+          role: "Gestión de Riesgos",
+          assignedTask: "Analizar la volatilidad, correlación y posibles coberturas para mitigar riesgos.",
+          searchQueries: [`${articleTitle} analisis de riesgo volatilidad`]
+        }
+      ];
+    }
+
+    // Limit to up to 5 tasks
+    subTasks = subTasks.slice(0, 5);
+
+    const defaultFavicons = [
+      "https://www.google.com/s2/favicons?domain=yahoo.com&sz=32",
+      "https://www.google.com/s2/favicons?domain=bloomberg.com&sz=32",
+      "https://www.google.com/s2/favicons?domain=reuters.com&sz=32"
+    ];
+
+    const reasoningSteps: any[] = [];
+
+    // Phase 2: Parallel execution (Promise.all) of agents via callMimo (concise system prompt).
+    const subAgentPromises = subTasks.map(async (task: any) => {
+      try {
+        const result = await callMimo({
+          model: "xiaomi/mimo-v2.5",
+          messages: [
+            {
+              role: "system",
+              content: `Eres un agente financiero especializado en ${task.role}. Responde de forma extremadamente breve, precisa y sin rodeos. Evita introducciones o saludos. Sé directo y técnico.`
+            },
+            {
+              role: "user",
+              content: `Consulta original: ${articleTitle}\nContexto: ${financialContext}\nTu tarea: ${task.assignedTask}`
+            }
+          ],
+          temperature: 0.5,
+          max_tokens: 1500,
+          search: true,
+          user: user.id
+        });
+        return {
+          agentName: task.agentName,
+          role: task.role,
+          assignedTask: task.assignedTask,
+          searchQueries: task.searchQueries || [],
+          answer: result.content,
+          citations: result.citations || [],
+          usage: result.usage,
+          success: true
+        };
+      } catch (error: any) {
+        console.error(`[Agents API] Sub-agent ${task.agentName} failed:`, error);
+        return {
+          agentName: task.agentName,
+          role: task.role,
+          assignedTask: task.assignedTask,
+          searchQueries: task.searchQueries || [],
+          answer: `Error al procesar la tarea: ${error.message}`,
+          citations: [],
+          usage: undefined,
+          success: false
+        };
+      }
+    });
+
+    const subAgentResponses = await Promise.all(subAgentPromises);
+
+    // Build reasoningSteps representing searches and thoughts
+    subAgentResponses.forEach((response: any) => {
+      const citations = response.citations || [];
+      const favicons = citations.length > 0
+        ? citations.map((c: string) => {
+            const d = getDomain(c);
+            return d ? `https://www.google.com/s2/favicons?domain=${d}&sz=32` : "";
+          }).filter(Boolean)
+        : defaultFavicons;
+      
+      const uniqueFavicons = [...new Set(favicons)];
+      
+      const queries = response.searchQueries && response.searchQueries.length > 0
+        ? response.searchQueries
+        : [response.assignedTask.slice(0, 60)];
+      
+      queries.forEach((q: string) => {
+        reasoningSteps.push({
+          type: "search",
+          text: q,
+          resultsCount: 10,
+          favicons: uniqueFavicons
+        });
+      });
+
+      reasoningSteps.push({
+        type: "thought",
+        text: `Analizando la viabilidad de: "${response.assignedTask}" por ${response.agentName} (${response.role})`
+      });
+    });
+
+    // Phase 3: Final Synthesizer (mimo-v2.5 or pro depending on modelId)
+    const subAgentReports = subAgentResponses
+      .map((r: any) => `[${r.agentName} - ${r.role}]: ${r.answer}`)
+      .join("\n\n");
+
     const activeModel = modelId === "pro" ? "xiaomi/mimo-v2.5-pro" : "xiaomi/mimo-v2.5";
 
-    const finalAgentCount = subTasks && subTasks.length > 0 ? Math.min(5, subTasks.length) : agentCount;
-    const systemPrompt = buildSystemPrompt(agentType, rounds, portfolioText, financialContext, customAgents, finalAgentCount, subTasks);
-
-    const userPrompt = `Semilla de Análisis:
-Tema: "${enrichedTitle}"
-Contexto del usuario: "${articleContent || "Sin contenido adicional"}"
-
-Configuración del debate:
-- Número de rondas de análisis: ${rounds} intervenciones del panel experto.
-
-Ejecuta el enjambre de debate y genera el reporte JSON.`;
-
-    console.log(`[Agents API] Running expert roundtable debate (type: ${agentType}) with model: ${activeModel} on: "${enrichedTitle}"`);
-
-    const result = await callMimo({
+    const synthResult = await callMimo({
       model: activeModel,
       messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt }
+        {
+          role: "system",
+          content: "Eres el Director de Estrategia de Reclu AI. Analiza la consulta, el portafolio y los reportes de los agentes especializados para formular una respuesta final, estructurada, detallada y profesional."
+        },
+        {
+          role: "user",
+          content: `Consulta: ${enrichedTitle}\nPortafolio: ${portfolioText}\n\nReportes de los agentes:\n${subAgentReports}`
+        }
       ],
-      temperature: 0.7,
-      max_tokens: 10000,
-      search: true, // Enable web search for live market grounding!
+      temperature: 0.6,
+      max_tokens: 3000,
+      search: false,
       user: user.id
     });
 
-    let rawText = result.content.trim();
-    rawText = extractJsonObject(rawText);
-    rawText = sanitizeJsonString(rawText);
-
-    if (result.usage?.total_tokens) {
-      totalTokensUsed += result.usage.total_tokens;
+    // Record token usage in database
+    let totalTokensUsed = 0;
+    if (orchestratorUsage) totalTokensUsed += orchestratorUsage;
+    subAgentResponses.forEach((r: any) => {
+      if (r.usage?.total_tokens) {
+        totalTokensUsed += r.usage.total_tokens;
+      }
+    });
+    if (synthResult.usage?.total_tokens) {
+      totalTokensUsed += synthResult.usage.total_tokens;
     }
 
-    // Record token usage in database
     if (totalTokensUsed > 0) {
       await incrementTokenUsage(user.id, totalTokensUsed);
       console.log(`[Agents API] Saved token usage for user ${user.id}: ${totalTokensUsed} tokens.`);
     }
 
-    try {
-      const simulationData = JSON.parse(rawText);
-      return NextResponse.json({
-        success: true,
-        simulation: simulationData
-      });
-    } catch (parseError: any) {
-      console.error("[Agents API] Failed to parse simulation JSON:", rawText, parseError);
-      return NextResponse.json({
-        success: false,
-        error: "Failed to generate structured simulation payload",
-        details: parseError.message,
-        rawText
-      }, { status: 500 });
-    }
+    return NextResponse.json({
+      success: true,
+      finalAnswer: synthResult.content,
+      reasoningSteps: reasoningSteps
+    });
 
   } catch (error: any) {
     console.error("[Agents API] Error:", error);

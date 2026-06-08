@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, Brain, Sparkles, Loader2, ExternalLink, Paperclip, BarChart3, Newspaper, Bell, TrendingUp, X, Globe, History, Trash2, Plus, MessageSquare, PanelLeftClose, PanelLeft, Settings, Moon, Sun, Monitor, Type, Maximize, CheckCircle2, Mic, Star, LineChart, PieChart, AreaChart, Target, Scale, Layers, ThumbsUp, ThumbsDown, RefreshCw, Share2, ChevronRight, Clock, Zap, ArrowDown, Lock, Crown, Gift, ArrowRight, FileText, CalendarDays, Briefcase, Users } from "lucide-react";
+import { Send, Bot, Brain, Sparkles, Loader2, ExternalLink, Paperclip, BarChart3, Newspaper, Bell, TrendingUp, X, Globe, History, Trash2, Plus, MessageSquare, PanelLeftClose, PanelLeft, Settings, Moon, Sun, Monitor, Type, Maximize, CheckCircle2, Mic, Star, LineChart, PieChart, AreaChart, Target, Scale, Layers, ThumbsUp, ThumbsDown, RefreshCw, Share2, ChevronRight, Clock, Zap, ArrowDown, Lock, Crown, Gift, ArrowRight, FileText, CalendarDays, Briefcase, Users, Search } from "lucide-react";
 
 import { useAIChatStore, ChatMessage, ToolResultUI } from "@/lib/stores/ai-chat-store";
 import { useAssistantStore } from "@/lib/stores/assistant-store";
@@ -96,6 +96,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
   const [portfolioDetails, setPortfolioDetails] = useState<any[]>([]);
   const [loadingPortfolio, setLoadingPortfolio] = useState(false);
   const [swarmLoading, setSwarmLoading] = useState(false);
+  const [collapsedThoughts, setCollapsedThoughts] = useState<Record<string, boolean>>({});
 
   // ── Mode and Agent states ──
   const [activeChatMode, setActiveChatMode] = useState<'chat' | 'mirofish'>(initialMode);
@@ -636,16 +637,31 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
     setAiMessages(prev => [...prev, userMsg as any]);
     setInput("");
 
-    // Marcador de posición de carga inicial del Swarm
-    const loadingMsgId = `loading-${Date.now()}`;
-    const loadingMsg = {
-      id: loadingMsgId,
+    // Thinking message representing the parallel swarm execution
+    const thinkingMsgId = `thinking-${Date.now()}`;
+    const thinkingMsg = {
+      id: thinkingMsgId,
       role: 'assistant' as const,
       content: "",
-      isSwarmLoadingPlaceholder: true,
+      isSwarmThinking: true,
+      secondsElapsed: 0,
+      isCollapsed: false,
+      reasoningSteps: [],
       timestamp: new Date()
     };
-    setAiMessages(prev => [...prev, loadingMsg as any]);
+    setAiMessages(prev => [...prev, thinkingMsg as any]);
+
+    let seconds = 0;
+    const interval = setInterval(() => {
+      seconds++;
+      setAiMessages(prev =>
+        prev.map(m =>
+          m.id === thinkingMsgId
+            ? { ...m, secondsElapsed: seconds } as any
+            : m
+        )
+      );
+    }, 1000);
 
     try {
       const res = await fetch("/api/agents/simulate", {
@@ -654,89 +670,68 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
         body: JSON.stringify({
           articleTitle: text,
           articleContent: attachedFiles.length > 0 ? attachedFiles[0].content : "",
-          modelId: 'pro',
+          modelId: selectedModel === 'agent' ? 'pro' : selectedModel,
           rounds: 5,
           agentType: 'financial',
           agentCount: 4
         })
       });
       const data = await res.json();
-
-      // Eliminar el marcador de carga
-      setAiMessages(prev => prev.filter(m => m.id !== loadingMsgId));
+      clearInterval(interval);
 
       if (!res.ok || !data.success) {
         throw new Error(data.error || "Error al simular la mesa redonda");
       }
 
-      const dialogueList = data.simulation.dialogue || [];
-      let currentMsgIndex = 0;
-      
-      const playNextMessage = () => {
-        if (currentMsgIndex >= dialogueList.length) {
-          setSwarmLoading(false);
-          requestAnimationFrame(() => {
-            const finalMessages = aiMessagesRef.current;
-            const storeMessages = finalMessages.map((m: any) => ({
-              id: m.id,
-              role: m.role,
-              content: m.content,
-              timestamp: new Date(),
-              isDebateMsg: m.isDebateMsg || undefined,
-              agentName: m.agentName || undefined,
-              agentRole: m.agentRole || undefined,
-              agentAvatar: m.agentAvatar || undefined,
-              sentiment: m.sentiment || undefined,
-            }));
-            useAIChatStore.setState({ messages: storeMessages as any });
-            useAIChatStore.getState().updateCurrentChat();
-            setTimeout(() => fetchRealUsage(), 800);
-          });
-          return;
-        }
-
-        const currentMsg = dialogueList[currentMsgIndex];
-        const thinkingMsgId = `thinking-${Date.now()}`;
-        const thinkingMsg = {
-          id: thinkingMsgId,
-          role: 'assistant' as const,
-          content: "",
-          isThinking: true,
-          agentName: getGenericAgentName(currentMsgIndex),
-          agentRole: `${currentMsg.agentName} · ${currentMsg.role}`,
-          agentAvatar: currentMsg.avatar || "🤖",
-          thinking: currentMsg.thinking || "Analizando el escenario...", // Razonamiento real del agente
-          timestamp: new Date()
-        };
-        setAiMessages(prev => [...prev, thinkingMsg as any]);
-        setIsUserAtBottom(true);
-
-        setTimeout(() => {
-          const finalMsg = {
-            id: currentMsg.id || `agent-msg-${Date.now()}-${currentMsgIndex}`,
-            role: 'assistant' as const,
-            content: currentMsg.message,
-            isDebateMsg: true,
-            agentName: getGenericAgentName(currentMsgIndex),
-            agentRole: `${currentMsg.agentName} · ${currentMsg.role}`,
-            agentAvatar: currentMsg.avatar || "🤖",
-            sentiment: currentMsg.sentiment,
-            timestamp: new Date()
-          };
-          setAiMessages(prev => prev.map(m => m.id === thinkingMsgId ? finalMsg as any : m));
-          setIsUserAtBottom(true);
-
-          currentMsgIndex++;
-          setTimeout(playNextMessage, 2500);
-        }, 2200);
+      const finalSeconds = seconds;
+      const finalThinkingMsg = {
+        id: thinkingMsgId,
+        role: 'assistant' as const,
+        content: "",
+        isSwarmThinking: true,
+        isCollapsed: true,
+        secondsElapsed: finalSeconds,
+        reasoningSteps: data.reasoningSteps || [],
+        timestamp: new Date()
       };
 
-      setTimeout(playNextMessage, 1000);
+      const finalAssistantMsgId = `assistant-${Date.now()}`;
+      const finalAssistantMsg = {
+        id: finalAssistantMsgId,
+        role: 'assistant' as const,
+        content: data.finalAnswer,
+        timestamp: new Date()
+      };
 
+      setAiMessages(prev => {
+        const filtered = prev.filter(m => m.id !== thinkingMsgId);
+        const nextMessages = [...filtered, finalThinkingMsg as any, finalAssistantMsg as any];
+        
+        setTimeout(() => {
+          const storeMessages = nextMessages.map((m: any) => ({
+            id: m.id,
+            role: m.role,
+            content: m.content,
+            timestamp: new Date(m.timestamp || Date.now()),
+            isSwarmThinking: m.isSwarmThinking || undefined,
+            isCollapsed: m.isCollapsed !== undefined ? m.isCollapsed : undefined,
+            secondsElapsed: m.secondsElapsed !== undefined ? m.secondsElapsed : undefined,
+            reasoningSteps: m.reasoningSteps || undefined,
+          }));
+          useAIChatStore.setState({ messages: storeMessages as any });
+          useAIChatStore.getState().updateCurrentChat();
+          setTimeout(() => fetchRealUsage(), 800);
+        }, 50);
+
+        return nextMessages;
+      });
+
+      setSwarmLoading(false);
     } catch (e: any) {
+      clearInterval(interval);
       setSwarmLoading(false);
       toast.error(e.message || "Error al simular agentes");
-      setAiMessages(prev => prev.filter(m => m.id !== loadingMsgId));
+      setAiMessages(prev => prev.filter(m => m.id !== thinkingMsgId));
     }
   };
 
@@ -1240,38 +1235,101 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                     </div>
                   )}
 
-                  {/* Marcador de posición de carga del enjambre (Mesa Redonda) */}
-                  {(msg as any).isSwarmLoadingPlaceholder && (
-                    <div className="self-start flex items-center gap-3 bg-gray-55 dark:bg-slate-900/40 border border-gray-200 dark:border-slate-800/60 rounded-full px-5 py-3 mb-4 text-xs font-semibold text-gray-500 text-left">
-                      <Loader2 className="w-4 h-4 animate-spin text-[#1890FF]" />
-                      <span>Orquestando mesa redonda de expertos...</span>
-                    </div>
-                  )}
-
-                  {/* Registro del agente pensando (con proceso de razonamiento real) */}
-                  {(msg as any).isThinking && (
-                    <div className="self-start flex gap-4 mb-4 items-start w-full text-left">
-                      <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-slate-850 flex items-center justify-center shrink-0 border border-gray-200 dark:border-slate-800 text-lg shadow-sm">
-                        {(msg as any).agentAvatar}
-                      </div>
-                      <div className="flex-1 bg-gray-55 dark:bg-slate-900/30 border border-gray-200 dark:border-slate-850 rounded-3xl p-4 max-w-xl">
-                        <div className="flex items-center justify-between mb-2">
+                  {/* Collapsible Swarm Thinking (R1-style tree) */}
+                  {(msg as any).isSwarmThinking && (() => {
+                    const isCollapsed = collapsedThoughts[msg.id] !== undefined
+                      ? collapsedThoughts[msg.id]
+                      : !!(msg as any).isCollapsed;
+                    
+                    return (
+                      <div className="self-start w-full max-w-2xl bg-gray-50/50 dark:bg-slate-900/40 border border-gray-200/50 dark:border-slate-800/60 rounded-2xl p-4 mb-4 text-left transition-all">
+                        {/* Header */}
+                        <button
+                          onClick={() => setCollapsedThoughts(prev => ({
+                            ...prev,
+                            [msg.id]: !isCollapsed
+                          }))}
+                          className="flex items-center justify-between w-full text-left text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                        >
                           <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-black text-gray-950 dark:text-white">
-                              {(msg as any).agentName}
-                            </span>
-                            <span className="text-[8px] font-bold text-gray-450 dark:text-gray-550 uppercase tracking-wider">
-                              {(msg as any).agentRole}
-                            </span>
+                            {swarmLoading && !isCollapsed && (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-[#1890FF]" />
+                            )}
+                            <span>Pensando • {(msg as any).secondsElapsed || 0}s</span>
                           </div>
-                          <Loader2 className="w-3 h-3 animate-spin text-[#1890FF]" />
-                        </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-450 italic leading-relaxed pl-1">
-                          &ldquo;{(msg as any).thinking}&rdquo;
-                        </p>
+                          <ChevronRight className={`w-4 h-4 text-gray-400 transform transition-transform duration-200 ${!isCollapsed ? "rotate-90" : ""}`} />
+                        </button>
+
+                        {/* Chronological Timeline Tree */}
+                        <AnimatePresence initial={false}>
+                          {!isCollapsed && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                              animate={{ opacity: 1, height: 'auto', marginTop: 12 }}
+                              exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="overflow-hidden relative pl-4 border-l border-gray-200 dark:border-slate-800 space-y-4"
+                            >
+                              {(!(msg as any).reasoningSteps || (msg as any).reasoningSteps.length === 0) ? (
+                                <div className="flex items-center gap-2 text-xs text-gray-450 italic">
+                                  <Loader2 className="w-3.5 h-3 animate-spin text-[#1890FF]" />
+                                  Orquestando agentes paralelos...
+                                </div>
+                              ) : (
+                                (msg as any).reasoningSteps.map((step: any, idx: number) => {
+                                  const isSearch = step.type === 'search';
+                                  return (
+                                    <div key={idx} className="relative flex items-start gap-3 text-xs">
+                                      <div className="absolute -left-[22.5px] top-0.5 w-[13px] h-[13px] rounded-full bg-white dark:bg-[#0a0a0a] border border-gray-300 dark:border-slate-700 flex items-center justify-center">
+                                        {isSearch ? (
+                                          <Search className="w-2 h-2 text-gray-500 dark:text-gray-400" />
+                                        ) : (
+                                          <div className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-slate-500" />
+                                        )}
+                                      </div>
+
+                                      {isSearch ? (
+                                        <div className="flex-1 flex items-center justify-between gap-4">
+                                          <span className="text-gray-700 dark:text-gray-300 font-semibold leading-relaxed">
+                                            Buscó en la web: <span className="text-gray-900 dark:text-white font-bold">&ldquo;{step.text}&rdquo;</span>
+                                          </span>
+                                          <div className="flex items-center gap-2 shrink-0">
+                                            <span className="text-[10px] text-gray-400 font-medium bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-md">
+                                              {step.resultsCount || 10} resultados
+                                            </span>
+                                            <div className="flex -space-x-1.5">
+                                              {step.favicons?.slice(0, 3).map((fav: string, fidx: number) => (
+                                                <div
+                                                  key={fidx}
+                                                  className="w-4.5 h-4.5 rounded-full border border-white dark:border-slate-900 overflow-hidden bg-white shrink-0 flex items-center justify-center shadow-sm"
+                                                  style={{ zIndex: 10 - fidx }}
+                                                >
+                                                  <img
+                                                    src={fav}
+                                                    alt=""
+                                                    className="w-full h-full object-cover bg-white"
+                                                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                                  />
+                                                </div>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div className="flex-1 text-gray-500 dark:text-gray-400 italic leading-relaxed">
+                                          {step.text}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })
+                              )}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   {/* Resolved Agent Debate Message */}
                   {(msg as any).isDebateMsg && (

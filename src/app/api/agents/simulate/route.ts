@@ -137,7 +137,8 @@ function buildSystemPrompt(
   portfolioText: string,
   financialContext: string,
   customAgents?: any[],
-  agentCount: number = 4
+  agentCount: number = 4,
+  subTasks: any[] = []
 ): string {
   const portfolioBlock = portfolioText
     ? `Contexto del Portafolio del Usuario:\n${portfolioText}`
@@ -145,17 +146,20 @@ function buildSystemPrompt(
   const financialBlock = financialContext
     ? `Contexto Técnico e Histórico Adicional (Generado por el Pre-Procesador Mimo):\n${financialContext}`
     : "";
+  const subTasksBlock = subTasks && subTasks.length > 0
+    ? `Distribución de Sub-Tareas por el LLM Principal (Orquestador):\n${subTasks.map((t, idx) => `- Agente ${idx + 1} ("${t.agentName}", avatar: ${t.avatar}, rol: ${t.role}): ${t.assignedTask}`).join("\n")}`
+    : "";
 
   const jsonSchema = `{
   "dialogue": [
     {
       "id": "1",
       "agentName": "Nombre del agente",
-      "avatar": "emoji correspondiente",
-      "role": "Rol del agente",
+      "avatar": "emoji",
+      "role": "Rol",
       "sentiment": "bullish | bearish | neutral",
-      "message": "Argumentación experta, altamente técnica, profesional y precisa.",
-      "time": "Hace 1 min"
+      "thinking": "Explicación breve y técnica de su proceso de razonamiento o análisis antes de dar su veredicto final. No uses iconos de cerebros.",
+      "message": "Argumentación experta..."
     }
   ],
   "summaryReport": "# Título del Reporte\\n\\nEscribe aquí un análisis exhaustivo y de nivel institucional en formato Markdown. Debe incluir:\\n- **Resumen Ejecutivo:** Evaluación de la situación.\\n- **Análisis de Volatilidad y Riesgos:** Nivel de riesgo esperado.\\n- **Perspectiva del Panel:** Consenso entre los agentes participantes.\\n- **Tabla de Acciones Afectadas:** Una tabla markdown con ticker, dirección esperada, rango y nivel de confianza.\\n- **Disclaimers:** Advertencia corporativa estándar.",
@@ -186,7 +190,7 @@ ${portfolioBlock}
 
 ${financialBlock}
 
-${webSearchLine}
+${subTasksBlock ? `${subTasksBlock}\n\n` : ""}${webSearchLine}
 
 Tu respuesta debe ser estrictamente un objeto JSON válido. No incluyas explicaciones previas ni markdown adicional fuera del JSON (excepto que el contenido de "summaryReport" interno sí debe ser markdown rico). El JSON debe coincidir exactamente con este esquema:
 
@@ -203,7 +207,7 @@ ${portfolioBlock}
 
 ${financialBlock}
 
-${webSearchLine}
+${subTasksBlock ? `${subTasksBlock}\n\n` : ""}${webSearchLine}
 
 Tu respuesta debe ser estrictamente un objeto JSON válido. No incluyas explicaciones previas ni markdown adicional fuera del JSON (excepto que el contenido de "summaryReport" interno sí debe ser markdown rico). El JSON debe coincidir exactamente con este esquema:
 
@@ -220,7 +224,7 @@ ${portfolioBlock}
 
 ${financialBlock}
 
-${webSearchLine}
+${subTasksBlock ? `${subTasksBlock}\n\n` : ""}${webSearchLine}
 
 Tu respuesta debe ser estrictamente un objeto JSON válido. No incluyas explicaciones previas ni markdown adicional fuera del JSON (excepto que el contenido de "summaryReport" interno sí debe ser markdown rico). El JSON debe coincidir exactamente con este esquema:
 
@@ -237,7 +241,7 @@ ${portfolioBlock}
 
 ${financialBlock}
 
-${webSearchLine}
+${subTasksBlock ? `${subTasksBlock}\n\n` : ""}${webSearchLine}
 
 Tu respuesta debe ser estrictamente un objeto JSON válido. No incluyas explicaciones previas ni markdown adicional fuera del JSON (excepto que el contenido de "summaryReport" interno sí debe ser markdown rico). El JSON debe coincidir exactamente con este esquema:
 
@@ -262,7 +266,7 @@ ${portfolioBlock}
 
 ${financialBlock}
 
-${webSearchLine}
+${subTasksBlock ? `${subTasksBlock}\n\n` : ""}${webSearchLine}
 
 Tu respuesta debe ser estrictamente un objeto JSON válido. No incluyas explicaciones previas ni markdown adicional fuera del JSON (excepto que el contenido de "summaryReport" interno sí debe ser markdown rico). El JSON debe coincidir exactamente con este esquema:
 
@@ -274,8 +278,8 @@ Tu respuesta debe ser estrictamente un objeto JSON válido. No incluyas explicac
       "avatar": "emoji correspondiente (ej: 🧠, 📈, 🌐, 🛡️, etc.)",
       "role": "Especialidad o rol del agente",
       "sentiment": "bullish | bearish | neutral",
-      "message": "Argumentación experta, altamente técnica, profesional y precisa sobre el impacto del evento en los mercados, apoyándote en cotizaciones reales o datos corporativos.",
-      "time": "Hace 1 min"
+      "thinking": "Explicación breve y técnica de su proceso de razonamiento o análisis antes de dar su veredicto final. No uses iconos de cerebros.",
+      "message": "Argumentación experta, altamente técnica, profesional y precisa sobre el impacto del evento en los mercados, apoyándote en cotizaciones reales o datos corporativos."
     }
   ],
   "summaryReport": "# Título del Reporte Corporativo de Inversión\\n\\nEscribe aquí un análisis exhaustivo y de nivel institucional en formato Markdown. Debe incluir:\\n- **Resumen Ejecutivo:** Evaluación de la situación.\\n- **Análisis de Volatilidad y Riesgos:** Nivel de riesgo esperado.\\n- **Perspectiva del Panel:** Consenso general entre los agentes.\\n- **Tabla de Acciones Afectadas:** Una tabla markdown con ticker, dirección esperada, rango y nivel de confianza.\\n- **Disclaimers:** Advertencia corporativa estándar.",
@@ -324,32 +328,38 @@ export async function POST(request: NextRequest) {
 
     let enrichedTitle = articleTitle;
     let financialContext = "";
+    let subTasks: any[] = [];
     let totalTokensUsed = 0;
 
-    // 4. Unconditional Pre-Processor using mimo-v2.5 (Reclu v2.5 Flash)
-    const preProcessorPrompt = `Analiza detalladamente la siguiente consulta del usuario para un espacio de debate financiero experto:
+    // 4. Procesamiento previo incondicional usando mimo-v2.5 (Reclu v2.5 Flash) que actúa como Director de Análisis y Orquestador
+    const preProcessorPrompt = `Analiza detalladamente la siguiente consulta del usuario actuando como el LLM Principal y Orquestador para un espacio de debate financiero experto:
 Consulta del usuario: "${articleTitle}"
 
 Portafolio actual del usuario (activos en cartera):
 ${portfolioText || "El portafolio está vacío o no especificado."}
 
-Tu objetivo es actuar como un Director de Análisis Financiero y Estrategia de Wall Street de élite. Debes generar un bloque de contexto financiero extremadamente denso e histórico para alimentar una mesa redonda de agentes de inversión especializados.
+Tu objetivo es actuar como un Director de Análisis Financiero y Estrategia de Wall Street de élite (LLM Principal y Orquestador). Debes desglosar la consulta en un conjunto de hasta 5 sub-tareas o sub-preguntas específicas y asignarlas a agentes especialistas ideales. Asimismo, debes generar un bloque de contexto financiero extremadamente denso e histórico para alimentar la mesa redonda.
 
 Sigue estas directrices obligatorias:
-1. Identifica los activos, empresas, tickers o sectores financieros relevantes mencionados o implícitos en la consulta.
-2. Si el usuario pregunta por su portafolio o el futuro del mismo (ej: "cómo se verá en 4 meses", rendimientos proyectados, etc.), genera una simulación de contexto detallada con:
-   - Datos financieros e históricos clave de cada activo (ej: comportamiento típico del sector, volatilidad histórica, catalizadores de crecimiento, múltiplos de valoración, etc.).
-   - Escenarios macroeconómicos factibles para los próximos meses.
-   - Rendimientos esperados basados en su CAGR histórico, tendencias de mercado recientes y dinámicas de su industria.
-3. Si el usuario pregunta por una empresa o activo específico, proporciona su contexto financiero profundo: trayectoria de ingresos, ventajas competitivas históricas, desempeño de su sector, tendencias clave de mercado y principales riesgos financieros.
+1. Identifica los activos, empresas, tickers o sectores financieros relevantes en la consulta.
+2. Si la consulta involucra múltiples dimensiones o activos, divídela en sub-tareas específicas (máximo 5) para que cada agente analice una parte del problema de forma profesional.
+3. Si el usuario pregunta por su portafolio o el futuro del mismo, genera una simulación de contexto detallada con datos financieros e históricos clave.
 4. Genera una consulta enriquecida y pulida ("enrichedQuery") adaptada a un lenguaje profesional de mercado.
-5. Genera un bloque de contexto financiero denso ("financialContext") con formato Markdown técnico, rico en cifras de referencia, análisis de riesgos y tendencias históricas detalladas.
-6. Tienes búsqueda web activada. DEBES buscar cotizaciones en tiempo real, últimos reportes trimestrales (earnings), noticias de última hora o cualquier dato financiero fresco relacionado con la consulta antes de estructurar el contexto.
+5. Genera un bloque de contexto financiero denso ("financialContext") con formato Markdown técnico.
+6. Tienes búsqueda web activada. DEBES buscar cotizaciones en tiempo real, últimos reportes trimestrales (earnings), noticias de última hora o cualquier dato financiero fresco relacionado con la consulta.
 
 Devuelve estrictamente un objeto JSON con este formato exacto:
 {
-  "enrichedQuery": "Consulta refinada y profesional de Wall Street basada en la original",
-  "financialContext": "### Contexto Financiero e Histórico Enriquecido\\n\\n[Escribe aquí todo el contexto técnico detallado, incluyendo tablas, proyecciones históricas, tendencias sectoriales y desglose de activos en base a la consulta del usuario.]"
+  "enrichedQuery": "Consulta refinada...",
+  "subTasks": [
+    {
+      "agentName": "Nombre del Agente",
+      "avatar": "emoji",
+      "role": "Rol o Especialidad",
+      "assignedTask": "Sub-pregunta o sub-tarea específica que este agente debe analizar"
+    }
+  ],
+  "financialContext": "### Contexto Financiero e Histórico Enriquecido\\n\\n[Escribe aquí todo el contexto técnico detallado...]"
 }`;
 
     try {
@@ -376,19 +386,23 @@ Devuelve estrictamente un objeto JSON con este formato exacto:
       if (parsed.financialContext) {
         financialContext = parsed.financialContext;
       }
+      if (parsed.subTasks) {
+        subTasks = parsed.subTasks;
+      }
       if (analysisResult.usage?.total_tokens) {
         totalTokensUsed += analysisResult.usage.total_tokens;
       }
-      console.log(`[Agents API] Enriched prompt and generated financial context for "${articleTitle}"`);
+      console.log(`[Agents API] Enriched prompt and generated financial context/subtasks for "${articleTitle}"`);
     } catch (e) {
       console.error("[Agents API] Error in pre-processing query:", e);
-      // Fallback if Mimo pre-processor fails, we still have the original articleTitle
+      // Fallback si falla el preprocesador Mimo
     }
 
-    // 5. Map Swarm Model based on modelId (Fast/Pro)
+    // 5. Mapear el modelo de Swarm según modelId (Fast/Pro)
     const activeModel = modelId === "pro" ? "xiaomi/mimo-v2.5-pro" : "xiaomi/mimo-v2.5";
 
-    const systemPrompt = buildSystemPrompt(agentType, rounds, portfolioText, financialContext, customAgents, agentCount);
+    const finalAgentCount = subTasks && subTasks.length > 0 ? Math.min(5, subTasks.length) : agentCount;
+    const systemPrompt = buildSystemPrompt(agentType, rounds, portfolioText, financialContext, customAgents, finalAgentCount, subTasks);
 
     const userPrompt = `Semilla de Análisis:
 Tema: "${enrichedTitle}"

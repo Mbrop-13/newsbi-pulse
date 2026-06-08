@@ -636,41 +636,16 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
     setAiMessages(prev => [...prev, userMsg as any]);
     setInput("");
 
-    const briefingMsgId = `briefing-${Date.now()}`;
-    const initialSteps: { label: string; status: 'pending' | 'running' | 'done' }[] = [
-      { label: "Optimización de consulta con terminología de Wall Street", status: 'running' },
-      { label: "Consolidación e historial de activos del portafolio", status: 'pending' },
-      { label: "Sincronización de búsquedas web y cotizaciones en vivo", status: 'pending' },
-      { label: "Conexión y preparación de la mesa de debate experto", status: 'pending' }
-    ];
-    let currentSteps = [...initialSteps];
-    const briefingMsg = {
-      id: briefingMsgId,
+    // Marcador de posición de carga inicial del Swarm
+    const loadingMsgId = `loading-${Date.now()}`;
+    const loadingMsg = {
+      id: loadingMsgId,
       role: 'assistant' as const,
       content: "",
-      isBriefing: true,
-      briefingSteps: currentSteps,
+      isSwarmLoadingPlaceholder: true,
       timestamp: new Date()
     };
-    setAiMessages(prev => [...prev, briefingMsg as any]);
-
-    let step = 0;
-    const stepInterval = setInterval(() => {
-      step++;
-      if (step === 1) {
-        currentSteps[0] = { ...currentSteps[0], status: 'done' };
-        currentSteps[1] = { ...currentSteps[1], status: 'running' };
-      } else if (step === 2) {
-        currentSteps[1] = { ...currentSteps[1], status: 'done' };
-        currentSteps[2] = { ...currentSteps[2], status: 'running' };
-      } else if (step === 3) {
-        currentSteps[2] = { ...currentSteps[2], status: 'done' };
-        currentSteps[3] = { ...currentSteps[3], status: 'running' };
-      } else {
-        clearInterval(stepInterval);
-      }
-      setAiMessages(prev => prev.map(m => m.id === briefingMsgId ? { ...m, briefingSteps: [...currentSteps] } as any : m));
-    }, 700);
+    setAiMessages(prev => [...prev, loadingMsg as any]);
 
     try {
       const res = await fetch("/api/agents/simulate", {
@@ -685,14 +660,14 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
           agentCount: 4
         })
       });
-      clearInterval(stepInterval);
       const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || "Failed to simulate");
-      }
 
-      currentSteps = currentSteps.map(s => ({ ...s, status: 'done' }));
-      setAiMessages(prev => prev.map(m => m.id === briefingMsgId ? { ...m, briefingSteps: [...currentSteps] } as any : m));
+      // Eliminar el marcador de carga
+      setAiMessages(prev => prev.filter(m => m.id !== loadingMsgId));
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Error al simular la mesa redonda");
+      }
 
       const dialogueList = data.simulation.dialogue || [];
       let currentMsgIndex = 0;
@@ -707,8 +682,6 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
               role: m.role,
               content: m.content,
               timestamp: new Date(),
-              isBriefing: m.isBriefing || undefined,
-              briefingSteps: m.briefingSteps || undefined,
               isDebateMsg: m.isDebateMsg || undefined,
               agentName: m.agentName || undefined,
               agentRole: m.agentRole || undefined,
@@ -732,6 +705,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
           agentName: getGenericAgentName(currentMsgIndex),
           agentRole: `${currentMsg.agentName} · ${currentMsg.role}`,
           agentAvatar: currentMsg.avatar || "🤖",
+          thinking: currentMsg.thinking || "Analizando el escenario...", // Razonamiento real del agente
           timestamp: new Date()
         };
         setAiMessages(prev => [...prev, thinkingMsg as any]);
@@ -760,10 +734,9 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
       setTimeout(playNextMessage, 1000);
 
     } catch (e: any) {
-      clearInterval(stepInterval);
       setSwarmLoading(false);
       toast.error(e.message || "Error al simular agentes");
-      setAiMessages(prev => prev.filter(m => m.id !== briefingMsgId));
+      setAiMessages(prev => prev.filter(m => m.id !== loadingMsgId));
     }
   };
 
@@ -1267,49 +1240,35 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                     </div>
                   )}
 
-                  {/* Briefing step logs */}
-                  {(msg as any).isBriefing && (
-                    <div className="self-start w-full bg-gray-55 dark:bg-slate-900/40 border border-gray-200 dark:border-slate-800/60 rounded-3xl p-5 mb-4 max-w-xl text-left">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Loader2 className="w-4 h-4 animate-spin text-[#1890FF]" />
-                        <span className="text-xs font-black uppercase tracking-widest text-gray-500">Mesa Redonda: Análisis de Escenario</span>
-                      </div>
-                      <div className="space-y-2.5">
-                        {(msg as any).briefingSteps?.map((step: any, sIdx: number) => (
-                          <div key={sIdx} className="flex items-center gap-3 text-xs font-semibold text-gray-650 dark:text-gray-450">
-                            {step.status === 'done' ? (
-                              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                            ) : step.status === 'running' ? (
-                              <Loader2 className="w-4 h-4 animate-spin text-[#1890FF] shrink-0" />
-                            ) : (
-                              <div className="w-4 h-4 rounded-full border border-gray-300 dark:border-gray-700 shrink-0" />
-                            )}
-                            <span className={step.status === 'running' ? 'text-gray-900 dark:text-white font-bold' : ''}>{step.label}</span>
-                          </div>
-                        ))}
-                      </div>
+                  {/* Marcador de posición de carga del enjambre (Mesa Redonda) */}
+                  {(msg as any).isSwarmLoadingPlaceholder && (
+                    <div className="self-start flex items-center gap-3 bg-gray-55 dark:bg-slate-900/40 border border-gray-200 dark:border-slate-800/60 rounded-full px-5 py-3 mb-4 text-xs font-semibold text-gray-500 text-left">
+                      <Loader2 className="w-4 h-4 animate-spin text-[#1890FF]" />
+                      <span>Orquestando mesa redonda de expertos...</span>
                     </div>
                   )}
 
-                  {/* Thinking agent log */}
+                  {/* Registro del agente pensando (con proceso de razonamiento real) */}
                   {(msg as any).isThinking && (
                     <div className="self-start flex gap-4 mb-4 items-start w-full text-left">
                       <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-slate-850 flex items-center justify-center shrink-0 border border-gray-200 dark:border-slate-800 text-lg shadow-sm">
                         {(msg as any).agentAvatar}
                       </div>
-                      <div className="flex-1 bg-gray-55 dark:bg-slate-900/30 border border-gray-200 dark:border-slate-800/60 rounded-3xl p-4 max-w-xl animate-pulse">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-black text-gray-950 dark:text-white">
-                            {(msg as any).agentName}
-                          </span>
-                          <span className="text-[8px] font-bold text-gray-450 dark:text-gray-550 uppercase tracking-wider">
-                            {(msg as any).agentRole}
-                          </span>
+                      <div className="flex-1 bg-gray-55 dark:bg-slate-900/30 border border-gray-200 dark:border-slate-850 rounded-3xl p-4 max-w-xl">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black text-gray-950 dark:text-white">
+                              {(msg as any).agentName}
+                            </span>
+                            <span className="text-[8px] font-bold text-gray-450 dark:text-gray-550 uppercase tracking-wider">
+                              {(msg as any).agentRole}
+                            </span>
+                          </div>
+                          <Loader2 className="w-3 h-3 animate-spin text-[#1890FF]" />
                         </div>
-                        <div className="flex items-center gap-2 mt-2 text-gray-500 dark:text-gray-450 text-xs font-semibold">
-                          <Loader2 className="w-3.5 h-3.5 animate-spin text-[#1890FF]" />
-                          <span>Analizando escenario y formulando argumento...</span>
-                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-450 italic leading-relaxed pl-1">
+                          &ldquo;{(msg as any).thinking}&rdquo;
+                        </p>
                       </div>
                     </div>
                   )}
@@ -1345,11 +1304,11 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                   )}
 
                   {/* User Message */}
-                  {msg.role === "user" && !(msg as any).isBriefing && !(msg as any).isThinking && !(msg as any).isDebateMsg ? (
+                  {msg.role === "user" && !(msg as any).isSwarmLoadingPlaceholder && !(msg as any).isThinking && !(msg as any).isDebateMsg ? (
                     <div className="self-end max-w-[85%] bg-gray-100 dark:bg-slate-800 rounded-[2rem] rounded-tr-sm px-6 py-4 shadow-sm border border-black/5 dark:border-white/5">
                       <p className={`${textClass} text-gray-900 dark:text-gray-100 font-medium whitespace-pre-wrap leading-relaxed`}>{msg.content}</p>
                     </div>
-                  ) : msg.role === "assistant" && !(msg as any).isBriefing && !(msg as any).isThinking && !(msg as any).isDebateMsg ? (
+                  ) : msg.role === "assistant" && !(msg as any).isSwarmLoadingPlaceholder && !(msg as any).isThinking && !(msg as any).isDebateMsg ? (
                     /* Assistant Message */
                     <div className="flex max-w-full">
                       <div className="flex-1 space-y-3 min-w-0">

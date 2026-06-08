@@ -14,6 +14,10 @@ export interface ChatMessage {
   reasoning?: string;
   model?: "deepseek" | "grok";
   toolInvocations?: any[];
+  isSwarmThinking?: boolean;
+  isCollapsed?: boolean;
+  secondsElapsed?: number;
+  reasoningSteps?: any[];
 }
 
 export interface ToolResultUI {

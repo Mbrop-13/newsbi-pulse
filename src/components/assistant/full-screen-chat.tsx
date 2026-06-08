@@ -2,9 +2,12 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, Brain, Sparkles, Loader2, ExternalLink, Paperclip, BarChart3, Newspaper, Bell, TrendingUp, X, Globe, History, Trash2, Plus, MessageSquare, PanelLeftClose, PanelLeft, Settings, Moon, Sun, Monitor, Type, Maximize, CheckCircle2, Mic, Star, LineChart, PieChart, AreaChart, Target, Scale, Layers, ThumbsUp, ThumbsDown, RefreshCw, Share2, ChevronRight, Clock, Zap, ArrowDown, Lock, Crown, Gift, ArrowRight, FileText, CalendarDays, Briefcase, Users, Search } from "lucide-react";
+import { Send, Bot, Brain, Sparkles, Loader2, ExternalLink, Paperclip, BarChart3, Newspaper, Bell, TrendingUp, X, Globe, History, Trash2, Plus, MessageSquare, PanelLeftClose, PanelLeft, Settings, Moon, Sun, Monitor, Type, Maximize, CheckCircle2, Mic, Star, LineChart, PieChart, AreaChart, Target, Scale, Layers, ThumbsUp, ThumbsDown, RefreshCw, Share2, ChevronRight, Clock, Zap, ArrowDown, Lock, Crown, Gift, ArrowRight, FileText, CalendarDays, Briefcase, Users, Search, GripVertical } from "lucide-react";
 
 import { useAIChatStore, ChatMessage, ToolResultUI } from "@/lib/stores/ai-chat-store";
+
+// Global tracking of active swarm executions
+const activeSwarmExecutions = new Map<string, boolean>();
 import { useAssistantStore } from "@/lib/stores/assistant-store";
 import { PREDEFINED_TOPICS } from "./assistant-setup";
 import { getPlanConfig, PlanTier, getNextTier } from "@/lib/plan-limits";
@@ -97,6 +100,15 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
   const [loadingPortfolio, setLoadingPortfolio] = useState(false);
   const [swarmLoading, setSwarmLoading] = useState(false);
   const [collapsedThoughts, setCollapsedThoughts] = useState<Record<string, boolean>>({});
+
+  // Sync swarmLoading with the background execution status for the currentChatId
+  useEffect(() => {
+    if (currentChatId) {
+      setSwarmLoading(!!activeSwarmExecutions.get(currentChatId));
+    } else {
+      setSwarmLoading(false);
+    }
+  }, [currentChatId]);
 
   // ── Mode and Agent states ──
   const [activeChatMode, setActiveChatMode] = useState<'chat' | 'mirofish'>(initialMode);
@@ -624,7 +636,6 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
 
   const sendSwarmAgentMessage = async (text: string) => {
     if (swarmLoading || aiLoading) return;
-    setSwarmLoading(true);
     setIsUserAtBottom(true);
 
     const userMsgId = `user-${Date.now()}`;
@@ -634,6 +645,30 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
       content: text,
       timestamp: new Date()
     };
+
+    // Synchronous Chat Creation if currentChatId is null
+    let activeChatId = currentChatId;
+    const isNewChat = !activeChatId;
+    if (isNewChat) {
+      activeChatId = Date.now().toString();
+      lastLoadedChatIdRef.current = activeChatId;
+      const userMsgStore: ChatMessage = {
+        id: userMsgId,
+        role: 'user',
+        content: text,
+        timestamp: new Date()
+      };
+      useAIChatStore.setState({
+        currentChatId: activeChatId,
+        messages: [userMsgStore]
+      });
+      useAIChatStore.getState().updateCurrentChat();
+    }
+
+    const targetChatId = activeChatId as string;
+    activeSwarmExecutions.set(targetChatId, true);
+    setSwarmLoading(true);
+
     setAiMessages(prev => [...prev, userMsg as any]);
     setInput("");
 
@@ -651,88 +686,106 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
     };
     setAiMessages(prev => [...prev, thinkingMsg as any]);
 
-    let seconds = 0;
-    const interval = setInterval(() => {
-      seconds++;
-      setAiMessages(prev =>
-        prev.map(m =>
-          m.id === thinkingMsgId
-            ? { ...m, secondsElapsed: seconds } as any
-            : m
-        )
-      );
-    }, 1000);
+    // Background Execution
+    (async () => {
+      let seconds = 0;
+      const interval = setInterval(() => {
+        seconds++;
+        if (useAIChatStore.getState().currentChatId === targetChatId) {
+          setAiMessages(prev =>
+            prev.map(m =>
+              m.id === thinkingMsgId
+                ? { ...m, secondsElapsed: seconds } as any
+                : m
+            )
+          );
+        }
+      }, 1000);
 
-    try {
-      const res = await fetch("/api/agents/simulate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          articleTitle: text,
-          articleContent: attachedFiles.length > 0 ? attachedFiles[0].content : "",
-          modelId: selectedModel === 'agent' ? 'pro' : selectedModel,
-          rounds: 5,
-          agentType: 'financial',
-          agentCount: 4
-        })
-      });
-      const data = await res.json();
-      clearInterval(interval);
+      try {
+        const res = await fetch("/api/agents/simulate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            articleTitle: text,
+            articleContent: attachedFiles.length > 0 ? attachedFiles[0].content : "",
+            modelId: selectedModel === 'agent' ? 'pro' : selectedModel,
+            rounds: 5,
+            agentType: 'financial',
+            agentCount: 4
+          })
+        });
+        const data = await res.json();
+        clearInterval(interval);
 
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || "Error al simular la mesa redonda");
-      }
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || "Error al simular la mesa redonda");
+        }
 
-      const finalSeconds = seconds;
-      const finalThinkingMsg = {
-        id: thinkingMsgId,
-        role: 'assistant' as const,
-        content: "",
-        isSwarmThinking: true,
-        isCollapsed: true,
-        secondsElapsed: finalSeconds,
-        reasoningSteps: data.reasoningSteps || [],
-        timestamp: new Date()
-      };
+        const finalSeconds = seconds;
+        const finalThinkingMsg = {
+          id: thinkingMsgId,
+          role: 'assistant' as const,
+          content: "",
+          isSwarmThinking: true,
+          isCollapsed: true,
+          secondsElapsed: finalSeconds,
+          reasoningSteps: data.reasoningSteps || [],
+          timestamp: new Date()
+        };
 
-      const finalAssistantMsgId = `assistant-${Date.now()}`;
-      const finalAssistantMsg = {
-        id: finalAssistantMsgId,
-        role: 'assistant' as const,
-        content: data.finalAnswer,
-        timestamp: new Date()
-      };
+        const finalAssistantMsgId = `assistant-${Date.now()}`;
+        const finalAssistantMsg = {
+          id: finalAssistantMsgId,
+          role: 'assistant' as const,
+          content: data.finalAnswer,
+          timestamp: new Date()
+        };
 
-      setAiMessages(prev => {
-        const filtered = prev.filter(m => m.id !== thinkingMsgId);
-        const nextMessages = [...filtered, finalThinkingMsg as any, finalAssistantMsg as any];
+        // Update the Zustand store first
+        const currentStoreMessages = useAIChatStore.getState().messages;
+        const userMsgIndex = currentStoreMessages.findIndex(m => m.id === userMsgId);
+        let nextStoreMessages: ChatMessage[];
+        if (userMsgIndex >= 0) {
+          nextStoreMessages = [
+            ...currentStoreMessages.slice(0, userMsgIndex + 1),
+            finalThinkingMsg as any,
+            finalAssistantMsg as any
+          ];
+        } else {
+          nextStoreMessages = [
+            ...currentStoreMessages,
+            finalThinkingMsg as any,
+            finalAssistantMsg as any
+          ];
+        }
+
+        useAIChatStore.setState({ messages: nextStoreMessages });
+        useAIChatStore.getState().updateCurrentChat();
+
+        // If the chat is active, update the local state and reset loading
+        if (useAIChatStore.getState().currentChatId === targetChatId) {
+          setAiMessages(prev => {
+            const filtered = prev.filter(m => m.id !== thinkingMsgId);
+            return [...filtered, finalThinkingMsg as any, finalAssistantMsg as any];
+          });
+          setSwarmLoading(false);
+        }
+
+        setTimeout(() => fetchRealUsage(), 800);
+      } catch (e: any) {
+        clearInterval(interval);
+        activeSwarmExecutions.delete(targetChatId);
         
-        setTimeout(() => {
-          const storeMessages = nextMessages.map((m: any) => ({
-            id: m.id,
-            role: m.role,
-            content: m.content,
-            timestamp: new Date(m.timestamp || Date.now()),
-            isSwarmThinking: m.isSwarmThinking || undefined,
-            isCollapsed: m.isCollapsed !== undefined ? m.isCollapsed : undefined,
-            secondsElapsed: m.secondsElapsed !== undefined ? m.secondsElapsed : undefined,
-            reasoningSteps: m.reasoningSteps || undefined,
-          }));
-          useAIChatStore.setState({ messages: storeMessages as any });
-          useAIChatStore.getState().updateCurrentChat();
-          setTimeout(() => fetchRealUsage(), 800);
-        }, 50);
-
-        return nextMessages;
-      });
-
-      setSwarmLoading(false);
-    } catch (e: any) {
-      clearInterval(interval);
-      setSwarmLoading(false);
-      toast.error(e.message || "Error al simular agentes");
-      setAiMessages(prev => prev.filter(m => m.id !== thinkingMsgId));
-    }
+        if (useAIChatStore.getState().currentChatId === targetChatId) {
+          setSwarmLoading(false);
+          toast.error(e.message || "Error al simular agentes");
+          setAiMessages(prev => prev.filter(m => m.id !== thinkingMsgId));
+        }
+      } finally {
+        activeSwarmExecutions.delete(targetChatId);
+      }
+    })();
   };
 
   const sendMessage = async (textOverride?: string, contextOverride?: string) => {
@@ -750,6 +803,26 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
     }
     
     setIsUserAtBottom(true);
+
+    // Synchronous Chat Creation if currentChatId is null
+    let activeChatId = currentChatId;
+    const isNewChat = !activeChatId;
+    if (isNewChat) {
+      activeChatId = Date.now().toString();
+      lastLoadedChatIdRef.current = activeChatId;
+      const userMsg: ChatMessage = {
+        id: `user-${Date.now()}`,
+        role: 'user',
+        content: text,
+        timestamp: new Date()
+      };
+      useAIChatStore.setState({
+        currentChatId: activeChatId,
+        messages: [userMsg]
+      });
+      useAIChatStore.getState().updateCurrentChat();
+    }
+
     // ONLY use append — this adds the user message to aiMessages AND triggers the API call.
     // The store sync happens in onFinish after the AI responds.
     append({ role: 'user', content: text }, {
@@ -1242,7 +1315,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                       : !!(msg as any).isCollapsed;
                     
                     return (
-                      <div className="self-start w-full max-w-2xl bg-gray-50/50 dark:bg-slate-900/40 border border-gray-200/50 dark:border-slate-800/60 rounded-2xl p-4 mb-4 text-left transition-all">
+                      <div className="self-start w-full max-w-2xl bg-transparent border-none p-4 mb-4 text-left transition-all">
                         {/* Header */}
                         <button
                           onClick={() => setCollapsedThoughts(prev => ({
@@ -1410,7 +1483,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                           const isReasoningOpen = openReasoning[msg.id] !== false; // open by default
 
                           return (
-                            <div className="border border-gray-200/60 dark:border-slate-800/60 bg-gray-50/50 dark:bg-slate-900/40 rounded-2xl p-3.5 mb-2.5 transition-all">
+                            <div className="bg-transparent border-none p-3.5 mb-2.5 transition-all">
                               <button 
                                 onClick={() => setOpenReasoning(prev => ({ ...prev, [msg.id]: !isReasoningOpen }))}
                                 className="flex items-center justify-between w-full text-left text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
@@ -1628,12 +1701,9 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
               })}
               {/* Loading State */}
               {(aiLoading || swarmLoading) && (
-                <div className="flex justify-center py-6 w-full">
-                  <div className="bg-gray-50/80 dark:bg-slate-900/60 border border-gray-200/60 dark:border-slate-800/60 px-5 py-3 rounded-full shadow-sm backdrop-blur-md flex items-center gap-3">
-                    <Brain className="w-4 h-4 text-purple-500" />
-                    <span className="text-xs font-bold text-gray-500 dark:text-gray-400 mr-1">R-AI está pensando...</span>
-                    <ThinkingAnimation />
-                  </div>
+                <div className="flex items-center gap-2.5 py-4 text-xs font-bold text-gray-500 dark:text-gray-400 select-none">
+                  <GripVertical className="w-3.5 h-3.5 text-gray-300 dark:text-gray-700 shrink-0 animate-pulse" />
+                  <span className="animate-pulse">R-AI está pensando...</span>
                 </div>
               )}
               
@@ -1875,7 +1945,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                             </div>
                             <div className="flex-1">
                               <div className="leading-none">Reclu v2.5 Fast</div>
-                              <div className="text-[10px] text-gray-400 font-normal mt-1">Rápido e Inteligente (Por defecto)</div>
+                              <div className="text-[10px] text-gray-400 font-normal mt-1">Respuestas rápidas y precisas (Por defecto)</div>
                             </div>
                           </button>
                           
@@ -1892,7 +1962,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                                 Reclu v2.5 Pro
                                 {!canUsePro && <span className="text-[9px] bg-amber-500 text-white px-1.5 py-0.5 rounded ml-2 uppercase flex items-center gap-1"><Lock className="w-2.5 h-2.5" />Pro</span>}
                               </div>
-                              <div className="text-[10px] text-gray-400 font-normal mt-1">{!canUsePro ? 'Requiere plan Pro o superior' : 'Razonamiento profundo avanzado'}</div>
+                              <div className="text-[10px] text-gray-400 font-normal mt-1">{!canUsePro ? 'Requiere plan Pro o superior' : 'Análisis financiero profundo y razonamiento reflexivo'}</div>
                             </div>
                           </button>
 
@@ -1909,7 +1979,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                                 Reclu v2.6 Agent
                                 <span className="text-[9px] bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-1.5 py-0.5 rounded ml-2 uppercase font-black tracking-wider shadow-sm">Swarm</span>
                               </div>
-                              <div className="text-[10px] text-gray-400 font-normal mt-1">Mesa Redonda Multi-Agente con Mimo v2.5</div>
+                              <div className="text-[10px] text-gray-400 font-normal mt-1">Orquestación de agentes con razonamiento avanzado</div>
                             </div>
                           </button>
                         </motion.div>

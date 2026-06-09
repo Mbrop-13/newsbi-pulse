@@ -77,7 +77,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
 
   const {
     messages, addMessage, isLoading, 
-    attachedArticles, attachedFiles, attachFile,
+    attachedArticles, attachedFiles, attachFile, removeFile, removeArticle,
     selectedModel, setModel, clearMessages,
     savedChats, loadChat, deleteSavedChat,
     cloudSyncEnabled, setCloudSync,
@@ -129,6 +129,47 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
 
   // ── Reports State ──
   const [sidebarTab, setSidebarTab] = useState<'chats' | 'reports' | 'agents'>('chats');
+
+  const [chatSearchQuery, setChatSearchQuery] = useState("");
+
+  const getGroupedChats = () => {
+    const filteredChats = chatSearchQuery.trim()
+      ? savedChats.filter(chat => 
+          chat.title.toLowerCase().includes(chatSearchQuery.toLowerCase()) ||
+          chat.messages.some(m => m.content.toLowerCase().includes(chatSearchQuery.toLowerCase()))
+        )
+      : savedChats;
+
+    const today: typeof savedChats = [];
+    const yesterday: typeof savedChats = [];
+    const last7Days: typeof savedChats = [];
+    const older: typeof savedChats = [];
+
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfYesterday = new Date(startOfToday.getTime() - 24 * 60 * 60 * 1000);
+    const startOf7DaysAgo = new Date(startOfToday.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    filteredChats.forEach((chat) => {
+      const chatDate = new Date(chat.timestamp);
+      if (chatDate >= startOfToday) {
+        today.push(chat);
+      } else if (chatDate >= startOfYesterday) {
+        yesterday.push(chat);
+      } else if (chatDate >= startOf7DaysAgo) {
+        last7Days.push(chat);
+      } else {
+        older.push(chat);
+      }
+    });
+
+    return [
+      { label: "Hoy", chats: today },
+      { label: "Ayer", chats: yesterday },
+      { label: "Últimos 7 días", chats: last7Days },
+      { label: "Más antiguos", chats: older },
+    ].filter(group => group.chats.length > 0);
+  };
 
   useEffect(() => {
     if (activeChatMode !== 'mirofish') {
@@ -851,8 +892,6 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
 
   return (
     <div className="flex h-[100dvh] bg-white dark:bg-[#0a0a0a] overflow-hidden relative font-sans">
-      
-      {/* ─── LEFT SIDEBAR (HISTORY) ─── */}
       <AnimatePresence>
         {isSidebarOpen && (
           <motion.div
@@ -860,84 +899,103 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
             animate={{ width: 280, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
             transition={{ type: "spring", stiffness: 400, damping: 30 }}
-            className="h-full border-r border-gray-100 dark:border-white/5 bg-[#FAFAFA] dark:bg-[#0F1117] flex flex-col flex-shrink-0 absolute md:relative z-50 shadow-2xl md:shadow-none overflow-hidden"
+            className="h-full border-r border-gray-100 dark:border-white/5 bg-[#FAFAFA] dark:bg-[#171717] flex flex-col flex-shrink-0 absolute md:relative z-50 shadow-2xl md:shadow-none overflow-hidden"
           >
             <div className="w-[280px] h-full flex flex-col">
-            <div className="p-4 flex flex-col gap-2">
+            <div className="p-3.5 flex flex-col gap-2">
               <div className="flex items-center justify-between gap-2">
                 <button 
                   onClick={() => { clearMessages(); setAiMessages([]); if(window.innerWidth < 768) setIsSidebarOpen(false); }}
-                  className="flex-1 flex items-center justify-between px-4 py-2.5 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:border-[#1890FF]/30 hover:bg-[#1890FF]/5 rounded-xl transition-all group"
+                  className="flex-1 flex items-center justify-between px-3 py-2 bg-white dark:bg-white/5 border border-gray-205 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10 rounded-xl transition-all group"
                 >
-                  <div className="flex items-center gap-2 font-bold text-sm text-gray-900 dark:text-white group-hover:text-[#1890FF]">
-                    <Plus className="w-4 h-4" /> Nuevo Chat
+                  <div className="flex items-center gap-2 font-bold text-xs text-gray-800 dark:text-gray-250">
+                    <Plus className="w-3.5 h-3.5" /> Nuevo Chat
                   </div>
-                  <Bot className="w-4 h-4 text-gray-400 group-hover:text-[#1890FF]" />
                 </button>
                 
                 <button 
                   onClick={() => setIsSidebarOpen(false)}
-                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 transition-colors"
+                  className="w-8 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-white/5 border border-gray-205 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10 text-gray-500 hover:text-gray-755 dark:hover:text-white transition-colors"
                   title="Ocultar menú lateral"
                 >
-                  <PanelLeftClose className="w-5 h-5" />
+                  <PanelLeftClose className="w-4.5 h-4.5" />
                 </button>
               </div>
             </div>
 
             {/* ── Sidebar Tabs ── */}
-            {/* ── Sidebar Tabs ── */}
-            <div className="flex items-center mx-4 mt-1 bg-gray-100 dark:bg-white/5 rounded-lg p-0.5">
-              <button onClick={() => { setSidebarTab('chats'); setActiveChatMode('chat'); }} className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-bold transition-all ${sidebarTab === 'chats' && activeChatMode !== 'mirofish' ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
-                <MessageSquare className="w-3.5 h-3.5" /> Chats
+            <div className="flex items-center mx-3.5 bg-gray-100 dark:bg-white/5 rounded-xl p-0.5">
+              <button onClick={() => { setSidebarTab('chats'); setActiveChatMode('chat'); }} className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-bold transition-all ${sidebarTab === 'chats' && activeChatMode !== 'mirofish' ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-750 dark:hover:text-gray-300'}`}>
+                <MessageSquare className="w-3 h-3" /> Chats
               </button>
-              <button onClick={() => { setSidebarTab('reports'); setActiveChatMode('chat'); }} className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-bold transition-all relative ${sidebarTab === 'reports' && activeChatMode !== 'mirofish' ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
-                <FileText className="w-3.5 h-3.5" /> Informes
-                {reports.some(r => !r.is_read) && <span className="absolute top-1 right-2 w-2 h-2 bg-[#1890FF] rounded-full animate-pulse" />}
+              <button onClick={() => { setSidebarTab('reports'); setActiveChatMode('chat'); }} className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-bold transition-all relative ${sidebarTab === 'reports' && activeChatMode !== 'mirofish' ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm' : 'text-gray-550 hover:text-gray-750'}`}>
+                <FileText className="w-3 h-3" /> Informes
+                {reports.some(r => !r.is_read) && <span className="absolute top-1 right-1.5 w-1.5 h-1.5 bg-[#1890FF] rounded-full animate-pulse" />}
               </button>
-            </div>
-
-            {/* ── Agents Tab (Similar Oval) ── */}
-            <div className="flex items-center mx-4 mt-2 bg-gray-100 dark:bg-white/5 rounded-lg p-0.5">
-              <button onClick={() => { setSidebarTab('agents'); setActiveChatMode('mirofish'); }} className={`w-full flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-bold transition-all ${activeChatMode === 'mirofish' ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
-                Agentes
+              <button onClick={() => { setSidebarTab('agents'); setActiveChatMode('mirofish'); }} className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-bold transition-all ${activeChatMode === 'mirofish' ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm' : 'text-gray-550 hover:text-gray-750 dark:hover:text-gray-350'}`}>
+                <Users className="w-3 h-3" /> Agentes
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-3 hidden-scrollbar mt-2 pt-2">
+            {/* Search Input */}
+            <div className="px-3.5 py-2">
+              <div className="relative flex items-center bg-gray-100 dark:bg-white/5 border border-transparent dark:border-white/5 rounded-xl px-2.5 py-1.5">
+                <Search className="w-3.5 h-3.5 text-gray-405 mr-2 shrink-0" />
+                <input 
+                  type="text" 
+                  value={chatSearchQuery}
+                  onChange={(e) => setChatSearchQuery(e.target.value)}
+                  placeholder="Buscar en el historial..." 
+                  className="w-full bg-transparent text-[11px] outline-none text-gray-800 dark:text-white placeholder-gray-400 font-medium"
+                />
+                {chatSearchQuery && (
+                  <button onClick={() => setChatSearchQuery("")} className="text-gray-400 hover:text-gray-650">
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-3.5 hidden-scrollbar mt-1 pt-1">
               
               {sidebarTab === 'chats' && (
                 /* ── Chats Tab ── */
                 <>
                   {savedChats.length === 0 ? (
-                    <div className="px-4 py-8 text-center text-gray-400 text-xs font-medium border border-dashed border-gray-200 dark:border-gray-800 rounded-xl mx-2">
+                    <div className="px-4 py-8 text-center text-gray-450 text-xs font-medium border border-dashed border-gray-200 dark:border-gray-800 rounded-xl mx-1.5">
                       Tus chats recientes aparecerán aquí
                     </div>
                   ) : (
-                    <div className="space-y-0.5">
-                      {savedChats.map((chat) => {
-                        const chatDate = new Date(chat.timestamp);
-                        const timeStr = chatDate.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
-                        const isActive = currentChatId === chat.id;
-                        return (
-                          <div 
-                            key={chat.id} 
-                            className={`group flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-colors ${
-                              isActive 
-                                ? 'bg-[#1890FF]/10 border border-[#1890FF]/20' 
-                                : 'hover:bg-gray-200/50 dark:hover:bg-white/5'
-                            }`}
-                          >
-                            <div className="flex-1 overflow-hidden" onClick={() => { loadChat(chat.id); setActiveChatMode('chat'); if(window.innerWidth < 768) setIsSidebarOpen(false); }}>
-                              <p className={`text-[13px] font-semibold truncate pl-1 ${isActive ? 'text-[#1890FF]' : 'text-gray-700 dark:text-gray-300'}`}>{chat.title}</p>
-                              <p className="text-[10px] text-gray-400 dark:text-gray-500 pl-1 mt-0.5 font-medium">{timeStr}</p>
-                            </div>
-                            <button onClick={(e) => { e.stopPropagation(); deleteSavedChat(chat.id); }} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-all p-1.5 shrink-0">
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                    <div className="space-y-4">
+                      {getGroupedChats().map((group) => (
+                        <div key={group.label} className="space-y-1">
+                          <div className="px-3 py-1 text-[10px] font-bold text-gray-400 dark:text-gray-550 uppercase tracking-wider">
+                            {group.label}
                           </div>
-                        );
-                      })}
+                          <div className="space-y-0.5">
+                            {group.chats.map((chat) => {
+                              const isActive = currentChatId === chat.id;
+                              return (
+                                <div 
+                                  key={chat.id} 
+                                  className={`group flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-all duration-200 ${
+                                    isActive 
+                                      ? 'bg-gray-200/50 dark:bg-white/5 border border-transparent' 
+                                      : 'hover:bg-gray-200/30 dark:hover:bg-white/[0.02]'
+                                  }`}
+                                >
+                                  <div className="flex-1 overflow-hidden" onClick={() => { loadChat(chat.id); setActiveChatMode('chat'); if(window.innerWidth < 768) setIsSidebarOpen(false); }}>
+                                    <p className={`text-xs font-semibold truncate pl-1 ${isActive ? 'text-gray-950 dark:text-white' : 'text-gray-700 dark:text-gray-400'}`}>{chat.title}</p>
+                                  </div>
+                                  <button onClick={(e) => { e.stopPropagation(); deleteSavedChat(chat.id); }} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-all p-1 hover:bg-gray-200 dark:hover:bg-white/10 rounded-md shrink-0">
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </>
@@ -1133,17 +1191,103 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
         {/* Top Navigation Bar */}
         {!isMirofishActive && activeChatMode !== 'mirofish' && (
           <div className="w-full flex items-center justify-between border-b border-gray-100 dark:border-gray-900 bg-white/50 dark:bg-[#0a0a0a]/50 backdrop-blur-md px-6 py-4 z-40 relative">
-            {/* Sidebar toggle button (if sidebar is closed) */}
-            <div className="flex items-center gap-4 min-w-[40px]">
+            {/* Sidebar toggle button & Model Selector */}
+            <div className="flex items-center gap-2">
               {!isSidebarOpen && (
                 <button 
                   onClick={() => setIsSidebarOpen(true)}
-                  className="w-10 h-10 rounded-xl bg-gray-50/80 dark:bg-slate-900/80 backdrop-blur-md border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-500 hover:text-[#1890FF] shadow-sm hover:shadow-md transition-all"
+                  className="w-10 h-10 rounded-xl bg-gray-50/80 dark:bg-slate-900/80 backdrop-blur-md border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-500 hover:text-[#1890FF] shadow-sm hover:shadow-md transition-all shrink-0"
                   title="Abrir menú lateral"
                 >
                   <PanelLeft className="w-5 h-5" />
                 </button>
               )}
+              
+              {/* Model Selector Dropdown */}
+              <div className="relative">
+                <button 
+                  type="button" 
+                  onClick={() => setShowModelMenu(!showModelMenu)} 
+                  className={`h-10 px-3 flex items-center justify-center gap-2 rounded-xl transition-colors ${
+                    selectedModel === 'pro'
+                      ? "bg-amber-500/10 text-amber-500 font-bold" 
+                      : selectedModel === 'agent'
+                      ? "bg-purple-500/10 text-purple-650 dark:text-purple-400 font-bold border border-purple-500/25"
+                      : "bg-gray-50 dark:bg-white/5 text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10"
+                  }`} 
+                  title="Seleccionar Modelo AI"
+                >
+                  {selectedModel === 'fast' ? <Zap className="w-4 h-4 text-[#1890FF]" /> : selectedModel === 'pro' ? <Sparkles className="w-4 h-4 text-amber-500" /> : <Users className="w-4 h-4 text-purple-500" />}
+                  <span className="text-xs font-bold text-gray-800 dark:text-gray-200 hidden sm:inline">
+                    {selectedModel === 'fast' ? 'Reclu Fast' : selectedModel === 'pro' ? 'Reclu Pro' : 'Reclu Agent'}
+                  </span>
+                  {selectedModel === 'pro' && !canUsePro && <Lock className="w-3 h-3 text-amber-500 shrink-0" />}
+                  {selectedModel === 'agent' && <span className="text-[8px] bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-1 rounded uppercase font-black tracking-wider shrink-0">Swarm</span>}
+                </button>
+
+                <AnimatePresence>
+                  {showModelMenu && (
+                    <>
+                      <div className="fixed inset-0 z-20" onClick={() => setShowModelMenu(false)} />
+                      <motion.div
+                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                        className="absolute top-full left-0 mt-2 z-50 w-72 bg-white dark:bg-slate-900 border border-gray-100 dark:border-white/10 rounded-2xl shadow-xl overflow-hidden flex flex-col p-2 space-y-1"
+                      >
+                        <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Modelo de IA</div>
+                        <button
+                          type="button"
+                          onClick={() => handleModelSelect('fast')}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold rounded-xl transition-colors text-left ${selectedModel === 'fast' ? 'bg-[#1890FF]/10 text-[#1890FF]' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'}`}
+                        >
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${selectedModel === 'fast' ? 'bg-[#1890FF]/20 text-[#1890FF]' : 'bg-gray-100 dark:bg-slate-800 text-gray-500'}`}>
+                            <Zap className="w-4 h-4" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="leading-none text-xs font-bold">Reclu Fast</div>
+                            <div className="text-[10px] text-gray-400 font-normal mt-1">Respuestas rápidas y precisas (Por defecto)</div>
+                          </div>
+                        </button>
+                        
+                        <button
+                          type="button"
+                          onClick={() => handleModelSelect('pro')}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold rounded-xl transition-colors text-left ${selectedModel === 'pro' ? 'bg-amber-500/10 text-amber-500' : !canUsePro ? 'text-gray-400 dark:text-gray-550 hover:bg-gray-50 dark:hover:bg-white/5' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'}`}
+                        >
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${selectedModel === 'pro' ? 'bg-amber-500/20 text-amber-500' : !canUsePro ? 'bg-gray-100 dark:bg-slate-800 text-gray-400' : 'bg-gray-100 dark:bg-slate-800 text-gray-500'}`}>
+                            {!canUsePro ? <Lock className="w-4 h-4 text-amber-500" /> : <Sparkles className="w-4 h-4" />}
+                          </div>
+                          <div className="flex-1">
+                            <div className="leading-none text-xs font-bold flex items-center justify-between">
+                              Reclu Pro
+                              {!canUsePro && <span className="text-[9px] bg-amber-500 text-white px-1.5 py-0.5 rounded ml-2 uppercase flex items-center gap-1"><Lock className="w-2.5 h-2.5" />Pro</span>}
+                            </div>
+                            <div className="text-[10px] text-gray-400 font-normal mt-1">{!canUsePro ? 'Requiere plan Pro o superior' : 'Análisis financiero profundo y razonamiento reflexivo'}</div>
+                          </div>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleModelSelect('agent')}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold rounded-xl transition-colors text-left ${selectedModel === 'agent' ? 'bg-purple-500/10 text-purple-500' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'}`}
+                        >
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${selectedModel === 'agent' ? 'bg-purple-500/20 text-purple-500' : 'bg-gray-100 dark:bg-slate-800 text-gray-500'}`}>
+                            <Users className="w-4 h-4" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="leading-none text-xs font-bold flex items-center justify-between">
+                              Reclu Agent
+                              <span className="text-[9px] bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-1.5 py-0.5 rounded ml-2 uppercase font-black tracking-wider shadow-sm">Swarm</span>
+                            </div>
+                            <div className="text-[10px] text-gray-400 font-normal mt-1">Orquestación de agentes con razonamiento avanzado</div>
+                          </div>
+                        </button>
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
 
             {/* Navigation links (styled elegantly like the prompt image) */}
@@ -1219,12 +1363,88 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
             {/* Chat Messages */}
             <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto hidden-scrollbar relative pb-24">
           
-          {/* ── Prompt Carousel (full width, outside max-w constraint) ── */}
-          {isStoreHydrated && aiMessages.length === 0 && !aiLoading && (
-            <div className="pt-24 md:pt-40">
-              <PromptCarousel onSend={(query, contextOverride) => sendMessage(query, contextOverride)} />
-            </div>
-          )}
+            {/* Centered Empty State (Open WebUI style) */}
+            {isStoreHydrated && aiMessages.length === 0 && !aiLoading && (
+              <div className="flex flex-col items-center justify-center min-h-[70vh] text-center px-4 pt-10 md:pt-16 max-w-3xl mx-auto">
+                <motion.div 
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="mb-8"
+                >
+                  {/* Premium Logo Icon */}
+                  <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-[#1890FF] to-indigo-600 flex items-center justify-center mx-auto mb-6 shadow-xl shadow-blue-500/10">
+                    <Bot className="w-9 h-9 text-white" />
+                  </div>
+                  <h2 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white tracking-tight">
+                    ¿En qué puedo ayudarte hoy, {user?.name?.split(" ")[0] || "User"}?
+                  </h2>
+                  <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-md mx-auto font-medium">
+                    Pregúntame sobre tu portafolio, cotizaciones de mercado o las últimas noticias financieras del día.
+                  </p>
+                </motion.div>
+
+                {/* 2x2 Grid of Recommendation Cards */}
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.15 }}
+                  className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 w-full"
+                >
+                  {[
+                    {
+                      title: "Analizar portafolio",
+                      description: "Calcula métricas clave, diversificación y rendimiento",
+                      icon: Briefcase,
+                      query: "¿Cómo van mis acciones hoy?",
+                      color: "text-blue-500 bg-blue-500/10 border-blue-500/10 dark:border-blue-500/20 hover:border-blue-500/30",
+                    },
+                    {
+                      title: "Noticias del día",
+                      description: "Resume las novedades financieras más relevantes de hoy",
+                      icon: Newspaper,
+                      query: "Dame un resumen de las noticias más importantes de hoy.",
+                      color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/10 dark:border-emerald-500/20 hover:border-emerald-500/30",
+                    },
+                    {
+                      title: "Análisis de acción",
+                      description: "Evaluación fundamental y técnica de una cotización",
+                      icon: TrendingUp,
+                      query: "Realiza un análisis fundamental y técnico de una acción como AAPL",
+                      color: "text-amber-500 bg-amber-500/10 border-amber-500/10 dark:border-amber-500/20 hover:border-amber-500/30",
+                    },
+                    {
+                      title: "Mesa Redonda",
+                      description: "Inicia un debate de agentes sobre tendencia de mercado",
+                      icon: Users,
+                      query: "Debate sobre las tendencias tecnológicas y oportunidades de inversión",
+                      color: "text-purple-500 bg-purple-500/10 border-purple-500/10 dark:border-purple-500/20 hover:border-purple-500/30",
+                      model: "agent" as const,
+                    }
+                  ].map((card, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => {
+                        if (card.model) {
+                          setModel(card.model);
+                        }
+                        sendMessage(card.query);
+                      }}
+                      className="flex items-start gap-4 p-4 text-left bg-gray-50 dark:bg-[#171717] hover:bg-gray-100 dark:hover:bg-[#202020] border border-gray-200 dark:border-white/5 rounded-2xl transition-all hover:scale-[1.01] duration-200 shadow-sm"
+                    >
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${card.color}`}>
+                        <card.icon className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-gray-900 dark:text-white leading-snug">{card.title}</h4>
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 leading-normal font-medium">{card.description}</p>
+                      </div>
+                    </button>
+                  ))}
+                </motion.div>
+              </div>
+            )}
 
           <div className={`${maxWClass} mx-auto w-full px-4 md:px-8 ${aiMessages.length === 0 ? "pt-0" : "pt-10"} pb-8 transition-all duration-300`}>
 
@@ -1379,7 +1599,11 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                     </div>
                   ) : msg.role === "assistant" && !(msg as any).isSwarmLoadingPlaceholder && !(msg as any).isThinking && !(msg as any).isDebateMsg ? (
                     /* Assistant Message */
-                    <div className="flex max-w-full">
+                    <div className="flex max-w-full gap-4 text-left items-start">
+                      {/* Premium Bot Avatar */}
+                      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1890FF] to-indigo-600 flex items-center justify-center shrink-0 border border-blue-500/20 shadow-md">
+                        <Bot className="w-5 h-5 text-white" />
+                      </div>
                       <div className="flex-1 space-y-3 min-w-0">
                         
                         {/* Native AI SDK Tools */}
@@ -1641,9 +1865,15 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
               })}
               {/* Loading State */}
               {(aiLoading || swarmLoading) && (
-                <div className="flex items-center gap-2.5 py-4 text-xs font-bold text-gray-500 dark:text-gray-400 select-none">
-                  <GripVertical className="w-3.5 h-3.5 text-gray-300 dark:text-gray-700 shrink-0 animate-pulse" />
-                  <span className="animate-pulse">R-AI está pensando...</span>
+                <div className="flex max-w-full gap-4 text-left items-start py-2">
+                  {/* Premium Bot Avatar */}
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1890FF] to-indigo-600 flex items-center justify-center shrink-0 border border-blue-500/20 shadow-md">
+                    <Bot className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="flex items-center gap-2.5 py-2 text-xs font-bold text-gray-500 dark:text-gray-400 select-none">
+                    <Loader2 className="w-4 h-4 animate-spin text-[#1890FF]" />
+                    <span className="animate-pulse">R-AI está pensando...</span>
+                  </div>
                 </div>
               )}
               
@@ -1693,294 +1923,253 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
               )}
             </AnimatePresence>
 
-            <form onSubmit={(e) => { e.preventDefault(); sendMessage(); }} className="relative flex items-end gap-2 bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-700/50 rounded-3xl p-1.5 shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)] focus-within:ring-4 focus-within:ring-[#1890FF]/15 focus-within:border-[#1890FF]/50 transition-all">
-              <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".txt,.md,.csv,.json,.ts" />
-              
-              {/* Active Tool Pills */}
-              <AnimatePresence>
-                {activeTools.length > 0 && (
-                  <div className="absolute bottom-full left-4 mb-2 flex flex-col sm:flex-row gap-2">
-                    {activeTools.map(toolId => {
-                      const tool = ADVANCED_TOOLS.find(t => t.id === toolId);
-                      if (!tool) return null;
-                      return (
-                        <motion.div
-                          key={toolId}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.9 }}
-                          className="bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 text-[11px] font-bold px-3 py-1.5 rounded-full flex items-center gap-2 shadow-sm"
-                        >
-                          <div className="w-5 h-5 rounded-full bg-blue-50 dark:bg-[#1890FF]/10 flex items-center justify-center">
-                            <tool.icon className="w-3 h-3 text-[#1890FF]" />
-                          </div>
-                          {tool.label}
-                          <button type="button" onClick={() => toggleTool(toolId, tool.category)} className="ml-1 text-gray-400 hover:text-red-500 transition-colors rounded-full p-0.5 hover:bg-red-50 dark:hover:bg-red-500/10"><X className="w-3.5 h-3.5" /></button>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-                )}
-              </AnimatePresence>
-
-              {/* Left Actions */}
-              <div className="flex items-center gap-1.5 pb-0.5 pl-1 shrink-0 relative">
-                <button type="button" onClick={() => setShowAttachMenu(!showAttachMenu)} className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors z-30 ${showAttachMenu ? "bg-[#1890FF] text-white shadow-lg" : "bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500"}`} title="Más opciones">
-                  <Plus className={`w-5 h-5 transition-transform duration-300 ${showAttachMenu ? "rotate-45" : ""}`} />
-                </button>
-
-                <AnimatePresence>
-                  {showAttachMenu && (
-                    <>
-                      <div className="fixed inset-0 z-20" onClick={() => { setShowAttachMenu(false); setTimeout(() => setAttachMenuView('main'), 200); }} />
-                      <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="absolute bottom-12 left-0 z-40 w-64 bg-white dark:bg-slate-900 border border-gray-100 dark:border-white/10 rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[350px]"
+            <form 
+              onSubmit={(e) => { e.preventDefault(); sendMessage(); }} 
+              className="relative flex flex-col gap-2 bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-700/50 rounded-3xl p-2 md:p-3 shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)] focus-within:ring-4 focus-within:ring-[#1890FF]/15 focus-within:border-[#1890FF]/50 transition-all"
+            >
+              {/* Attached files and articles row */}
+              {(attachedFiles.length > 0 || attachedArticles.length > 0) && (
+                <div className="flex flex-wrap gap-2 px-2.5 pb-2.5 border-b border-gray-150 dark:border-white/5 w-full">
+                  {attachedFiles.map((file) => (
+                    <div 
+                      key={file.id} 
+                      className="bg-gray-100 dark:bg-white/5 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-white/10 text-xs font-semibold px-2.5 py-1 rounded-xl flex items-center gap-2"
+                    >
+                      <Paperclip className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                      <span className="truncate max-w-[120px]">{file.name}</span>
+                      <button 
+                        type="button" 
+                        onClick={() => removeFile(file.id)} 
+                        className="text-gray-405 hover:text-red-505 p-0.5 hover:bg-gray-200 dark:hover:bg-white/10 rounded-full transition-colors"
                       >
-                        <div className="flex-1 overflow-y-auto hidden-scrollbar p-2 space-y-3">
-                          
-                          {attachMenuView === 'main' && (
-                            <motion.div key="main" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}>
-                              {/* Archivos */}
-                              <div>
-                                <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Archivos</div>
-                                <button
-                                  type="button"
-                                  onClick={() => { setShowAttachMenu(false); fileInputRef.current?.click(); }}
-                                  className="w-full flex items-center gap-3 px-2 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-[#1890FF] rounded-xl transition-colors text-left"
-                                >
-                                  <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center text-gray-500 shrink-0">
-                                    <Paperclip className="w-4 h-4" />
-                                  </div>
-                                  Subir archivo
-                                </button>
-                              </div>
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                  {attachedArticles.map((article) => (
+                    <div 
+                      key={article.id} 
+                      className="bg-[#1890FF]/10 text-[#1890FF] border border-[#1890FF]/20 text-xs font-semibold px-2.5 py-1 rounded-xl flex items-center gap-2"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-[#1890FF] shrink-0" />
+                      <span className="truncate max-w-[120px]">{article.title}</span>
+                      <button 
+                        type="button" 
+                        onClick={() => removeArticle(article.id)} 
+                        className="text-gray-450 hover:text-red-550 p-0.5 hover:bg-gray-200 dark:hover:bg-white/10 rounded-full transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
 
-                              <div className="mt-2">
-                                <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Herramientas</div>
-                                <button type="button" onClick={() => setAttachMenuView('charts')}
-                                  className="w-full flex items-center justify-between px-2 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-blue-500 rounded-xl transition-colors">
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0"><PieChart className="w-4 h-4" /></div>
-                                    Gráficos
-                                  </div>
-                                  <ChevronRight className="w-4 h-4 text-gray-400" />
-                                </button>
-                                <button type="button" onClick={() => setAttachMenuView('analysis')}
-                                  className="w-full flex items-center justify-between px-2 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-purple-500 rounded-xl transition-colors mt-1">
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0"><TrendingUp className="w-4 h-4" /></div>
-                                    Análisis
-                                  </div>
-                                  <ChevronRight className="w-4 h-4 text-gray-400" />
-                                </button>
-                              </div>
-                            </motion.div>
-                          )}
-
-                          {attachMenuView === 'charts' && (
-                            <motion.div key="charts" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
-                              <button type="button" onClick={() => setAttachMenuView('main')} className="flex items-center gap-1 text-[11px] font-bold text-gray-500 hover:text-gray-900 dark:hover:text-white px-2 py-1 mb-2 transition-colors">
-                                <ChevronRight className="w-3 h-3 rotate-180" /> Volver
-                              </button>
-                              <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Gráficos</div>
-                              <div className="space-y-0.5">
-                                {ADVANCED_TOOLS.filter(t => t.category === 'Gráficos').map(tool => {
-                                  const Icon = tool.icon;
-                                  const isActive = activeTools.includes(tool.id);
-                                  return (
-                                    <div key={tool.id} className="w-full flex items-center justify-between px-2 py-2 text-sm font-semibold rounded-xl transition-colors group">
-                                      <button type="button" onClick={() => { toggleTool(tool.id, tool.category); setShowAttachMenu(false); setTimeout(() => setAttachMenuView('main'), 200); }} 
-                                        className={`flex-1 flex items-center gap-3 text-left ${isActive ? "text-blue-600 dark:text-blue-400" : "text-gray-700 dark:text-gray-300 hover:text-[#1890FF]"}`}>
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isActive ? "bg-blue-500/20 text-blue-600" : "bg-blue-500/10 text-blue-600 dark:text-blue-400"}`}>
-                                          <Icon className="w-4 h-4" />
-                                        </div>
-                                        {tool.label}
-                                      </button>
-                                      <button type="button" onClick={(e) => { e.stopPropagation(); toggleFavoriteTool(tool.id); }} className={`p-1.5 transition-all ${favoriteTools.includes(tool.id) ? "text-amber-500" : "text-gray-300 hover:text-amber-500 dark:text-gray-600 dark:hover:text-amber-500 opacity-0 group-hover:opacity-100"}`}>
-                                        <Star className={`w-4 h-4 ${favoriteTools.includes(tool.id) ? "fill-amber-500" : ""}`} />
-                                      </button>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </motion.div>
-                          )}
-
-                          {attachMenuView === 'analysis' && (
-                            <motion.div key="analysis" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
-                              <button type="button" onClick={() => setAttachMenuView('main')} className="flex items-center gap-1 text-[11px] font-bold text-gray-500 hover:text-gray-900 dark:hover:text-white px-2 py-1 mb-2 transition-colors">
-                                <ChevronRight className="w-3 h-3 rotate-180" /> Volver
-                              </button>
-                              <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Análisis</div>
-                              <div className="space-y-0.5">
-                                {ADVANCED_TOOLS.filter(t => t.category === 'Análisis').map(tool => {
-                                  const Icon = tool.icon;
-                                  const isActive = activeTools.includes(tool.id);
-                                  return (
-                                    <div key={tool.id} className="w-full flex items-center justify-between px-2 py-2 text-sm font-semibold rounded-xl transition-colors group">
-                                      <button type="button" onClick={() => { toggleTool(tool.id, tool.category); setShowAttachMenu(false); setTimeout(() => setAttachMenuView('main'), 200); }} 
-                                        className={`flex-1 flex items-center gap-3 text-left ${isActive ? "text-purple-600 dark:text-purple-400" : "text-gray-700 dark:text-gray-300 hover:text-purple-500"}`}>
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isActive ? "bg-purple-500/20 text-purple-600" : "bg-purple-500/10 text-purple-600 dark:text-purple-400"}`}>
-                                          <Icon className="w-4 h-4" />
-                                        </div>
-                                        {tool.label}
-                                      </button>
-                                      <button type="button" onClick={(e) => { e.stopPropagation(); toggleFavoriteTool(tool.id); }} className={`p-1.5 transition-all ${favoriteTools.includes(tool.id) ? "text-amber-500" : "text-gray-300 hover:text-amber-500 dark:text-gray-600 dark:hover:text-amber-500 opacity-0 group-hover:opacity-100"}`}>
-                                        <Star className={`w-4 h-4 ${favoriteTools.includes(tool.id) ? "fill-amber-500" : ""}`} />
-                                      </button>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </motion.div>
-                          )}
-
-                        </div>
-                      </motion.div>
-                    </>
+              <div className="flex items-end gap-2 w-full">
+                <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".txt,.md,.csv,.json,.ts" />
+                
+                {/* Active Tool Pills */}
+                <AnimatePresence>
+                  {activeTools.length > 0 && (
+                    <div className="absolute bottom-full left-4 mb-2 flex flex-col sm:flex-row gap-2">
+                      {activeTools.map(toolId => {
+                        const tool = ADVANCED_TOOLS.find(t => t.id === toolId);
+                        if (!tool) return null;
+                        return (
+                          <motion.div
+                            key={toolId}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
+                            className="bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 text-[11px] font-bold px-3 py-1.5 rounded-full flex items-center gap-2 shadow-sm"
+                          >
+                            <div className="w-5 h-5 rounded-full bg-blue-50 dark:bg-[#1890FF]/10 flex items-center justify-center">
+                              <tool.icon className="w-3 h-3 text-[#1890FF]" />
+                            </div>
+                            {tool.label}
+                            <button type="button" onClick={() => toggleTool(toolId, tool.category)} className="ml-1 text-gray-400 hover:text-red-500 transition-colors rounded-full p-0.5 hover:bg-red-50 dark:hover:bg-red-500/10"><X className="w-3.5 h-3.5" /></button>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
                   )}
                 </AnimatePresence>
-                
-                {/* Model Selector */}
-                <div className="relative">
-                  <button 
-                    type="button" 
-                    onClick={() => setShowModelMenu(!showModelMenu)} 
-                    className={`h-10 px-3 flex items-center justify-center gap-2 rounded-full transition-colors ${
-                      selectedModel === 'pro'
-                        ? "bg-amber-500/10 text-amber-500 font-bold" 
-                        : selectedModel === 'agent'
-                        ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold border border-purple-500/25"
-                        : "bg-gray-50 dark:bg-white/5 text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10"
-                    }`} 
-                    title="Seleccionar Modelo AI"
-                  >
-                    {selectedModel === 'fast' ? <Zap className="w-4 h-4" /> : selectedModel === 'pro' ? <Sparkles className="w-4 h-4" /> : <Users className="w-4 h-4" />}
-                    <span className="text-xs font-semibold hidden sm:inline">
-                      {selectedModel === 'fast' ? 'V2.5 Fast' : selectedModel === 'pro' ? 'V2.5 Pro' : 'V2.6 Agent'}
-                    </span>
+
+                {/* Left Actions */}
+                <div className="flex items-center gap-1.5 pb-0.5 pl-1 shrink-0 relative">
+                  <button type="button" onClick={() => setShowAttachMenu(!showAttachMenu)} className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors z-30 ${showAttachMenu ? "bg-[#1890FF] text-white shadow-lg" : "bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500"}`} title="Más opciones">
+                    <Plus className={`w-5 h-5 transition-transform duration-300 ${showAttachMenu ? "rotate-45" : ""}`} />
                   </button>
 
                   <AnimatePresence>
-                    {showModelMenu && (
+                    {showAttachMenu && (
                       <>
-                        <div className="fixed inset-0 z-20" onClick={() => setShowModelMenu(false)} />
+                        <div className="fixed inset-0 z-20" onClick={() => { setShowAttachMenu(false); setTimeout(() => setAttachMenuView('main'), 200); }} />
                         <motion.div
                           initial={{ opacity: 0, y: 10, scale: 0.95 }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                          className="absolute bottom-12 left-0 z-40 w-56 bg-white dark:bg-slate-900 border border-gray-100 dark:border-white/10 rounded-2xl shadow-xl overflow-hidden flex flex-col p-2 space-y-1"
+                          className="absolute bottom-12 left-0 z-40 w-64 bg-white dark:bg-slate-900 border border-gray-100 dark:border-white/10 rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[350px]"
                         >
-                          <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Modelo de IA</div>
-                          <button
-                            type="button"
-                            onClick={() => handleModelSelect('fast')}
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold rounded-xl transition-colors text-left ${selectedModel === 'fast' ? 'bg-[#1890FF]/10 text-[#1890FF]' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'}`}
-                          >
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${selectedModel === 'fast' ? 'bg-[#1890FF]/20 text-[#1890FF]' : 'bg-gray-100 dark:bg-slate-800 text-gray-500'}`}>
-                              <Zap className="w-4 h-4" />
-                            </div>
-                            <div className="flex-1">
-                              <div className="leading-none">Reclu v2.5 Fast</div>
-                              <div className="text-[10px] text-gray-400 font-normal mt-1">Respuestas rápidas y precisas (Por defecto)</div>
-                            </div>
-                          </button>
-                          
-                          <button
-                            type="button"
-                            onClick={() => handleModelSelect('pro')}
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold rounded-xl transition-colors text-left ${selectedModel === 'pro' ? 'bg-amber-500/10 text-amber-500' : !canUsePro ? 'text-gray-400 dark:text-gray-550 hover:bg-gray-50 dark:hover:bg-white/5' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'}`}
-                          >
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${selectedModel === 'pro' ? 'bg-amber-500/20 text-amber-500' : !canUsePro ? 'bg-gray-100 dark:bg-slate-800 text-gray-400' : 'bg-gray-100 dark:bg-slate-800 text-gray-500'}`}>
-                              {!canUsePro ? <Lock className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
-                            </div>
-                            <div className="flex-1">
-                              <div className="leading-none flex items-center justify-between">
-                                Reclu v2.5 Pro
-                                {!canUsePro && <span className="text-[9px] bg-amber-500 text-white px-1.5 py-0.5 rounded ml-2 uppercase flex items-center gap-1"><Lock className="w-2.5 h-2.5" />Pro</span>}
-                              </div>
-                              <div className="text-[10px] text-gray-400 font-normal mt-1">{!canUsePro ? 'Requiere plan Pro o superior' : 'Análisis financiero profundo y razonamiento reflexivo'}</div>
-                            </div>
-                          </button>
+                          <div className="flex-1 overflow-y-auto hidden-scrollbar p-2 space-y-3">
+                            
+                            {attachMenuView === 'main' && (
+                              <motion.div key="main" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}>
+                                {/* Archivos */}
+                                <div>
+                                  <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Archivos</div>
+                                  <button
+                                    type="button"
+                                    onClick={() => { setShowAttachMenu(false); fileInputRef.current?.click(); }}
+                                    className="w-full flex items-center gap-3 px-2 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-[#1890FF] rounded-xl transition-colors text-left"
+                                  >
+                                    <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center text-gray-500 shrink-0">
+                                      <Paperclip className="w-4 h-4" />
+                                    </div>
+                                    Subir archivo
+                                  </button>
+                                </div>
 
-                          <button
-                            type="button"
-                            onClick={() => handleModelSelect('agent')}
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold rounded-xl transition-colors text-left ${selectedModel === 'agent' ? 'bg-purple-500/10 text-purple-500' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'}`}
-                          >
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${selectedModel === 'agent' ? 'bg-purple-500/20 text-purple-500' : 'bg-gray-100 dark:bg-slate-800 text-gray-500'}`}>
-                              <Users className="w-4 h-4" />
-                            </div>
-                            <div className="flex-1">
-                              <div className="leading-none flex items-center justify-between">
-                                Reclu v2.6 Agent
-                                <span className="text-[9px] bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-1.5 py-0.5 rounded ml-2 uppercase font-black tracking-wider shadow-sm">Swarm</span>
-                              </div>
-                              <div className="text-[10px] text-gray-400 font-normal mt-1">Orquestación de agentes con razonamiento avanzado</div>
-                            </div>
-                          </button>
+                                <div className="mt-2">
+                                  <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Herramientas</div>
+                                  <button type="button" onClick={() => setAttachMenuView('charts')}
+                                    className="w-full flex items-center justify-between px-2 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-blue-500 rounded-xl transition-colors">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-8 h-8 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0"><PieChart className="w-4 h-4" /></div>
+                                      Gráficos
+                                    </div>
+                                    <ChevronRight className="w-4 h-4 text-gray-400" />
+                                  </button>
+                                  <button type="button" onClick={() => setAttachMenuView('analysis')}
+                                    className="w-full flex items-center justify-between px-2 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-purple-500 rounded-xl transition-colors mt-1">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-8 h-8 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0"><TrendingUp className="w-4 h-4" /></div>
+                                      Análisis
+                                    </div>
+                                    <ChevronRight className="w-4 h-4 text-gray-400" />
+                                  </button>
+                                </div>
+                              </motion.div>
+                            )}
+
+                            {attachMenuView === 'charts' && (
+                              <motion.div key="charts" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
+                                <button type="button" onClick={() => setAttachMenuView('main')} className="flex items-center gap-1 text-[11px] font-bold text-gray-500 hover:text-gray-900 dark:hover:text-white px-2 py-1 mb-2 transition-colors">
+                                  <ChevronRight className="w-3 h-3 rotate-180" /> Volver
+                                </button>
+                                <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Gráficos</div>
+                                <div className="space-y-0.5">
+                                  {ADVANCED_TOOLS.filter(t => t.category === 'Gráficos').map(tool => {
+                                    const Icon = tool.icon;
+                                    const isActive = activeTools.includes(tool.id);
+                                    return (
+                                      <div key={tool.id} className="w-full flex items-center justify-between px-2 py-2 text-sm font-semibold rounded-xl transition-colors group">
+                                        <button type="button" onClick={() => { toggleTool(tool.id, tool.category); setShowAttachMenu(false); setTimeout(() => setAttachMenuView('main'), 200); }} 
+                                          className={`flex-1 flex items-center gap-3 text-left ${isActive ? "text-blue-600 dark:text-blue-400" : "text-gray-700 dark:text-gray-300 hover:text-[#1890FF]"}`}>
+                                          <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isActive ? "bg-blue-500/20 text-blue-600" : "bg-blue-500/10 text-blue-600 dark:text-blue-400"}`}>
+                                            <Icon className="w-4 h-4" />
+                                          </div>
+                                          {tool.label}
+                                        </button>
+                                        <button type="button" onClick={(e) => { e.stopPropagation(); toggleFavoriteTool(tool.id); }} className={`p-1.5 transition-all ${favoriteTools.includes(tool.id) ? "text-amber-500" : "text-gray-300 hover:text-amber-500 dark:text-gray-600 dark:hover:text-amber-500 opacity-0 group-hover:opacity-100"}`}>
+                                          <Star className={`w-4 h-4 ${favoriteTools.includes(tool.id) ? "fill-amber-500" : ""}`} />
+                                        </button>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </motion.div>
+                            )}
+
+                            {attachMenuView === 'analysis' && (
+                              <motion.div key="analysis" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
+                                <button type="button" onClick={() => setAttachMenuView('main')} className="flex items-center gap-1 text-[11px] font-bold text-gray-500 hover:text-gray-900 dark:hover:text-white px-2 py-1 mb-2 transition-colors">
+                                  <ChevronRight className="w-3 h-3 rotate-180" /> Volver
+                                </button>
+                                <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Análisis</div>
+                                <div className="space-y-0.5">
+                                  {ADVANCED_TOOLS.filter(t => t.category === 'Análisis').map(tool => {
+                                    const Icon = tool.icon;
+                                    const isActive = activeTools.includes(tool.id);
+                                    return (
+                                      <div key={tool.id} className="w-full flex items-center justify-between px-2 py-2 text-sm font-semibold rounded-xl transition-colors group">
+                                        <button type="button" onClick={() => { toggleTool(tool.id, tool.category); setShowAttachMenu(false); setTimeout(() => setAttachMenuView('main'), 200); }} 
+                                          className={`flex-1 flex items-center gap-3 text-left ${isActive ? "text-purple-600 dark:text-purple-400" : "text-gray-700 dark:text-gray-300 hover:text-purple-500"}`}>
+                                          <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isActive ? "bg-purple-500/20 text-purple-600" : "bg-purple-500/10 text-purple-600 dark:text-purple-400"}`}>
+                                            <Icon className="w-4 h-4" />
+                                          </div>
+                                          {tool.label}
+                                        </button>
+                                        <button type="button" onClick={(e) => { e.stopPropagation(); toggleFavoriteTool(tool.id); }} className={`p-1.5 transition-all ${favoriteTools.includes(tool.id) ? "text-amber-500" : "text-gray-300 hover:text-amber-500 dark:text-gray-600 dark:hover:text-amber-500 opacity-0 group-hover:opacity-100"}`}>
+                                          <Star className={`w-4 h-4 ${favoriteTools.includes(tool.id) ? "fill-amber-500" : ""}`} />
+                                        </button>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </motion.div>
+                            )}
+
+                          </div>
                         </motion.div>
                       </>
                     )}
                   </AnimatePresence>
                 </div>
+
+                {/* Text Input */}
+                <textarea
+                  ref={inputRef}
+                  value={input}
+                  onChange={handleInputChange}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+                  }}
+                  placeholder={reachedQuestionLimit ? `Límite de consultas alcanzado` : "Pregúntale a R-AI..."}
+                  className="flex-1 bg-transparent text-[15px] py-3 px-2 max-h-40 min-h-[44px] resize-none outline-none disabled:cursor-not-allowed font-medium text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
+                  disabled={aiLoading || swarmLoading || reachedQuestionLimit}
+                  rows={1}
+                />
+                
+                {/* Send / Mic Button */}
+                {isRecording ? (
+                  <button
+                    type="button"
+                    onClick={toggleRecording}
+                    className="w-10 h-10 mb-0.5 mr-0.5 rounded-full bg-red-500 text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-md shrink-0"
+                    title="Detener grabación"
+                  >
+                    <div className="flex items-center justify-center gap-[3px] h-4">
+                      {[1, 2, 3].map((i) => (
+                        <motion.div
+                          key={i}
+                          animate={{ height: ["4px", "14px", "4px"] }}
+                          transition={{ repeat: Infinity, duration: 0.6, delay: i * 0.15, ease: "easeInOut" }}
+                          className="w-[3px] bg-white rounded-full"
+                        />
+                      ))}
+                    </div>
+                  </button>
+                ) : input.trim() ? (
+                  <button
+                    type="submit"
+                    disabled={aiLoading || swarmLoading || reachedQuestionLimit}
+                    className="w-10 h-10 mb-0.5 mr-0.5 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center disabled:opacity-30 hover:scale-105 active:scale-95 transition-all shadow-md shrink-0"
+                  >
+                    <Send className="w-4 h-4 ml-0.5" />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={toggleRecording}
+                    disabled={aiLoading || swarmLoading || reachedQuestionLimit}
+                    className="w-10 h-10 mb-0.5 mr-0.5 rounded-full bg-[#1890FF] text-white flex items-center justify-center disabled:opacity-30 hover:scale-105 active:scale-95 transition-all shadow-md shrink-0"
+                    title="Dictar por voz"
+                  >
+                    <Mic className="w-4 h-4" />
+                  </button>
+                )}
               </div>
-              
-              {/* Text Input */}
-              <textarea
-                ref={inputRef}
-                value={input}
-                onChange={handleInputChange}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-                }}
-                placeholder={reachedQuestionLimit ? `Límite de consultas alcanzado` : "Pregúntale a R-AI..."}
-                className="flex-1 bg-transparent text-[15px] py-3 px-2 max-h-40 min-h-[44px] resize-none outline-none disabled:cursor-not-allowed font-medium text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
-                disabled={aiLoading || swarmLoading || reachedQuestionLimit}
-                rows={1}
-              />
-              
-              {/* Send / Mic Button */}
-              {isRecording ? (
-                <button
-                  type="button"
-                  onClick={toggleRecording}
-                  className="w-10 h-10 mb-0.5 mr-0.5 rounded-full bg-red-500 text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-md shrink-0"
-                  title="Detener grabación"
-                >
-                  <div className="flex items-center justify-center gap-[3px] h-4">
-                    {[1, 2, 3].map((i) => (
-                      <motion.div
-                        key={i}
-                        animate={{ height: ["4px", "14px", "4px"] }}
-                        transition={{ repeat: Infinity, duration: 0.6, delay: i * 0.15, ease: "easeInOut" }}
-                        className="w-[3px] bg-white rounded-full"
-                      />
-                    ))}
-                  </div>
-                </button>
-              ) : input.trim() ? (
-                <button
-                  type="submit"
-                  disabled={aiLoading || swarmLoading || reachedQuestionLimit}
-                  className="w-10 h-10 mb-0.5 mr-0.5 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center disabled:opacity-30 hover:scale-105 active:scale-95 transition-all shadow-md shrink-0"
-                >
-                  <Send className="w-4 h-4 ml-0.5" />
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={toggleRecording}
-                  disabled={aiLoading || swarmLoading || reachedQuestionLimit}
-                  className="w-10 h-10 mb-0.5 mr-0.5 rounded-full bg-[#1890FF] text-white flex items-center justify-center disabled:opacity-30 hover:scale-105 active:scale-95 transition-all shadow-md shrink-0"
-                  title="Dictar por voz"
-                >
-                  <Mic className="w-4 h-4" />
-                </button>
-              )}
             </form>
             <div className="text-center mt-1">
               <span className="text-[10px] text-gray-400 font-medium">R-AI puede cometer errores. Verifica la información financiera.</span>

@@ -35,13 +35,13 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const mainButtons = React.useMemo(
     () => [
       {
-        title: "New Chat",
+        title: "Nuevo chat",
         url: "/ai",
         icon: MessageSquarePlus,
         onClick: clearMessages,
       },
       {
-        title: "Search",
+        title: "Buscar",
         url: "#",
         icon: Search,
         isAction: true,

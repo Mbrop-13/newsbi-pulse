@@ -91,7 +91,7 @@ export function ClientLayoutProviders({
               <SidebarProvider>
                 <AppSidebar />
                 <SidebarInset>
-                  <div className="flex flex-col h-full min-h-screen overflow-y-auto overflow-x-hidden">
+                  <div className="flex flex-col h-full min-h-screen w-full min-w-0 overflow-y-auto overflow-x-hidden">
                     {children}
                   </div>
                 </SidebarInset>

@@ -1130,120 +1130,57 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
       {/* ─── MAIN CHAT AREA ─── */}
       <div className="flex-1 flex flex-col h-full overflow-hidden relative bg-white dark:bg-[#0a0a0a]">
         
-        {/* Floating Quick Navigation Circles (Noticias, Mercados, Portafolio) */}
+        {/* Top Navigation Bar */}
         {!isMirofishActive && activeChatMode !== 'mirofish' && (
-          <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
-            <Link 
-              href="/noticias"
-              className="w-10 h-10 rounded-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-gray-200/80 dark:border-gray-800/80 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-[#1890FF] hover:scale-105 shadow-sm hover:shadow-md hover:border-[#1890FF]/30 transition-all"
-              title="Noticias"
-            >
-              <Newspaper className="w-4 h-4" />
-            </Link>
-            <Link 
-              href="/mercados"
-              className="w-10 h-10 rounded-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-gray-200/80 dark:border-gray-800/80 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-amber-500 dark:hover:text-amber-400 hover:scale-105 shadow-sm hover:shadow-md hover:border-amber-500/30 transition-all"
-              title="Mercados"
-            >
-              <TrendingUp className="w-4 h-4" />
-            </Link>
-            <div 
-              className="relative"
-              onMouseEnter={() => {
-                setShowPortfolioDropdown(true);
-                fetchPortfolioDetails();
-              }}
-              onMouseLeave={() => setShowPortfolioDropdown(false)}
-            >
-              <Link 
-                href="/portafolio"
-                className="w-10 h-10 rounded-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-gray-200/80 dark:border-gray-800/80 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-emerald-500 dark:hover:text-emerald-400 hover:scale-105 shadow-sm hover:shadow-md hover:border-emerald-500/30 transition-all"
-                title="Portafolio"
-              >
-                <Briefcase className="w-4 h-4" />
-              </Link>
-
-              <AnimatePresence>
-                {showPortfolioDropdown && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute top-12 right-0 w-80 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-gray-200 dark:border-slate-800 rounded-2xl shadow-2xl z-50 p-4"
-                  >
-                    <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-150 dark:border-slate-800">
-                      <span className="text-xs font-bold text-gray-850 dark:text-white flex items-center gap-1.5">
-                        <Briefcase className="w-3.5 h-3.5 text-emerald-500" />
-                        Mi Portafolio
-                      </span>
-                      {portfolioDetails.length > 0 && (
-                        <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold px-2 py-0.5 rounded-full">
-                          {portfolioDetails.length} Activos
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="space-y-2 max-h-60 overflow-y-auto hidden-scrollbar">
-                      {loadingPortfolio && portfolioDetails.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-6 gap-2">
-                          <Loader2 className="w-5 h-5 animate-spin text-emerald-500" />
-                          <span className="text-[10px] text-gray-400 font-medium">Cargando portafolio...</span>
-                        </div>
-                      ) : portfolioDetails.length === 0 ? (
-                        <div className="text-center py-6 px-4">
-                          <p className="text-[11px] text-gray-400 font-medium leading-relaxed">Tu portafolio está vacío. Agrega tus acciones para verlas aquí en tiempo real.</p>
-                          <Link href="/portafolio" className="inline-block mt-2 text-[10px] font-bold text-emerald-500 hover:underline">Ir a Portafolio →</Link>
-                        </div>
-                      ) : (
-                        portfolioDetails.map((asset) => {
-                          const isPositive = asset.changePercent >= 0;
-                          return (
-                            <div key={asset.symbol} className="flex items-center justify-between p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-800/40 border border-transparent hover:border-gray-100 dark:hover:border-slate-800/40 transition-all">
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                <div className="w-8 h-8 rounded-lg bg-gray-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700/60 overflow-hidden flex items-center justify-center shrink-0">
-                                  <img 
-                                    src={asset.logo} 
-                                    alt={asset.symbol}
-                                    onError={(e) => {
-                                      e.currentTarget.src = `https://ui-avatars.com/api/?name=${asset.symbol}&background=10B981&color=fff&bold=true&size=64`;
-                                    }}
-                                    className="w-6 h-6 object-contain"
-                                  />
-                                </div>
-                                <div className="truncate">
-                                  <p className="text-xs font-bold text-gray-900 dark:text-white leading-none">{asset.symbol}</p>
-                                  <p className="text-[9px] text-gray-400 dark:text-gray-500 font-medium truncate mt-0.5 max-w-[120px]">{asset.companyName}</p>
-                                </div>
-                              </div>
-                              <div className="text-right shrink-0">
-                                <p className="text-xs font-bold text-gray-900 dark:text-white leading-none">${asset.price?.toFixed(2)}</p>
-                                <p className={`text-[10px] font-bold mt-0.5 leading-none ${isPositive ? "text-green-500" : "text-red-500"}`}>
-                                  {isPositive ? "+" : ""}{asset.changePercent?.toFixed(2)}%
-                                </p>
-                              </div>
-                            </div>
-                          );
-                        })
-                      )}
-                    </div>
-
-                    <div className="mt-3 pt-2 border-t border-gray-150 dark:border-slate-800">
-                      <Link 
-                        href="/portafolio"
-                        className="w-full flex items-center justify-center gap-1.5 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-colors shadow-sm shadow-emerald-500/10"
-                      >
-                        Ver Detalle Completo
-                      </Link>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+          <div className="w-full flex items-center justify-between border-b border-gray-100 dark:border-gray-900 bg-white/50 dark:bg-[#0a0a0a]/50 backdrop-blur-md px-6 py-4 z-40 relative">
+            {/* Sidebar toggle button (if sidebar is closed) */}
+            <div className="flex items-center gap-4 min-w-[40px]">
+              {!isSidebarOpen && (
+                <button 
+                  onClick={() => setIsSidebarOpen(true)}
+                  className="w-10 h-10 rounded-xl bg-gray-50/80 dark:bg-slate-900/80 backdrop-blur-md border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-500 hover:text-[#1890FF] shadow-sm hover:shadow-md transition-all"
+                  title="Abrir menú lateral"
+                >
+                  <PanelLeft className="w-5 h-5" />
+                </button>
+              )}
             </div>
+
+            {/* Navigation links (styled elegantly like the prompt image) */}
+            <div className="flex items-center justify-center gap-6 sm:gap-10 flex-1">
+              <Link 
+                href="/noticias" 
+                className="text-sm sm:text-base font-bold text-gray-650 dark:text-gray-400 hover:text-[#1890FF] dark:hover:text-[#1890FF] transition-all hover:scale-105 duration-200"
+              >
+                Noticias
+              </Link>
+              <Link 
+                href="/portafolio" 
+                className="text-sm sm:text-base font-bold text-gray-655 dark:text-gray-400 hover:text-[#1890FF] dark:hover:text-[#1890FF] transition-all hover:scale-105 duration-200"
+              >
+                Portafolio
+              </Link>
+              <Link 
+                href="/mercados" 
+                className="text-sm sm:text-base font-bold text-gray-655 dark:text-gray-400 hover:text-[#1890FF] dark:hover:text-[#1890FF] transition-all hover:scale-105 duration-200"
+              >
+                Mercados
+              </Link>
+              <Link 
+                href="/mundo" 
+                className="text-sm sm:text-base font-bold text-gray-655 dark:text-gray-400 hover:text-[#1890FF] dark:hover:text-[#1890FF] transition-all hover:scale-105 duration-200"
+              >
+                Mundo
+              </Link>
+            </div>
+
+            {/* Spacer for centering layout */}
+            <div className="w-10 h-10 invisible shrink-0" />
           </div>
         )}
-        {/* Toggle Sidebar Button (Floating) */}
-        {!isSidebarOpen && (activeChatMode !== 'mirofish' || !isMirofishActive) && (
+
+        {/* Toggle Sidebar Button (Floating - only when top bar is not visible) */}
+        {!isSidebarOpen && (activeChatMode === 'mirofish' || isMirofishActive) && (
           <button 
             onClick={() => setIsSidebarOpen(true)}
             className="absolute top-4 left-4 z-50 w-10 h-10 rounded-xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-500 hover:text-[#1890FF] shadow-sm hover:shadow-md transition-all"

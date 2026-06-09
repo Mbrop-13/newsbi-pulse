@@ -30,6 +30,11 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const { state } = useSidebar()
   const clearMessages = useAIChatStore((s) => s.clearMessages)
   const [searchOpen, setSearchOpen] = React.useState(false)
+  const [mounted, setMounted] = React.useState(false)
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Navigation data for main buttons
   const mainButtons = React.useMemo(
@@ -82,7 +87,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
         </SidebarHeader>
         <SidebarContent className="[&::-webkit-scrollbar]:hidden [scrollbar-width:none] [-ms-overflow-style:none] gap-0">
           <NavMain items={mainButtons} />
-          {state === "expanded" && <NavChats />}
+          {state === "expanded" && mounted && <NavChats />}
         </SidebarContent>
         <SidebarFooter>
           <NavUser />

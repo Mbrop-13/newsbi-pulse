@@ -54,6 +54,11 @@ export function NavUser() {
   const { theme, setTheme } = useTheme()
   const router = useRouter()
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
   
   const user = useAuthStore((s) => s.user)
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
@@ -64,10 +69,10 @@ export function NavUser() {
   const { balance, loadDiamonds } = useDiamondStore()
 
   useEffect(() => {
-    if (isAuthenticated && user) {
+    if (mounted && isAuthenticated && user) {
       loadDiamonds(user.id)
     }
-  }, [isAuthenticated, user, loadDiamonds])
+  }, [mounted, isAuthenticated, user, loadDiamonds])
 
   const handleSignOut = () => {
     useAuthStore.getState().logout()
@@ -89,16 +94,16 @@ export function NavUser() {
                 className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
               >
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={avatarSrc} alt={displayName} />
+                  <AvatarImage src={mounted ? avatarSrc : undefined} alt={mounted ? displayName : "Usuario"} />
                   <AvatarFallback className="rounded-lg">
-                    {getInitials(displayName, displayEmail)}
+                    {mounted ? getInitials(displayName, displayEmail) : "U"}
                   </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
-                  <span className="truncate font-medium">{displayName}</span>
-                  <span className="truncate text-xs text-muted-foreground">{displayEmail}</span>
+                  <span className="truncate font-medium">{mounted ? displayName : "Usuario"}</span>
+                  <span className="truncate text-xs text-muted-foreground">{mounted ? displayEmail : ""}</span>
                 </div>
-                {state === "expanded" && isAuthenticated && (
+                {mounted && state === "expanded" && isAuthenticated && (
                   <div className="mr-1 flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-blue-50/50 dark:bg-[#1890FF]/15 border border-blue-100/20 dark:border-blue-900/30 shrink-0">
                     <div className="relative w-4 h-4 flex items-center justify-center pointer-events-none">
                       <img 
@@ -123,18 +128,18 @@ export function NavUser() {
                 <div className="flex items-center justify-between px-1 py-1.5 text-left text-sm">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <Avatar className="h-8 w-8 rounded-lg">
-                      <AvatarImage src={avatarSrc} alt={displayName} />
+                      <AvatarImage src={mounted ? avatarSrc : undefined} alt={mounted ? displayName : "Usuario"} />
                       <AvatarFallback className="rounded-lg">
-                        {getInitials(displayName, displayEmail)}
+                        {mounted ? getInitials(displayName, displayEmail) : "U"}
                       </AvatarFallback>
                     </Avatar>
                     <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
-                      <span className="truncate font-medium">{displayName}</span>
-                      <span className="truncate text-xs text-muted-foreground">{displayEmail}</span>
+                      <span className="truncate font-medium">{mounted ? displayName : "Usuario"}</span>
+                      <span className="truncate text-xs text-muted-foreground">{mounted ? displayEmail : ""}</span>
                     </div>
                   </div>
                   {/* Diamond Oval Badge */}
-                  {isAuthenticated && (
+                  {mounted && isAuthenticated && (
                     <Link href="/mis-diamantes" className="ml-2 flex items-center gap-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-[#1890FF]/15 dark:to-indigo-500/15 border border-blue-100/50 dark:border-blue-900/50 hover:opacity-90 transition-all shrink-0">
                       <div className="relative w-5 h-5 flex items-center justify-center pointer-events-none">
                         <img 

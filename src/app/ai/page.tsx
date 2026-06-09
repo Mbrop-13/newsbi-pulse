@@ -7,6 +7,7 @@ import { AssistantLanding } from "@/components/assistant/assistant-landing";
 import { ChatLanding } from "@/components/chat/chat-landing";
 
 function ChatSkeleton() {
+  const skeletonWidths = ["75%", "65%", "85%", "70%"];
   return (
     <div className="flex min-h-screen bg-background">
       {/* Sidebar Skeleton (desktop only) */}
@@ -14,7 +15,7 @@ function ChatSkeleton() {
         <div className="h-8 w-32 bg-muted/60 rounded-lg animate-pulse" />
         <div className="space-y-3 flex-1">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-6 bg-muted/40 rounded-lg animate-pulse" style={{ width: `${60 + Math.random() * 30}%` }} />
+            <div key={i} className="h-6 bg-muted/40 rounded-lg animate-pulse" style={{ width: skeletonWidths[i % skeletonWidths.length] }} />
           ))}
         </div>
         <div className="h-10 bg-muted/40 rounded-lg animate-pulse" />

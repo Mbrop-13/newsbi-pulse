@@ -142,7 +142,10 @@ export function NavUser() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={() => setSettingsOpen(true)}>
+              <DropdownMenuItem onSelect={(e) => {
+                e.preventDefault();
+                setSettingsOpen(true);
+              }}>
                 <Settings className="mr-2 h-4 w-4" />
                 Configuración
               </DropdownMenuItem>
@@ -160,9 +163,7 @@ export function NavUser() {
         </SidebarMenuItem>
       </SidebarMenu>
 
-      {settingsOpen && (
-        <ViewSettingsDialog isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
-      )}
+      <ViewSettingsDialog isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </>
   )
 }

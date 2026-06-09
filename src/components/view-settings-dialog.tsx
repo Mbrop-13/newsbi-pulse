@@ -1,11 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useViewStore } from "@/lib/stores/use-view-store";
 import { useFilterStore } from "@/lib/stores/filter-store";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { LayoutGrid, List, Monitor, LayoutTemplate, Maximize2, Type, Image as ImageIcon, ImageOff, RefreshCw, AlignLeft, TrendingUp, TrendingDown, Clock, CalendarDays, Settings2, Zap, Search, X, Check, Rss } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface ViewSettingsDialogProps {
   isOpen: boolean;
@@ -26,6 +25,16 @@ export function ViewSettingsDialog({ isOpen, onClose }: ViewSettingsDialogProps)
   const { availableSources, selectedSources, toggleSource, clearSources } = useFilterStore();
   const [sourceSearch, setSourceSearch] = useState("");
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    if (isOpen) {
+      document.addEventListener("keydown", handleKeyDown);
+    }
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   const getFavicon = (url: string) => {
     if (!url) return null;
     const match = url.match(/^(?:https?:\/\/)?(?:[^@\n]+@)?(?:www\.)?([^:\/\n?]+)/im);
@@ -34,21 +43,42 @@ export function ViewSettingsDialog({ isOpen, onClose }: ViewSettingsDialogProps)
   const filteredSrcs = availableSources.filter(s => s.name.toLowerCase().includes(sourceSearch.toLowerCase()));
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[460px] p-0 overflow-hidden bg-white/95 dark:bg-[#080C16]/95 backdrop-blur-3xl border-gray-200/50 dark:border-white/5 rounded-[2rem] shadow-2xl shadow-indigo-500/10 dark:shadow-blue-900/20">
-        
-        <div className="max-h-[75vh] overflow-y-auto hidden-scrollbar flex flex-col">
-          <DialogHeader className="p-7 pb-5 border-b border-gray-100 dark:border-white/5 bg-gradient-to-b from-gray-50/50 to-transparent dark:from-white/[0.02]">
-            <DialogTitle className="text-2xl font-black flex items-center gap-2.5 text-gray-900 dark:text-white tracking-tight">
-              <div className="p-2 bg-[#1890FF]/10 rounded-xl">
-                <Settings2 className="w-5 h-5 text-[#1890FF]" />
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="relative w-full max-w-[460px] overflow-hidden rounded-[2rem] bg-white/95 dark:bg-[#080C16]/95 backdrop-blur-3xl border border-gray-200/50 dark:border-white/5 shadow-2xl shadow-indigo-500/10 dark:shadow-blue-900/20"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="max-h-[75vh] overflow-y-auto hidden-scrollbar flex flex-col">
+              <div className="p-7 pb-5 border-b border-gray-100 dark:border-white/5 bg-gradient-to-b from-gray-50/50 to-transparent dark:from-white/[0.02] relative">
+                <button
+                  onClick={onClose}
+                  className="absolute top-6 right-6 w-8 h-8 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center text-gray-400 hover:text-gray-950 dark:hover:text-white transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+                <div className="text-2xl font-black flex items-center gap-2.5 text-gray-900 dark:text-white tracking-tight">
+                  <div className="p-2 bg-[#1890FF]/10 rounded-xl">
+                    <Settings2 className="w-5 h-5 text-[#1890FF]" />
+                  </div>
+                  Preferencias
+                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 font-medium">
+                  Ajusta el contenido y el diseño a tu medida. Los cambios se guardan y aplican al instante.
+                </p>
               </div>
-              Preferencias
-            </DialogTitle>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 font-medium">
-              Ajusta el contenido y el diseño a tu medida. Los cambios se guardan y aplican al instante.
-            </p>
-          </DialogHeader>
 
           <div className="p-7 space-y-9">
           
@@ -376,7 +406,9 @@ export function ViewSettingsDialog({ isOpen, onClose }: ViewSettingsDialogProps)
             Hecho
           </button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </motion.div>
+    </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

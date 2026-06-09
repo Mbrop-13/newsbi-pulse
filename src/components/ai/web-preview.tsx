@@ -1,11 +1,6 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
 import { Input } from '@/components/ui/input';
 import {
   Tooltip,
@@ -14,15 +9,15 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { cn } from "@/lib/utils";
-import { ChevronDownIcon } from 'lucide-react';
-import type { ComponentProps, ReactNode } from 'react';
-import { createContext, useContext, useEffect, useState } from 'react';
+import { ChevronLeft, ChevronRight, RotateCw, ExternalLink, Globe, ShieldAlert } from 'lucide-react';
+import type { ComponentProps } from 'react';
+import { createContext, useContext, useEffect, useState, useRef } from 'react';
 
 export type WebPreviewContextValue = {
   url: string;
   setUrl: (url: string) => void;
-  consoleOpen: boolean;
-  setConsoleOpen: (open: boolean) => void;
+  iframeRef: React.RefObject<HTMLIFrameElement | null>;
+  reload: () => void;
 };
 
 const WebPreviewContext = createContext<WebPreviewContextValue | null>(null);
@@ -48,9 +43,8 @@ export const WebPreview = ({
   ...props
 }: WebPreviewProps) => {
   const [url, setUrl] = useState(defaultUrl);
-  const [consoleOpen, setConsoleOpen] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  // Sync internal URL when defaultUrl prop changes
   useEffect(() => {
     if (typeof defaultUrl === 'string' && defaultUrl && defaultUrl !== url) {
       setUrl(defaultUrl);
@@ -62,21 +56,26 @@ export const WebPreview = ({
     onUrlChange?.(newUrl);
   };
 
+  const reload = () => {
+    if (iframeRef.current) {
+      iframeRef.current.src = url;
+    }
+  };
+
   const contextValue: WebPreviewContextValue = {
     url,
     setUrl: handleUrlChange,
-    consoleOpen,
-    setConsoleOpen,
+    iframeRef,
+    reload,
   };
 
   return (
     <WebPreviewContext.Provider value={contextValue}>
       <div
         className={cn(
-          'w-full flex flex-col rounded-lg border bg-card',
+          'w-full flex flex-col rounded-2xl border bg-card overflow-hidden shadow-2xl border-gray-250/50 dark:border-white/5 backdrop-blur-md bg-white/50 dark:bg-slate-950/50 transition-all duration-300',
           className
         )}
-        style={{ aspectRatio: '2 / 3' }}
         {...props}
       >
         {children}
@@ -91,46 +90,63 @@ export const WebPreviewNavigation = ({
   className,
   children,
   ...props
-}: WebPreviewNavigationProps) => (
-  <div
-    className={cn('flex items-center gap-1 border-b p-2', className)}
-    {...props}
-  >
-    {children}
-  </div>
-);
+}: WebPreviewNavigationProps) => {
+  const { url, reload } = useWebPreview();
+  
+  const handleOpenExternal = () => {
+    if (url) {
+      window.open(url.startsWith('http') ? url : `https://${url}`, '_blank', 'noopener,noreferrer');
+    }
+  };
 
-export type WebPreviewNavigationButtonProps = ComponentProps<typeof Button> & {
-  tooltip?: string;
-};
+  return (
+    <div
+      className={cn('flex items-center gap-2 border-b border-gray-250/20 dark:border-white/5 p-3 bg-gray-50/50 dark:bg-slate-900/50', className)}
+      {...props}
+    >
+      {/* macOS style dots */}
+      <div className="flex gap-1.5 mr-2">
+        <div className="w-3 h-3 rounded-full bg-red-400 opacity-80" />
+        <div className="w-3 h-3 rounded-full bg-yellow-400 opacity-80" />
+        <div className="w-3 h-3 rounded-full bg-green-400 opacity-80" />
+      </div>
 
-export const WebPreviewNavigationButton = ({
-  onClick,
-  disabled,
-  tooltip,
-  children,
-  ...props
-}: WebPreviewNavigationButtonProps) => (
-  <TooltipProvider>
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          className="h-8 w-8 p-0 hover:text-foreground"
-          disabled={disabled}
-          onClick={onClick}
-          size="sm"
-          variant="ghost"
-          {...props}
-        >
-          {children}
+      {/* Navigation Buttons */}
+      <div className="flex items-center gap-0.5">
+        <Button type="button" variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-gray-500 hover:text-gray-900 dark:hover:text-white" disabled>
+          <ChevronLeft className="w-4 h-4" />
         </Button>
-      </TooltipTrigger>
-      <TooltipContent>
-        <p>{tooltip}</p>
-      </TooltipContent>
-    </Tooltip>
-  </TooltipProvider>
-);
+        <Button type="button" variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-gray-500 hover:text-gray-900 dark:hover:text-white" disabled>
+          <ChevronRight className="w-4 h-4" />
+        </Button>
+        <Button type="button" onClick={reload} variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-gray-500 hover:text-gray-900 dark:hover:text-white">
+          <RotateCw className="w-3.5 h-3.5" />
+        </Button>
+      </div>
+
+      {children}
+
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              onClick={handleOpenExternal}
+              className="h-8 w-8 p-0 rounded-lg text-gray-500 hover:text-gray-955 dark:hover:text-white"
+              size="sm"
+              variant="ghost"
+            >
+              <ExternalLink className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="top">
+            <p>Abrir en pestaña nueva</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    </div>
+  );
+};
 
 export type WebPreviewUrlProps = ComponentProps<typeof Input>;
 
@@ -138,6 +154,7 @@ export const WebPreviewUrl = ({
   value,
   onChange,
   onKeyDown,
+  className,
   ...props
 }: WebPreviewUrlProps) => {
   const { url, setUrl } = useWebPreview();
@@ -145,133 +162,56 @@ export const WebPreviewUrl = ({
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
       const target = event.target as HTMLInputElement;
-      setUrl(target.value);
+      let targetUrl = target.value.trim();
+      if (targetUrl && !targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+        targetUrl = 'https://' + targetUrl;
+      }
+      setUrl(targetUrl);
     }
     onKeyDown?.(event);
   };
 
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    onChange?.(event);
-  };
-
-  // Use defaultValue for uncontrolled input when no onChange is provided
-  if (!onChange && !value) {
-    return (
+  return (
+    <div className="relative flex-1 flex items-center max-w-lg mx-auto">
+      <Globe className="absolute left-3 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
       <Input
-        className="h-8 flex-1 text-sm"
-        defaultValue={url}
+        className={cn(
+          "h-8 pl-9 pr-4 text-xs bg-white/70 dark:bg-slate-950/70 border-gray-200/50 dark:border-white/5 rounded-lg focus-visible:ring-1 focus-visible:ring-blue-500",
+          className
+        )}
+        onChange={onChange}
         onKeyDown={handleKeyDown}
-        placeholder="Enter URL..."
+        placeholder="Buscar o escribir dirección web..."
+        value={value ?? url}
         {...props}
       />
-    );
-  }
-
-  return (
-    <Input
-      className="h-8 flex-1 text-sm"
-      onChange={handleChange}
-      onKeyDown={handleKeyDown}
-      placeholder="Enter URL..."
-      value={value ?? url}
-      {...props}
-    />
-  );
-};
-
-export type WebPreviewBodyProps = ComponentProps<'iframe'> & {
-  loading?: ReactNode;
-};
-
-export const WebPreviewBody = ({
-  className,
-  loading,
-  src,
-  ...props
-}: WebPreviewBodyProps) => {
-  const { url } = useWebPreview();
-
-  return (
-    <div className="flex-1">
-      <iframe
-        className={cn('h-[400px] w-full', className)}
-        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-presentation"
-        src={(src ?? url) || undefined}
-        title="Preview"
-        {...props}
-      />
-      {loading}
     </div>
   );
 };
 
-export type WebPreviewConsoleProps = ComponentProps<'div'> & {
-  logs?: Array<{
-    level: 'log' | 'warn' | 'error';
-    message: string;
-    timestamp: Date;
-  }>;
-};
+export type WebPreviewBodyProps = ComponentProps<'iframe'>;
 
-export const WebPreviewConsole = ({
+export const WebPreviewBody = ({
   className,
-  logs = [],
-  children,
+  src,
   ...props
-}: WebPreviewConsoleProps) => {
-  const { consoleOpen, setConsoleOpen } = useWebPreview();
+}: WebPreviewBodyProps) => {
+  const { url, iframeRef } = useWebPreview();
 
   return (
-    <Collapsible
-      className={cn('border-t bg-muted/50 font-mono text-sm', className)}
-      onOpenChange={setConsoleOpen}
-      open={consoleOpen}
-      {...props}
-    >
-      <CollapsibleTrigger asChild>
-        <Button
-          className="flex w-full items-center justify-between p-4 text-left font-medium hover:bg-muted/50"
-          variant="ghost"
-        >
-          Console
-          <ChevronDownIcon
-            className={cn(
-              'h-4 w-4 transition-transform duration-200',
-              consoleOpen && 'rotate-180'
-            )}
-          />
-        </Button>
-      </CollapsibleTrigger>
-      <CollapsibleContent
-        className={cn(
-          'px-4 pb-4',
-          'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 outline-none data-[state=closed]:animate-out data-[state=open]:animate-in'
-        )}
-      >
-        <div className="max-h-48 space-y-1 overflow-y-auto">
-          {logs.length === 0 ? (
-            <p className="text-muted-foreground">No console output</p>
-          ) : (
-            logs.map((log, index) => (
-              <div
-                className={cn(
-                  'text-xs',
-                  log.level === 'error' && 'text-destructive',
-                  log.level === 'warn' && 'text-yellow-600',
-                  log.level === 'log' && 'text-foreground'
-                )}
-                key={`${log.timestamp.getTime()}-${index}`}
-              >
-                <span className="text-muted-foreground">
-                  {log.timestamp.toLocaleTimeString()}
-                </span>{' '}
-                {log.message}
-              </div>
-            ))
-          )}
-          {children}
-        </div>
-      </CollapsibleContent>
-    </Collapsible>
+    <div className="relative flex-1 bg-white/50 dark:bg-slate-950/50 w-full min-h-[450px]">
+      <iframe
+        ref={iframeRef}
+        className={cn('w-full h-[450px] border-0', className)}
+        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-presentation"
+        src={src ?? url}
+        title="Web Preview"
+        {...props}
+      />
+      <div className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-600 dark:text-yellow-400 text-[10px] font-bold shadow-sm backdrop-blur-md pointer-events-none">
+        <ShieldAlert className="w-3.5 h-3.5" />
+        <span>Si el sitio no carga, haz clic en el icono externo para abrir en pestaña nueva</span>
+      </div>
+    </div>
   );
 };

@@ -25,7 +25,7 @@ function decodeJsonString(escapedStr: string): string {
 }
 
 // ── MiMo client factory with web_search injection ──
-function createMimoWithWebSearch(userId: string, streamData?: StreamData) {
+function createMimoWithWebSearch(userId: string, streamData?: StreamData, webSearchEnabled: boolean = true) {
   return createOpenAI({
     baseURL: 'https://api.xiaomimimo.com/v1',
     apiKey: process.env.MIMO_API_KEY,
@@ -34,17 +34,24 @@ function createMimoWithWebSearch(userId: string, streamData?: StreamData) {
       if (options?.body && typeof options.body === 'string') {
         try {
           const body = JSON.parse(options.body);
-          // Ensure tools array exists
-          if (!body.tools) body.tools = [];
-          // Inject the native web_search tool if not already present
-          const hasWebSearch = body.tools.some((t: any) => t.type === 'web_search');
-          if (!hasWebSearch) {
-            body.tools.push({
-              type: 'web_search',
-              max_keyword: 3,
-              force_search: false,
-              limit: 1,
-            });
+          if (webSearchEnabled) {
+            // Ensure tools array exists
+            if (!body.tools) body.tools = [];
+            // Inject the native web_search tool if not already present
+            const hasWebSearch = body.tools.some((t: any) => t.type === 'web_search');
+            if (!hasWebSearch) {
+              body.tools.push({
+                type: 'web_search',
+                max_keyword: 3,
+                force_search: false,
+                limit: 1,
+              });
+            }
+          } else {
+            // Remove web_search tool if disabled
+            if (body.tools) {
+              body.tools = body.tools.filter((t: any) => t.type !== 'web_search');
+            }
           }
           // Inject user identity for Xiaomi native edge rate-limiting and audit tracking
           body.user = userId;
@@ -137,7 +144,7 @@ NUNCA digas que eres de OpenAI, Anthropic o Google. Eres de Reclu.`;
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages, articles, files, modelId, activeTools, contextOverride } = await req.json();
+    const { messages, articles, files, modelId, activeTools, contextOverride, webSearch } = await req.json();
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(JSON.stringify({ error: "Messages are required" }), { status: 400 });
@@ -229,7 +236,7 @@ export async function POST(req: NextRequest) {
     const yf = new YahooFinance();
 
     const streamData = new StreamData();
-    const mimo = createMimoWithWebSearch(user.id, streamData);
+    const mimo = createMimoWithWebSearch(user.id, streamData, webSearch !== false);
 
     const result = await streamText({
       model: mimo(finalModelStr),

@@ -27,8 +27,9 @@ export function ViewSettingsDialog({ isOpen, onClose }: ViewSettingsDialogProps)
   const [sourceSearch, setSourceSearch] = useState("");
 
   const getFavicon = (url: string) => {
-    try { return `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=32`; }
-    catch { return null; }
+    if (!url) return null;
+    const match = url.match(/^(?:https?:\/\/)?(?:[^@\n]+@)?(?:www\.)?([^:\/\n?]+)/im);
+    return match ? `https://www.google.com/s2/favicons?domain=${match[1]}&sz=32` : null;
   };
   const filteredSrcs = availableSources.filter(s => s.name.toLowerCase().includes(sourceSearch.toLowerCase()));
 

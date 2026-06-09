@@ -103,18 +103,6 @@ export function NavUser() {
                   <span className="truncate font-medium">{mounted ? displayName : "Usuario"}</span>
                   <span className="truncate text-xs text-muted-foreground">{mounted ? displayEmail : ""}</span>
                 </div>
-                {mounted && state === "expanded" && isAuthenticated && (
-                  <div className="mr-1 flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-blue-50/50 dark:bg-[#1890FF]/15 border border-blue-100/20 dark:border-blue-900/30 shrink-0">
-                    <div className="relative w-4 h-4 flex items-center justify-center pointer-events-none">
-                      <img 
-                        src="https://cdn.shopify.com/s/files/1/0564/3812/8712/files/diamante-1.png?v=1774402513" 
-                        alt="Diamond" 
-                        className="absolute w-10 h-10 max-w-none object-contain"
-                      />
-                    </div>
-                    <span className="text-[10px] font-black text-gray-700 dark:text-gray-200">{balance}</span>
-                  </div>
-                )}
                 <ChevronsUpDown className="ml-auto size-4 shrink-0" />
               </SidebarMenuButton>
             </DropdownMenuTrigger>
@@ -172,7 +160,9 @@ export function NavUser() {
         </SidebarMenuItem>
       </SidebarMenu>
 
-      <ViewSettingsDialog isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      {settingsOpen && (
+        <ViewSettingsDialog isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      )}
     </>
   )
 }

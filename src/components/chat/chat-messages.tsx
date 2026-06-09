@@ -70,7 +70,7 @@ export function ChatMessages({
         ))}
 
         {/* Loading indicator */}
-        {isLoading && (
+        {isLoading && messages[messages.length - 1]?.role === 'user' && (
           <div className="flex gap-3">
             <Avatar className="h-8 w-8 shrink-0 mt-1">
               <AvatarFallback className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 text-xs">
@@ -193,9 +193,11 @@ function MessageBubble({
       <div className="mb-2">
         <button
           onClick={onToggleReasoning}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          className={cn(
+            "flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-all duration-200",
+            !isReasoningOpen && "opacity-0 group-hover:opacity-100"
+          )}
         >
-          <Sparkles className="h-3 w-3" />
           <span>Razonamiento</span>
           <ChevronRight
             className={cn(

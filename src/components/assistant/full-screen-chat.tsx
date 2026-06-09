@@ -27,6 +27,7 @@ import { PromptCarousel } from './prompt-carousel';
 import { ShareChatDialog } from './share-chat-dialog';
 import { MiroFishSandbox } from "./mirofish-sandbox";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 const ADVANCED_TOOLS = [
   { id: 'chart_bar', label: 'Gráfico de Barras', icon: BarChart3, category: 'Gráficos' },
@@ -1793,7 +1794,10 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                             <div className="bg-transparent border-none p-3.5 mb-2.5 transition-all">
                               <button 
                                 onClick={() => setOpenReasoning(prev => ({ ...prev, [msg.id]: !isReasoningOpen }))}
-                                className="flex items-center justify-between w-full text-left text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                                className={cn(
+                                  "flex items-center justify-between w-full text-left text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all duration-200",
+                                  !isReasoningOpen && "opacity-0 group-hover:opacity-100"
+                                )}
                               >
                                 <div className="flex items-center gap-2">
                                   <span>Pensamiento de la IA</span>
@@ -2006,7 +2010,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                 );
               })}
               {/* Loading State */}
-              {(aiLoading || swarmLoading) && (
+              {(aiLoading || swarmLoading) && displayMessages[displayMessages.length - 1]?.role === 'user' && (
                 <div className="flex max-w-full gap-4 text-left items-start py-2">
                   {/* Premium Bot Avatar */}
                   <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1890FF] to-indigo-600 flex items-center justify-center shrink-0 border border-blue-500/20 shadow-md">

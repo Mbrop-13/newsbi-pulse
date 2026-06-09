@@ -68,45 +68,46 @@ export function ChatLanding() {
     handleInputChange,
     data,
   } = useChat({
-    api: "/api/ai/chat",
+    api: "/api/ai-chat",
     onFinish: (message) => {
-      // Find citations in useChat data (which contains all streamData)
+      // Find citations & reasoning in streamData (data)
       let citationsList: string[] = []
+      let reasoningText = ""
       if (data && data.length > 0) {
         const citationObj = (data as any[]).find((d: any) => d?.type === 'citations')
         if (citationObj?.urls) {
           citationsList = citationObj.urls
         }
+        const reasoningChunks = (data as any[]).filter((d: any) => d?.type === 'reasoning')
+        reasoningText = reasoningChunks.map(c => c.text).join('')
       }
 
-      // Sync finished message to our store
-      const assistantMsg: ChatMessage = {
-        id: `assistant-${Date.now()}`,
-        role: "assistant",
-        content: message.content,
-        timestamp: new Date(),
-        model: selectedModel === "fast" ? "deepseek" : "grok",
-        toolInvocations: (message as any).toolInvocations,
-        citations: citationsList,
-      }
-
-      // Extract reasoning from parts if available
-      const parts = (message as any).parts || (message as any).content?.parts
-      if (parts) {
-        for (const part of parts) {
-          if (part.type === "reasoning") {
-            assistantMsg.reasoning = part.reasoning || part.content || ""
-            assistantMsg.secondsElapsed = part.details?.durationMs
-              ? Math.round(part.details.durationMs / 1000)
-              : undefined
-          }
-        }
-      }
-
-      addMessage(assistantMsg)
-      useAIChatStore.getState().updateCurrentChat()
+      // Use requestAnimationFrame to ensure aiMessages state has been flushed by React
+      requestAnimationFrame(() => {
+        const latestMessages = aiMessagesRef.current;
+        const storeMessages: ChatMessage[] = latestMessages.map((m: any, idx: number) => {
+          const isLastAssistant = m.role === 'assistant' && idx === latestMessages.length - 1;
+          return {
+            id: m.id,
+            role: m.role as 'user' | 'assistant',
+            content: m.content,
+            timestamp: new Date(),
+            model: selectedModel === "fast" ? "deepseek" : "grok",
+            toolInvocations: m.toolInvocations,
+            citations: isLastAssistant ? citationsList : (m.citations || []),
+            reasoning: isLastAssistant ? reasoningText : (m.reasoning || undefined),
+          };
+        });
+        useAIChatStore.setState({ messages: storeMessages });
+        useAIChatStore.getState().updateCurrentChat();
+      });
     },
   })
+
+  const aiMessagesRef = useRef<any[]>([])
+  useEffect(() => {
+    aiMessagesRef.current = aiMessages
+  }, [aiMessages])
 
   // Sync store messages → useChat messages on load/chat switch
   useEffect(() => {
@@ -119,7 +120,10 @@ export function ChatLanding() {
             id: m.id,
             role: m.role,
             content: m.content,
-          }))
+            toolInvocations: m.toolInvocations,
+            reasoning: m.reasoning,
+            citations: m.citations,
+          })) as any
         )
       }
     } else {
@@ -242,50 +246,39 @@ export function ChatLanding() {
 
   const hasMessages = storeMessages.length > 0 || aiMessages.length > 0
 
-  // Determine which messages to display
-  const displayMessages = [...storeMessages]
+  // Determine which messages to display, mapping from aiMessages to capture streaming state and fallback to storeMessages when syncing
+  const isSyncing = currentChatId !== lastLoadedChatIdRef.current
+  const displayMessagesSource = (isSyncing || aiMessages.length === 0) ? storeMessages : aiMessages
 
-  if (aiLoading && aiMessages.length > 0) {
-    const lastAiMessage = aiMessages[aiMessages.length - 1]
-    if (lastAiMessage.role === "assistant") {
-      const hasAssistantAtEnd = storeMessages.length > 0 && storeMessages[storeMessages.length - 1].role === "assistant"
-      
-      let reasoningText = ""
-      let citationsList: string[] = []
-      
+  const displayMessages: ChatMessage[] = displayMessagesSource.map((m, idx) => {
+    const isLastAssistant = m.role === "assistant" && idx === displayMessagesSource.length - 1;
+    
+    let reasoningText = (m as any).reasoning;
+    let citationsList = (m as any).citations;
+
+    if (isLastAssistant && aiLoading) {
       if (data && data.length > 0) {
-        const reasoningChunks = (data as any[]).filter((d: any) => d?.type === 'reasoning')
-        reasoningText = reasoningChunks.map(c => c.text).join('')
-        
-        const citationObj = (data as any[]).find((d: any) => d?.type === 'citations')
-        if (citationObj?.urls) {
-          citationsList = citationObj.urls
-        }
-      }
+        const reasoningChunks = (data as any[]).filter((d: any) => d?.type === 'reasoning');
+        reasoningText = reasoningChunks.map(c => c.text).join('');
 
-      if (!hasAssistantAtEnd) {
-        displayMessages.push({
-          id: lastAiMessage.id,
-          role: "assistant",
-          content: lastAiMessage.content,
-          timestamp: new Date(),
-          model: selectedModel === "fast" ? "deepseek" : "grok",
-          reasoning: reasoningText || undefined,
-          citations: citationsList,
-        })
-      } else {
-        const lastMsg = { ...displayMessages[displayMessages.length - 1] }
-        lastMsg.content = lastAiMessage.content
-        if (reasoningText) {
-          lastMsg.reasoning = reasoningText
+        const citationObj = (data as any[]).find((d: any) => d?.type === 'citations');
+        if (citationObj?.urls) {
+          citationsList = citationObj.urls;
         }
-        if (citationsList.length > 0) {
-          lastMsg.citations = citationsList
-        }
-        displayMessages[displayMessages.length - 1] = lastMsg
       }
     }
-  }
+
+    return {
+      id: m.id,
+      role: m.role as 'user' | 'assistant',
+      content: m.content,
+      timestamp: (m as any).timestamp || new Date(),
+      model: selectedModel === "fast" ? "deepseek" : "grok",
+      toolInvocations: m.toolInvocations,
+      reasoning: reasoningText || undefined,
+      citations: citationsList || [],
+    };
+  });
 
   return (
     <div className="flex flex-col h-full relative flex-1">

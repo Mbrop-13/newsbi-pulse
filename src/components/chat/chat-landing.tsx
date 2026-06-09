@@ -243,7 +243,49 @@ export function ChatLanding() {
   const hasMessages = storeMessages.length > 0 || aiMessages.length > 0
 
   // Determine which messages to display
-  const displayMessages = storeMessages.length > 0 ? storeMessages : []
+  const displayMessages = [...storeMessages]
+
+  if (aiLoading && aiMessages.length > 0) {
+    const lastAiMessage = aiMessages[aiMessages.length - 1]
+    if (lastAiMessage.role === "assistant") {
+      const hasAssistantAtEnd = storeMessages.length > 0 && storeMessages[storeMessages.length - 1].role === "assistant"
+      
+      let reasoningText = ""
+      let citationsList: string[] = []
+      
+      if (data && data.length > 0) {
+        const reasoningChunks = (data as any[]).filter((d: any) => d?.type === 'reasoning')
+        reasoningText = reasoningChunks.map(c => c.text).join('')
+        
+        const citationObj = (data as any[]).find((d: any) => d?.type === 'citations')
+        if (citationObj?.urls) {
+          citationsList = citationObj.urls
+        }
+      }
+
+      if (!hasAssistantAtEnd) {
+        displayMessages.push({
+          id: lastAiMessage.id,
+          role: "assistant",
+          content: lastAiMessage.content,
+          timestamp: new Date(),
+          model: selectedModel === "fast" ? "deepseek" : "grok",
+          reasoning: reasoningText || undefined,
+          citations: citationsList,
+        })
+      } else {
+        const lastMsg = { ...displayMessages[displayMessages.length - 1] }
+        lastMsg.content = lastAiMessage.content
+        if (reasoningText) {
+          lastMsg.reasoning = reasoningText
+        }
+        if (citationsList.length > 0) {
+          lastMsg.citations = citationsList
+        }
+        displayMessages[displayMessages.length - 1] = lastMsg
+      }
+    }
+  }
 
   return (
     <div className="flex flex-col h-full relative flex-1">

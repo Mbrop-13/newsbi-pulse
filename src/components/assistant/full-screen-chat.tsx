@@ -1001,10 +1001,11 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
     let reasoningText = (m as any).reasoning;
     let citationsList = (m as any).citations;
 
-    if (isLastAssistantLike && aiLoading) {
+    if (isLastAssistantLike) {
       if (streamData && streamData.length > 0) {
         const reasoningChunks = (streamData as any[]).filter((d: any) => d?.type === 'reasoning');
-        reasoningText = reasoningChunks.map(c => c.text).join('');
+        const streamReasoning = reasoningChunks.map(c => c.text).join('');
+        if (streamReasoning) reasoningText = streamReasoning;
 
         const citationObj = (streamData as any[]).find((d: any) => d?.type === 'citations');
         if (citationObj?.urls) {

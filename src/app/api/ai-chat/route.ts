@@ -152,17 +152,21 @@ export async function POST(req: NextRequest) {
 
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
+    
+    // IP-based fallback identifier for guest users
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const userId = user?.id || `guest-${ip}`;
 
-    if (!user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+    // Fetch custom assistant configuration if it exists and user is logged in
+    let assistantConfig = null;
+    if (user) {
+      const { data } = await supabase
+        .from("assistant_configs")
+        .select("name, tone, role, topics")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      assistantConfig = data;
     }
-
-    // Fetch custom assistant configuration if it exists
-    const { data: assistantConfig } = await supabase
-      .from("assistant_configs")
-      .select("name, tone, role, topics")
-      .eq("user_id", user.id)
-      .maybeSingle();
 
     const assistantName = assistantConfig?.name || "R-AI";
     const assistantTone = assistantConfig?.tone || "Analítico";
@@ -174,24 +178,26 @@ export async function POST(req: NextRequest) {
     if (lastUserMessage) {
       const securityCheck = detectSuspiciousPatterns(lastUserMessage);
       if (securityCheck.isSuspicious) {
-        console.warn(`[SECURITY_ALERT] [PRE-CHECK_DETECTION] Intento de Prompt Injection o solicitud dudosa del usuario ${user.id}. Motivo: ${securityCheck.reason}. Contenido: "${lastUserMessage}"`);
+        console.warn(`[SECURITY_ALERT] [PRE-CHECK_DETECTION] Intento de Prompt Injection o solicitud dudosa del usuario ${userId}. Motivo: ${securityCheck.reason}. Contenido: "${lastUserMessage}"`);
       }
     }
 
     // Burst protection — prevents rapid-fire abuse
-    const rl = rateLimit(`ai:${user.id}`, AI_CHAT_LIMIT);
+    const rl = rateLimit(`ai:${userId}`, AI_CHAT_LIMIT);
     if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
 
-    const tokenLimit = await checkTokenLimit(user.id);
+    const tokenLimit = await checkTokenLimit(userId);
     if (!tokenLimit.allowed) {
       return new Response(JSON.stringify({
-        error: "Has alcanzado el límite de tokens de tu plan para la IA. Actualiza tu suscripción para continuar chateando o debatiendo.",
+        error: user 
+          ? "Has alcanzado el límite de tokens de tu plan para la IA. Actualiza tu suscripción para continuar."
+          : "Límite de tokens de invitado alcanzado. Por favor inicia sesión o regístrate para continuar chateando.",
         code: "TOKEN_LIMIT_REACHED",
         details: tokenLimit,
       }), { status: 403 });
     }
 
-    const tier = await getUserTier(user.id);
+    const tier = user ? await getUserTier(user.id) : "free";
     const isPremium = tier !== "free";
 
     // Enforce model restrictions
@@ -236,7 +242,7 @@ export async function POST(req: NextRequest) {
     const yf = new YahooFinance();
 
     const streamData = new StreamData();
-    const mimo = createMimoWithWebSearch(user.id, streamData, webSearch !== false);
+    const mimo = createMimoWithWebSearch(userId, streamData, webSearch !== false);
 
     const result = await streamText({
       model: mimo(finalModelStr),
@@ -252,8 +258,11 @@ export async function POST(req: NextRequest) {
           parameters: z.object({}),
           execute: async () => {
             try {
+              if (!user) {
+                return { error: "El usuario no ha iniciado sesión. Pídele que inicie sesión para ver su portafolio." };
+              }
               const sc = await createClient();
-              const { data: dbAssets } = await sc.from('portfolios').select('*').eq('user_id', user.id);
+              const { data: dbAssets } = await sc.from('portfolios').select('*').eq('user_id', user!.id);
               if (!dbAssets || dbAssets.length === 0) {
                 return { error: "El usuario no tiene activos en su portafolio. Sugiérele agregar algunos en /portafolio." };
               }
@@ -309,8 +318,9 @@ export async function POST(req: NextRequest) {
           parameters: z.object({ limit: z.number().optional() }),
           execute: async ({ limit = 10 }) => {
             try {
+              if (!user) return { news: [], portfolio_symbols: [], note: "Debes iniciar sesión para ver noticias de tu portafolio." };
               const sc = await createClient();
-              const { data: portfolios } = await sc.from('portfolios').select('symbol, company_name').eq('user_id', user.id);
+              const { data: portfolios } = await sc.from('portfolios').select('symbol, company_name').eq('user_id', user!.id);
               if (!portfolios || portfolios.length === 0) return { error: "Sin portafolio.", news: [] };
               const cutoff = new Date(Date.now() - 48 * 3600000).toISOString();
               const searchTerms: string[] = [];
@@ -592,11 +602,14 @@ export async function POST(req: NextRequest) {
           }),
           execute: async ({ symbol, targetPrice, condition }) => {
             try {
+              if (!user) {
+                return { success: false, error: "Debes iniciar sesión para crear alertas de precio." };
+              }
               const sc = await createClient();
               const s = symbol.toUpperCase();
               
               // 1. Check plan limits
-              const limitCheck = await checkLimit(user.id, "price_alert");
+              const limitCheck = await checkLimit(user!.id, "price_alert");
               if (!limitCheck.allowed) {
                 return {
                   success: false,
@@ -626,7 +639,7 @@ export async function POST(req: NextRequest) {
               const { data, error } = await sc
                 .from("price_alerts")
                 .insert({
-                  user_id: user.id,
+                  user_id: user!.id,
                   symbol: s,
                   target_price: targetPrice,
                   condition: finalCondition,
@@ -657,19 +670,21 @@ export async function POST(req: NextRequest) {
         const hasContent = text && text.trim().length > 0;
         const isValidFinish = finishReason !== 'error';
 
-        if (hasContent && isValidFinish) {
+        if (user && hasContent && isValidFinish) {
           // Increment message count only on successful response
           await incrementUsage(user.id, "ai_message").catch(console.error);
+        } else if (!user) {
+          console.log(`[AI Chat] Guest chat completed successfully.`);
         } else {
           console.warn(`[AI Chat] Skipping usage increment for user ${user.id}: finishReason=${finishReason}, hasContent=${hasContent}`);
         }
 
-        if (usage && usage.totalTokens) {
+        if (user && usage && usage.totalTokens) {
           await incrementTokenUsage(user.id, usage.totalTokens).catch(console.error);
           console.log(`[AI Chat] Saved token usage for user ${user.id}: ${usage.totalTokens} tokens.`);
         }
         if (text.includes("[ALERTA_SEGURIDAD]") || text.includes("ALERTA DE SEGURIDAD") || text.includes("intento de evasión detectado")) {
-          console.warn(`[SECURITY_ALERT] [LLM_DETECTION] El modelo R-AI detectó un intento de manipulación o solicitud inusual del usuario ${user.id}. Respuesta del modelo: "${text}"`);
+          console.warn(`[SECURITY_ALERT] [LLM_DETECTION] El modelo R-AI detectó un intento de manipulación o solicitud inusual del usuario ${userId}. Respuesta del modelo: "${text}"`);
         }
       }
     });

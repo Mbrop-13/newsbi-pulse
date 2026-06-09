@@ -362,10 +362,11 @@ export function ChatLanding() {
     let reasoningText = (m as any).reasoning;
     let citationsList = (m as any).citations;
 
-    if (isLastAssistantLike && aiLoading) {
+    if (isLastAssistantLike) {
       if (data && data.length > 0) {
         const reasoningChunks = (data as any[]).filter((d: any) => d?.type === 'reasoning');
-        reasoningText = reasoningChunks.map(c => c.text).join('');
+        const streamReasoning = reasoningChunks.map(c => c.text).join('');
+        if (streamReasoning) reasoningText = streamReasoning;
 
         const citationObj = (data as any[]).find((d: any) => d?.type === 'citations');
         if (citationObj?.urls) {

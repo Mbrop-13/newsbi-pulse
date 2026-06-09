@@ -15,6 +15,7 @@ import { useFilterStore } from "@/lib/stores/filter-store";
 import { useViewStore } from "@/lib/stores/use-view-store";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useInterestStore } from "@/lib/stores/interest-store";
+import { useSidebar } from "@/components/ui/sidebar";
 
 import { TraditionalNewspaper } from "@/components/traditional-newspaper";
 import {
@@ -32,6 +33,8 @@ interface Props {
 
 export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props) {
   const router = useRouter();
+  const { state } = useSidebar();
+  const isExpanded = state === "expanded";
   const defaultTab: FeedTab = (initialFeed as FeedTab) || "chile";
   const [activeTab, setActiveTab] = useState<FeedTab>(defaultTab);
   const [dbArticles, setDbArticles] = useState<any[]>([]);
@@ -62,11 +65,15 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
 
   const gridClass = viewLayout === 'list' 
     ? 'grid-cols-1 max-w-3xl mx-auto'
-    : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3';
+    : isExpanded
+      ? 'grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3'
+      : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3';
 
   const bottomGridClass = viewLayout === 'list'
     ? 'grid-cols-1 max-w-3xl mx-auto'
-    : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
+    : isExpanded
+      ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'
+      : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
 
   const toggleTag = (tag: string) => {
     const lowerTag = tag.trim().toLowerCase();
@@ -328,7 +335,7 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0F172A] text-gray-900 dark:text-gray-100 font-sans">
-      <div className="pt-[72px]">
+      <div className="pt-2">
       </div>
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 pb-16">
 

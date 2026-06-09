@@ -9,6 +9,7 @@ import { SymbolOverview, CHILE_SYMBOLS, GLOBAL_SYMBOLS, TENDENCIA_SYMBOLS } from
 import { MiniChart } from "@/components/tradingview/mini-chart";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
+import { SidebarLayout } from "@/components/sidebar/sidebar-layout";
 
 // Mapping TradingView symbols to Yahoo Finance symbols for portfolio & alerts compatibility
 function toYahooSymbol(tvSymbol: string): string {
@@ -204,7 +205,8 @@ export default function MercadosPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50/50 dark:bg-[#0F0F13] pt-16">
+    <SidebarLayout>
+    <div className="min-h-screen bg-gray-50/50 dark:bg-[#0F0F13] pt-4">
       {/* ΓöÇΓöÇ TICKER TAPE ΓöÇΓöÇ */}
       <TickerTape />
 
@@ -626,5 +628,6 @@ export default function MercadosPage() {
         )}
       </AnimatePresence>
     </div>
+    </SidebarLayout>
   );
 }

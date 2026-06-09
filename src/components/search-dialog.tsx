@@ -14,8 +14,10 @@ import {
   Loader2,
   TrendingUp,
   Sparkles,
+  MessageSquare,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useAIChatStore } from "@/lib/stores/ai-chat-store";
 
 function getLogoUrl(symbol: string): string {
   return `https://assets.parqet.com/logos/symbol/${symbol}`;
@@ -35,10 +37,9 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [newsResults, setNewsResults] = useState<any[]>([]);
   const [assetResults, setAssetResults] = useState<any[]>([]);
-  const [predictionResults, setPredictionResults] = useState<any[]>([]);
+  const [chatResults, setChatResults] = useState<any[]>([]);
   const [isSearchingNews, setIsSearchingNews] = useState(false);
   const [isSearchingAssets, setIsSearchingAssets] = useState(false);
-  const [isSearchingPredictions, setIsSearchingPredictions] = useState(false);
   const [includeNews, setIncludeNews] = useState(() => {
     if (typeof window !== 'undefined') return localStorage.getItem('reclu-search-news') !== 'false';
     return true;
@@ -47,14 +48,16 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
     if (typeof window !== 'undefined') return localStorage.getItem('reclu-search-assets') !== 'false';
     return true;
   });
-  const [includePredictions, setIncludePredictions] = useState(() => {
-    if (typeof window !== 'undefined') return localStorage.getItem('reclu-search-predictions') === 'true';
-    return false;
+  const [includeChats, setIncludeChats] = useState(() => {
+    if (typeof window !== 'undefined') return localStorage.getItem('reclu-search-chats') !== 'false';
+    return true;
   });
   const [autoFocus, setAutoFocus] = useState(false);
-  const isSearching = isSearchingNews || isSearchingAssets || isSearchingPredictions;
+  const isSearching = isSearchingNews || isSearchingAssets;
   const router = useRouter();
   const supabase = createClient();
+  const savedChats = useAIChatStore((s) => s.savedChats);
+  const loadChat = useAIChatStore((s) => s.loadChat);
 
   useEffect(() => {
     setAutoFocus(window.innerWidth > 768);
@@ -146,39 +149,22 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
     searchAssets();
   }, [debouncedQuery, includeAssets]);
 
-  // Debounced Predictions Search Effect
+  // Local Chats Search Effect
   useEffect(() => {
-    async function searchPredictions() {
-      if (!includePredictions || !debouncedQuery.trim() || debouncedQuery.length < 2) {
-        setPredictionResults([]);
-        setIsSearchingPredictions(false);
-        return;
-      }
-      setIsSearchingPredictions(true);
-
-      try {
-        const res = await fetch(`/api/predictions?status=active`);
-        const data = await res.json();
-        if (data.predictions) {
-          const q = debouncedQuery.toLowerCase();
-          const matched = data.predictions.filter((p: any) =>
-            p.title?.toLowerCase().includes(q) ||
-            p.description?.toLowerCase().includes(q) ||
-            p.tags?.some((t: string) => t.toLowerCase().includes(q))
-          ).slice(0, 3);
-          setPredictionResults(matched);
-        } else {
-          setPredictionResults([]);
-        }
-      } catch {
-        setPredictionResults([]);
-      } finally {
-        setIsSearchingPredictions(false);
-      }
+    if (!includeChats || !debouncedQuery.trim() || debouncedQuery.length < 2) {
+      setChatResults([]);
+      return;
     }
 
-    searchPredictions();
-  }, [debouncedQuery, includePredictions]);
+    const q = debouncedQuery.toLowerCase();
+    const matched = savedChats.filter((chat) => {
+      if (chat.title?.toLowerCase().includes(q)) return true;
+      if (chat.messages?.some(m => m.content?.toLowerCase().includes(q))) return true;
+      return false;
+    }).slice(0, 3);
+
+    setChatResults(matched);
+  }, [debouncedQuery, savedChats, includeChats]);
 
   const toggleNews = () => {
     setIncludeNews(prev => {
@@ -198,11 +184,11 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
     });
   };
 
-  const togglePredictions = () => {
-    setIncludePredictions(prev => {
+  const toggleChats = () => {
+    setIncludeChats(prev => {
       const next = !prev;
-      localStorage.setItem('reclu-search-predictions', String(next));
-      if (!next) { setPredictionResults([]); setIsSearchingPredictions(false); }
+      localStorage.setItem('reclu-search-chats', String(next));
+      if (!next) { setChatResults([]); }
       return next;
     });
   };
@@ -225,12 +211,21 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
     router.push(`/mercados/${symbol}`);
   };
 
+  const handleSelectChat = (chatId: string) => {
+    if (query.trim()) saveSearch(query.trim());
+    loadChat(chatId);
+    onClose();
+    router.push("/ai");
+  };
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (assetResults.length > 0) {
       handleSelectAsset(assetResults[0].symbol);
     } else if (newsResults.length > 0) {
       handleSelectNews(newsResults[0].slug || newsResults[0].id);
+    } else if (chatResults.length > 0) {
+      handleSelectChat(chatResults[0].id);
     }
   };
 
@@ -304,23 +299,23 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
                 <span className={`ml-0.5 w-1.5 h-1.5 rounded-full transition-colors ${includeAssets ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'}`} />
               </button>
               <button
-                onClick={togglePredictions}
+                onClick={toggleChats}
                 className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 ${
-                  includePredictions
+                  includeChats
                     ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 ring-1 ring-amber-500/20'
                     : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
                 }`}
               >
-                <TrendingUp className="w-3 h-3" />
-                Predicciones
-                <span className={`ml-0.5 w-1.5 h-1.5 rounded-full transition-colors ${includePredictions ? 'bg-amber-500' : 'bg-gray-300 dark:bg-gray-600'}`} />
+                <MessageSquare className="w-3 h-3" />
+                Chats
+                <span className={`ml-0.5 w-1.5 h-1.5 rounded-full transition-colors ${includeChats ? 'bg-amber-500' : 'bg-gray-300 dark:bg-gray-600'}`} />
               </button>
             </div>
 
             {/* Results / Empty state */}
             <div className="max-h-[400px] overflow-y-auto">
               {query.length >= 2 ? (
-                (newsResults.length > 0 || assetResults.length > 0 || predictionResults.length > 0 || isSearchingNews || isSearchingAssets || isSearchingPredictions) ? (
+                (newsResults.length > 0 || assetResults.length > 0 || chatResults.length > 0 || isSearchingNews || isSearchingAssets) ? (
                   <div className="py-2">
                     {/* News Section — appears instantly */}
                     {includeNews && (isSearchingNews && newsResults.length === 0 ? (
@@ -394,43 +389,38 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
                     ) : null)}
 
                     {/* Divider */}
-                    {(newsResults.length > 0 || assetResults.length > 0) && (predictionResults.length > 0 || isSearchingPredictions) && (
+                    {(newsResults.length > 0 || assetResults.length > 0) && chatResults.length > 0 && (
                       <div className="mx-5 border-t border-border/50" />
                     )}
 
-                    {/* Predictions Section — loads with debounce */}
-                    {includePredictions && (isSearchingPredictions ? (
-                      <div className="px-5 py-4 flex items-center gap-2 text-muted-foreground">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span className="text-xs">Buscando predicciones...</span>
-                      </div>
-                    ) : predictionResults.length > 0 ? (
+                    {/* Chats Section — local search */}
+                    {includeChats && chatResults.length > 0 && (
                       <div className="mb-2">
                         <p className="px-5 py-2 text-[10px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
-                          <TrendingUp className="w-3.5 h-3.5" /> Predicciones
+                          <MessageSquare className="w-3.5 h-3.5" /> Chats Guardados
                         </p>
-                        {predictionResults.map((pred: any) => (
+                        {chatResults.map((chat: any) => (
                           <button
-                            key={pred.id}
-                            onClick={() => { onClose(); router.push('/predicciones'); }}
+                            key={chat.id}
+                            onClick={() => handleSelectChat(chat.id)}
                             className="w-full flex items-center gap-3 px-5 py-2.5 hover:bg-amber-500/5 transition-colors text-left group"
                           >
                             <div className="w-10 h-10 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0">
-                              <TrendingUp className="w-4 h-4" />
+                              <MessageSquare className="w-4 h-4" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-bold text-foreground truncate">{pred.title}</p>
+                              <p className="text-sm font-bold text-foreground truncate">{chat.title}</p>
                               <p className="text-[11px] text-muted-foreground truncate">
-                                {pred.tags?.slice(0, 3).join(' · ') || 'Predicción'}
+                                {chat.messages?.length || 0} mensajes · {new Date(chat.timestamp).toLocaleDateString()}
                               </p>
                             </div>
                             <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/0 group-hover:text-amber-500 transition-all group-hover:translate-x-0.5 flex-shrink-0" />
                           </button>
                         ))}
                       </div>
-                    ) : null)}
+                    )}
                   </div>
-                ) : !isSearchingNews && !isSearchingAssets && !isSearchingPredictions ? (
+                ) : !isSearchingNews && !isSearchingAssets ? (
                   <div className="py-12 text-center">
                     <Search className="w-8 h-8 text-muted-foreground/30 mx-auto mb-3" />
                     <p className="text-sm text-muted-foreground">No se encontraron resultados para &quot;{query}&quot;</p>

@@ -1,4 +1,5 @@
 import SettingsClient from "./settings-client";
+import { SidebarLayoutWrapper } from "./sidebar-wrapper";
 
 export const metadata = {
   title: "Configuración | Reclu",
@@ -6,5 +7,9 @@ export const metadata = {
 };
 
 export default function SettingsPage() {
-  return <SettingsClient />;
+  return (
+    <SidebarLayoutWrapper>
+      <SettingsClient />
+    </SidebarLayoutWrapper>
+  );
 }

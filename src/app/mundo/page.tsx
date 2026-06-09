@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { SidebarLayout } from "@/components/sidebar/sidebar-layout";
 
 // Globe must be dynamically imported with SSR disabled because it relies on window/document.
 const GlobeMundo = dynamic(
@@ -31,7 +32,8 @@ export default function MundoPage() {
   }, []);
 
   return (
-    <div className="w-full h-[100dvh] bg-slate-100 text-slate-900 overflow-hidden relative">
+    <SidebarLayout>
+    <div className="w-full h-[calc(100dvh)] bg-slate-100 text-slate-900 overflow-hidden relative">
       <div className="absolute inset-0">
         {mounted ? <GlobeMundo /> : <GlobeFallback />}
       </div>
@@ -44,5 +46,6 @@ export default function MundoPage() {
         <ArrowLeft className="w-5 h-5" />
       </Link>
     </div>
+    </SidebarLayout>
   );
 }

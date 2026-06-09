@@ -1203,7 +1203,7 @@ export function MiroFishSandbox({ selectedSimulation, onClearSelected, onSimulat
                     Mesa Redonda <span className="bg-gradient-to-r from-[#1890FF] to-indigo-500 bg-clip-text text-transparent">Multi-Agente</span>
                   </h1>
                   <p className="text-xs text-gray-500 dark:text-gray-400 font-medium max-w-xl mx-auto leading-relaxed">
-                    Debate con nuestro panel de agentes IA con Mimo v2.5 Flash y búsqueda web en vivo.
+                    Debate con nuestro panel de agentes IA con Reclu v2.5 Flash y búsqueda web en vivo.
                   </p>
                 </div>
               </div>

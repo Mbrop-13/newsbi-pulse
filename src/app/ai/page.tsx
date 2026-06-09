@@ -4,7 +4,9 @@ import { useState } from "react";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { AuthModals } from "@/components/auth-modals";
 import { AssistantLanding } from "@/components/assistant/assistant-landing";
-import { FullScreenChat } from "@/components/assistant/full-screen-chat";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/sidebar/app-sidebar";
+import { ChatLanding } from "@/components/chat/chat-landing";
 
 export default function AIPage() {
   const { isAuthenticated, isLoaded } = useAuthStore();
@@ -20,8 +22,8 @@ export default function AIPage() {
 
   if (!isLoaded) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-[#0a0a0a]">
-        <div className="w-8 h-8 rounded-full border-4 border-[#1890FF]/30 border-t-[#1890FF] animate-spin" />
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="w-8 h-8 rounded-full border-4 border-blue-500/30 border-t-blue-500 animate-spin" />
       </div>
     );
   }
@@ -37,7 +39,10 @@ export default function AIPage() {
       {!isAuthenticated ? (
         <AssistantLanding onAuthReq={handleAuthRequest} />
       ) : (
-        <FullScreenChat />
+        <SidebarProvider>
+          <AppSidebar />
+          <ChatLanding />
+        </SidebarProvider>
       )}
     </>
   );

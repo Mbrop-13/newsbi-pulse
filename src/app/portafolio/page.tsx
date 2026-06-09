@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import PortfolioClient from "./portfolio-client";
+import { SidebarLayoutWrapper } from "./sidebar-wrapper";
 
 export const metadata: Metadata = {
   title: "Portafolio | Reclu",
@@ -7,5 +8,9 @@ export const metadata: Metadata = {
 };
 
 export default function PortfolioPage() {
-  return <PortfolioClient />;
+  return (
+    <SidebarLayoutWrapper>
+      <PortfolioClient />
+    </SidebarLayoutWrapper>
+  );
 }

@@ -1,5 +1,10 @@
 import { CountryFeedPage } from "@/components/country-feed-page";
+import { SidebarLayout } from "@/components/sidebar/sidebar-layout";
 
 export default function TechGlobalPage() {
-  return <CountryFeedPage initialFeed="tech_global" />;
+  return (
+    <SidebarLayout>
+      <CountryFeedPage initialFeed="tech_global" />
+    </SidebarLayout>
+  );
 }

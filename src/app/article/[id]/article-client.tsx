@@ -32,6 +32,7 @@ import { useViewStore } from "@/lib/stores/use-view-store";
 import { useAuthStore, useAuthModalStore } from "@/lib/stores/auth-store";
 import { OnboardingModal } from "@/components/onboarding-modal";
 import { useInterestStore } from "@/lib/stores/interest-store";
+import { SidebarLayout } from "@/components/sidebar/sidebar-layout";
 
 export default function ArticlePage() {
   const params = useParams();
@@ -147,9 +148,10 @@ export default function ArticlePage() {
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Top spacer for navbar */}
-      <div className="pt-[6rem]" />
+    <SidebarLayout>
+      <div className="min-h-screen bg-background">
+        {/* Top spacer for navbar */}
+        <div className="pt-4 md:pt-6" />
 
       {/* Article Header */}
       <motion.article
@@ -388,6 +390,7 @@ export default function ArticlePage() {
         articleTitle={article.title}
       />
 
-    </div>
+      </div>
+    </SidebarLayout>
   );
 }

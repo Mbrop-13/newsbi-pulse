@@ -38,7 +38,27 @@ export function ClientLayoutProviders({
   }, []);
   const pathname = usePathname();
   const isLandingPage = pathname === "/";
-  const isFullscreenPage = pathname === "/mundo" || pathname === "/ai" || pathname === "/ai/agentes";
+  // Pages that use the sidebar layout (no navbar/footer)
+  const sidebarPages = [
+    "/ai",
+    "/ai/agentes",
+    "/noticias",
+    "/mercados",
+    "/portafolio",
+    "/mundo",
+    "/configuracion",
+    "/economia",
+    "/finanzas",
+    "/inversiones",
+    "/tech-global",
+    "/impacto-global"
+  ];
+  const isStaticSidebar = sidebarPages.some(p => pathname === p || pathname.startsWith(p + "/"));
+  const isArticlePage = pathname.startsWith("/article/");
+  const countrySlugs = ["chile", "argentina", "colombia", "brasil", "ecuador", "mexico"];
+  const isCountryPage = countrySlugs.some(slug => pathname === `/${slug}` || pathname.startsWith(`/${slug}/`));
+  const isSidebarPage = isStaticSidebar || isArticlePage || isCountryPage;
+  const isFullscreenPage = isSidebarPage;
   const isAssistantPage = pathname === "/ai" || pathname === "/ai/agentes";
   const isAdminPage = pathname.startsWith("/admin");
   const audioMode = useAudioPlayerStore((s) => s.mode);
@@ -49,7 +69,7 @@ export function ClientLayoutProviders({
       <TooltipProvider>
         <AuthSync />
         <div className="flex flex-col min-h-screen">
-          {!isAdminPage && !isLandingPage && !pathname.startsWith("/ai") && pathname !== "/mundo" && (
+          {!isAdminPage && !isLandingPage && !isSidebarPage && (
             <Navbar />
           )}
           <main

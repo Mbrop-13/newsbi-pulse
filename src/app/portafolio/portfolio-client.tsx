@@ -291,7 +291,7 @@ export default function PortfolioClient() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0F172A] pt-[72px] md:pt-[80px] pb-24">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0F172A] pt-4 md:pt-6 pb-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {/* Header removed as requested to clean up UI */}
 

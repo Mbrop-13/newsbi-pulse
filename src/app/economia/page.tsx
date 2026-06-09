@@ -1,5 +1,10 @@
 import { CountryFeedPage } from "@/components/country-feed-page";
+import { SidebarLayout } from "@/components/sidebar/sidebar-layout";
 
 export default function EconomiaPage() {
-  return <CountryFeedPage initialFeed="economia" />;
+  return (
+    <SidebarLayout>
+      <CountryFeedPage initialFeed="economia" />
+    </SidebarLayout>
+  );
 }

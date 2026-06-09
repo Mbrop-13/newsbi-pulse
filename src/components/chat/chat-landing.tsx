@@ -23,6 +23,79 @@ const MODEL_MAP: Record<string, string> = {
   agent: "agent",
 }
 
+function groupConsecutiveMessages(messages: ChatMessage[]): ChatMessage[] {
+  const grouped: ChatMessage[] = [];
+  
+  for (const msg of messages) {
+    const isAssistantLike = msg.role === "assistant" || (msg.role as string) === "tool";
+    
+    if (grouped.length === 0) {
+      grouped.push({ 
+        ...msg,
+        role: isAssistantLike ? "assistant" : msg.role
+      });
+      continue;
+    }
+    
+    const lastGrouped = grouped[grouped.length - 1];
+    const isLastAssistantLike = lastGrouped.role === "assistant";
+    
+    if (isAssistantLike && isLastAssistantLike && !msg.isSwarmThinking && !lastGrouped.isSwarmThinking) {
+      if (msg.content) {
+        lastGrouped.content = lastGrouped.content 
+          ? (lastGrouped.content + "\n\n" + msg.content).trim()
+          : msg.content;
+      }
+      
+      if (msg.toolInvocations) {
+        lastGrouped.toolInvocations = [
+          ...(lastGrouped.toolInvocations || []),
+          ...msg.toolInvocations
+        ];
+      }
+      
+      if (msg.citations && msg.citations.length > 0) {
+        lastGrouped.citations = Array.from(new Set([
+          ...(lastGrouped.citations || []),
+          ...msg.citations
+        ]));
+      }
+      
+      if (msg.reasoning) {
+        lastGrouped.reasoning = lastGrouped.reasoning 
+          ? (lastGrouped.reasoning + "\n" + msg.reasoning).trim()
+          : msg.reasoning;
+      }
+      
+      if (msg.thinkingSteps) {
+        lastGrouped.thinkingSteps = [
+          ...(lastGrouped.thinkingSteps || []),
+          ...msg.thinkingSteps
+        ];
+      }
+      
+      if (msg.reasoningSteps) {
+        lastGrouped.reasoningSteps = [
+          ...(lastGrouped.reasoningSteps || []),
+          ...msg.reasoningSteps
+        ];
+      }
+      
+      if (msg.secondsElapsed) {
+        lastGrouped.secondsElapsed = (lastGrouped.secondsElapsed || 0) + msg.secondsElapsed;
+      }
+    } else {
+      grouped.push({ 
+        ...msg,
+        role: isAssistantLike ? "assistant" : msg.role
+      });
+    }
+  }
+  
+  return grouped;
+}
+
+
 export function ChatLanding() {
   const user = useAuthStore((s) => s.user)
   const userTier = useAuthStore((s) =>
@@ -85,23 +158,56 @@ export function ChatLanding() {
       // Use requestAnimationFrame to ensure aiMessages state has been flushed by React
       requestAnimationFrame(() => {
         const latestMessages = aiMessagesRef.current;
+        const lastAssistantIdx = [...latestMessages].reverse().findIndex(m => m.role === 'assistant' || m.role === 'tool');
+        const targetIdx = lastAssistantIdx !== -1 ? (latestMessages.length - 1 - lastAssistantIdx) : -1;
+
         const storeMessages: ChatMessage[] = latestMessages.map((m: any, idx: number) => {
-          const isLastAssistant = m.role === 'assistant' && idx === latestMessages.length - 1;
+          const isTarget = idx === targetIdx;
+          if (isTarget) {
+            return {
+              id: message.id,
+              role: "assistant",
+              content: message.content || m.content || "",
+              timestamp: new Date(),
+              model: selectedModel === "fast" ? "deepseek" : "grok",
+              toolInvocations: message.toolInvocations || m.toolInvocations,
+              citations: citationsList,
+              reasoning: reasoningText || m.reasoning || undefined,
+            };
+          }
           return {
             id: m.id,
-            role: m.role as 'user' | 'assistant',
+            role: (m.role === 'tool' ? 'assistant' : m.role) as 'user' | 'assistant',
             content: m.content,
             timestamp: new Date(),
             model: selectedModel === "fast" ? "deepseek" : "grok",
             toolInvocations: m.toolInvocations,
-            citations: isLastAssistant ? citationsList : (m.citations || []),
-            reasoning: isLastAssistant ? reasoningText : (m.reasoning || undefined),
+            citations: m.citations || [],
+            reasoning: m.reasoning || undefined,
           };
         });
+
+        if (targetIdx === -1) {
+          storeMessages.push({
+            id: message.id,
+            role: "assistant",
+            content: message.content,
+            timestamp: new Date(),
+            model: selectedModel === "fast" ? "deepseek" : "grok",
+            toolInvocations: message.toolInvocations,
+            citations: citationsList,
+            reasoning: reasoningText || undefined,
+          });
+        }
+
         useAIChatStore.setState({ messages: storeMessages });
         useAIChatStore.getState().updateCurrentChat();
       });
     },
+    onError: (error) => {
+      console.error("[AI Chat] Stream error:", error);
+      toast.error(error.message || "Ocurrió un error al procesar la solicitud. Por favor, intenta de nuevo.");
+    }
   })
 
   const aiMessagesRef = useRef<any[]>([])
@@ -250,13 +356,13 @@ export function ChatLanding() {
   const isSyncing = currentChatId !== lastLoadedChatIdRef.current
   const displayMessagesSource = (isSyncing || aiMessages.length === 0) ? storeMessages : aiMessages
 
-  const displayMessages: ChatMessage[] = displayMessagesSource.map((m, idx) => {
-    const isLastAssistant = m.role === "assistant" && idx === displayMessagesSource.length - 1;
+  const rawDisplayMessages: ChatMessage[] = displayMessagesSource.map((m, idx) => {
+    const isLastAssistantLike = (m.role === "assistant" || m.role === "tool") && idx === displayMessagesSource.length - 1;
     
     let reasoningText = (m as any).reasoning;
     let citationsList = (m as any).citations;
 
-    if (isLastAssistant && aiLoading) {
+    if (isLastAssistantLike && aiLoading) {
       if (data && data.length > 0) {
         const reasoningChunks = (data as any[]).filter((d: any) => d?.type === 'reasoning');
         reasoningText = reasoningChunks.map(c => c.text).join('');
@@ -270,7 +376,7 @@ export function ChatLanding() {
 
     return {
       id: m.id,
-      role: m.role as 'user' | 'assistant',
+      role: (m.role === 'tool' ? 'assistant' : m.role) as 'user' | 'assistant',
       content: m.content,
       timestamp: (m as any).timestamp || new Date(),
       model: selectedModel === "fast" ? "deepseek" : "grok",
@@ -279,6 +385,8 @@ export function ChatLanding() {
       citations: citationsList || [],
     };
   });
+
+  const displayMessages = groupConsecutiveMessages(rawDisplayMessages);
 
   return (
     <div className="flex flex-col h-full relative flex-1">

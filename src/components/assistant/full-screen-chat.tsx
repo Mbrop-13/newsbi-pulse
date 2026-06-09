@@ -49,6 +49,78 @@ function sentimentColor(s: string) {
   return { bg: 'bg-slate-500/10', text: 'text-slate-400', border: 'border-slate-500/20', hex: '#64748b' };
 }
 
+function groupConsecutiveMessages(messages: ChatMessage[]): ChatMessage[] {
+  const grouped: ChatMessage[] = [];
+  
+  for (const msg of messages) {
+    const isAssistantLike = msg.role === "assistant" || (msg.role as string) === "tool";
+    
+    if (grouped.length === 0) {
+      grouped.push({ 
+        ...msg,
+        role: isAssistantLike ? "assistant" : msg.role
+      });
+      continue;
+    }
+    
+    const lastGrouped = grouped[grouped.length - 1];
+    const isLastAssistantLike = lastGrouped.role === "assistant";
+    
+    if (isAssistantLike && isLastAssistantLike && !msg.isSwarmThinking && !lastGrouped.isSwarmThinking) {
+      if (msg.content) {
+        lastGrouped.content = lastGrouped.content 
+          ? (lastGrouped.content + "\n\n" + msg.content).trim()
+          : msg.content;
+      }
+      
+      if (msg.toolInvocations) {
+        lastGrouped.toolInvocations = [
+          ...(lastGrouped.toolInvocations || []),
+          ...msg.toolInvocations
+        ];
+      }
+      
+      if (msg.citations && msg.citations.length > 0) {
+        lastGrouped.citations = Array.from(new Set([
+          ...(lastGrouped.citations || []),
+          ...msg.citations
+        ]));
+      }
+      
+      if (msg.reasoning) {
+        lastGrouped.reasoning = lastGrouped.reasoning 
+          ? (lastGrouped.reasoning + "\n" + msg.reasoning).trim()
+          : msg.reasoning;
+      }
+      
+      if (msg.thinkingSteps) {
+        lastGrouped.thinkingSteps = [
+          ...(lastGrouped.thinkingSteps || []),
+          ...msg.thinkingSteps
+        ];
+      }
+      
+      if (msg.reasoningSteps) {
+        lastGrouped.reasoningSteps = [
+          ...(lastGrouped.reasoningSteps || []),
+          ...msg.reasoningSteps
+        ];
+      }
+      
+      if (msg.secondsElapsed) {
+        lastGrouped.secondsElapsed = (lastGrouped.secondsElapsed || 0) + msg.secondsElapsed;
+      }
+    } else {
+      grouped.push({ 
+        ...msg,
+        role: isAssistantLike ? "assistant" : msg.role
+      });
+    }
+  }
+  
+  return grouped;
+}
+
 interface FullScreenChatProps {
   initialMode?: 'chat' | 'mirofish';
 }
@@ -319,26 +391,63 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
     },
     onFinish: (message) => {
       clearTools();
-      // Extract reasoning tokens from current streamData session
-      const currentReasoning = streamData
-        ?.filter((d: any) => d?.type === 'reasoning')
-        ?.map((d: any) => d?.text)
-        ?.join('') || '';
+      // Extract citations & reasoning from streamData
+      let citationsList: string[] = [];
+      let reasoningText = "";
+      if (streamData && streamData.length > 0) {
+        const citationObj = (streamData as any[]).find((d: any) => d?.type === 'citations');
+        if (citationObj?.urls) {
+          citationsList = citationObj.urls;
+        }
+        const reasoningChunks = (streamData as any[]).filter((d: any) => d?.type === 'reasoning');
+        reasoningText = reasoningChunks.map(c => c.text).join('');
+      }
 
       // Use requestAnimationFrame to ensure aiMessages state has been flushed by React
       requestAnimationFrame(() => {
         const latestMessages = aiMessagesRef.current;
+        const lastAssistantIdx = [...latestMessages].reverse().findIndex(m => m.role === 'assistant' || m.role === 'tool');
+        const targetIdx = lastAssistantIdx !== -1 ? (latestMessages.length - 1 - lastAssistantIdx) : -1;
+
         const storeMessages: ChatMessage[] = latestMessages.map((m: any, idx: number) => {
-          const isLastAssistant = m.role === 'assistant' && idx === latestMessages.length - 1;
+          const isTarget = idx === targetIdx;
+          if (isTarget) {
+            return {
+              id: message.id,
+              role: "assistant",
+              content: message.content || m.content || "",
+              timestamp: new Date(),
+              model: selectedModel === "fast" ? "deepseek" : "grok",
+              toolInvocations: message.toolInvocations || m.toolInvocations,
+              citations: citationsList,
+              reasoning: reasoningText || m.reasoning || undefined,
+            };
+          }
           return {
             id: m.id,
-            role: m.role as 'user' | 'assistant',
+            role: (m.role === 'tool' ? 'assistant' : m.role) as 'user' | 'assistant',
             content: m.content,
             timestamp: new Date(),
+            model: selectedModel === "fast" ? "deepseek" : "grok",
             toolInvocations: m.toolInvocations,
-            reasoning: isLastAssistant ? currentReasoning : (m.reasoning || undefined),
+            citations: m.citations || [],
+            reasoning: m.reasoning || undefined,
           };
         });
+
+        if (targetIdx === -1) {
+          storeMessages.push({
+            id: message.id,
+            role: "assistant",
+            content: message.content,
+            timestamp: new Date(),
+            model: selectedModel === "fast" ? "deepseek" : "grok",
+            toolInvocations: message.toolInvocations,
+            citations: citationsList,
+            reasoning: reasoningText || undefined,
+          });
+        }
+
         useAIChatStore.setState({ messages: storeMessages });
         useAIChatStore.getState().updateCurrentChat();
         setTimeout(() => fetchRealUsage(), 800);
@@ -885,6 +994,38 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
     { label: "Análisis de mercado", id: "market_analysis", query: "Analiza mi portafolio frente al mercado hoy." },
   ];
 
+  // Map raw messages to include streaming reasoning, citations and normalize roles
+  const rawDisplayMessages: ChatMessage[] = aiMessages.map((m, idx) => {
+    const isLastAssistantLike = (m.role === "assistant" || m.role === "tool") && idx === aiMessages.length - 1;
+    
+    let reasoningText = (m as any).reasoning;
+    let citationsList = (m as any).citations;
+
+    if (isLastAssistantLike && aiLoading) {
+      if (streamData && streamData.length > 0) {
+        const reasoningChunks = (streamData as any[]).filter((d: any) => d?.type === 'reasoning');
+        reasoningText = reasoningChunks.map(c => c.text).join('');
+
+        const citationObj = (streamData as any[]).find((d: any) => d?.type === 'citations');
+        if (citationObj?.urls) {
+          citationsList = citationObj.urls;
+        }
+      }
+    }
+
+    return {
+      id: m.id,
+      role: (m.role === 'tool' ? 'assistant' : m.role) as 'user' | 'assistant',
+      content: m.content,
+      timestamp: (m as any).timestamp || new Date(),
+      toolInvocations: m.toolInvocations,
+      reasoning: reasoningText || undefined,
+      citations: citationsList || [],
+    };
+  });
+
+  const displayMessages = groupConsecutiveMessages(rawDisplayMessages);
+
   // Dynamic classes based on preferences
   const maxWClass = chatPrefs.width === "wide" ? "max-w-5xl" : "max-w-3xl";
   const fontSizeClass = chatPrefs.fontSize === "large" ? "prose-lg" : "prose-base";
@@ -1364,7 +1505,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
             <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto hidden-scrollbar relative pb-24">
           
             {/* Centered Empty State (Open WebUI style) */}
-            {isStoreHydrated && aiMessages.length === 0 && !aiLoading && (
+            {isStoreHydrated && displayMessages.length === 0 && !aiLoading && (
               <div className="flex flex-col items-center justify-center min-h-[70vh] text-center px-4 pt-10 md:pt-16 max-w-3xl mx-auto">
                 <motion.div 
                   initial={{ opacity: 0, y: -20 }}
@@ -1446,10 +1587,10 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
               </div>
             )}
 
-          <div className={`${maxWClass} mx-auto w-full px-4 md:px-8 ${aiMessages.length === 0 ? "pt-0" : "pt-10"} pb-8 transition-all duration-300`}>
+          <div className={`${maxWClass} mx-auto w-full px-4 md:px-8 ${displayMessages.length === 0 ? "pt-0" : "pt-10"} pb-8 transition-all duration-300`}>
 
             <div className="space-y-8">
-              {aiMessages.map((msg, msgIndex) => {
+              {displayMessages.map((msg, msgIndex) => {
                 // Show timestamp ONLY for chats loaded from history
                 // isLoadedChatRef.current is true only when navigating to a previously saved chat
                 const showTimestamp = isLoadedChatRef.current && msgIndex === 0 && msg.role === 'user' && (msg as any).createdAt;
@@ -1633,7 +1774,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
 
                         {/* Reasoning / CoT Collapse Box */}
                         {(() => {
-                          const isLastAssistant = msg.id === aiMessages.filter(m => m.role === 'assistant').pop()?.id;
+                          const isLastAssistant = msg.id === displayMessages.filter(m => m.role === 'assistant').pop()?.id;
                           // Extract reasoning from streamData if it is actively streaming
                           let streamReasoning = "";
                           if (isLastAssistant && streamData && streamData.length > 0) {
@@ -1711,18 +1852,18 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                         )}
 
                         {/* Action Bar & Expandable Citations */}
-                        {(!aiMessages[msgIndex + 1] || aiMessages[msgIndex + 1].role === 'user') && (
+                        {(!displayMessages[msgIndex + 1] || displayMessages[msgIndex + 1].role === 'user') && (
                           <div className="flex flex-col gap-2 mt-3 pt-2">
                             <div className="flex items-center flex-wrap gap-1.5">
                               
                               {/* Sources Pill Widget */}
                               {(() => {
                                 // Check per-message annotations first
-                                const citationAnnotation = msg.annotations?.find((a: any) => a?.type === 'citations') as any;
+                                const citationAnnotation = (msg as any).annotations?.find((a: any) => a?.type === 'citations') as any;
                                 let citationsList = citationAnnotation?.urls || (msg as any).citations;
                                 // Fallback: check streamData (useChat data) for the last assistant message
                                 if ((!citationsList || citationsList.length === 0) && streamData && streamData.length > 0) {
-                                  const isLastAssistant = msg.id === aiMessages.filter(m => m.role === 'assistant').pop()?.id;
+                                  const isLastAssistant = msg.id === displayMessages.filter(m => m.role === 'assistant').pop()?.id;
                                   if (isLastAssistant) {
                                     const sdCitation = (streamData as any[]).find((d: any) => d?.type === 'citations');
                                     if (sdCitation?.urls) citationsList = sdCitation.urls;
@@ -1768,7 +1909,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                               <button 
                                 onClick={() => {
                                   // Find previous user message
-                                  const prevUserMsg = aiMessages.slice(0, msgIndex).reverse().find(m => m.role === 'user');
+                                  const prevUserMsg = displayMessages.slice(0, msgIndex).reverse().find(m => m.role === 'user');
                                   setShareDialog({ 
                                     isOpen: true, 
                                     question: prevUserMsg ? prevUserMsg.content : "Pregunta sobre inteligencia financiera...", 
@@ -1802,7 +1943,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                             </button>
 
                             {/* Regenerate (Only on last AI message) */}
-                            {msg.id === aiMessages.filter(m => m.role === 'assistant').pop()?.id && !aiLoading && (
+                            {msg.id === displayMessages.filter(m => m.role === 'assistant').pop()?.id && !aiLoading && (
                               <>
                                 <div className="w-px h-4 bg-gray-200 dark:bg-gray-700/50 mx-1" />
                                 <button 
@@ -1818,11 +1959,11 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
 
                           {/* Expanded Citations List */}
                           {(() => {
-                            const citationAnnotation = msg.annotations?.find((a: any) => a?.type === 'citations') as any;
+                            const citationAnnotation = (msg as any).annotations?.find((a: any) => a?.type === 'citations') as any;
                             let citationsList = citationAnnotation?.urls || (msg as any).citations;
                             // Fallback: check streamData for the last assistant message
                             if ((!citationsList || citationsList.length === 0) && streamData && streamData.length > 0) {
-                              const isLastAssistant = msg.id === aiMessages.filter(m => m.role === 'assistant').pop()?.id;
+                              const isLastAssistant = msg.id === displayMessages.filter(m => m.role === 'assistant').pop()?.id;
                               if (isLastAssistant) {
                                 const sdCitation = (streamData as any[]).find((d: any) => d?.type === 'citations') as any;
                                 if (sdCitation?.urls) citationsList = sdCitation.urls;
@@ -1884,7 +2025,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
 
         {/* ─── SCROLL TO BOTTOM BUTTON ─── */}
         <AnimatePresence>
-          {!isUserAtBottom && aiMessages.length > 0 && (
+          {!isUserAtBottom && displayMessages.length > 0 && (
             <motion.button
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}

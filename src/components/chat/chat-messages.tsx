@@ -150,21 +150,29 @@ function MessageBubble({
 
     // 2. Render from Vercel AI SDK toolInvocations (from new messages)
     const sdkCards = message.toolInvocations?.map((inv: any, i: number) => {
-      if (inv.state !== 'result') return null;
+      if (inv.state !== 'result') {
+        return (
+          <div key={inv.toolCallId || `loading-tool-${i}`} className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/5 text-blue-500 rounded-xl text-xs font-bold w-fit animate-pulse border border-blue-500/20 my-1">
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            Analizando datos...
+          </div>
+        );
+      }
       
       switch (inv.toolName) {
         case 'get_portfolio_summary':
           return <PortfolioSummaryCard key={`inv-port-${i}`} result={inv.result} />
         case 'analyze_stock':
-          return <StockAnalysisCard key={`inv-stock-${i}`} toolName="analyze_stock" result={inv.result} />
-        case 'get_portfolio_news':
-        case 'get_top_news_today':
-        case 'search_general_news':
-          return <AnalyzedNewsCard key={`inv-news-${i}`} toolName="get_news" result={inv.result} />
+        case 'compare_stocks':
+        case 'screen_market':
+        case 'get_sector_performance':
+          return <StockAnalysisCard key={`inv-stock-${i}`} toolName={inv.toolName} result={inv.result} />
+        case 'render_chart':
+          return <AIChartCard key={`inv-chart-${i}`} result={inv.result} />
         case 'create_price_alert':
           return <PriceAlertCard key={`inv-alert-${i}`} result={inv.result} />
         default:
-          return null
+          return <AnalyzedNewsCard key={`inv-news-${i}`} toolName={inv.toolName} result={inv.result} />
       }
     }) || []
 

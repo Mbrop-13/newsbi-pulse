@@ -132,25 +132,47 @@ function MessageBubble({
 
   // Render tool result cards
   const renderToolResults = () => {
-    if (!message.toolResults?.length) return null
-    return (
-      <div className="space-y-3 mt-2">
-        {message.toolResults.map((tr, i) => {
-          switch (tr.tool) {
-            case 'portfolio':
-              return <PortfolioSummaryCard key={i} result={tr.data} />
-            case 'stock_info':
-              return <StockAnalysisCard key={i} toolName="analyze_stock" result={tr.data} />
-            case 'news':
-              return <AnalyzedNewsCard key={i} toolName="get_news" result={tr.data} />
-            case 'alerts':
-              return <PriceAlertCard key={i} result={tr.data} />
-            default:
-              return null
-          }
-        })}
-      </div>
-    )
+    // 1. Render from traditional toolResults
+    const traditionalCards = message.toolResults?.map((tr, i) => {
+      switch (tr.tool) {
+        case 'portfolio':
+          return <PortfolioSummaryCard key={`tr-port-${i}`} result={tr.data} />
+        case 'stock_info':
+          return <StockAnalysisCard key={`tr-stock-${i}`} toolName="analyze_stock" result={tr.data} />
+        case 'news':
+          return <AnalyzedNewsCard key={`tr-news-${i}`} toolName="get_news" result={tr.data} />
+        case 'alerts':
+          return <PriceAlertCard key={`tr-alert-${i}`} result={tr.data} />
+        default:
+          return null
+      }
+    }) || []
+
+    // 2. Render from Vercel AI SDK toolInvocations (from new messages)
+    const sdkCards = message.toolInvocations?.map((inv: any, i: number) => {
+      if (inv.state !== 'result') return null;
+      
+      switch (inv.toolName) {
+        case 'get_portfolio_summary':
+          return <PortfolioSummaryCard key={`inv-port-${i}`} result={inv.result} />
+        case 'analyze_stock':
+          return <StockAnalysisCard key={`inv-stock-${i}`} toolName="analyze_stock" result={inv.result} />
+        case 'get_portfolio_news':
+        case 'get_top_news_today':
+        case 'search_general_news':
+          return <AnalyzedNewsCard key={`inv-news-${i}`} toolName="get_news" result={inv.result} />
+        case 'create_price_alert':
+          return <PriceAlertCard key={`inv-alert-${i}`} result={inv.result} />
+        default:
+          return null
+      }
+    }) || []
+
+    // Filter out null cards
+    const allCards = [...traditionalCards, ...sdkCards].filter(Boolean)
+    if (allCards.length === 0) return null
+
+    return <div className="space-y-3 mt-2">{allCards}</div>
   }
 
   // Render reasoning/thinking steps

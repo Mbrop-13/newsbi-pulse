@@ -6,6 +6,7 @@ import { NewsArticle } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { useViewStore, type ViewDensity, type ViewFontSize } from "@/lib/stores/use-view-store";
+import { useActiveArticleStore } from "@/lib/stores/active-article-store";
 
 /* ─────────────────────────────────────────────────────────
    Traditional Newspaper Layout — proper editorial hierarchy
@@ -97,15 +98,27 @@ function Masthead() {
 
 /* ── Hero Article (big story at top) ── */
 function HeroArticle({ article, density, fontSize }: { article: NewsArticle; density: ViewDensity; fontSize: ViewFontSize }) {
+  const { openArticle } = useActiveArticleStore();
   const hasEnriched = !!(article.enriched_content && article.enriched_content.length > 50);
   const titleClass = getHeroTitleClass(fontSize);
   const summaryClass = getHeroSummaryClass(fontSize);
   const imageClass = getHeroImageClass(density);
   const contentToDisplay = article.summary ? `${article.summary}\n\n${article.content || ""}` : (article.content || "");
 
+  const handleArticleClick = (e: React.MouseEvent) => {
+    if (e.button === 0 && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
+      e.preventDefault();
+      openArticle(article.id, article);
+    }
+  };
+
   return (
     <article className="group">
-      <Link href={`/article/${article.slug || article.id}`} className="block focus:outline-none">
+      <Link 
+        href={`/article/${article.slug || article.id}`} 
+        onClick={handleArticleClick}
+        className="block focus:outline-none"
+      >
         <div className="flex items-center gap-2 mb-3">
           <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#1890FF]">{article.category}</span>
           <span className="w-1 h-1 rounded-full bg-gray-400" />
@@ -165,14 +178,26 @@ function HeroArticle({ article, density, fontSize }: { article: NewsArticle; den
 
 /* ── Secondary Article (medium, used in 2-3 col rows) ── */
 function SecondaryArticle({ article, showImage = true, density, fontSize }: { article: NewsArticle; showImage?: boolean; density: ViewDensity; fontSize: ViewFontSize }) {
+  const { openArticle } = useActiveArticleStore();
   const hasEnriched = !!(article.enriched_content && article.enriched_content.length > 50);
   const titleClass = getSecondaryTitleClass(fontSize);
   const summaryClass = getSecondarySummaryClass(fontSize);
   const imageClass = getSecondaryImageClass(density);
 
+  const handleArticleClick = (e: React.MouseEvent) => {
+    if (e.button === 0 && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
+      e.preventDefault();
+      openArticle(article.id, article);
+    }
+  };
+
   return (
     <article className="group flex flex-col">
-      <Link href={`/article/${article.slug || article.id}`} className="flex flex-col gap-2 focus:outline-none">
+      <Link 
+        href={`/article/${article.slug || article.id}`} 
+        onClick={handleArticleClick}
+        className="flex flex-col gap-2 focus:outline-none"
+      >
         {showImage && article.image_url && (
           <div className="w-full overflow-hidden mb-2 rounded-none relative">
             <img
@@ -218,12 +243,24 @@ function SecondaryArticle({ article, showImage = true, density, fontSize }: { ar
 
 /* ── Brief Article (headline-only, for dense sidebar-like areas) ── */
 function BriefArticle({ article, index, density, fontSize }: { article: NewsArticle; index: number; density: ViewDensity; fontSize: ViewFontSize }) {
+  const { openArticle } = useActiveArticleStore();
   const briefTitleClass = getBriefTitleClass(fontSize);
   const pyClass = density === 'compact' ? 'py-2' : density === 'spacious' ? 'py-4' : 'py-3';
 
+  const handleArticleClick = (e: React.MouseEvent) => {
+    if (e.button === 0 && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
+      e.preventDefault();
+      openArticle(article.id, article);
+    }
+  };
+
   return (
     <article className={`group ${pyClass} border-b border-gray-200 dark:border-gray-800 last:border-b-0`}>
-      <Link href={`/article/${article.slug || article.id}`} className="flex gap-3 focus:outline-none">
+      <Link 
+        href={`/article/${article.slug || article.id}`} 
+        onClick={handleArticleClick}
+        className="flex gap-3 focus:outline-none"
+      >
         <span className="text-2xl font-serif font-light text-gray-300 dark:text-gray-700 leading-none mt-0.5 shrink-0 w-7 text-right">
           {(index + 1).toString().padStart(2, '0')}
         </span>

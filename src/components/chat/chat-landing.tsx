@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { SidebarInset } from "@/components/ui/sidebar"
+
 import { ChatInput } from "@/components/chat/chat-input"
 import { ChatMessages } from "@/components/chat/chat-messages"
 import { ModelSelector, type RecluModel } from "@/components/chat/model-selector"
@@ -246,7 +246,7 @@ export function ChatLanding() {
   const displayMessages = storeMessages.length > 0 ? storeMessages : []
 
   return (
-    <SidebarInset>
+    <div className="flex flex-col h-full relative flex-1">
       <div className="flex flex-col h-full relative">
         {/* Main content area */}
         {!hasMessages ? (
@@ -335,6 +335,6 @@ export function ChatLanding() {
         question={shareDialog.question}
         answer={shareDialog.answer}
       />
-    </SidebarInset>
+    </div>
   )
 }

@@ -14,6 +14,7 @@ import { useReadingListStore } from "@/lib/stores/use-reading-list-store";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useAuthToastStore } from "@/lib/stores/auth-toast-store";
 import { toast } from "sonner";
+import { useActiveArticleStore } from "@/lib/stores/active-article-store";
 
 interface NewsCardProps {
   article: NewsArticle;
@@ -22,8 +23,16 @@ interface NewsCardProps {
 }
 
 export function NewsCard({ article, index, layout = "default" }: NewsCardProps) {
+  const { openArticle } = useActiveArticleStore();
   const hasEnriched = !!(article.enriched_content && article.enriched_content.length > 50);
   const { showImages, fontSize } = useViewStore();
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    if (e.button === 0 && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
+      e.preventDefault();
+      openArticle(article.id, article);
+    }
+  };
   const [imgError, setImgError] = useState(false);
 
   const [showMenu, setShowMenu] = useState(false);
@@ -178,7 +187,11 @@ export function NewsCard({ article, index, layout = "default" }: NewsCardProps) 
           </AnimatePresence>
         </div>
 
-        <Link href={`/article/${article.slug || article.id}`} className="group-hover:opacity-80 transition-opacity flex flex-col gap-3 focus:outline-none">
+        <Link 
+          href={`/article/${article.slug || article.id}`} 
+          onClick={handleCardClick}
+          className="group-hover:opacity-80 transition-opacity flex flex-col gap-3 focus:outline-none"
+        >
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs font-bold uppercase tracking-widest text-[#1890FF]">{article.category}</span>
             <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
@@ -290,7 +303,11 @@ export function NewsCard({ article, index, layout = "default" }: NewsCardProps) 
         </AnimatePresence>
       </div>
 
-      <Link href={`/article/${article.slug || article.id}`} className="flex flex-col flex-1 relative focus:outline-none">
+      <Link 
+        href={`/article/${article.slug || article.id}`} 
+        onClick={handleCardClick}
+        className="flex flex-col flex-1 relative focus:outline-none"
+      >
         
         {/* Floating Ripple Effect Layer (Subtle click action) */}
         <div className="absolute inset-0 bg-[#1890FF]/0 group-active:bg-[#1890FF]/5 transition-colors z-10 pointer-events-none" />

@@ -16,6 +16,7 @@ import { useViewStore } from "@/lib/stores/use-view-store";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useInterestStore } from "@/lib/stores/interest-store";
 import { useSidebar } from "@/components/ui/sidebar";
+import { useActiveArticleStore } from "@/lib/stores/active-article-store";
 
 import { TraditionalNewspaper } from "@/components/traditional-newspaper";
 import {
@@ -638,11 +639,19 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
 
 /* ── Trending / Most Viewed Panel ── */
 function TrendingPanel({ articles }: { articles: any[] }) {
+  const { openArticle } = useActiveArticleStore();
   const trending = useMemo(() => {
     return [...articles]
       .sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0))
       .slice(0, 10); // Limit to 10 to approximate height of 2 rows of images
   }, [articles]);
+
+  const handleArticleClick = (article: any) => (e: React.MouseEvent) => {
+    if (e.button === 0 && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
+      e.preventDefault();
+      openArticle(article.id, article);
+    }
+  };
 
   if (trending.length === 0) return null;
 
@@ -670,7 +679,12 @@ function TrendingPanel({ articles }: { articles: any[] }) {
       <div className="lg:hidden overflow-x-auto hide-scrollbar">
         <div className="flex gap-4 p-4" style={{ width: 'max-content' }}>
           {trending.map((article) => (
-            <Link key={article.id} href={`/article/${article.slug || article.id}`} className="flex-shrink-0 w-[260px] group">
+            <Link 
+              key={article.id} 
+              href={`/article/${article.slug || article.id}`} 
+              onClick={handleArticleClick(article)}
+              className="flex-shrink-0 w-[260px] group"
+            >
               <div className="bg-gray-50 dark:bg-white/[0.03] rounded-xl border border-gray-100 dark:border-gray-700/50 p-3 hover:border-[#1890FF]/30 transition-all h-full flex gap-3">
                 {article.image_url && (
                   <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-gray-200 dark:bg-gray-700">
@@ -690,7 +704,12 @@ function TrendingPanel({ articles }: { articles: any[] }) {
       {/* Vertical list on desktop */}
       <div className="hidden lg:block divide-y divide-gray-50 dark:divide-gray-800">
         {trending.map((article, i) => (
-          <Link key={article.id} href={`/article/${article.slug || article.id}`} className="flex items-start gap-3 px-5 py-4 hover:bg-gray-50 dark:hover:bg-white/[0.03] transition-colors group">
+          <Link 
+            key={article.id} 
+            href={`/article/${article.slug || article.id}`} 
+            onClick={handleArticleClick(article)}
+            className="flex items-start gap-3 px-5 py-4 hover:bg-gray-50 dark:hover:bg-white/[0.03] transition-colors group"
+          >
             <span className="text-lg font-black text-gray-200 dark:text-gray-700 w-6 flex-shrink-0 text-right tabular-nums">{i + 1}</span>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 line-clamp-2 group-hover:text-[#1890FF] transition-colors leading-snug">{article.title}</p>

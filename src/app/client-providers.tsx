@@ -21,6 +21,10 @@ import { PremiumConversionModal } from "@/components/premium-conversion-modal";
 import { AuthModals } from "@/components/auth-modals";
 import { useAuthModalStore } from "@/lib/stores/auth-store";
 import { Toaster } from "sonner";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/sidebar/app-sidebar";
+import { useAuthStore } from "@/lib/stores/auth-store";
+import { ActiveArticleDrawer } from "@/components/active-article-drawer";
 
 import { useState, useEffect } from "react";
 export function ClientLayoutProviders({
@@ -57,7 +61,9 @@ export function ClientLayoutProviders({
   const isArticlePage = pathname.startsWith("/article/");
   const countrySlugs = ["chile", "argentina", "colombia", "brasil", "ecuador", "mexico"];
   const isCountryPage = countrySlugs.some(slug => pathname === `/${slug}` || pathname.startsWith(`/${slug}/`));
-  const isSidebarPage = isStaticSidebar || isArticlePage || isCountryPage;
+  const isSidebarRoute = isStaticSidebar || isArticlePage || isCountryPage;
+  const { isAuthenticated, isLoaded: authLoaded } = useAuthStore();
+  const isSidebarPage = isSidebarRoute && (!authLoaded || isAuthenticated);
   const isFullscreenPage = isSidebarPage;
   const isAssistantPage = pathname === "/ai" || pathname === "/ai/agentes";
   const isAdminPage = pathname.startsWith("/admin");
@@ -81,7 +87,18 @@ export function ClientLayoutProviders({
               transition: 'margin-right 0.3s ease-in-out',
             }}
           >
-            {children}
+            {isSidebarPage ? (
+              <SidebarProvider>
+                <AppSidebar />
+                <SidebarInset>
+                  <div className="flex flex-col h-full min-h-screen overflow-y-auto overflow-x-hidden">
+                    {children}
+                  </div>
+                </SidebarInset>
+              </SidebarProvider>
+            ) : (
+              children
+            )}
           </main>
           {!isFullscreenPage && !isAdminPage && !isLandingPage && <Footer />}
           {!isFullscreenPage && !isAdminPage && !isLandingPage && <MobileBottomNav />}
@@ -91,6 +108,7 @@ export function ClientLayoutProviders({
           {!isAdminPage && <AudioPlayerSidebar />}
           {!isAdminPage && <AIChatSidebar />}
           <AuthToast />
+          {!isAdminPage && <ActiveArticleDrawer />}
           {!isAdminPage && <ReadingListWidget />}
           {!isAdminPage && <ResolvedBetsPopup />}
           <PremiumConversionModal />

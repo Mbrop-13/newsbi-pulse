@@ -17,6 +17,13 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
+function getLogoUrl(symbol: string): string {
+  return `https://assets.parqet.com/logos/symbol/${symbol}`;
+}
+function getFallbackLogo(symbol: string): string {
+  return `https://ui-avatars.com/api/?name=${symbol}&background=1890FF&color=fff&bold=true&size=96`;
+}
+
 interface SearchDialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -373,8 +380,8 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
                             onClick={() => handleSelectAsset(asset.symbol)}
                             className="w-full flex items-center gap-3 px-5 py-2.5 hover:bg-[#1890FF]/5 transition-colors text-left group"
                           >
-                            <div className="w-10 h-10 rounded-lg bg-[#1890FF]/10 text-[#1890FF] flex items-center justify-center flex-shrink-0">
-                              <span className="text-xs font-bold">{asset.symbol.substring(0, 3)}</span>
+                            <div className="w-10 h-10 rounded-lg group-hover:rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden border border-gray-200 dark:border-gray-700 shrink-0 transition-all duration-300">
+                              <img src={getLogoUrl(asset.symbol)} alt="" onError={(e) => { e.currentTarget.src = getFallbackLogo(asset.symbol); }} className="w-full h-full object-contain group-hover:rounded-full transition-all duration-300" />
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-bold text-foreground truncate">{asset.symbol} <span className="text-xs font-medium text-muted-foreground ml-1">{asset.exchange}</span></p>

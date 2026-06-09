@@ -1,16 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { Clock, Radio, ShieldCheck } from "lucide-react";
+import { Clock, Radio, ShieldCheck, MoreVertical, Bookmark, Headphones, Copy, Share2, Check } from "lucide-react";
 import { NewsArticle } from "@/lib/types";
 import { formatDate, getFallbackImage } from "@/lib/utils";
-import { BookmarkButton } from "./bookmark-button";
-import { ReadingListButton } from "./reading-list-button";
 import ReactMarkdown from "react-markdown";
 import { ExpandableSources } from "./expandable-sources";
 import { useViewStore } from "@/lib/stores/use-view-store";
+import { useBookmarkStore } from "@/lib/stores/bookmark-store";
+import { useReadingListStore } from "@/lib/stores/use-reading-list-store";
+import { useAuthStore } from "@/lib/stores/auth-store";
+import { useAuthToastStore } from "@/lib/stores/auth-toast-store";
+import { toast } from "sonner";
 
 interface NewsCardProps {
   article: NewsArticle;
@@ -23,6 +26,84 @@ export function NewsCard({ article, index, layout = "default" }: NewsCardProps) 
   const { showImages, fontSize } = useViewStore();
   const [imgError, setImgError] = useState(false);
 
+  const [showMenu, setShowMenu] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const { isBookmarked, toggleBookmark } = useBookmarkStore();
+  const { isAuthenticated } = useAuthStore();
+  const { showToast } = useAuthToastStore();
+  const bookmarked = isBookmarked(article.id);
+
+  const { addToQueue, removeFromQueue, queue } = useReadingListStore();
+  const isInQueue = queue.some(q => q.id === article.id);
+
+  const handleToggleBookmark = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isAuthenticated) {
+      showToast("Inicia sesión para poder guardar noticias.");
+      return;
+    }
+    toggleBookmark(article.id);
+    toast.success(bookmarked ? "Quitado de favoritos." : "Guardado en favoritos.");
+  };
+
+  const handleToggleReadingList = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isAuthenticated) {
+      showToast("Inicia sesión para escuchar noticias.");
+      return;
+    }
+    if (isInQueue) {
+      removeFromQueue(article.id);
+      toast.success("Quitado de tu lista de reproducción.");
+    } else {
+      addToQueue({
+        id: article.id,
+        title: article.title,
+        category: article.category,
+        image_url: article.image_url || undefined,
+        slug: article.slug,
+        published_at: article.published_at,
+        source: article.sources?.[0]?.name
+      });
+      toast.success("Añadido a tu lista de reproducción.");
+    }
+  };
+
+  const handleCopyLink = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const url = `${window.location.origin}/article/${article.slug || article.id}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      toast.success("Enlace copiado al portapapeles.");
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {
+      toast.error("Error al copiar enlace.");
+    });
+  };
+
+  const handleShare = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const url = `${window.location.origin}/article/${article.slug || article.id}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: article.title,
+          text: article.summary || undefined,
+          url: url,
+        });
+      } catch (err) {
+        // share cancelled
+      }
+    } else {
+      handleCopyLink(e);
+    }
+  };
+
   const titleSizeClass = 
     layout === 'featured' ? 'text-2xl sm:text-3xl md:text-4xl' :
     layout === 'compact' ? 'text-lg' :
@@ -33,7 +114,70 @@ export function NewsCard({ article, index, layout = "default" }: NewsCardProps) 
 
   if (layout === 'traditional') {
     return (
-      <article className="group flex flex-col gap-3 py-6 border-b border-gray-200 dark:border-gray-800">
+      <article className="group flex flex-col gap-3 py-6 border-b border-gray-200 dark:border-gray-800 relative">
+        {/* Floating Action Menu */}
+        <div className="absolute top-6 right-0 z-30">
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setShowMenu(!showMenu);
+            }}
+            className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white flex items-center justify-center transition-colors shadow-sm"
+          >
+            <MoreVertical className="w-4 h-4" />
+          </button>
+          
+          {/* Context Dropdown */}
+          <AnimatePresence>
+            {showMenu && (
+              <>
+                <div className="fixed inset-0 z-35" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowMenu(false); }} />
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 mt-1 w-44 rounded-xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-gray-150 dark:border-gray-800 shadow-xl z-40 py-1 overflow-hidden"
+                >
+                  <button
+                    onClick={handleToggleBookmark}
+                    className={`w-full text-left px-3 py-2.5 text-xs font-bold transition-colors flex items-center gap-2 ${
+                      bookmarked ? 'text-[#1890FF]' : 'text-gray-700 dark:text-gray-300'
+                    } hover:bg-gray-100 dark:hover:bg-slate-800`}
+                  >
+                    <Bookmark className={`w-3.5 h-3.5 ${bookmarked ? 'fill-current' : ''}`} />
+                    {bookmarked ? "Guardado" : "Guardar favorito"}
+                  </button>
+                  <button
+                    onClick={handleToggleReadingList}
+                    className={`w-full text-left px-3 py-2.5 text-xs font-bold transition-colors flex items-center gap-2 ${
+                      isInQueue ? 'text-[#1890FF]' : 'text-gray-700 dark:text-gray-300'
+                    } hover:bg-gray-100 dark:hover:bg-slate-800`}
+                  >
+                    <Headphones className="w-3.5 h-3.5" />
+                    {isInQueue ? "Escuchando" : "Escuchar audio"}
+                  </button>
+                  <button
+                    onClick={handleCopyLink}
+                    className="w-full text-left px-3 py-2.5 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
+                  >
+                    {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copied ? "Copiado!" : "Copiar enlace"}
+                  </button>
+                  <button
+                    onClick={handleShare}
+                    className="w-full text-left px-3 py-2.5 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
+                  >
+                    <Share2 className="w-3.5 h-3.5" />
+                    Compartir
+                  </button>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
+        </div>
+
         <Link href={`/article/${article.slug || article.id}`} className="group-hover:opacity-80 transition-opacity flex flex-col gap-3 focus:outline-none">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs font-bold uppercase tracking-widest text-[#1890FF]">{article.category}</span>
@@ -83,6 +227,69 @@ export function NewsCard({ article, index, layout = "default" }: NewsCardProps) 
         layout !== 'default' ? 'h-full' : ''
       }`}
     >
+      {/* Floating Action Menu */}
+      <div className="absolute top-3 right-3 z-30 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setShowMenu(!showMenu);
+          }}
+          className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-md text-white hover:bg-[#1890FF] hover:text-white border-none flex items-center justify-center transition-colors shadow-md"
+        >
+          <MoreVertical className="w-4 h-4" />
+        </button>
+        
+        {/* Context Dropdown */}
+        <AnimatePresence>
+          {showMenu && (
+            <>
+              <div className="fixed inset-0 z-35" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowMenu(false); }} />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                transition={{ duration: 0.15 }}
+                className="absolute right-0 mt-1 w-44 rounded-xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-gray-150 dark:border-gray-800 shadow-xl z-40 py-1 overflow-hidden"
+              >
+                <button
+                  onClick={handleToggleBookmark}
+                  className={`w-full text-left px-3 py-2 text-xs font-bold transition-colors flex items-center gap-2 ${
+                    bookmarked ? 'text-[#1890FF]' : 'text-gray-700 dark:text-gray-300'
+                  } hover:bg-gray-100 dark:hover:bg-slate-800`}
+                >
+                  <Bookmark className={`w-3.5 h-3.5 ${bookmarked ? 'fill-current' : ''}`} />
+                  {bookmarked ? "Guardado" : "Guardar favorito"}
+                </button>
+                <button
+                  onClick={handleToggleReadingList}
+                  className={`w-full text-left px-3 py-2 text-xs font-bold transition-colors flex items-center gap-2 ${
+                    isInQueue ? 'text-[#1890FF]' : 'text-gray-700 dark:text-gray-300'
+                  } hover:bg-gray-100 dark:hover:bg-slate-800`}
+                >
+                  <Headphones className="w-3.5 h-3.5" />
+                  {isInQueue ? "Escuchando" : "Escuchar audio"}
+                </button>
+                <button
+                  onClick={handleCopyLink}
+                  className="w-full text-left px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? "Copiado!" : "Copiar enlace"}
+                </button>
+                <button
+                  onClick={handleShare}
+                  className="w-full text-left px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  Compartir
+                </button>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+      </div>
+
       <Link href={`/article/${article.slug || article.id}`} className="flex flex-col flex-1 relative focus:outline-none">
         
         {/* Floating Ripple Effect Layer (Subtle click action) */}
@@ -109,22 +316,6 @@ export function NewsCard({ article, index, layout = "default" }: NewsCardProps) 
                 En Vivo
               </div>
             )}
-            
-            <div className="absolute top-3 right-3 flex items-center gap-2 z-20 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-              <ReadingListButton 
-                article={{
-                  id: article.id,
-                  title: article.title,
-                  category: article.category,
-                  image_url: article.image_url || undefined,
-                  slug: article.slug,
-                  published_at: article.published_at,
-                  source: article.sources?.[0]?.name
-                }}
-                className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-md text-white hover:bg-[#1890FF] hover:text-white border-none" 
-              />
-              <BookmarkButton articleId={article.id} className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-md text-white hover:bg-[#1890FF] hover:text-white border-none" />
-            </div>
           </div>
         )}
 

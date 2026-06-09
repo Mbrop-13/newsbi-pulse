@@ -575,6 +575,75 @@ export async function POST(req: NextRequest) {
             return { type, title, data, xLabel, yLabel };
           }
         }),
+
+        create_price_alert: tool({
+          description: 'Crea una alerta de precio para una acción específica. Informa al usuario que la alerta se enviará por correo electrónico (email) cuando el precio alcance el objetivo.',
+          parameters: z.object({
+            symbol: z.string().describe('Ticker de la acción, ej: AAPL, TSLA'),
+            targetPrice: z.number().describe('Precio objetivo para activar la alerta'),
+            condition: z.enum(['above', 'below']).optional().describe('Condición de activación: "above" si se espera que suba hasta ese precio, o "below" si se espera que caiga hasta ese precio. Si no se especifica, se calculará automáticamente comparando con el precio actual.')
+          }),
+          execute: async ({ symbol, targetPrice, condition }) => {
+            try {
+              const sc = await createClient();
+              const s = symbol.toUpperCase();
+              
+              // 1. Check plan limits
+              const limitCheck = await checkLimit(user.id, "price_alert");
+              if (!limitCheck.allowed) {
+                return {
+                  success: false,
+                  error: "Límite de alertas alcanzado",
+                  upgradeRequired: limitCheck.upgradeRequired,
+                  message: `Has alcanzado el límite de tu plan (${limitCheck.limit} alertas activas). Actualiza tu plan para crear más alertas.`
+                };
+              }
+
+              // 2. Auto-detect condition if not provided
+              let finalCondition = condition;
+              if (!finalCondition) {
+                try {
+                  const quote = await yf.quote(s);
+                  const currentPrice = quote?.regularMarketPrice;
+                  if (currentPrice) {
+                    finalCondition = targetPrice >= currentPrice ? 'above' : 'below';
+                  } else {
+                    finalCondition = 'above';
+                  }
+                } catch {
+                  finalCondition = 'above';
+                }
+              }
+
+              // 3. Insert into database
+              const { data, error } = await sc
+                .from("price_alerts")
+                .insert({
+                  user_id: user.id,
+                  symbol: s,
+                  target_price: targetPrice,
+                  condition: finalCondition,
+                  is_active: true
+                })
+                .select()
+                .single();
+
+              if (error) {
+                console.error("[create_price_alert] DB Error:", error);
+                return { success: false, error: error.message };
+              }
+
+              return {
+                success: true,
+                alert: data,
+                message: `Alerta creada con éxito para ${s} a $${targetPrice} (${finalCondition === 'above' ? 'por encima' : 'por debajo'}). Se notificará al correo electrónico registrado.`
+              };
+            } catch (err: any) {
+              console.error("[create_price_alert] Error:", err);
+              return { success: false, error: err.message || String(err) };
+            }
+          }
+        }),
       },
       onFinish: async ({ text, usage, finishReason }) => {
         // Only count usage if the model actually produced a response

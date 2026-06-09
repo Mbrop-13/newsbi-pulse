@@ -363,8 +363,8 @@ export default function PortfolioClient() {
                           <button key={res.symbol} onClick={() => !alreadyAdded && addAsset(res.symbol, res.shortname || res.longname || res.symbol)} disabled={alreadyAdded}
                             className={`w-full text-left px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between group transition-colors ${alreadyAdded ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-50 dark:hover:bg-slate-800"}`}>
                             <div className="flex items-center gap-3">
-                              <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden border border-gray-200 dark:border-gray-700 shrink-0">
-                                <img src={getLogoUrl(res.symbol)} alt="" onError={(e) => { e.currentTarget.src = getFallbackLogo(res.symbol); }} className="w-full h-full object-contain" />
+                              <div className="w-9 h-9 rounded-lg group-hover:rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden border border-gray-200 dark:border-gray-700 shrink-0 transition-all duration-300">
+                                <img src={getLogoUrl(res.symbol)} alt="" onError={(e) => { e.currentTarget.src = getFallbackLogo(res.symbol); }} className="w-full h-full object-contain group-hover:rounded-full transition-all duration-300" />
                               </div>
                               <div>
                                 <div className="font-bold text-gray-900 dark:text-white group-hover:text-[#1890FF] transition-colors text-sm">{res.symbol}</div>
@@ -398,12 +398,12 @@ export default function PortfolioClient() {
                     const isPositive = (asset.changePercent || 0) >= 0;
                     const isExpanded = expandedAsset === asset.symbol;
                     return (
-                      <motion.div key={asset.id} layout className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden hover:border-[#1890FF]/30 transition-colors">
+                      <motion.div key={asset.id} layout className="group bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden hover:border-[#1890FF]/30 transition-colors">
                         {/* Main Row */}
                         <button onClick={() => setExpandedAsset(isExpanded ? null : asset.symbol)} className="w-full p-4 sm:px-5 flex items-center justify-between text-left">
                           <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden shrink-0 border border-gray-200 dark:border-gray-700">
-                              <img src={asset.logo || getLogoUrl(asset.symbol)} alt={asset.symbol} onError={(e) => { e.currentTarget.src = getFallbackLogo(asset.symbol); }} className="w-full h-full object-contain" />
+                            <div className="w-12 h-12 rounded-xl group-hover:rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden shrink-0 border border-gray-200 dark:border-gray-700 transition-all duration-300">
+                              <img src={asset.logo || getLogoUrl(asset.symbol)} alt={asset.symbol} onError={(e) => { e.currentTarget.src = getFallbackLogo(asset.symbol); }} className="w-full h-full object-contain group-hover:rounded-full transition-all duration-300" />
                             </div>
                             <div>
                               <h3 className="font-bold text-gray-900 dark:text-white text-base leading-tight">{asset.symbol}</h3>
@@ -426,11 +426,11 @@ export default function PortfolioClient() {
                         <AnimatePresence>
                           {isExpanded && (
                             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}>
-                              <div className="px-5 pb-4 pt-1 border-t border-gray-100 dark:border-gray-800">
-                                {/* Shares Row */}
-                                <div className="flex items-center gap-3 mt-3 mb-3">
-                                  <div className="flex-1">
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Acciones</label>
+                              <div className="px-5 pb-4 pt-1 border-t border-gray-150 dark:border-gray-800/80">
+                                {/* Inputs: Shares & Average Purchase Price */}
+                                <div className="grid grid-cols-2 gap-3 mt-3 mb-4">
+                                  <div>
+                                    <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider block mb-1">Acciones</label>
                                     <input type="number" step="any" min="0" placeholder="0" defaultValue={asset.shares || ""}
                                       onKeyDown={(e) => {
                                         if (e.key === 'Enter') {
@@ -444,29 +444,90 @@ export default function PortfolioClient() {
                                       }}
                                       className={`w-full px-3 py-2 rounded-lg border text-sm font-bold outline-none transition-all ${
                                         (asset.shares || 0) > 0 
-                                          ? "border-[#1890FF] bg-[#1890FF]/10 text-[#1890FF] focus:bg-white dark:focus:bg-slate-800 focus:text-gray-900 dark:focus:text-white focus:border-[#1890FF]" 
+                                          ? "border-[#1890FF] bg-[#1890FF]/5 text-[#1890FF] focus:bg-white dark:focus:bg-slate-800 focus:text-gray-900 dark:focus:text-white focus:border-[#1890FF]" 
                                           : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white focus:border-[#1890FF]"
                                       }`} />
                                   </div>
-                                  {(asset.shares || 0) > 0 && (asset.price || 0) > 0 && (
-                                    <div className="flex-1 text-right">
-                                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Posición</label>
-                                      <p className="text-sm font-black text-gray-900 dark:text-white">${((asset.shares || 0) * (asset.price || 0)).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                                    </div>
-                                  )}
+                                  <div>
+                                    <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider block mb-1">Precio Promedio ($)</label>
+                                    <input type="number" step="any" min="0" placeholder="0.00" defaultValue={asset.average_price || ""}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          e.currentTarget.blur();
+                                        }
+                                      }}
+                                      onBlur={async (e) => {
+                                        const val = parseFloat(e.target.value) || 0;
+                                        setAssets(prev => prev.map(a => a.id === asset.id ? { ...a, average_price: val } : a));
+                                        await supabase.from("portfolios").update({ average_price: val }).eq("id", asset.id);
+                                      }}
+                                      className={`w-full px-3 py-2 rounded-lg border text-sm font-bold outline-none transition-all ${
+                                        (asset.average_price || 0) > 0 
+                                          ? "border-[#1890FF] bg-[#1890FF]/5 text-[#1890FF] focus:bg-white dark:focus:bg-slate-800 focus:text-gray-900 dark:focus:text-white focus:border-[#1890FF]" 
+                                          : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white focus:border-[#1890FF]"
+                                      }`} />
+                                  </div>
                                 </div>
 
+                                {/* Premium Broker Position Dashboard */}
+                                {(asset.shares || 0) > 0 && (
+                                  (() => {
+                                    const shares = asset.shares || 0;
+                                    const price = asset.price || 0;
+                                    const avgPrice = asset.average_price || 0;
+                                    const positionValue = shares * price;
+                                    const totalCost = shares * avgPrice;
+                                    const pnlVal = avgPrice > 0 ? positionValue - totalCost : 0;
+                                    const pnlPct = avgPrice > 0 ? ((price - avgPrice) / avgPrice) * 100 : 0;
+                                    const isPnlPositive = pnlVal >= 0;
+
+                                    return (
+                                      <div className="bg-slate-50/70 dark:bg-slate-900/40 backdrop-blur-md rounded-2xl border border-gray-150 dark:border-gray-800/80 p-4 mb-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                        <div className="space-y-0.5">
+                                          <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Valor Posición</span>
+                                          <span className="text-sm sm:text-base font-extrabold text-gray-900 dark:text-white tabular-nums">
+                                            ${positionValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                          </span>
+                                        </div>
+                                        <div className="space-y-0.5">
+                                          <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Costo Total</span>
+                                          <span className="text-sm sm:text-base font-semibold text-gray-700 dark:text-gray-300 tabular-nums">
+                                            {avgPrice > 0 ? `$${totalCost.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "N/A"}
+                                          </span>
+                                        </div>
+                                        <div className="space-y-0.5">
+                                          <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Precio Mercado</span>
+                                          <span className="text-sm sm:text-base font-semibold text-gray-700 dark:text-gray-300 tabular-nums">
+                                            ${price.toFixed(2)}
+                                          </span>
+                                        </div>
+                                        <div className="space-y-0.5">
+                                          <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Retorno (PnL)</span>
+                                          {avgPrice > 0 ? (
+                                            <div className={`flex items-center gap-1 text-sm sm:text-base font-extrabold tabular-nums ${isPnlPositive ? 'text-green-500' : 'text-red-500'}`}>
+                                              {isPnlPositive ? "+" : ""}${pnlVal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                              <span className="text-xs font-semibold">({isPnlPositive ? "+" : ""}{pnlPct.toFixed(2)}%)</span>
+                                            </div>
+                                          ) : (
+                                            <span className="text-xs font-medium text-gray-400 dark:text-gray-500">Añade precio promedio</span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })()
+                                )}
+
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                  <button onClick={(e) => { e.stopPropagation(); setAlertModal({ open: true, symbol: asset.symbol, price: asset.price || 0 }); setAlertForm({ targetPrice: "", condition: "above" }); }} className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 text-xs font-semibold hover:bg-orange-100 dark:hover:bg-orange-500/20 transition-colors">
+                                  <button onClick={(e) => { e.stopPropagation(); setAlertModal({ open: true, symbol: asset.symbol, price: asset.price || 0 }); setAlertForm({ targetPrice: "", condition: "above" }); }} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 text-xs font-bold hover:bg-orange-100 dark:hover:bg-orange-500/20 active:scale-[0.98] transition-all duration-200 border border-orange-200/40 dark:border-orange-500/20 shadow-sm">
                                     <Bell className="w-3.5 h-3.5" /> Alerta de Precio
                                   </button>
-                                  <Link href={`/mercados/${asset.symbol}`} className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-semibold hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors">
+                                  <Link href={`/mercados/${asset.symbol}`} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-bold hover:bg-blue-100 dark:hover:bg-blue-500/20 active:scale-[0.98] transition-all duration-200 border border-blue-200/40 dark:border-blue-500/20 shadow-sm">
                                     <BarChart3 className="w-3.5 h-3.5" /> Ver Mercado
                                   </Link>
-                                  <Link href={`/?tag=${asset.symbol}`} className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 text-xs font-semibold hover:bg-purple-100 dark:hover:bg-purple-500/20 transition-colors">
+                                  <Link href={`/?tag=${asset.symbol}`} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 text-xs font-bold hover:bg-purple-100 dark:hover:bg-purple-500/20 active:scale-[0.98] transition-all duration-200 border border-purple-200/40 dark:border-purple-500/20 shadow-sm">
                                     <ExternalLink className="w-3.5 h-3.5" /> Noticias
                                   </Link>
-                                  <button onClick={() => removeAsset(asset.symbol)} className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-500 text-xs font-semibold hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors">
+                                  <button onClick={() => removeAsset(asset.symbol)} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-500 text-xs font-bold hover:bg-red-100 dark:hover:bg-red-500/20 active:scale-[0.98] transition-all duration-200 border border-red-200/40 dark:border-red-500/20 shadow-sm">
                                     <Trash2 className="w-3.5 h-3.5" /> Eliminar
                                   </button>
                                 </div>

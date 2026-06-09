@@ -22,6 +22,7 @@ import { AnalyzedNewsCard } from './analyzed-news-card';
 import { PortfolioSummaryCard } from './portfolio-summary-card';
 import { StockAnalysisCard } from './stock-analysis-card';
 import { AIChartCard } from './ai-chart-card';
+import { PriceAlertCard } from './price-alert-card';
 import { PromptCarousel } from './prompt-carousel';
 import { ShareChatDialog } from './share-chat-dialog';
 import { MiroFishSandbox } from "./mirofish-sandbox";
@@ -1455,6 +1456,9 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                             }
                             if (toolInvocation.toolName === 'render_chart') {
                               return <AIChartCard key={toolInvocation.toolCallId} result={toolInvocation.result} />;
+                            }
+                            if (toolInvocation.toolName === 'create_price_alert') {
+                              return <PriceAlertCard key={toolInvocation.toolCallId} result={toolInvocation.result} />;
                             }
                             return <AnalyzedNewsCard key={toolInvocation.toolCallId} toolName={toolInvocation.toolName} result={toolInvocation.result} />;
                           }

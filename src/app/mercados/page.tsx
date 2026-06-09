@@ -3,11 +3,27 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Activity, Flame, Eye, ArrowUpRight, TrendingUp, Newspaper, ExternalLink } from "lucide-react";
+import { Activity, Flame, Eye, ArrowUpRight, TrendingUp, Newspaper, ExternalLink, MoreVertical, Plus, Bell, Loader2, X } from "lucide-react";
 import { TickerTape } from "@/components/tradingview/ticker-tape";
 import { SymbolOverview, CHILE_SYMBOLS, GLOBAL_SYMBOLS, TENDENCIA_SYMBOLS } from "@/components/tradingview/market-overview";
 import { MiniChart } from "@/components/tradingview/mini-chart";
 import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
+
+// Mapping TradingView symbols to Yahoo Finance symbols for portfolio & alerts compatibility
+function toYahooSymbol(tvSymbol: string): string {
+  const map: Record<string, string> = {
+    "BCS:SP_IPSA": "^IPSA",
+    "FX:USDCLP": "USDCLP=X",
+    "CAPITALCOM:COPPER": "HG=F",
+    "NYSE:SQM": "SQM",
+    "FOREXCOM:SPXUSD": "^GSPC",
+    "FOREXCOM:NSXUSD": "^IXIC",
+    "BITSTAMP:BTCUSD": "BTC-USD",
+    "OANDA:XAUUSD": "GC=F",
+  };
+  return map[tvSymbol] || tvSymbol.split(":").pop() || tvSymbol;
+}
 
 /* ΓöÇΓöÇ Mini-Charts Data ΓöÇΓöÇ */
 const SPOTLIGHT_CHILE = [
@@ -43,6 +59,96 @@ export default function MercadosPage() {
   const [activeTab, setActiveTab] = useState<TabId>("chile");
   const [articles, setArticles] = useState<any[]>([]);
   const supabase = createClient();
+
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [alertModal, setAlertModal] = useState<{ open: boolean; symbol: string; currentPrice?: number }>({ open: false, symbol: "" });
+  const [alertPrice, setAlertPrice] = useState<string>("");
+  const [alertCondition, setAlertCondition] = useState<"above" | "below">("above");
+  const [isCreatingAlert, setIsCreatingAlert] = useState(false);
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user) {
+        setUser(data.user);
+      }
+    });
+  }, []);
+
+  const handleAddToPortfolio = async (symbol: string, companyName: string) => {
+    if (!user) {
+      toast.error("Debes iniciar sesión para agregar activos a tu portafolio.");
+      return;
+    }
+    try {
+      const { data: existing } = await supabase
+        .from("portfolios")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("symbol", symbol)
+        .maybeSingle();
+
+      if (existing) {
+        toast.error(`${symbol} ya está en tu portafolio.`);
+        return;
+      }
+
+      const { error } = await supabase.from("portfolios").insert({
+        user_id: user.id,
+        symbol,
+        company_name: companyName
+      });
+      if (error) throw error;
+      toast.success(`${symbol} agregado a tu portafolio con éxito.`);
+    } catch (e: any) {
+      toast.error("Error al agregar a portafolio: " + (e.message || String(e)));
+    }
+  };
+
+  const handleOpenAlertModal = async (symbol: string) => {
+    setAlertModal({ open: true, symbol });
+    setAlertPrice("");
+    setAlertCondition("above");
+    try {
+      const res = await fetch(`/api/finance/portfolio?symbols=${symbol}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.length > 0) {
+          const price = data[0].price || 0;
+          setAlertModal({ open: true, symbol, currentPrice: price });
+          setAlertPrice(price.toFixed(2));
+        }
+      }
+    } catch (e) {
+      console.error("Error fetching price for alert:", e);
+    }
+  };
+
+  const handleCreateAlert = async () => {
+    if (!user || !alertModal.symbol) return;
+    const targetPrice = parseFloat(alertPrice);
+    if (isNaN(targetPrice) || targetPrice <= 0) {
+      toast.error("Por favor ingresa un precio objetivo válido.");
+      return;
+    }
+    setIsCreatingAlert(true);
+    try {
+      const { error } = await supabase.from("price_alerts").insert({
+        user_id: user.id,
+        symbol: alertModal.symbol,
+        target_price: targetPrice,
+        condition: alertCondition,
+        is_active: true
+      });
+      if (error) throw error;
+      toast.success(`Alerta creada para ${alertModal.symbol} a $${targetPrice}`);
+      setAlertModal({ open: false, symbol: "" });
+    } catch (e: any) {
+      toast.error("Error al crear la alerta: " + (e.message || String(e)));
+    } finally {
+      setIsCreatingAlert(false);
+    }
+  };
 
   useEffect(() => {
     const fetchNews = async () => {
@@ -288,13 +394,94 @@ export default function MercadosPage() {
             </h2>
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {(activeTab === "chile" ? SPOTLIGHT_CHILE : SPOTLIGHT_GLOBAL).map(s => (
-              <Link key={s.symbol} href={`/mercados/${encodeURIComponent(s.symbol)}`} className="relative group block">
-                <MiniChart symbol={s.symbol} height={200} />
-                {/* Full-height transparent overlay ΓÇö redirects to our page instead of TradingView */}
-                <div className="absolute inset-0 z-10 cursor-pointer rounded-2xl group-hover:bg-[#1890FF]/5 transition-colors" />
-              </Link>
-            ))}
+            {(activeTab === "chile" ? SPOTLIGHT_CHILE : SPOTLIGHT_GLOBAL).map(s => {
+              const yahooSymbol = toYahooSymbol(s.symbol);
+              return (
+                <div key={s.symbol} className="relative group rounded-2xl overflow-hidden bg-white dark:bg-[#1A1A1E] border border-gray-200 dark:border-white/5 shadow-sm hover:border-[#1890FF]/30 transition-all duration-300">
+                  {/* Clickable Area for Mini Chart */}
+                  <Link href={`/mercados/${encodeURIComponent(s.symbol)}`} className="block">
+                    <MiniChart symbol={s.symbol} height={200} />
+                    {/* Visual Overlay */}
+                    <div className="absolute inset-0 z-0 cursor-pointer rounded-2xl group-hover:bg-[#1890FF]/5 transition-colors" />
+                  </Link>
+
+                  {/* Floating Action Button (Three dots / Gear) */}
+                  <div className="absolute top-3 right-3 z-20">
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setActiveDropdown(activeDropdown === s.symbol ? null : s.symbol);
+                      }}
+                      className="p-1.5 rounded-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-gray-200 dark:border-gray-800 shadow-md text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
+                    >
+                      <MoreVertical className="w-4 h-4" />
+                    </button>
+                    
+                    {/* Context Dropdown */}
+                    <AnimatePresence>
+                      {activeDropdown === s.symbol && (
+                        <>
+                          {/* Backdrop to close click */}
+                          <div 
+                            className="fixed inset-0 z-30" 
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setActiveDropdown(null);
+                            }} 
+                          />
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                            transition={{ duration: 0.15 }}
+                            className="absolute right-0 mt-1.5 w-48 rounded-xl bg-white/95 dark:bg-slate-950/95 backdrop-blur-lg border border-gray-150 dark:border-gray-800/80 shadow-xl z-40 py-1 overflow-hidden"
+                          >
+                            <button
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setActiveDropdown(null);
+                                await handleAddToPortfolio(yahooSymbol, s.label);
+                              }}
+                              className="w-full text-left px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-[#1890FF]/10 hover:text-[#1890FF] transition-colors flex items-center gap-2"
+                            >
+                              <Plus className="w-3.5 h-3.5" /> Agregar a Cartera
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setActiveDropdown(null);
+                                handleOpenAlertModal(yahooSymbol);
+                              }}
+                              className="w-full text-left px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-orange-500/10 hover:text-orange-500 transition-colors flex items-center gap-2"
+                            >
+                              <Bell className="w-3.5 h-3.5" /> Crear Alerta
+                            </button>
+                            <Link
+                              href={`/?tag=${encodeURIComponent(yahooSymbol)}`}
+                              className="w-full text-left px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-purple-500/10 hover:text-purple-500 transition-colors flex items-center gap-2"
+                              onClick={() => setActiveDropdown(null)}
+                            >
+                              <Newspaper className="w-3.5 h-3.5" /> Ver Noticias
+                            </Link>
+                            <Link
+                              href={`/mercados/${encodeURIComponent(s.symbol)}`}
+                              className="w-full text-left px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-blue-500/10 hover:text-blue-500 transition-colors flex items-center gap-2"
+                              onClick={() => setActiveDropdown(null)}
+                            >
+                              <Eye className="w-3.5 h-3.5" /> Ver Detalle
+                            </Link>
+                          </motion.div>
+                        </>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -348,6 +535,96 @@ export default function MercadosPage() {
         )}
 
       </div>
+
+      {/* Alert Modal */}
+      <AnimatePresence>
+        {alertModal.open && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setAlertModal({ open: false, symbol: "" })}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            {/* Modal Box */}
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative w-full max-w-md bg-white dark:bg-[#1A1A1E] rounded-3xl border border-gray-200 dark:border-white/5 p-6 shadow-2xl overflow-hidden z-10"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="font-bold text-lg text-gray-900 dark:text-white flex items-center gap-2">
+                    <Bell className="w-5 h-5 text-orange-500" /> Crear Alerta de Precio
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    {alertModal.symbol} {alertModal.currentPrice !== undefined && `• Precio actual: $${alertModal.currentPrice.toFixed(2)}`}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setAlertModal({ open: false, symbol: "" })}
+                  className="p-1 rounded-full text-gray-400 hover:text-gray-655 dark:hover:text-white hover:bg-gray-150/10 dark:hover:bg-white/5 transition-all"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Condition Selector */}
+              <div className="flex gap-2 mb-4">
+                <button
+                  onClick={() => setAlertCondition("above")}
+                  className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all ${
+                    alertCondition === "above"
+                      ? "border-green-500 bg-green-500/10 text-green-655 dark:text-green-400"
+                      : "border-gray-200 dark:border-white/5 text-gray-500 hover:bg-gray-50 dark:hover:bg-white/5"
+                  }`}
+                >
+                  Sube por encima de
+                </button>
+                <button
+                  onClick={() => setAlertCondition("below")}
+                  className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all ${
+                    alertCondition === "below"
+                      ? "border-red-500 bg-red-500/10 text-red-655 dark:text-red-400"
+                      : "border-gray-200 dark:border-white/5 text-gray-500 hover:bg-gray-50 dark:hover:bg-white/5"
+                  }`}
+                >
+                  Baja por debajo de
+                </button>
+              </div>
+
+              {/* Input Target Price */}
+              <div className="mb-4">
+                <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider block mb-1">Precio Objetivo ($)</label>
+                <input
+                  type="number"
+                  step="any"
+                  value={alertPrice}
+                  onChange={(e) => setAlertPrice(e.target.value)}
+                  placeholder={alertModal.currentPrice !== undefined ? alertModal.currentPrice.toFixed(2) : "0.00"}
+                  className="w-full px-4 py-3 rounded-2xl border border-gray-200 dark:border-white/5 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white text-lg font-bold outline-none focus:border-[#1890FF] focus:ring-2 focus:ring-[#1890FF]/20 transition-all"
+                />
+                <p className="text-[11px] text-gray-450 dark:text-gray-500 mt-2">
+                  Te enviaremos un correo electrónico cuando <strong>{alertModal.symbol}</strong> alcance este precio objetivo.
+                </p>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                onClick={handleCreateAlert}
+                disabled={isCreatingAlert || !alertPrice}
+                className="w-full py-3 bg-[#1890FF] text-white rounded-2xl font-bold text-sm hover:bg-[#1890FF]/90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#1890FF]/25 disabled:opacity-50"
+              >
+                {isCreatingAlert ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4" />}
+                {isCreatingAlert ? "Guardando..." : "Crear Alerta"}
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

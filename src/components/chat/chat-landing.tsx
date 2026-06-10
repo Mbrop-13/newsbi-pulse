@@ -229,6 +229,13 @@ export function ChatLanding() {
             toolInvocations: m.toolInvocations,
             reasoning: m.reasoning,
             citations: m.citations,
+            model: m.model,
+            isSwarmThinking: m.isSwarmThinking,
+            isCollapsed: m.isCollapsed,
+            secondsElapsed: m.secondsElapsed,
+            reasoningSteps: m.reasoningSteps,
+            timestamp: m.timestamp,
+            createdAt: m.timestamp ? new Date(m.timestamp) : undefined,
           })) as any
         )
       }
@@ -384,6 +391,10 @@ export function ChatLanding() {
       toolInvocations: m.toolInvocations,
       reasoning: reasoningText || undefined,
       citations: citationsList || [],
+      isSwarmThinking: (m as any).isSwarmThinking,
+      isCollapsed: (m as any).isCollapsed,
+      secondsElapsed: (m as any).secondsElapsed,
+      reasoningSteps: (m as any).reasoningSteps,
     };
   });
 

@@ -484,6 +484,15 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
           role: m.role,
           content: m.content,
           toolInvocations: m.toolInvocations,
+          citations: m.citations,
+          reasoning: m.reasoning,
+          model: m.model,
+          isSwarmThinking: m.isSwarmThinking,
+          isCollapsed: m.isCollapsed,
+          secondsElapsed: m.secondsElapsed,
+          reasoningSteps: m.reasoningSteps,
+          timestamp: m.timestamp,
+          createdAt: m.timestamp ? new Date(m.timestamp) : undefined,
         })) as any);
       } else if (!currentChatId) {
         // New chat / cleared
@@ -1036,6 +1045,14 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
       toolInvocations: m.toolInvocations,
       reasoning: reasoningText || undefined,
       citations: citationsList || [],
+      isSwarmThinking: (m as any).isSwarmThinking,
+      isCollapsed: (m as any).isCollapsed,
+      secondsElapsed: (m as any).secondsElapsed,
+      reasoningSteps: (m as any).reasoningSteps,
+      model: (m as any).model,
+      isSwarmLoadingPlaceholder: (m as any).isSwarmLoadingPlaceholder,
+      isThinking: (m as any).isThinking,
+      isDebateMsg: (m as any).isDebateMsg,
     };
   });
 

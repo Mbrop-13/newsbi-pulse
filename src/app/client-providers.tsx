@@ -34,12 +34,16 @@ export function ClientLayoutProviders({
 }) {
   const { isOpen: authModalOpen, view: authModalView, closeModal } = useAuthModalStore();
   const [isMobile, setIsMobile] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
   useEffect(() => {
+    setMounted(true);
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
+
   const pathname = usePathname();
   const isLandingPage = pathname === "/";
   // Pages that use the sidebar layout (no navbar/footer)
@@ -63,7 +67,7 @@ export function ClientLayoutProviders({
   const isCountryPage = countrySlugs.some(slug => pathname === `/${slug}` || pathname.startsWith(`/${slug}/`));
   const isSidebarRoute = isStaticSidebar || isArticlePage || isCountryPage;
   const { isAuthenticated, isLoaded: authLoaded } = useAuthStore();
-  const isSidebarPage = isSidebarRoute && (!authLoaded || isAuthenticated);
+  const isSidebarPage = isSidebarRoute && mounted && (!authLoaded || isAuthenticated);
   const isFullscreenPage = isSidebarPage;
   const isAssistantPage = pathname === "/ai" || pathname === "/ai/agentes";
   const isAdminPage = pathname.startsWith("/admin");

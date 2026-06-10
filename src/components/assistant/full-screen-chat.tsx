@@ -510,6 +510,15 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
   const isPremium = userTier === "max" || userTier === "ultra";
   const canUsePro = userTier !== "free"; // Only paid users can use Pro model
 
+  // Protect agents route if they are free tier
+  useEffect(() => {
+    if (initialMode === 'mirofish' && userTier === 'free') {
+      setShowUpsell(true);
+      setActiveChatMode('chat');
+      setSidebarTab('chats');
+    }
+  }, [initialMode, userTier]);
+
   const config = getPlanConfig(userTier);
   const proConfig = getPlanConfig("pro");
   const questionLimit = userTier === "free" ? config.aiLifetimeMessages : config.aiMessagesPerMonth;
@@ -754,7 +763,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
   }, [aiMessages, aiLoading, isUserAtBottom]);
 
   const handleModelSelect = (mId: 'fast' | 'pro' | 'agent') => {
-    if (mId === 'pro' && !canUsePro) {
+    if ((mId === 'pro' || mId === 'agent') && !canUsePro) {
       setShowUpsell(true);
       setShowModelMenu(false);
       return;
@@ -945,6 +954,10 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
     if (!text || aiLoading) return;
 
     if (selectedModel === 'agent') {
+      if (!canUsePro) {
+        setShowUpsell(true);
+        return;
+      }
       sendSwarmAgentMessage(textOverride || input.trim());
       return;
     }
@@ -1075,7 +1088,14 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                 <FileText className="w-3 h-3" /> Informes
                 {reports.some(r => !r.is_read) && <span className="absolute top-1 right-1.5 w-1.5 h-1.5 bg-[#1890FF] rounded-full animate-pulse" />}
               </button>
-              <button onClick={() => { setSidebarTab('agents'); setActiveChatMode('mirofish'); }} className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-bold transition-all ${activeChatMode === 'mirofish' ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm' : 'text-gray-550 hover:text-gray-750 dark:hover:text-gray-350'}`}>
+              <button onClick={() => { 
+                if (!canUsePro) {
+                  setShowUpsell(true);
+                  return;
+                }
+                setSidebarTab('agents'); 
+                setActiveChatMode('mirofish'); 
+              }} className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-bold transition-all ${activeChatMode === 'mirofish' ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm' : 'text-gray-550 hover:text-gray-750 dark:hover:text-gray-350'}`}>
                 <Users className="w-3 h-3" /> Agentes
               </button>
             </div>

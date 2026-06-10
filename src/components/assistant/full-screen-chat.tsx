@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, Sparkles, Loader2, ExternalLink, Paperclip, BarChart3, Newspaper, Bell, TrendingUp, X, Globe, History, Trash2, Plus, MessageSquare, PanelLeftClose, PanelLeft, Settings, Moon, Sun, Monitor, Type, Maximize, CheckCircle2, Mic, Star, LineChart, PieChart, AreaChart, Target, Scale, Layers, ThumbsUp, ThumbsDown, RefreshCw, Share2, ChevronRight, Clock, Zap, ArrowDown, Lock, Crown, Gift, ArrowRight, FileText, CalendarDays, Briefcase, Users, Search, GripVertical } from "lucide-react";
+import { Send, Bot, Sparkles, Loader2, ExternalLink, Paperclip, BarChart3, Newspaper, Bell, TrendingUp, X, Globe, Cloud, History, Trash2, Plus, MessageSquare, PanelLeftClose, PanelLeft, Settings, Moon, Sun, Monitor, Type, Maximize, CheckCircle2, Mic, Star, LineChart, PieChart, AreaChart, Target, Scale, Layers, ThumbsUp, ThumbsDown, RefreshCw, Share2, ChevronRight, Clock, Zap, ArrowDown, Lock, Crown, Gift, ArrowRight, FileText, CalendarDays, Briefcase, Users, Search, GripVertical, Chrome } from "lucide-react";
 
 import { useAIChatStore, ChatMessage, ToolResultUI } from "@/lib/stores/ai-chat-store";
 
@@ -27,7 +27,7 @@ import { PromptCarousel } from './prompt-carousel';
 import { ShareChatDialog } from './share-chat-dialog';
 import { MiroFishSandbox } from "./mirofish-sandbox";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, slugify } from "@/lib/utils";
 
 const ADVANCED_TOOLS = [
   { id: 'chart_bar', label: 'Gráfico de Barras', icon: BarChart3, category: 'Gráficos' },
@@ -156,7 +156,8 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
     cloudSyncEnabled, setCloudSync,
     favoriteTools, toggleFavoriteTool,
     activeTools, toggleTool, clearTools,
-    messageFeedback, setFeedback, currentChatId
+    messageFeedback, setFeedback, currentChatId,
+    fetchCloudChats
   } = useAIChatStore();
   
   const [showUpsell, setShowUpsell] = useState(false);
@@ -174,6 +175,88 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
   const [loadingPortfolio, setLoadingPortfolio] = useState(false);
   const [swarmLoading, setSwarmLoading] = useState(false);
   const [collapsedThoughts, setCollapsedThoughts] = useState<Record<string, boolean>>({});
+  const [browser, setBrowser] = useState(false);
+
+  // Google Drive Integration States
+  const [showDriveModal, setShowDriveModal] = useState(false);
+  const [driveFiles, setDriveFiles] = useState<any[]>([]);
+  const [loadingDrive, setLoadingDrive] = useState(false);
+  const [driveError, setDriveError] = useState<string | null>(null);
+  const [driveSearchQuery, setDriveSearchQuery] = useState("");
+  const [attachingDriveFile, setAttachingDriveFile] = useState<string | null>(null);
+
+  const fetchDriveFiles = async () => {
+    setLoadingDrive(true);
+    setDriveError(null);
+    try {
+      const res = await fetch("/api/user/drive");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Google Drive no conectado");
+      }
+      const data = await res.json();
+      setDriveFiles(data.files || []);
+    } catch (err: any) {
+      setDriveError(err.message || String(err));
+    } finally {
+      setLoadingDrive(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showDriveModal && user) {
+      fetchDriveFiles();
+    }
+  }, [showDriveModal, user]);
+
+  useEffect(() => {
+    const handleDriveMessage = (event: MessageEvent) => {
+      if (event.data === "google-drive-connected") {
+        fetchDriveFiles();
+      }
+    };
+    window.addEventListener("message", handleDriveMessage);
+    return () => window.removeEventListener("message", handleDriveMessage);
+  }, []);
+
+  const handleConnectDrive = () => {
+    const width = 600;
+    const height = 650;
+    const left = window.screen.width / 2 - width / 2;
+    const top = window.screen.height / 2 - height / 2;
+    window.open(
+      "/api/auth/google-drive/login",
+      "Conectar Google Drive",
+      `width=${width},height=${height},top=${top},left=${left}`
+    );
+  };
+
+  const handleAttachDriveFile = async (file: any) => {
+    setAttachingDriveFile(file.id);
+    try {
+      const res = await fetch("/api/user/drive", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileId: file.id }),
+      });
+      if (!res.ok) throw new Error("No se pudo descargar el archivo");
+      const data = await res.json();
+      
+      if (data.success && data.file) {
+        attachFile({
+          id: `drive-${file.id}`,
+          name: file.name,
+          content: data.file.content,
+        });
+        toast.success(`Archivo "${file.name}" adjuntado con éxito.`);
+        setShowDriveModal(false);
+      }
+    } catch {
+      toast.error("Error al adjuntar archivo");
+    } finally {
+      setAttachingDriveFile(null);
+    }
+  };
 
   const accumulatedReasoningRef = useRef<string>("");
   const accumulatedCitationsRef = useRef<string[]>([]);
@@ -260,13 +343,16 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
       if (activeChatMode === 'mirofish') {
         targetPath = '/ai/agentes';
       } else if (currentChatId) {
-        targetPath = `/ai/chat/${currentChatId}`;
+        const firstUserMsg = messages.find(m => m.role === 'user')?.content || '';
+        const title = firstUserMsg.slice(0, 40) || 'Nuevo Chat';
+        const slug = slugify(title);
+        targetPath = `/ai/chat/${slug ? `${slug}-` : ''}${currentChatId}`;
       }
       if (currentPath !== targetPath && !currentPath.startsWith('/share/')) {
         window.history.pushState(null, '', targetPath);
       }
     }
-  }, [activeChatMode, currentChatId]);
+  }, [activeChatMode, currentChatId, messages]);
 
   const loadSimulations = () => {
     if (typeof window !== "undefined") {
@@ -397,6 +483,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
       files: attachedFiles,
       modelId: selectedModel,
       activeTools: activeTools,
+      browser: browser,
     },
     onFinish: (message) => {
       clearTools();
@@ -421,13 +508,22 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
         const lastAssistantIdx = [...latestMessages].reverse().findIndex(m => m.role === 'assistant' || m.role === 'tool');
         const targetIdx = lastAssistantIdx !== -1 ? (latestMessages.length - 1 - lastAssistantIdx) : -1;
 
+        const firstMsgText = message.content || "";
+        const toolsCalled = message.toolInvocations || [];
+        const hasTools = toolsCalled.length > 0;
+        const finalContent = (firstMsgText.trim().length > 0)
+          ? firstMsgText
+          : hasTools
+            ? "He procesado los datos financieros solicitados y configurado los paneles interactivos correspondientes. Puedes revisar la información en los widgets de arriba."
+            : "Lo siento, la respuesta de la IA se detuvo inesperadamente sin generar texto. Por favor, intenta de nuevo.";
+
         const storeMessages: ChatMessage[] = latestMessages.map((m: any, idx: number) => {
           const isTarget = idx === targetIdx;
           if (isTarget) {
             return {
               id: message.id,
               role: "assistant",
-              content: message.content || m.content || "",
+              content: finalContent,
               timestamp: new Date(),
               model: selectedModel === "fast" ? "deepseek" : "grok",
               toolInvocations: message.toolInvocations || m.toolInvocations,
@@ -451,7 +547,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
           storeMessages.push({
             id: message.id,
             role: "assistant",
-            content: message.content,
+            content: finalContent,
             timestamp: new Date(),
             model: selectedModel === "fast" ? "deepseek" : "grok",
             toolInvocations: message.toolInvocations,
@@ -712,6 +808,9 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
           setHasPortfolio(data ? data.length > 0 : false);
         });
       fetchPortfolioDetails();
+      
+      // Load chats from Supabase on mount/login to prevent chat not found errors
+      useAIChatStore.getState().fetchCloudChats().catch(console.error);
     }
     
     // Auto-collapse sidebar on mobile
@@ -1041,6 +1140,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
         files: attachedFiles,
         modelId: selectedModel,
         activeTools: activeTools,
+        browser: browser,
         contextOverride: contextOverride || undefined
       }
     });
@@ -2222,6 +2322,14 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                   <button type="button" onClick={() => setShowAttachMenu(!showAttachMenu)} className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors z-30 ${showAttachMenu ? "bg-[#1890FF] text-white shadow-lg" : "bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500"}`} title="Más opciones">
                     <Plus className={`w-5 h-5 transition-transform duration-300 ${showAttachMenu ? "rotate-45" : ""}`} />
                   </button>
+                  <button 
+                    type="button" 
+                    onClick={() => setBrowser(prev => !prev)} 
+                    className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors z-30 ${browser ? "bg-[#1890FF] text-white shadow-lg" : "bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500"}`} 
+                    title="Navegador virtual"
+                  >
+                    <Chrome className="w-5 h-5" />
+                  </button>
 
                   <AnimatePresence>
                     {showAttachMenu && (
@@ -2249,6 +2357,16 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                                       <Paperclip className="w-4 h-4" />
                                     </div>
                                     Subir archivo
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => { setShowAttachMenu(false); setShowDriveModal(true); }}
+                                    className="w-full flex items-center gap-3 px-2 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-[#1890FF] rounded-xl transition-colors text-left mt-1"
+                                  >
+                                    <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center text-gray-500 shrink-0">
+                                      <Cloud className="w-4 h-4" />
+                                    </div>
+                                    Google Drive
                                   </button>
                                 </div>
 
@@ -2586,6 +2704,104 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
         question={shareDialog.question}
         answer={shareDialog.answer}
       />
+
+      {/* ─── GOOGLE DRIVE MODAL ─── */}
+      <AnimatePresence>
+        {showDriveModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+            <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden border border-gray-100 dark:border-white/10 flex flex-col max-h-[80vh]">
+              
+              {/* Header */}
+              <div className="px-6 py-4 border-b border-gray-100 dark:border-white/5 flex items-center justify-between bg-gray-50 dark:bg-slate-800/50">
+                <h3 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
+                  <Cloud className="w-5 h-5 text-[#1890FF]" /> Google Drive
+                </h3>
+                <button onClick={() => setShowDriveModal(false)} className="text-gray-400 hover:text-red-500 bg-white dark:bg-slate-800 rounded-full p-1.5 shadow-sm">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              
+              {/* Body */}
+              <div className="p-6 overflow-y-auto flex-1 flex flex-col min-h-0 space-y-4">
+                {loadingDrive ? (
+                  <div className="flex-1 flex flex-col items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 text-[#1890FF] animate-spin mb-4" />
+                    <p className="text-sm text-gray-500">Cargando archivos de Google Drive...</p>
+                  </div>
+                ) : driveError ? (
+                  <div className="flex-1 flex flex-col items-center justify-center py-12 text-center space-y-4">
+                    <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-500/10 flex items-center justify-center text-red-500">
+                      <Cloud className="w-8 h-8" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-gray-900 dark:text-white">Google Drive no conectado</h4>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-xs">Conecta tu cuenta de Google Drive para poder adjuntar tus documentos y hojas de cálculo al chat.</p>
+                    </div>
+                    <button
+                      onClick={handleConnectDrive}
+                      className="px-6 py-2.5 bg-[#1890FF] text-white rounded-full font-bold text-sm hover:opacity-90 transition-opacity shadow-lg shadow-[#1890FF]/20"
+                    >
+                      Conectar Google Drive
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    {/* Search bar */}
+                    <div className="relative">
+                      <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Buscar en Google Drive..."
+                        value={driveSearchQuery}
+                        onChange={(e) => setDriveSearchQuery(e.target.value)}
+                        className="w-full bg-gray-50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl pl-10 pr-4 py-2.5 text-sm outline-none focus:border-[#1890FF] transition-all"
+                      />
+                    </div>
+
+                    {/* Files list */}
+                    <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-1">
+                      {driveFiles.filter(f => f.name.toLowerCase().includes(driveSearchQuery.toLowerCase())).length === 0 ? (
+                        <div className="text-center py-8 text-sm text-gray-400">No se encontraron archivos</div>
+                      ) : (
+                        driveFiles
+                          .filter(f => f.name.toLowerCase().includes(driveSearchQuery.toLowerCase()))
+                          .map((file) => {
+                            const isAttaching = attachingDriveFile === file.id;
+                            return (
+                              <button
+                                key={file.id}
+                                disabled={!!attachingDriveFile}
+                                onClick={() => handleAttachDriveFile(file)}
+                                className="w-full flex items-center justify-between p-3.5 hover:bg-gray-50 dark:hover:bg-white/5 border border-gray-100 dark:border-gray-800 hover:border-blue-500/30 rounded-2xl transition-all text-left group disabled:opacity-50"
+                              >
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className="w-9 h-9 rounded-xl bg-blue-500/10 text-[#1890FF] flex items-center justify-center shrink-0">
+                                    <FileText className="w-4.5 h-4.5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <div className="text-sm font-bold text-gray-900 dark:text-white truncate group-hover:text-[#1890FF] transition-colors">{file.name}</div>
+                                    <div className="text-[10px] text-gray-400 mt-0.5 truncate">{file.mimeType.split(".").pop() || "Archivo"}</div>
+                                  </div>
+                                </div>
+                                <div className="shrink-0 pl-2">
+                                  {isAttaching ? (
+                                    <Loader2 className="w-4 h-4 text-[#1890FF] animate-spin" />
+                                  ) : (
+                                    <ChevronRight className="w-4 h-4 text-gray-400 group-hover:translate-x-0.5 transition-transform" />
+                                  )}
+                                </div>
+                              </button>
+                            );
+                          })
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -29,9 +29,10 @@ import {
   TrendingUp,
   Scale,
   Layers,
-  Paperclip,
   FileText,
   BookOpen,
+  Chrome,
+  Paperclip,
 } from "lucide-react";
 
 const ADVANCED_TOOLS = [
@@ -57,6 +58,7 @@ interface ChatInputProps {
       webSearch: boolean;
       image: boolean;
       codeInterpreter: boolean;
+      browser: boolean;
     }
   ) => void;
 }
@@ -73,6 +75,7 @@ export function ChatInput({
   const [webSearch, setWebSearch] = useState(false);
   const [image, setImage] = useState(false);
   const [codeInterpreter, setCodeInterpreter] = useState(false);
+  const [browser, setBrowser] = useState(false);
   
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [attachMenuView, setAttachMenuView] = useState<'main' | 'charts' | 'analysis'>('main');
@@ -167,7 +170,7 @@ export function ChatInput({
     e.preventDefault();
     const trimmed = value.trim();
     if (!trimmed) return;
-    onSubmit?.(trimmed, { webSearch, image, codeInterpreter });
+    onSubmit?.(trimmed, { webSearch, image, codeInterpreter, browser });
     setValue("");
     requestAnimationFrame(resizeTextarea);
     textareaRef.current?.focus();
@@ -470,6 +473,12 @@ export function ChatInput({
                 onClick={() => setCodeInterpreter(prev => !prev)}
                 icon={<Terminal className="h-4 w-4" />}
                 label="Intérprete de código"
+              />
+              <Pill
+                active={browser}
+                onClick={() => setBrowser(prev => !prev)}
+                icon={<Chrome className="h-4 w-4" />}
+                label="Navegador virtual"
               />
             </div>
 

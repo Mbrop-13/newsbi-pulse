@@ -16,7 +16,7 @@ import { getPlanConfig, type PlanTier, getNextTier } from "@/lib/plan-limits"
 import { useChat } from "ai/react"
 import { ShareChatDialog } from "@/components/assistant/share-chat-dialog"
 import { toast } from "sonner"
-import { cn, formatDate as fmtDate, getFallbackImage } from "@/lib/utils"
+import { cn, formatDate as fmtDate, getFallbackImage, slugify } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import { Newspaper, Sparkles, Headphones, LineChart, Coins, Landmark, Briefcase, Shield, Lightbulb, Globe, Flame, Calendar, Cpu, ArrowUpRight, ArrowDownRight } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
@@ -238,13 +238,22 @@ export function ChatLanding() {
         const lastAssistantIdx = [...latestMessages].reverse().findIndex(m => m.role === 'assistant' || m.role === 'tool');
         const targetIdx = lastAssistantIdx !== -1 ? (latestMessages.length - 1 - lastAssistantIdx) : -1;
 
+        const firstMsgText = message.content || "";
+        const toolsCalled = message.toolInvocations || [];
+        const hasTools = toolsCalled.length > 0;
+        const finalContent = (firstMsgText.trim().length > 0)
+          ? firstMsgText
+          : hasTools
+            ? "He procesado los datos financieros solicitados y configurado los paneles interactivos correspondientes. Puedes revisar la información en los widgets de arriba."
+            : "Lo siento, la respuesta de la IA se detuvo inesperadamente sin generar texto. Por favor, intenta de nuevo.";
+
         const storeMessages: ChatMessage[] = latestMessages.map((m: any, idx: number) => {
           const isTarget = idx === targetIdx;
           if (isTarget) {
             return {
               id: message.id,
               role: "assistant",
-              content: message.content || m.content || "",
+              content: finalContent,
               timestamp: new Date(),
               model: selectedModel === "fast" ? "deepseek" : "grok",
               toolInvocations: message.toolInvocations || m.toolInvocations,
@@ -268,7 +277,7 @@ export function ChatLanding() {
           storeMessages.push({
             id: message.id,
             role: "assistant",
-            content: message.content,
+            content: finalContent,
             timestamp: new Date(),
             model: selectedModel === "fast" ? "deepseek" : "grok",
             toolInvocations: message.toolInvocations,
@@ -316,13 +325,16 @@ export function ChatLanding() {
       const currentPath = window.location.pathname;
       let targetPath = '/ai';
       if (currentChatId) {
-        targetPath = `/ai/chat/${currentChatId}`;
+        const firstUserMsg = storeMessages.find(m => m.role === 'user')?.content || '';
+        const title = firstUserMsg.slice(0, 40) || 'Nuevo Chat';
+        const slug = slugify(title);
+        targetPath = `/ai/chat/${slug ? `${slug}-` : ''}${currentChatId}`;
       }
       if (currentPath !== targetPath && !currentPath.startsWith('/share/')) {
         window.history.pushState(null, '', targetPath);
       }
     }
-  }, [currentChatId]);
+  }, [currentChatId, storeMessages]);
 
   // Sync store messages → useChat messages on load/chat switch
   useEffect(() => {
@@ -361,7 +373,7 @@ export function ChatLanding() {
 
   const handleSend = (
     text: string,
-    options: { webSearch: boolean; image: boolean; codeInterpreter: boolean }
+    options: { webSearch: boolean; image: boolean; codeInterpreter: boolean; browser: boolean }
   ) => {
     if (!text.trim() || aiLoading) return
 
@@ -404,6 +416,7 @@ export function ChatLanding() {
           modelId: selectedModel,
           activeTools: activeTools,
           webSearch: options.webSearch,
+          browser: options.browser,
         },
       }
     )
@@ -874,7 +887,7 @@ export function ChatLanding() {
                 // Re-send the last user message
                 const lastUserMsg = [...displayMessages].reverse().find(m => m.role === 'user')
                 if (lastUserMsg) {
-                  handleSend(lastUserMsg.content, { webSearch: false, image: false, codeInterpreter: false })
+                  handleSend(lastUserMsg.content, { webSearch: false, image: false, codeInterpreter: false, browser: false })
                 }
               }}
               onShare={handleShare}

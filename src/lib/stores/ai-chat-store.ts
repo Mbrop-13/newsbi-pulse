@@ -102,7 +102,7 @@ export const useAIChatStore = create<AIChatStore>()(
       attachedArticles: [],
       attachedFiles: [],
       savedChats: [],
-      cloudSyncEnabled: false,
+      cloudSyncEnabled: true,
       activeTools: [],
       favoriteTools: [],
       messageFeedback: {},

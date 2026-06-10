@@ -8,6 +8,7 @@ import ReactMarkdown from "react-markdown";
 import { useAIChatStore } from "@/lib/stores/ai-chat-store";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { createClient } from "@/lib/supabase/client";
+import { slugify } from "@/lib/utils";
 
 interface ShareChatDialogProps {
   isOpen: boolean;
@@ -104,7 +105,9 @@ export function ShareChatDialog({ isOpen, onClose, question, answer }: ShareChat
           if (error) throw error;
         }
 
-        const shareUrl = `${window.location.origin}/ai/chat/${currentChatId}`;
+        const firstUserMsg = messages.find(m => m.role === "user")?.content || "";
+        const slug = slugify(firstUserMsg.slice(0, 40) || "Nuevo Chat");
+        const shareUrl = `${window.location.origin}/ai/chat/${slug ? `${slug}-` : ''}${currentChatId}`;
         await navigator.clipboard.writeText(shareUrl);
         setCopiedLink(true);
         setTimeout(() => setCopiedLink(false), 3000);

@@ -16,6 +16,7 @@ import { PriceAlertCard } from "@/components/assistant/price-alert-card"
 import { motion, AnimatePresence } from "framer-motion"
 import { WebPreview, WebPreviewNavigation, WebPreviewUrl, WebPreviewBody } from "@/components/ai/web-preview"
 import { detectTicker } from "@/lib/detect-ticker"
+import { VirtualBrowserCard } from "@/components/chat/virtual-browser-card"
 
 interface ChatMessagesProps {
   messages: ChatMessage[]
@@ -209,8 +210,26 @@ function MessageBubble({
           return <AIChartCard key={`inv-chart-${i}`} result={inv.result} />
         case 'create_price_alert':
           return <PriceAlertCard key={`inv-alert-${i}`} result={inv.result} />
-        default:
-          return <AnalyzedNewsCard key={`inv-news-${i}`} toolName={inv.toolName} result={inv.result} />
+        case 'run_python':
+          return <PythonResultCard key={`inv-python-${i}`} args={inv.args} result={inv.result} />
+        case 'browser_navigate': {
+          const sessionId = inv.result?.sessionId;
+          const currentUrl = inv.result?.url || inv.args?.url || '';
+          return (
+            <VirtualBrowserCard
+              key={`inv-browser-${i}`}
+              sessionId={sessionId}
+              currentUrl={currentUrl}
+              isActive={inv.state !== 'result'}
+              extractedContent={inv.result?.textContent?.slice(0, 500)}
+            />
+          );
+        }
+        case 'browser_click':
+        case 'browser_type':
+        case 'browser_scroll':
+          // These render within the existing VirtualBrowserCard via SSE
+          return null;
       }
     }) || []
 
@@ -542,3 +561,64 @@ const getYahooFinanceSymbol = (symbol: string): string => {
   }
   return ticker;
 };
+
+function PythonResultCard({ args, result }: { args: any; result: any }) {
+  const [showCode, setShowCode] = useState(false);
+
+  return (
+    <div className="border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-5 shadow-sm space-y-4 max-w-xl text-left">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 py-1 rounded-lg bg-amber-500/10 text-amber-500 font-black text-xs">
+            PY
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-gray-900 dark:text-white">Cálculo Python Ejecutado</h4>
+            <p className="text-[10px] text-gray-400">Sandbox de WebAssembly · {result?.durationMs || 0}ms</p>
+          </div>
+        </div>
+        
+        <button
+          onClick={() => setShowCode(!showCode)}
+          className="text-xs font-semibold text-[#1890FF] hover:underline"
+        >
+          {showCode ? "Ocultar Código" : "Ver Código"}
+        </button>
+      </div>
+
+      {showCode && args?.script && (
+        <pre className="text-xs p-3.5 bg-slate-950 text-slate-100 rounded-2xl overflow-x-auto font-mono border border-slate-800 max-h-48">
+          <code>{args.script}</code>
+        </pre>
+      )}
+
+      {result?.success ? (
+        <div className="space-y-2">
+          {result.stdout && (
+            <div className="space-y-1">
+              <span className="text-[9px] uppercase font-bold text-gray-400 tracking-wider">Consola (stdout)</span>
+              <pre className="text-xs p-3 bg-gray-50 dark:bg-slate-950 text-emerald-500 dark:text-emerald-400 rounded-2xl overflow-x-auto font-mono border border-gray-100 dark:border-slate-900">
+                <code>{result.stdout}</code>
+              </pre>
+            </div>
+          )}
+          {result.output !== undefined && result.output !== null && (
+            <div className="space-y-1">
+              <span className="text-[9px] uppercase font-bold text-gray-400 tracking-wider">Retorno de Función</span>
+              <pre className="text-xs p-3 bg-gray-50 dark:bg-slate-950 text-blue-500 dark:text-blue-400 rounded-2xl overflow-x-auto font-mono border border-gray-100 dark:border-slate-900">
+                <code>{typeof result.output === 'object' ? JSON.stringify(result.output, null, 2) : String(result.output)}</code>
+              </pre>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-1">
+          <span className="text-[9px] uppercase font-bold text-red-500 tracking-wider">Error de Ejecución</span>
+          <pre className="text-xs p-3 bg-red-50 dark:bg-red-500/5 text-red-600 dark:text-red-400 rounded-2xl overflow-x-auto font-mono border border-red-100 dark:border-red-500/10">
+            <code>{result?.stderr || result?.error || "Error desconocido en el script."}</code>
+          </pre>
+        </div>
+      )}
+    </div>
+  );
+}

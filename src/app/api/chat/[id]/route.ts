@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase";
+import { extractIdFromSlug } from "@/lib/utils";
 
 export async function GET(
   request: NextRequest,
@@ -15,12 +16,15 @@ export async function GET(
       );
     }
 
+    const chatId = extractIdFromSlug(id);
+
     const supabase = createServiceClient();
     const { data, error } = await supabase
       .from("ai_saved_chats")
       .select("*")
-      .eq("chat_id", id)
+      .eq("chat_id", chatId)
       .maybeSingle();
+
 
     if (error) {
       console.error("[Get Chat API] Error fetching from DB:", error);

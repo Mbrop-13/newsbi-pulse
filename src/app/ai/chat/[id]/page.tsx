@@ -8,6 +8,7 @@ import { ChatMessages } from "@/components/chat/chat-messages";
 import { AuthModals } from "@/components/auth-modals";
 import { Bot, Sparkles, ArrowRight, Loader2, Home } from "lucide-react";
 import Link from "next/link";
+import { extractIdFromSlug } from "@/lib/utils";
 
 interface PageProps {
   params: Promise<{
@@ -17,9 +18,10 @@ interface PageProps {
 
 export default function ChatPage(props: PageProps) {
   const params = use(props.params);
-  const chatId = params.id;
+  const chatId = extractIdFromSlug(params.id);
 
   const { user, isAuthenticated, isLoaded: isAuthLoaded } = useAuthStore();
+
   const [chatData, setChatData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);

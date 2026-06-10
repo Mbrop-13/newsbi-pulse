@@ -37,6 +37,32 @@ export function slugify(text: string): string {
     .replace(/(^-|-$)+/g, "");
 }
 
+export function extractIdFromSlug(slugId: string): string {
+  if (!slugId) return "";
+  
+  // Intentar emparejar un UUID al final (ej: ...-fd8b7913-321d-4785-a1f5-574b9fb2c7ff)
+  const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const uuidMatch = slugId.match(uuidRegex);
+  if (uuidMatch) {
+    return uuidMatch[0];
+  }
+  
+  // Intentar emparejar un timestamp numérico al final (ej: ...-1718012345678)
+  const timestampRegex = /\d+$/;
+  const timestampMatch = slugId.match(timestampRegex);
+  if (timestampMatch) {
+    return timestampMatch[0];
+  }
+
+  // Fallback: separar por guión y tomar el último elemento
+  if (slugId.includes("-")) {
+    return slugId.split("-").pop() || slugId;
+  }
+  
+  return slugId;
+}
+
+
 export function getCategoryColor(category: string): string {
   const colors: Record<string, string> = {
     tech: "bg-blue-500/10 text-blue-400 border-blue-500/20",

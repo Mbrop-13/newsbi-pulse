@@ -15,6 +15,9 @@ import { getPlanConfig, type PlanTier, getNextTier } from "@/lib/plan-limits"
 import { useChat } from "ai/react"
 import { ShareChatDialog } from "@/components/assistant/share-chat-dialog"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
+import { motion, AnimatePresence } from "framer-motion"
+import { Newspaper, Sparkles, Headphones, LineChart, Coins, Landmark, Briefcase, Shield, Lightbulb, Globe, Flame, Calendar } from "lucide-react"
 
 // Model ID mapping for our API
 const MODEL_MAP: Record<string, string> = {
@@ -117,6 +120,20 @@ export function ChatLanding() {
     setFeedback,
     currentChatId,
   } = useAIChatStore()
+
+  const [activeMenu, setActiveMenu] = useState<'noticias' | 'mercados' | 'portafolio' | 'mundo' | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleMouseEnter = (menu: 'noticias' | 'mercados' | 'portafolio' | 'mundo') => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    setActiveMenu(menu);
+  };
+
+  const handleMouseLeave = () => {
+    timeoutRef.current = setTimeout(() => {
+      setActiveMenu(null);
+    }, 150);
+  };
 
   const [openReasoning, setOpenReasoning] = useState<Record<string, boolean>>({})
   const [shareDialog, setShareDialog] = useState({ isOpen: false, question: "", answer: "" })
@@ -458,19 +475,140 @@ export function ChatLanding() {
           /* Landing view - center content with prompt suggestions */
           <div className="flex-1 flex flex-col items-center justify-center px-4 pt-16 relative">
             {/* Top Navigation Sections */}
-            <div className="absolute top-6 inset-x-0 flex items-center justify-center gap-6 text-sm font-medium z-10">
-              <Link href="/noticias" className="text-muted-foreground hover:text-foreground transition-colors py-1 px-2">
-                Noticias
-              </Link>
-              <Link href="/mercados" className="text-muted-foreground hover:text-foreground transition-colors py-1 px-2">
-                Mercados
-              </Link>
-              <Link href="/portafolio" className="text-muted-foreground hover:text-foreground transition-colors py-1 px-2">
-                Portafolio
-              </Link>
-              <Link href="/mundo" className="text-muted-foreground hover:text-foreground transition-colors py-1 px-2">
-                Mundo
-              </Link>
+            <div className="absolute top-6 inset-x-0 flex items-center justify-center gap-2 text-sm font-semibold z-30 select-none">
+              
+              {/* NOTICIAS MENU */}
+              <div 
+                className="relative"
+                onMouseEnter={() => handleMouseEnter('noticias')}
+                onMouseLeave={handleMouseLeave}
+              >
+                <Link href="/noticias" className={cn(
+                  "text-muted-foreground hover:text-foreground transition-colors py-2 px-3.5 rounded-full hover:bg-secondary/50 flex items-center gap-1",
+                  activeMenu === 'noticias' && "text-foreground bg-secondary/80"
+                )}>
+                  Noticias
+                </Link>
+                
+                <AnimatePresence>
+                  {activeMenu === 'noticias' && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                      transition={{ duration: 0.2, ease: "easeOut" }}
+                      className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[320px] bg-white/95 dark:bg-[#0B1329]/95 backdrop-blur-xl border border-gray-200/50 dark:border-white/5 rounded-2xl p-3 shadow-2xl z-50 flex flex-col gap-2.5 font-sans text-left"
+                    >
+                      <h4 className="text-[10px] font-black tracking-widest text-[#1890FF] uppercase px-1.5 pt-1">Noticias Financieras</h4>
+                      <div className="flex flex-col gap-1">
+                        <MenuLink href="/noticias" icon={Newspaper} title="Feed de Noticias" desc="Noticias globales en tiempo real libre de sesgos." />
+                        <MenuLink href="/noticias?feed=personal" icon={Sparkles} title="Feed Personalizado" desc="Noticias adaptadas a tus activos de interés." />
+                        <MenuLink href="/radio" icon={Headphones} title="Maverlang Radio" desc="Transmisión de audio con reportes de IA." />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* MERCADOS MENU */}
+              <div 
+                className="relative"
+                onMouseEnter={() => handleMouseEnter('mercados')}
+                onMouseLeave={handleMouseLeave}
+              >
+                <Link href="/mercados" className={cn(
+                  "text-muted-foreground hover:text-foreground transition-colors py-2 px-3.5 rounded-full hover:bg-secondary/50 flex items-center gap-1",
+                  activeMenu === 'mercados' && "text-foreground bg-secondary/80"
+                )}>
+                  Mercados
+                </Link>
+                
+                <AnimatePresence>
+                  {activeMenu === 'mercados' && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                      transition={{ duration: 0.2, ease: "easeOut" }}
+                      className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[320px] bg-white/95 dark:bg-[#0B1329]/95 backdrop-blur-xl border border-gray-200/50 dark:border-white/5 rounded-2xl p-3 shadow-2xl z-50 flex flex-col gap-2.5 font-sans text-left"
+                    >
+                      <h4 className="text-[10px] font-black tracking-widest text-[#1890FF] uppercase px-1.5 pt-1">Activos & Cotizaciones</h4>
+                      <div className="flex flex-col gap-1">
+                        <MenuLink href="/mercados?tab=acciones" icon={LineChart} title="Acciones Globales" desc="Índices, cotizaciones y análisis del mercado." />
+                        <MenuLink href="/mercados?tab=crypto" icon={Coins} title="Criptomonedas" desc="Precios en vivo de BTC, ETH y altcoins." />
+                        <MenuLink href="/mercados?tab=forex" icon={Landmark} title="Divisas / Forex" desc="Monitoreo de pares de divisas globales." />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* PORTAFOLIO MENU */}
+              <div 
+                className="relative"
+                onMouseEnter={() => handleMouseEnter('portafolio')}
+                onMouseLeave={handleMouseLeave}
+              >
+                <Link href="/portafolio" className={cn(
+                  "text-muted-foreground hover:text-foreground transition-colors py-2 px-3.5 rounded-full hover:bg-secondary/50 flex items-center gap-1",
+                  activeMenu === 'portafolio' && "text-foreground bg-secondary/80"
+                )}>
+                  Portafolio
+                </Link>
+                
+                <AnimatePresence>
+                  {activeMenu === 'portafolio' && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                      transition={{ duration: 0.2, ease: "easeOut" }}
+                      className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[320px] bg-white/95 dark:bg-[#0B1329]/95 backdrop-blur-xl border border-gray-200/50 dark:border-white/5 rounded-2xl p-3 shadow-2xl z-50 flex flex-col gap-2.5 font-sans text-left"
+                    >
+                      <h4 className="text-[10px] font-black tracking-widest text-[#1890FF] uppercase px-1.5 pt-1">Gestión de Portafolio</h4>
+                      <div className="flex flex-col gap-1">
+                        <MenuLink href="/portafolio" icon={Briefcase} title="Mi Portafolio" desc="Monitorea tus inversiones y rentabilidad." />
+                        <MenuLink href="/portafolio?tab=analisis" icon={Shield} title="Análisis de Riesgo" desc="Diversificación y volatilidad calculada por IA." />
+                        <MenuLink href="/portafolio?tab=sugerencias" icon={Lightbulb} title="Alertas de Rebalanceo" desc="Consejos inteligentes para optimizar ganancias." />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* MUNDO MENU */}
+              <div 
+                className="relative"
+                onMouseEnter={() => handleMouseEnter('mundo')}
+                onMouseLeave={handleMouseLeave}
+              >
+                <Link href="/mundo" className={cn(
+                  "text-muted-foreground hover:text-foreground transition-colors py-2 px-3.5 rounded-full hover:bg-secondary/50 flex items-center gap-1",
+                  activeMenu === 'mundo' && "text-foreground bg-secondary/80"
+                )}>
+                  Mundo
+                </Link>
+                
+                <AnimatePresence>
+                  {activeMenu === 'mundo' && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                      transition={{ duration: 0.2, ease: "easeOut" }}
+                      className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[320px] bg-white/95 dark:bg-[#0B1329]/95 backdrop-blur-xl border border-gray-200/50 dark:border-white/5 rounded-2xl p-3 shadow-2xl z-50 flex flex-col gap-2.5 font-sans text-left"
+                    >
+                      <h4 className="text-[10px] font-black tracking-widest text-[#1890FF] uppercase px-1.5 pt-1">Mundo Global</h4>
+                      <div className="flex flex-col gap-1">
+                        <MenuLink href="/mundo" icon={Globe} title="Globo Terráqueo 3D" desc="Explora noticias interactivamente en 3D." />
+                        <MenuLink href="/mundo?tab=tendencias" icon={Flame} title="Tendencias Globales" desc="Geopolítica y eventos de alto impacto." />
+                        <MenuLink href="/mundo?tab=calendario" icon={Calendar} title="Macro Calendario" desc="Eventos económicos internacionales clave." />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
             </div>
 
             <div className="w-full max-w-2xl mx-auto">
@@ -541,5 +679,36 @@ export function ChatLanding() {
         answer={shareDialog.answer}
       />
     </div>
+  )
+}
+
+function MenuLink({ 
+  href, 
+  icon: Icon, 
+  title, 
+  desc 
+}: { 
+  href: string; 
+  icon: React.ComponentType<any>; 
+  title: string; 
+  desc: string 
+}) {
+  return (
+    <Link 
+      href={href}
+      className="group/menu-link flex items-start gap-3 p-2 rounded-xl hover:bg-gray-100/70 dark:hover:bg-white/[0.03] transition-all duration-200 active:scale-[0.98]"
+    >
+      <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/5 text-foreground group-hover/menu-link:bg-foreground group-hover/menu-link:text-background flex items-center justify-center shrink-0 transition-colors duration-200">
+        <Icon className="w-4 h-4" />
+      </div>
+      <div className="flex flex-col min-w-0">
+        <span className="text-xs font-bold text-gray-900 dark:text-gray-100 transition-colors">
+          {title}
+        </span>
+        <span className="text-[10px] text-muted-foreground leading-normal mt-0.5 line-clamp-2">
+          {desc}
+        </span>
+      </div>
+    </Link>
   )
 }

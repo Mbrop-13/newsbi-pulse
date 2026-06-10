@@ -21,16 +21,11 @@ export function SidebarLogo() {
         onClick={handleHomeClick}
       >
         {state === "expanded" ? (
-          <>
-            <img 
-              src="/assets/maverlang-logo-small.png" 
-              alt="Maverlang Logo" 
-              className="h-8 w-8 object-contain" 
-            />
-            <span className="text-xl font-black tracking-tighter text-[#1890FF] italic">
-              MAVERLANG
-            </span>
-          </>
+          <img 
+            src="/assets/maverlang-logo.png" 
+            alt="Maverlang Logo" 
+            className="h-7 w-auto object-contain" 
+          />
         ) : (
           <img 
             src="/assets/maverlang-logo-small.png" 

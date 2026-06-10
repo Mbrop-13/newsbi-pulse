@@ -89,18 +89,13 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
               <img 
                 src={selectedModel.id === "fast" ? "/assets/mav25.png" : selectedModel.id === "pro" ? "/assets/mav25pro.png" : "/assets/mav26.png"} 
                 alt={selectedModel.name} 
-                className="h-5 w-auto object-contain block dark:hidden"
+                className="h-3 w-auto object-contain block dark:hidden"
               />
               <img 
                 src={selectedModel.id === "fast" ? "/assets/mav25-R.png" : selectedModel.id === "pro" ? "/assets/mav25pro-R.png" : "/assets/mav26-R.png"} 
                 alt={selectedModel.name} 
-                className="h-5 w-auto object-contain hidden dark:block"
+                className="h-3 w-auto object-contain hidden dark:block"
               />
-              {selectedModel.id === "agent" && (
-                <span className="text-[10px] font-black tracking-wider text-white [text-shadow:-1px_-1px_0_#000,1px_-1px_0_#000,-1px_1px_0_#000,1px_1px_0_#000] px-1 py-0.5 uppercase leading-none shrink-0 ml-1">
-                  AGENT
-                </span>
-              )}
               <ChevronsUpDown className="h-3 w-3 shrink-0 opacity-50 ml-1" />
             </Button>
           </PopoverTrigger>
@@ -117,7 +112,7 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
                     <CommandItem
                       key={model.id}
                       value={model.name}
-                      className="group/item text-xs flex items-center py-2 px-3 rounded-lg cursor-pointer transition-colors duration-150 data-selected:bg-black! data-selected:text-white! dark:data-selected:bg-slate-900! select-none"
+                      className="group/item text-xs flex items-center py-2 px-3 rounded-lg cursor-pointer transition-all duration-300 ease-out data-selected:bg-black! data-selected:text-white! dark:data-selected:bg-slate-900! data-selected:scale-[1.02] data-selected:shadow-md select-none"
                       onSelect={() => {
                         if (userTier === "free" && (model.id === "pro" || model.id === "agent")) {
                           setUpsellReason(model.id === "pro" ? "pro" : "agent")
@@ -134,18 +129,13 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
                           <img 
                             src={model.id === "fast" ? "/assets/mav25.png" : model.id === "pro" ? "/assets/mav25pro.png" : "/assets/mav26.png"} 
                             alt={model.name} 
-                            className="h-5 w-auto object-contain block dark:hidden group-hover/item:hidden group-data-selected/item:hidden"
+                            className="h-3 w-auto object-contain block dark:hidden group-hover/item:hidden group-data-selected/item:hidden transition-transform duration-300 ease-out group-hover/item:scale-105 group-data-selected/item:scale-105"
                           />
                           <img 
                             src={model.id === "fast" ? "/assets/mav25-R.png" : model.id === "pro" ? "/assets/mav25pro-R.png" : "/assets/mav26-R.png"} 
                             alt={model.name} 
-                            className="h-5 w-auto object-contain hidden dark:block group-hover/item:block group-data-selected/item:block"
+                            className="h-3 w-auto object-contain hidden dark:block group-hover/item:block group-data-selected/item:block transition-transform duration-300 ease-out group-hover/item:scale-105 group-data-selected/item:scale-105"
                           />
-                          {model.id === "agent" && (
-                            <span className="text-[10px] font-black tracking-wider text-white [text-shadow:-1px_-1px_0_#000,1px_-1px_0_#000,-1px_1px_0_#000,1px_1px_0_#000] px-1 py-0.5 uppercase leading-none shrink-0">
-                              AGENT
-                            </span>
-                          )}
                         </div>
                         <span className="text-[10px] text-muted-foreground truncate group-data-selected/item:text-gray-300 transition-colors">
                           {model.description}
@@ -273,18 +263,13 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
                     <img 
                       src={selectedModel.id === "fast" ? "/assets/mav25.png" : selectedModel.id === "pro" ? "/assets/mav25pro.png" : "/assets/mav26.png"} 
                       alt={selectedModel.name} 
-                      className="h-6 w-auto object-contain block dark:hidden"
+                      className="h-3 w-auto object-contain block dark:hidden"
                     />
                     <img 
                       src={selectedModel.id === "fast" ? "/assets/mav25-R.png" : selectedModel.id === "pro" ? "/assets/mav25pro-R.png" : "/assets/mav26-R.png"} 
                       alt={selectedModel.name} 
-                      className="h-6 w-auto object-contain hidden dark:block"
+                      className="h-3 w-auto object-contain hidden dark:block"
                     />
-                    {selectedModel.id === "agent" && (
-                      <span className="text-[11px] font-black tracking-wider text-white [text-shadow:-1px_-1px_0_#000,1px_-1px_0_#000,-1px_1px_0_#000,1px_1px_0_#000] px-1.5 py-0.5 uppercase leading-none shrink-0 ml-1">
-                        AGENT
-                      </span>
-                    )}
                     <span className="text-xs text-primary/35 font-medium shrink-0 ml-1">
                       {selectedModel.provider}
                     </span>
@@ -312,7 +297,7 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
                     <CommandItem
                       key={model.id}
                       value={model.name}
-                      className="group/item cursor-pointer transition-colors duration-150 data-selected:bg-black! data-selected:text-white! dark:data-selected:bg-slate-900! select-none"
+                      className="group/item cursor-pointer transition-all duration-300 ease-out data-selected:bg-black! data-selected:text-white! dark:data-selected:bg-slate-900! data-selected:scale-[1.02] data-selected:shadow-md select-none"
                       onSelect={() => {
                         if (userTier === "free" && (model.id === "pro" || model.id === "agent")) {
                           setUpsellReason(model.id === "pro" ? "pro" : "agent")
@@ -329,18 +314,13 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
                           <img 
                             src={model.id === "fast" ? "/assets/mav25.png" : model.id === "pro" ? "/assets/mav25pro.png" : "/assets/mav26.png"} 
                             alt={model.name} 
-                            className="h-6 w-auto object-contain block dark:hidden group-hover/item:hidden group-data-selected/item:hidden"
+                            className="h-3 w-auto object-contain block dark:hidden group-hover/item:hidden group-data-selected/item:hidden transition-transform duration-300 ease-out group-hover/item:scale-105 group-data-selected/item:scale-105"
                           />
                           <img 
                             src={model.id === "fast" ? "/assets/mav25-R.png" : model.id === "pro" ? "/assets/mav25pro-R.png" : "/assets/mav26-R.png"} 
                             alt={model.name} 
-                            className="h-6 w-auto object-contain hidden dark:block group-hover/item:block group-data-selected/item:block"
+                            className="h-3 w-auto object-contain hidden dark:block group-hover/item:block group-data-selected/item:block transition-transform duration-300 ease-out group-hover/item:scale-105 group-data-selected/item:scale-105"
                           />
-                          {model.id === "agent" && (
-                            <span className="text-[11px] font-black tracking-wider text-white [text-shadow:-1px_-1px_0_#000,1px_-1px_0_#000,-1px_1px_0_#000,1px_1px_0_#000] px-1.5 py-0.5 uppercase leading-none shrink-0">
-                              AGENT
-                            </span>
-                          )}
                         </div>
                         <span className="text-xs text-muted-foreground group-data-selected/item:text-gray-300 transition-colors">
                           {model.description}

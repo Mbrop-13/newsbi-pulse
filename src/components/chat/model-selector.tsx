@@ -86,8 +86,22 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
               aria-expanded={open}
               className="w-fit h-8 gap-1 bg-white/5 dark:bg-white/5 border border-border/40 hover:bg-muted/50 px-2.5 py-1 rounded-full text-xs font-semibold text-muted-foreground hover:text-foreground transition-all duration-300 shadow-sm cursor-pointer"
             >
-              <span className="truncate max-w-[80px] sm:max-w-[120px]">{selectedModel.name}</span>
-              <ChevronsUpDown className="h-3 w-3 shrink-0 opacity-50" />
+              <img 
+                src={selectedModel.id === "fast" ? "/assets/mav25.png" : selectedModel.id === "pro" ? "/assets/mav25pro.png" : "/assets/mav26.png"} 
+                alt={selectedModel.name} 
+                className="h-5 w-auto object-contain block dark:hidden"
+              />
+              <img 
+                src={selectedModel.id === "fast" ? "/assets/mav25-R.png" : selectedModel.id === "pro" ? "/assets/mav25pro-R.png" : "/assets/mav26-R.png"} 
+                alt={selectedModel.name} 
+                className="h-5 w-auto object-contain hidden dark:block"
+              />
+              {selectedModel.id === "agent" && (
+                <span className="text-[10px] font-black tracking-wider text-white [text-shadow:-1px_-1px_0_#000,1px_-1px_0_#000,-1px_1px_0_#000,1px_1px_0_#000] px-1 py-0.5 uppercase leading-none shrink-0 ml-1">
+                  AGENT
+                </span>
+              )}
+              <ChevronsUpDown className="h-3 w-3 shrink-0 opacity-50 ml-1" />
             </Button>
           </PopoverTrigger>
           <PopoverContent
@@ -103,7 +117,7 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
                     <CommandItem
                       key={model.id}
                       value={model.name}
-                      className="group/item text-xs flex items-center py-2 px-3 rounded-lg hover:bg-accent cursor-pointer"
+                      className="group/item text-xs flex items-center py-2 px-3 rounded-lg cursor-pointer transition-colors duration-150 data-selected:bg-black! data-selected:text-white! dark:data-selected:bg-slate-900! select-none"
                       onSelect={() => {
                         if (userTier === "free" && (model.id === "pro" || model.id === "agent")) {
                           setUpsellReason(model.id === "pro" ? "pro" : "agent")
@@ -117,19 +131,28 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
                     >
                       <div className="flex flex-col w-full min-w-0">
                         <div className="flex items-center gap-1.5 min-w-0">
-                          <span className="font-bold truncate text-foreground">
-                            {model.name}
-                          </span>
+                          <img 
+                            src={model.id === "fast" ? "/assets/mav25.png" : model.id === "pro" ? "/assets/mav25pro.png" : "/assets/mav26.png"} 
+                            alt={model.name} 
+                            className="h-5 w-auto object-contain block dark:hidden group-hover/item:hidden group-data-selected/item:hidden"
+                          />
+                          <img 
+                            src={model.id === "fast" ? "/assets/mav25-R.png" : model.id === "pro" ? "/assets/mav25pro-R.png" : "/assets/mav26-R.png"} 
+                            alt={model.name} 
+                            className="h-5 w-auto object-contain hidden dark:block group-hover/item:block group-data-selected/item:block"
+                          />
                           {model.id === "agent" && (
-                            <Sparkles className="h-3 w-3 text-amber-500 shrink-0" />
+                            <span className="text-[10px] font-black tracking-wider text-white [text-shadow:-1px_-1px_0_#000,1px_-1px_0_#000,-1px_1px_0_#000,1px_1px_0_#000] px-1 py-0.5 uppercase leading-none shrink-0">
+                              AGENT
+                            </span>
                           )}
                         </div>
-                        <span className="text-[10px] text-muted-foreground truncate">
+                        <span className="text-[10px] text-muted-foreground truncate group-data-selected/item:text-gray-300 transition-colors">
                           {model.description}
                         </span>
                       </div>
                       {selectedModel?.id === model.id && (
-                        <Check className="h-4 w-4 ml-auto text-blue-500" />
+                        <Check className="h-4 w-4 ml-auto text-blue-500 group-data-selected/item:text-white" />
                       )}
                     </CommandItem>
                   ))}
@@ -247,8 +270,22 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
               <div className="flex items-center gap-2 min-w-0">
                 {selectedModel ? (
                   <div className="flex items-center gap-2 min-w-0 max-w-[55vw] md:max-w-none">
-                    <span className="truncate text-sm max-w-full">{selectedModel.name}</span>
-                    <span className="text-xs text-primary/35 font-medium">
+                    <img 
+                      src={selectedModel.id === "fast" ? "/assets/mav25.png" : selectedModel.id === "pro" ? "/assets/mav25pro.png" : "/assets/mav26.png"} 
+                      alt={selectedModel.name} 
+                      className="h-6 w-auto object-contain block dark:hidden"
+                    />
+                    <img 
+                      src={selectedModel.id === "fast" ? "/assets/mav25-R.png" : selectedModel.id === "pro" ? "/assets/mav25pro-R.png" : "/assets/mav26-R.png"} 
+                      alt={selectedModel.name} 
+                      className="h-6 w-auto object-contain hidden dark:block"
+                    />
+                    {selectedModel.id === "agent" && (
+                      <span className="text-[11px] font-black tracking-wider text-white [text-shadow:-1px_-1px_0_#000,1px_-1px_0_#000,-1px_1px_0_#000,1px_1px_0_#000] px-1.5 py-0.5 uppercase leading-none shrink-0 ml-1">
+                        AGENT
+                      </span>
+                    )}
+                    <span className="text-xs text-primary/35 font-medium shrink-0 ml-1">
                       {selectedModel.provider}
                     </span>
                   </div>
@@ -275,7 +312,7 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
                     <CommandItem
                       key={model.id}
                       value={model.name}
-                      className="group/item"
+                      className="group/item cursor-pointer transition-colors duration-150 data-selected:bg-black! data-selected:text-white! dark:data-selected:bg-slate-900! select-none"
                       onSelect={() => {
                         if (userTier === "free" && (model.id === "pro" || model.id === "agent")) {
                           setUpsellReason(model.id === "pro" ? "pro" : "agent")
@@ -289,19 +326,28 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
                     >
                       <div className="flex flex-col w-full">
                         <div className="flex items-center gap-2 min-w-0">
-                          <span className="font-medium truncate max-w-[60vw] md:max-w-none">
-                            {model.name}
-                          </span>
+                          <img 
+                            src={model.id === "fast" ? "/assets/mav25.png" : model.id === "pro" ? "/assets/mav25pro.png" : "/assets/mav26.png"} 
+                            alt={model.name} 
+                            className="h-6 w-auto object-contain block dark:hidden group-hover/item:hidden group-data-selected/item:hidden"
+                          />
+                          <img 
+                            src={model.id === "fast" ? "/assets/mav25-R.png" : model.id === "pro" ? "/assets/mav25pro-R.png" : "/assets/mav26-R.png"} 
+                            alt={model.name} 
+                            className="h-6 w-auto object-contain hidden dark:block group-hover/item:block group-data-selected/item:block"
+                          />
                           {model.id === "agent" && (
-                            <Sparkles className="h-3 w-3 text-amber-500" />
+                            <span className="text-[11px] font-black tracking-wider text-white [text-shadow:-1px_-1px_0_#000,1px_-1px_0_#000,-1px_1px_0_#000,1px_1px_0_#000] px-1.5 py-0.5 uppercase leading-none shrink-0">
+                              AGENT
+                            </span>
                           )}
                         </div>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-muted-foreground group-data-selected/item:text-gray-300 transition-colors">
                           {model.description}
                         </span>
                       </div>
                       {selectedModel?.id === model.id && (
-                        <Check className="h-4 w-4 ml-auto" />
+                        <Check className="h-4 w-4 ml-auto group-data-selected/item:text-white" />
                       )}
                     </CommandItem>
                   ))}

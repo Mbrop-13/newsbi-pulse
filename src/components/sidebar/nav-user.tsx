@@ -117,11 +117,11 @@ export function NavUser() {
                 className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
               >
                 <Avatar className={cn(
-                  "h-8 w-8 rounded-lg transition-all",
-                  mounted && isAuthenticated && userTier !== "free" && "ring-2 ring-[#1890FF] ring-offset-2 ring-offset-background"
+                  "h-8 w-8 rounded-full transition-all",
+                  mounted && isAuthenticated && userTier !== "free" && "ring-2 ring-[#1890FF]"
                 )}>
                   <AvatarImage src={mounted ? avatarSrc : undefined} alt={mounted ? displayName : "Usuario"} />
-                  <AvatarFallback className="rounded-lg">
+                  <AvatarFallback className="rounded-full">
                     {mounted ? getInitials(displayName, displayEmail) : "U"}
                   </AvatarFallback>
                 </Avatar>
@@ -155,11 +155,11 @@ export function NavUser() {
                 <div className="flex items-center justify-between px-1 py-1.5 text-left text-sm">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <Avatar className={cn(
-                      "h-8 w-8 rounded-lg transition-all",
-                      mounted && isAuthenticated && userTier !== "free" && "ring-2 ring-[#1890FF] ring-offset-2 ring-offset-background"
+                      "h-8 w-8 rounded-full transition-all",
+                      mounted && isAuthenticated && userTier !== "free" && "ring-2 ring-[#1890FF]"
                     )}>
                       <AvatarImage src={mounted ? avatarSrc : undefined} alt={mounted ? displayName : "Usuario"} />
-                      <AvatarFallback className="rounded-lg">
+                      <AvatarFallback className="rounded-full">
                         {mounted ? getInitials(displayName, displayEmail) : "U"}
                       </AvatarFallback>
                     </Avatar>

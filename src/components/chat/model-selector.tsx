@@ -34,23 +34,23 @@ export type MaverlangModel = RecluModel
 const AVAILABLE_MODELS: RecluModel[] = [
   {
     id: "fast",
-    name: "Reclu v2.5",
+    name: "Maverlang v2.5",
     description: "Respuestas rápidas y precisas (Por defecto)",
-    provider: "Reclu",
+    provider: "Maverlang",
     icon: "⚡",
   },
   {
     id: "pro",
-    name: "Reclu v2.5 Pro",
+    name: "Maverlang v2.5 Pro",
     description: "Análisis financiero profundo y razonamiento reflexivo",
-    provider: "Reclu",
+    provider: "Maverlang",
     icon: "🧠",
   },
   {
     id: "agent",
-    name: "Reclu v2.6 Agent",
+    name: "Maverlang v2.6 Agent",
     description: "Orquestación de agentes con razonamiento avanzado (Swarm)",
-    provider: "Reclu",
+    provider: "Maverlang",
     icon: "🐝",
   },
 ]
@@ -172,7 +172,7 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
                   </div>
                   
                   <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-2 tracking-tight">
-                    {upsellReason === "pro" ? "Desbloquea Reclu Pro" : "Desbloquea Reclu Agent"}
+                    {upsellReason === "pro" ? "Desbloquea Maverlang Pro" : "Desbloquea Maverlang Agent"}
                   </h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-[300px] mx-auto font-medium">
                     {upsellReason === "pro" 
@@ -345,7 +345,7 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
                 </div>
                 
                 <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-2 tracking-tight">
-                  {upsellReason === "pro" ? "Desbloquea Reclu Pro" : "Desbloquea Reclu Agent"}
+                  {upsellReason === "pro" ? "Desbloquea Maverlang Pro" : "Desbloquea Maverlang Agent"}
                 </h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-[300px] mx-auto font-medium">
                   {upsellReason === "pro" 

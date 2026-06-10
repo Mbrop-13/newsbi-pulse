@@ -55,7 +55,7 @@ export function ShareChatDialog({ isOpen, onClose, question, answer }: ShareChat
   };
 
   const handleCopyText = () => {
-    const textToShare = `💡 Pregunta:\n${question}\n\n🤖 Reclu AI:\n${cleanAnswer}\n\n✨ Generado por Reclu — reclu.cl`;
+    const textToShare = `💡 Pregunta:\n${question}\n\n🤖 Maverlang AI:\n${cleanAnswer}\n\n✨ Generado por Maverlang — maverlang.cl`;
     navigator.clipboard.writeText(textToShare);
     setCopiedText(true);
     setTimeout(() => setCopiedText(false), 2000);
@@ -183,8 +183,8 @@ export function ShareChatDialog({ isOpen, onClose, question, answer }: ShareChat
                   {/* Header / Logo — bigger, no text */}
                   <div className="flex items-center gap-2 mb-4 relative z-10">
                     <img 
-                      src="https://cdn.shopify.com/s/files/1/0564/3812/8712/files/freepik__background__94196.png?v=1771922713" 
-                      alt="Reclu" 
+                      src="/assets/maverlang-logo-small.png" 
+                      alt="Maverlang" 
                       className="h-9 w-auto object-contain"
                     />
                   </div>
@@ -208,7 +208,7 @@ export function ShareChatDialog({ isOpen, onClose, question, answer }: ShareChat
 
                   {/* Footer watermark */}
                   <div className="flex items-center justify-center gap-2 pt-3 mt-2 relative z-10 border-t border-gray-100 dark:border-white/5">
-                    <span className="text-[10px] font-semibold tracking-wider text-gray-300 dark:text-gray-600 uppercase">reclu.cl</span>
+                    <span className="text-[10px] font-semibold tracking-wider text-gray-300 dark:text-gray-600 uppercase">maverlang.cl</span>
                   </div>
                 </div>
               </div>

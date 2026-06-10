@@ -11,30 +11,30 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://reclu.cl"),
-  title: "Reclu | Copiloto e Inteligencia Artificial",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://maverlang.cl"),
+  title: "Maverlang | Copiloto e Inteligencia Artificial",
   description: "Plataforma avanzada de Inteligencia Artificial para análisis de noticias, portafolio y toma de decisiones en tiempo real.",
   keywords: [
     "inteligencia artificial",
     "asistente IA",
     "analisis financiero",
-    "Reclu",
+    "Maverlang",
     "noticias IA",
     "agente autonomo",
     "tech news",
   ],
-  authors: [{ name: "Reclu", url: "https://reclu.cl" }],
+  authors: [{ name: "Maverlang", url: "https://maverlang.cl" }],
   openGraph: {
-    title: "Reclu | Inteligencia Artificial y Toma de Decisiones",
+    title: "Maverlang | Inteligencia Artificial y Toma de Decisiones",
     description: "Plataforma avanzada de Inteligencia Artificial para análisis de noticias, portafolio y toma de decisiones en tiempo real.",
-    url: "https://reclu.cl",
-    siteName: "Reclu",
+    url: "https://maverlang.cl",
+    siteName: "Maverlang",
     type: "website",
     locale: "es_CL",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Reclu | Inteligencia Artificial y Toma de Decisiones",
+    title: "Maverlang | Inteligencia Artificial y Toma de Decisiones",
     description: "Plataforma avanzada de Inteligencia Artificial para análisis de noticias, portafolio y toma de decisiones en tiempo real.",
   },
   manifest: "/manifest.json",

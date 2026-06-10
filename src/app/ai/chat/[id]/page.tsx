@@ -142,12 +142,12 @@ export default function ChatPage(props: PageProps) {
       <header className="sticky top-0 z-20 w-full border-b border-gray-100 dark:border-white/5 bg-white/80 dark:bg-[#0F1117]/80 backdrop-blur-md px-6 py-4 flex items-center justify-between shrink-0">
         <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
           <img 
-            src="https://cdn.shopify.com/s/files/1/0564/3812/8712/files/freepik__background__94196.png?v=1771922713" 
-            alt="Reclu Logo" 
+            src="/assets/maverlang-logo-small.png" 
+            alt="Maverlang Logo" 
             className="h-8 w-auto object-contain"
           />
           <span className="font-extrabold text-sm tracking-wide text-gray-900 dark:text-white uppercase">
-            RECLU <span className="text-[#1890FF]">AI</span>
+            MAVERLANG <span className="text-[#1890FF]">AI</span>
           </span>
         </Link>
 
@@ -211,7 +211,7 @@ export default function ChatPage(props: PageProps) {
                   onClick={() => handleAuthRequest("register")}
                   className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-extrabold py-3 px-6 rounded-2xl flex items-center justify-center gap-2 hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-blue-500/20"
                 >
-                  Probar Reclu AI Gratis
+                  Probar Maverlang AI Gratis
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>

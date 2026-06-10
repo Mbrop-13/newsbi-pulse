@@ -48,7 +48,7 @@ export function AssistantNavbar() {
         {/* Left: Logo + Preferencias */}
         <div className="flex-shrink-0 flex items-center gap-4">
           <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
-             <span className="font-bold text-[26px] tracking-tight text-[#1890FF]">Reclu</span>
+             <span className="font-bold text-[26px] tracking-tight text-[#1890FF]">Maverlang</span>
           </Link>
 
           <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-2 hidden sm:block" />
@@ -96,7 +96,7 @@ export function AssistantNavbar() {
                 ? "bg-[#1890FF] text-white shadow-lg shadow-[#1890FF]/30"
                 : "bg-gray-100 dark:bg-slate-800 text-gray-500 hover:text-[#1890FF] hover:bg-[#1890FF]/10"
               }`}
-            title="Reclu Radio"
+            title="Maverlang Radio"
           >
             <Headphones className="w-4 h-4" />
           </button>

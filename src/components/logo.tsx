@@ -17,16 +17,16 @@ export function Logo({ showText = true, size = "md", className = "" }: LogoProps
   };
 
   return (
-    <Link href="/" className={`flex items-center gap-3 group ${className}`} aria-label="Reclu Home">
+    <Link href="/" className={`flex items-center gap-3 group ${className}`} aria-label="Maverlang Home">
       <img 
-        src="https://cdn.shopify.com/s/files/1/0564/3812/8712/files/freepik__background__94196.png?v=1771922713" 
-        alt="Reclu" 
+        src="/assets/maverlang-logo-small.png" 
+        alt="Maverlang" 
         className={`${sizeClasses[size]} w-auto object-contain transition-transform group-hover:scale-105`}
       />
       {showText && (
         <div className="flex flex-col leading-none">
           <span className="text-xl font-black tracking-tighter text-[#1890FF] italic">
-            RECLU
+            MAVERLANG
           </span>
         </div>
       )}

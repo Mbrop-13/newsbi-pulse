@@ -147,9 +147,9 @@ export function Navbar() {
           <div className="flex-shrink-0 flex items-center gap-3 h-full overflow-visible">
             <Link href={`/`} className="flex items-center hover:opacity-80 transition-opacity h-full overflow-visible">
                <img 
-                 src="https://cdn.shopify.com/s/files/1/0564/3812/8712/files/freepik__background__94196.png?v=1771922713" 
-                 alt="Reclu" 
-                 className="h-[84px] w-auto object-contain max-w-none"
+                 src="/assets/maverlang-logo.png" 
+                 alt="Maverlang" 
+                 className="h-12 w-auto object-contain max-w-none"
                />
             </Link>
 
@@ -218,7 +218,7 @@ export function Navbar() {
                     ? "bg-[#1890FF] text-white shadow-lg shadow-[#1890FF]/30"
                     : "bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-[#1890FF] hover:bg-[#1890FF]/10"
                   }`}
-                title="Reclu Radio"
+                title="Maverlang Radio"
               >
                 <Headphones className="w-4 h-4" />
               </button>

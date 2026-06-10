@@ -477,8 +477,8 @@ export function ChatLanding() {
               <div className="text-center mb-8">
                 <div className="flex items-center justify-center">
                   <img 
-                    src="https://cdn.shopify.com/s/files/1/0564/3812/8712/files/freepik__background__94196.png?v=1771922713" 
-                    alt="Reclu Logo" 
+                    src="/assets/maverlang-logo.png" 
+                    alt="Maverlang Logo" 
                     className="h-28 w-auto object-contain"
                   />
                 </div>

@@ -22,13 +22,13 @@ export function SidebarLogo() {
       >
         {state === "expanded" ? (
           <img 
-            src="https://cdn.shopify.com/s/files/1/0564/3812/8712/files/freepik__background__94196.png?v=1771922713" 
-            alt="Reclu Logo" 
+            src="/assets/maverlang-logo.png" 
+            alt="Maverlang Logo" 
             className="h-16 w-auto object-contain" 
           />
         ) : (
           <div className="flex h-7 w-7 items-center justify-center rounded-lg overflow-hidden shadow-sm bg-transparent shrink-0">
-            <img src="/assets/reclu-favicon.png" alt="Reclu Logo" className="h-full w-full object-cover" />
+            <img src="/assets/maverlang-logo-small.png" alt="Maverlang Logo" className="h-full w-full object-cover" />
           </div>
         )}
       </Link>

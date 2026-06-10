@@ -1441,7 +1441,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                 >
                   {selectedModel === 'fast' ? <Zap className="w-4 h-4 text-[#1890FF]" /> : selectedModel === 'pro' ? <Sparkles className="w-4 h-4 text-amber-500" /> : <Users className="w-4 h-4 text-purple-500" />}
                   <span className="text-xs font-bold text-gray-800 dark:text-gray-200 hidden sm:inline">
-                    {selectedModel === 'fast' ? 'Reclu Fast' : selectedModel === 'pro' ? 'Reclu Pro' : 'Reclu Agent'}
+                    {selectedModel === 'fast' ? 'Maverlang Fast' : selectedModel === 'pro' ? 'Maverlang Pro' : 'Maverlang Agent'}
                   </span>
                   {selectedModel === 'pro' && !canUsePro && <Lock className="w-3 h-3 text-amber-500 shrink-0" />}
                   {selectedModel === 'agent' && <span className="text-[8px] bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-1 rounded uppercase font-black tracking-wider shrink-0">Swarm</span>}
@@ -1467,7 +1467,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                             <Zap className="w-4 h-4" />
                           </div>
                           <div className="flex-1">
-                            <div className="leading-none text-xs font-bold">Reclu Fast</div>
+                            <div className="leading-none text-xs font-bold">Maverlang Fast</div>
                             <div className="text-[10px] text-gray-400 font-normal mt-1">Respuestas rápidas y precisas (Por defecto)</div>
                           </div>
                         </button>
@@ -1482,7 +1482,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                           </div>
                           <div className="flex-1">
                             <div className="leading-none text-xs font-bold flex items-center justify-between">
-                              Reclu Pro
+                              Maverlang Pro
                               {!canUsePro && <span className="text-[9px] bg-amber-500 text-white px-1.5 py-0.5 rounded ml-2 uppercase flex items-center gap-1"><Lock className="w-2.5 h-2.5" />Pro</span>}
                             </div>
                             <div className="text-[10px] text-gray-400 font-normal mt-1">{!canUsePro ? 'Requiere plan Pro o superior' : 'Análisis financiero profundo y razonamiento reflexivo'}</div>
@@ -1499,7 +1499,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                           </div>
                           <div className="flex-1">
                             <div className="leading-none text-xs font-bold flex items-center justify-between">
-                              Reclu Agent
+                              Maverlang Agent
                               <span className="text-[9px] bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-1.5 py-0.5 rounded ml-2 uppercase font-black tracking-wider shadow-sm">Swarm</span>
                             </div>
                             <div className="text-[10px] text-gray-400 font-normal mt-1">Orquestación de agentes con razonamiento avanzado</div>
@@ -2749,7 +2749,7 @@ function ToolResultPill({ result }: { result: ToolResultUI }) {
                   <div className="flex flex-col justify-between py-0.5">
                     <h4 className="text-[13px] font-bold line-clamp-2 leading-snug mb-1 text-gray-900 dark:text-white group-hover:text-[#1890FF]">{item.title}</h4>
                     <div className="flex items-center justify-between text-[10px] text-gray-500 font-medium">
-                      <span className="flex items-center gap-1"><ExternalLink className="w-3 h-3 text-[#1890FF]" /> {item.source || "Reclu"}</span>
+                      <span className="flex items-center gap-1"><ExternalLink className="w-3 h-3 text-[#1890FF]" /> {item.source || "Maverlang"}</span>
                     </div>
                   </div>
                 </a>

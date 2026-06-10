@@ -479,7 +479,7 @@ export function ChatLanding() {
                   <img 
                     src="/assets/maverlang-logo.png" 
                     alt="Maverlang Logo" 
-                    className="h-28 w-auto object-contain"
+                    className="h-16 w-auto object-contain"
                   />
                 </div>
               </div>

@@ -13,23 +13,30 @@ export function SidebarLogo() {
   }
 
   return (
-    <div className="flex items-center pl-1 pr-2 py-2">
+    <div className={`flex items-center ${state === "expanded" ? "pl-1 pr-2 py-2" : "justify-center py-2"}`}>
       <Link
         href="/"
         aria-label="Go to home"
-        className="flex items-center gap-3 flex-1 h-full"
+        className={`flex items-center ${state === "expanded" ? "gap-3 flex-1 h-full" : "justify-center"}`}
         onClick={handleHomeClick}
       >
         {state === "expanded" ? (
-          <img 
-            src="/assets/maverlang-logo.png" 
-            alt="Maverlang Logo" 
-            className="h-16 w-auto object-contain" 
-          />
+          <>
+            <img 
+              src="/assets/maverlang-logo-small.png" 
+              alt="Maverlang Logo" 
+              className="h-8 w-8 object-contain" 
+            />
+            <span className="text-xl font-black tracking-tighter text-[#1890FF] italic">
+              MAVERLANG
+            </span>
+          </>
         ) : (
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg overflow-hidden shadow-sm bg-transparent shrink-0">
-            <img src="/assets/maverlang-logo-small.png" alt="Maverlang Logo" className="h-full w-full object-cover" />
-          </div>
+          <img 
+            src="/assets/maverlang-logo-small.png" 
+            alt="Maverlang Logo" 
+            className="h-7 w-7 object-contain shrink-0" 
+          />
         )}
       </Link>
       {state === "expanded" && (

@@ -7,17 +7,19 @@ import { ChatMessages } from "@/components/chat/chat-messages"
 import { ModelSelector, type RecluModel } from "@/components/chat/model-selector"
 import PromptSuggestions from "@/components/chat/prompt-suggestions"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useAIChatStore, type ChatMessage } from "@/lib/stores/ai-chat-store"
 import { useAssistantStore } from "@/lib/stores/assistant-store"
-import { useAuthStore } from "@/lib/stores/auth-store"
+import { useAuthStore, useAuthModalStore } from "@/lib/stores/auth-store"
 import { getPlanConfig, type PlanTier, getNextTier } from "@/lib/plan-limits"
 import { useChat } from "ai/react"
 import { ShareChatDialog } from "@/components/assistant/share-chat-dialog"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"
+import { cn, formatDate as fmtDate } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
-import { Newspaper, Sparkles, Headphones, LineChart, Coins, Landmark, Briefcase, Shield, Lightbulb, Globe, Flame, Calendar } from "lucide-react"
+import { Newspaper, Sparkles, Headphones, LineChart, Coins, Landmark, Briefcase, Shield, Lightbulb, Globe, Flame, Calendar, Cpu } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
 
 // Model ID mapping for our API
 const MODEL_MAP: Record<string, string> = {
@@ -101,6 +103,7 @@ function groupConsecutiveMessages(messages: ChatMessage[]): ChatMessage[] {
 
 export function ChatLanding() {
   const user = useAuthStore((s) => s.user)
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const userTier = useAuthStore((s) =>
     s.user?.role === "admin" ? "ultra" : (s.user?.tier || "free")
   ) as PlanTier
@@ -124,6 +127,11 @@ export function ChatLanding() {
   const [activeMenu, setActiveMenu] = useState<'noticias' | 'mercados' | 'portafolio' | 'mundo' | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  const [newsList, setNewsList] = useState<any[]>([]);
+  const [worldNewsList, setWorldNewsList] = useState<any[]>([]);
+  const [portfolioList, setPortfolioList] = useState<any[]>([]);
+  const [loadingData, setLoadingData] = useState(false);
+
   const handleMouseEnter = (menu: 'noticias' | 'mercados' | 'portafolio' | 'mundo') => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     setActiveMenu(menu);
@@ -134,6 +142,52 @@ export function ChatLanding() {
       setActiveMenu(null);
     }, 150);
   };
+
+  const supabase = createClient();
+  const openModal = useAuthModalStore(s => s.openModal);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoadingData(true);
+      try {
+        // 1. Fetch News
+        const { data: newsData } = await supabase
+          .from('news_articles')
+          .select('*')
+          .neq('is_hidden', true)
+          .order('published_at', { ascending: false })
+          .limit(40);
+        
+        if (newsData) {
+          // General News (first 3 articles)
+          setNewsList(newsData.slice(0, 3));
+          
+          // World News (articles from countries Chile, Argentina, Colombia, Brasil, Ecuador, México)
+          const countrySlugs = ['chile', 'argentina', 'colombia', 'brasil', 'ecuador', 'mexico'];
+          const filteredWorld = newsData.filter(a => countrySlugs.includes(a.feed_tag || ''));
+          setWorldNewsList(filteredWorld.slice(0, 3));
+        }
+
+        // 2. Fetch Portfolio if authenticated
+        if (user?.id) {
+          const { data: portData } = await supabase
+            .from('portfolios')
+            .select('*')
+            .eq('user_id', user.id);
+          if (portData) {
+            setPortfolioList(portData);
+          }
+        } else {
+          setPortfolioList([]);
+        }
+      } catch (err) {
+        console.error("Error fetching dropdown data:", err);
+      } finally {
+        setLoadingData(false);
+      }
+    };
+    fetchData();
+  }, [user, isAuthenticated, supabase]);
 
   const [openReasoning, setOpenReasoning] = useState<Record<string, boolean>>({})
   const [shareDialog, setShareDialog] = useState({ isOpen: false, question: "", answer: "" })
@@ -497,14 +551,42 @@ export function ChatLanding() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 8, scale: 0.96 }}
                       transition={{ duration: 0.2, ease: "easeOut" }}
-                      className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[320px] bg-white/95 dark:bg-[#0B1329]/95 backdrop-blur-xl border border-gray-200/50 dark:border-white/5 rounded-2xl p-3 shadow-2xl z-50 flex flex-col gap-2.5 font-sans text-left"
+                      className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[360px] bg-white/95 dark:bg-[#0B1329]/95 backdrop-blur-xl border border-gray-200/50 dark:border-white/5 rounded-2xl p-4 shadow-2xl z-50 flex flex-col gap-3 font-sans text-left"
                     >
-                      <h4 className="text-[10px] font-black tracking-widest text-[#1890FF] uppercase px-1.5 pt-1">Noticias Financieras</h4>
-                      <div className="flex flex-col gap-1">
-                        <MenuLink href="/noticias" icon={Newspaper} title="Feed de Noticias" desc="Noticias globales en tiempo real libre de sesgos." />
-                        <MenuLink href="/noticias?feed=personal" icon={Sparkles} title="Feed Personalizado" desc="Noticias adaptadas a tus activos de interés." />
-                        <MenuLink href="/radio" icon={Headphones} title="Maverlang Radio" desc="Transmisión de audio con reportes de IA." />
+                      <div className="flex items-center justify-between px-1 border-b border-gray-100 dark:border-white/5 pb-2">
+                        <h4 className="text-[10px] font-black tracking-widest text-[#1890FF] uppercase">Noticias Destacadas</h4>
+                        <span className="text-[9px] bg-red-500/10 text-red-500 font-bold px-1.5 py-0.5 rounded-full animate-pulse">EN VIVO</span>
                       </div>
+                      
+                      <div className="flex flex-col gap-1">
+                        {newsList.length > 0 ? (
+                          newsList.map((art) => (
+                            <Link 
+                              key={art.id} 
+                              href={`/article/${art.slug || art.id}`}
+                              className="group flex items-start gap-3 p-2 rounded-xl hover:bg-gray-100/70 dark:hover:bg-white/[0.03] transition-all duration-200"
+                            >
+                              {art.image_url && (
+                                <img src={art.image_url} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0 bg-gray-100 dark:bg-slate-800" />
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-bold text-gray-900 dark:text-gray-100 line-clamp-2 leading-snug group-hover:text-[#1890FF] transition-colors">
+                                  {art.title}
+                                </p>
+                                <span className="text-[10px] text-muted-foreground mt-1 block">
+                                  {art.source_name || "Bloomberg"} • {fmtDate(art.published_at)}
+                                </span>
+                              </div>
+                            </Link>
+                          ))
+                        ) : (
+                          <div className="text-center py-6 text-xs text-muted-foreground">Cargando noticias...</div>
+                        )}
+                      </div>
+                      
+                      <Link href="/noticias" className="text-center text-[10px] font-bold text-[#1890FF] hover:underline pt-2 border-t border-gray-100 dark:border-white/5">
+                        Ver todas las noticias →
+                      </Link>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -530,14 +612,45 @@ export function ChatLanding() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 8, scale: 0.96 }}
                       transition={{ duration: 0.2, ease: "easeOut" }}
-                      className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[320px] bg-white/95 dark:bg-[#0B1329]/95 backdrop-blur-xl border border-gray-200/50 dark:border-white/5 rounded-2xl p-3 shadow-2xl z-50 flex flex-col gap-2.5 font-sans text-left"
+                      className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[340px] bg-white/95 dark:bg-[#0B1329]/95 backdrop-blur-xl border border-gray-200/50 dark:border-white/5 rounded-2xl p-4 shadow-2xl z-50 flex flex-col gap-3 font-sans text-left"
                     >
-                      <h4 className="text-[10px] font-black tracking-widest text-[#1890FF] uppercase px-1.5 pt-1">Activos & Cotizaciones</h4>
-                      <div className="flex flex-col gap-1">
-                        <MenuLink href="/mercados?tab=acciones" icon={LineChart} title="Acciones Globales" desc="Índices, cotizaciones y análisis del mercado." />
-                        <MenuLink href="/mercados?tab=crypto" icon={Coins} title="Criptomonedas" desc="Precios en vivo de BTC, ETH y altcoins." />
-                        <MenuLink href="/mercados?tab=forex" icon={Landmark} title="Divisas / Forex" desc="Monitoreo de pares de divisas globales." />
+                      <div className="flex items-center justify-between px-1 border-b border-gray-100 dark:border-white/5 pb-2">
+                        <h4 className="text-[10px] font-black tracking-widest text-[#1890FF] uppercase">Resumen de Mercados</h4>
+                        <span className="text-[9px] text-green-500 font-bold">MERCADOS ABIERTOS</span>
                       </div>
+                      
+                      <div className="flex flex-col gap-1.5">
+                        {[
+                          { symbol: "S&P 500", name: "Índice Standard & Poor's", price: "5,342.87", change: "+0.45%", isUp: true },
+                          { symbol: "NVDA", name: "NVIDIA Corporation", price: "$1,208.50", change: "+2.15%", isUp: true },
+                          { symbol: "BTC", name: "Bitcoin / Dólar", price: "$68,420.00", change: "-1.20%", isUp: false },
+                          { symbol: "TSLA", name: "Tesla Motors", price: "$177.46", change: "-0.85%", isUp: false }
+                        ].map((asset) => (
+                          <Link 
+                            key={asset.symbol}
+                            href={`/mercados/${asset.symbol}`}
+                            className="group flex items-center justify-between p-2 rounded-xl hover:bg-gray-100/70 dark:hover:bg-white/[0.03] transition-all duration-200"
+                          >
+                            <div className="flex flex-col">
+                              <span className="text-xs font-bold text-gray-900 dark:text-gray-100 group-hover:text-[#1890FF] transition-colors">{asset.symbol}</span>
+                              <span className="text-[9px] text-muted-foreground mt-0.5">{asset.name}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-gray-955 dark:text-white tabular-nums">{asset.price}</span>
+                              <span className={cn(
+                                "text-[10px] font-bold px-2.5 py-0.5 rounded-full tabular-nums",
+                                asset.isUp ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"
+                              )}>
+                                {asset.change}
+                              </span>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                      
+                      <Link href="/mercados" className="text-center text-[10px] font-bold text-[#1890FF] hover:underline pt-2 border-t border-gray-100 dark:border-white/5">
+                        Explorar todos los mercados →
+                      </Link>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -563,14 +676,79 @@ export function ChatLanding() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 8, scale: 0.96 }}
                       transition={{ duration: 0.2, ease: "easeOut" }}
-                      className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[320px] bg-white/95 dark:bg-[#0B1329]/95 backdrop-blur-xl border border-gray-200/50 dark:border-white/5 rounded-2xl p-3 shadow-2xl z-50 flex flex-col gap-2.5 font-sans text-left"
+                      className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[320px] bg-white/95 dark:bg-[#0B1329]/95 backdrop-blur-xl border border-gray-200/50 dark:border-white/5 rounded-2xl p-4 shadow-2xl z-50 flex flex-col gap-3 font-sans text-left"
                     >
-                      <h4 className="text-[10px] font-black tracking-widest text-[#1890FF] uppercase px-1.5 pt-1">Gestión de Portafolio</h4>
-                      <div className="flex flex-col gap-1">
-                        <MenuLink href="/portafolio" icon={Briefcase} title="Mi Portafolio" desc="Monitorea tus inversiones y rentabilidad." />
-                        <MenuLink href="/portafolio?tab=analisis" icon={Shield} title="Análisis de Riesgo" desc="Diversificación y volatilidad calculada por IA." />
-                        <MenuLink href="/portafolio?tab=sugerencias" icon={Lightbulb} title="Alertas de Rebalanceo" desc="Consejos inteligentes para optimizar ganancias." />
+                      <div className="flex items-center justify-between px-1 border-b border-gray-100 dark:border-white/5 pb-2">
+                        <h4 className="text-[10px] font-black tracking-widest text-[#1890FF] uppercase">Mi Inversión</h4>
+                        {isAuthenticated && portfolioList.length > 0 && (
+                          <span className="text-[10px] text-green-500 font-bold px-1.5 py-0.5 rounded-full bg-green-500/10">+5.42%</span>
+                        )}
                       </div>
+                      
+                      <div className="flex flex-col gap-1.5">
+                        {!isAuthenticated ? (
+                          <div className="text-center py-4 px-2">
+                            <Briefcase className="w-10 h-10 text-[#1890FF]/25 mx-auto mb-3" />
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-4 leading-normal">
+                              Inicia sesión para sincronizar tus activos y analizar tus retornos.
+                            </p>
+                            <Button 
+                              onClick={() => { setActiveMenu(null); openModal("login"); }}
+                              className="w-full h-8 rounded-xl bg-[#1890FF] text-white hover:bg-[#1890FF]/90 text-xs font-bold shadow-md shadow-[#1890FF]/15 cursor-pointer"
+                            >
+                              Iniciar Sesión
+                            </Button>
+                          </div>
+                        ) : loadingData ? (
+                          <div className="text-center py-6 text-xs text-muted-foreground">Cargando portafolio...</div>
+                        ) : portfolioList.length > 0 ? (
+                          <div className="flex flex-col gap-1.5">
+                            {portfolioList.slice(0, 3).map((asset) => (
+                              <Link 
+                                key={asset.id}
+                                href={`/mercados/${asset.symbol}`}
+                                className="group flex items-center justify-between p-2 rounded-xl hover:bg-gray-100/70 dark:hover:bg-white/[0.03] transition-all duration-200"
+                              >
+                                <div className="flex flex-col">
+                                  <span className="text-xs font-bold text-gray-900 dark:text-gray-100 group-hover:text-[#1890FF] transition-colors">{asset.symbol}</span>
+                                  <span className="text-[9px] text-muted-foreground mt-0.5 truncate max-w-[150px]">{asset.company_name}</span>
+                                </div>
+                                <div className="flex flex-col items-end">
+                                  <span className="text-xs font-semibold text-gray-955 dark:text-white tabular-nums">
+                                    {(asset.shares || 0) * (asset.average_price || 0) > 0 
+                                      ? `$${((asset.shares || 0) * (asset.average_price || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                                      : `$${(asset.average_price || 0).toLocaleString('en-US')}`
+                                    }
+                                  </span>
+                                  <span className="text-[9px] text-muted-foreground mt-0.5 tabular-nums">
+                                    {asset.shares || 0} acc.
+                                  </span>
+                                </div>
+                              </Link>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-4 px-2">
+                            <Briefcase className="w-10 h-10 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-4 leading-normal">
+                              Tu portafolio está vacío. Agrega tus acciones para seguir su rendimiento.
+                            </p>
+                            <Link 
+                              href="/portafolio" 
+                              onClick={() => setActiveMenu(null)}
+                              className="w-full flex items-center justify-center h-8 rounded-xl bg-secondary hover:bg-secondary/80 text-foreground text-xs font-bold transition-all"
+                            >
+                              Administrar Portafolio
+                            </Link>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {isAuthenticated && portfolioList.length > 0 && (
+                        <Link href="/portafolio" onClick={() => setActiveMenu(null)} className="text-center text-[10px] font-bold text-[#1890FF] hover:underline pt-2 border-t border-gray-100 dark:border-white/5">
+                          Ver portafolio completo →
+                        </Link>
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -596,14 +774,53 @@ export function ChatLanding() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 8, scale: 0.96 }}
                       transition={{ duration: 0.2, ease: "easeOut" }}
-                      className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[320px] bg-white/95 dark:bg-[#0B1329]/95 backdrop-blur-xl border border-gray-200/50 dark:border-white/5 rounded-2xl p-3 shadow-2xl z-50 flex flex-col gap-2.5 font-sans text-left"
+                      className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[360px] bg-white/95 dark:bg-[#0B1329]/95 backdrop-blur-xl border border-gray-200/50 dark:border-white/5 rounded-2xl p-4 shadow-2xl z-50 flex flex-col gap-3 font-sans text-left"
                     >
-                      <h4 className="text-[10px] font-black tracking-widest text-[#1890FF] uppercase px-1.5 pt-1">Mundo Global</h4>
-                      <div className="flex flex-col gap-1">
-                        <MenuLink href="/mundo" icon={Globe} title="Globo Terráqueo 3D" desc="Explora noticias interactivamente en 3D." />
-                        <MenuLink href="/mundo?tab=tendencias" icon={Flame} title="Tendencias Globales" desc="Geopolítica y eventos de alto impacto." />
-                        <MenuLink href="/mundo?tab=calendario" icon={Calendar} title="Macro Calendario" desc="Eventos económicos internacionales clave." />
+                      <div className="flex items-center justify-between px-1 border-b border-gray-100 dark:border-white/5 pb-2">
+                        <h4 className="text-[10px] font-black tracking-widest text-[#1890FF] uppercase">Noticias por Región</h4>
+                        <span className="text-[9px] text-[#1890FF] font-bold">LATINOAMÉRICA</span>
                       </div>
+                      
+                      <div className="flex flex-col gap-2">
+                        {worldNewsList.length > 0 ? (
+                          worldNewsList.map((art) => {
+                            const countryConfig = COUNTRY_MAP[art.feed_tag || ''];
+                            return (
+                              <Link 
+                                key={art.id} 
+                                href={`/article/${art.slug || art.id}`}
+                                className="group flex items-start gap-3 p-2 rounded-xl hover:bg-gray-100/70 dark:hover:bg-white/[0.03] transition-all duration-200"
+                              >
+                                {art.image_url && (
+                                  <img src={art.image_url} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0 bg-gray-100 dark:bg-slate-800" />
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                                    {countryConfig && (
+                                      <span className="inline-flex items-center gap-1 text-[9px] font-extrabold bg-[#1890FF]/10 text-[#1890FF] px-1.5 py-0.5 rounded-full uppercase leading-none">
+                                        <span>{countryConfig.flag}</span>
+                                        <span>{countryConfig.name}</span>
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-xs font-bold text-gray-900 dark:text-gray-100 line-clamp-2 leading-snug group-hover:text-[#1890FF] transition-colors">
+                                    {art.title}
+                                  </p>
+                                  <span className="text-[10px] text-muted-foreground mt-1 block">
+                                    {art.source_name || "Mundo"} • {fmtDate(art.published_at)}
+                                  </span>
+                                </div>
+                              </Link>
+                            );
+                          })
+                        ) : (
+                          <div className="text-center py-6 text-xs text-muted-foreground">Cargando noticias globales...</div>
+                        )}
+                      </div>
+                      
+                      <Link href="/mundo" className="text-center text-[10px] font-bold text-[#1890FF] hover:underline pt-2 border-t border-gray-100 dark:border-white/5">
+                        Explorar el mapa global →
+                      </Link>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -681,6 +898,15 @@ export function ChatLanding() {
     </div>
   )
 }
+
+const COUNTRY_MAP: Record<string, { name: string; flag: string }> = {
+  chile: { name: 'Chile', flag: '🇨🇱' },
+  argentina: { name: 'Argentina', flag: '🇦🇷' },
+  colombia: { name: 'Colombia', flag: '🇨🇴' },
+  brasil: { name: 'Brasil', flag: '🇧🇷' },
+  ecuador: { name: 'Ecuador', flag: '🇪🇨' },
+  mexico: { name: 'México', flag: '🇲🇽' },
+};
 
 function MenuLink({ 
   href, 

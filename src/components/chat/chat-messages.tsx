@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
-import { Bot, User, ThumbsUp, ThumbsDown, Share2, RefreshCw, ChevronRight, Sparkles, Loader2, Globe, ExternalLink, X } from "lucide-react"
+import { Bot, User, ThumbsUp, ThumbsDown, Share2, RefreshCw, ChevronRight, Sparkles, Loader2, Globe, ExternalLink, X, ArrowDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import ReactMarkdown from "react-markdown"
@@ -43,17 +43,51 @@ export function ChatMessages({
 }: ChatMessagesProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const [showScrollButton, setShowScrollButton] = useState(false)
+  const isAtBottomRef = useRef(true)
+
+  const handleScroll = () => {
+    const el = containerRef.current
+    if (!el) return
+    const isAtB = el.scrollHeight - el.scrollTop - el.clientHeight < 150
+    isAtBottomRef.current = isAtB
+    setShowScrollButton(!isAtB)
+  }
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    if (isAtBottomRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    }
   }, [messages, isLoading])
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    isAtBottomRef.current = true
+    setShowScrollButton(false)
+  }
 
   return (
     <div
       ref={containerRef}
+      onScroll={handleScroll}
       className="flex-1 overflow-y-auto scrollbar-hide px-4 md:px-6 relative"
     >
+      <AnimatePresence>
+        {showScrollButton && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            onClick={scrollToBottom}
+            className="absolute bottom-10 left-6 z-50 w-10 h-10 bg-[#1890FF] hover:bg-[#1890FF]/90 text-white rounded-full shadow-lg flex items-center justify-center transition-all cursor-pointer border border-[#1890FF]/20"
+            title="Desplazar al final"
+          >
+            <ArrowDown className="w-5 h-5 animate-bounce" />
+          </motion.button>
+        )}
+      </AnimatePresence>
+
       <div className="max-w-3xl mx-auto pt-20 pb-6 space-y-6">
         {messages.map((msg, idx) => (
           <MessageBubble
@@ -188,8 +222,31 @@ function MessageBubble({
     }) || []
 
     // 2. Render from Vercel AI SDK toolInvocations (from new messages)
+    const browserInvs = message.toolInvocations?.filter((inv: any) =>
+      ['browser_navigate', 'browser_click', 'browser_type', 'browser_scroll'].includes(inv.toolName)
+    ) || [];
+    const firstBrowserToolCallId = browserInvs[0]?.toolCallId;
+
     const sdkCards = message.toolInvocations?.map((inv: any, i: number) => {
+      const isBrowserTool = ['browser_navigate', 'browser_click', 'browser_type', 'browser_scroll'].includes(inv.toolName);
+      
       if (inv.state !== 'result') {
+        if (isBrowserTool) {
+          if (inv.toolCallId === firstBrowserToolCallId) {
+            const browserSessionObj = streamData?.find((d: any) => d?.type === 'browser_session');
+            const sessionId = inv.result?.sessionId || browserSessionObj?.sessionId || (message as any)._browserSessionId;
+            const currentUrl = browserInvs.find((bi: any) => bi.toolName === 'browser_navigate')?.args?.url || '';
+            return (
+              <VirtualBrowserCard
+                key={`inv-browser-${i}`}
+                sessionId={sessionId}
+                currentUrl={currentUrl}
+                isActive={true}
+              />
+            );
+          }
+          return null;
+        }
         return (
           <div key={inv.toolCallId || `loading-tool-${i}`} className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/5 text-blue-500 rounded-xl text-xs font-bold w-fit animate-pulse border border-blue-500/20 my-1">
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -213,22 +270,36 @@ function MessageBubble({
         case 'run_python':
           return <PythonResultCard key={`inv-python-${i}`} args={inv.args} result={inv.result} />
         case 'browser_navigate': {
-          const sessionId = inv.result?.sessionId;
-          const currentUrl = inv.result?.url || inv.args?.url || '';
-          return (
-            <VirtualBrowserCard
-              key={`inv-browser-${i}`}
-              sessionId={sessionId}
-              currentUrl={currentUrl}
-              isActive={inv.state !== 'result'}
-              extractedContent={inv.result?.textContent?.slice(0, 500)}
-            />
-          );
+          if (inv.toolCallId === firstBrowserToolCallId) {
+            const sessionId = inv.result?.sessionId;
+            const currentUrl = inv.result?.url || inv.args?.url || '';
+            return (
+              <VirtualBrowserCard
+                key={`inv-browser-${i}`}
+                sessionId={sessionId}
+                currentUrl={currentUrl}
+                isActive={browserInvs.some((bi: any) => bi.state !== 'result')}
+                extractedContent={inv.result?.textContent?.slice(0, 500)}
+              />
+            );
+          }
+          return null;
         }
         case 'browser_click':
         case 'browser_type':
         case 'browser_scroll':
-          // These render within the existing VirtualBrowserCard via SSE
+          if (inv.toolCallId === firstBrowserToolCallId) {
+            const browserSessionObj = streamData?.find((d: any) => d?.type === 'browser_session');
+            const sessionId = inv.result?.sessionId || browserSessionObj?.sessionId || (message as any)._browserSessionId;
+            return (
+              <VirtualBrowserCard
+                key={`inv-browser-${i}`}
+                sessionId={sessionId}
+                currentUrl=""
+                isActive={browserInvs.some((bi: any) => bi.state !== 'result')}
+              />
+            );
+          }
           return null;
       }
     }) || []

@@ -885,20 +885,23 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isUserAtBottom, setIsUserAtBottom] = useState(true);
+  const isAtBottomRef = useRef(true);
 
   const handleScroll = () => {
     if (scrollContainerRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
-      setIsUserAtBottom(scrollHeight - scrollTop - clientHeight < 150);
+      const isAtB = scrollHeight - scrollTop - clientHeight < 150;
+      isAtBottomRef.current = isAtB;
+      setIsUserAtBottom(isAtB);
     }
   };
 
   // Auto-scroll
   useEffect(() => {
-    if (isUserAtBottom) {
+    if (isAtBottomRef.current) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [aiMessages, aiLoading, isUserAtBottom]);
+  }, [aiMessages, aiLoading]);
 
   const handleModelSelect = (mId: 'fast' | 'pro' | 'agent') => {
     if ((mId === 'pro' || mId === 'agent') && !canUsePro) {
@@ -2214,12 +2217,13 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
               transition={{ duration: 0.15 }}
               onClick={() => {
                 messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+                isAtBottomRef.current = true;
                 setIsUserAtBottom(true);
               }}
-              className="absolute bottom-28 right-6 md:right-10 z-40 w-9 h-9 bg-white dark:bg-[#1A1A1A] border border-gray-200 dark:border-gray-700 rounded-full shadow-lg flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-[#1890FF] hover:border-[#1890FF]/40 hover:shadow-xl transition-all cursor-pointer"
+              className="absolute bottom-28 left-6 md:left-10 z-40 w-9 h-9 bg-white dark:bg-[#1A1A1A] border border-gray-200 dark:border-gray-700 rounded-full shadow-lg flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-[#1890FF] hover:border-[#1890FF]/40 hover:shadow-xl transition-all cursor-pointer"
               title="Ir al final"
             >
-              <ArrowDown className="w-4 h-4" />
+              <ArrowDown className="w-4 h-4 animate-bounce" />
             </motion.button>
           )}
         </AnimatePresence>

@@ -203,5 +203,21 @@ Se han realizado las siguientes mejoras visuales avanzadas para otorgar un aspec
 *   **Imágenes de Portada Garantizadas en Noticias:**
     *   Tanto en el menú de `Noticias` como en el de `Mundo`, se utiliza la función `getFallbackImage` para proveer portadas de Unsplash optimizadas según la categoría de la noticia si la base de datos no cuenta con un `image_url` asignado.
 
+---
+
+## 13. Búsqueda Web Interactiva y Pantalla Integrada de Yahoo Finance
+
+Se ha desarrollado e integrado un flujo dinámico para automatizar las consultas de mercado y portafolio mediante una simulación de navegador real en el chat:
+
+*   **Pantalla de Yahoo Finance en Tiempo Real:**
+    *   Al solicitar un análisis de portafolio o de una acción en particular (ej: AAPL, NVDA, BTC), la burbuja del chat despliega de manera automática una ventana de navegador web (`WebPreview`) apuntando a la ficha del activo en Yahoo Finance (ej: `https://finance.yahoo.com/quote/AAPL`).
+    *   Esta ventana emula un navegador clásico con barra de direcciones editable, botones de navegación y un control para abrir la página en una nueva pestaña (útil ante bloqueos de seguridad iframe).
+    *   La ubicación del widget se alinea de forma fija directamente debajo del card de métricas del portafolio o de análisis fundamental, permaneciendo visible y al alcance del usuario en el historial.
+*   **Detección Automatizada mediante System Prompt:**
+    *   Se implementó la **Regla 13 (TICKERS)** en el System Prompt del backend para obligar al modelo de lenguaje a escribir explícitamente los tickers entre paréntesis (ej: *Nvidia (NVDA)*) cada vez que el usuario mencione una empresa o activo financiero.
+    *   El frontend intercepta este texto usando el detector de expresiones regulares y extrae el símbolo para cargarlo automáticamente en la ventana de navegación web sin necesidad de configuraciones manuales.
+    *   **Mapeo de Índices:** Se adaptaron los símbolos para mapear índices genéricos (ej: S&P 500) a su correspondiente clave en Yahoo Finance (`^GSPC` para S&P 500, `^NDX` para Nasdaq, `^DJI` para Dow Jones).
+
+
 
 

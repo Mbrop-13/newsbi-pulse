@@ -15,6 +15,7 @@ import { AIChartCard } from "@/components/assistant/ai-chart-card"
 import { PriceAlertCard } from "@/components/assistant/price-alert-card"
 import { motion, AnimatePresence } from "framer-motion"
 import { WebPreview, WebPreviewNavigation, WebPreviewUrl, WebPreviewBody } from "@/components/ai/web-preview"
+import { detectTicker } from "@/lib/detect-ticker"
 
 interface ChatMessagesProps {
   messages: ChatMessage[]
@@ -129,6 +130,43 @@ function MessageBubble({
     }
   }
   const hasCitations = citationsList.length > 0
+
+  const getAutoPreviewUrl = () => {
+    const stockInv = message.toolInvocations?.find((inv: any) => inv.toolName === 'analyze_stock' && inv.state === 'result');
+    if (stockInv?.result?.symbol) {
+      const sym = getYahooFinanceSymbol(stockInv.result.symbol);
+      return { url: `https://finance.yahoo.com/quote/${sym}`, label: `Yahoo Finance: ${sym}` };
+    }
+    
+    const stockTr = message.toolResults?.find((tr: any) => tr.tool === 'stock_info');
+    const stockTrSym = stockTr?.data?.symbol;
+    if (stockTrSym) {
+      const sym = getYahooFinanceSymbol(stockTrSym);
+      return { url: `https://finance.yahoo.com/quote/${sym}`, label: `Yahoo Finance: ${sym}` };
+    }
+
+    const portInv = message.toolInvocations?.find((inv: any) => inv.toolName === 'get_portfolio_summary' && inv.state === 'result');
+    const portInvSym = portInv?.result?.assets?.[0]?.symbol;
+    if (portInvSym) {
+      const firstSym = getYahooFinanceSymbol(portInvSym);
+      return { url: `https://finance.yahoo.com/quote/${firstSym}`, label: `Yahoo Finance: ${firstSym}` };
+    }
+
+    const portTr = message.toolResults?.find((tr: any) => tr.tool === 'portfolio');
+    const portTrSym = portTr?.data?.assets?.[0]?.symbol;
+    if (portTrSym) {
+      const firstSym = getYahooFinanceSymbol(portTrSym);
+      return { url: `https://finance.yahoo.com/quote/${firstSym}`, label: `Yahoo Finance: ${firstSym}` };
+    }
+
+    const detected = detectTicker(message.content) || detectTicker(prevMessageContent);
+    if (detected?.symbol) {
+      const sym = getYahooFinanceSymbol(detected.symbol);
+      return { url: `https://finance.yahoo.com/quote/${sym}`, label: `Yahoo Finance: ${sym}` };
+    }
+
+    return null;
+  };
 
   // Render tool result cards
   const renderToolResults = () => {
@@ -277,6 +315,24 @@ function MessageBubble({
       <div className="flex-1 min-w-0">
         {renderToolResults()}
         {renderCharts()}
+        {(() => {
+          const preview = getAutoPreviewUrl();
+          if (preview) {
+            return (
+              <div className="my-4 max-w-xl">
+                <WebPreview defaultUrl={preview.url} className="overflow-hidden border border-gray-200/80 dark:border-white/10 shadow-lg">
+                  <WebPreviewNavigation className="flex items-center justify-between p-2 border-b bg-muted/30">
+                    <div className="flex items-center gap-2 flex-1 mr-2">
+                      <WebPreviewUrl className="bg-white dark:bg-[#0a0a0a]" />
+                    </div>
+                  </WebPreviewNavigation>
+                  <WebPreviewBody className="min-h-[350px] h-[350px]" />
+                </WebPreview>
+              </div>
+            );
+          }
+          return null;
+        })()}
         {renderReasoning()}
         
         <div className="prose prose-sm dark:prose-invert max-w-none text-sm">
@@ -467,3 +523,22 @@ function MessageBubble({
     </div>
   )
 }
+
+const getYahooFinanceSymbol = (symbol: string): string => {
+  const clean = symbol.toUpperCase();
+  if (clean.includes('SPXUSD') || clean.includes('SPX') || clean.includes('S&P 500')) {
+    return '^GSPC';
+  }
+  if (clean.includes('NDX') || clean.includes('NASDAQ')) {
+    return '^NDX';
+  }
+  if (clean.includes('DJI') || clean.includes('DOW')) {
+    return '^DJI';
+  }
+  const parts = symbol.split(':');
+  const ticker = parts[parts.length - 1];
+  if (ticker.endsWith('USDT')) {
+    return ticker.replace('USDT', '-USD');
+  }
+  return ticker;
+};

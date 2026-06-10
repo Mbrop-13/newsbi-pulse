@@ -41,5 +41,12 @@
   - [x] Show all portfolio stocks without truncation, utilizing a scrollable max-height container
   - [x] Restructure Markets drop-down template with left-aligned circular logos and green/red trend arrow badges
   - [x] Enforce fallback cover images for all news items using category configurations
+- [x] 10. Web Search Automation & Ticker Yahoo Finance Preview
+  - [x] Implement dynamic ticker extraction from user prompts and assistant message content
+  - [x] Map indices, stock, and cryptocurrency tickers to standard Yahoo Finance symbols (e.g. ^GSPC, BTC-USD)
+  - [x] Embed automatic inline WebPreview frame directly below stock/portfolio cards or at message end
+  - [x] Update system prompt rules in backend to mandate official ticker outputs (rule 13)
+  - [x] Validate TypeScript compilation and type safety (resolved TS18048 undefined checks)
+
 
 

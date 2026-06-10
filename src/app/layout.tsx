@@ -24,6 +24,10 @@ export const metadata: Metadata = {
     "tech news",
   ],
   authors: [{ name: "Maverlang", url: "https://maverlang.cl" }],
+  icons: {
+    icon: "/assets/reclu-favicon.png",
+    apple: "/assets/reclu-favicon.png",
+  },
   openGraph: {
     title: "Maverlang | Inteligencia Artificial y Toma de Decisiones",
     description: "Plataforma avanzada de Inteligencia Artificial para análisis de noticias, portafolio y toma de decisiones en tiempo real.",

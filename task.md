@@ -35,4 +35,11 @@
   - [x] Add elegant authentication CTA card with a login button for unauthenticated users
   - [x] Apply a 150ms hover exit delay to prevent flickering
   - [x] Fix compilation issues (extra closing tag, missing Button/formatDate imports, and missing isAuthenticated store extraction)
+- [x] 9. Dropdowns Visual Polish & Portfolio Complete List
+  - [x] Render circular stock/crypto logos (`StockLogo` component) for all asset items
+  - [x] Integrate high-fidelity logo assets and elegant fallback gradients based on symbol hashing
+  - [x] Show all portfolio stocks without truncation, utilizing a scrollable max-height container
+  - [x] Restructure Markets drop-down template with left-aligned circular logos and green/red trend arrow badges
+  - [x] Enforce fallback cover images for all news items using category configurations
+
 

@@ -184,4 +184,24 @@ Se han rediseñado por completo los menús desplegables superiores en la landing
 *   **Transiciones y Debounce Hover:**
     *   Se implementó un retraso de salida de `150ms` (`debounce`) mediante hooks de estado de React y temporizadores para asegurar que al mover el cursor desde el enlace de menú hacia la ventana del panel desplegable no haya parpadeos ni cierres accidentales.
 
+---
+
+## 12. Pulido de Diseño y Listado Completo en Dropdowns
+
+Se han realizado las siguientes mejoras visuales avanzadas para otorgar un aspecto 100% profesional y de alta fidelidad:
+
+*   **Logos Circulares de Activos (Componente `StockLogo`):**
+    *   Se diseñó un componente inteligente que solicita los logotipos oficiales de acciones y criptomonedas usando CDNs públicas de alta velocidad (`Financial Modeling Prep` y `Cryptocurrency Icons`).
+    *   **Resiliencia de Carga:** Si la imagen falla en cargar (ej: por falta de conexión o logo inexistente), el componente genera de forma automática un contenedor circular premium con un gradiente de fondo dinámico y único basado en el hash del símbolo del activo (ej. `from-blue-500 to-indigo-600`), mostrando las dos letras iniciales del ticker en mayúsculas.
+*   **Mercados con Diseño Enriquecido:**
+    *   Cada renglón del menú de mercados ahora cuenta con su logotipo circular correspondiente alineado a la izquierda.
+    *   Las etiquetas de cambio diario (`Daily Changes`) incorporan iconos de tendencia dinámicos (`ArrowUpRight` y `ArrowDownRight`) que acompañan al valor porcentual.
+*   **Portafolio sin Límites y Scroll Interno:**
+    *   Se eliminó la limitación de visualización de los primeros 3 activos, mostrando ahora la lista completa de acciones del portafolio.
+    *   Para evitar que el menú desplegable exceda la pantalla, se aplicó un contenedor de alto máximo acotado a `240px` (`max-h-[240px]`) con desplazamiento vertical y scrollbar estilizado.
+    *   Cada acción del portafolio del usuario ahora se muestra con su correspondiente logotipo circular oficial o su avatar autogenerado.
+*   **Imágenes de Portada Garantizadas en Noticias:**
+    *   Tanto en el menú de `Noticias` como en el de `Mundo`, se utiliza la función `getFallbackImage` para proveer portadas de Unsplash optimizadas según la categoría de la noticia si la base de datos no cuenta con un `image_url` asignado.
+
+
 

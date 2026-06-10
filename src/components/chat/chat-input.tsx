@@ -293,7 +293,10 @@ export function ChatInput({
           </div>
         )}
 
-        <div className="rounded-3xl bg-secondary dark:bg-secondary p-2 shadow-md border">
+        <div className={cn(
+          "rounded-3xl bg-secondary dark:bg-secondary p-2 shadow-md border transition-all duration-300",
+          isListening && "border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.15)]"
+        )}>
           {/* Textarea area */}
           <div className="flex items-center px-2 bg-transparent relative">
             <Textarea
@@ -302,7 +305,7 @@ export function ChatInput({
               onChange={(e) => setValue(e.target.value)}
               onInput={() => resizeTextarea()}
               onKeyDown={handleKeyDown}
-              placeholder={placeholder}
+              placeholder={isListening ? "Escuchando... habla ahora" : placeholder}
               disabled={Boolean(disabled && !isStreaming)}
               id="chat-input"
               name="input"
@@ -324,7 +327,7 @@ export function ChatInput({
                   type="button"
                   variant={showAttachMenu ? "secondary" : "ghost"}
                   size="icon"
-                  className={cn("rounded-full transition-all duration-300", showAttachMenu && "bg-[#1890FF] text-white hover:bg-[#1890FF]/90 shadow-md")}
+                  className={cn("rounded-full transition-all duration-300", showAttachMenu && "bg-foreground text-background hover:bg-foreground/90 dark:bg-foreground dark:text-background shadow-md")}
                   aria-label="Opciones"
                   onClick={() => setShowAttachMenu(prev => !prev)}
                 >
@@ -350,37 +353,35 @@ export function ChatInput({
                           {attachMenuView === 'main' && (
                             <motion.div key="main" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}>
                               {/* Archivos */}
-                              <div>
-                                <div className="px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-[#1890FF] dark:text-blue-400 mb-1 opacity-80">Archivos</div>
+                              <div className="pt-1">
                                 <button
                                   type="button"
                                   onClick={() => { setShowAttachMenu(false); triggerUploadFiles(); }}
-                                  className="w-full flex items-center gap-3 px-2.5 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.03] hover:text-[#1890FF] rounded-xl transition-all duration-200 active:scale-[0.98] text-left"
+                                  className="group/btn w-full flex items-center gap-3 px-2.5 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.03] hover:text-foreground rounded-xl transition-all duration-200 active:scale-[0.98] text-left"
                                 >
-                                  <div className="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                                  <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/5 text-foreground group-hover/btn:bg-foreground group-hover/btn:text-background flex items-center justify-center shrink-0 transition-colors duration-200">
                                     <Paperclip className="w-4 h-4" />
                                   </div>
                                   Subir archivo
                                 </button>
                               </div>
 
-                              <div className="mt-2">
-                                <div className="px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-[#1890FF] dark:text-blue-400 mb-1 opacity-80">Herramientas</div>
+                              <div className="mt-1">
                                 <button type="button" onClick={() => setAttachMenuView('charts')}
-                                  className="w-full flex items-center justify-between px-2.5 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.03] hover:text-blue-505 rounded-xl transition-all duration-200 active:scale-[0.98]">
+                                  className="group/btn w-full flex items-center justify-between px-2.5 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.03] hover:text-foreground rounded-xl transition-all duration-200 active:scale-[0.98]">
                                   <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0"><PieChart className="w-4 h-4" /></div>
+                                    <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/5 text-foreground group-hover/btn:bg-foreground group-hover/btn:text-background flex items-center justify-center shrink-0 transition-colors duration-200"><PieChart className="w-4 h-4" /></div>
                                     Gráficos
                                   </div>
-                                  <ChevronRight className="w-4 h-4 text-gray-400" />
+                                  <ChevronRight className="w-4 h-4 text-gray-400 group-hover/btn:translate-x-0.5 transition-transform" />
                                 </button>
                                 <button type="button" onClick={() => setAttachMenuView('analysis')}
-                                  className="w-full flex items-center justify-between px-2.5 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.03] hover:text-purple-500 rounded-xl transition-all duration-200 active:scale-[0.98] mt-1">
+                                  className="group/btn w-full flex items-center justify-between px-2.5 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.03] hover:text-foreground rounded-xl transition-all duration-200 active:scale-[0.98] mt-1">
                                   <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0"><TrendingUp className="w-4 h-4" /></div>
+                                    <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/5 text-foreground group-hover/btn:bg-foreground group-hover/btn:text-background flex items-center justify-center shrink-0 transition-colors duration-200"><TrendingUp className="w-4 h-4" /></div>
                                     Análisis
                                   </div>
-                                  <ChevronRight className="w-4 h-4 text-gray-400" />
+                                  <ChevronRight className="w-4 h-4 text-gray-400 group-hover/btn:translate-x-0.5 transition-transform" />
                                 </button>
                               </div>
                             </motion.div>
@@ -480,27 +481,49 @@ export function ChatInput({
                 variant="inline"
               />
 
-              {/* Microphone / Transcribe Button */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={toggleListening}
-                    className={cn(
-                      "rounded-full h-8 w-8 text-muted-foreground hover:text-foreground transition-all cursor-pointer flex items-center justify-center",
-                      isListening && "text-red-500 hover:text-red-600 bg-red-500/10 animate-pulse"
-                    )}
-                    aria-label={isListening ? "Detener grabación" : "Transcribir voz"}
-                  >
-                    <Mic className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top" sideOffset={6}>
-                  {isListening ? "Deteniendo..." : "Dictar mensaje"}
-                </TooltipContent>
-              </Tooltip>
+              {/* Microphone / Transcribe Button & Equalizer */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                {isListening && (
+                  <div className="flex items-end gap-[3px] h-5 px-1 shrink-0 pb-0.5">
+                    {[1, 2, 3, 4, 5].map((bar) => (
+                      <motion.span
+                        key={bar}
+                        className="w-[3px] bg-red-500 rounded-full"
+                        animate={{
+                          height: ["6px", "18px", "6px"],
+                        }}
+                        transition={{
+                          duration: 0.8,
+                          repeat: Infinity,
+                          repeatType: "reverse",
+                          delay: bar * 0.12,
+                          ease: "easeInOut",
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={toggleListening}
+                      className={cn(
+                        "rounded-full h-8 w-8 text-muted-foreground hover:text-foreground transition-all cursor-pointer flex items-center justify-center",
+                        isListening && "text-red-500 hover:text-red-650 bg-red-500/10 shadow-[0_0_8px_rgba(239,68,68,0.25)] animate-pulse"
+                      )}
+                      aria-label={isListening ? "Detener grabación" : "Transcribir voz"}
+                    >
+                      <Mic className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" sideOffset={6}>
+                    {isListening ? "Deteniendo..." : "Dictar mensaje"}
+                  </TooltipContent>
+                </Tooltip>
+              </div>
 
               {/* Primary action button */}
               {isStreaming ? (

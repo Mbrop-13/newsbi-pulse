@@ -16,9 +16,9 @@ import { getPlanConfig, type PlanTier, getNextTier } from "@/lib/plan-limits"
 import { useChat } from "ai/react"
 import { ShareChatDialog } from "@/components/assistant/share-chat-dialog"
 import { toast } from "sonner"
-import { cn, formatDate as fmtDate } from "@/lib/utils"
+import { cn, formatDate as fmtDate, getFallbackImage } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
-import { Newspaper, Sparkles, Headphones, LineChart, Coins, Landmark, Briefcase, Shield, Lightbulb, Globe, Flame, Calendar, Cpu } from "lucide-react"
+import { Newspaper, Sparkles, Headphones, LineChart, Coins, Landmark, Briefcase, Shield, Lightbulb, Globe, Flame, Calendar, Cpu, ArrowUpRight, ArrowDownRight } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
 // Model ID mapping for our API
@@ -566,9 +566,11 @@ export function ChatLanding() {
                               href={`/article/${art.slug || art.id}`}
                               className="group flex items-start gap-3 p-2 rounded-xl hover:bg-gray-100/70 dark:hover:bg-white/[0.03] transition-all duration-200"
                             >
-                              {art.image_url && (
-                                <img src={art.image_url} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0 bg-gray-100 dark:bg-slate-800" />
-                              )}
+                              <img 
+                                src={art.image_url || getFallbackImage(art.category || art.feed_tag || 'general')} 
+                                alt="" 
+                                className="w-12 h-12 rounded-lg object-cover shrink-0 bg-gray-100 dark:bg-slate-800 border border-gray-200/50 dark:border-white/5" 
+                              />
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs font-bold text-gray-900 dark:text-gray-100 line-clamp-2 leading-snug group-hover:text-[#1890FF] transition-colors">
                                   {art.title}
@@ -618,29 +620,32 @@ export function ChatLanding() {
                         <h4 className="text-[10px] font-black tracking-widest text-[#1890FF] uppercase">Resumen de Mercados</h4>
                         <span className="text-[9px] text-green-500 font-bold">MERCADOS ABIERTOS</span>
                       </div>
-                      
-                      <div className="flex flex-col gap-1.5">
+                                     <div className="flex flex-col gap-1">
                         {[
-                          { symbol: "S&P 500", name: "Índice Standard & Poor's", price: "5,342.87", change: "+0.45%", isUp: true },
-                          { symbol: "NVDA", name: "NVIDIA Corporation", price: "$1,208.50", change: "+2.15%", isUp: true },
-                          { symbol: "BTC", name: "Bitcoin / Dólar", price: "$68,420.00", change: "-1.20%", isUp: false },
-                          { symbol: "TSLA", name: "Tesla Motors", price: "$177.46", change: "-0.85%", isUp: false }
+                          { symbol: "S&P 500", name: "Índice Standard & Poor's", price: "5,342.87", change: "+0.45%", isUp: true, logo: "SPY" },
+                          { symbol: "NVDA", name: "NVIDIA Corporation", price: "$1,208.50", change: "+2.15%", isUp: true, logo: "NVDA" },
+                          { symbol: "BTC", name: "Bitcoin / Dólar", price: "$68,420.00", change: "-1.20%", isUp: false, logo: "BTC" },
+                          { symbol: "TSLA", name: "Tesla Motors", price: "$177.46", change: "-0.85%", isUp: false, logo: "TSLA" }
                         ].map((asset) => (
                           <Link 
                             key={asset.symbol}
                             href={`/mercados/${asset.symbol}`}
-                            className="group flex items-center justify-between p-2 rounded-xl hover:bg-gray-100/70 dark:hover:bg-white/[0.03] transition-all duration-200"
+                            className="group flex items-center justify-between p-2.5 rounded-xl hover:bg-gray-100/70 dark:hover:bg-white/[0.03] border border-transparent hover:border-gray-200/50 dark:hover:border-white/5 transition-all duration-200"
                           >
-                            <div className="flex flex-col">
-                              <span className="text-xs font-bold text-gray-900 dark:text-gray-100 group-hover:text-[#1890FF] transition-colors">{asset.symbol}</span>
-                              <span className="text-[9px] text-muted-foreground mt-0.5">{asset.name}</span>
+                            <div className="flex items-center gap-3 min-w-0">
+                              <StockLogo symbol={asset.logo} className="w-8 h-8" />
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-xs font-bold text-gray-900 dark:text-gray-100 group-hover:text-[#1890FF] transition-colors">{asset.symbol}</span>
+                                <span className="text-[9px] text-muted-foreground mt-0.5 truncate max-w-[130px]">{asset.name}</span>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 shrink-0">
                               <span className="text-xs font-bold text-gray-900 dark:text-white tabular-nums">{asset.price}</span>
                               <span className={cn(
-                                "text-[10px] font-bold px-2.5 py-0.5 rounded-full tabular-nums",
+                                "text-[10px] font-bold px-2 py-0.5 rounded-lg tabular-nums flex items-center gap-0.5",
                                 asset.isUp ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"
                               )}>
+                                {asset.isUp ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
                                 {asset.change}
                               </span>
                             </div>
@@ -676,7 +681,7 @@ export function ChatLanding() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 8, scale: 0.96 }}
                       transition={{ duration: 0.2, ease: "easeOut" }}
-                      className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[320px] bg-white/95 dark:bg-[#0B1329]/95 backdrop-blur-xl border border-gray-200/50 dark:border-white/5 rounded-2xl p-4 shadow-2xl z-50 flex flex-col gap-3 font-sans text-left"
+                      className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[340px] bg-white/95 dark:bg-[#0B1329]/95 backdrop-blur-xl border border-gray-200/50 dark:border-white/5 rounded-2xl p-4 shadow-2xl z-50 flex flex-col gap-3 font-sans text-left"
                     >
                       <div className="flex items-center justify-between px-1 border-b border-gray-100 dark:border-white/5 pb-2">
                         <h4 className="text-[10px] font-black tracking-widest text-[#1890FF] uppercase">Mi Inversión</h4>
@@ -702,18 +707,21 @@ export function ChatLanding() {
                         ) : loadingData ? (
                           <div className="text-center py-6 text-xs text-muted-foreground">Cargando portafolio...</div>
                         ) : portfolioList.length > 0 ? (
-                          <div className="flex flex-col gap-1.5">
-                            {portfolioList.slice(0, 3).map((asset) => (
+                          <div className="flex flex-col gap-1.5 max-h-[240px] overflow-y-auto pr-1">
+                            {portfolioList.map((asset) => (
                               <Link 
                                 key={asset.id}
                                 href={`/mercados/${asset.symbol}`}
                                 className="group flex items-center justify-between p-2 rounded-xl hover:bg-gray-100/70 dark:hover:bg-white/[0.03] transition-all duration-200"
                               >
-                                <div className="flex flex-col">
-                                  <span className="text-xs font-bold text-gray-900 dark:text-gray-100 group-hover:text-[#1890FF] transition-colors">{asset.symbol}</span>
-                                  <span className="text-[9px] text-muted-foreground mt-0.5 truncate max-w-[150px]">{asset.company_name}</span>
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <StockLogo symbol={asset.symbol} className="w-8 h-8" />
+                                  <div className="flex flex-col min-w-0">
+                                    <span className="text-xs font-bold text-gray-900 dark:text-gray-100 group-hover:text-[#1890FF] transition-colors">{asset.symbol}</span>
+                                    <span className="text-[9px] text-muted-foreground mt-0.5 truncate max-w-[120px]">{asset.company_name}</span>
+                                  </div>
                                 </div>
-                                <div className="flex flex-col items-end">
+                                <div className="flex flex-col items-end shrink-0">
                                   <span className="text-xs font-semibold text-gray-900 dark:text-white tabular-nums">
                                     {(asset.shares || 0) * (asset.average_price || 0) > 0 
                                       ? `$${((asset.shares || 0) * (asset.average_price || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -791,9 +799,11 @@ export function ChatLanding() {
                                 href={`/article/${art.slug || art.id}`}
                                 className="group flex items-start gap-3 p-2 rounded-xl hover:bg-gray-100/70 dark:hover:bg-white/[0.03] transition-all duration-200"
                               >
-                                {art.image_url && (
-                                  <img src={art.image_url} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0 bg-gray-100 dark:bg-slate-800" />
-                                )}
+                                <img 
+                                  src={art.image_url || getFallbackImage(art.category || art.feed_tag || 'general')} 
+                                  alt="" 
+                                  className="w-12 h-12 rounded-lg object-cover shrink-0 bg-gray-100 dark:bg-slate-800 border border-gray-200/50 dark:border-white/5" 
+                                />
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                                     {countryConfig && (
@@ -937,4 +947,51 @@ function MenuLink({
       </div>
     </Link>
   )
+}
+
+function StockLogo({ symbol, className }: { symbol: string; className?: string }) {
+  const [error, setError] = useState(false);
+  const sym = symbol.toUpperCase();
+  
+  const logoUrl = sym === 'BTC' || sym === 'ETH' || sym === 'SOL'
+    ? `https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/${sym.toLowerCase()}.png`
+    : `https://images.financialmodelingprep.com/symbol/${sym}.png`;
+
+  const getGradient = (str: string) => {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const colors = [
+      'from-blue-500 to-indigo-600',
+      'from-emerald-400 to-teal-600',
+      'from-purple-500 to-pink-600',
+      'from-orange-400 to-red-600',
+      'from-cyan-400 to-blue-600',
+      'from-pink-400 to-rose-600'
+    ];
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
+  };
+
+  if (error) {
+    return (
+      <div className={cn(
+        "w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-black text-white bg-gradient-to-br shrink-0 shadow-sm uppercase",
+        getGradient(sym),
+        className
+      )}>
+        {sym.slice(0, 2)}
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={logoUrl}
+      alt={sym}
+      onError={() => setError(true)}
+      className={cn("w-8 h-8 rounded-full object-cover shrink-0 bg-white p-0.5 border border-gray-100 dark:border-white/10 shadow-sm", className)}
+    />
+  );
 }

@@ -43,6 +43,22 @@ export default function ChatPage(props: PageProps) {
 
   useEffect(() => {
     async function fetchChat() {
+      // Intenta cargar primero desde el historial de Zustand del cliente en localStorage
+      const localChat = useAIChatStore.getState().savedChats.find((c) => c.id === chatId);
+      if (localChat) {
+        setChatData({
+          chat_id: localChat.id,
+          user_id: user?.id || null,
+          title: localChat.title,
+          messages: localChat.messages,
+          attached_articles: localChat.attachedArticles || [],
+          attached_files: localChat.attachedFiles || [],
+          created_at: localChat.timestamp,
+        });
+        setLoading(false);
+        return;
+      }
+
       try {
         const res = await fetch(`/api/chat/${chatId}`);
         if (!res.ok) {
@@ -70,7 +86,7 @@ export default function ChatPage(props: PageProps) {
     if (chatId) {
       fetchChat();
     }
-  }, [chatId]);
+  }, [chatId, user]);
 
   const isOwner = isAuthenticated && user && chatData && user.id === chatData.user_id;
 
@@ -85,6 +101,23 @@ export default function ChatPage(props: PageProps) {
           attachedArticles: chatData.attached_articles || [],
           attachedFiles: chatData.attached_files || [],
         });
+
+        // Asegurar de que también se agrega al historial local para que updateCurrentChat no lo trate como nuevo
+        const savedChats = useAIChatStore.getState().savedChats;
+        const exists = savedChats.some((c) => c.id === chatData.chat_id);
+        if (!exists) {
+          const newSavedChat = {
+            id: chatData.chat_id,
+            title: chatData.title,
+            messages: chatData.messages,
+            attachedArticles: chatData.attached_articles || [],
+            attachedFiles: chatData.attached_files || [],
+            timestamp: new Date(chatData.created_at || Date.now()),
+          };
+          useAIChatStore.setState({
+            savedChats: [newSavedChat, ...savedChats].slice(0, 10),
+          });
+        }
       }
     }
   }, [isOwner, chatData]);

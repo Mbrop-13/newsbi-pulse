@@ -206,10 +206,11 @@ export const useAIChatStore = create<AIChatStore>()(
 
         const user = useAuthStore.getState().user;
 
-        const isNewChat = !currentChatId;
         const chatId = currentChatId || Date.now().toString();
+        const existingIndex = savedChats.findIndex(c => c.id === chatId);
+        const isNewChat = existingIndex === -1;
         
-        if (isNewChat) {
+        if (!currentChatId) {
           set({ currentChatId: chatId });
         }
 
@@ -224,7 +225,6 @@ export const useAIChatStore = create<AIChatStore>()(
           timestamp: new Date(),
         };
 
-        const existingIndex = savedChats.findIndex(c => c.id === chatId);
         let updatedChats;
         if (existingIndex >= 0) {
           updatedChats = [...savedChats];

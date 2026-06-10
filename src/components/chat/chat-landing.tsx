@@ -122,6 +122,9 @@ export function ChatLanding() {
   const [shareDialog, setShareDialog] = useState({ isOpen: false, question: "", answer: "" })
   const lastLoadedChatIdRef = useRef<string | null>(null)
 
+  const accumulatedReasoningRef = useRef<string>("")
+  const accumulatedCitationsRef = useRef<string[]>([]);
+
   // Track store hydration
   const [isStoreHydrated, setIsStoreHydrated] = useState(false)
   useEffect(() => {
@@ -143,16 +146,19 @@ export function ChatLanding() {
   } = useChat({
     api: "/api/ai-chat",
     onFinish: (message) => {
-      // Find citations & reasoning in streamData (data)
-      let citationsList: string[] = []
-      let reasoningText = ""
-      if (data && data.length > 0) {
-        const citationObj = (data as any[]).find((d: any) => d?.type === 'citations')
-        if (citationObj?.urls) {
-          citationsList = citationObj.urls
+      // Find citations & reasoning in streamData (data) or accumulated refs
+      let citationsList: string[] = accumulatedCitationsRef.current.length > 0 ? accumulatedCitationsRef.current : []
+      let reasoningText = accumulatedReasoningRef.current || ""
+      if (citationsList.length === 0 || !reasoningText) {
+        if (data && data.length > 0) {
+          const citationObj = (data as any[]).find((d: any) => d?.type === 'citations')
+          if (citationObj?.urls && citationsList.length === 0) {
+            citationsList = citationObj.urls
+          }
+          const reasoningChunks = (data as any[]).filter((d: any) => d?.type === 'reasoning')
+          const streamReasoning = reasoningChunks.map(c => c.text).join('')
+          if (streamReasoning && !reasoningText) reasoningText = streamReasoning
         }
-        const reasoningChunks = (data as any[]).filter((d: any) => d?.type === 'reasoning')
-        reasoningText = reasoningChunks.map(c => c.text).join('')
       }
 
       // Use requestAnimationFrame to ensure aiMessages state has been flushed by React
@@ -215,6 +221,38 @@ export function ChatLanding() {
     aiMessagesRef.current = aiMessages
   }, [aiMessages])
 
+  // Accumulate citations & reasoning from streamData to prevent them from vanishing during tool execution steps
+  useEffect(() => {
+    if (data && data.length > 0) {
+      const reasoningChunks = (data as any[]).filter((d: any) => d?.type === 'reasoning');
+      const streamReasoning = reasoningChunks.map(c => c.text).join('');
+      if (streamReasoning && streamReasoning !== accumulatedReasoningRef.current) {
+        accumulatedReasoningRef.current = streamReasoning;
+      }
+
+      const citationObj = (data as any[]).find((d: any) => d?.type === 'citations');
+      if (citationObj?.urls && citationObj.urls.length > 0) {
+        accumulatedCitationsRef.current = Array.from(new Set([
+          ...accumulatedCitationsRef.current,
+          ...citationObj.urls
+        ]));
+      }
+    }
+  }, [data]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const currentPath = window.location.pathname;
+      let targetPath = '/ai';
+      if (currentChatId) {
+        targetPath = `/ai/chat/${currentChatId}`;
+      }
+      if (currentPath !== targetPath && !currentPath.startsWith('/share/')) {
+        window.history.pushState(null, '', targetPath);
+      }
+    }
+  }, [currentChatId]);
+
   // Sync store messages → useChat messages on load/chat switch
   useEffect(() => {
     if (!isStoreHydrated) return
@@ -255,6 +293,9 @@ export function ChatLanding() {
     options: { webSearch: boolean; image: boolean; codeInterpreter: boolean }
   ) => {
     if (!text.trim() || aiLoading) return
+
+    accumulatedReasoningRef.current = ""
+    accumulatedCitationsRef.current = []
 
     // If Swarm agent mode, route differently
     if (selectedModel === "agent") {
@@ -298,6 +339,9 @@ export function ChatLanding() {
   }
 
   const sendSwarmMessage = async (text: string) => {
+    accumulatedReasoningRef.current = ""
+    accumulatedCitationsRef.current = []
+
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
       role: "user",
@@ -370,11 +414,17 @@ export function ChatLanding() {
     let citationsList = (m as any).citations;
 
     if (isLastAssistantLike) {
-      if (data && data.length > 0) {
+      if (accumulatedReasoningRef.current) {
+        reasoningText = accumulatedReasoningRef.current;
+      } else if (data && data.length > 0) {
         const reasoningChunks = (data as any[]).filter((d: any) => d?.type === 'reasoning');
         const streamReasoning = reasoningChunks.map(c => c.text).join('');
         if (streamReasoning) reasoningText = streamReasoning;
+      }
 
+      if (accumulatedCitationsRef.current.length > 0) {
+        citationsList = accumulatedCitationsRef.current;
+      } else if (data && data.length > 0) {
         const citationObj = (data as any[]).find((d: any) => d?.type === 'citations');
         if (citationObj?.urls) {
           citationsList = citationObj.urls;

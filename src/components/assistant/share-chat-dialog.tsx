@@ -5,6 +5,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Copy, Download, Share2, Sparkles, Link as LinkIcon, Loader2, MessageSquare } from "lucide-react";
 import * as htmlToImage from "html-to-image";
 import ReactMarkdown from "react-markdown";
+import { useAIChatStore } from "@/lib/stores/ai-chat-store";
+import { useAuthStore } from "@/lib/stores/auth-store";
+import { createClient } from "@/lib/supabase/client";
 
 interface ShareChatDialogProps {
   isOpen: boolean;
@@ -61,22 +64,69 @@ export function ShareChatDialog({ isOpen, onClose, question, answer }: ShareChat
   const handleGenerateLink = async () => {
     setIsGeneratingLink(true);
     try {
-      const res = await fetch("/api/share-chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question, answer }),
-      });
-      
-      if (!res.ok) throw new Error("Failed to generate link");
-      
-      const { id } = await res.json();
-      const shareUrl = `${window.location.origin}/share/chat/${id}`;
-      
-      await navigator.clipboard.writeText(shareUrl);
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 3000);
+      const user = useAuthStore.getState().user;
+      if (!user) {
+        alert("Debes iniciar sesión para compartir.");
+        return;
+      }
+
+      const { currentChatId, messages, attachedArticles, attachedFiles } = useAIChatStore.getState();
+
+      if (currentChatId && messages.length > 0) {
+        // Force save/sync the chat to Supabase ai_saved_chats
+        const supabase = createClient();
+        const title = messages.find(m => m.role === "user")?.content.slice(0, 40) + "..." || "Nuevo chat";
+
+        // Check if it already exists
+        const { data: existingChat } = await supabase
+          .from("ai_saved_chats")
+          .select("chat_id")
+          .eq("chat_id", currentChatId)
+          .maybeSingle();
+
+        if (!existingChat) {
+          const { error } = await supabase.from("ai_saved_chats").insert({
+            user_id: user.id,
+            chat_id: currentChatId,
+            title,
+            messages,
+            attached_articles: attachedArticles,
+            attached_files: attachedFiles
+          });
+          if (error) throw error;
+        } else {
+          const { error } = await supabase.from("ai_saved_chats").update({
+            title,
+            messages,
+            attached_articles: attachedArticles,
+            attached_files: attachedFiles
+          }).eq("chat_id", currentChatId).eq("user_id", user.id);
+          if (error) throw error;
+        }
+
+        const shareUrl = `${window.location.origin}/ai/chat/${currentChatId}`;
+        await navigator.clipboard.writeText(shareUrl);
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 3000);
+      } else {
+        // Fallback to legacy single Q&A sharing
+        const res = await fetch("/api/share-chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question, answer }),
+        });
+        
+        if (!res.ok) throw new Error("Failed to generate link");
+        
+        const { id } = await res.json();
+        const shareUrl = `${window.location.origin}/share/chat/${id}`;
+        
+        await navigator.clipboard.writeText(shareUrl);
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 3000);
+      }
     } catch (err) {
-      console.error(err);
+      console.error("[Share Chat Dialog] Error:", err);
       alert("Error al generar el enlace.");
     } finally {
       setIsGeneratingLink(false);

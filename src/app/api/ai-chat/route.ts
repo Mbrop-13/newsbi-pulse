@@ -66,26 +66,33 @@ function createMimoWithWebSearch(userId: string, streamData?: StreamData, webSea
       // If it's a stream, intercept chunks to extract MiMo's native web search annotations
       if (res.body && streamData) {
         const collectedUrls = new Set<string>();
+        let buffer = "";
         const transformStream = new TransformStream({
           transform(chunk, controller) {
-            const str = new TextDecoder().decode(chunk);
-            // MiMo sends annotations inside delta with varying key order
-            // Match any url_citation block and extract its url field
-            const urlMatches = Array.from(str.matchAll(/"type"\s*:\s*"url_citation"[^}]*"url"\s*:\s*"([^"]+)"/g));
-            for (const m of urlMatches) collectedUrls.add(m[1]);
-            // Also try reversed key order (url before type)
-            const urlMatchesRev = Array.from(str.matchAll(/"url"\s*:\s*"([^"]+)"[^}]*"type"\s*:\s*"url_citation"/g));
-            for (const m of urlMatchesRev) collectedUrls.add(m[1]);
+            buffer += new TextDecoder().decode(chunk);
+            const lines = buffer.split('\n');
+            // Keep the last partial line in the buffer
+            buffer = lines.pop() || "";
 
-            // Match reasoning_content tokens and stream them to client
-            const reasoningMatches = Array.from(str.matchAll(/"reasoning_content"\s*:\s*"((?:[^"\\]|\\.)*)"/g));
-            for (const m of reasoningMatches) {
-              const text = decodeJsonString(m[1]);
-              if (text && text !== 'null') {
-                try {
-                  streamData.append({ type: 'reasoning', text });
-                } catch {
-                  // StreamData may already be closed/flushed
+            for (const line of lines) {
+              if (!line.trim()) continue;
+              // Match any url_citation block and extract its url field
+              const urlMatches = Array.from(line.matchAll(/"type"\s*:\s*"url_citation"[^}]*"url"\s*:\s*"([^"]+)"/g));
+              for (const m of urlMatches) collectedUrls.add(m[1]);
+              // Also try reversed key order (url before type)
+              const urlMatchesRev = Array.from(line.matchAll(/"url"\s*:\s*"([^"]+)"[^}]*"type"\s*:\s*"url_citation"/g));
+              for (const m of urlMatchesRev) collectedUrls.add(m[1]);
+
+              // Match reasoning_content tokens and stream them to client
+              const reasoningMatches = Array.from(line.matchAll(/"reasoning_content"\s*:\s*"((?:[^"\\]|\\.)*)"/g));
+              for (const m of reasoningMatches) {
+                const text = decodeJsonString(m[1]);
+                if (text && text !== 'null') {
+                  try {
+                    streamData.append({ type: 'reasoning', text });
+                  } catch {
+                    // StreamData may already be closed/flushed
+                  }
                 }
               }
             }
@@ -93,6 +100,24 @@ function createMimoWithWebSearch(userId: string, streamData?: StreamData, webSea
             controller.enqueue(chunk);
           },
           flush() {
+            // Process any remaining text in buffer
+            if (buffer) {
+              const urlMatches = Array.from(buffer.matchAll(/"type"\s*:\s*"url_citation"[^}]*"url"\s*:\s*"([^"]+)"/g));
+              for (const m of urlMatches) collectedUrls.add(m[1]);
+              const urlMatchesRev = Array.from(buffer.matchAll(/"url"\s*:\s*"([^"]+)"[^}]*"type"\s*:\s*"url_citation"/g));
+              for (const m of urlMatchesRev) collectedUrls.add(m[1]);
+
+              const reasoningMatches = Array.from(buffer.matchAll(/"reasoning_content"\s*:\s*"((?:[^"\\]|\\.)*)"/g));
+              for (const m of reasoningMatches) {
+                const text = decodeJsonString(m[1]);
+                if (text && text !== 'null') {
+                  try {
+                    streamData.append({ type: 'reasoning', text });
+                  } catch {}
+                }
+              }
+            }
+
             try {
               if (collectedUrls.size > 0) {
                 streamData.append({ type: 'citations', urls: Array.from(collectedUrls) });

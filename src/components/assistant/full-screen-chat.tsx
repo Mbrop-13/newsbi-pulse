@@ -175,6 +175,9 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
   const [swarmLoading, setSwarmLoading] = useState(false);
   const [collapsedThoughts, setCollapsedThoughts] = useState<Record<string, boolean>>({});
 
+  const accumulatedReasoningRef = useRef<string>("");
+  const accumulatedCitationsRef = useRef<string[]>([]);
+
   // Sync swarmLoading with the background execution status for the currentChatId
   useEffect(() => {
     if (currentChatId) {
@@ -253,12 +256,17 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
   useEffect(() => {
     if (typeof window !== "undefined") {
       const currentPath = window.location.pathname;
-      const targetPath = activeChatMode === 'mirofish' ? '/ai/agentes' : '/ai';
-      if (currentPath !== targetPath) {
+      let targetPath = '/ai';
+      if (activeChatMode === 'mirofish') {
+        targetPath = '/ai/agentes';
+      } else if (currentChatId) {
+        targetPath = `/ai/chat/${currentChatId}`;
+      }
+      if (currentPath !== targetPath && !currentPath.startsWith('/share/')) {
         window.history.pushState(null, '', targetPath);
       }
     }
-  }, [activeChatMode]);
+  }, [activeChatMode, currentChatId]);
 
   const loadSimulations = () => {
     if (typeof window !== "undefined") {
@@ -392,16 +400,19 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
     },
     onFinish: (message) => {
       clearTools();
-      // Extract citations & reasoning from streamData
-      let citationsList: string[] = [];
-      let reasoningText = "";
-      if (streamData && streamData.length > 0) {
-        const citationObj = (streamData as any[]).find((d: any) => d?.type === 'citations');
-        if (citationObj?.urls) {
-          citationsList = citationObj.urls;
+      // Extract citations & reasoning from streamData or accumulated refs
+      let citationsList: string[] = accumulatedCitationsRef.current.length > 0 ? accumulatedCitationsRef.current : [];
+      let reasoningText = accumulatedReasoningRef.current || "";
+      if (citationsList.length === 0 || !reasoningText) {
+        if (streamData && streamData.length > 0) {
+          const citationObj = (streamData as any[]).find((d: any) => d?.type === 'citations');
+          if (citationObj?.urls && citationsList.length === 0) {
+            citationsList = citationObj.urls;
+          }
+          const reasoningChunks = (streamData as any[]).filter((d: any) => d?.type === 'reasoning');
+          const streamReasoning = reasoningChunks.map(c => c.text).join('');
+          if (streamReasoning && !reasoningText) reasoningText = streamReasoning;
         }
-        const reasoningChunks = (streamData as any[]).filter((d: any) => d?.type === 'reasoning');
-        reasoningText = reasoningChunks.map(c => c.text).join('');
       }
 
       // Use requestAnimationFrame to ensure aiMessages state has been flushed by React
@@ -466,6 +477,25 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
   useEffect(() => {
     aiMessagesRef.current = aiMessages;
   }, [aiMessages]);
+
+  // Accumulate citations & reasoning from streamData to prevent them from vanishing during tool execution steps
+  useEffect(() => {
+    if (streamData && streamData.length > 0) {
+      const reasoningChunks = (streamData as any[]).filter((d: any) => d?.type === 'reasoning');
+      const streamReasoning = reasoningChunks.map(c => c.text).join('');
+      if (streamReasoning && streamReasoning !== accumulatedReasoningRef.current) {
+        accumulatedReasoningRef.current = streamReasoning;
+      }
+
+      const citationObj = (streamData as any[]).find((d: any) => d?.type === 'citations');
+      if (citationObj?.urls && citationObj.urls.length > 0) {
+        accumulatedCitationsRef.current = Array.from(new Set([
+          ...accumulatedCitationsRef.current,
+          ...citationObj.urls
+        ]));
+      }
+    }
+  }, [streamData]);
 
   // Track the last loaded chat to detect switches
   const lastLoadedChatIdRef = useRef<string | null>(null);
@@ -808,6 +838,9 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
     if (swarmLoading || aiLoading) return;
     setIsUserAtBottom(true);
 
+    accumulatedReasoningRef.current = "";
+    accumulatedCitationsRef.current = [];
+
     const userMsgId = `user-${Date.now()}`;
     const userMsg = {
       id: userMsgId,
@@ -962,6 +995,9 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
     const text = textOverride || input.trim();
     if (!text || aiLoading) return;
 
+    accumulatedReasoningRef.current = "";
+    accumulatedCitationsRef.current = [];
+
     if (selectedModel === 'agent') {
       if (!canUsePro) {
         setShowUpsell(true);
@@ -1025,11 +1061,17 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
     let citationsList = (m as any).citations;
 
     if (isLastAssistantLike) {
-      if (streamData && streamData.length > 0) {
+      if (accumulatedReasoningRef.current) {
+        reasoningText = accumulatedReasoningRef.current;
+      } else if (streamData && streamData.length > 0) {
         const reasoningChunks = (streamData as any[]).filter((d: any) => d?.type === 'reasoning');
         const streamReasoning = reasoningChunks.map(c => c.text).join('');
         if (streamReasoning) reasoningText = streamReasoning;
+      }
 
+      if (accumulatedCitationsRef.current.length > 0) {
+        citationsList = accumulatedCitationsRef.current;
+      } else if (streamData && streamData.length > 0) {
         const citationObj = (streamData as any[]).find((d: any) => d?.type === 'citations');
         if (citationObj?.urls) {
           citationsList = citationObj.urls;
@@ -1777,7 +1819,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                     <div className="self-end max-w-[85%] bg-gray-100 dark:bg-slate-800 rounded-[2rem] rounded-tr-sm px-6 py-4 shadow-sm border border-black/5 dark:border-white/5">
                       <p className={`${textClass} text-gray-900 dark:text-gray-100 font-medium whitespace-pre-wrap leading-relaxed`}>{msg.content}</p>
                     </div>
-                  ) : msg.role === "assistant" && !(msg as any).isSwarmLoadingPlaceholder && !(msg as any).isThinking && !(msg as any).isDebateMsg ? (
+                  ) : msg.role === "assistant" && !(msg as any).isSwarmLoadingPlaceholder && !(msg as any).isThinking && !(msg as any).isDebateMsg && !(msg as any).isSwarmThinking ? (
                     /* Assistant Message */
                     <div className="flex max-w-full gap-4 text-left items-start">
                       {/* Premium Bot Avatar */}
@@ -1831,10 +1873,7 @@ function FullScreenChatInternal({ initialMode }: { initialMode: 'chat' | 'mirofi
                             <div className="bg-transparent border-none p-3.5 mb-2.5 transition-all">
                               <button 
                                 onClick={() => setOpenReasoning(prev => ({ ...prev, [msg.id]: !isReasoningOpen }))}
-                                className={cn(
-                                  "flex items-center justify-between w-full text-left text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all duration-200",
-                                  !isReasoningOpen && "opacity-0 group-hover:opacity-100"
-                                )}
+                                className="flex items-center justify-between w-full text-left text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all duration-200"
                               >
                                 <div className="flex items-center gap-2">
                                   <span>Pensamiento de la IA</span>

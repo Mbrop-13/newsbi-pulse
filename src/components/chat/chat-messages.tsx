@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
-import { Bot, User, ThumbsUp, ThumbsDown, Share2, RefreshCw, ChevronRight, Sparkles, Loader2, Globe, ExternalLink, Eye, X } from "lucide-react"
+import { Bot, User, ThumbsUp, ThumbsDown, Share2, RefreshCw, ChevronRight, Sparkles, Loader2, Globe, ExternalLink, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import ReactMarkdown from "react-markdown"
@@ -61,7 +61,7 @@ export function ChatMessages({
             onFeedback={onFeedback}
             onRetry={idx === messages.length - 1 && msg.role === 'assistant' ? onRetry : undefined}
             onShare={onShare}
-            isReasoningOpen={openReasoning[msg.id] ?? false}
+            isReasoningOpen={openReasoning[msg.id] !== false}
             onToggleReasoning={() => onToggleReasoning?.(msg.id)}
             prevMessageContent={idx > 0 ? messages[idx - 1].content : ""}
             streamData={streamData}
@@ -193,10 +193,7 @@ function MessageBubble({
       <div className="mb-2">
         <button
           onClick={onToggleReasoning}
-          className={cn(
-            "flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-all duration-200",
-            !isReasoningOpen && "opacity-0 group-hover:opacity-100"
-          )}
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-all duration-200"
         >
           <span>Razonamiento</span>
           <ChevronRight
@@ -278,12 +275,24 @@ function MessageBubble({
         </AvatarFallback>
       </Avatar>
       <div className="flex-1 min-w-0">
+        {renderToolResults()}
+        {renderCharts()}
         {renderReasoning()}
         
         <div className="prose prose-sm dark:prose-invert max-w-none text-sm">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {message.content}
-          </ReactMarkdown>
+          {message.content ? (
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {message.content}
+            </ReactMarkdown>
+          ) : (
+            !message.toolResults?.length && !message.toolInvocations?.length && !message.reasoning && (
+              <div className="flex items-center gap-1 py-1.5">
+                <div className="w-1.5 h-1.5 bg-[#1890FF] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-1.5 h-1.5 bg-[#1890FF] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-1.5 h-1.5 bg-[#1890FF] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+            )
+          )}
         </div>
 
         {/* Citations Widget */}
@@ -292,7 +301,15 @@ function MessageBubble({
             <div className="flex items-center flex-wrap gap-1.5">
               <button 
                 type="button"
-                onClick={() => setIsCitationsOpen(prev => !prev)}
+                onClick={() => {
+                  const newOpen = !isCitationsOpen;
+                  setIsCitationsOpen(newOpen);
+                  if (newOpen && citationsList.length > 0) {
+                    setActivePreviewUrl(citationsList[0]);
+                  } else {
+                    setActivePreviewUrl(null);
+                  }
+                }}
                 className="flex items-center gap-1.5 w-fit pl-1.5 pr-2.5 py-1 bg-white hover:bg-gray-50 dark:bg-[#1A1A1A] dark:hover:bg-[#222] border border-gray-200 dark:border-gray-800 rounded-full transition-all cursor-pointer group shadow-sm mr-1.5"
               >
                 <div className="flex -space-x-2">
@@ -338,28 +355,31 @@ function MessageBubble({
                     {citationsList.map((url: string, i: number) => {
                       let hostname = url;
                       try { hostname = new URL(url).hostname.replace("www.", ""); } catch {}
+                      const isSelected = activePreviewUrl === url;
                       return (
-                        <div key={i} className="flex items-center gap-1.5">
+                        <div key={i} className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setActivePreviewUrl(isSelected ? null : url)}
+                            className={cn(
+                              "flex items-center gap-1.5 text-[11px] py-1 px-2.5 rounded-lg border transition-all shadow-sm select-none",
+                              isSelected 
+                                ? "bg-blue-500/10 border-blue-500/40 text-blue-600 dark:text-blue-400 font-bold" 
+                                : "bg-white hover:bg-gray-50 dark:bg-[#0a0a0a] dark:hover:bg-[#111] border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400"
+                            )}
+                          >
+                            <Globe className={cn("w-3 h-3 shrink-0", isSelected ? "text-[#1890FF]" : "text-gray-400")} />
+                            <span className="truncate max-w-[130px]">{hostname}</span>
+                          </button>
                           <a 
                             href={url} 
                             target="_blank" 
                             rel="noopener noreferrer" 
-                            className="flex items-center gap-1.5 text-[11px] text-gray-600 dark:text-gray-400 hover:text-[#1890FF] dark:hover:text-[#1890FF] transition-colors bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 py-1 px-2.5 rounded-lg shadow-sm hover:shadow-md hover:border-[#1890FF]/30"
+                            className="flex items-center justify-center p-1 rounded-lg border border-gray-200 dark:border-gray-800 bg-white hover:bg-gray-50 dark:bg-[#0a0a0a] dark:hover:bg-[#111] text-gray-400 hover:text-[#1890FF] transition-colors shadow-sm"
+                            title="Abrir en pestaña nueva"
                           >
-                            <ExternalLink className="w-2.5 h-2.5 shrink-0 text-[#1890FF]" /> 
-                            <span className="truncate max-w-[150px] font-bold">{hostname}</span>
+                            <ExternalLink className="w-3.5 h-3.5" />
                           </a>
-                          <button
-                            type="button"
-                            onClick={() => setActivePreviewUrl(activePreviewUrl === url ? null : url)}
-                            className={cn(
-                              "flex items-center justify-center p-1 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1A1A1A] hover:bg-gray-50 dark:hover:bg-[#222] transition-colors shadow-sm",
-                              activePreviewUrl === url && "text-blue-500 border-blue-500/35 bg-blue-500/10"
-                            )}
-                            title="Vista Previa"
-                          >
-                            <Eye className="w-3.5 h-3.5 text-[#1890FF]" />
-                          </button>
                         </div>
                       );
                     })}
@@ -400,10 +420,7 @@ function MessageBubble({
               )}
             </AnimatePresence>
           </div>
-        )}
-
-        {renderToolResults()}
-        {renderCharts()}
+        ) /* Citations closing tag */}
 
         {/* Actions bar */}
         <div className="flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">

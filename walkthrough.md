@@ -162,3 +162,26 @@ Se han adaptado las secciones clave de la plataforma para utilizar la nueva barr
 *   **Ajuste y Limpieza de Márgenes:**
     *   Se eliminaron los espaciadores superiores obsoletos (ej: `pt-[72px]`) que compensaban la barra de navegación tradicional en `country-feed-page.tsx`, `mercados/page.tsx`, `portfolio-client.tsx`, `settings-client.tsx` y `mundo/page.tsx`, logrando una transición vertical limpia y compacta.
 
+---
+
+## 11. Menús Desplegables Dinámicos e Interactivos en Navegación Superior
+
+Se han rediseñado por completo los menús desplegables superiores en la landing de chat (`Noticias`, `Mercados`, `Portafolio` y `Mundo`) para mostrar información en tiempo real desde Supabase y con una experiencia visual premium:
+
+*   **Noticias (Top Noticias):**
+    *   Muestra las 3 noticias más recientes directamente desde la base de datos Supabase, ordenadas por fecha de publicación.
+    *   Cada artículo cuenta con su miniatura, el nombre de la fuente de noticias y la hora/fecha formateada de manera amigable (ej: *Hace 2h*).
+*   **Mercados:**
+    *   Visualización de cotizaciones clave en tiempo real para activos de interés: S&P 500, NVIDIA (NVDA), Bitcoin (BTC) y Tesla (TSLA).
+    *   Se integraron badges con colores de variaciones diarias estilizados (verde para subidas, rojo para caídas) para una rápida lectura.
+*   **Portafolio (Mi Inversión):**
+    *   **Estado Autenticado:** Consulta y muestra en tiempo real las tenencias del usuario (símbolo, nombre de empresa, cantidad de acciones y valor de mercado calculado dinámicamente como `cantidad * precio promedio`).
+    *   **Estado No Autenticado:** Se presenta una hermosa tarjeta estilo cristal esmerilado con la invitación a iniciar sesión y un botón destacado de "Iniciar Sesión" que abre el modal global de login con un solo clic.
+    *   **Estado Vacío:** Si el usuario no tiene activos en cartera, ofrece un atajo visual para ir a configurar su portafolio.
+*   **Mundo (Noticias Regionales):**
+    *   Muestra las 3 principales noticias de interés regional, filtradas por países clave de Latinoamérica (`Chile`, `Brasil`, `México`, `Argentina`, `Colombia`, `Ecuador`) usando la columna `feed_tag` de la tabla `news_articles`.
+    *   Cada noticia se presenta de manera elegante con la bandera Emoji y el nombre del país (ej: `🇨🇱 Chile`, `🇧🇷 Brasil`) usando una configuración mapeada para conservar consistencia.
+*   **Transiciones y Debounce Hover:**
+    *   Se implementó un retraso de salida de `150ms` (`debounce`) mediante hooks de estado de React y temporizadores para asegurar que al mover el cursor desde el enlace de menú hacia la ventana del panel desplegable no haya parpadeos ni cierres accidentales.
+
+

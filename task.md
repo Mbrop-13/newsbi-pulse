@@ -28,3 +28,11 @@
   - [x] Add `reasoning` field to the Zustand store `ChatMessage` interface (`src/lib/stores/ai-chat-store.ts`) for database serialization.
   - [x] Integrate `streamDataRef` to collect reasoning tokens in frontend.
   - [x] Build collapsible `Proceso de Pensamiento` (accordion details block) in message list with Lucide `Brain` icon, auto-opening while thinking, auto-closing when the text response starts, and remaining togglable (`src/components/assistant/full-screen-chat.tsx`).
+- [x] 8. Dynamic Navigation Dropdowns (Noticias, Mercados, Portafolio, Mundo)
+  - [x] Fetch real Supabase records for latest general news and regional world news
+  - [x] Query authenticated user's portfolio and calculate holdings value
+  - [x] Display country names and flags (e.g., 🇨🇱 Chile, 🇧🇷 Brasil) for international articles
+  - [x] Add elegant authentication CTA card with a login button for unauthenticated users
+  - [x] Apply a 150ms hover exit delay to prevent flickering
+  - [x] Fix compilation issues (extra closing tag, missing Button/formatDate imports, and missing isAuthenticated store extraction)
+

@@ -636,7 +636,7 @@ export function ChatLanding() {
                               <span className="text-[9px] text-muted-foreground mt-0.5">{asset.name}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-xs font-bold text-gray-955 dark:text-white tabular-nums">{asset.price}</span>
+                              <span className="text-xs font-bold text-gray-900 dark:text-white tabular-nums">{asset.price}</span>
                               <span className={cn(
                                 "text-[10px] font-bold px-2.5 py-0.5 rounded-full tabular-nums",
                                 asset.isUp ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"
@@ -714,7 +714,7 @@ export function ChatLanding() {
                                   <span className="text-[9px] text-muted-foreground mt-0.5 truncate max-w-[150px]">{asset.company_name}</span>
                                 </div>
                                 <div className="flex flex-col items-end">
-                                  <span className="text-xs font-semibold text-gray-955 dark:text-white tabular-nums">
+                                  <span className="text-xs font-semibold text-gray-900 dark:text-white tabular-nums">
                                     {(asset.shares || 0) * (asset.average_price || 0) > 0 
                                       ? `$${((asset.shares || 0) * (asset.average_price || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                                       : `$${(asset.average_price || 0).toLocaleString('en-US')}`

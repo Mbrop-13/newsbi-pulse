@@ -100,8 +100,8 @@ export function ClientLayoutProviders({
   const messages = useAIChatStore((s) => s.messages);
   const hasMessages = messages.length > 0;
   
-  // Show bottom nav on mobile for sidebar pages, EXCEPT when in a chat on AI page
-  const showMobileNavOnSidebar = isMobile && isSidebarPage && (!isAiPage || !hasMessages);
+  // Show bottom nav on mobile for sidebar pages, EXCEPT when on AI page
+  const showMobileNavOnSidebar = isMobile && isSidebarPage && !isAiPage;
 
   return (
     <ThemeProvider>

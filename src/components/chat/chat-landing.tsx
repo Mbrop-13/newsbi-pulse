@@ -20,6 +20,7 @@ import { cn, formatDate as fmtDate, getFallbackImage, slugify } from "@/lib/util
 import { motion, AnimatePresence } from "framer-motion"
 import { Newspaper, Sparkles, Headphones, LineChart, Coins, Landmark, Briefcase, Shield, Lightbulb, Globe, Flame, Calendar, Cpu, ArrowUpRight, ArrowDownRight } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
+import { useSidebar } from "@/components/ui/sidebar"
 
 // Model ID mapping for our API
 const MODEL_MAP: Record<string, string> = {
@@ -102,6 +103,7 @@ function groupConsecutiveMessages(messages: ChatMessage[]): ChatMessage[] {
 
 
 export function ChatLanding() {
+  const { isMobile } = useSidebar()
   const user = useAuthStore((s) => s.user)
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const userTier = useAuthStore((s) =>
@@ -863,14 +865,16 @@ export function ChatLanding() {
               </div>
             </div>
 
-            <div className="w-full max-w-3xl mx-auto z-10 sticky md:relative bottom-0 md:bottom-auto bg-gradient-to-t from-background via-background/95 to-transparent md:bg-transparent pt-4 pb-6 md:p-0 md:mb-32">
-              <ChatInput
-                placeholder="Pregúntame lo que quieras..."
-                onSubmit={handleSend}
-                disabled={false}
-                isStreaming={aiLoading}
-                onStop={stop}
-              />
+            <div className="sticky bottom-0 md:relative z-10 w-full bg-gradient-to-t from-background via-background/95 to-transparent md:bg-transparent pt-4 pb-6 md:p-0 md:mb-32">
+              <div className="max-w-3xl mx-auto w-full">
+                <ChatInput
+                  placeholder={isMobile ? "Envía un mensaje..." : "Pregúntame lo que quieras..."}
+                  onSubmit={handleSend}
+                  disabled={false}
+                  isStreaming={aiLoading}
+                  onStop={stop}
+                />
+              </div>
             </div>
           </div>
         ) : (

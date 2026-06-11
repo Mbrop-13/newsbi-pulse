@@ -14,7 +14,7 @@ import { AnalyzedNewsCard } from "@/components/assistant/analyzed-news-card"
 import { AIChartCard } from "@/components/assistant/ai-chart-card"
 import { PriceAlertCard } from "@/components/assistant/price-alert-card"
 import { motion, AnimatePresence } from "framer-motion"
-
+import { WebPreview, WebPreviewNavigation, WebPreviewUrl, WebPreviewBody } from "@/components/ai/web-preview"
 
 interface ChatMessagesProps {
   messages: ChatMessage[]

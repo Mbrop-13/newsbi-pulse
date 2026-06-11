@@ -147,7 +147,7 @@ export function Navbar() {
         <div className="w-full px-3 md:px-6 xl:px-12 h-full flex items-center justify-between gap-2 md:gap-4">
 
           {/* Left: Logo & Sidebar Toggle */}
-          <div className="flex-shrink-0 flex items-center gap-2 h-full overflow-visible">
+          <div className="flex-shrink-0 flex items-center gap-2 h-full overflow-visible z-10">
             {isMobile && !isPublicRoute && (
               <button
                 type="button"
@@ -158,11 +158,22 @@ export function Navbar() {
                 <Menu className="w-5 h-5" />
               </button>
             )}
-            <Link href={`/`} className="flex items-center hover:opacity-80 transition-opacity h-full overflow-visible">
+            <Link href={`/`} className="hidden md:flex items-center hover:opacity-80 transition-opacity h-full overflow-visible">
                <img 
                  src={mounted && resolvedTheme === "dark" ? "/assets/maverlang-logo-white.png" : "/assets/maverlang-logo.png"} 
                  alt="Maverlang" 
                  className="h-12 w-auto object-contain max-w-none"
+               />
+            </Link>
+          </div>
+
+          {/* Absolute Center Logo for Mobile */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 md:hidden z-0 pointer-events-auto flex items-center justify-center">
+            <Link href={`/`} className="flex items-center hover:opacity-80 transition-opacity">
+               <img 
+                 src={mounted && resolvedTheme === "dark" ? "/assets/maverlang-logo-white.png" : "/assets/maverlang-logo.png"} 
+                 alt="Maverlang" 
+                 className="h-8 w-auto object-contain"
                />
             </Link>
           </div>

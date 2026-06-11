@@ -865,7 +865,7 @@ export function ChatLanding() {
               </div>
             </div>
 
-            <div className="w-full max-w-3xl mx-auto z-10 sticky md:relative bottom-0 md:bottom-auto bg-gradient-to-t from-background via-background/95 to-transparent md:bg-transparent pt-4 pb-6 md:p-0 md:mb-32">
+            <div className="w-full max-w-3xl mx-auto z-10 sticky md:relative bottom-0 md:bottom-auto bg-gradient-to-t from-background via-background/95 to-transparent md:bg-transparent pt-4 pb-8 md:p-0 md:mb-16">
               <ChatInput
                 placeholder="Pregúntame lo que quieras..."
                 onSubmit={handleSend}
@@ -896,7 +896,7 @@ export function ChatLanding() {
               onToggleReasoning={toggleReasoning}
             />
 
-            <div className="sticky bottom-0 z-10 w-full bg-gradient-to-t from-background via-background/95 to-transparent pt-4 pb-6">
+            <div className="sticky bottom-0 z-10 w-full bg-gradient-to-t from-background via-background/95 to-transparent pt-4 pb-8 md:pb-12">
               <div className="max-w-3xl mx-auto w-full">
                 <ChatInput
                   placeholder="Envía un mensaje..."

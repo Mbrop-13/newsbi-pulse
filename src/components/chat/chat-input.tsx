@@ -455,40 +455,44 @@ export function ChatInput({
                 </AnimatePresence>
               </div>
 
-              {/* Feature toggle pills */}
-              <Pill
-                active={webSearch}
-                onClick={() => setWebSearch(prev => !prev)}
-                icon={<Globe className="h-4 w-4" />}
-                label="Búsqueda web"
-              />
-              <Pill
-                active={image}
-                onClick={() => setImage(prev => !prev)}
-                icon={<ImageIcon className="h-4 w-4" />}
-                label="Generar imagen"
-              />
-              <Pill
-                active={codeInterpreter}
-                onClick={() => setCodeInterpreter(prev => !prev)}
-                icon={<Terminal className="h-4 w-4" />}
-                label="Intérprete de código"
-              />
-              <Pill
-                active={browser}
-                onClick={() => setBrowser(prev => !prev)}
-                icon={<Chrome className="h-4 w-4" />}
-                label="Navegador virtual"
-              />
+              {/* Feature toggle pills scrollable row */}
+              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [scrollbar-width:none] select-none flex-nowrap pr-2 max-w-[calc(100vw-180px)] sm:max-w-none">
+                <Pill
+                  active={webSearch}
+                  onClick={() => setWebSearch(prev => !prev)}
+                  icon={<Globe className="h-4 w-4" />}
+                  label="Búsqueda web"
+                />
+                <Pill
+                  active={image}
+                  onClick={() => setImage(prev => !prev)}
+                  icon={<ImageIcon className="h-4 w-4" />}
+                  label="Generar imagen"
+                />
+                <Pill
+                  active={codeInterpreter}
+                  onClick={() => setCodeInterpreter(prev => !prev)}
+                  icon={<Terminal className="h-4 w-4" />}
+                  label="Intérprete de código"
+                />
+                <Pill
+                  active={browser}
+                  onClick={() => setBrowser(prev => !prev)}
+                  icon={<Chrome className="h-4 w-4" />}
+                  label="Navegador virtual"
+                />
+              </div>
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Inline Model Selector */}
-              <ModelSelector
-                selectedModelId={selectedModel}
-                onModelSelect={(model) => setModel(model.id)}
-                variant="inline"
-              />
+              {/* Inline Model Selector - Hidden on Mobile */}
+              <div className="hidden sm:block">
+                <ModelSelector
+                  selectedModelId={selectedModel}
+                  onModelSelect={(model) => setModel(model.id)}
+                  variant="inline"
+                />
+              </div>
 
               {/* Microphone / Transcribe Button & Equalizer */}
               <div className="flex items-center gap-1.5 shrink-0">

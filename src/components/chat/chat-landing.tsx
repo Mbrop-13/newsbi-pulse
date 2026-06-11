@@ -542,7 +542,7 @@ export function ChatLanding() {
           /* Landing view - center content with prompt suggestions */
           <div className="flex-1 flex flex-col items-center justify-center px-4 pt-16 relative">
             {/* Top Navigation Sections */}
-            <div className="absolute top-6 inset-x-0 flex items-center justify-center gap-2 text-sm font-semibold z-30 select-none">
+            <div className="absolute top-6 inset-x-0 hidden md:flex items-center justify-center gap-2 text-sm font-semibold z-30 select-none">
               
               {/* NOTICIAS MENU */}
               <div 

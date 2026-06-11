@@ -80,7 +80,7 @@ function PlanBadge({ tier }: { tier: string }) {
 }
 
 export function NavUser() {
-  const { isMobile, state } = useSidebar()
+  const { isMobile, state, setOpenMobile } = useSidebar()
   const { theme, setTheme } = useTheme()
   const router = useRouter()
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -105,6 +105,7 @@ export function NavUser() {
   }, [mounted, isAuthenticated, user, loadDiamonds])
 
   const handleSignOut = () => {
+    if (isMobile) setOpenMobile(false)
     useAuthStore.getState().logout()
     router.push("/")
   }
@@ -131,6 +132,7 @@ export function NavUser() {
           <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-relaxed font-medium">Actualiza a Pro para acceder a modelos avanzados y agentes.</p>
           <Link 
             href="/suscripcion"
+            onClick={() => { if (isMobile) setOpenMobile(false) }}
             className="w-full text-center py-1.5 px-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-[11px] font-bold shadow-md shadow-blue-500/20 transition-all flex items-center justify-center gap-1 mt-1 group-hover:scale-[1.02]"
           >
             <span>Subir de Nivel</span>
@@ -208,7 +210,7 @@ export function NavUser() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => router.push("/suscripcion")}>
+              <DropdownMenuItem onClick={() => { if (isMobile) setOpenMobile(false); router.push("/suscripcion"); }}>
                 <Zap className="mr-2 h-4 w-4 text-[#1890FF]" />
                 {userTier === "free" ? "Suscribirse" : userTier === "ultra" ? "Gestionar Plan" : "Subir de nivel"}
               </DropdownMenuItem>

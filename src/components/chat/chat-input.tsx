@@ -458,18 +458,6 @@ export function ChatInput({
               {/* Feature toggle pills scrollable row */}
               <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [scrollbar-width:none] select-none flex-nowrap pr-2 max-w-[calc(100vw-180px)] sm:max-w-none">
                 <Pill
-                  active={webSearch}
-                  onClick={() => setWebSearch(prev => !prev)}
-                  icon={<Globe className="h-4 w-4" />}
-                  label="Búsqueda web"
-                />
-                <Pill
-                  active={image}
-                  onClick={() => setImage(prev => !prev)}
-                  icon={<ImageIcon className="h-4 w-4" />}
-                  label="Generar imagen"
-                />
-                <Pill
                   active={codeInterpreter}
                   onClick={() => setCodeInterpreter(prev => !prev)}
                   icon={<Terminal className="h-4 w-4" />}
@@ -485,79 +473,73 @@ export function ChatInput({
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Inline Model Selector - Hidden on Mobile */}
-              <div className="hidden sm:block">
-                <ModelSelector
-                  selectedModelId={selectedModel}
-                  onModelSelect={(model) => setModel(model.id)}
-                  variant="inline"
-                />
-              </div>
+              {/* Inline Model Selector */}
+              <ModelSelector
+                selectedModelId={selectedModel}
+                onModelSelect={(model) => setModel(model.id)}
+                variant="inline"
+              />
 
-              {/* Microphone / Transcribe Button & Equalizer */}
-              <div className="flex items-center gap-1.5 shrink-0">
-                {isListening && (
-                  <div className="flex items-end gap-[3px] h-5 px-1 shrink-0 pb-0.5">
-                    {[1, 2, 3, 4, 5].map((bar) => (
-                      <motion.span
-                        key={bar}
-                        className="w-[3px] bg-red-500 rounded-full"
-                        animate={{
-                          height: ["6px", "18px", "6px"],
-                        }}
-                        transition={{
-                          duration: 0.8,
-                          repeat: Infinity,
-                          repeatType: "reverse",
-                          delay: bar * 0.12,
-                          ease: "easeInOut",
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={toggleListening}
-                      className={cn(
-                        "rounded-full h-8 w-8 text-muted-foreground hover:text-foreground transition-all cursor-pointer flex items-center justify-center",
-                        isListening && "text-red-500 hover:text-red-650 bg-red-500/10 shadow-[0_0_8px_rgba(239,68,68,0.25)] animate-pulse"
-                      )}
-                      aria-label={isListening ? "Detener grabación" : "Transcribir voz"}
-                    >
-                      <Mic className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" sideOffset={6}>
-                    {isListening ? "Deteniendo..." : "Dictar mensaje"}
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-
-              {/* Primary action button */}
+              {/* Primary action button (Microphone when empty, Send when has text) */}
               {isStreaming ? (
                 <Button
                   type="button"
                   size="icon"
                   onClick={onStop}
-                  className={cn(
-                    "rounded-full h-8 w-8 bg-foreground text-background hover:opacity-90 transition-opacity cursor-pointer flex items-center justify-center"
-                  )}
+                  className="rounded-full h-8 w-8 bg-foreground text-background hover:opacity-90 transition-opacity cursor-pointer flex items-center justify-center shrink-0"
                   aria-label="Detener generación"
                 >
                   <div className="h-2.5 w-2.5 bg-current rounded-[1px]" />
                 </Button>
+              ) : value.trim() === "" ? (
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {isListening && (
+                    <div className="flex items-end gap-[3px] h-5 px-1 shrink-0 pb-0.5">
+                      {[1, 2, 3, 4, 5].map((bar) => (
+                        <motion.span
+                          key={bar}
+                          className="w-[3px] bg-red-500 rounded-full"
+                          animate={{
+                            height: ["6px", "18px", "6px"],
+                          }}
+                          transition={{
+                            duration: 0.8,
+                            repeat: Infinity,
+                            repeatType: "reverse",
+                            delay: bar * 0.12,
+                            ease: "easeInOut",
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        size="icon"
+                        onClick={toggleListening}
+                        className={cn(
+                          "rounded-full h-8 w-8 transition-all cursor-pointer flex items-center justify-center shrink-0",
+                          isListening
+                            ? "bg-red-500 text-white hover:bg-red-650 shadow-[0_0_8px_rgba(239,68,68,0.25)] animate-pulse"
+                            : "bg-foreground text-background hover:opacity-90"
+                        )}
+                        aria-label={isListening ? "Detener grabación" : "Dictar mensaje"}
+                      >
+                        <Mic className="h-4.5 w-4.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" sideOffset={6}>
+                      {isListening ? "Deteniendo..." : "Dictar mensaje"}
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
               ) : (
                 <Button
                   type="submit"
                   size="icon"
-                  className={cn(
-                    "rounded-full h-8 w-8 bg-foreground text-background hover:opacity-90 transition-opacity cursor-pointer flex items-center justify-center"
-                  )}
+                  className="rounded-full h-8 w-8 bg-foreground text-background hover:opacity-90 transition-opacity cursor-pointer flex items-center justify-center shrink-0"
                   aria-label="Enviar mensaje"
                   disabled={disabled}
                 >

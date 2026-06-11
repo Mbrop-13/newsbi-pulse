@@ -141,7 +141,7 @@ export function ClientLayoutProviders({
   const { isAuthenticated, isLoaded: authLoaded } = useAuthStore();
   const isSidebarPage = isSidebarRoute && mounted && (!authLoaded || isAuthenticated);
   const isFullscreenPage = isSidebarPage;
-  const isAssistantPage = pathname === "/ai";
+  const isAiPage = pathname === "/ai" || pathname.startsWith("/ai/");
   const isAdminPage = pathname.startsWith("/admin");
   const audioMode = useAudioPlayerStore((s) => s.mode);
   const pinnedWidth = useAudioPlayerStore((s) => s.pinnedWidth);
@@ -150,7 +150,7 @@ export function ClientLayoutProviders({
   const hasMessages = messages.length > 0;
   
   // Show bottom nav on mobile for sidebar pages, EXCEPT when in a chat on AI page
-  const showMobileNavOnSidebar = isMobile && isSidebarPage && (!isAssistantPage || !hasMessages);
+  const showMobileNavOnSidebar = isMobile && isSidebarPage && (!isAiPage || !hasMessages);
 
   return (
     <ThemeProvider>

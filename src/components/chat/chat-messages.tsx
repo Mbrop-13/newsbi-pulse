@@ -108,17 +108,14 @@ export function ChatMessages({
             prevMessageContent={idx > 0 ? messages[idx - 1].content : ""}
             streamData={streamData}
             isLast={idx === messages.length - 1}
+            isLoading={isLoading}
           />
         ))}
 
         {/* Loading indicator */}
         {isLoading && messages[messages.length - 1]?.role === 'user' && (
           <div className="flex gap-3">
-            <Avatar className="h-8 w-8 shrink-0 mt-1">
-              <AvatarFallback className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 text-xs">
-                <Bot className="h-4 w-4 text-blue-500" />
-              </AvatarFallback>
-            </Avatar>
+            <AssistantAvatar isResponding={true} />
             <div className="flex items-center gap-2 py-2">
               <div className="flex items-center gap-1">
                 <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -146,6 +143,7 @@ function MessageBubble({
   prevMessageContent,
   streamData,
   isLast,
+  isLoading,
 }: {
   message: ChatMessage
   feedback?: 'like' | 'dislike'
@@ -157,6 +155,7 @@ function MessageBubble({
   prevMessageContent: string
   streamData?: any[]
   isLast: boolean
+  isLoading: boolean
 }) {
   const isUser = message.role === "user"
   const [isCitationsOpen, setIsCitationsOpen] = useState(false)
@@ -312,14 +311,12 @@ function MessageBubble({
     )
   }
 
+  const isResponding = isLast && isLoading;
+
   // Assistant message
   return (
     <div className="flex gap-3 group">
-      <Avatar className="h-8 w-8 shrink-0 mt-1">
-        <AvatarFallback className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 text-xs">
-          <Bot className="h-4 w-4 text-blue-500" />
-        </AvatarFallback>
-      </Avatar>
+      <AssistantAvatar isResponding={isResponding} />
       <div className="flex-1 min-w-0">
         {renderToolResults()}
         {renderCharts()}
@@ -591,6 +588,32 @@ function PythonResultCard({ args, result }: { args: any; result: any }) {
           </pre>
         </div>
       )}
+    </div>
+  );
+}
+
+function AssistantAvatar({ isResponding }: { isResponding: boolean }) {
+  if (isResponding) {
+    return (
+      <div className="h-8 w-8 rounded-full overflow-hidden shrink-0 mt-1 bg-black flex items-center justify-center border border-blue-500/20">
+        <video 
+          src="/assets/video-chat.mp4" 
+          autoPlay 
+          loop 
+          muted 
+          playsInline
+          className="w-full h-full object-cover scale-110"
+        />
+      </div>
+    );
+  }
+  return (
+    <div className="h-8 w-8 rounded-full overflow-hidden shrink-0 mt-1 flex items-center justify-center border border-gray-200/50 dark:border-gray-800/50 bg-white">
+      <img 
+        src="/assets/chat.png" 
+        alt="Chat Logo" 
+        className="w-full h-full object-cover"
+      />
     </div>
   );
 }

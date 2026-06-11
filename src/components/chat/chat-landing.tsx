@@ -540,7 +540,7 @@ export function ChatLanding() {
     <div className="flex flex-col h-full relative flex-1">
       <div className="flex flex-col h-full relative">
         {/* Main content area */}
-        {!hasMessages ? (
+        {!hasMessages && !isMobile ? (
           /* Landing view - center content with prompt suggestions */
           <div className="flex-1 flex flex-col items-center justify-between md:justify-center px-4 pt-16 relative h-full">
             {/* Top Navigation Sections */}
@@ -865,16 +865,14 @@ export function ChatLanding() {
               </div>
             </div>
 
-            <div className="sticky bottom-0 md:relative z-10 w-full bg-gradient-to-t from-background via-background/95 to-transparent md:bg-transparent pt-4 pb-6 md:p-0 md:mb-32">
-              <div className="max-w-3xl mx-auto w-full">
-                <ChatInput
-                  placeholder={isMobile ? "Envía un mensaje..." : "Pregúntame lo que quieras..."}
-                  onSubmit={handleSend}
-                  disabled={false}
-                  isStreaming={aiLoading}
-                  onStop={stop}
-                />
-              </div>
+            <div className="w-full max-w-3xl mx-auto z-10 sticky md:relative bottom-0 md:bottom-auto bg-gradient-to-t from-background via-background/95 to-transparent md:bg-transparent pt-4 pb-6 md:p-0 md:mb-32">
+              <ChatInput
+                placeholder="Pregúntame lo que quieras..."
+                onSubmit={handleSend}
+                disabled={false}
+                isStreaming={aiLoading}
+                onStop={stop}
+              />
             </div>
           </div>
         ) : (

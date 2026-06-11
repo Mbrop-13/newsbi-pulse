@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Sun, Moon, LogIn, ChevronDown, User, Users, Headphones, Filter, ArrowLeft, Bot, Sparkles, Layers, Settings, X, Check, Settings2, TrendingUp, Landmark, LineChart, Globe, PieChart, Cpu, BookOpen, Briefcase, Scale, Zap, BarChart3, Crown } from "lucide-react";
+import { Menu, Search, Sun, Moon, LogIn, ChevronDown, User, Users, Headphones, Filter, ArrowLeft, Bot, Sparkles, Layers, Settings, X, Check, Settings2, TrendingUp, Landmark, LineChart, Globe, PieChart, Cpu, BookOpen, Briefcase, Scale, Zap, BarChart3, Crown } from "lucide-react";
 import { DiamondsButton } from "@/components/diamonds-button";
 import { NotificationBell } from "@/components/notification-bell";
 import { AuthModals } from "./auth-modals";
@@ -28,6 +28,7 @@ import {
 import { useAudioPlayerStore } from "@/lib/stores/audio-player-store";
 import { usePathname, useRouter } from "next/navigation";
 import { useFilterStore } from "@/lib/stores/filter-store";
+import { useSidebar } from "@/components/ui/sidebar";
 export function Navbar() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -63,10 +64,12 @@ export function Navbar() {
   const { isOpen: authModalOpen, view: authModalView, openModal, closeModal } = useAuthModalStore();
   const toggleAudioSidebar = useAudioPlayerStore((s) => s.toggleSidebar);
   const isAudioOpen = useAudioPlayerStore((s) => s.isOpen);
+  const { toggleSidebar, isMobile } = useSidebar();
   const supabase = createClient();
 
   const router = useRouter();
   const pathname = usePathname();
+  const isPublicRoute = pathname === "/" || pathname === "/login" || pathname === "/register" || pathname?.startsWith("/share/");
 
   const renderNavLink = (href: string, label: string) => {
     const isActive = pathname === href;
@@ -143,8 +146,18 @@ export function Navbar() {
       >
         <div className="w-full px-3 md:px-6 xl:px-12 h-full flex items-center justify-between gap-2 md:gap-4">
 
-          {/* Left: Logo */}
-          <div className="flex-shrink-0 flex items-center gap-3 h-full overflow-visible">
+          {/* Left: Logo & Sidebar Toggle */}
+          <div className="flex-shrink-0 flex items-center gap-2 h-full overflow-visible">
+            {isMobile && !isPublicRoute && (
+              <button
+                type="button"
+                onClick={toggleSidebar}
+                className="flex items-center justify-center w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-[#1890FF] hover:bg-[#1890FF]/10 transition-colors mr-1 cursor-pointer active:scale-95"
+                aria-label="Abrir menú"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+            )}
             <Link href={`/`} className="flex items-center hover:opacity-80 transition-opacity h-full overflow-visible">
                <img 
                  src="/assets/maverlang-logo.png" 
@@ -152,7 +165,6 @@ export function Navbar() {
                  className="h-12 w-auto object-contain max-w-none"
                />
             </Link>
-
           </div>
 
           {/* Center: Minimal Search Bar */}

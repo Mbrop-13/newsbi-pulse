@@ -250,7 +250,12 @@ export async function POST(req: NextRequest) {
     if (files && Array.isArray(files) && files.length > 0) {
       contextPrefix += `[ARCHIVOS ADJUNTOS DEL USUARIO]\n`;
       for (const file of files) {
-        contextPrefix += `--- Archivo: ${file.name} ---\nContenido:\n${file.content}\n---------------------\n\n`;
+        const isImage = file.type === "image" || (file.content && file.content.startsWith("data:image/"));
+        if (isImage) {
+          contextPrefix += `--- Archivo de Imagen: ${file.name} (Imagen subida por el usuario) ---\n\n`;
+        } else {
+          contextPrefix += `--- Archivo: ${file.name} ---\nContenido:\n${file.content}\n---------------------\n\n`;
+        }
       }
       contextPrefix += `[Fin de Archivos Adjuntos. Utiliza esta información si el usuario te hace consultas sobre estos archivos.]\n\n`;
     }

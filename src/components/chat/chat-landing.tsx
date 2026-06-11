@@ -540,7 +540,7 @@ export function ChatLanding() {
         {/* Main content area */}
         {!hasMessages ? (
           /* Landing view - center content with prompt suggestions */
-          <div className="flex-1 flex flex-col items-center justify-center px-4 pt-16 relative">
+          <div className="flex-1 flex flex-col items-center justify-between md:justify-center px-4 pt-16 relative h-full">
             {/* Top Navigation Sections */}
             <div className="absolute top-6 inset-x-0 hidden md:flex items-center justify-center gap-2 text-sm font-semibold z-30 select-none">
               
@@ -851,7 +851,7 @@ export function ChatLanding() {
 
             </div>
 
-            <div className="w-full max-w-2xl mx-auto">
+            <div className="flex-grow flex flex-col items-center justify-center w-full max-w-2xl mx-auto">
               <div className="text-center mb-8">
                 <div className="flex items-center justify-center">
                   <img 
@@ -861,19 +861,17 @@ export function ChatLanding() {
                   />
                 </div>
               </div>
-
-              <div className="w-full">
-                <ChatInput
-                  placeholder="Pregúntame lo que quieras..."
-                  onSubmit={handleSend}
-                  disabled={false}
-                  isStreaming={aiLoading}
-                  onStop={stop}
-                />
-              </div>
             </div>
-            {/* Spacer to push the input bar up slightly, keeping it centered where it was before */}
-            <div className="h-32 w-full shrink-0" />
+
+            <div className="w-full max-w-3xl mx-auto z-10 sticky md:relative bottom-0 md:bottom-auto bg-gradient-to-t from-background via-background/95 to-transparent md:bg-transparent pt-4 pb-6 md:p-0 md:mb-32">
+              <ChatInput
+                placeholder="Pregúntame lo que quieras..."
+                onSubmit={handleSend}
+                disabled={false}
+                isStreaming={aiLoading}
+                onStop={stop}
+              />
+            </div>
           </div>
         ) : (
           /* Chat view - messages + input at bottom */

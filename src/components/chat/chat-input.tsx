@@ -9,6 +9,7 @@ import { useAIChatStore } from "@/lib/stores/ai-chat-store";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { motion, AnimatePresence } from "framer-motion";
 import { ModelSelector } from "@/components/chat/model-selector";
+import { useSidebar } from "@/components/ui/sidebar";
 import {
   Plus,
   Mic,
@@ -104,7 +105,9 @@ export function ChatInput({
     setModel,
   } = useAIChatStore();
 
+  const { isMobile } = useSidebar();
   const isNewChat = messages.length === 0;
+  const openUpward = !isNewChat || isMobile;
 
   // Auto-resize the textarea as content grows
   const resizeTextarea = () => {
@@ -190,26 +193,64 @@ export function ChatInput({
   }, []);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (attachedFiles.length >= MAX_FILES) {
-      alert(`Has alcanzado el límite de ${MAX_FILES} archivos para tu plan.`);
-      return;
-    }
+    const files = e.target.files;
+    if (!files) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const content = event.target?.result as string;
-      if (content) {
-        attachFile({
-          id: Date.now().toString(),
-          name: file.name,
-          content: content.slice(0, 15000),
-        });
+    Array.from(files).forEach(file => {
+      if (attachedFiles.length >= MAX_FILES) {
+        alert(`Has alcanzado el límite de ${MAX_FILES} archivos para tu plan.`);
+        return;
       }
-    };
-    reader.readAsText(file);
+
+      const isImage = file.type.startsWith("image/");
+      const reader = new FileReader();
+
+      reader.onload = (event) => {
+        const content = event.target?.result as string;
+        if (content) {
+          attachFile({
+            id: Math.random().toString(36).substring(7),
+            name: file.name,
+            content: isImage ? content : content.slice(0, 15000),
+            type: isImage ? "image" : file.type.includes("code") || isCode(content) ? "code" : "file",
+            size: file.size,
+          });
+        }
+      };
+
+      if (isImage) {
+        reader.readAsDataURL(file);
+      } else {
+        reader.readAsText(file);
+      }
+    });
+
     if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const pastedText = e.clipboardData.getData("text");
+    if (!pastedText) return;
+
+    if (isCode(pastedText)) {
+      e.preventDefault();
+      
+      const lang = detectLanguage(pastedText);
+      const fileName = `codigo.${lang}`;
+      
+      attachFile({
+        id: Math.random().toString(36).substring(7),
+        name: fileName,
+        content: pastedText,
+        type: "code",
+        isPastedCode: true,
+        size: pastedText.length,
+      });
+      
+      setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 0);
+    }
   };
 
   return (
@@ -219,7 +260,7 @@ export function ChatInput({
         className={cn("max-w-6xl px-0 pb-0 md:pb-4 mx-auto inset-x-0 pt-0 relative", className)}
       >
         {/* Active Tool Pills & Attachments */}
-        {(activeTools.length > 0 || attachedFiles.length > 0 || attachedArticles.length > 0) && (
+        {(activeTools.length > 0 || attachedArticles.length > 0) && (
           <div className="absolute bottom-full left-4 mb-2.5 flex flex-wrap gap-2 pointer-events-auto">
             {/* Active Tools */}
             {activeTools.map(toolId => {
@@ -248,29 +289,6 @@ export function ChatInput({
               );
             })}
 
-            {/* Attached Files */}
-            {attachedFiles.map(file => (
-              <motion.div
-                key={file.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 text-[11px] font-bold px-3 py-1.5 rounded-full flex items-center gap-2 shadow-sm"
-              >
-                <div className="w-5 h-5 rounded-full bg-green-55 dark:bg-green-500/10 flex items-center justify-center">
-                  <FileText className="w-3 h-3 text-green-500" />
-                </div>
-                <span className="max-w-[120px] truncate">{file.name}</span>
-                <button
-                  type="button"
-                  onClick={() => removeFile(file.id)}
-                  className="ml-1 text-gray-400 hover:text-red-500 transition-colors rounded-full p-0.5 hover:bg-red-50 dark:hover:bg-red-500/10"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </motion.div>
-            ))}
-
             {/* Attached Articles */}
             {attachedArticles.map(article => (
               <motion.div
@@ -297,9 +315,68 @@ export function ChatInput({
         )}
 
         <div className={cn(
-          "rounded-3xl bg-secondary dark:bg-secondary p-2 shadow-md border transition-all duration-300",
+          "rounded-3xl bg-secondary dark:bg-secondary p-2 shadow-md border transition-all duration-300 overflow-hidden",
           isListening && "border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.15)]"
         )}>
+          {/* File Previews inside the input box */}
+          {attachedFiles.length > 0 && (
+            <div className="flex flex-wrap gap-3 p-3 border-b border-border/20 mb-2">
+              {attachedFiles.map(file => {
+                const isImage = file.type === "image" || file.content.startsWith("data:image/");
+                const isCodeFile = file.type === "code" || file.isPastedCode;
+                
+                return (
+                  <motion.div
+                    key={file.id}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    className="relative group w-22 h-22 rounded-2xl overflow-hidden border border-border/40 bg-muted/30 dark:bg-white/[0.02] flex flex-col justify-between p-2 shadow-sm transition-all duration-300 hover:border-border/60"
+                  >
+                    {/* Delete button floating in the corner */}
+                    <button
+                      type="button"
+                      onClick={() => removeFile(file.id)}
+                      className="absolute top-1.5 right-1.5 z-30 h-5 w-5 rounded-full bg-black/75 hover:bg-black text-white flex items-center justify-center cursor-pointer active:scale-90 transition-transform shadow-md border border-white/10"
+                      aria-label="Eliminar"
+                    >
+                      <X className="w-2.5 h-2.5" />
+                    </button>
+                    
+                    {isImage ? (
+                      /* Image preview */
+                      <div className="absolute inset-0 z-10 w-full h-full">
+                        <img
+                          src={file.content}
+                          alt={file.name}
+                          className="w-full h-full object-cover rounded-xl"
+                        />
+                      </div>
+                    ) : isCodeFile ? (
+                      /* Code preview card */
+                      <div className="w-full h-full flex flex-col justify-between font-mono text-[7px] text-muted-foreground select-none leading-normal overflow-hidden p-0.5">
+                        <div className="truncate font-bold text-[9px] text-foreground mb-1 border-b border-border/20 pb-0.5 max-w-[80%]">{file.name}</div>
+                        <div className="line-clamp-4 break-all opacity-70 mb-1 leading-tight">{file.content}</div>
+                        <div className="text-[7px] font-black uppercase text-blue-500 dark:text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded-md self-start tracking-wider">PASTED</div>
+                      </div>
+                    ) : (
+                      /* Regular file preview card */
+                      <div className="w-full h-full flex flex-col justify-between p-0.5">
+                        <div className="w-8 h-8 rounded-xl bg-green-500/10 flex items-center justify-center shrink-0">
+                          <FileText className="w-4.5 h-4.5 text-green-500" />
+                        </div>
+                        <div className="flex flex-col min-w-0 mt-1">
+                          <div className="text-[9px] font-bold truncate text-foreground">{file.name}</div>
+                          <div className="text-[7px] text-muted-foreground uppercase mt-0.5">{file.name.split('.').pop() || 'FILE'}</div>
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+
           {/* Textarea area */}
           <div className="flex items-center px-2 bg-transparent relative">
             <Textarea
@@ -308,6 +385,7 @@ export function ChatInput({
               onChange={(e) => setValue(e.target.value)}
               onInput={() => resizeTextarea()}
               onKeyDown={handleKeyDown}
+              onPaste={handlePaste}
               placeholder={isListening ? "Escuchando... habla ahora" : placeholder}
               disabled={Boolean(disabled && !isStreaming)}
               id="chat-input"
@@ -341,13 +419,13 @@ export function ChatInput({
                     <>
                       <div className="fixed inset-0 z-20" onClick={() => { setShowAttachMenu(false); setTimeout(() => setAttachMenuView('main'), 200); }} />
                       <motion.div
-                        initial={{ opacity: 0, y: isNewChat ? -10 : 10, scale: 0.95 }}
+                        initial={{ opacity: 0, y: openUpward ? 10 : -10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: isNewChat ? -10 : 10, scale: 0.95 }}
+                        exit={{ opacity: 0, y: openUpward ? 10 : -10, scale: 0.95 }}
                         transition={{ type: "spring", damping: 20, stiffness: 300 }}
                         className={cn(
                           "absolute left-0 z-40 w-64 flex flex-col max-h-[350px] overflow-hidden rounded-2xl border shadow-2xl",
-                          isNewChat ? "top-12" : "bottom-12",
+                          openUpward ? "bottom-12" : "top-12",
                           "bg-white/95 dark:bg-[#0B1329]/95 backdrop-blur-xl border-gray-200/50 dark:border-white/5 shadow-blue-500/5 dark:shadow-blue-900/10"
                         )}
                       >
@@ -597,3 +675,58 @@ function Pill({
     </Tooltip>
   );
 }
+
+const isCode = (text: string): boolean => {
+  if (text.length < 20) return false;
+  
+  const lines = text.split("\n");
+  if (lines.length < 2) {
+    if (text.startsWith("<!DOCTYPE") || text.startsWith("<html>")) return true;
+    return false;
+  }
+
+  const indicators = [
+    /^\s*(import|export|const|let|var|function|class)\s/m,
+    /^\s*(public|private|protected|static|void|int|double|string)\s/m,
+    /^\s*(def|class|import|from)\s.*:/m,
+    /^\s*<\?php/m,
+    /^\s*(using\s+System|namespace|class|public\s+class)/m,
+    /^\s*(#include|using\s+namespace|int\s+main)/m,
+    /^\s*package\s+main/m,
+    /^\s*(select|insert|update|delete)\s+.*\s+from/mi,
+    /^\s*<!DOCTYPE html/i,
+    /^\s*@import\s+/m,
+    /^\s*(interface|type|enum)\s[A-Z]/m,
+    /[{}]/m,
+  ];
+
+  let matchCount = 0;
+  for (const regex of indicators) {
+    if (regex.test(text)) {
+      matchCount++;
+    }
+  }
+
+  return matchCount >= 2 || text.trim().startsWith("<!DOCTYPE") || text.trim().startsWith("<html>");
+};
+
+const detectLanguage = (text: string): string => {
+  if (/^\s*<!DOCTYPE html/i.test(text) || /^\s*<html/i.test(text)) return "html";
+  if (/^\s*<\?php/i.test(text)) return "php";
+  if (/^\s*import\s+.*\s+from\s+['"]/m.test(text) || /const\s+.*\s+=\s+require\(/m.test(text)) return "js";
+  if (/^\s*def\s+\w+\(.*\):/m.test(text) || /^\s*import\s+(os|sys|math|pandas|numpy)/m.test(text)) return "py";
+  if (/^\s*(public|private|protected)\s+class\s+\w+/m.test(text)) return "java";
+  if (/^\s*(#include|using\s+namespace)/m.test(text)) return "cpp";
+  if (/^\s*using\s+System/m.test(text)) return "cs";
+  if (/^\s*package\s+main/m.test(text)) return "go";
+  if (/^\s*(select|insert|update|delete|create)\s+.*\s+from/mi.test(text)) return "sql";
+  if (/^\s*@import|body\s*\{|\.\w+\s*\{/m.test(text)) return "css";
+  const trimmed = text.trim();
+  if ((trimmed.startsWith("{") && trimmed.endsWith("}")) || (trimmed.startsWith("[") && trimmed.endsWith("]"))) {
+    try {
+      JSON.parse(trimmed);
+      return "json";
+    } catch (_) {}
+  }
+  return "txt";
+};

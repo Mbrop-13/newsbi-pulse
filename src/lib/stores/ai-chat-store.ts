@@ -39,6 +39,9 @@ export interface AttachedFile {
   id: string;
   name: string;
   content: string;
+  type?: string;        // "image" | "code" | "file"
+  size?: number;        // size in bytes
+  isPastedCode?: boolean;
 }
 
 export interface SavedChat {

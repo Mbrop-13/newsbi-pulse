@@ -93,8 +93,10 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
             </Button>
           </PopoverTrigger>
           <PopoverContent
+            side="top"
+            sideOffset={8}
             align="end"
-            className="w-[280px] p-0 shadow-lg border scrollbar-hide z-50 bg-popover text-popover-foreground"
+            className="w-[280px] p-0 shadow-lg border scrollbar-hide z-50 bg-popover text-popover-foreground animate-in fade-in slide-in-from-bottom-2 duration-200"
             onOpenAutoFocus={(e) => e.preventDefault()}
           >
             <Command className="scrollbar-hide">

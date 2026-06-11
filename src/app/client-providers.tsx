@@ -35,68 +35,19 @@ import { cn } from "@/lib/utils";
 
 import { useState, useEffect } from "react";
 
-function MobileHeader({ pathname }: { pathname: string }) {
+function MobileMenuButton() {
   const { setOpenMobile } = useSidebar();
-  const { messages, clearMessages, selectedModel, setModel } = useAIChatStore();
-  const isAi = pathname === "/ai" || pathname.startsWith("/ai/");
-  
-  // Custom titles or elements based on path
-  const isNoticias = pathname === "/noticias" || pathname.startsWith("/noticias/") || pathname.startsWith("/chile") || pathname.startsWith("/argentina") || pathname.startsWith("/colombia") || pathname.startsWith("/brasil") || pathname.startsWith("/ecuador") || pathname.startsWith("/mexico");
-  const isMercados = pathname === "/mercados" || pathname.startsWith("/mercados/");
-  const isPortafolio = pathname === "/portafolio" || pathname.startsWith("/portafolio/");
-  const isMundo = pathname === "/mundo" || pathname.startsWith("/mundo/");
-
-  let title = "Reclu";
-  if (isNoticias) title = "Noticias";
-  else if (isMercados) title = "Mercados";
-  else if (isPortafolio) title = "Portafolio";
-  else if (isMundo) title = "Mundo";
-
   return (
-    <header className="flex items-center justify-between px-4 h-14 border-b border-border/40 bg-background/95 backdrop-blur-md sticky top-0 z-40 shrink-0 md:hidden w-full select-none">
-      <div className="flex items-center gap-2">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground cursor-pointer flex items-center justify-center"
-          onClick={() => setOpenMobile(true)}
-          aria-label="Abrir menú"
-        >
-          <Menu className="h-5 w-5" />
-        </Button>
-        {!isAi && (
-          <span className="font-black text-sm tracking-tight text-gray-900 dark:text-gray-100 uppercase">
-            {title}
-          </span>
-        )}
-      </div>
-
-      {isAi && (
-        <div className="flex-1 flex justify-center max-w-[60%]">
-          <ModelSelector
-            selectedModelId={selectedModel}
-            onModelSelect={(model) => setModel(model.id)}
-            variant="inline"
-          />
-        </div>
-      )}
-
-      <div className="flex items-center gap-1.5 min-w-[36px] justify-end">
-        {isAi && messages.length > 0 && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground cursor-pointer flex items-center justify-center"
-            onClick={clearMessages}
-            title="Nuevo chat"
-          >
-            <Plus className="h-5 w-5" />
-          </Button>
-        )}
-      </div>
-    </header>
+    <Button
+      type="button"
+      variant="secondary"
+      size="icon"
+      className="fixed top-4 left-4 h-10 w-10 rounded-full shadow-lg border border-border/45 backdrop-blur-md bg-background/80 text-muted-foreground hover:text-foreground z-40 md:hidden flex items-center justify-center cursor-pointer active:scale-95 transition-all"
+      onClick={() => setOpenMobile(true)}
+      aria-label="Abrir menú"
+    >
+      <Menu className="h-5 w-5" />
+    </Button>
   );
 }
 
@@ -173,7 +124,7 @@ export function ClientLayoutProviders({
               <SidebarProvider>
                 <AppSidebar />
                 <SidebarInset>
-                  <MobileHeader pathname={pathname} />
+                  {isMobile && <MobileMenuButton />}
                   <div className={cn(
                     "flex flex-col h-full min-h-screen w-full min-w-0 overflow-y-auto overflow-x-hidden",
                     showMobileNavOnSidebar && "pb-24"

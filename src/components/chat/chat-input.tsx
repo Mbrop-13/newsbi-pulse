@@ -480,7 +480,7 @@ export function ChatInput({
                 variant="inline"
               />
 
-              {/* Primary action button (Microphone when empty, Send when has text) */}
+              {/* Primary action button (Microphone when empty/listening, Send when has text) */}
               {isStreaming ? (
                 <Button
                   type="button"
@@ -491,7 +491,7 @@ export function ChatInput({
                 >
                   <div className="h-2.5 w-2.5 bg-current rounded-[1px]" />
                 </Button>
-              ) : value.trim() === "" ? (
+              ) : (isListening || value.trim() === "") ? (
                 <div className="flex items-center gap-1.5 shrink-0">
                   {isListening && (
                     <div className="flex items-end gap-[3px] h-5 px-1 shrink-0 pb-0.5">
@@ -513,27 +513,20 @@ export function ChatInput({
                       ))}
                     </div>
                   )}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        type="button"
-                        size="icon"
-                        onClick={toggleListening}
-                        className={cn(
-                          "rounded-full h-8 w-8 transition-all cursor-pointer flex items-center justify-center shrink-0",
-                          isListening
-                            ? "bg-red-500 text-white hover:bg-red-650 shadow-[0_0_8px_rgba(239,68,68,0.25)] animate-pulse"
-                            : "bg-foreground text-background hover:opacity-90"
-                        )}
-                        aria-label={isListening ? "Detener grabación" : "Dictar mensaje"}
-                      >
-                        <Mic className="h-4.5 w-4.5" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" sideOffset={6}>
-                      {isListening ? "Deteniendo..." : "Dictar mensaje"}
-                    </TooltipContent>
-                  </Tooltip>
+                  <Button
+                    type="button"
+                    size="icon"
+                    onClick={toggleListening}
+                    className={cn(
+                      "rounded-full h-8 w-8 transition-all cursor-pointer flex items-center justify-center shrink-0",
+                      isListening
+                        ? "bg-red-500 text-white hover:bg-red-650 shadow-[0_0_8px_rgba(239,68,68,0.25)] animate-pulse"
+                        : "bg-foreground text-background hover:opacity-90"
+                    )}
+                    aria-label={isListening ? "Detener grabación" : "Dictar mensaje"}
+                  >
+                    <Mic className="h-4.5 w-4.5" />
+                  </Button>
                 </div>
               ) : (
                 <Button

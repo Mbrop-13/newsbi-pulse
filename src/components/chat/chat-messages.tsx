@@ -79,16 +79,16 @@ export function ChatMessages({
     >
       <AnimatePresence>
         {showScrollButton && (
-          <div className="sticky top-[85%] left-1/2 -translate-x-1/2 z-50 w-full h-0 pointer-events-none flex justify-center overflow-visible">
+          <div className="sticky bottom-6 left-full -translate-x-[60px] z-50 w-0 h-0 pointer-events-none flex justify-end overflow-visible">
             <motion.button
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
               onClick={scrollToBottom}
-              className="pointer-events-auto w-10 h-10 bg-[#1890FF] hover:bg-[#1890FF]/90 text-white rounded-full shadow-lg flex items-center justify-center transition-all cursor-pointer border border-[#1890FF]/20 mt-[-20px]"
-              title="Desplazar al final"
+              className="pointer-events-auto w-10 h-10 bg-[#1890FF] hover:bg-[#1890FF]/90 text-white rounded-full shadow-lg flex items-center justify-center transition-all cursor-pointer border border-[#1890FF]/20 active:scale-95"
+              title="Ir al final"
             >
-              <ArrowDown className="w-5 h-5 animate-bounce" />
+              <ArrowDown className="w-5 h-5" />
             </motion.button>
           </div>
         )}

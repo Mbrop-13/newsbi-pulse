@@ -10,6 +10,7 @@ import {
   Crown,
   ArrowRight,
   Zap,
+  Sparkles,
 } from "lucide-react"
 import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"

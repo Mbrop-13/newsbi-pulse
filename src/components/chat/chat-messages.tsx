@@ -14,9 +14,7 @@ import { AnalyzedNewsCard } from "@/components/assistant/analyzed-news-card"
 import { AIChartCard } from "@/components/assistant/ai-chart-card"
 import { PriceAlertCard } from "@/components/assistant/price-alert-card"
 import { motion, AnimatePresence } from "framer-motion"
-import { WebPreview, WebPreviewNavigation, WebPreviewUrl, WebPreviewBody } from "@/components/ai/web-preview"
-import { detectTicker } from "@/lib/detect-ticker"
-import { VirtualBrowserCard } from "@/components/chat/virtual-browser-card"
+
 
 interface ChatMessagesProps {
   messages: ChatMessage[]
@@ -174,42 +172,7 @@ function MessageBubble({
   }
   const hasCitations = citationsList.length > 0
 
-  const getAutoPreviewUrl = () => {
-    const stockInv = message.toolInvocations?.find((inv: any) => inv.toolName === 'analyze_stock' && inv.state === 'result');
-    if (stockInv?.result?.symbol) {
-      const sym = getGoogleFinanceSymbol(stockInv.result.symbol);
-      return { url: `https://www.google.com/finance/quote/${sym}`, label: `Google Finance: ${sym}` };
-    }
-    
-    const stockTr = message.toolResults?.find((tr: any) => tr.tool === 'stock_info');
-    const stockTrSym = stockTr?.data?.symbol;
-    if (stockTrSym) {
-      const sym = getGoogleFinanceSymbol(stockTrSym);
-      return { url: `https://www.google.com/finance/quote/${sym}`, label: `Google Finance: ${sym}` };
-    }
 
-    const portInv = message.toolInvocations?.find((inv: any) => inv.toolName === 'get_portfolio_summary' && inv.state === 'result');
-    const portInvSym = portInv?.result?.assets?.[0]?.symbol;
-    if (portInvSym) {
-      const firstSym = getGoogleFinanceSymbol(portInvSym);
-      return { url: `https://www.google.com/finance/quote/${firstSym}`, label: `Google Finance: ${firstSym}` };
-    }
-
-    const portTr = message.toolResults?.find((tr: any) => tr.tool === 'portfolio');
-    const portTrSym = portTr?.data?.assets?.[0]?.symbol;
-    if (portTrSym) {
-      const firstSym = getGoogleFinanceSymbol(portTrSym);
-      return { url: `https://www.google.com/finance/quote/${firstSym}`, label: `Google Finance: ${firstSym}` };
-    }
-
-    const detected = detectTicker(message.content) || detectTicker(prevMessageContent);
-    if (detected?.symbol) {
-      const sym = getGoogleFinanceSymbol(detected.symbol);
-      return { url: `https://www.google.com/finance/quote/${sym}`, label: `Google Finance: ${sym}` };
-    }
-
-    return null;
-  };
 
   // Render tool result cards
   const renderToolResults = () => {
@@ -230,31 +193,8 @@ function MessageBubble({
     }) || []
 
     // 2. Render from Vercel AI SDK toolInvocations (from new messages)
-    const browserInvs = message.toolInvocations?.filter((inv: any) =>
-      ['browser_navigate', 'browser_click', 'browser_type', 'browser_scroll'].includes(inv.toolName)
-    ) || [];
-    const firstBrowserToolCallId = browserInvs[0]?.toolCallId;
-
     const sdkCards = message.toolInvocations?.map((inv: any, i: number) => {
-      const isBrowserTool = ['browser_navigate', 'browser_click', 'browser_type', 'browser_scroll'].includes(inv.toolName);
-      
       if (inv.state !== 'result') {
-        if (isBrowserTool) {
-          if (inv.toolCallId === firstBrowserToolCallId) {
-            const browserSessionObj = streamData?.find((d: any) => d?.type === 'browser_session');
-            const sessionId = inv.result?.sessionId || browserSessionObj?.sessionId || (message as any)._browserSessionId;
-            const currentUrl = browserInvs.find((bi: any) => bi.toolName === 'browser_navigate')?.args?.url || '';
-            return (
-              <VirtualBrowserCard
-                key={`inv-browser-${i}`}
-                sessionId={sessionId}
-                currentUrl={currentUrl}
-                isActive={true}
-              />
-            );
-          }
-          return null;
-        }
         return (
           <div key={inv.toolCallId || `loading-tool-${i}`} className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/5 text-blue-500 rounded-xl text-xs font-bold w-fit animate-pulse border border-blue-500/20 my-1">
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -277,37 +217,7 @@ function MessageBubble({
           return <PriceAlertCard key={`inv-alert-${i}`} result={inv.result} />
         case 'run_python':
           return <PythonResultCard key={`inv-python-${i}`} args={inv.args} result={inv.result} />
-        case 'browser_navigate': {
-          if (inv.toolCallId === firstBrowserToolCallId) {
-            const sessionId = inv.result?.sessionId;
-            const currentUrl = inv.result?.url || inv.args?.url || '';
-            return (
-              <VirtualBrowserCard
-                key={`inv-browser-${i}`}
-                sessionId={sessionId}
-                currentUrl={currentUrl}
-                isActive={browserInvs.some((bi: any) => bi.state !== 'result')}
-                extractedContent={inv.result?.textContent?.slice(0, 500)}
-              />
-            );
-          }
-          return null;
-        }
-        case 'browser_click':
-        case 'browser_type':
-        case 'browser_scroll':
-          if (inv.toolCallId === firstBrowserToolCallId) {
-            const browserSessionObj = streamData?.find((d: any) => d?.type === 'browser_session');
-            const sessionId = inv.result?.sessionId || browserSessionObj?.sessionId || (message as any)._browserSessionId;
-            return (
-              <VirtualBrowserCard
-                key={`inv-browser-${i}`}
-                sessionId={sessionId}
-                currentUrl=""
-                isActive={browserInvs.some((bi: any) => bi.state !== 'result')}
-              />
-            );
-          }
+        default:
           return null;
       }
     }) || []
@@ -413,24 +323,7 @@ function MessageBubble({
       <div className="flex-1 min-w-0">
         {renderToolResults()}
         {renderCharts()}
-        {(() => {
-          const preview = getAutoPreviewUrl();
-          if (preview) {
-            return (
-              <div className="my-4 max-w-xl">
-                <WebPreview defaultUrl={preview.url} className="overflow-hidden border border-gray-200/80 dark:border-white/10 shadow-lg">
-                  <WebPreviewNavigation className="flex items-center justify-between p-2 border-b bg-muted/30">
-                    <div className="flex items-center gap-2 flex-1 mr-2">
-                      <WebPreviewUrl className="bg-white dark:bg-[#0a0a0a]" />
-                    </div>
-                  </WebPreviewNavigation>
-                  <WebPreviewBody className="min-h-[350px] h-[350px]" />
-                </WebPreview>
-              </div>
-            );
-          }
-          return null;
-        })()}
+
         {renderReasoning()}
         
         <div className="prose prose-sm dark:prose-invert max-w-none text-sm">

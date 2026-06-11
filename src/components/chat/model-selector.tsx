@@ -86,17 +86,10 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
               aria-expanded={open}
               className="w-fit h-8 gap-1 bg-white/5 dark:bg-white/5 border border-border/40 hover:bg-muted/50 px-2.5 py-1 rounded-full text-xs font-semibold text-muted-foreground hover:text-foreground transition-all duration-300 shadow-sm cursor-pointer"
             >
-              <img 
-                src={selectedModel.id === "fast" ? "/assets/mav25.png" : selectedModel.id === "pro" ? "/assets/mav25pro.png" : "/assets/mav26.png"} 
-                alt={selectedModel.name} 
-                className="h-3 w-auto object-contain block dark:hidden"
-              />
-              <img 
-                src={selectedModel.id === "fast" ? "/assets/mav25-R.png" : selectedModel.id === "pro" ? "/assets/mav25pro-R.png" : "/assets/mav26-R.png"} 
-                alt={selectedModel.name} 
-                className="h-3 w-auto object-contain hidden dark:block"
-              />
-              <ChevronsUpDown className="h-3 w-3 shrink-0 opacity-50 ml-1" />
+              <span className="font-bold text-[10px] sm:text-xs group-hover:text-white transition-colors">
+                {selectedModel.name}
+              </span>
+              <ChevronsUpDown className="h-3 w-3 shrink-0 opacity-50 ml-1 group-hover:text-white transition-colors" />
             </Button>
           </PopoverTrigger>
           <PopoverContent
@@ -126,16 +119,9 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
                     >
                       <div className="flex flex-col w-full min-w-0">
                         <div className="flex items-center gap-1.5 min-w-0">
-                          <img 
-                            src={model.id === "fast" ? "/assets/mav25.png" : model.id === "pro" ? "/assets/mav25pro.png" : "/assets/mav26.png"} 
-                            alt={model.name} 
-                            className="h-3 w-auto object-contain block dark:hidden group-hover/item:hidden group-data-selected/item:hidden transition-transform duration-300 ease-out group-hover/item:scale-105 group-data-selected/item:scale-105"
-                          />
-                          <img 
-                            src={model.id === "fast" ? "/assets/mav25-R.png" : model.id === "pro" ? "/assets/mav25pro-R.png" : "/assets/mav26-R.png"} 
-                            alt={model.name} 
-                            className="h-3 w-auto object-contain hidden dark:block group-hover/item:block group-data-selected/item:block transition-transform duration-300 ease-out group-hover/item:scale-105 group-data-selected/item:scale-105"
-                          />
+                          <span className="font-bold text-xs text-gray-700 dark:text-gray-300 group-hover/item:text-white group-data-selected/item:text-white transition-colors duration-300">
+                            {model.name}
+                          </span>
                         </div>
                         <span className="text-[10px] text-muted-foreground truncate group-data-selected/item:text-gray-300 transition-colors">
                           {model.description}
@@ -260,16 +246,9 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
               <div className="flex items-center gap-2 min-w-0">
                 {selectedModel ? (
                   <div className="flex items-center gap-2 min-w-0 max-w-[55vw] md:max-w-none">
-                    <img 
-                      src={selectedModel.id === "fast" ? "/assets/mav25.png" : selectedModel.id === "pro" ? "/assets/mav25pro.png" : "/assets/mav26.png"} 
-                      alt={selectedModel.name} 
-                      className="h-3 w-auto object-contain block dark:hidden"
-                    />
-                    <img 
-                      src={selectedModel.id === "fast" ? "/assets/mav25-R.png" : selectedModel.id === "pro" ? "/assets/mav25pro-R.png" : "/assets/mav26-R.png"} 
-                      alt={selectedModel.name} 
-                      className="h-3 w-auto object-contain hidden dark:block"
-                    />
+                    <span className="font-bold text-sm text-gray-800 dark:text-gray-200 group-hover:text-white transition-colors">
+                      {selectedModel.name}
+                    </span>
                     <span className="text-xs text-primary/35 font-medium shrink-0 ml-1">
                       {selectedModel.provider}
                     </span>
@@ -311,16 +290,9 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
                     >
                       <div className="flex flex-col w-full">
                         <div className="flex items-center gap-2 min-w-0">
-                          <img 
-                            src={model.id === "fast" ? "/assets/mav25.png" : model.id === "pro" ? "/assets/mav25pro.png" : "/assets/mav26.png"} 
-                            alt={model.name} 
-                            className="h-3 w-auto object-contain block dark:hidden group-hover/item:hidden group-data-selected/item:hidden transition-transform duration-300 ease-out group-hover/item:scale-105 group-data-selected/item:scale-105"
-                          />
-                          <img 
-                            src={model.id === "fast" ? "/assets/mav25-R.png" : model.id === "pro" ? "/assets/mav25pro-R.png" : "/assets/mav26-R.png"} 
-                            alt={model.name} 
-                            className="h-3 w-auto object-contain hidden dark:block group-hover/item:block group-data-selected/item:block transition-transform duration-300 ease-out group-hover/item:scale-105 group-data-selected/item:scale-105"
-                          />
+                          <span className="font-bold text-xs text-gray-700 dark:text-gray-300 group-hover/item:text-white group-data-selected/item:text-white transition-colors duration-300">
+                            {model.name}
+                          </span>
                         </div>
                         <span className="text-xs text-muted-foreground group-data-selected/item:text-gray-300 transition-colors">
                           {model.description}

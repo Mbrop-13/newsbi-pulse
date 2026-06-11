@@ -49,7 +49,6 @@ export function ClientLayoutProviders({
   // Pages that use the sidebar layout (no navbar/footer)
   const sidebarPages = [
     "/ai",
-    "/ai/agentes",
     "/noticias",
     "/mercados",
     "/portafolio",
@@ -69,7 +68,7 @@ export function ClientLayoutProviders({
   const { isAuthenticated, isLoaded: authLoaded } = useAuthStore();
   const isSidebarPage = isSidebarRoute && mounted && (!authLoaded || isAuthenticated);
   const isFullscreenPage = isSidebarPage;
-  const isAssistantPage = pathname === "/ai" || pathname === "/ai/agentes";
+  const isAssistantPage = pathname === "/ai";
   const isAdminPage = pathname.startsWith("/admin");
   const audioMode = useAudioPlayerStore((s) => s.mode);
   const pinnedWidth = useAudioPlayerStore((s) => s.pinnedWidth);

@@ -55,11 +55,17 @@ export function ChatMessages({
   }
 
   // Auto-scroll to bottom on new messages
+  const lastMessageContent = messages[messages.length - 1]?.content || '';
+  const messagesCount = messages.length;
+
   useEffect(() => {
     if (isAtBottomRef.current) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+      // Use requestAnimationFrame to avoid sudden jumps while layout shifts
+      requestAnimationFrame(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+      });
     }
-  }, [messages, isLoading])
+  }, [messagesCount, lastMessageContent, isLoading])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -75,16 +81,18 @@ export function ChatMessages({
     >
       <AnimatePresence>
         {showScrollButton && (
-          <motion.button
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            onClick={scrollToBottom}
-            className="absolute bottom-10 left-6 z-50 w-10 h-10 bg-[#1890FF] hover:bg-[#1890FF]/90 text-white rounded-full shadow-lg flex items-center justify-center transition-all cursor-pointer border border-[#1890FF]/20"
-            title="Desplazar al final"
-          >
-            <ArrowDown className="w-5 h-5 animate-bounce" />
-          </motion.button>
+          <div className="sticky top-[85%] left-1/2 -translate-x-1/2 z-50 w-full h-0 pointer-events-none flex justify-center overflow-visible">
+            <motion.button
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              onClick={scrollToBottom}
+              className="pointer-events-auto w-10 h-10 bg-[#1890FF] hover:bg-[#1890FF]/90 text-white rounded-full shadow-lg flex items-center justify-center transition-all cursor-pointer border border-[#1890FF]/20 mt-[-20px]"
+              title="Desplazar al final"
+            >
+              <ArrowDown className="w-5 h-5 animate-bounce" />
+            </motion.button>
+          </div>
         )}
       </AnimatePresence>
 
@@ -169,35 +177,35 @@ function MessageBubble({
   const getAutoPreviewUrl = () => {
     const stockInv = message.toolInvocations?.find((inv: any) => inv.toolName === 'analyze_stock' && inv.state === 'result');
     if (stockInv?.result?.symbol) {
-      const sym = getYahooFinanceSymbol(stockInv.result.symbol);
-      return { url: `https://finance.yahoo.com/quote/${sym}`, label: `Yahoo Finance: ${sym}` };
+      const sym = getGoogleFinanceSymbol(stockInv.result.symbol);
+      return { url: `https://www.google.com/finance/quote/${sym}`, label: `Google Finance: ${sym}` };
     }
     
     const stockTr = message.toolResults?.find((tr: any) => tr.tool === 'stock_info');
     const stockTrSym = stockTr?.data?.symbol;
     if (stockTrSym) {
-      const sym = getYahooFinanceSymbol(stockTrSym);
-      return { url: `https://finance.yahoo.com/quote/${sym}`, label: `Yahoo Finance: ${sym}` };
+      const sym = getGoogleFinanceSymbol(stockTrSym);
+      return { url: `https://www.google.com/finance/quote/${sym}`, label: `Google Finance: ${sym}` };
     }
 
     const portInv = message.toolInvocations?.find((inv: any) => inv.toolName === 'get_portfolio_summary' && inv.state === 'result');
     const portInvSym = portInv?.result?.assets?.[0]?.symbol;
     if (portInvSym) {
-      const firstSym = getYahooFinanceSymbol(portInvSym);
-      return { url: `https://finance.yahoo.com/quote/${firstSym}`, label: `Yahoo Finance: ${firstSym}` };
+      const firstSym = getGoogleFinanceSymbol(portInvSym);
+      return { url: `https://www.google.com/finance/quote/${firstSym}`, label: `Google Finance: ${firstSym}` };
     }
 
     const portTr = message.toolResults?.find((tr: any) => tr.tool === 'portfolio');
     const portTrSym = portTr?.data?.assets?.[0]?.symbol;
     if (portTrSym) {
-      const firstSym = getYahooFinanceSymbol(portTrSym);
-      return { url: `https://finance.yahoo.com/quote/${firstSym}`, label: `Yahoo Finance: ${firstSym}` };
+      const firstSym = getGoogleFinanceSymbol(portTrSym);
+      return { url: `https://www.google.com/finance/quote/${firstSym}`, label: `Google Finance: ${firstSym}` };
     }
 
     const detected = detectTicker(message.content) || detectTicker(prevMessageContent);
     if (detected?.symbol) {
-      const sym = getYahooFinanceSymbol(detected.symbol);
-      return { url: `https://finance.yahoo.com/quote/${sym}`, label: `Yahoo Finance: ${sym}` };
+      const sym = getGoogleFinanceSymbol(detected.symbol);
+      return { url: `https://www.google.com/finance/quote/${sym}`, label: `Google Finance: ${sym}` };
     }
 
     return null;
@@ -614,16 +622,16 @@ function MessageBubble({
   )
 }
 
-const getYahooFinanceSymbol = (symbol: string): string => {
+const getGoogleFinanceSymbol = (symbol: string): string => {
   const clean = symbol.toUpperCase();
   if (clean.includes('SPXUSD') || clean.includes('SPX') || clean.includes('S&P 500')) {
-    return '^GSPC';
+    return '.INX:INDEXSP';
   }
   if (clean.includes('NDX') || clean.includes('NASDAQ')) {
-    return '^NDX';
+    return 'NDX:INDEXNASDAQ';
   }
   if (clean.includes('DJI') || clean.includes('DOW')) {
-    return '^DJI';
+    return '.DJI:INDEXDJX';
   }
   const parts = symbol.split(':');
   const ticker = parts[parts.length - 1];

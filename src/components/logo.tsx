@@ -1,5 +1,7 @@
 "use client";
 
+import { useTheme } from "next-themes";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
 interface LogoProps {
@@ -10,6 +12,13 @@ interface LogoProps {
 }
 
 export function Logo({ showText = true, size = "md", className = "", variant = 1 }: LogoProps) {
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const sizeClasses = {
     sm: "h-6",
     md: "h-8",
@@ -17,7 +26,10 @@ export function Logo({ showText = true, size = "md", className = "", variant = 1
     xl: "h-16",
   };
 
-  const logoSrc = variant === 1 ? "/assets/maverlang-logo.png" : "/assets/maverlang-logo-small.png";
+  const isDark = mounted && resolvedTheme === "dark";
+  const logoSrc = variant === 1 
+    ? (isDark ? "/assets/maverlang-logo-white.png" : "/assets/maverlang-logo.png")
+    : (isDark ? "/assets/maverlang-logo-small-white.png" : "/assets/maverlang-logo-small.png");
 
   return (
     <Link href="/" className={`flex items-center gap-3 group ${className}`} aria-label="Maverlang Home">

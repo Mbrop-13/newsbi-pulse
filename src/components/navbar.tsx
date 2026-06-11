@@ -30,7 +30,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useFilterStore } from "@/lib/stores/filter-store";
 import { useSidebar } from "@/components/ui/sidebar";
 export function Navbar() {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [viewSettingsOpen, setViewSettingsOpen] = useState(false);
@@ -160,7 +160,7 @@ export function Navbar() {
             )}
             <Link href={`/`} className="flex items-center hover:opacity-80 transition-opacity h-full overflow-visible">
                <img 
-                 src="/assets/maverlang-logo.png" 
+                 src={mounted && resolvedTheme === "dark" ? "/assets/maverlang-logo-white.png" : "/assets/maverlang-logo.png"} 
                  alt="Maverlang" 
                  className="h-12 w-auto object-contain max-w-none"
                />

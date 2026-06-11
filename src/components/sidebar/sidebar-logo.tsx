@@ -6,11 +6,23 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { useSidebar } from "@/components/ui/sidebar"
 
+import { useTheme } from "next-themes"
+
 export function SidebarLogo() {
   const { toggleSidebar, state, isMobile, setOpenMobile } = useSidebar()
+  const { resolvedTheme } = useTheme()
+  const [mounted, setMounted] = React.useState(false)
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
+
   const handleHomeClick = () => {
     if (isMobile) setOpenMobile(false)
   }
+
+  const isDark = mounted && resolvedTheme === "dark"
+  const logoSrc = isDark ? "/assets/maverlang-logo-small-white.png" : "/assets/maverlang-logo-small.png"
 
   return (
     <div className={`flex items-center ${state === "expanded" ? "pl-1 pr-2 py-2" : "justify-center py-2"}`}>
@@ -21,7 +33,7 @@ export function SidebarLogo() {
         onClick={handleHomeClick}
       >
         <img 
-          src="/assets/maverlang-logo-small.png" 
+          src={logoSrc} 
           alt="Maverlang Logo" 
           className="h-7 w-7 object-contain shrink-0" 
         />

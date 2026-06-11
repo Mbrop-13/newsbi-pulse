@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
 import { Bot, User, ThumbsUp, ThumbsDown, Share2, RefreshCw, ChevronRight, Sparkles, Loader2, Globe, ExternalLink, X, ArrowDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -593,26 +594,37 @@ function PythonResultCard({ args, result }: { args: any; result: any }) {
 }
 
 function AssistantAvatar({ isResponding }: { isResponding: boolean }) {
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   if (isResponding) {
     return (
-      <div className="h-8 w-8 rounded-full overflow-hidden shrink-0 mt-1 bg-black flex items-center justify-center border border-blue-500/20">
+      <div className="h-16 w-16 rounded-xl overflow-hidden shrink-0 mt-1 bg-black flex items-center justify-center border border-blue-500/20 shadow-lg">
         <video 
           src="/assets/video-chat.mp4" 
           autoPlay 
           loop 
           muted 
           playsInline
-          className="w-full h-full object-cover scale-110"
+          className="w-full h-full object-cover scale-100"
         />
       </div>
     );
   }
+
+  const isDark = mounted && resolvedTheme === "dark";
+  const imageSrc = isDark ? "/assets/chat-white.png" : "/assets/chat.png";
+
   return (
-    <div className="h-8 w-8 rounded-full overflow-hidden shrink-0 mt-1 flex items-center justify-center border border-gray-200/50 dark:border-gray-800/50 bg-white">
+    <div className="h-16 w-16 rounded-xl overflow-hidden shrink-0 mt-1 flex items-center justify-center border border-gray-200/50 dark:border-gray-800/50 bg-white dark:bg-slate-900 shadow-md">
       <img 
-        src="/assets/chat.png" 
+        src={imageSrc} 
         alt="Chat Logo" 
-        className="w-full h-full object-cover"
+        className="w-full h-full object-contain p-1"
       />
     </div>
   );

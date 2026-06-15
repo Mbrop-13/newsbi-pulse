@@ -278,6 +278,49 @@ function MessageBubble({
     )
   }
 
+  // Render agent reports if any
+  const renderAgentReports = () => {
+    if (!message.reasoningSteps || message.reasoningSteps.length === 0) return null;
+
+    return (
+      <div className="mt-4 pt-3 border-t border-gray-100 dark:border-slate-800/80 space-y-3">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-[#1890FF] flex items-center gap-1.5">
+          <Sparkles className="w-3.5 h-3.5 text-[#1890FF]" /> Reportes de Agentes Expertos
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {message.reasoningSteps.map((report: any, idx: number) => {
+            return (
+              <div 
+                key={idx} 
+                className="border border-gray-200/60 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-900/10 rounded-2xl p-3.5 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-black text-gray-900 dark:text-white flex items-center gap-1">
+                      🤖 {report.agentName}
+                    </span>
+                    <span className="text-[9px] font-semibold text-muted-foreground bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
+                      {report.durationMs ? `${(report.durationMs / 1000).toFixed(1)}s` : "OK"}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-[#1890FF] font-bold mb-2 uppercase tracking-wide">
+                    {report.role}
+                  </p>
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400 italic mb-2 leading-relaxed">
+                    Tarea: {report.task}
+                  </p>
+                  <div className="text-xs text-gray-800 dark:text-gray-200 bg-white dark:bg-slate-950/60 border border-gray-100 dark:border-slate-900/60 p-3 rounded-xl whitespace-pre-wrap leading-relaxed">
+                    {report.content}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   if (isUser) {
     return (
       <div className="flex justify-end">
@@ -290,29 +333,27 @@ function MessageBubble({
     )
   }
 
-  // Swarm thinking message
-  if (message.isSwarmThinking) {
+  const isResponding = isLast && isLoading;
+
+  // Swarm thinking / Agent Orchestration in progress
+  const isAgentOrchestrating = (message as any).isSwarmThinking || (isLast && isLoading && message.reasoning && !message.content);
+  
+  if (isAgentOrchestrating) {
     return (
       <div className="flex gap-3">
-        <Avatar className="h-8 w-8 shrink-0 mt-1">
-          <AvatarFallback className="bg-gradient-to-br from-amber-500/20 to-orange-500/20 text-xs">
-            🐝
-          </AvatarFallback>
-        </Avatar>
+        <AssistantAvatar isResponding={true} />
         <div className="flex-1 min-w-0">
-          <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1.5">
-            <Sparkles className="h-3 w-3 text-amber-500" />
-            <span>Swarm AI · Pensando...</span>
+          <div className="text-xs text-[#1890FF] font-bold mb-2 flex items-center gap-1.5 animate-pulse">
+            <Loader2 className="h-3 w-3 animate-spin text-[#1890FF]" />
+            <span>Agentes analizando...</span>
           </div>
-          <div className="text-sm text-muted-foreground/70 whitespace-pre-wrap">
-            {message.content}
+          <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/40 rounded-2xl p-4 text-xs font-mono text-slate-600 dark:text-slate-400 whitespace-pre-wrap max-h-60 overflow-y-auto shadow-sm">
+            {message.reasoning || message.content}
           </div>
         </div>
       </div>
     )
   }
-
-  const isResponding = isLast && isLoading;
 
   // Assistant message
   return (
@@ -339,6 +380,8 @@ function MessageBubble({
             )
           )}
         </div>
+
+        {renderAgentReports()}
 
         {/* Citations Widget */}
         {hasCitations && (
@@ -603,9 +646,9 @@ function AssistantAvatar({ isResponding }: { isResponding: boolean }) {
 
   if (isResponding) {
     return (
-      <div className="h-24 w-32 shrink-0 mt-1 flex items-center justify-center">
+      <div className="h-24 w-32 shrink-0 mt-1 flex items-center justify-center rounded-2xl overflow-hidden bg-transparent dark:bg-black">
         <video 
-          src="/assets/Video%20chat.mp4" 
+          src="/assets/saturn-logo.mp4" 
           autoPlay 
           loop 
           muted 

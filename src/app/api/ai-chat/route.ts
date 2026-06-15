@@ -320,6 +320,16 @@ export async function POST(req: NextRequest) {
 
     let messagesForFinalLlm = processedMessages;
     if (orchestrationResult.isComplex && orchestrationResult.agentReports.length > 0) {
+      // Stream agent reports to client
+      try {
+        streamData.append({
+          type: 'agentReports',
+          reports: orchestrationResult.agentReports as any
+        });
+      } catch (e) {
+        console.error("Failed to append agent reports to streamData:", e);
+      }
+
       const reportsSummary = orchestrationResult.agentReports
         .map(
           (r) =>

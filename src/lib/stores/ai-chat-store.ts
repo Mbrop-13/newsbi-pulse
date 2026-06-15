@@ -14,7 +14,6 @@ export interface ChatMessage {
   reasoning?: string;
   model?: "deepseek" | "grok";
   toolInvocations?: any[];
-  isSwarmThinking?: boolean;
   isCollapsed?: boolean;
   secondsElapsed?: number;
   reasoningSteps?: any[];
@@ -57,7 +56,7 @@ interface AIChatStore {
   isOpen: boolean;
   messages: ChatMessage[];
   isLoading: boolean;
-  selectedModel: "fast" | "pro" | "agent";
+  selectedModel: "fast" | "pro";
   attachedArticles: AttachedArticle[];
   attachedFiles: AttachedFile[];
   savedChats: SavedChat[];
@@ -73,7 +72,7 @@ interface AIChatStore {
   close: () => void;
   addMessage: (msg: ChatMessage) => void;
   setLoading: (val: boolean) => void;
-  setModel: (val: "fast" | "pro" | "agent") => void;
+  setModel: (val: "fast" | "pro") => void;
   setCloudSync: (val: boolean) => void;
   clearMessages: () => void;
   toggleTool: (toolId: string, category: string) => void;

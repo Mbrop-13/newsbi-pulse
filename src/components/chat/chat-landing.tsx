@@ -46,7 +46,7 @@ function groupConsecutiveMessages(messages: ChatMessage[]): ChatMessage[] {
     const lastGrouped = grouped[grouped.length - 1];
     const isLastAssistantLike = lastGrouped.role === "assistant";
     
-    if (isAssistantLike && isLastAssistantLike && !msg.isSwarmThinking && !lastGrouped.isSwarmThinking) {
+    if (isAssistantLike && isLastAssistantLike) {
       if (msg.content) {
         lastGrouped.content = lastGrouped.content 
           ? (lastGrouped.content + "\n\n" + msg.content).trim()
@@ -222,7 +222,8 @@ export function ChatLanding() {
       // Find citations & reasoning in streamData (data) or accumulated refs
       let citationsList: string[] = accumulatedCitationsRef.current.length > 0 ? accumulatedCitationsRef.current : []
       let reasoningText = accumulatedReasoningRef.current || ""
-      if (citationsList.length === 0 || !reasoningText) {
+      let agentReportsData: any[] = []
+      if (citationsList.length === 0 || !reasoningText || agentReportsData.length === 0) {
         if (data && data.length > 0) {
           const citationObj = (data as any[]).find((d: any) => d?.type === 'citations')
           if (citationObj?.urls && citationsList.length === 0) {
@@ -231,6 +232,11 @@ export function ChatLanding() {
           const reasoningChunks = (data as any[]).filter((d: any) => d?.type === 'reasoning')
           const streamReasoning = reasoningChunks.map(c => c.text).join('')
           if (streamReasoning && !reasoningText) reasoningText = streamReasoning
+          
+          const reportsObj = (data as any[]).find((d: any) => d?.type === 'agentReports')
+          if (reportsObj?.reports) {
+            agentReportsData = reportsObj.reports
+          }
         }
       }
 
@@ -261,6 +267,7 @@ export function ChatLanding() {
               toolInvocations: message.toolInvocations || m.toolInvocations,
               citations: citationsList,
               reasoning: reasoningText || m.reasoning || undefined,
+              reasoningSteps: agentReportsData.length > 0 ? agentReportsData : m.reasoningSteps || undefined,
             };
           }
           return {
@@ -285,6 +292,7 @@ export function ChatLanding() {
             toolInvocations: message.toolInvocations,
             citations: citationsList,
             reasoning: reasoningText || undefined,
+            reasoningSteps: agentReportsData.length > 0 ? agentReportsData : undefined,
           });
         }
 
@@ -353,7 +361,6 @@ export function ChatLanding() {
             reasoning: m.reasoning,
             citations: m.citations,
             model: m.model,
-            isSwarmThinking: m.isSwarmThinking,
             isCollapsed: m.isCollapsed,
             secondsElapsed: m.secondsElapsed,
             reasoningSteps: m.reasoningSteps,
@@ -381,12 +388,6 @@ export function ChatLanding() {
 
     accumulatedReasoningRef.current = ""
     accumulatedCitationsRef.current = []
-
-    // If Swarm agent mode, route differently
-    if (selectedModel === "agent") {
-      sendSwarmMessage(text)
-      return
-    }
 
     // Check chat limits
     const planConfig = getPlanConfig(userTier)
@@ -424,60 +425,6 @@ export function ChatLanding() {
     )
   }
 
-  const sendSwarmMessage = async (text: string) => {
-    accumulatedReasoningRef.current = ""
-    accumulatedCitationsRef.current = []
-
-    const userMsg: ChatMessage = {
-      id: `user-${Date.now()}`,
-      role: "user",
-      content: text,
-      timestamp: new Date(),
-    }
-    addMessage(userMsg)
-    useAIChatStore.setState({ isLoading: true })
-
-    try {
-      const thinkingId = `swarm-thinking-${Date.now()}`
-      const thinkingMsg: ChatMessage = {
-        id: thinkingId,
-        role: "assistant",
-        content: "Coordinando agentes especializados...",
-        timestamp: new Date(),
-        isSwarmThinking: true,
-      }
-      addMessage(thinkingMsg)
-
-      const res = await fetch("/api/ai/swarm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text, articles: attachedArticles }),
-      })
-
-      if (!res.ok) throw new Error("Swarm error")
-      const data = await res.json()
-
-      // Remove thinking message
-      useAIChatStore.setState((s) => ({
-        messages: s.messages.filter((m) => m.id !== thinkingId),
-      }))
-
-      const assistantMsg: ChatMessage = {
-        id: `assistant-${Date.now()}`,
-        role: "assistant",
-        content: data.response || data.content || "",
-        timestamp: new Date(),
-        model: "grok",
-        reasoningSteps: data.agentResults,
-      }
-      addMessage(assistantMsg)
-      useAIChatStore.getState().updateCurrentChat()
-    } catch (e) {
-      toast.error("Error con Swarm AI. Intenta de nuevo.")
-    } finally {
-      useAIChatStore.setState({ isLoading: false })
-    }
-  }
 
   const toggleReasoning = (id: string) => {
     setOpenReasoning((prev) => ({ ...prev, [id]: !prev[id] }))
@@ -498,7 +445,7 @@ export function ChatLanding() {
     
     let reasoningText = (m as any).reasoning;
     let citationsList = (m as any).citations;
-
+    let reasoningStepsList = (m as any).reasoningSteps;
     if (isLastAssistantLike) {
       if (accumulatedReasoningRef.current) {
         reasoningText = accumulatedReasoningRef.current;
@@ -516,6 +463,13 @@ export function ChatLanding() {
           citationsList = citationObj.urls;
         }
       }
+
+      if (data && data.length > 0) {
+        const reportsObj = (data as any[]).find((d: any) => d?.type === 'agentReports');
+        if (reportsObj?.reports) {
+          reasoningStepsList = reportsObj.reports;
+        }
+      }
     }
 
     return {
@@ -527,10 +481,9 @@ export function ChatLanding() {
       toolInvocations: m.toolInvocations,
       reasoning: reasoningText || undefined,
       citations: citationsList || [],
-      isSwarmThinking: (m as any).isSwarmThinking,
       isCollapsed: (m as any).isCollapsed,
       secondsElapsed: (m as any).secondsElapsed,
-      reasoningSteps: (m as any).reasoningSteps,
+      reasoningSteps: reasoningStepsList,
     };
   });
 
@@ -865,14 +818,16 @@ export function ChatLanding() {
               </div>
             </div>
 
-            <div className="w-full max-w-3xl mx-auto z-10 sticky md:relative bottom-0 md:bottom-auto bg-gradient-to-t from-background via-background/95 to-transparent md:bg-transparent pt-4 pb-0 md:p-0 md:mb-8">
-              <ChatInput
-                placeholder="Pregúntame lo que quieras..."
-                onSubmit={handleSend}
-                disabled={false}
-                isStreaming={aiLoading}
-                onStop={stop}
-              />
+            <div className="sticky bottom-0 z-10 w-full bg-gradient-to-t from-background via-background/95 to-transparent pt-4 pb-0 md:pb-6">
+              <div className="max-w-3xl mx-auto w-full">
+                <ChatInput
+                  placeholder="Pregúntame lo que quieras..."
+                  onSubmit={handleSend}
+                  disabled={false}
+                  isStreaming={aiLoading}
+                  onStop={stop}
+                />
+              </div>
             </div>
           </div>
         ) : (

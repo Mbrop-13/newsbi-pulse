@@ -21,7 +21,7 @@ import {
 import { useSidebar } from "@/components/ui/sidebar"
 
 export interface MaverlangModel {
-  id: "fast" | "pro" | "agent"
+  id: "fast" | "pro"
   name: string
   description: string
   provider: string
@@ -43,13 +43,6 @@ const AVAILABLE_MODELS: MaverlangModel[] = [
     provider: "Maverlang",
     icon: "🧠",
   },
-  {
-    id: "agent",
-    name: "Maverlang v2.6 Agent",
-    description: "Orquestación de agentes con razonamiento avanzado (Swarm)",
-    provider: "Maverlang",
-    icon: "🐝",
-  },
 ]
 
 interface ModelSelectorProps {
@@ -62,7 +55,7 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
   const [open, setOpen] = useState(false)
   const { setOpenMobile } = useSidebar()
   const [showUpsell, setShowUpsell] = useState(false)
-  const [upsellReason, setUpsellReason] = useState<"pro" | "agent">("pro")
+  const [upsellReason, setUpsellReason] = useState<"pro">("pro")
 
   const user = useAuthStore((s) => s.user)
   const userTier = user?.role === "admin" ? "ultra" : (user?.tier || "free")
@@ -106,8 +99,8 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
                       value={model.name}
                       className="group/item text-xs flex items-center py-2 px-3 rounded-lg cursor-pointer transition-all duration-300 ease-out data-selected:bg-black! data-selected:text-white! dark:data-selected:bg-slate-900! data-selected:scale-[1.02] data-selected:shadow-md select-none"
                       onSelect={() => {
-                        if (userTier === "free" && (model.id === "pro" || model.id === "agent")) {
-                          setUpsellReason(model.id === "pro" ? "pro" : "agent")
+                        if (userTier === "free" && model.id === "pro") {
+                          setUpsellReason("pro")
                           setShowUpsell(true)
                           setOpen(false)
                           return
@@ -170,13 +163,10 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
                   </div>
                   
                   <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-2 tracking-tight">
-                    {upsellReason === "pro" ? "Desbloquea Maverlang Pro" : "Desbloquea Maverlang Agent"}
+                    Desbloquea Maverlang Pro
                   </h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-[300px] mx-auto font-medium">
-                    {upsellReason === "pro" 
-                      ? "Activa el análisis financiero profundo, razonamiento reflexivo de IA y búsqueda en tiempo real."
-                      : "Orquesta múltiples agentes de IA expertos (Swarm) para simulaciones y reportes avanzados."
-                    }
+                    Activa el análisis financiero profundo, razonamiento reflexivo de IA, orquestación de agentes y búsqueda en tiempo real.
                   </p>
 
                   {/* Benefits */}
@@ -277,8 +267,8 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
                       value={model.name}
                       className="group/item cursor-pointer transition-all duration-300 ease-out data-selected:bg-black! data-selected:text-white! dark:data-selected:bg-slate-900! data-selected:scale-[1.02] data-selected:shadow-md select-none"
                       onSelect={() => {
-                        if (userTier === "free" && (model.id === "pro" || model.id === "agent")) {
-                          setUpsellReason(model.id === "pro" ? "pro" : "agent")
+                        if (userTier === "free" && model.id === "pro") {
+                          setUpsellReason("pro")
                           setShowUpsell(true)
                           setOpen(false)
                           return
@@ -342,13 +332,10 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
                 </div>
                 
                 <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-2 tracking-tight">
-                  {upsellReason === "pro" ? "Desbloquea Maverlang Pro" : "Desbloquea Maverlang Agent"}
+                  Desbloquea Maverlang Pro
                 </h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-[300px] mx-auto font-medium">
-                  {upsellReason === "pro" 
-                    ? "Activa el análisis financiero profundo, razonamiento reflexivo de IA y búsqueda en tiempo real."
-                    : "Orquesta múltiples agentes de IA expertos (Swarm) para simulaciones y reportes avanzados."
-                  }
+                  Activa el análisis financiero profundo, razonamiento reflexivo de IA, orquestación de agentes y búsqueda en tiempo real.
                 </p>
 
                 {/* Benefits */}

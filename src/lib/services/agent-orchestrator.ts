@@ -20,6 +20,17 @@ export interface OrchestrationResult {
   totalOrchestrationTimeMs: number;
 }
 
+// In-memory cache for query complexity classification
+interface CachedClassification {
+  isComplex: boolean;
+  reason: string;
+  agents: AgentInfo[];
+  timestamp: number;
+}
+
+const classificationCache = new Map<string, CachedClassification>();
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes TTL
+
 // Secure JSON extractor to ensure robustness when parsing LLM outputs
 function extractJsonBlock(text: string): string {
   const firstBrace = text.indexOf('{');
@@ -30,6 +41,15 @@ function extractJsonBlock(text: string): string {
   return text;
 }
 
+// Helper for promise timeout
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, timeoutError: Error): Promise<T> {
+  let timeoutId: any;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(timeoutError), timeoutMs);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timeoutId));
+}
+
 export async function runOrchestration(
   model: LanguageModel,
   userMessage: string,
@@ -37,128 +57,167 @@ export async function runOrchestration(
   onProgress?: (text: string) => void
 ): Promise<OrchestrationResult> {
   const startTime = Date.now();
-  onProgress?.("🧠 [Orquestador] Iniciando análisis de complejidad de la consulta...\n");
-
-  const systemOrchestratorPrompt = `Actúas como el LLM Coordinador y Orquestador de una plataforma financiera de élite.
+  
+  // Clean message for cache key lookup
+  const cacheKey = userMessage.trim().toLowerCase();
+  const cached = classificationCache.get(cacheKey);
+  
+  let isComplex = false;
+  let reason = "";
+  let agents: AgentInfo[] = [];
+  
+  if (cached && (Date.now() - cached.timestamp < CACHE_TTL_MS)) {
+    onProgress?.("🧠 [Orquestador] Usando decisión de complejidad pre-clasificada (Caché).\n");
+    isComplex = cached.isComplex;
+    reason = cached.reason;
+    agents = cached.agents;
+  } else {
+    onProgress?.("🧠 [Orquestador] Iniciando análisis de complejidad de la consulta...\n");
+    
+    const systemOrchestratorPrompt = `Actúas como el LLM Coordinador y Orquestador de una plataforma financiera de élite.
 Tu tarea es analizar la consulta del usuario y determinar si requiere ser delegada a agentes especializados en paralelo para recopilar y verificar información antes de dar la respuesta final.
 
 CRITERIOS PARA DELEGACIÓN:
-- Sí requiere delegación (isComplex: true) si la consulta involucra análisis comparativo de múltiples empresas, proyecciones financieras complejas, análisis de noticias contradictorias de última hora, optimización de portafolios, o cruce de datos de múltiples sectores.
-- No requiere delegación (isComplex: false) si es un saludo, una pregunta general sencilla, una consulta básica sobre un solo ticker, o preguntas conversacionales simples.
+- SÍ requiere delegación (isComplex: true) si la consulta requiere análisis comparativo de múltiples empresas, proyecciones financieras complejas, análisis de noticias contradictorias de última hora, optimización de portafolios, o cruce de datos de múltiples sectores.
+  Ejemplos de consultas que SÍ requieren delegación:
+  * "Compara los fundamentales de AAPL, MSFT y GOOGL"
+  * "Analiza el impacto macroeconómico de la subida de tasas de la Fed en el sector tecnológico y bancario"
+  * "Haz un análisis DAFO de Tesla considerando sus últimos reportes de entregas y la competencia china"
+  * "Optimiza mi portafolio actual entre acciones defensivas y de crecimiento"
+- NO requiere delegación (isComplex: false) si es un saludo, una pregunta general sencilla, una consulta básica sobre un solo ticker, o preguntas conversacionales simples.
+  Ejemplos de consultas que NO requieren delegación:
+  * "Hola, ¿cómo estás?"
+  * "Precio actual de Apple"
+  * "¿Qué es el ratio PER?"
+  * "¿Cuál es la capitalización de mercado de Tesla?"
+  * "¿Qué pasó hoy en las noticias?"
 
-Si determinas que requiere delegación, define hasta 5 agentes especializados (mínimo 2, máximo 5) con nombres, roles específicos e instrucciones de tareas claras e independientes.
+Si determinas que requiere delegación, define hasta 5 agentes especializados (mínimo 2, máximo 5) con nombres, roles específicos e instrucciones de tareas claras e independientes. E.g.:
+- FundamentalAgent (Analista de Balances) - Analizar métricas financieras.
+- SentimentAgent (Analista de Sentimiento de Mercado) - Analizar el tono y noticias.
+- MacroAgent (Economista Macro) - Analizar impacto de tasas/inflación.
+- TechnicalAgent (Analista Técnico) - Evaluar tendencias de precios y soporte/resistencia.
+- CompetitorAgent (Analista de Competencia) - Comparar con rivales directos.
 
 DEBES responder ÚNICAMENTE con un bloque JSON en el siguiente formato (sin explicaciones, sin markdown, solo el JSON):
 {
   "isComplex": true,
-  "reason": "Explicación del motivo de la decisión",
+  "reason": "Explicación breve del motivo de la decisión",
   "agents": [
     {
-      "agentName": "Nombre del Agente (ej: FundamentalAgent, SentimentAgent)",
+      "agentName": "Nombre del Agente",
       "role": "Rol o especialidad del agente",
       "task": "Tarea o sub-pregunta específica a responder"
     }
   ]
 }`;
 
-  try {
-    const { text } = await generateText({
-      model,
-      system: systemOrchestratorPrompt,
-      messages: [
-        { role: 'user', content: `Consulta del usuario: "${userMessage}"\n\n${portfolioContext ? `Contexto del portafolio:\n${portfolioContext}` : ''}` }
-      ],
-      temperature: 0.1,
-    });
+    try {
+      const { text } = await generateText({
+        model,
+        system: systemOrchestratorPrompt,
+        messages: [
+          { role: 'user', content: `Consulta del usuario: "${userMessage}"\n\n${portfolioContext ? `Contexto del portafolio:\n${portfolioContext}` : ''}` }
+        ],
+        temperature: 0.1,
+      });
 
-    const jsonText = extractJsonBlock(text);
-    const result = JSON.parse(jsonText);
+      const jsonText = extractJsonBlock(text);
+      const result = JSON.parse(jsonText);
 
-    const isComplex = !!result.isComplex;
-    const reason = result.reason || 'Sin motivo provisto';
-    const rawAgents: AgentInfo[] = Array.isArray(result.agents) ? result.agents : [];
+      isComplex = !!result.isComplex;
+      reason = result.reason || 'Sin motivo provisto';
+      const rawAgents: AgentInfo[] = Array.isArray(result.agents) ? result.agents : [];
+      agents = rawAgents.slice(0, 5);
 
-    // Limit to max 5 agents
-    const agents = rawAgents.slice(0, 5);
-
-    if (!isComplex || agents.length === 0) {
-      onProgress?.(`✅ [Orquestador] Consulta analizada: Es simple. Resolviendo directamente (${reason}).\n\n`);
-      return {
-        isComplex: false,
+      // Save to cache
+      classificationCache.set(cacheKey, {
+        isComplex,
         reason,
-        agents: [],
-        agentReports: [],
-        totalOrchestrationTimeMs: Date.now() - startTime
-      };
+        agents,
+        timestamp: Date.now()
+      });
+
+    } catch (err: any) {
+      console.error("Classification phase failed, falling back to simple query execution:", err);
+      isComplex = false;
+      reason = `Error en clasificación: ${err.message || String(err)}`;
+      agents = [];
     }
+  }
 
-    onProgress?.(`🔍 [Orquestador] Consulta compleja detectada: "${reason}"\n`);
-    onProgress?.(`🤖 Creando ${agents.length} agentes expertos para investigar en paralelo...\n\n`);
-
-    // Run agents in parallel
-    const agentPromises = agents.map(async (agent): Promise<AgentReport> => {
-      const agentStartTime = Date.now();
-      onProgress?.(`⏳ [Agente] ${agent.agentName} (${agent.role}) iniciando tarea: "${agent.task}"...\n`);
-
-      const agentSystemPrompt = `Actúas como el agente experto "${agent.agentName}" con el rol de "${agent.role}".
-Tu tarea asignada por el Orquestador es: "${agent.task}".
-Responde a tu tarea de forma concisa, técnica, objetiva y 100% en español.
-REGLA CRÍTICA: Enfócate estrictamente en tu sub-tarea asignada. No saludes ni des rodeos. Longitud máxima: 150 palabras.`;
-
-      try {
-        const agentResponse = await generateText({
-          model,
-          system: agentSystemPrompt,
-          messages: [{ role: 'user', content: `Consulta original: "${userMessage}"\nSub-tarea: "${agent.task}"` }],
-          temperature: 0.5,
-        });
-
-        const duration = Date.now() - agentStartTime;
-        onProgress?.(`✅ [Agente] ${agent.agentName} completado en ${duration}ms.\n`);
-
-        return {
-          ...agent,
-          content: agentResponse.text,
-          durationMs: duration,
-          success: true
-        };
-      } catch (err: any) {
-        const duration = Date.now() - agentStartTime;
-        console.error(`Error in agent ${agent.agentName}:`, err);
-        onProgress?.(`❌ [Agente] ${agent.agentName} falló después de ${duration}ms: ${err.message || String(err)}\n`);
-
-        return {
-          ...agent,
-          content: `Error al procesar la tarea: ${err.message || String(err)}`,
-          durationMs: duration,
-          success: false
-        };
-      }
-    });
-
-    const agentReports = await Promise.all(agentPromises);
-    const totalDuration = Date.now() - startTime;
-
-    onProgress?.(`\n📊 [Orquestador] Todos los agentes completados. Consolidando reportes (${totalDuration}ms total)...\n\n`);
-
-    return {
-      isComplex: true,
-      reason,
-      agents,
-      agentReports,
-      totalOrchestrationTimeMs: totalDuration
-    };
-
-  } catch (error: any) {
-    console.error("Orchestration failed:", error);
-    onProgress?.(`⚠️ [Orquestador] Error durante la fase de análisis/delegación: ${error.message || String(error)}. Respondiendo directamente.\n\n`);
-    
+  if (!isComplex || agents.length === 0) {
+    onProgress?.(`✅ [Orquestador] Consulta analizada: Es simple. Resolviendo directamente (${reason}).\n\n`);
     return {
       isComplex: false,
-      reason: `Failed to orchestrate: ${error.message || String(error)}`,
+      reason,
       agents: [],
       agentReports: [],
       totalOrchestrationTimeMs: Date.now() - startTime
     };
   }
+
+  onProgress?.(`🔍 [Orquestador] Consulta compleja detectada: "${reason}"\n`);
+  onProgress?.(`🤖 Creando ${agents.length} agentes expertos para investigar en paralelo...\n\n`);
+
+  // Run agents in parallel with a timeout of 15 seconds per agent
+  const agentPromises = agents.map(async (agent): Promise<AgentReport> => {
+    const agentStartTime = Date.now();
+    onProgress?.(`⏳ [Agente] ${agent.agentName} (${agent.role}) iniciando tarea: "${agent.task}"...\n`);
+
+    const agentSystemPrompt = `Actúas como el agente experto "${agent.agentName}" con el rol de "${agent.role}".
+Tu tarea asignada por el Orquestador es: "${agent.task}".
+Responde a tu tarea de forma concisa, técnica, objetiva y 100% en español.
+REGLA CRÍTICA: Enfócate estrictamente en tu sub-tarea asignada. No saludes ni des rodeos. Longitud máxima: 150 palabras.`;
+
+    try {
+      const agentPromise = generateText({
+        model,
+        system: agentSystemPrompt,
+        messages: [{ role: 'user', content: `Consulta original: "${userMessage}"\nSub-tarea: "${agent.task}"` }],
+        temperature: 0.5,
+      });
+
+      // Wrap the LLM call with a 15-second timeout
+      const agentResponse = await withTimeout(
+        agentPromise,
+        15000,
+        new Error("Excedió el tiempo límite de ejecución de 15 segundos")
+      );
+
+      const duration = Date.now() - agentStartTime;
+      onProgress?.(`✅ [Agente] ${agent.agentName} completado en ${duration}ms.\n`);
+
+      return {
+        ...agent,
+        content: agentResponse.text,
+        durationMs: duration,
+        success: true
+      };
+    } catch (err: any) {
+      const duration = Date.now() - agentStartTime;
+      console.error(`Error in agent ${agent.agentName}:`, err);
+      onProgress?.(`❌ [Agente] ${agent.agentName} falló después de ${duration}ms: ${err.message || String(err)}\n`);
+
+      return {
+        ...agent,
+        content: `Error al procesar la tarea: ${err.message || String(err)}`,
+        durationMs: duration,
+        success: false
+      };
+    }
+  });
+
+  const agentReports = await Promise.all(agentPromises);
+  const totalDuration = Date.now() - startTime;
+
+  onProgress?.(`\n📊 [Orquestador] Todos los agentes completados o finalizados por límite de tiempo. Consolidando reportes (${totalDuration}ms total)...\n\n`);
+
+  return {
+    isComplex: true,
+    reason,
+    agents,
+    agentReports,
+    totalOrchestrationTimeMs: totalDuration
+  };
 }

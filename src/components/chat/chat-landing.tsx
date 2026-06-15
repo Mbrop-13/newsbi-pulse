@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { useTheme } from "next-themes"
 
 import { ChatInput } from "@/components/chat/chat-input"
 import { ChatMessages } from "@/components/chat/chat-messages"
@@ -205,6 +206,15 @@ export function ChatLanding() {
     const unsub = useAIChatStore.persist.onFinishHydration(() => setIsStoreHydrated(true))
     return () => unsub()
   }, [])
+
+  // Track theme mounting for dark mode logo swapping
+  const { resolvedTheme } = useTheme()
+  const [themeMounted, setThemeMounted] = useState(false)
+  useEffect(() => {
+    setThemeMounted(true)
+  }, [])
+  const isDark = themeMounted && resolvedTheme === "dark"
+  const chatLogoSrc = isDark ? "/assets/maverlang-logo-white.png" : "/assets/maverlang-logo.png"
 
   // AI SDK useChat for streaming
   const {
@@ -810,7 +820,7 @@ export function ChatLanding() {
               <div className="text-center mb-8">
                 <div className="flex items-center justify-center">
                   <img 
-                    src="/assets/maverlang-logo.png" 
+                    src={chatLogoSrc} 
                     alt="Maverlang Logo" 
                     className="h-16 w-auto object-contain"
                   />
@@ -818,7 +828,7 @@ export function ChatLanding() {
               </div>
             </div>
 
-            <div className="sticky bottom-0 z-10 w-full bg-gradient-to-t from-background via-background/95 to-transparent pt-4 pb-0 md:pb-6">
+            <div className="sticky bottom-0 z-10 w-full bg-gradient-to-t from-background via-background/95 to-transparent pt-2 pb-2 md:pb-3">
               <div className="max-w-3xl mx-auto w-full">
                 <ChatInput
                   placeholder="Pregúntame lo que quieras..."
@@ -851,7 +861,7 @@ export function ChatLanding() {
               onToggleReasoning={toggleReasoning}
             />
 
-            <div className="sticky bottom-0 z-10 w-full bg-gradient-to-t from-background via-background/95 to-transparent pt-4 pb-0 md:pb-6">
+            <div className="sticky bottom-0 z-10 w-full bg-gradient-to-t from-background via-background/95 to-transparent pt-2 pb-2 md:pb-3">
               <div className="max-w-3xl mx-auto w-full">
                 <ChatInput
                   placeholder="Envía un mensaje..."

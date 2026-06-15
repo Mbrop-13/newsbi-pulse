@@ -315,7 +315,7 @@ export function ChatInput({
         )}
 
         <div className={cn(
-          "rounded-3xl bg-secondary dark:bg-secondary p-2 shadow-md border transition-all duration-300 overflow-hidden",
+          "rounded-3xl bg-secondary dark:bg-secondary p-2 shadow-md border transition-all duration-300 relative",
           isListening && "border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.15)]"
         )}>
           {/* File Previews inside the input box */}

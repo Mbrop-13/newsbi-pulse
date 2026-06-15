@@ -41,7 +41,7 @@ export async function sendEmail({
 
   // Use the provided from address or fallback to the environment variable.
   // Azure requires this to be an exact match with the verified domain.
-  const senderAddress = from || process.env.AZURE_SENDER_ADDRESS || "DoNotReply@reclu.cl";
+  const senderAddress = from || process.env.AZURE_SENDER_ADDRESS || "DoNotReply@maverlang.cl";
   const toAddresses = Array.isArray(to) ? to : [to];
 
   try {

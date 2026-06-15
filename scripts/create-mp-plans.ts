@@ -12,7 +12,7 @@
 const ACCESS_TOKEN = process.env.MERCADOPAGO_ACCESS_TOKEN 
   || "APP_USR-8908539754439484-051008-0f765f858fd6638d059dea9a66c1e6a1-3370652327";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://reclu.cl";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://maverlang.cl";
 
 interface PlanDef {
   reason: string;
@@ -21,9 +21,9 @@ interface PlanDef {
 }
 
 const plans: PlanDef[] = [
-  { reason: "Reclu Pro — Suscripción Mensual", amount: 22990, tier: "pro" },
-  { reason: "Reclu Max — Suscripción Mensual", amount: 44990, tier: "max" },
-  { reason: "Reclu Ultra — Suscripción Mensual", amount: 79990, tier: "ultra" },
+  { reason: "Maverlang Pro — Suscripción Mensual", amount: 22990, tier: "pro" },
+  { reason: "Maverlang Max — Suscripción Mensual", amount: 44990, tier: "max" },
+  { reason: "Maverlang Ultra — Suscripción Mensual", amount: 79990, tier: "ultra" },
 ];
 
 async function createPlan(plan: PlanDef) {

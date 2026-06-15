@@ -205,7 +205,7 @@ export function AIChatSidebar() {
         model: data.model,
       });
     } catch (err: any) {
-      toast.error(err.message || "Error al conectar con R-AI");
+      toast.error(err.message || "Error al conectar con Maverlang AI");
       addMessage({
         id: (Date.now() + 1).toString(),
         role: "assistant",
@@ -292,14 +292,14 @@ export function AIChatSidebar() {
           <div className="px-4 pt-4 pb-3 border-b border-gray-100 dark:border-white/5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#1890FF] to-indigo-600 flex items-center justify-center shadow-md">
-                  <Bot className="w-4 h-4 text-white" />
+                <div className="w-8 h-8 rounded-xl bg-black dark:bg-white flex items-center justify-center shadow-md">
+                  <Bot className="w-4 h-4 text-white dark:text-black" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-black tracking-tight text-gray-900 dark:text-white">R-AI</h2>
+                  <h2 className="text-sm font-black tracking-tight text-gray-900 dark:text-white">Maverlang AI</h2>
                   <p className="text-[10px] text-gray-400 font-medium flex items-center gap-1">
                     {webSearchEnabled ? (
-                      <><Globe className="w-2.5 h-2.5 text-[#1890FF]" /> Web · Grok</>
+                      <><Globe className="w-2.5 h-2.5 text-black dark:text-white" /> Web · Grok</>
                     ) : (
                       "Modelo Rápido"
                     )}
@@ -609,7 +609,7 @@ export function AIChatSidebar() {
                   </AnimatePresence>
 
                   <button onClick={() => { if (isPremium) setWebSearch(!webSearchEnabled); }}
-                    className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${webSearchEnabled ? "bg-[#1890FF]/10 text-[#1890FF]" : "text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"}`}
+                    className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${webSearchEnabled ? "bg-black/10 text-black dark:bg-white/10 dark:text-white" : "text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"}`}
                     title={webSearchEnabled ? "Web Search ON" : "Web Search OFF"}>
                     <Globe className={`w-4 h-4 ${webSearchEnabled ? "animate-pulse" : ""}`} />
                   </button>
@@ -621,7 +621,7 @@ export function AIChatSidebar() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-                  placeholder={reachedQuestionLimit ? "Límite alcanzado" : "Pregúntale a R-AI..."}
+                  placeholder={reachedQuestionLimit ? "Límite alcanzado" : "Pregúntale a Maverlang AI..."}
                   className="flex-1 bg-transparent text-[13px] py-2.5 px-1 max-h-28 min-h-[40px] resize-none outline-none disabled:cursor-not-allowed font-medium text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
                   disabled={isLoading}
                   rows={1}
@@ -643,13 +643,13 @@ export function AIChatSidebar() {
                   </button>
                 ) : (
                   <button onClick={toggleRecording} disabled={isLoading}
-                    className="w-8 h-8 mb-0.5 mr-0.5 rounded-full bg-[#1890FF] text-white flex items-center justify-center disabled:opacity-30 hover:scale-105 active:scale-95 transition-all shadow-md shrink-0">
+                    className="w-8 h-8 mb-0.5 mr-0.5 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center disabled:opacity-30 hover:scale-105 active:scale-95 transition-all shadow-md shrink-0">
                     <Mic className="w-3.5 h-3.5" />
                   </button>
                 )}
               </div>
               <div className="text-center mt-1">
-                <span className="text-[9px] text-gray-400 font-medium">R-AI puede cometer errores. Verifica la información.</span>
+                <span className="text-[9px] text-gray-400 font-medium">Maverlang AI puede cometer errores. Verifica la información.</span>
               </div>
             </div>
           )}
@@ -755,7 +755,7 @@ function ToolResultPill({ result }: { result: ToolResultUI }) {
                 <a key={i} href={item.url || `/?tag=${item.slug}`} target="_blank" rel="noopener noreferrer" className="block p-2 rounded-lg bg-gray-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors">
                   <h4 className="text-xs font-bold line-clamp-2 leading-snug mb-1">{item.title}</h4>
                   <div className="flex justify-between text-[9px] text-muted-foreground">
-                    <span>{item.source || "Reclu"}</span>
+                    <span>{item.source || "Maverlang"}</span>
                   </div>
                 </a>
               ))}

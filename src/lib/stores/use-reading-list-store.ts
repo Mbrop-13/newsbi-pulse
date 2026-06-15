@@ -38,7 +38,7 @@ export const useReadingListStore = create<ReadingListState>()(
       reorderQueue: (newQueue) => set({ queue: newQueue }),
     }),
     {
-      name: 'reclu-reading-queue',
+      name: 'maverlang-reading-queue',
     }
   )
 );

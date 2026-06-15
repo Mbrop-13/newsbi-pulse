@@ -49,10 +49,10 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 
   /* Brand Colors */
-  --color-reclu: #1890FF;
-  --color-reclu-dark: #096DD9;
-  --color-reclu-light: #40A9FF;
-  --color-cyan-accent: #22D3EE;
+  --color-maverlang: #000000;
+  --color-maverlang-dark: #1F2937;
+  --color-maverlang-light: #4B5563;
+  --color-cyan-accent: #71717A;
   --color-live-red: #EF4444;
   --color-surface: var(--surface);
   --color-surface-hover: var(--surface-hover);
@@ -81,17 +81,17 @@
   --secondary-foreground: #1E293B;
   --muted: #F8FAFC;
   --muted-foreground: #64748B;
-  --accent: #1890FF;
+  --accent: #000000;
   --accent-foreground: #FFFFFF;
   --destructive: #EF4444;
   --border: #E5E7EB;
   --input: #E5E7EB;
-  --ring: #1890FF;
-  --chart-1: #1890FF;
-  --chart-2: #22D3EE;
-  --chart-3: #06B6D4;
-  --chart-4: #0EA5E9;
-  --chart-5: #38BDF8;
+  --ring: #000000;
+  --chart-1: #000000;
+  --chart-2: #4B5563;
+  --chart-3: #6B7280;
+  --chart-4: #9CA3AF;
+  --chart-5: #D1D5DB;
   --radius: 0.75rem;
   --surface: #FFFFFF;
   --surface-hover: #F8FAFC;
@@ -103,7 +103,7 @@
   --sidebar-accent: #F1F5F9;
   --sidebar-accent-foreground: #1E293B;
   --sidebar-border: #E5E7EB;
-  --sidebar-ring: #1890FF;
+  --sidebar-ring: #000000;
 }
 
 /* ── Dark Mode ───────────────────────────────── */
@@ -120,12 +120,12 @@
   --secondary-foreground: #EDEDED;
   --muted: #171717;
   --muted-foreground: #A3A3A3;
-  --accent: #1890FF;
-  --accent-foreground: #FFFFFF;
+  --accent: #FFFFFF;
+  --accent-foreground: #000000;
   --destructive: #EF4444;
   --border: #262626;
   --input: #262626;
-  --ring: #1890FF;
+  --ring: #FFFFFF;
   --surface: #121212;
   --surface-hover: #1F1F1F;
   --editorial-rule: #262626;
@@ -136,7 +136,7 @@
   --sidebar-accent: #1A1A1A;
   --sidebar-accent-foreground: #EDEDED;
   --sidebar-border: #1F1F1F;
-  --sidebar-ring: #1890FF;
+  --sidebar-ring: #FFFFFF;
 }
 
 /* ── Base Styles ──────────────────────────────── */
@@ -161,10 +161,13 @@
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
   .gradient-text {
-    background: linear-gradient(135deg, #1890FF, #38BDF8);
+    background: linear-gradient(135deg, #000000 0%, #52525b 50%, #000000 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+  }
+  .dark .gradient-text {
+    background: linear-gradient(135deg, #ffffff 0%, #a1a1aa 50%, #ffffff 100%);
   }
   .glass {
     background: rgba(255, 255, 255, 0.85);
@@ -285,10 +288,13 @@
 
 /* ── Gradient Text Utility ── */
 .gradient-text {
-  background: linear-gradient(135deg, #0052CC 0%, #22D3EE 50%, #0066FF 100%);
+  background: linear-gradient(135deg, #000000 0%, #52525b 50%, #000000 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+.dark .gradient-text {
+  background: linear-gradient(135deg, #ffffff 0%, #a1a1aa 50%, #ffffff 100%);
 }
 
 /* ── Cloud Reveal and Landing Page Animations ── */

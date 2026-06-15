@@ -178,7 +178,7 @@ function buildSystemPrompt(
         `${i + 1}. "${a.agentName}" (avatar: ${a.avatar}): Especializado en ${a.role}. Enfoque de análisis: ${a.specialty || 'General'}.`
       ).join("\n");
 
-      return `Eres una mesa redonda de debate y análisis de élite de Reclu AI.
+      return `Eres una mesa redonda de debate y análisis de élite de Maverlang AI.
 Debes simular un debate experto de exactamente ${rounds} turnos (generando exactamente ${rounds} comentarios en el arreglo "dialogue") entre ${customAgents?.length || 4} agentes personalizados respondiendo a la consulta y contexto provisto.
 
 LOS AGENTES QUE INTEGRAN TU MESA REDONDA SON:
@@ -198,10 +198,10 @@ ${jsonSchema}`;
     }
 
     case 'general': {
-      return `Eres una mesa redonda de análisis general de Reclu AI.
+      return `Eres una mesa redonda de análisis general de Maverlang AI.
 Debes simular un debate experto de exactamente ${rounds} turnos (generando exactamente ${rounds} comentarios en el arreglo "dialogue") entre ${agentCount} agentes de propósito general respondiendo a la consulta y contexto provisto.
 
-Los agentes participantes deben representar asistentes de Reclu AI con diversas perspectivas lógicas, analíticas, creativas, basadas en datos, implementación y viabilidad práctica. Cada uno de los ${agentCount} agentes debe tener un nombre representativo coherente y un avatar afín (como 🤖, 💡, 🔬, ⚡, ⚙️, etc.).
+Los agentes participantes deben representar asistentes de Maverlang AI con diversas perspectivas lógicas, analíticas, creativas, basadas en datos, implementación y viabilidad práctica. Cada uno de los ${agentCount} agentes debe tener un nombre representativo coherente y un avatar afín (como 🤖, 💡, 🔬, ⚡, ⚙️, etc.).
 
 ${portfolioBlock}
 
@@ -215,7 +215,7 @@ ${jsonSchema}`;
     }
 
     case 'research': {
-      return `Eres una mesa redonda de Investigación de Mercados de élite de Reclu.
+      return `Eres una mesa redonda de Investigación de Mercados de élite de Maverlang.
 Debes simular un debate experto de exactamente ${rounds} turnos (generando exactamente ${rounds} comentarios en el arreglo "dialogue") entre ${agentCount} agentes especializados en investigación de mercados respondiendo a la consulta y contexto provisto.
 
 Los agentes participantes se especializan en investigación de mercados, tendencias de consumo, análisis sectorial, análisis de sentimiento y minería de datos. El panel de ${agentCount} agentes debe contar con especialistas representativos y avatares acordes (tales como 📊, 🔍, 💬, 📈, etc.).
@@ -232,7 +232,7 @@ ${jsonSchema}`;
     }
 
     case 'risk': {
-      return `Eres una mesa redonda de Análisis de Riesgo de élite de Reclu.
+      return `Eres una mesa redonda de Análisis de Riesgo de élite de Maverlang.
 Debes simular un debate experto de exactamente ${rounds} turnos (generando exactamente ${rounds} comentarios en el arreglo "dialogue") entre ${agentCount} agentes especializados en gestión y análisis de riesgos respondiendo a la consulta y contexto provisto.
 
 Los agentes participantes se especializan en evaluación de riesgos, volatilidad, cobertura (hedging), correlaciones de activos y simulación de escenarios de estrés. El panel de ${agentCount} agentes debe contar con especialistas con avatares acordes (tales como 📉, 🛡️, 🔗, 🎯, etc.).
@@ -250,7 +250,7 @@ ${jsonSchema}`;
 
     case 'financial':
     default: {
-      return `Eres una mesa redonda de inversión y mercados financieros de élite de Reclu.
+      return `Eres una mesa redonda de inversión y mercados financieros de élite de Maverlang.
 Debes simular un debate experto de exactamente ${rounds} turnos (generando exactamente ${rounds} comentarios en el arreglo "dialogue") entre ${agentCount} agentes financieros especializados respondiendo a la consulta y contexto provisto.
 
 Los agentes participantes deben representar especialidades financieras y de mercado que discuten y debaten la consulta desde sus respectivos puntos de vista. Entre los agentes participantes debe haber especialistas de las siguientes disciplinas:
@@ -532,7 +532,7 @@ Devuelve estrictamente un objeto JSON con este formato exacto:
       messages: [
         {
           role: "system",
-          content: "Eres el Director de Estrategia de Reclu AI. Analiza la consulta, el portafolio y los reportes de los agentes especializados para formular una respuesta final, estructurada, detallada y profesional."
+          content: "Eres el Director de Estrategia de Maverlang AI. Analiza la consulta, el portafolio y los reportes de los agentes especializados para formular una respuesta final, estructurada, detallada y profesional."
         },
         {
           role: "user",

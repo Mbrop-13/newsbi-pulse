@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
         to: normalizedEmail,
         subject,
         html,
-        from: `Reclu Newsletter <${process.env.SES_FROM_EMAIL}>`,
+        from: `Maverlang Newsletter <${process.env.SES_FROM_EMAIL}>`,
       });
     }
 

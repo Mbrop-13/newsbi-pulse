@@ -31,15 +31,15 @@ interface OnboardingModalProps {
 const STEPS = [
   {
     id: "welcome",
-    badge: "Bienvenido a Reclu",
+    badge: "Bienvenido a Maverlang",
     title: "Tu plataforma de noticias inteligente",
     description:
-      "Reclu te ofrece noticias financieras, tecnológicas y de impacto global analizadas con inteligencia artificial. Regístrate gratis para acceder a todo el contenido.",
+      "Maverlang te ofrece noticias financieras, tecnológicas y de impacto global analizadas con inteligencia artificial. Regístrate gratis para acceder a todo el contenido.",
     features: [
-      { icon: <Zap className="w-5 h-5" />, label: "Noticias en tiempo real", color: "text-blue-500", bg: "bg-blue-500/10" },
-      { icon: <Bot className="w-5 h-5" />, label: "Asistente IA personal", color: "text-purple-500", bg: "bg-purple-500/10" },
-      { icon: <Shield className="w-5 h-5" />, label: "Análisis verificado", color: "text-emerald-500", bg: "bg-emerald-500/10" },
-      { icon: <Globe className="w-5 h-5" />, label: "Cobertura global", color: "text-amber-500", bg: "bg-amber-500/10" },
+      { icon: <Zap className="w-5 h-5" />, label: "Noticias en tiempo real", color: "text-slate-800 dark:text-slate-200", bg: "bg-slate-500/10" },
+      { icon: <Bot className="w-5 h-5" />, label: "Asistente IA personal", color: "text-slate-800 dark:text-slate-200", bg: "bg-slate-500/10" },
+      { icon: <Shield className="w-5 h-5" />, label: "Análisis verificado", color: "text-slate-800 dark:text-slate-200", bg: "bg-slate-500/10" },
+      { icon: <Globe className="w-5 h-5" />, label: "Cobertura global", color: "text-slate-800 dark:text-slate-200", bg: "bg-slate-500/10" },
     ],
     visual: "welcome",
   },
@@ -91,9 +91,9 @@ function StepVisual({ visual }: { visual: string }) {
         <motion.div
           animate={{ scale: [1, 1.05, 1], rotate: [0, 2, -2, 0] }}
           transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
-          className="w-24 h-24 rounded-3xl bg-gradient-to-br from-[#1890FF] to-indigo-600 shadow-2xl shadow-blue-500/30 flex items-center justify-center"
+          className="w-24 h-24 rounded-3xl bg-black dark:bg-white shadow-2xl shadow-black/30 dark:shadow-white/5 flex items-center justify-center"
         >
-          <Zap className="w-12 h-12 text-white" />
+          <Zap className="w-12 h-12 text-white dark:text-black" />
         </motion.div>
         {/* Floating particles */}
         {[...Array(5)].map((_, i) => (
@@ -105,7 +105,7 @@ function StepVisual({ visual }: { visual: string }) {
               opacity: [0.3, 0.7, 0.3],
             }}
             transition={{ repeat: Infinity, duration: 3 + i * 0.5, delay: i * 0.3 }}
-            className="absolute w-2 h-2 rounded-full bg-[#1890FF]/40"
+            className="absolute w-2 h-2 rounded-full bg-black/20 dark:bg-white/20"
             style={{
               top: `${20 + i * 15}%`,
               left: `${15 + i * 16}%`,
@@ -130,7 +130,7 @@ function StepVisual({ visual }: { visual: string }) {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: "spring", delay: i * 0.08 }}
-            className="px-3 py-1.5 rounded-full bg-[#1890FF]/10 text-[#1890FF] text-xs font-bold border border-[#1890FF]/20"
+            className="px-3 py-1.5 rounded-full bg-black/10 text-black dark:bg-white/10 dark:text-white text-xs font-bold border border-black/10 dark:border-white/10"
           >
             {s}
           </motion.div>
@@ -145,9 +145,9 @@ function StepVisual({ visual }: { visual: string }) {
       <motion.div
         animate={{ rotate: [0, 360] }}
         transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
-        className="w-20 h-20 rounded-full border-4 border-dashed border-[#1890FF]/30 flex items-center justify-center"
+        className="w-20 h-20 rounded-full border-4 border-dashed border-black/30 dark:border-white/30 flex items-center justify-center"
       >
-        <Settings2 className="w-8 h-8 text-[#1890FF]" />
+        <Settings2 className="w-8 h-8 text-black dark:text-white" />
       </motion.div>
     </div>
   );
@@ -221,7 +221,7 @@ export function OnboardingModal({ isOpen, onClose, articleTitle }: OnboardingMod
                 key={i}
                 onClick={() => setStep(i)}
                 className={`h-1.5 rounded-full transition-all duration-300 ${
-                  i === step ? "w-6 bg-[#1890FF]" : "w-1.5 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400"
+                  i === step ? "w-6 bg-black dark:bg-white" : "w-1.5 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400"
                 }`}
               />
             ))}
@@ -239,7 +239,7 @@ export function OnboardingModal({ isOpen, onClose, articleTitle }: OnboardingMod
               transition={{ duration: 0.2 }}
             >
               {/* Badge */}
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1890FF]/10 text-[#1890FF] text-[11px] font-bold uppercase tracking-wider mb-4">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/10 text-black dark:bg-white/10 dark:text-white text-[11px] font-bold uppercase tracking-wider mb-4">
                 <Sparkles className="w-3 h-3" />
                 {current.badge}
               </span>
@@ -280,22 +280,22 @@ export function OnboardingModal({ isOpen, onClose, articleTitle }: OnboardingMod
                         onClick={() => setLayout(view.id)}
                         className={`flex items-center gap-3 p-3 rounded-xl transition-all text-left ${
                           isActive
-                            ? "bg-[#1890FF]/10 ring-2 ring-[#1890FF] shadow-sm"
+                            ? "bg-black/5 dark:bg-white/5 ring-2 ring-black dark:ring-white shadow-sm"
                             : "hover:bg-gray-50 dark:hover:bg-white/5 border border-transparent hover:border-gray-200 dark:hover:border-gray-800"
                         }`}
                       >
                         <div className={`p-2.5 rounded-xl shrink-0 ${
-                          isActive ? "bg-[#1890FF] text-white" : `${view.bg} ${view.color}`
+                          isActive ? "bg-black text-white dark:bg-white dark:text-black" : `${view.bg} ${view.color}`
                         }`}>
                           {view.icon}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className={`text-sm font-bold ${isActive ? "text-[#1890FF]" : "text-gray-700 dark:text-gray-300"}`}>
+                            <span className={`text-sm font-bold ${isActive ? "text-black dark:text-white" : "text-gray-700 dark:text-gray-300"}`}>
                               {view.label}
                             </span>
                             {isActive && (
-                              <span className="text-[9px] font-bold text-[#1890FF] bg-[#1890FF]/10 px-2 py-0.5 rounded-full uppercase">Activo</span>
+                              <span className="text-[9px] font-bold text-black dark:text-white bg-black/10 dark:bg-white/10 px-2 py-0.5 rounded-full uppercase">Activo</span>
                             )}
                           </div>
                           <span className="text-xs text-gray-400">{view.desc}</span>
@@ -344,7 +344,7 @@ export function OnboardingModal({ isOpen, onClose, articleTitle }: OnboardingMod
             {!isLast ? (
               <button
                 onClick={() => setStep(step + 1)}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#1890FF] text-white text-sm font-bold hover:bg-[#1890FF]/90 transition-colors shadow-lg shadow-[#1890FF]/25"
+                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-black text-white dark:bg-white dark:text-black text-sm font-bold hover:bg-black/90 dark:hover:bg-white/90 transition-colors shadow-lg shadow-black/25 dark:shadow-white/10"
               >
                 Siguiente
                 <ChevronRight className="w-4 h-4" />
@@ -352,7 +352,7 @@ export function OnboardingModal({ isOpen, onClose, articleTitle }: OnboardingMod
             ) : (
               <button
                 onClick={handleRegister}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#1890FF] to-indigo-600 text-white text-sm font-bold hover:opacity-90 transition-all shadow-lg shadow-[#1890FF]/25"
+                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-black text-white dark:bg-white dark:text-black text-sm font-bold hover:opacity-90 transition-all shadow-lg shadow-black/25 dark:shadow-white/10"
               >
                 Crear Cuenta Gratis
                 <ArrowRight className="w-4 h-4" />
@@ -363,7 +363,7 @@ export function OnboardingModal({ isOpen, onClose, articleTitle }: OnboardingMod
           {/* Login link */}
           <p className="text-center text-xs text-gray-400 mt-4">
             ¿Ya tienes cuenta?{" "}
-            <button onClick={handleLogin} className="text-[#1890FF] font-bold hover:underline">
+            <button onClick={handleLogin} className="text-black dark:text-white font-bold hover:underline">
               Inicia sesión
             </button>
           </p>

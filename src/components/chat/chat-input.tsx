@@ -254,10 +254,10 @@ export function ChatInput({
   };
 
   return (
-    <div className={cn("bg-background", "mx-4")}>
+    <div className={cn("bg-transparent", "px-2 md:px-0 pb-4 md:pb-6")}>
       <form
         onSubmit={handleSubmit}
-        className={cn("max-w-6xl px-0 pb-0 md:pb-4 mx-auto inset-x-0 pt-0 relative", className)}
+        className={cn("max-w-6xl px-0 mx-auto inset-x-0 pt-0 relative", className)}
       >
         {/* Active Tool Pills & Attachments */}
         {(activeTools.length > 0 || attachedArticles.length > 0) && (

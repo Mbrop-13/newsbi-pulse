@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next';
 import { createClient } from '@/lib/supabase/server';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://reclu.cl';
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://maverlang.cl';
   const supabase = await createClient();
 
   // Rutas estáticas principales

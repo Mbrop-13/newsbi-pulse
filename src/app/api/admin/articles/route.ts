@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
       relevance_score: relevance_score || 0.5,
       slug,
       published_at: new Date().toISOString(),
-      sources: [{ name: "Reclu Editorial", url: "/" }],
+      sources: [{ name: "Maverlang Editorial", url: "/" }],
       is_hidden: false,
       is_pinned: false,
     }).select().single();

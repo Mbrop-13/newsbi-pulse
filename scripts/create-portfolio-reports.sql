@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════
--- Reclu — Portfolio Reports Module
+-- Maverlang — Portfolio Reports Module
 -- Run this in Supabase SQL Editor
 -- ═══════════════════════════════════════════════════════════════
 

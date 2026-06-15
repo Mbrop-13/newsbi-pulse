@@ -9,7 +9,7 @@ export async function updateSession(request: NextRequest) {
   // Capture referral code if present
   const refCode = request.nextUrl.searchParams.get('ref');
   if (refCode) {
-    supabaseResponse.cookies.set('reclu_ref_code', refCode, { 
+    supabaseResponse.cookies.set('maverlang_ref_code', refCode, { 
       maxAge: 60 * 60 * 24 * 7, // 7 days
       path: '/',
       httpOnly: true,

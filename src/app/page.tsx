@@ -41,7 +41,7 @@ export default function HomePage() {
             marginLeft: marginX,
             marginRight: marginX,
           }}
-          className="bg-[#0b0f1d] border border-[#0b0f1d] mx-auto overflow-hidden flex justify-center"
+          className="bg-black border border-black mx-auto overflow-hidden flex justify-center"
         >
           <div className="w-screen min-w-[100vw] flex justify-center shrink-0">
             <LandingMobileMockup />

@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════
--- Reclu — AI Calendar Cache Migration
+-- Maverlang — AI Calendar Cache Migration
 -- ═══════════════════════════════════════════════
 
 CREATE TABLE IF NOT EXISTS user_ai_calendar (

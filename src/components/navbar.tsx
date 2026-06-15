@@ -160,7 +160,7 @@ export function Navbar() {
             )}
             <Link href={`/`} className="hidden md:flex items-center hover:opacity-80 transition-opacity h-full overflow-visible">
                <img 
-                 src={mounted && resolvedTheme === "dark" ? "/assets/maverlang-logo-white.png" : "/assets/maverlang-logo.png"} 
+                 src={mounted && resolvedTheme === "dark" ? "/assets/Logo 1-Blanco.png" : "/assets/Maverlang Logo-1.png"} 
                  alt="Maverlang" 
                  className="h-12 w-auto object-contain max-w-none"
                />
@@ -171,7 +171,7 @@ export function Navbar() {
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 md:hidden z-0 pointer-events-auto flex items-center justify-center">
             <Link href={`/`} className="flex items-center hover:opacity-80 transition-opacity">
                <img 
-                 src={mounted && resolvedTheme === "dark" ? "/assets/maverlang-logo-white.png" : "/assets/maverlang-logo.png"} 
+                 src={mounted && resolvedTheme === "dark" ? "/assets/Logo 1-Blanco.png" : "/assets/Maverlang Logo-1.png"} 
                  alt="Maverlang" 
                  className="h-8 w-auto object-contain"
                />

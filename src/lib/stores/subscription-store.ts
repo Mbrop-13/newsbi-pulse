@@ -112,7 +112,7 @@ export const useSubscriptionStore = create<SubscriptionState>()(
       },
     }),
     {
-      name: "reclu-subscription",
+      name: "maverlang-subscription",
       partialize: (state) => ({
         tier: state.tier,
         status: state.status,

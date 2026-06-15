@@ -132,7 +132,7 @@ export default function MisPrediccionesPage() {
           {activeBets.length > 0 && (
             <div>
               <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" /> Activas ({activeBets.length})
+                <div className="w-2 h-2 rounded-full bg-black dark:bg-white animate-pulse" /> Activas ({activeBets.length})
               </h2>
               <div className="space-y-2">
                 {activeBets.map((bet, i) => {
@@ -152,7 +152,7 @@ export default function MisPrediccionesPage() {
                       className="bg-card border border-border rounded-xl p-4 flex items-center justify-between gap-3"
                     >
                       <div className="min-w-0 flex-1">
-                        <Link href={`/predicciones/${p.slug || p.id}`} className="font-bold text-foreground text-sm truncate hover:text-blue-400 transition-colors block">
+                        <Link href={`/predicciones/${p.slug || p.id}`} className="font-bold text-foreground text-sm truncate hover:text-slate-400 transition-colors block">
                           {p.title}
                         </Link>
                         <p className="text-[10px] text-muted-foreground mt-0.5">
@@ -164,12 +164,12 @@ export default function MisPrediccionesPage() {
                         </p>
                       </div>
                       <div className="shrink-0 text-right flex flex-col gap-2 items-end">
-                        <span className="text-xs font-bold text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded-lg w-fit">
+                        <span className="text-xs font-bold text-black dark:text-white bg-black/10 dark:bg-white/10 px-2.5 py-1 rounded-lg w-fit">
                           EN JUEGO
                         </span>
                         <Link 
                           href={`/predicciones/${p.slug || p.id}`}
-                          className="text-[10px] font-bold text-white bg-[#0ea5e9] hover:bg-[#0284c7] px-3 py-1.5 rounded-md transition-colors"
+                          className="text-[10px] font-bold text-white bg-black hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90 px-3 py-1.5 rounded-md transition-colors"
                         >
                           Vender
                         </Link>
@@ -202,7 +202,7 @@ export default function MisPrediccionesPage() {
                       }`}
                     >
                       <div className="min-w-0 flex-1">
-                        <Link href={`/predicciones/${p.slug || p.id}`} className="font-bold text-foreground text-sm truncate hover:text-blue-400 transition-colors block">
+                        <Link href={`/predicciones/${p.slug || p.id}`} className="font-bold text-foreground text-sm truncate hover:text-slate-400 transition-colors block">
                           {p.title}
                         </Link>
                         <p className="text-[10px] text-muted-foreground mt-0.5">

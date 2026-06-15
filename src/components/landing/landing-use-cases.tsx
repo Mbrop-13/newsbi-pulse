@@ -10,7 +10,7 @@ const USE_CASES = [
     slug: "auditoria-corporativa",
     category: "AUDITORÍA DE INVERSIONES",
     title: "Auditoría de Inversiones Corporativas con Agentes IA",
-    desc: "Cómo un Gestor de Fondos o Administrador de Activos podría ocupar Reclu para auditar transacciones en tiempo real con agentes de IA.",
+    desc: "Cómo un Gestor de Fondos o Administrador de Activos podría ocupar Maverlang para auditar transacciones en tiempo real con agentes de IA.",
     image: "https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&w=600&q=80",
     badge: "AI Multi-Agente + Supabase",
     cta: "Lee la historia de auditoría"
@@ -19,7 +19,7 @@ const USE_CASES = [
     slug: "deteccion-de-sesgos",
     category: "ANÁLISIS DE PRENSA",
     title: "Detección y Purificación de Sesgos Informativos",
-    desc: "Cómo un Analista Financiero podría ocupar Reclu para purificar noticias y eliminar sesgo macroeconómico de forma inmediata.",
+    desc: "Cómo un Analista Financiero podría ocupar Maverlang para purificar noticias y eliminar sesgo macroeconómico de forma inmediata.",
     image: "https://images.unsplash.com/photo-1542831371-29b0f74f9713?auto=format&fit=crop&w=600&q=80",
     badge: "Python + LLMs",
     cta: "Lee la historia de purificación"
@@ -28,7 +28,7 @@ const USE_CASES = [
     slug: "seguimiento-automatizado",
     category: "WEALTH MANAGEMENT",
     title: "Monitoreo Automatizado de Portafolios",
-    desc: "Cómo un Asesor Patrimonial o Inversor podría ocupar Reclu para recibir alertas inteligentes vinculadas a sus activos en cartera.",
+    desc: "Cómo un Asesor Patrimonial o Inversor podría ocupar Maverlang para recibir alertas inteligentes vinculadas a sus activos en cartera.",
     image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80",
     badge: "Upstash + Cron",
     cta: "Lee la historia de monitoreo"
@@ -37,7 +37,7 @@ const USE_CASES = [
     slug: "prediccion-banco-central",
     category: "ANALÍTICA PREDICTIVA",
     title: "Predicción de Variaciones de Tasas del Banco Central",
-    desc: "Cómo una Firma de Corretaje podría ocupar Reclu para anticipar de manera analítica decisiones de tasas swap del Banco Central.",
+    desc: "Cómo una Firma de Corretaje podría ocupar Maverlang para anticipar de manera analítica decisiones de tasas swap del Banco Central.",
     image: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=600&q=80",
     badge: "Next.js + Azure",
     cta: "Lee la historia de predicción"
@@ -46,7 +46,7 @@ const USE_CASES = [
     slug: "analisis-sentimiento-cripto",
     category: "CRIPTO & SOCIAL",
     title: "Medición de Sentimiento Real de Criptoactivos",
-    desc: "Cómo un Inversor de Activos Digitales podría ocupar Reclu para filtrar campañas artificiales de bots y medir el sentimiento social real.",
+    desc: "Cómo un Inversor de Activos Digitales podría ocupar Maverlang para filtrar campañas artificiales de bots y medir el sentimiento social real.",
     image: "https://images.unsplash.com/photo-1642104704074-907c0698cbd9?auto=format&fit=crop&w=600&q=80",
     badge: "Azure + OpenAI",
     cta: "Lee la historia de criptoactivos"
@@ -55,7 +55,7 @@ const USE_CASES = [
     slug: "regulacion-fiscal",
     category: "COMPLIANCE LEGAL",
     title: "Auditoría Regulatoria y Fiscal de Boletines Oficiales",
-    desc: "Cómo un Estudio Jurídico o Tributario podría ocupar Reclu para monitorizar decretos en boletines oficiales en busca de riesgos.",
+    desc: "Cómo un Estudio Jurídico o Tributario podría ocupar Maverlang para monitorizar decretos en boletines oficiales en busca de riesgos.",
     image: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=600&q=80",
     badge: "Supabase + RLS",
     cta: "Lee la historia de compliance"
@@ -64,7 +64,7 @@ const USE_CASES = [
     slug: "cadena-suministro",
     category: "LOGÍSTICA GLOBAL",
     title: "Resiliencia Geopolítica de Cadenas de Suministro",
-    desc: "Cómo un Gestor de Operaciones Logísticas podría ocupar Reclu para predecir cierres portuarios debido a eventos geopolíticos.",
+    desc: "Cómo un Gestor de Operaciones Logísticas podría ocupar Maverlang para predecir cierres portuarios debido a eventos geopolíticos.",
     image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=600&q=80",
     badge: "Capacitor + React",
     cta: "Lee la historia de logística"
@@ -73,7 +73,7 @@ const USE_CASES = [
     slug: "educacion-financiera",
     category: "ACADEMIA & FINANZAS",
     title: "Simulación Académica en Laboratorios Financieros",
-    desc: "Cómo una Universidad o Academia podría ocupar Reclu como herramienta interactiva para que estudiantes auditen mercados.",
+    desc: "Cómo una Universidad o Academia podría ocupar Maverlang como herramienta interactiva para que estudiantes auditen mercados.",
     image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=600&q=80",
     badge: "MercadoPago + Node",
     cta: "Lee la historia de academia"
@@ -138,11 +138,11 @@ export function LandingUseCases() {
         {/* Header with Navigation Controls */}
         <div className="flex items-center justify-between mb-12">
           <div>
-            <h2 className="text-sm font-bold tracking-widest text-[#1890FF] uppercase mb-3">
+            <h2 className="text-sm font-bold tracking-widest text-black uppercase mb-3">
               EJEMPLOS DE USO
             </h2>
             <p className="text-3xl md:text-4xl font-bold tracking-tight text-slate-950">
-              ¿Para qué podrías ocupar Reclu?
+              ¿Para qué podrías ocupar Maverlang?
             </p>
           </div>
           
@@ -200,16 +200,16 @@ export function LandingUseCases() {
 
                 {/* Title & Link below */}
                 <div className="flex flex-col items-start px-1">
-                  <span className="text-[11px] font-extrabold tracking-widest text-[#1890FF] uppercase mb-2">
+                  <span className="text-[11px] font-extrabold tracking-widest text-black uppercase mb-2">
                     {uc.category}
                   </span>
-                  <h3 className="text-slate-950 font-black text-lg md:text-xl mb-2 leading-snug tracking-tight transition-all duration-300 group-hover:text-blue-600">
+                  <h3 className="text-slate-950 font-black text-lg md:text-xl mb-2 leading-snug tracking-tight transition-all duration-300 group-hover:text-black">
                     {uc.title}
                   </h3>
                   <p className="text-slate-500 text-[13px] font-medium mb-4 leading-relaxed min-h-[64px] transition-all duration-300 group-hover:text-slate-700">
                     {uc.desc}
                   </p>
-                  <span className="inline-flex items-center gap-1 text-blue-600 text-xs font-bold">
+                  <span className="inline-flex items-center gap-1 text-black text-xs font-bold">
                     {uc.cta} <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
                   </span>
                 </div>

@@ -28,8 +28,8 @@ export function Logo({ showText = true, size = "md", className = "", variant = 1
 
   const isDark = mounted && resolvedTheme === "dark";
   const logoSrc = variant === 1 
-    ? (isDark ? "/assets/maverlang-logo-white.png" : "/assets/maverlang-logo.png")
-    : (isDark ? "/assets/maverlang-logo-small-white.png" : "/assets/maverlang-logo-small.png");
+    ? (isDark ? "/assets/Logo 1-Blanco.png" : "/assets/Maverlang Logo-1.png")
+    : (isDark ? "/assets/Logo 2-Blanco.png" : "/assets/Maverlang Logo-2.png");
 
   return (
     <Link href="/" className={`flex items-center gap-3 group ${className}`} aria-label="Maverlang Home">
@@ -40,7 +40,7 @@ export function Logo({ showText = true, size = "md", className = "", variant = 1
       />
       {showText && variant === 2 && (
         <div className="flex flex-col leading-none">
-          <span className="text-xl font-black tracking-tighter text-[#1890FF] italic">
+          <span className="text-xl font-black tracking-tighter text-black dark:text-white italic">
             MAVERLANG
           </span>
         </div>

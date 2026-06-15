@@ -54,7 +54,7 @@ export function LandingChatDemo() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Hola. Soy R-AI, tu copiloto financiero e informativo impulsado por agentes de inteligencia artificial. Selecciona uno de los siguientes análisis rápidos para ver cómo opero en tiempo real."
+      content: "Hola. Soy Maverlang AI, tu copiloto financiero e informativo impulsado por agentes de inteligencia artificial. Selecciona uno de los siguientes análisis rápidos para ver cómo opero en tiempo real."
     }
   ]);
   const [isTyping, setIsTyping] = useState(false);
@@ -130,19 +130,19 @@ export function LandingChatDemo() {
   return (
     <section className="py-24 bg-slate-50 text-slate-900 relative overflow-hidden border-b border-slate-100">
       {/* Decorative gradients */}
-      <div className="absolute top-[20%] left-[5%] w-[45vw] h-[45vw] rounded-full bg-blue-100/30 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[10%] right-[5%] w-[35vw] h-[35vw] rounded-full bg-[#1890FF]/5 blur-[100px] pointer-events-none" />
+      <div className="absolute top-[20%] left-[5%] w-[45vw] h-[45vw] rounded-full bg-slate-200/20 blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[10%] right-[5%] w-[35vw] h-[35vw] rounded-full bg-black/5 blur-[100px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="text-sm font-bold tracking-widest text-[#1890FF] uppercase mb-3">
+          <h2 className="text-sm font-bold tracking-widest text-black uppercase mb-3">
             MOCKUP INTERACTIVO
           </h2>
           <p className="text-3xl md:text-5xl font-black tracking-tight leading-tight">
             Interacción con agentes en tiempo real
           </p>
           <p className="mt-4 text-slate-500 text-base md:text-lg">
-            R-AI no solo conversa; ejecuta herramientas de búsqueda, analiza datos complejos y valida afirmaciones al instante.
+            Maverlang AI no solo conversa; ejecuta herramientas de búsqueda, analiza datos complejos y valida afirmaciones al instante.
           </p>
         </div>
 
@@ -153,7 +153,7 @@ export function LandingChatDemo() {
           <div className="lg:col-span-4 flex flex-col justify-between gap-6 bg-white border border-slate-200/60 rounded-2xl p-6 shadow-sm">
             <div>
               <div className="flex items-center gap-2 mb-6 pb-4 border-b border-slate-100">
-                <Terminal className="w-5 h-5 text-blue-500" />
+                <Terminal className="w-5 h-5 text-black" />
                 <span className="text-xs uppercase font-extrabold text-slate-700 tracking-wider">Agentes Disponibles</span>
               </div>
 
@@ -161,7 +161,7 @@ export function LandingChatDemo() {
               <div className="space-y-3 mb-8">
                 <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
                   <div className="relative">
-                    <Globe className="w-5 h-5 text-blue-500" />
+                    <Globe className="w-5 h-5 text-black" />
                     <span className="absolute bottom-0 right-0 w-2 h-2 bg-emerald-500 rounded-full" />
                   </div>
                   <div>
@@ -201,7 +201,7 @@ export function LandingChatDemo() {
                     disabled={isTyping}
                     className={`w-full text-left text-xs font-semibold p-3.5 rounded-xl border transition-all ${
                       activePreset === idx
-                        ? "bg-[#1890FF]/10 border-[#1890FF] text-[#0066FF] shadow-xs"
+                        ? "bg-black/10 border-black text-black shadow-xs"
                         : "bg-slate-50 border-slate-100 text-slate-700 hover:bg-slate-100/50 hover:border-slate-200"
                     } disabled:opacity-50`}
                   >
@@ -215,7 +215,7 @@ export function LandingChatDemo() {
             <div className="pt-4 border-t border-slate-100 mt-6 lg:mt-0">
               <button
                 onClick={handleCTAClick}
-                className="w-full bg-[#1890FF] hover:bg-[#1890FF]/90 text-white text-xs font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 group cursor-pointer"
+                className="w-full bg-black hover:bg-black/90 text-white text-xs font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 group cursor-pointer"
               >
                 Pruébalo con tu cuenta
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -228,13 +228,13 @@ export function LandingChatDemo() {
             {/* Terminal header */}
             <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-[#1890FF]/10 border border-[#1890FF]/20 flex items-center justify-center">
-                  <Bot className="w-4 h-4 text-blue-500" />
+                <div className="w-8 h-8 rounded-full bg-black/10 border border-black/20 flex items-center justify-center">
+                  <Bot className="w-4 h-4 text-black" />
                 </div>
                 <div>
                   <h3 className="text-sm font-bold flex items-center gap-1.5 text-slate-900">
-                    Asistente R-AI
-                    <Sparkles className="w-3.5 h-3.5 text-[#1890FF] animate-pulse" />
+                    Asistente Maverlang AI
+                    <Sparkles className="w-3.5 h-3.5 text-black animate-pulse" />
                   </h3>
                   <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" />
@@ -259,7 +259,7 @@ export function LandingChatDemo() {
                   <div
                     className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                       msg.role === "user"
-                        ? "bg-[#1890FF]/15 text-[#0052cc] border border-[#1890FF]/30 rounded-tr-none"
+                        ? "bg-black/10 text-neutral-850 border border-black/20 rounded-tr-none"
                         : "bg-slate-100 text-slate-800 border border-slate-200/40 rounded-tl-none"
                     }`}
                   >
@@ -270,7 +270,7 @@ export function LandingChatDemo() {
                       <div className="mt-3 p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs font-mono text-slate-700">
                         <div className="flex items-center justify-between mb-1.5 text-slate-500">
                           <span className="flex items-center gap-1.5 font-bold">
-                            <Terminal className="w-3.5 h-3.5 text-blue-500 animate-pulse" />
+                            <Terminal className="w-3.5 h-3.5 text-black animate-pulse" />
                             Tool: {msg.tool.name}
                           </span>
                           <span className={msg.tool.status === "completed" ? "text-emerald-600 font-bold" : "text-amber-500 font-bold animate-pulse"}>
@@ -290,7 +290,7 @@ export function LandingChatDemo() {
 
               {isTyping && messages[messages.length - 1].content === "" && (
                 <div className="flex items-center gap-2 text-xs text-slate-400 font-mono bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
-                  <span className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-ping" />
+                  <span className="w-1.5 h-1.5 bg-black rounded-full animate-ping" />
                   Agentes ejecutando herramientas complejas...
                 </div>
               )}

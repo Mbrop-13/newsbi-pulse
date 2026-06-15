@@ -21,7 +21,7 @@ export async function GET(request: Request) {
     if (!error && authData?.user) {
       // Process Referral Code
       const cookieStore = request.headers.get('cookie') || '';
-      const match = cookieStore.match(/reclu_ref_code=([^;]+)/);
+      const match = cookieStore.match(/maverlang_ref_code=([^;]+)/);
       if (match) {
         const refCode = match[1];
         
@@ -48,10 +48,10 @@ export async function GET(request: Request) {
       const isSafeHost = forwardedHost && (
         forwardedHost === 'localhost:3000' || 
         forwardedHost === 'newsbi-pulse.vercel.app' || 
-        forwardedHost === 'reclu.cl' || 
-        forwardedHost === 'reclu.com' ||
-        forwardedHost.endsWith('.reclu.cl') || 
-        forwardedHost.endsWith('.reclu.com')
+        forwardedHost === 'maverlang.cl' || 
+        forwardedHost === 'maverlang.com' ||
+        forwardedHost.endsWith('.maverlang.cl') || 
+        forwardedHost.endsWith('.maverlang.com')
       )
       
       const redirectUrl = isLocalEnv
@@ -63,7 +63,7 @@ export async function GET(request: Request) {
       const response = NextResponse.redirect(redirectUrl)
           
       // Delete the referral cookie
-      response.cookies.delete('reclu_ref_code');
+      response.cookies.delete('maverlang_ref_code');
       return response;
     }
   }

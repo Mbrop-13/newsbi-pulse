@@ -52,7 +52,7 @@ export const useViewStore = create<ViewSettingsState>()(
       resetToDefaults: () => set(defaultState),
     }),
     {
-      name: 'reclu-view-settings', 
+      name: 'maverlang-view-settings', 
     }
   )
 );

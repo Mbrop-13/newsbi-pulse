@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No autenticado. Inicia sesión primero." }, { status: 401 });
     }
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://reclu.cl";
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://maverlang.cl";
 
     const trialEnd = new Date();
     trialEnd.setDate(trialEnd.getDate() + 7);
@@ -38,8 +38,8 @@ export async function POST(request: NextRequest) {
     const isReferred = !!referralData;
     const finalPrice = isReferred ? Math.round(planConfig.price * 0.8) : planConfig.price;
     const planReason = isReferred 
-      ? `Suscripción Reclu ${plan.toUpperCase()} — 7 días gratis + 20% Dscto Referido`
-      : `Suscripción Reclu ${plan.toUpperCase()} — 7 días gratis`;
+      ? `Suscripción Maverlang ${plan.toUpperCase()} — 7 días gratis + 20% Dscto Referido`
+      : `Suscripción Maverlang ${plan.toUpperCase()} — 7 días gratis`;
 
     // Create a preapproval (subscription) with 7-day free trial
     const body = {

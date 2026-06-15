@@ -89,7 +89,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <Shield className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h1 className="font-bold text-sm text-slate-900 dark:text-white">Reclu Admin</h1>
+                  <h1 className="font-bold text-sm text-slate-900 dark:text-white">Maverlang Admin</h1>
                   <p className="text-[10px] text-slate-500 dark:text-gray-500 truncate max-w-[150px]">{email}</p>
                 </div>
               </div>

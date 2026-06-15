@@ -1,5 +1,5 @@
 /**
- * Professional HTML email templates for Reclu
+ * Professional HTML email templates for Maverlang
  * All templates are responsive, dark-mode compatible, and use inline styles for maximum email client compatibility.
  */
 
@@ -10,8 +10,8 @@ const BRAND = {
   red: "#f7525f",
   gray: "#6B7280",
   lightBg: "#f8fafc",
-  logo: "https://reclu.cl/icon-192x192.png",
-  url: "https://reclu.cl",
+  logo: "https://maverlang.cl/icon-192x192.png",
+  url: "https://maverlang.cl",
 };
 
 function baseLayout(content: string, preheader: string = ""): string {
@@ -21,7 +21,7 @@ function baseLayout(content: string, preheader: string = ""): string {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>Reclu</title>
+  <title>Maverlang</title>
   <!--[if mso]><style>body{font-family:Arial,sans-serif!important}</style><![endif]-->
 </head>
 <body style="margin:0;padding:0;background-color:${BRAND.lightBg};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased;">
@@ -38,7 +38,7 @@ function baseLayout(content: string, preheader: string = ""): string {
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td>
-                    <span style="font-size:22px;font-weight:900;color:${BRAND.dark};letter-spacing:-0.5px;">Reclu</span>
+                    <span style="font-size:22px;font-weight:900;color:${BRAND.dark};letter-spacing:-0.5px;">Maverlang</span>
                     <span style="font-size:10px;font-weight:700;color:${BRAND.primary};background-color:rgba(24,144,255,0.1);padding:2px 6px;border-radius:4px;margin-left:6px;vertical-align:middle;">IA</span>
                   </td>
                 </tr>
@@ -55,10 +55,10 @@ function baseLayout(content: string, preheader: string = ""): string {
           <tr>
             <td style="padding:20px 32px 28px;border-top:1px solid #f1f5f9;text-align:center;">
               <p style="margin:0 0 8px;font-size:11px;color:${BRAND.gray};">
-                © ${new Date().getFullYear()} Reclu — Inteligencia de Noticias
+                © ${new Date().getFullYear()} Maverlang — Inteligencia de Noticias
               </p>
               <p style="margin:0;font-size:10px;color:#9CA3AF;">
-                <a href="${BRAND.url}" style="color:${BRAND.primary};text-decoration:none;">reclu.cl</a> · 
+                <a href="${BRAND.url}" style="color:${BRAND.primary};text-decoration:none;">maverlang.cl</a> · 
                 <a href="${BRAND.url}/configuracion" style="color:${BRAND.gray};text-decoration:none;">Gestionar notificaciones</a>
               </p>
             </td>
@@ -130,13 +130,13 @@ export function priceAlertEmail({
     
     <div style="text-align:center;">
       <a href="${BRAND.url}/mercados/${encodeURIComponent(symbol)}" style="display:inline-block;padding:14px 32px;background-color:${BRAND.primary};color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;border-radius:10px;box-shadow:0 4px 6px -1px rgba(24,144,255,0.2);">
-        Analizar ${symbol} en Reclu →
+        Analizar ${symbol} en Maverlang →
       </a>
     </div>
   `;
 
   return {
-    subject: `🔔 ${symbol} alcanzó $${currentPrice.toFixed(2)} — Alerta de Reclu`,
+    subject: `🔔 ${symbol} alcanzó $${currentPrice.toFixed(2)} — Alerta de Maverlang`,
     html: baseLayout(content, `${symbol} ha cruzado tu precio objetivo de $${targetPrice.toFixed(2)}. Inicia sesión para ver los detalles.`),
   };
 }
@@ -152,7 +152,7 @@ export function welcomeEmail({ userName, email }: { userName?: string; email: st
       </div>
     </div>
     <h1 style="margin:0 0 12px;font-size:26px;font-weight:900;color:${BRAND.dark};text-align:center;letter-spacing:-0.5px;">
-      Bienvenido a Reclu
+      Bienvenido a Maverlang
     </h1>
     <p style="margin:0 0 32px;font-size:16px;color:${BRAND.gray};text-align:center;line-height:1.6;padding:0 16px;">
       ${userName ? `Hola ${userName}, g` : "G"}racias por unirte. Tu cuenta está lista para explorar el mercado con inteligencia artificial en tiempo real.
@@ -169,7 +169,7 @@ export function welcomeEmail({ userName, email }: { userName?: string; email: st
             </div>
           </td>
           <td>
-            <p style="margin:0 0 4px;font-size:16px;font-weight:800;color:${BRAND.dark};">R-AI Assistant</p>
+            <p style="margin:0 0 4px;font-size:16px;font-weight:800;color:${BRAND.dark};">Maverlang AI Assistant</p>
             <p style="margin:0;font-size:13px;color:${BRAND.gray};line-height:1.5;">Haz preguntas financieras complejas, analiza empresas y gráficos al instante.</p>
           </td>
         </tr>
@@ -212,8 +212,8 @@ export function welcomeEmail({ userName, email }: { userName?: string; email: st
   `;
 
   return {
-    subject: "Bienvenido a Reclu — Inteligencia de Noticias & Mercados 🚀",
-    html: baseLayout(content, "Bienvenido a Reclu. Descubre tu asistente IA, alertas de precio y más."),
+    subject: "Bienvenido a Maverlang — Inteligencia de Noticias & Mercados 🚀",
+    html: baseLayout(content, "Bienvenido a Maverlang. Descubre tu asistente IA, alertas de precio y más."),
   };
 }
 
@@ -229,7 +229,7 @@ export function newsletterConfirmationEmail({ email }: { email: string }): { sub
       ¡Suscripción Confirmada!
     </h1>
     <p style="margin:0 0 24px;font-size:14px;color:${BRAND.gray};text-align:center;line-height:1.7;">
-      Recibirás el <strong>Boletín Diario de Reclu</strong> cada mañana con las noticias más relevantes, analizadas por IA.
+      Recibirás el <strong>Boletín Diario de Maverlang</strong> cada mañana con las noticias más relevantes, analizadas por IA.
     </p>
     <div style="padding:20px;background-color:#f8fafc;border-radius:12px;text-align:center;margin-bottom:24px;">
       <p style="margin:0;font-size:12px;color:${BRAND.gray};">Suscrito con</p>
@@ -237,14 +237,14 @@ export function newsletterConfirmationEmail({ email }: { email: string }): { sub
     </div>
     <div style="text-align:center;">
       <a href="${BRAND.url}" style="display:inline-block;padding:14px 32px;background-color:${BRAND.primary};color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;border-radius:10px;">
-        Ir a Reclu →
+        Ir a Maverlang →
       </a>
     </div>
   `;
 
   return {
-    subject: "✅ Suscripción confirmada — Boletín Diario de Reclu",
-    html: baseLayout(content, "Tu suscripción al boletín diario de Reclu ha sido confirmada."),
+    subject: "✅ Suscripción confirmada — Boletín Diario de Maverlang",
+    html: baseLayout(content, "Tu suscripción al boletín diario de Maverlang ha sido confirmada."),
   };
 }
 
@@ -315,7 +315,7 @@ export function paymentSuccessEmail({
       ¡Pago Confirmado!
     </h1>
     <p style="margin:0 0 28px;font-size:15px;color:${BRAND.gray};text-align:center;line-height:1.6;">
-      ${userName ? `Hola ${userName}, h` : "H"}emos recibido el pago de tu suscripción a <strong>Reclu ${planName}</strong>. ¡Gracias por confiar en nosotros!
+      ${userName ? `Hola ${userName}, h` : "H"}emos recibido el pago de tu suscripción a <strong>Maverlang ${planName}</strong>. ¡Gracias por confiar en nosotros!
     </p>
     
     <div style="background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:24px;margin-bottom:32px;">
@@ -326,7 +326,7 @@ export function paymentSuccessEmail({
             <span style="font-size:13px;color:${BRAND.gray};">Plan</span>
           </td>
           <td style="padding:8px 0;text-align:right;">
-            <span style="font-size:14px;font-weight:700;color:${BRAND.dark};">Reclu ${planName}</span>
+            <span style="font-size:14px;font-weight:700;color:${BRAND.dark};">Maverlang ${planName}</span>
           </td>
         </tr>
         <tr>
@@ -368,8 +368,8 @@ export function paymentSuccessEmail({
   `;
 
   return {
-    subject: `Recibo de pago: Reclu ${planName} — Confirmado`,
-    html: baseLayout(content, `Tu pago por ${formattedAmount} para el plan Reclu ${planName} ha sido procesado exitosamente.`),
+    subject: `Recibo de pago: Maverlang ${planName} — Confirmado`,
+    html: baseLayout(content, `Tu pago por ${formattedAmount} para el plan Maverlang ${planName} ha sido procesado exitosamente.`),
   };
 }
 
@@ -442,8 +442,8 @@ export function trialExpiringEmail({
   `;
 
   return {
-    subject: `⏳ Tu trial ${planName} en Reclu expira en ${daysLeft} día${daysLeft > 1 ? "s" : ""}`,
-    html: baseLayout(content, `Tu prueba gratuita de Reclu ${planName} está por terminar. Conserva tus funciones premium.`),
+    subject: `⏳ Tu trial ${planName} en Maverlang expira en ${daysLeft} día${daysLeft > 1 ? "s" : ""}`,
+    html: baseLayout(content, `Tu prueba gratuita de Maverlang ${planName} está por terminar. Conserva tus funciones premium.`),
   };
 }
 
@@ -462,7 +462,7 @@ export function activationEmail({
       </div>
     </div>
     <h1 style="margin:0 0 8px;font-size:24px;font-weight:900;color:${BRAND.dark};text-align:center;letter-spacing:-0.5px;">
-      ¿Ya probaste R-AI?
+      ¿Ya probaste Maverlang AI?
     </h1>
     <p style="margin:0 0 28px;font-size:15px;color:${BRAND.gray};text-align:center;line-height:1.6;">
       ${userName ? `Hola ${userName}, t` : "T"}u asistente financiero con IA está listo para responder cualquier pregunta sobre mercados, empresas o tu portafolio.
@@ -484,14 +484,14 @@ export function activationEmail({
     
     <div style="text-align:center;">
       <a href="${BRAND.url}/ai" style="display:inline-block;padding:16px 40px;background-color:${BRAND.primary};color:#ffffff;font-size:15px;font-weight:800;text-decoration:none;border-radius:12px;box-shadow:0 8px 16px -4px rgba(24,144,255,0.3);">
-        Conversar con R-AI →
+        Conversar con Maverlang AI →
       </a>
     </div>
   `;
 
   return {
-    subject: "🤖 Tu asistente financiero te espera — Prueba R-AI ahora",
-    html: baseLayout(content, "R-AI está listo para analizar mercados, empresas y tu portafolio. Haz tu primera pregunta."),
+    subject: "🤖 Tu asistente financiero te espera — Prueba Maverlang AI ahora",
+    html: baseLayout(content, "Maverlang AI está listo para analizar mercados, empresas y tu portafolio. Haz tu primera pregunta."),
   };
 }
 
@@ -547,7 +547,7 @@ export function weeklyDigestEmail({
   `;
 
   return {
-    subject: `📰 Resumen Semanal Reclu — ${weekStr}`,
-    html: baseLayout(content, `Las 5 noticias más importantes de la semana en Reclu.`),
+    subject: `📰 Resumen Semanal Maverlang — ${weekStr}`,
+    html: baseLayout(content, `Las 5 noticias más importantes de la semana en Maverlang.`),
   };
 }

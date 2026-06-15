@@ -378,7 +378,7 @@ export async function filterWithStep(articles: RawArticle[], traceId?: string): 
     `${i}. "${a.title}" — ${a.sourceName} [${a.country_code?.toUpperCase()}/${a.language}]\n   ${a.summary.substring(0, 150)}`
   ).join('\n\n');
 
-  const prompt = `Eres el editor de "Reclu", portal PREMIUM de noticias económicas y financieras en ESPAÑOL.
+  const prompt = `Eres el editor de "Maverlang", portal PREMIUM de noticias económicas y financieras en ESPAÑOL.
 
 ENFOQUE: Economía, finanzas, inversiones, mercados, tech con impacto financiero, política económica Chile/EEUU.
 EXCLUIR: Deportes, fútbol, entretenimiento, farándula, crimen, sucesos policiales.
@@ -486,7 +486,7 @@ f = 2 dígitos: país(1=CL,2=US) + tema(1=General,2=Tech,3=Impacto,4=Finanzas,5=
 // ── Static system prompt for enrichment (cacheable by OpenRouter) ──
 // Placed outside the function so it's byte-identical across all calls.
 // OpenRouter auto-caches stable system prefixes → 50-90% cheaper on input tokens.
-const ENRICH_SYSTEM_PROMPT = `Eres un periodista senior de "Reclu", portal PREMIUM de noticias financieras en ESPAÑOL.
+const ENRICH_SYSTEM_PROMPT = `Eres un periodista senior de "Maverlang", portal PREMIUM de noticias financieras en ESPAÑOL.
 
 Tu trabajo: recibir una URL de noticia, investigarla en la web, y producir un artículo profesional.
 

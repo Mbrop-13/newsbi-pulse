@@ -43,8 +43,8 @@ export default function MarketingAdminPage() {
   // Configuration States
   const [newsletterEnabled, setNewsletterEnabled] = useState(true);
   const [pushEnabled, setPushEnabled] = useState(false);
-  const [senderName, setSenderName] = useState("Reclu Inteligencia");
-  const [senderEmail, setSenderEmail] = useState("no-reply@reclu.cl");
+  const [senderName, setSenderName] = useState("Maverlang Inteligencia");
+  const [senderEmail, setSenderEmail] = useState("no-reply@maverlang.cl");
 
   useEffect(() => {
     fetchEnrichedNews();
@@ -76,7 +76,7 @@ export default function MarketingAdminPage() {
   };
 
   const handleCopyNewsletter = (article: Article) => {
-    const text = `📰 *${article.title}*\n\n${article.enriched_content || "Sin contenido enriquecido"}\n\n👉 Lee más en reclu.cl`;
+    const text = `📰 *${article.title}*\n\n${article.enriched_content || "Sin contenido enriquecido"}\n\n👉 Lee más en maverlang.cl`;
     navigator.clipboard.writeText(text);
     setCopiedId(article.id);
     setTimeout(() => setCopiedId(null), 2000);

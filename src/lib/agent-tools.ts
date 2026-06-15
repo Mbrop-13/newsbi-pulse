@@ -1,5 +1,5 @@
 /**
- * R-AI Agent Tools
+ * Maverlang AI Agent Tools
  * 
  * Functions the AI agent can invoke to fetch real-time data from
  * the user's portfolio, stock prices, news articles, and alerts.

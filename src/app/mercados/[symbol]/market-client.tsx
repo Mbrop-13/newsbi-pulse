@@ -199,7 +199,7 @@ export default function MarketClient({ symbol }: { symbol: string }) {
                             {item.title}
                           </h4>
                           <p className="text-[10px] text-gray-500 mt-1 font-medium uppercase tracking-wider">
-                            {new Date(item.published_at).toLocaleDateString()} • {item.source_domain || "Reclu"}
+                            {new Date(item.published_at).toLocaleDateString()} • {item.source_domain || "Maverlang"}
                           </p>
                         </div>
                       </div>

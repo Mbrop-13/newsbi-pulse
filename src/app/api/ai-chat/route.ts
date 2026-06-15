@@ -8,6 +8,7 @@ import { rateLimit, rateLimitResponse, AI_CHAT_LIMIT } from "@/lib/rate-limit";
 import YahooFinance from "yahoo-finance2";
 import { detectSuspiciousPatterns } from "@/lib/security";
 import * as BrowserManager from "@/lib/services/browser-manager";
+import { runOrchestration } from "@/lib/services/agent-orchestrator";
 
 export const maxDuration = 60;
 
@@ -142,7 +143,7 @@ function createMimoWithWebSearch(userId: string, streamData?: StreamData, webSea
 
 // ── Dynamic system prompt generator ──
 function getSystemPrompt(name: string, tone: string, role: string, topics: string[]) {
-  const cleanName = name.trim() || "R-AI";
+  const cleanName = name.trim() || "Maverlang AI";
   const topicContext = topics.length > 0 
     ? `Tus áreas de interés preferidas son: ${topics.join(", ")}. Prioriza relacionar tus respuestas con estos temas si es relevante.`
     : "";
@@ -198,7 +199,7 @@ export async function POST(req: NextRequest) {
       assistantConfig = data;
     }
 
-    const assistantName = assistantConfig?.name || "R-AI";
+    const assistantName = assistantConfig?.name || "Maverlang AI";
     const assistantTone = assistantConfig?.tone || "Analítico";
     const assistantRole = assistantConfig?.role || "Mentor Financiero";
     const assistantTopics = assistantConfig?.topics || [];
@@ -288,10 +289,62 @@ export async function POST(req: NextRequest) {
     const streamData = new StreamData();
     const mimo = createMimoWithWebSearch(userId, streamData, webSearch !== false);
 
+    // Load user portfolio context for orchestration
+    let portfolioText = "";
+    if (user) {
+      const { data: dbAssets } = await supabase
+        .from("portfolios")
+        .select("symbol, shares, company_name")
+        .eq("user_id", user.id);
+      if (dbAssets && dbAssets.length > 0) {
+        portfolioText = dbAssets
+          .map((a: any) => `- ${a.symbol}: ${a.shares || 0} acciones (${a.company_name || ""})`)
+          .join("\n");
+      }
+    }
+
+    // ── Multi-Agent Orchestration ──
+    const orchestratorModel = mimo(finalModelStr);
+    const orchestrationResult = await runOrchestration(
+      orchestratorModel,
+      lastUserMessage,
+      portfolioText,
+      (text) => {
+        try {
+          streamData.append({ type: 'reasoning', text });
+        } catch {
+          // StreamData may already be closed/flushed
+        }
+      }
+    );
+
+    let messagesForFinalLlm = processedMessages;
+    if (orchestrationResult.isComplex && orchestrationResult.agentReports.length > 0) {
+      const reportsSummary = orchestrationResult.agentReports
+        .map(
+          (r) =>
+            `[Reporte de Agente Especializado: ${r.agentName} (Rol: ${r.role})]\nTarea: ${r.task}\nResultado del análisis:\n${r.content}`
+        )
+        .join("\n\n");
+
+      // Inject the summaries as a system context instruction to the final model
+      const contextMessage = {
+        role: "system" as const,
+        content: `A continuación se presentan los informes de investigación en paralelo generados por tus agentes especializados. Úsalos como base fáctica y consólidalos en tu respuesta al usuario de forma integrada en español:\n\n${reportsSummary}`,
+      };
+
+      const lastIndex = messagesForFinalLlm.length - 1;
+      messagesForFinalLlm = [
+        ...messagesForFinalLlm.slice(0, lastIndex),
+        contextMessage,
+        messagesForFinalLlm[lastIndex],
+      ];
+    }
+
     const result = await streamText({
       model: mimo(finalModelStr),
       system: getSystemPrompt(assistantName, assistantTone, assistantRole, assistantTopics),
-      messages: processedMessages,
+      messages: messagesForFinalLlm,
       maxTokens: 8192, // MiMo is a reasoning model — needs enough budget for thinking + response
       maxSteps: 8,
       toolChoice: 'auto',
@@ -408,7 +461,7 @@ export async function POST(req: NextRequest) {
 
         // ── NEWS TOOLS ──
         search_general_news: tool({
-          description: 'Buscar noticias en Reclu por palabra clave.',
+          description: 'Buscar noticias en Maverlang por palabra clave.',
           parameters: z.object({ query: z.string() }),
           execute: async ({ query }) => {
             try {
@@ -844,7 +897,7 @@ export async function POST(req: NextRequest) {
           console.log(`[AI Chat] Saved token usage for user ${user.id}: ${usage.totalTokens} tokens.`);
         }
         if (text.includes("[ALERTA_SEGURIDAD]") || text.includes("ALERTA DE SEGURIDAD") || text.includes("intento de evasión detectado")) {
-          console.warn(`[SECURITY_ALERT] [LLM_DETECTION] El modelo R-AI detectó un intento de manipulación o solicitud inusual del usuario ${userId}. Respuesta del modelo: "${text}"`);
+          console.warn(`[SECURITY_ALERT] [LLM_DETECTION] El modelo Maverlang AI detectó un intento de manipulación o solicitud inusual del usuario ${userId}. Respuesta del modelo: "${text}"`);
         }
       }
     });

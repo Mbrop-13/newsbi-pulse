@@ -8,15 +8,15 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 const REWARDS = [
   {
     id: "pro_1m",
-    title: "Reclu PRO",
+    title: "Maverlang PRO",
     subtitle: "1 Mes",
     tag: "Suscripción",
-    gradient: "from-indigo-600 to-purple-800",
-    shadowHover: "hover:shadow-[0_0_30px_rgba(99,102,241,0.2)]",
-    borderHover: "hover:border-indigo-400",
+    gradient: "from-zinc-700 to-black dark:from-white dark:to-zinc-500",
+    shadowHover: "hover:shadow-[0_0_30px_rgba(0,0,0,0.15)]",
+    borderHover: "hover:border-zinc-400",
     cost: 500,
     shortDesc: "Accede a agentes de IA ilimitados, resúmenes bursátiles en tiempo real y modo lectura sin distracciones.",
-    longDesc: "Con Reclu PRO llevas tu investigación al siguiente nivel. Obtendrás acceso prioritario a todas nuestras herramientas analíticas de inteligencia artificial, filtrado de ruido avanzado para mercados financieros y una experiencia de lectura 100% inmersiva libre de interrupciones.\n\nAl canjear esta recompensa, se añadirán 30 días de suscripción premium directamente a tu cuenta registrada.",
+    longDesc: "Con Maverlang PRO llevas tu investigación al siguiente nivel. Obtendrás acceso prioritario a todas nuestras herramientas analíticas de inteligencia artificial, filtrado de ruido avanzado para mercados financieros y una experiencia de lectura 100% inmersiva libre de interrupciones.\n\nAl canjear esta recompensa, se añadirán 30 días de suscripción premium directamente a tu cuenta registrada.",
     imagePlaceholder: "https://images.unsplash.com/photo-1639322537228-f710d846310a?auto=format&fit=crop&q=80&w=800",
   },
   {
@@ -29,7 +29,7 @@ const REWARDS = [
     borderHover: "hover:border-amber-400",
     cost: 150,
     shortDesc: "Destaca tus comentarios en la comunidad con un aro animado color oro diseñado para lectores pioneros.",
-    longDesc: "Diseñado para los miembros más leales. Este borde cosmético rodeará tu foto de perfil en toda la plataforma (incluyendo el feed principal, artículos y tu panel de estadísticas). \n\nEquípalo para demostrar tu estatus de pionero fundacional en Reclu.",
+    longDesc: "Diseñado para los miembros más leales. Este borde cosmético rodeará tu foto de perfil en toda la plataforma (incluyendo el feed principal, artículos y tu panel de estadísticas). \n\nEquípalo para demostrar tu estatus de pionero fundacional en Maverlang.",
     imagePlaceholder: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=800",
   }
 ];
@@ -42,7 +42,7 @@ export default function RecompensasPage() {
     <div className="flex flex-col">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">Recompensas Reclu</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">Recompensas Maverlang</h1>
         <p className="text-gray-500 dark:text-gray-400 text-sm md:text-base">Elige entre las recompensas a continuación y canjea tus diamantes por artículos exclusivos.</p>
       </div>
 
@@ -147,13 +147,13 @@ export default function RecompensasPage() {
                 </div>
                 
                 <div className="mt-10">
-                  <div className="bg-blue-50 dark:bg-[#1A202C] border border-blue-100 dark:border-gray-800 rounded-2xl p-5 flex items-center gap-5">
+                  <div className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl p-5 flex items-center gap-5">
                     <div className="bg-white dark:bg-[#0B0E11] p-3 rounded-2xl shrink-0 shadow-sm border border-gray-100 dark:border-gray-800">
-                      <Diamond className="w-8 h-8 text-[#3B71F7] fill-[#3B71F7]" />
+                      <Diamond className="w-8 h-8 text-black dark:text-white fill-black dark:fill-white" />
                     </div>
                     <div>
                       <h5 className="font-bold text-gray-900 dark:text-white text-base">Costo de Canje</h5>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Balance requerido: <strong className="text-[#3B71F7] text-lg font-black">{selectedReward.cost} 💎</strong></p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Balance requerido: <strong className="text-black dark:text-white text-lg font-black">{selectedReward.cost} 💎</strong></p>
                     </div>
                   </div>
 
@@ -166,9 +166,9 @@ export default function RecompensasPage() {
                     </button>
                     <button 
                       disabled={balance < selectedReward.cost}
-                      className={`flex-[2] py-4 rounded-xl font-bold text-white transition-all flex items-center justify-center gap-2 order-1 sm:order-2 shadow-lg ${
+                      className={`flex-[2] py-4 rounded-xl font-bold text-white dark:text-black transition-all flex items-center justify-center gap-2 order-1 sm:order-2 shadow-lg ${
                         balance >= selectedReward.cost 
-                          ? 'bg-[#3B71F7] hover:bg-blue-600 hover:scale-[1.02] active:scale-[0.98]' 
+                          ? 'bg-black hover:bg-black/90 dark:bg-white dark:hover:bg-white/90 hover:scale-[1.02] active:scale-[0.98]' 
                           : 'bg-gray-300 dark:bg-[#1E2329] text-gray-500 cursor-not-allowed shadow-none'
                       }`}
                     >

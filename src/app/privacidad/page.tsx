@@ -21,7 +21,7 @@ const sections = [
     content: [
       "**Personalizar tu experiencia:** Adaptamos el feed de noticias, las recomendaciones del asistente IA y las sugerencias según tus intereses y comportamiento de lectura.",
       "**Proporcionar el servicio:** Procesamos tus datos para autenticarte, mantener tu sesión, guardar tus artículos favoritos, lista de lectura y preferencias.",
-      "**Asistente IA:** Cuando interactúas con nuestro asistente de inteligencia artificial (R-ai), las consultas que realizas y los artículos que adjuntas se procesan a través de modelos de lenguaje de terceros (OpenRouter / Grok) para generar respuestas. No almacenamos permanentemente el contenido de tus conversaciones con la IA.",
+      "**Asistente IA:** Cuando interactúas con nuestro asistente de inteligencia artificial (Maverlang AI), las consultas que realizas y los artículos que adjuntas se procesan a través de modelos de lenguaje de terceros (OpenRouter / Grok) para generar respuestas. No almacenamos permanentemente el contenido de tus conversaciones con la IA.",
       "**Notificaciones:** Utilizamos tu token de dispositivo para enviarte notificaciones push sobre noticias de alta relevancia, resultados de predicciones y actualizaciones importantes.",
       "**Audio (Text-to-Speech):** Cuando usas la función de audio para escuchar artículos, el texto se procesa a través de Amazon Polly para generar el audio. No almacenamos grabaciones de tu voz.",
       "**Mejora del servicio:** Analizamos datos de uso agregados y anónimos para mejorar la plataforma, corregir errores y desarrollar nuevas funcionalidades.",
@@ -86,10 +86,10 @@ const sections = [
     icon: Mail,
     title: "8. Contacto y Cambios",
     content: [
-      "Si tienes preguntas sobre esta Política de Privacidad, puedes contactarnos en: **soporte@reclu.com**",
+      "Si tienes preguntas sobre esta Política de Privacidad, puedes contactarnos en: **soporte@maverlang.cl**",
       "Nos reservamos el derecho de actualizar esta política periódicamente. Te notificaremos sobre cambios significativos a través de la plataforma o por correo electrónico.",
       "La fecha de la última actualización se indica al inicio de este documento.",
-      "Al continuar utilizando Reclu después de cualquier modificación, aceptas la política actualizada.",
+      "Al continuar utilizando Maverlang después de cualquier modificación, aceptas la política actualizada.",
     ],
   },
 ];
@@ -116,7 +116,7 @@ export default function PrivacidadPage() {
             Política de Privacidad
           </h1>
           <p className="text-muted-foreground text-base leading-relaxed">
-            En <strong>Reclu</strong> nos tomamos tu privacidad muy en serio. Esta política
+            En <strong>Maverlang</strong> nos tomamos tu privacidad muy en serio. Esta política
             describe cómo recopilamos, usamos y protegemos tu información personal.
           </p>
           <div className="mt-4 px-4 py-2.5 bg-muted/30 border border-border rounded-xl inline-flex items-center gap-2">
@@ -179,7 +179,7 @@ export default function PrivacidadPage() {
           className="mt-16 pt-8 border-t border-border/50"
         >
           <p className="text-sm text-muted-foreground text-center">
-            © {new Date().getFullYear()} Reclu. Todos los derechos reservados.
+            © {new Date().getFullYear()} Maverlang. Todos los derechos reservados.
           </p>
         </motion.div>
       </div>

@@ -208,7 +208,7 @@ export async function POST(req: NextRequest) {
     // Build the mega-prompt
     const today = new Date().toLocaleDateString('es-CL', { dateStyle: 'full', timeZone: 'America/Santiago' });
 
-    const SYSTEM_PROMPT = `Eres un analista financiero senior de élite que trabaja para "Reclu", una plataforma de inteligencia financiera. Generas informes de portafolio extremadamente técnicos y profesionales en ESPAÑOL.
+    const SYSTEM_PROMPT = `Eres un analista financiero senior de élite que trabaja para "Maverlang", una plataforma de inteligencia financiera. Generas informes de portafolio extremadamente técnicos y profesionales en ESPAÑOL.
 
 REGLAS ESTRICTAS:
 1. Responde ÚNICAMENTE con JSON válido puro. Sin markdown, sin explicaciones fuera del JSON.
@@ -340,7 +340,7 @@ Genera un informe financiero profesional con esta estructura JSON EXACTA:
     "diversification_score": "BUENA|REGULAR|POBRE",
     "risk_assessment": "Evaluación detallada del riesgo: volatilidad promedio ponderada, beta del portafolio vs S&P 500, exposición sectorial."
   },
-  "disclaimer": "⚠️ AVISO LEGAL IMPORTANTE: Este informe es generado automáticamente por inteligencia artificial con fines exclusivamente informativos y educativos. NO constituye asesoría financiera, recomendación de inversión, ni oferta de compra o venta de valores. Los cálculos, proyecciones y análisis presentados se basan en datos históricos y modelos cuantitativos que pueden no reflejar condiciones futuras del mercado. Las decisiones de inversión son responsabilidad exclusiva del usuario. Rendimientos pasados no garantizan resultados futuros. Consulte siempre con un asesor financiero certificado antes de tomar decisiones de inversión. Reclu no se hace responsable por pérdidas derivadas del uso de esta información."
+  "disclaimer": "⚠️ AVISO LEGAL IMPORTANTE: Este informe es generado automáticamente por inteligencia artificial con fines exclusivamente informativos y educativos. NO constituye asesoría financiera, recomendación de inversión, ni oferta de compra o venta de valores. Los cálculos, proyecciones y análisis presentados se basan en datos históricos y modelos cuantitativos que pueden no reflejar condiciones futuras del mercado. Las decisiones de inversión son responsabilidad exclusiva del usuario. Rendimientos pasados no garantizan resultados futuros. Consulte siempre con un asesor financiero certificado antes de tomar decisiones de inversión. Maverlang no se hace responsable por pérdidas derivadas del uso de esta información."
 }`;
 
     const model = 'deepseek/deepseek-v4-flash';

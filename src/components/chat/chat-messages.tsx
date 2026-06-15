@@ -104,7 +104,7 @@ export function ChatMessages({
             onFeedback={onFeedback}
             onRetry={idx === messages.length - 1 && msg.role === 'assistant' ? onRetry : undefined}
             onShare={onShare}
-            isReasoningOpen={openReasoning[msg.id] !== false}
+            isReasoningOpen={openReasoning[msg.id] === true}
             onToggleReasoning={() => onToggleReasoning?.(msg.id)}
             prevMessageContent={idx > 0 ? messages[idx - 1].content : ""}
             streamData={streamData}
@@ -603,28 +603,28 @@ function AssistantAvatar({ isResponding }: { isResponding: boolean }) {
 
   if (isResponding) {
     return (
-      <div className="h-16 w-16 rounded-xl overflow-hidden shrink-0 mt-1 bg-black flex items-center justify-center border border-blue-500/20 shadow-lg">
+      <div className="h-24 w-32 shrink-0 mt-1 flex items-center justify-center">
         <video 
-          src="/assets/video-chat.mp4" 
+          src="/assets/Video%20chat.mp4" 
           autoPlay 
           loop 
           muted 
           playsInline
-          className="w-full h-full object-cover scale-100"
+          className="w-full h-full object-contain"
         />
       </div>
     );
   }
 
   const isDark = mounted && resolvedTheme === "dark";
-  const imageSrc = isDark ? "/assets/chat-white.png" : "/assets/chat.png";
+  const imageSrc = isDark ? "/assets/Chat%201-Blanco.png" : "/assets/chat.png";
 
   return (
-    <div className="h-16 w-16 rounded-xl overflow-hidden shrink-0 mt-1 flex items-center justify-center border border-gray-200/50 dark:border-gray-800/50 bg-white dark:bg-slate-900 shadow-md">
+    <div className="h-20 w-28 shrink-0 mt-1 flex items-center justify-center">
       <img 
         src={imageSrc} 
         alt="Chat Logo" 
-        className="w-full h-full object-contain p-1"
+        className="w-full h-full object-contain"
       />
     </div>
   );

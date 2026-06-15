@@ -23,26 +23,26 @@ export function LandingCTA() {
   return (
     <section className="relative bg-white text-slate-900 border-t border-slate-100">
       {/* Glow effect */}
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#1890FF]/30 to-transparent" />
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-black/20 to-transparent" />
 
       {/* CTA Box */}
       <div className="max-w-6xl mx-auto px-6 py-24">
         <div className="relative rounded-3xl overflow-hidden bg-slate-50 border border-slate-200/60 p-8 md:p-16 text-center shadow-sm">
           {/* Background blurred sphere */}
-          <div className="absolute -top-12 -left-12 w-48 h-48 rounded-full bg-blue-100/50 blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-12 -right-12 w-48 h-48 rounded-full bg-cyan-100/50 blur-3xl pointer-events-none" />
+          <div className="absolute -top-12 -left-12 w-48 h-48 rounded-full bg-slate-200/40 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-12 -right-12 w-48 h-48 rounded-full bg-zinc-200/40 blur-3xl pointer-events-none" />
 
           <div className="relative z-10 max-w-2xl mx-auto">
             <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-4 text-slate-950">
               ¿Listo para experimentar el futuro de la información?
             </h2>
             <p className="text-slate-500 text-sm md:text-base leading-relaxed mb-8">
-              Únete hoy a Reclu. Obtén respuestas verificadas, análisis de carteras impulsados por IA y mantente a la vanguardia de las noticias del mercado global.
+              Únete hoy a Maverlang. Obtén respuestas verificadas, análisis de carteras impulsados por IA y mantente a la vanguardia de las noticias del mercado global.
             </p>
 
             <button
               onClick={handleCTA}
-              className="mx-auto bg-[#1890FF] hover:bg-[#1890FF]/90 text-white font-bold px-8 py-4 rounded-full transition-all shadow-[0_4px_20px_rgba(24,144,255,0.3)] hover:scale-105 flex items-center justify-center gap-2 group cursor-pointer"
+              className="mx-auto bg-black hover:bg-black/90 text-white font-bold px-8 py-4 rounded-full transition-all shadow-[0_4px_20px_rgba(0,0,0,0.25)] hover:scale-105 flex items-center justify-center gap-2 group cursor-pointer"
             >
               {isAuthenticated ? "Ir al Asistente IA" : "Comenzar Gratis Ahora"}
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -61,7 +61,7 @@ export function LandingCTA() {
               <div className="flex items-center gap-3 mb-4">
                 <img 
                   src="https://cdn.shopify.com/s/files/1/0564/3812/8712/files/freepik__background__94196.png?v=1771922713" 
-                  alt="Reclu Logo" 
+                  alt="Maverlang Logo" 
                   className="h-10 w-auto object-contain opacity-90"
                 />
                 <span className="text-xs text-slate-500 font-bold uppercase tracking-wider">| Inteligencia Artificial Financiera</span>
@@ -76,7 +76,7 @@ export function LandingCTA() {
                   href="https://github.com" 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="w-9 h-9 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 hover:text-blue-600 transition-all flex items-center justify-center text-slate-500 shadow-sm"
+                  className="w-9 h-9 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 hover:text-black hover:border-black transition-all flex items-center justify-center text-slate-500 shadow-sm"
                   aria-label="GitHub"
                 >
                   <Github className="w-4 h-4" />
@@ -85,7 +85,7 @@ export function LandingCTA() {
                   href="https://twitter.com" 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="w-9 h-9 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 hover:text-blue-600 transition-all flex items-center justify-center text-slate-500 shadow-sm"
+                  className="w-9 h-9 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 hover:text-black hover:border-black transition-all flex items-center justify-center text-slate-500 shadow-sm"
                   aria-label="Twitter"
                 >
                   <Twitter className="w-4 h-4" />
@@ -94,14 +94,14 @@ export function LandingCTA() {
                   href="https://linkedin.com" 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="w-9 h-9 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 hover:text-blue-600 transition-all flex items-center justify-center text-slate-500 shadow-sm"
+                  className="w-9 h-9 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 hover:text-black hover:border-black transition-all flex items-center justify-center text-slate-500 shadow-sm"
                   aria-label="LinkedIn"
                 >
                   <Linkedin className="w-4 h-4" />
                 </a>
                 <a 
-                  href="mailto:info@reclu.com" 
-                  className="w-9 h-9 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 hover:text-blue-600 transition-all flex items-center justify-center text-slate-500 shadow-sm"
+                  href="mailto:info@maverlang.cl" 
+                  className="w-9 h-9 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 hover:text-black hover:border-black transition-all flex items-center justify-center text-slate-500 shadow-sm"
                   aria-label="Email"
                 >
                   <Mail className="w-4 h-4" />
@@ -113,11 +113,11 @@ export function LandingCTA() {
             <div>
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 mb-4">Secciones</h4>
               <ul className="space-y-2.5">
-                <li><Link href="/noticias" className="text-sm text-slate-500 hover:text-blue-600 transition-colors">Principal</Link></li>
-                <li><Link href="/finanzas" className="text-sm text-slate-500 hover:text-blue-600 transition-colors">Finanzas</Link></li>
-                <li><Link href="/inversiones" className="text-sm text-slate-500 hover:text-blue-600 transition-colors">Inversiones</Link></li>
-                <li><Link href="/economia" className="text-sm text-slate-500 hover:text-blue-600 transition-colors">Economía</Link></li>
-                <li><Link href="/tech-global" className="text-sm text-slate-500 hover:text-blue-600 transition-colors">Tech Global</Link></li>
+                <li><Link href="/noticias" className="text-sm text-slate-500 hover:text-black transition-colors">Principal</Link></li>
+                <li><Link href="/finanzas" className="text-sm text-slate-500 hover:text-black transition-colors">Finanzas</Link></li>
+                <li><Link href="/inversiones" className="text-sm text-slate-500 hover:text-black transition-colors">Inversiones</Link></li>
+                <li><Link href="/economia" className="text-sm text-slate-500 hover:text-black transition-colors">Economía</Link></li>
+                <li><Link href="/tech-global" className="text-sm text-slate-500 hover:text-black transition-colors">Tech Global</Link></li>
               </ul>
             </div>
 
@@ -125,11 +125,11 @@ export function LandingCTA() {
             <div>
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 mb-4">Explorar</h4>
               <ul className="space-y-2.5">
-                <li><Link href="/para-ti" className="text-sm text-slate-500 hover:text-blue-600 transition-colors">Para Ti</Link></li>
-                <li><Link href="/breaking" className="text-sm text-slate-500 hover:text-blue-600 transition-colors">Breaking</Link></li>
-                <li><Link href="/mercados" className="text-sm text-slate-500 hover:text-blue-600 transition-colors">Mercados</Link></li>
-                <li><Link href="/predicciones" className="text-sm text-slate-500 hover:text-blue-600 transition-colors">Predicciones</Link></li>
-                <li><Link href="/ai" className="text-sm text-slate-500 hover:text-blue-600 transition-colors">Copiloto IA</Link></li>
+                <li><Link href="/para-ti" className="text-sm text-slate-500 hover:text-black transition-colors">Para Ti</Link></li>
+                <li><Link href="/breaking" className="text-sm text-slate-500 hover:text-black transition-colors">Breaking</Link></li>
+                <li><Link href="/mercados" className="text-sm text-slate-500 hover:text-black transition-colors">Mercados</Link></li>
+                <li><Link href="/predicciones" className="text-sm text-slate-500 hover:text-black transition-colors">Predicciones</Link></li>
+                <li><Link href="/ai" className="text-sm text-slate-500 hover:text-black transition-colors">Copiloto IA</Link></li>
               </ul>
             </div>
 
@@ -137,10 +137,10 @@ export function LandingCTA() {
             <div>
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 mb-4">Tu Cuenta</h4>
               <ul className="space-y-2.5">
-                <li><Link href="/profile" className="text-sm text-slate-500 hover:text-blue-600 transition-colors">Mi Perfil</Link></li>
-                <li><Link href="/guardados" className="text-sm text-slate-500 hover:text-blue-600 transition-colors">Guardados</Link></li>
-                <li><Link href="/lista-lectura" className="text-sm text-slate-500 hover:text-blue-600 transition-colors">Lista de Lectura</Link></li>
-                <li><Link href="/suscripcion" className="text-sm text-slate-500 hover:text-blue-600 transition-colors">Suscripción</Link></li>
+                <li><Link href="/profile" className="text-sm text-slate-500 hover:text-black transition-colors">Mi Perfil</Link></li>
+                <li><Link href="/guardados" className="text-sm text-slate-500 hover:text-black transition-colors">Guardados</Link></li>
+                <li><Link href="/lista-lectura" className="text-sm text-slate-500 hover:text-black transition-colors">Lista de Lectura</Link></li>
+                <li><Link href="/suscripcion" className="text-sm text-slate-500 hover:text-black transition-colors">Suscripción</Link></li>
               </ul>
             </div>
 
@@ -148,9 +148,9 @@ export function LandingCTA() {
             <div>
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 mb-4">Legal</h4>
               <ul className="space-y-2.5">
-                <li><Link href="/privacidad" className="text-sm text-slate-500 hover:text-blue-600 transition-colors">Privacidad</Link></li>
-                <li><Link href="/terminos" className="text-sm text-slate-500 hover:text-blue-600 transition-colors">Términos</Link></li>
-                <li><Link href="/soporte" className="text-sm text-slate-500 hover:text-blue-600 transition-colors">Soporte</Link></li>
+                <li><Link href="/privacidad" className="text-sm text-slate-500 hover:text-black transition-colors">Privacidad</Link></li>
+                <li><Link href="/terminos" className="text-sm text-slate-500 hover:text-black transition-colors">Términos</Link></li>
+                <li><Link href="/soporte" className="text-sm text-slate-500 hover:text-black transition-colors">Soporte</Link></li>
               </ul>
             </div>
 
@@ -173,7 +173,7 @@ export function LandingCTA() {
           {/* Copyright Bar */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-xs text-slate-400 font-medium">
-              © {new Date().getFullYear()} Reclu. Todos los derechos reservados.
+              © {new Date().getFullYear()} Maverlang. Todos los derechos reservados.
             </p>
             <p className="text-xs text-slate-400 font-medium flex items-center gap-1">
               Hecho con <Heart className="w-3 h-3 text-red-500 fill-red-500" /> en Chile 🇨🇱

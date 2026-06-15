@@ -32,15 +32,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   
   if (!chat) {
     return {
-      title: "Chat no encontrado | Reclu",
+      title: "Chat no encontrado | Maverlang",
     };
   }
 
   const title = chat.question.length > 50 ? chat.question.substring(0, 50) + "..." : chat.question;
 
   return {
-    title: `Chat sobre: ${title} | Reclu AI`,
-    description: "Una respuesta generada por Inteligencia Artificial Financiera en Reclu.",
+    title: `Chat sobre: ${title} | Maverlang AI`,
+    description: "Una respuesta generada por Inteligencia Artificial Financiera en Maverlang.",
   };
 }
 
@@ -65,7 +65,7 @@ export default async function SharedChatPage({ params }: PageProps) {
             <Sparkles className="w-4 h-4 text-white" />
           </div>
           <span className="font-extrabold text-lg tracking-wide text-gray-900 dark:text-white">
-            RECLU <span className="text-[#1890FF]">AI</span>
+            Maverlang <span className="text-[#1890FF]">AI</span>
           </span>
         </Link>
         <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
@@ -112,7 +112,7 @@ export default async function SharedChatPage({ params }: PageProps) {
           ¿Quieres respuestas como esta?
         </h3>
         <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
-          Únete a Reclu y accede a la Inteligencia Artificial financiera más avanzada del mercado, datos en tiempo real y análisis profundo.
+          Únete a Maverlang y accede a la Inteligencia Artificial financiera más avanzada del mercado, datos en tiempo real y análisis profundo.
         </p>
         <Link href="/">
           <button className="bg-gray-900 dark:bg-white text-white dark:text-black font-bold py-3.5 px-8 rounded-full flex items-center gap-2 hover:opacity-90 transition-opacity mx-auto shadow-xl">

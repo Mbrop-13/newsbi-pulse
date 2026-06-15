@@ -49,7 +49,7 @@ export function ShareChatDialog({ isOpen, onClose, question, answer }: ShareChat
     const dataUrl = await generateImage();
     if (dataUrl) {
       const link = document.createElement('a');
-      link.download = `reclu-chat-${Date.now()}.png`;
+      link.download = `Maverlang-chat-${Date.now()}.png`;
       link.href = dataUrl;
       link.click();
     }

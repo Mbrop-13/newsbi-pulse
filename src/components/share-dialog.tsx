@@ -32,7 +32,7 @@ export function ShareDialog({ isOpen, onClose, title, summary, url, imageUrl, is
     ? `${window.location.origin}${url}`
     : url;
 
-  const shareText = `${title}${summary ? `\n\n${summary.slice(0, 120)}...` : ""}\n\n📰 Lee más en Reclu`;
+  const shareText = `${title}${summary ? `\n\n${summary.slice(0, 120)}...` : ""}\n\n📰 Lee más en Maverlang`;
 
   const copyLink = async () => {
     try {
@@ -104,7 +104,7 @@ export function ShareDialog({ isOpen, onClose, title, summary, url, imageUrl, is
           >
             <div className="bg-popover/95 backdrop-blur-xl border border-border/50 rounded-3xl shadow-2xl overflow-hidden">
               {/* Preview card */}
-              <div className="p-4 bg-gradient-to-br from-[#1890FF]/5 to-transparent">
+              <div className="p-4 bg-gradient-to-br from-zinc-500/5 to-transparent">
                 <div className="flex gap-3">
                   {imageUrl && (
                     <div className="w-20 h-14 rounded-xl overflow-hidden bg-foreground/5 shrink-0">
@@ -114,11 +114,11 @@ export function ShareDialog({ isOpen, onClose, title, summary, url, imageUrl, is
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 mb-1">
                       {isAudio && (
-                        <span className="px-1.5 py-0.5 rounded-md bg-[#1890FF]/10 text-[#1890FF] text-[9px] font-bold flex items-center gap-0.5">
+                        <span className="px-1.5 py-0.5 rounded-md bg-black/10 text-black dark:bg-white/10 dark:text-white text-[9px] font-bold flex items-center gap-0.5">
                           <Headphones className="w-2.5 h-2.5" /> AUDIO
                         </span>
                       )}
-                      <span className="text-[9px] text-muted-foreground/50 font-medium">reclu.com</span>
+                      <span className="text-[9px] text-muted-foreground/50 font-medium">maverlang.cl</span>
                     </div>
                     <p className="text-xs font-semibold text-foreground line-clamp-2 leading-tight">{title}</p>
                     {summary && <p className="text-[10px] text-muted-foreground/60 line-clamp-1 mt-0.5">{summary}</p>}
@@ -157,7 +157,7 @@ export function ShareDialog({ isOpen, onClose, title, summary, url, imageUrl, is
                   <div className="flex-1 min-w-0 text-left">
                     <p className="text-[11px] font-medium text-foreground/60 truncate">{fullUrl}</p>
                   </div>
-                  <span className="text-[10px] font-bold text-[#1890FF] shrink-0">
+                  <span className="text-[10px] font-bold text-black dark:text-white shrink-0">
                     {copied ? "¡Copiado!" : "Copiar"}
                   </span>
                 </button>
@@ -168,7 +168,7 @@ export function ShareDialog({ isOpen, onClose, title, summary, url, imageUrl, is
                 <div className="px-4 pb-4 -mt-1">
                   <button
                     onClick={nativeShare}
-                    className="w-full py-2.5 rounded-2xl bg-[#1890FF]/10 text-[#1890FF] text-xs font-bold hover:bg-[#1890FF]/20 transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-2.5 rounded-2xl bg-black/10 text-black dark:bg-white/10 dark:text-white text-xs font-bold hover:bg-black/15 transition-colors flex items-center justify-center gap-2"
                   >
                     <Share2 className="w-3.5 h-3.5" /> Más opciones
                   </button>

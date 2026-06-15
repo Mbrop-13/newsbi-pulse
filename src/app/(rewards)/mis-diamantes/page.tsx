@@ -98,12 +98,12 @@ export default function MisDiamantesPage() {
     <div className="flex flex-col gap-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2 leading-tight">Mis diamantes de Reclu</h1>
-        <p className="text-gray-500 dark:text-gray-400 text-sm md:text-base max-w-2xl">Consigue diamantes de Reclu y canjéalos por recompensas exclusivas y ofertas especiales.</p>
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2 leading-tight">Mis diamantes de Maverlang</h1>
+        <p className="text-gray-500 dark:text-gray-400 text-sm md:text-base max-w-2xl">Consigue diamantes de Maverlang y canjéalos por recompensas exclusivas y ofertas especiales.</p>
       </div>
 
-      {/* Big Blue Balance Card */}
-      <div className="relative w-full h-[180px] sm:h-[220px] bg-[#3B71F7] rounded-2xl sm:rounded-3xl p-5 sm:p-10 overflow-hidden shadow-xl mb-4 sm:mb-6 flex flex-col justify-between group">
+      {/* Big Monochrome Balance Card */}
+      <div className="relative w-full h-[180px] sm:h-[220px] bg-black dark:bg-[#1E2329] rounded-2xl sm:rounded-3xl p-5 sm:p-10 overflow-hidden shadow-xl mb-4 sm:mb-6 flex flex-col justify-between group border border-neutral-800/80 dark:border-white/5">
          <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
          <div className="absolute bottom-[-20%] right-[-8%] w-80 h-80 group-hover:scale-105 transition-transform duration-700 opacity-90 pointer-events-none">
             <img 
@@ -145,9 +145,9 @@ export default function MisDiamantesPage() {
           disabled={isLoading || (!canClaimToday && isAuthenticated)}
           className={`w-full sm:w-auto whitespace-nowrap font-bold text-sm px-8 py-3 rounded-xl transition-all shadow-lg ${
             !isAuthenticated 
-              ? 'bg-[#3B71F7] hover:bg-blue-600 text-white' 
+              ? 'bg-black text-white hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90' 
               : canClaimToday 
-                ? 'bg-[#3B71F7] hover:bg-blue-600 text-white hover:scale-105 active:scale-95' 
+                ? 'bg-black text-white hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90 hover:scale-105 active:scale-95' 
                 : 'bg-gray-200 dark:bg-[#1E2329] text-gray-400 cursor-not-allowed shadow-none'
           }`}
         >
@@ -171,12 +171,12 @@ export default function MisDiamantesPage() {
 
             const baseClasses = "flex flex-col items-center justify-between p-2.5 sm:p-4 rounded-xl sm:rounded-2xl h-24 sm:h-36 transition-all relative border border-transparent";
             const bgClasses = isCurrent 
-              ? "bg-[#3B71F7] shadow-xl shadow-blue-500/20 md:hover:-translate-y-1" 
+              ? "bg-black text-white dark:bg-white dark:text-black shadow-xl shadow-black/20 dark:shadow-white/5 md:hover:-translate-y-1" 
               : isClaimed
               ? "bg-gray-100 dark:bg-[#1E2329] opacity-70 border-green-500/30 dark:border-green-500/20"
               : "bg-gray-100 dark:bg-[#1E2329]";
-            const textColor = isCurrent ? "text-white" : "text-gray-500 dark:text-gray-400";
-            const activePulse = isCurrent ? "after:absolute after:inset-0 after:ring-4 after:ring-blue-400 after:rounded-2xl after:animate-pulse" : "";
+            const textColor = isCurrent ? "text-white dark:text-black" : "text-gray-500 dark:text-gray-400";
+            const activePulse = isCurrent ? "after:absolute after:inset-0 after:ring-4 after:ring-black dark:after:ring-white after:rounded-2xl after:animate-pulse" : "";
 
             return (
               <div key={day} className={`${baseClasses} ${bgClasses} ${activePulse}`}>

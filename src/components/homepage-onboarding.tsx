@@ -52,8 +52,8 @@ export function HomepageOnboarding() {
       >
         {/* Background decoration */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-20 -right-20 w-60 h-60 rounded-full bg-[#1890FF]/5 blur-3xl" />
-          <div className="absolute -bottom-10 -left-10 w-40 h-40 rounded-full bg-indigo-500/5 blur-3xl" />
+          <div className="absolute -top-20 -right-20 w-60 h-60 rounded-full bg-black/5 dark:bg-white/5 blur-3xl" />
+          <div className="absolute -bottom-10 -left-10 w-40 h-40 rounded-full bg-black/5 dark:bg-white/5 blur-3xl" />
         </div>
 
         <div className="relative max-w-[1400px] mx-auto px-4 sm:px-6 py-5">
@@ -69,10 +69,10 @@ export function HomepageOnboarding() {
             {/* Left: Message */}
             <div className="flex-1 min-w-0 pr-8 sm:pr-0">
               <div className="flex items-center gap-2 mb-1.5">
-                <div className="p-1 rounded-md bg-[#1890FF]/10">
-                  <Sparkles className="w-3.5 h-3.5 text-[#1890FF]" />
+                <div className="p-1 rounded-md bg-black/10 dark:bg-white/10">
+                  <Sparkles className="w-3.5 h-3.5 text-black dark:text-white" />
                 </div>
-                <span className="text-[10px] font-bold text-[#1890FF] uppercase tracking-wider">Bienvenido a Reclu</span>
+                <span className="text-[10px] font-bold text-black dark:text-white uppercase tracking-wider">Bienvenido a Maverlang</span>
               </div>
               <h3 className="text-base font-black text-gray-900 dark:text-white leading-tight">
                 Personaliza tu experiencia
@@ -90,8 +90,8 @@ export function HomepageOnboarding() {
                   onClick={() => setLayout(view.id)}
                   className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
                     layout === view.id
-                      ? "bg-[#1890FF] text-white shadow-lg shadow-[#1890FF]/20"
-                      : "bg-white dark:bg-white/5 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-800 hover:border-[#1890FF]/30 hover:text-[#1890FF]"
+                      ? "bg-black text-white dark:bg-white dark:text-black shadow-lg shadow-black/20 dark:shadow-white/10"
+                      : "bg-white dark:bg-white/5 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-800 hover:border-black/30 dark:hover:border-white/30 hover:text-black dark:hover:text-white"
                   }`}
                 >
                   {view.icon}
@@ -107,14 +107,14 @@ export function HomepageOnboarding() {
             <div className="flex items-center gap-3 shrink-0">
               <button
                 onClick={() => openModal("register")}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#1890FF] to-indigo-600 text-white text-xs font-bold hover:opacity-90 transition-all shadow-lg shadow-[#1890FF]/20"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-black text-white dark:bg-white dark:text-black text-xs font-bold hover:opacity-90 transition-all shadow-lg shadow-black/20 dark:shadow-white/10"
               >
                 Registrarse Gratis
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={() => openModal("login")}
-                className="text-xs font-bold text-gray-400 hover:text-[#1890FF] transition-colors hidden sm:block"
+                className="text-xs font-bold text-gray-400 hover:text-black dark:hover:text-white transition-colors hidden sm:block"
               >
                 Iniciar sesión
               </button>

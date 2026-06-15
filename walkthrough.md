@@ -130,21 +130,21 @@ Se han implementado refinamientos avanzados de diseño y funcionalidad:
 
 ---
 
-## 9. Rediseño de Modelos a Reclu, Disposición y Logotipos (Perplexity Style)
+## 9. Rediseño de Modelos a Maverlang, Disposición y Logotipos (Perplexity Style)
 
 Se han completado los últimos ajustes estéticos e identitarios de la plataforma:
 *   **Alineación del Chat en Landing Page:** Se solucionó el problema por el cual la barra de chat inicial se ubicaba muy abajo tras la eliminación de las sugerencias. Se añadió un espaciador inferior dinámico (`h-32`) que reubica la barra en la zona media-alta del viewport, exactamente donde se encontraba antes.
 *   **Limpieza del Selector de Modelos Dropdown:**
     *   Se removió el buscador (`CommandInput`) de los menús desplegables del selector de modelos.
     *   Se eliminaron por completo todos los símbolos/emojis de los modelos de las pastillas disparadoras y de las opciones de la lista desplegable.
-*   **Renombramiento de Modelos (Reclu):** Se actualizaron las referencias de modelos a la nueva identidad corporativa:
-    *   `Mimo v2.5` -> **`Reclu v2.5`**
-    *   `Mimo v2.5 Pro` -> **`Reclu v2.5 Pro`**
-    *   `Mimo v2.6 Agent` -> **`Reclu v2.6 Agent`**
+*   **Renombramiento de Modelos (Maverlang):** Se actualizaron las referencias de modelos a la nueva identidad corporativa:
+    *   `Mimo v2.5` -> **`Maverlang v2.5`**
+    *   `Mimo v2.5 Pro` -> **`Maverlang v2.5 Pro`**
+    *   `Mimo v2.6 Agent` -> **`Maverlang v2.6 Agent`**
     *   Esto aplica tanto en el componente global `ModelSelector` como en la descripción interna del simulador de agentes de Mirofish (`mirofish-sandbox.tsx`).
-*   **Identidad y Logotipo (Reclu):**
+*   **Identidad y Logotipo (Maverlang):**
     *   Se reemplazó la marca "Maverlang" en la barra lateral (`SidebarLogo`) y en la cabecera de la landing page del chat.
-    *   Ahora la plataforma utiliza el logotipo completo de la marca (el mismo que aparece en la sección Home) de forma directa, eliminando el texto redundante "Reclu" a su lado. Cuando la barra lateral está colapsada, se muestra el favicon cuadrado de la marca.
+    *   Ahora la plataforma utiliza el logotipo completo de la marca (el mismo que aparece en la sección Home) de forma directa, eliminando el texto redundante "Maverlang" a su lado. Cuando la barra lateral está colapsada, se muestra el favicon cuadrado de la marca.
 
 ---
 

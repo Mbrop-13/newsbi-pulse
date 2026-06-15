@@ -59,7 +59,7 @@ export default function SupportPage() {
             ticket_id: currentTicket.id,
             user_id: user?.id,
             is_admin: true,
-            message: "¡Hola! Bienvenido al soporte de Reclu. ¿En qué podemos ayudarte hoy?"
+            message: "¡Hola! Bienvenido al soporte de Maverlang. ¿En qué podemos ayudarte hoy?"
           }]);
         }
 
@@ -169,7 +169,7 @@ export default function SupportPage() {
               <Headphones className="w-5 h-5 text-[#1890FF]" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-gray-900 dark:text-white">Soporte Reclu</h2>
+              <h2 className="text-sm font-bold text-gray-900 dark:text-white">Soporte Maverlang</h2>
               <p className="text-xs text-green-500 font-medium flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
                 En línea

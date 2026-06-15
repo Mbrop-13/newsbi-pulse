@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/popover"
 import { useSidebar } from "@/components/ui/sidebar"
 
-export interface RecluModel {
+export interface MaverlangModel {
   id: "fast" | "pro" | "agent"
   name: string
   description: string
@@ -28,10 +28,7 @@ export interface RecluModel {
   icon: string
 }
 
-// Keep MaverlangModel type alias for compatibility in other files
-export type MaverlangModel = RecluModel
-
-const AVAILABLE_MODELS: RecluModel[] = [
+const AVAILABLE_MODELS: MaverlangModel[] = [
   {
     id: "fast",
     name: "Maverlang v2.5",
@@ -57,7 +54,7 @@ const AVAILABLE_MODELS: RecluModel[] = [
 
 interface ModelSelectorProps {
   selectedModelId: string
-  onModelSelect: (model: RecluModel) => void
+  onModelSelect: (model: MaverlangModel) => void
   variant?: "floating" | "inline"
 }
 

@@ -47,8 +47,8 @@ export async function callOpenRouter(options: OpenRouterOptions): Promise<{
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
-        'HTTP-Referer': 'https://reclu.com',
-        'X-Title': 'Reclu',
+        'HTTP-Referer': 'https://maverlang.cl',
+        'X-Title': 'Maverlang',
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(payload),
@@ -73,8 +73,8 @@ export async function callOpenRouter(options: OpenRouterOptions): Promise<{
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${apiKey}`,
-            'HTTP-Referer': 'https://reclu.com',
-            'X-Title': 'Reclu',
+            'HTTP-Referer': 'https://maverlang.cl',
+            'X-Title': 'Maverlang',
             'Content-Type': 'application/json'
           },
           body: JSON.stringify(payload),

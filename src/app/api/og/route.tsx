@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
     
     // Dynamic params
     const title = searchParams.get('title') || 'Noticias y Análisis IA';
-    const category = searchParams.get('category') || 'Reclu';
+    const category = searchParams.get('category') || 'Maverlang';
     const date = searchParams.get('date') || new Date().toLocaleDateString('es-CL');
     const image = searchParams.get('image'); // Optional background image
 
@@ -130,7 +130,7 @@ export async function GET(req: NextRequest) {
               </div>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ color: 'white', fontSize: '28px', fontWeight: 700, letterSpacing: '-0.5px' }}>
-                  Reclu
+                  Maverlang
                 </span>
                 <span style={{ color: '#94A3B8', fontSize: '20px', fontWeight: 400 }}>
                   Inteligencia Artificial

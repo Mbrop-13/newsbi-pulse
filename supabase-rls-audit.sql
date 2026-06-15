@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════
--- Reclu — RLS Audit (safe version — skips non-existent tables)
+-- Maverlang — RLS Audit (safe version — skips non-existent tables)
 -- Run in Supabase SQL Editor
 -- ═══════════════════════════════════════════════════════════════
 

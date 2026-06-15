@@ -25,7 +25,7 @@ export default function AdminCrearArticuloPage() {
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [imageUrl, setImageUrl] = useState("");
-  const [author, setAuthor] = useState("Reclu Editorial");
+  const [author, setAuthor] = useState("Maverlang Editorial");
   const [relevanceScore, setRelevanceScore] = useState(0.5);
   const [showPreview, setShowPreview] = useState(false);
   const [saving, setSaving] = useState(false);

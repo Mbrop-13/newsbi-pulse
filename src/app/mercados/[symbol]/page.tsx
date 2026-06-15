@@ -59,7 +59,7 @@ function getTickerInfo(ticker: string) {
 export async function generateMetadata({ params }: Props) {
   const { symbol } = await params;
   const info = getTickerInfo(symbol);
-  return { title: `${info.name} | Mercados | Reclu`, description: info.description };
+  return { title: `${info.name} | Mercados | Maverlang`, description: info.description };
 }
 
 export default async function TickerPage({ params }: Props) {

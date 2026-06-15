@@ -27,7 +27,7 @@ const USE_CASE_MAP: Record<string, UseCaseData> = {
     gradient: "from-blue-600 to-indigo-700",
     challenge: "En este flujo de ejemplo, un analista financiero debe recopilar de forma manual informes regulatorios y balances de múltiples fuentes. Este proceso manual puede tomar decenas de horas y aumenta el riesgo de omitir detalles clave o verse afectado por sesgos informativos.",
     solution: "Al usar esta plataforma, el analista puede delegar el análisis a una red de agentes de IA especializados. Los agentes recopilan datos financieros históricos, verifican la coherencia de los comunicados oficiales y presentan un reporte consolidado libre de sesgos en minutos.",
-    products: ["Asistente de IA (R-AI)", "Análisis de Portafolio", "Feed de Noticias", "Reclu 2.5 Pro"],
+    products: ["Asistente de IA (Maverlang AI)", "Análisis de Portafolio", "Feed de Noticias", "Maverlang 2.5 Pro"],
     region: "Global (Ejemplo)",
     industry: "Auditoría de Inversiones (Ejemplo)",
     quote: "Este ejemplo ilustra cómo la automatización del análisis financiero permite centrarse en la estrategia final de inversión en lugar de perder tiempo en la recopilación manual de datos.",
@@ -46,7 +46,7 @@ const USE_CASE_MAP: Record<string, UseCaseData> = {
     gradient: "from-emerald-500 to-teal-600",
     challenge: "En este caso de ejemplo, un profesional del mercado de divisas se enfrenta a un volumen masivo de noticias contradictorias, rumores y clickbait que pueden inducir a errores en la toma de decisiones por volatilidad artificial.",
     solution: "Al implementar el Feed de Noticias inteligente, cada artículo es analizado automáticamente por agentes de IA que determinan el nivel de objetividad, identifican sesgos políticos o corporativos y cruzan la información con otras fuentes verificadas.",
-    products: ["Feed de Noticias", "Alertas de Precio", "Reclu 2.5 Flash"],
+    products: ["Feed de Noticias", "Alertas de Precio", "Maverlang 2.5 Flash"],
     region: "Global (Ejemplo)",
     industry: "Análisis de Medios Financieros (Ejemplo)",
     quote: "Este ejemplo demuestra la capacidad de procesar y puntuar la neutralidad de miles de noticias financieras en milisegundos para operar con información limpia.",
@@ -64,8 +64,8 @@ const USE_CASE_MAP: Record<string, UseCaseData> = {
     desc: "Guía ilustrativa sobre cómo configurar alertas inteligentes y recibir reportes automáticos sobre los activos en tu cartera.",
     gradient: "from-indigo-600 to-purple-500",
     challenge: "En este escenario de ejemplo, un inversor particular o asesor patrimonial necesita estar al tanto de cualquier evento económico o geopolítico que afecte directamente a los activos de su portafolio sin tener que revisar la prensa 24/7.",
-    solution: "Al vincular la cartera de activos con la plataforma, el sistema monitorea noticias mundiales y variaciones de mercado continuamente. Si ocurre un suceso de impacto para algún activo de la lista, el R-AI envía un análisis de impacto instantáneo.",
-    products: ["Análisis de Portafolio", "Alertas de Precio", "Asistente de IA (R-AI)", "Reclu 2.5 Flash"],
+    solution: "Al vincular la cartera de activos con la plataforma, el sistema monitorea noticias mundiales y variaciones de mercado continuamente. Si ocurre un suceso de impacto para algún activo de la lista, Maverlang AI envía un análisis de impacto instantáneo.",
+    products: ["Análisis de Portafolio", "Alertas de Precio", "Asistente de IA (Maverlang AI)", "Maverlang 2.5 Flash"],
     region: "Global (Ejemplo)",
     industry: "Gestión de Portafolios (Ejemplo)",
     quote: "Este ejemplo enseña cómo la monitorización inteligente en segundo plano mantiene al inversor informado ante movimientos macroeconómicos imprevistos.",
@@ -84,7 +84,7 @@ const USE_CASE_MAP: Record<string, UseCaseData> = {
     gradient: "from-rose-500 to-orange-500",
     challenge: "En este ejemplo, se analiza la dificultad de correlacionar decenas de discursos oficiales, comunicados de prensa de bancos centrales e indicadores de inflación para prever decisiones de tipos de interés.",
     solution: "Se simula una mesa de debate donde múltiples agentes de IA analizan las minutas y declaraciones históricas del banco central. Los agentes evalúan la polaridad (hawkish/dovish) y asignan probabilidades estadísticas a las decisiones de tasas.",
-    products: ["Asistente de IA (R-AI)", "Feed de Noticias", "Reclu 2.5 Pro"],
+    products: ["Asistente de IA (Maverlang AI)", "Feed de Noticias", "Maverlang 2.5 Pro"],
     region: "Global (Ejemplo)",
     industry: "Análisis Macroeconómico (Ejemplo)",
     quote: "Esta guía de ejemplo demuestra la viabilidad de utilizar debates multi-agente para estructurar y ponderar variables económicas complejas de manera objetiva.",
@@ -103,7 +103,7 @@ const USE_CASE_MAP: Record<string, UseCaseData> = {
     gradient: "from-amber-400 to-orange-600",
     challenge: "En este caso práctico, un inversor de activos digitales se ve abrumado por el volumen de spam, bots y campañas coordinadas de manipulación ('hype') en foros y redes sociales, dificultando el análisis de sentimiento real.",
     solution: "El sistema escanea y filtra las cuentas automatizadas y los comentarios repetitivos mediante procesamiento de lenguaje natural en tiempo real, reflejando únicamente la polaridad de las discusiones orgánicas y fundamentadas.",
-    products: ["Asistente de IA (R-AI)", "Feed de Noticias", "Alertas de Precio"],
+    products: ["Asistente de IA (Maverlang AI)", "Feed de Noticias", "Alertas de Precio"],
     region: "Global (Ejemplo)",
     industry: "Análisis de Activos Digitales (Ejemplo)",
     quote: "Este ejemplo ilustra cómo separar el ruido especulativo de la comunidad del interés fundamental y orgánico antes de abrir posiciones.",
@@ -121,8 +121,8 @@ const USE_CASE_MAP: Record<string, UseCaseData> = {
     desc: "Guía ilustrativa sobre cómo automatizar la lectura de diarios oficiales para identificar rápidamente cambios fiscales o normativos.",
     gradient: "from-teal-500 to-emerald-600",
     challenge: "En este flujo de ejemplo, un equipo de asesores legales o contables debe revisar diariamente decenas de páginas del Boletín Oficial del Estado buscando decretos fiscales que afecten a su operación, consumiendo valioso tiempo.",
-    solution: "El R-AI escanea automáticamente las publicaciones gubernamentales oficiales, categoriza los nuevos decretos según áreas de interés y genera notificaciones instantáneas de compliance con resúmenes ejecutivos detallados.",
-    products: ["Asistente de IA (R-AI)", "Feed de Noticias", "Reclu 2.5 Pro"],
+    solution: "Maverlang AI escanea automáticamente las publicaciones gubernamentales oficiales, categoriza los nuevos decretos según áreas de interés y genera notificaciones instantáneas de compliance con resúmenes ejecutivos detallados.",
+    products: ["Asistente de IA (Maverlang AI)", "Feed de Noticias", "Maverlang 2.5 Pro"],
     region: "Global (Ejemplo)",
     industry: "Asesoría Legal e Impuestos (Ejemplo)",
     quote: "Este caso práctico demuestra cómo automatizar la revisión de leyes oficiales permite enfocar el talento en la consultoría estratégica directa.",
@@ -140,8 +140,8 @@ const USE_CASE_MAP: Record<string, UseCaseData> = {
     desc: "Guía ilustrativa sobre cómo monitorear noticias de puertos, aduanas y clima internacional para prevenir disrupciones operativas.",
     gradient: "from-blue-600 to-indigo-850",
     challenge: "En este escenario de ejemplo, un gestor logístico sufre constantes retrasos y aumentos de fletes debido a huelgas portuarias, incidentes geopolíticos o desastres naturales imprevistos en rutas globales.",
-    solution: "Al programar alertas basadas en la lectura de R-AI, el sistema recopila información local de puertos y zonas fronterizas 24/7. Al detectar un evento crítico, sugiere rutas alternativas y calcula el impacto en la entrega.",
-    products: ["Feed de Noticias", "Alertas de Precio", "Asistente de IA (R-AI)"],
+    solution: "Al programar alertas basadas en la lectura de Maverlang AI, el sistema recopila información local de puertos y zonas fronterizas 24/7. Al detectar un evento crítico, sugiere rutas alternativas y calcula el impacto en la entrega.",
+    products: ["Feed de Noticias", "Alertas de Precio", "Asistente de IA (Maverlang AI)"],
     region: "Global (Ejemplo)",
     industry: "Logística y Suministros (Ejemplo)",
     quote: "Este ejemplo ilustra cómo el escaneo geopolítico constante de la IA previene pérdidas operativas sustanciales al anticipar cierres en la red de transportes.",
@@ -159,8 +159,8 @@ const USE_CASE_MAP: Record<string, UseCaseData> = {
     desc: "Guía ilustrativa sobre cómo facultades de economía integran herramientas de análisis con IA para la enseñanza práctica de mercados.",
     gradient: "from-purple-600 to-pink-500",
     challenge: "En este caso de ejemplo, una universidad desea capacitar a sus alumnos con herramientas modernas de análisis de mercados pero se enfrenta a altos costos de licencias en terminales tradicionales y complejas curvas de aprendizaje.",
-    solution: "Al incorporar R-AI en las aulas, los estudiantes acceden a una plataforma moderna para simular portafolios, debatir tesis de inversión con agentes y aprender a auditar fuentes de noticias con algoritmos de IA.",
-    products: ["Asistente de IA (R-AI)", "Análisis de Portafolio", "Feed de Noticias", "Reclu 2.5 Flash"],
+    solution: "Al incorporar Maverlang AI en las aulas, los estudiantes acceden a una plataforma moderna para simular portafolios, debatir tesis de inversión con agentes y aprender a auditar fuentes de noticias con algoritmos de IA.",
+    products: ["Asistente de IA (Maverlang AI)", "Análisis de Portafolio", "Feed de Noticias", "Maverlang 2.5 Flash"],
     region: "Global (Ejemplo)",
     industry: "Educación y Academia (Ejemplo)",
     quote: "Este ejemplo demuestra la utilidad de una interfaz intuitiva con explicaciones didácticas de IA para el aprendizaje financiero interactivo.",
@@ -309,7 +309,7 @@ export default async function CasoDeUsoPage({ params }: CasosPageProps) {
             {/* La Solucion */}
             <div>
               <h3 className="text-xs font-black uppercase tracking-widest text-[#1890FF] mb-3 flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-[#1890FF]" /> La Solución con Reclu IA
+                <ShieldCheck className="w-4 h-4 text-[#1890FF]" /> La Solución con Maverlang IA
               </h3>
               <p className="text-sm md:text-base leading-relaxed text-slate-600 font-medium">
                 {data.solution}
@@ -341,7 +341,7 @@ export default async function CasoDeUsoPage({ params }: CasosPageProps) {
             Obtén la misma ventaja en tus análisis
           </h3>
           <p className="text-xs md:text-sm text-slate-500 mb-8 max-w-lg mx-auto leading-relaxed">
-            Únete hoy a Reclu y eleva el nivel de tus decisiones de inversión con nuestra red multi-agente de Inteligencia Artificial.
+            Únete hoy a Maverlang y eleva el nivel de tus decisiones de inversión con nuestra red multi-agente de Inteligencia Artificial.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
@@ -363,7 +363,7 @@ export default async function CasoDeUsoPage({ params }: CasosPageProps) {
 
       {/* Footer copyright note */}
       <footer className="mt-20 border-t border-slate-200/80 pt-8 flex items-center justify-center text-[10px] text-slate-450 font-bold uppercase tracking-widest gap-1">
-        <span>© {new Date().getFullYear()} Reclu. Hecho con</span>
+        <span>© {new Date().getFullYear()} Maverlang. Hecho con</span>
         <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500" />
         <span>en Chile 🇨🇱</span>
       </footer>

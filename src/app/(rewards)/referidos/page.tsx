@@ -61,18 +61,18 @@ export default function ReferralsPage() {
   };
 
   const shareToWhatsApp = () => {
-    const text = `¡Únete a Reclu, la mejor IA financiera! Usa mi enlace y obtén beneficios exclusivos: ${referralLink}`;
+    const text = `¡Únete a Maverlang, la mejor IA financiera! Usa mi enlace y obtén beneficios exclusivos: ${referralLink}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
   };
 
   const shareToTwitter = () => {
-    const text = `Descubrí @RecluCL — una plataforma de noticias financieras con IA increíble. Únete con mi enlace:`;
+    const text = `Descubrí @MaverlangCL — una plataforma de noticias financieras con IA increíble. Únete con mi enlace:`;
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(referralLink)}`, "_blank");
   };
 
   const shareByEmail = () => {
-    const subject = "Te invito a probar Reclu — IA para mercados financieros";
-    const body = `Hola,\n\nQuiero compartirte Reclu, una plataforma de noticias financieras con IA.\n\nRegistrate con mi enlace y ambos ganamos beneficios:\n${referralLink}\n\n¡Saludos!`;
+    const subject = "Te invito a probar Maverlang — IA para mercados financieros";
+    const body = `Hola,\n\nQuiero compartirte Maverlang, una plataforma de noticias financieras con IA.\n\nRegistrate con mi enlace y ambos ganamos beneficios:\n${referralLink}\n\n¡Saludos!`;
     window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
   };
 

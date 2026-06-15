@@ -307,7 +307,7 @@ export const useAIChatStore = create<AIChatStore>()(
       },
     }),
     {
-      name: "r-ai-chat-history",
+      name: "maverlang-ai-chat-history",
       partialize: (state) => ({ 
         savedChats: state.savedChats, 
         cloudSyncEnabled: state.cloudSyncEnabled,

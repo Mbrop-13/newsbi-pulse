@@ -54,21 +54,21 @@ export function CapacitorInit() {
         if (permResult.receive === "granted") {
           // TEMPORARILY DISABLED: Causes app crash if google-services.json is missing
           // await PushNotifications.register();
-          console.log("[Reclu] Push permissions granted, but registration is disabled pending Firebase setup.");
+          console.log("[Maverlang] Push permissions granted, but registration is disabled pending Firebase setup.");
         }
 
         PushNotifications.addListener("registration", (token) => {
-          console.log("[Reclu] Push registration token:", token.value);
+          console.log("[Maverlang] Push registration token:", token.value);
         });
 
         PushNotifications.addListener("registrationError", (err) => {
-          console.error("[Reclu] Push registration error:", err.error);
+          console.error("[Maverlang] Push registration error:", err.error);
         });
 
         PushNotifications.addListener(
           "pushNotificationReceived",
           (notification) => {
-            console.log("[Reclu] Push received in foreground:", notification);
+            console.log("[Maverlang] Push received in foreground:", notification);
           }
         );
 

@@ -96,7 +96,7 @@ export default function PortfolioClient() {
       // Fetch AI calendar events
       setCalendarLoading(true);
       try {
-        const calRes = await fetch('/api/finance/calendar-ai');
+        const calRes = await fetch('/api/finance/calendaMaverlang AI');
         if (calRes.ok) {
           const calData = await calRes.json();
           setCalendarEvents(calData.events || []);
@@ -119,7 +119,7 @@ export default function PortfolioClient() {
     setCalendarLoading(true);
     try {
       const symbols = assets.map(a => a.symbol);
-      const res = await fetch('/api/finance/calendar-ai', {
+      const res = await fetch('/api/finance/calendaMaverlang AI', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ symbols })
@@ -284,7 +284,7 @@ export default function PortfolioClient() {
       <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] pt-24 pb-16 px-4 flex flex-col items-center justify-center text-center">
         <Briefcase className="w-16 h-16 text-[#1890FF] mb-6 opacity-20" />
         <h1 className="text-3xl font-black text-gray-900 dark:text-white mb-4">Tu Portafolio de Inversión</h1>
-        <p className="text-gray-500 max-w-md mx-auto mb-8">Únete a Reclu para crear tu portafolio personalizado, recibir alertas de precio y obtener un calendario de eventos impulsado por IA.</p>
+        <p className="text-gray-500 max-w-md mx-auto mb-8">Únete a Maverlang para crear tu portafolio personalizado, recibir alertas de precio y obtener un calendario de eventos impulsado por IA.</p>
         <button onClick={() => openAuthModal("register")} className="px-8 py-3 rounded-full bg-[#1890FF] text-white font-bold hover:opacity-90 transition-opacity shadow-lg shadow-[#1890FF]/25">Crear cuenta gratis</button>
       </div>
     );

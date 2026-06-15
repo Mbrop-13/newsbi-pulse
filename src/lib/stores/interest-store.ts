@@ -93,7 +93,7 @@ export const useInterestStore = create<InterestState>()(
       },
     }),
     {
-      name: 'reclu-user-interests',
+      name: 'maverlang-user-interests',
       version: 1,
     }
   )

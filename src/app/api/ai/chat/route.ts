@@ -15,8 +15,8 @@ const openrouter = createOpenAI({
   baseURL: 'https://openrouter.ai/api/v1',
   apiKey: process.env.OPENROUTER_API_KEY,
   headers: {
-    'HTTP-Referer': 'https://reclu.cl',
-    'X-Title': 'Reclu',
+    'HTTP-Referer': 'https://maverlang.cl',
+    'X-Title': 'Maverlang',
   }
 });
 
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
     // Get current date for context
     const currentDate = new Date().toISOString();
 
-    const systemPrompt = `Eres "${name}", un AI financiero avanzado y de élite, exclusivo de Reclu.
+    const systemPrompt = `Eres "${name}", un AI financiero avanzado y de élite, exclusivo de Maverlang.
 Tu objetivo es ayudar al usuario a entender el mercado, noticias y tomar decisiones.
 
 PERFIL DEL USUARIO:
@@ -48,11 +48,11 @@ PERFIL DEL USUARIO:
 
 INSTRUCCIONES:
 1. Responde de forma profesional, concisa y directa. (Máx 2-3 párrafos).
-2. Tienes acceso a herramientas (tools) para buscar noticias en tiempo real en la base de datos de Reclu.
+2. Tienes acceso a herramientas (tools) para buscar noticias en tiempo real en la base de datos de Maverlang.
 3. Si el usuario pregunta por su portafolio, usa la herramienta 'get_portfolio_news' obligatoriamente.
 4. Si necesitas más contexto de una noticia específica, usa 'get_news_context'.
 5. NUNCA inventes noticias, siempre usa las herramientas.
-6. Nunca menciones que eres de OpenAI o Anthropic. Eres una creación pura de Reclu.
+6. Nunca menciones que eres de OpenAI o Anthropic. Eres una creación pura de Maverlang.
 `;
 
     // Only Grok supports tool calling reasonably well on OpenRouter. If using another model, make sure it supports tools.
@@ -105,7 +105,7 @@ INSTRUCCIONES:
         }),
         
         search_general_news: tool({
-          description: 'Busca noticias generales en la plataforma Reclu por palabra clave o periodo de tiempo.',
+          description: 'Busca noticias generales en la plataforma Maverlang por palabra clave o periodo de tiempo.',
           parameters: z.object({
             query: z.string().describe('Término de búsqueda (ej. Trump, Apple, tasas de interés).'),
             days_ago: z.number().optional().describe('Buscar noticias de los últimos X días. Por defecto 1.'),

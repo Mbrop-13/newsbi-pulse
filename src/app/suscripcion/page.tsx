@@ -175,7 +175,7 @@ const faqItems = [
   },
   {
     q: "¿Qué son los diamantes 💎?",
-    a: "Los diamantes son la moneda virtual de Reclu. Los ganas diariamente con un multiplicador según tu plan: Free x0.5, Pro x1, Max x2, Ultra x5.",
+    a: "Los diamantes son la moneda virtual de Maverlang. Los ganas diariamente con un multiplicador según tu plan: Free x0.5, Pro x1, Max x2, Ultra x5.",
   },
   {
     q: "¿Hay descuento por pago anual?",
@@ -191,7 +191,7 @@ const faqItems = [
   },
   {
     q: "¿Qué significa 50.000 tokens IA de por vida?",
-    a: "En el plan gratuito, tienes 50.000 tokens de por vida para interactuar con el asistente R-AI. Si necesitas más capacidad para realizar consultas complejas y análisis profundos, puedes suscribirte a Pro para obtener 20 veces más tokens al mes.",
+    a: "En el plan gratuito, tienes 50.000 tokens de por vida para interactuar con el asistente Maverlang AI. Si necesitas más capacidad para realizar consultas complejas y análisis profundos, puedes suscribirte a Pro para obtener 20 veces más tokens al mes.",
   },
 ];
 
@@ -602,7 +602,7 @@ export default function SuscripcionesPage() {
               ¿Listo para elevar tu juego?
             </h2>
             <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-              Únete a miles de inversores que usan Reclu para tomar decisiones informadas con Inteligencia Artificial.
+              Únete a miles de inversores que usan Maverlang para tomar decisiones informadas con Inteligencia Artificial.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Button

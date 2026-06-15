@@ -9,7 +9,7 @@ const PLANS = [
     name: "Gratuito",
     price: "$0",
     period: "siempre gratis",
-    desc: "Para informarse y probar la tecnología de Reclu.",
+    desc: "Para informarse y probar la tecnología de Maverlang.",
     features: [
       "50.000 tokens de IA (de por vida)",
       "5 audios de noticias al día",
@@ -86,7 +86,7 @@ export function LandingPricing() {
     <section className="pt-10 pb-20 bg-white text-slate-900 relative">
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center max-w-3xl mx-auto mb-10">
-          <h2 className="text-sm font-bold tracking-widest text-[#1890FF] uppercase mb-3">
+          <h2 className="text-sm font-bold tracking-widest text-black uppercase mb-3">
             PLANES FLEXIBLES
           </h2>
           <p className="text-3xl md:text-5xl font-black tracking-tight leading-tight text-slate-950">
@@ -103,12 +103,12 @@ export function LandingPricing() {
               key={idx}
               className={`relative flex flex-col justify-between rounded-2xl p-8 border shadow-sm transition-all hover:shadow-md ${
                 plan.popular
-                  ? "bg-blue-50/30 border-[#1890FF] shadow-[0_4px_30px_rgba(24,144,255,0.06)]"
+                  ? "bg-slate-50/40 border-black shadow-[0_4px_30px_rgba(0,0,0,0.08)]"
                   : "bg-slate-50/50 border-slate-200/60"
               }`}
             >
               {plan.popular && (
-                <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-[#1890FF] text-white text-[10px] font-extrabold uppercase px-4 py-1 rounded-full flex items-center gap-1">
+                <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] font-extrabold uppercase px-4 py-1 rounded-full flex items-center gap-1">
                   <Sparkles className="w-3 h-3" /> Recomendado
                 </span>
               )}
@@ -126,7 +126,7 @@ export function LandingPricing() {
                 <ul className="space-y-4 mb-8">
                   {plan.features.map((feature, fIdx) => (
                     <li key={fIdx} className="flex items-start gap-2.5 text-xs text-slate-600 leading-normal">
-                      <Check className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                      <Check className="w-4 h-4 text-black shrink-0 mt-0.5" />
                       <span>{feature}</span>
                     </li>
                   ))}
@@ -137,7 +137,7 @@ export function LandingPricing() {
                 href={plan.link}
                 className={`w-full text-center text-xs font-bold py-3.5 rounded-xl transition-all cursor-pointer ${
                   plan.popular
-                    ? "bg-[#1890FF] hover:bg-[#1890FF]/90 text-white shadow-lg shadow-[#1890FF]/25"
+                    ? "bg-black hover:bg-black/90 text-white shadow-lg shadow-black/25"
                     : "bg-white hover:bg-slate-50 text-slate-800 border border-slate-200"
                 }`}
               >

@@ -2,7 +2,7 @@ import SettingsClient from "./settings-client";
 import { SidebarLayoutWrapper } from "./sidebar-wrapper";
 
 export const metadata = {
-  title: "Configuración | Reclu",
+  title: "Configuración | Maverlang",
   description: "Gestiona tus preferencias, notificaciones y seguridad.",
 };
 

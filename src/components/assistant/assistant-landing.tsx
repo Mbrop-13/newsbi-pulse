@@ -16,7 +16,7 @@ const SLIDES = [
     id: "intro",
     badge: "Bienvenido",
     title: "Tu Analista IA Personal",
-    description: "Reclu Assistant escanea en tiempo real miles de fuentes globales y te entrega inteligencia accionable. Sin ruido. Sin sesgo. Solo señal.",
+    description: "Maverlang Assistant escanea en tiempo real miles de fuentes globales y te entrega inteligencia accionable. Sin ruido. Sin sesgo. Solo señal.",
     icon: Bot,
     color: "#1890FF",
     mockup: "chat" as const,
@@ -84,7 +84,7 @@ export function AssistantLanding({ onAuthReq }: AssistantLandingProps) {
 
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">
-          <p className="text-xs font-black uppercase tracking-[0.3em] text-gray-400 dark:text-white/30 mb-3">Reclu</p>
+          <p className="text-xs font-black uppercase tracking-[0.3em] text-gray-400 dark:text-white/30 mb-3">Maverlang</p>
           <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-gray-900 dark:text-white tracking-tight">
             Conoce tu AI
           </h1>

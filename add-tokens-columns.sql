@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════
--- Reclu — Agregar columnas de tracking de tokens
+-- Maverlang — Agregar columnas de tracking de tokens
 -- Ejecuta este script en el editor SQL de Supabase
 -- ═══════════════════════════════════════════════
 

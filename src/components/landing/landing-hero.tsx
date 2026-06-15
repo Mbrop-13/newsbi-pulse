@@ -63,21 +63,21 @@ export function LandingHero({ onScrollToFeatures }: LandingHeroProps) {
 
         {/* Center: Navigation Links */}
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-[#191919]/80">
-          <Link href="/noticias" className="hover:text-[#1890FF] transition-colors">
+          <Link href="/noticias" className="hover:text-black transition-colors">
             Noticias
           </Link>
-          <Link href="/mercados" className="hover:text-[#1890FF] transition-colors">
+          <Link href="/mercados" className="hover:text-black transition-colors">
             Mercados
           </Link>
-          <div className="flex items-center gap-1 cursor-pointer hover:text-[#1890FF] transition-colors">
+          <div className="flex items-center gap-1 cursor-pointer hover:text-black transition-colors">
             <span>Portafolio</span>
             <ChevronDown className="w-3.5 h-3.5 opacity-60" />
           </div>
-          <div className="flex items-center gap-1 cursor-pointer hover:text-[#1890FF] transition-colors">
+          <div className="flex items-center gap-1 cursor-pointer hover:text-black transition-colors">
             <span>Suscripciones</span>
             <ChevronDown className="w-3.5 h-3.5 opacity-60" />
           </div>
-          <Link href="/soporte" className="hover:text-[#1890FF] transition-colors">
+          <Link href="/soporte" className="hover:text-black transition-colors">
             Soporte
           </Link>
         </nav>
@@ -90,7 +90,7 @@ export function LandingHero({ onScrollToFeatures }: LandingHeroProps) {
           {/* Main Comenzar Button */}
           <button
             onClick={() => isAuthenticated ? router.push("/ai") : openModal("login")}
-            className="flex items-center gap-1 text-xs md:text-sm font-extrabold bg-[#1890FF] text-white hover:bg-[#1890FF]/90 px-5 rounded-l-xl border-r border-[#1890FF]/25 shadow-sm shadow-[#1890FF]/10 transition-all select-none cursor-pointer"
+            className="flex items-center gap-1 text-xs md:text-sm font-extrabold bg-black text-white hover:bg-black/90 px-5 rounded-l-xl border-r border-white/10 shadow-sm shadow-black/10 transition-all select-none cursor-pointer"
           >
             Comenzar
           </button>
@@ -99,7 +99,7 @@ export function LandingHero({ onScrollToFeatures }: LandingHeroProps) {
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             onMouseEnter={() => setIsDropdownOpen(true)}
-            className="flex items-center justify-center w-9 bg-[#1890FF] text-white hover:bg-[#1890FF]/90 rounded-r-xl shadow-sm shadow-[#1890FF]/10 transition-all select-none cursor-pointer"
+            className="flex items-center justify-center w-9 bg-black text-white hover:bg-black/90 rounded-r-xl shadow-sm shadow-black/10 transition-all select-none cursor-pointer"
             aria-label="Opciones de la Plataforma"
           >
             <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isDropdownOpen ? "rotate-180" : ""}`} />
@@ -122,16 +122,16 @@ export function LandingHero({ onScrollToFeatures }: LandingHeroProps) {
                     <li>
                       <Link 
                         href="/ai" 
-                        className="flex items-center justify-between text-[13px] font-bold text-slate-800 hover:text-[#1890FF] transition-colors"
+                        className="flex items-center justify-between text-[13px] font-bold text-slate-800 hover:text-black transition-colors"
                       >
-                        <span>Asistente de IA (R-AI)</span>
+                        <span>Asistente de IA (Maverlang AI)</span>
                         <span className="text-[10px] text-slate-400 font-normal">↗</span>
                       </Link>
                     </li>
                     <li>
                       <Link 
                         href="/portafolio" 
-                        className="flex items-center justify-between text-[13px] font-bold text-slate-800 hover:text-[#1890FF] transition-colors"
+                        className="flex items-center justify-between text-[13px] font-bold text-slate-800 hover:text-black transition-colors"
                       >
                         <span>Análisis de Portafolio</span>
                         <span className="text-[10px] text-slate-400 font-normal">↗</span>
@@ -140,7 +140,7 @@ export function LandingHero({ onScrollToFeatures }: LandingHeroProps) {
                     <li>
                       <Link 
                         href="/mercados" 
-                        className="flex items-center justify-between text-[13px] font-bold text-slate-800 hover:text-[#1890FF] transition-colors"
+                        className="flex items-center justify-between text-[13px] font-bold text-slate-800 hover:text-black transition-colors"
                       >
                         <span>Mercados & Activos</span>
                         <span className="text-[10px] text-slate-400 font-normal">↗</span>
@@ -149,7 +149,7 @@ export function LandingHero({ onScrollToFeatures }: LandingHeroProps) {
                     <li>
                       <Link 
                         href="/noticias" 
-                        className="flex items-center justify-between text-[13px] font-bold text-slate-800 hover:text-[#1890FF] transition-colors"
+                        className="flex items-center justify-between text-[13px] font-bold text-slate-800 hover:text-black transition-colors"
                       >
                         <span>Feed de Noticias</span>
                         <span className="text-[10px] text-slate-400 font-normal">↗</span>
@@ -158,7 +158,7 @@ export function LandingHero({ onScrollToFeatures }: LandingHeroProps) {
                     <li>
                       <Link 
                         href="/suscripcion" 
-                        className="flex items-center justify-between text-[13px] font-bold text-slate-800 hover:text-[#1890FF] transition-colors"
+                        className="flex items-center justify-between text-[13px] font-bold text-slate-800 hover:text-black transition-colors"
                       >
                         <span>Suscripciones Premium</span>
                         <span className="text-[10px] text-slate-400 font-normal">↗</span>
@@ -175,11 +175,11 @@ export function LandingHero({ onScrollToFeatures }: LandingHeroProps) {
                   <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Modelos de IA</h4>
                   <ul className="space-y-2.5 text-[13px] font-semibold text-slate-700">
                     <li className="flex items-center justify-between">
-                      <span className="font-bold text-slate-800">Reclu 2.5 Flash</span>
-                      <span className="text-[10px] bg-blue-500/10 text-blue-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Activo</span>
+                      <span className="font-bold text-slate-800">Maverlang 2.5 Flash</span>
+                      <span className="text-[10px] bg-black/10 text-black px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Activo</span>
                     </li>
                     <li className="flex items-center justify-between">
-                      <span className="font-bold text-slate-800">Reclu 2.5 Pro</span>
+                      <span className="font-bold text-slate-800">Maverlang 2.5 Pro</span>
                       <span className="text-[10px] bg-purple-500/10 text-purple-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider text-right">Premium</span>
                     </li>
                   </ul>
@@ -198,7 +198,7 @@ export function LandingHero({ onScrollToFeatures }: LandingHeroProps) {
                           setIsDropdownOpen(false);
                           openModal("login");
                         }}
-                        className="w-full flex items-center justify-between text-[13px] font-bold text-slate-800 hover:text-[#1890FF] transition-colors text-left cursor-pointer"
+                        className="w-full flex items-center justify-between text-[13px] font-bold text-slate-800 hover:text-black transition-colors text-left cursor-pointer"
                       >
                         <span>Iniciar Sesión</span>
                         <span className="text-[10px] text-slate-400 font-normal">↗</span>
@@ -210,7 +210,7 @@ export function LandingHero({ onScrollToFeatures }: LandingHeroProps) {
                           setIsDropdownOpen(false);
                           openModal("register");
                         }}
-                        className="w-full flex items-center justify-between text-[13px] font-bold text-slate-800 hover:text-[#1890FF] transition-colors text-left cursor-pointer"
+                        className="w-full flex items-center justify-between text-[13px] font-bold text-slate-800 hover:text-black transition-colors text-left cursor-pointer"
                       >
                         <span>Registrarse</span>
                         <span className="text-[10px] text-slate-400 font-normal">↗</span>
@@ -231,13 +231,13 @@ export function LandingHero({ onScrollToFeatures }: LandingHeroProps) {
         <div className="lg:col-span-7">
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1.1] text-[#191919] min-h-[180px] sm:min-h-[220px] md:min-h-[280px]">
             Agentes de{" "}
-            <span className="inline-block border-b-[3px] md:border-b-[4px] border-[#1890FF] pb-0.5 md:pb-1 text-[#1890FF] font-bold">
+            <span className="inline-block border-b-[3px] md:border-b-[4px] border-black pb-0.5 md:pb-1 text-black font-bold">
               IA
             </span>{" "}
             que potencian tus
-            <span className="block mt-3 border-b-[3px] md:border-b-[4px] border-[#1890FF] pb-0.5 md:pb-1 text-[#1890FF] font-bold max-w-fit">
+            <span className="block mt-3 border-b-[3px] md:border-b-[4px] border-black pb-0.5 md:pb-1 text-black font-bold max-w-fit">
               {words[wordIndex].substring(0, subIndex)}
-              <span className="inline-block w-[3px] h-[32px] md:h-[50px] bg-[#1890FF] ml-1.5 animate-pulse" />
+              <span className="inline-block w-[3px] h-[32px] md:h-[50px] bg-black ml-1.5 animate-pulse" />
             </span>
           </h1>
         </div>
@@ -248,14 +248,14 @@ export function LandingHero({ onScrollToFeatures }: LandingHeroProps) {
             className="text-lg md:text-xl font-medium text-[#191919]/90 leading-relaxed mb-8"
             style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
           >
-            La inteligencia artificial transformará nuestra relación con la información financiera. Reclu es una plataforma de análisis y veracidad autónoma dedicada a potenciar tu portafolio y entregarte noticias sin sesgos ni desinformación.
+            La inteligencia artificial de Maverlang está diseñada para redefinir el análisis financiero. Mediante un consorcio de agentes autónomos que trabajan en paralelo, auditamos mercados globales en tiempo real y verificamos cada dato para potenciar tu portafolio sin sesgos ni desinformación.
           </p>
 
           <button
             onClick={handleCTA}
-            className="group flex items-center justify-center gap-2 bg-[#1890FF] text-white hover:bg-[#1890FF]/90 font-bold text-sm px-6 py-3.5 rounded-xl transition-all shadow-md shadow-[#1890FF]/25 cursor-pointer"
+            className="group flex items-center justify-center gap-2 bg-black text-white hover:bg-black/90 font-bold text-sm px-6 py-3.5 rounded-xl transition-all shadow-md shadow-black/25 cursor-pointer"
           >
-            {isAuthenticated ? "Abrir Asistente R-AI" : "Comenzar Gratis"}
+            {isAuthenticated ? "Abrir Asistente Maverlang AI" : "Comenzar Gratis"}
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </button>
         </div>

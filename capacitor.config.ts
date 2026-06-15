@@ -5,8 +5,8 @@ import { KeyboardResize } from '@capacitor/keyboard';
 const USE_LOCAL_DEV = false;
 
 const config: CapacitorConfig = {
-  appId: 'com.reclu.news',
-  appName: 'Reclu',
+  appId: 'com.maverlang.news',
+  appName: 'Maverlang',
   webDir: 'out',
 
   server: USE_LOCAL_DEV

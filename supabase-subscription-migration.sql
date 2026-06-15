@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════
--- Reclu — Subscription & Usage Tables
+-- Maverlang — Subscription & Usage Tables
 -- Run this in Supabase SQL Editor
 -- ═══════════════════════════════════════════════
 

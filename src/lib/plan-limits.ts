@@ -1,5 +1,5 @@
 /**
- * Reclu — Plan Limits Configuration
+ * Maverlang — Plan Limits Configuration
  * 
  * Configuración centralizada de todos los límites por tier.
  * Edita SOLO este archivo para ajustar cualquier límite de la plataforma.

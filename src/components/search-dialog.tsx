@@ -41,15 +41,15 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
   const [isSearchingNews, setIsSearchingNews] = useState(false);
   const [isSearchingAssets, setIsSearchingAssets] = useState(false);
   const [includeNews, setIncludeNews] = useState(() => {
-    if (typeof window !== 'undefined') return localStorage.getItem('reclu-search-news') !== 'false';
+    if (typeof window !== 'undefined') return localStorage.getItem('maverlang-search-news') !== 'false';
     return true;
   });
   const [includeAssets, setIncludeAssets] = useState(() => {
-    if (typeof window !== 'undefined') return localStorage.getItem('reclu-search-assets') !== 'false';
+    if (typeof window !== 'undefined') return localStorage.getItem('maverlang-search-assets') !== 'false';
     return true;
   });
   const [includeChats, setIncludeChats] = useState(() => {
-    if (typeof window !== 'undefined') return localStorage.getItem('reclu-search-chats') !== 'false';
+    if (typeof window !== 'undefined') return localStorage.getItem('maverlang-search-chats') !== 'false';
     return true;
   });
   const [autoFocus, setAutoFocus] = useState(false);
@@ -67,7 +67,7 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
   useEffect(() => {
     if (isOpen) {
       try {
-        const stored = localStorage.getItem("reclu-recent-searches");
+        const stored = localStorage.getItem("maverlang-recent-searches");
         if (stored) setRecentSearches(JSON.parse(stored));
       } catch {}
       setQuery("");
@@ -169,7 +169,7 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
   const toggleNews = () => {
     setIncludeNews(prev => {
       const next = !prev;
-      localStorage.setItem('reclu-search-news', String(next));
+      localStorage.setItem('maverlang-search-news', String(next));
       if (!next) { setNewsResults([]); setIsSearchingNews(false); }
       return next;
     });
@@ -178,7 +178,7 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
   const toggleAssets = () => {
     setIncludeAssets(prev => {
       const next = !prev;
-      localStorage.setItem('reclu-search-assets', String(next));
+      localStorage.setItem('maverlang-search-assets', String(next));
       if (!next) { setAssetResults([]); setIsSearchingAssets(false); }
       return next;
     });
@@ -187,7 +187,7 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
   const toggleChats = () => {
     setIncludeChats(prev => {
       const next = !prev;
-      localStorage.setItem('reclu-search-chats', String(next));
+      localStorage.setItem('maverlang-search-chats', String(next));
       if (!next) { setChatResults([]); }
       return next;
     });
@@ -196,7 +196,7 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
   const saveSearch = useCallback((term: string) => {
     const updated = [term, ...recentSearches.filter((s) => s !== term)].slice(0, 5);
     setRecentSearches(updated);
-    localStorage.setItem("reclu-recent-searches", JSON.stringify(updated));
+    localStorage.setItem("maverlang-recent-searches", JSON.stringify(updated));
   }, [recentSearches]);
 
   const handleSelectNews = (articleIdOrSlug: string) => {
@@ -438,7 +438,7 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
                         <button
                           onClick={() => {
                             setRecentSearches([]);
-                            localStorage.removeItem("reclu-recent-searches");
+                            localStorage.removeItem("maverlang-recent-searches");
                           }}
                           className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
                         >

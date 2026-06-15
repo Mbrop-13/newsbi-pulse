@@ -14,7 +14,7 @@ export function LandingPortfolioDemo() {
         
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="text-sm font-bold tracking-widest text-[#1890FF] uppercase mb-3">
+          <h2 className="text-sm font-bold tracking-widest text-black uppercase mb-3">
             MOCKUP DEL PORTAFOLIO
           </h2>
           <p className="text-3xl md:text-5xl font-black tracking-tight leading-tight">
@@ -81,7 +81,7 @@ export function LandingPortfolioDemo() {
                 </div>
 
                 {/* AAPL Asset (EXPANDED BY DEFAULT TO SHOW ACTIONS) */}
-                <div className="bg-white rounded-2xl border border-[#1890FF]/40 shadow-md overflow-hidden">
+                <div className="bg-white rounded-2xl border border-black/40 shadow-md overflow-hidden">
                   <button 
                     onClick={() => setExpanded(!expanded)} 
                     className="w-full p-4 sm:px-5 flex items-center justify-between text-left"
@@ -114,7 +114,7 @@ export function LandingPortfolioDemo() {
                                 type="number"
                                 value={shares}
                                 onChange={(e) => setShares(parseFloat(e.target.value) || 0)}
-                                className="w-full px-3 py-2 rounded-lg border border-[#1890FF] bg-[#1890FF]/5 text-[#1890FF] text-sm font-bold outline-none"
+                                className="w-full px-3 py-2 rounded-lg border border-black bg-black/5 text-black text-sm font-bold outline-none"
                               />
                             </div>
                             <div className="flex-1 text-right">
@@ -127,7 +127,7 @@ export function LandingPortfolioDemo() {
                             <button className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-orange-50 text-orange-600 text-xs font-semibold">
                               <Bell className="w-3.5 h-3.5" /> Alerta
                             </button>
-                            <button className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-blue-50 text-blue-600 text-xs font-semibold">
+                            <button className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-slate-100 text-slate-900 text-xs font-semibold">
                               <BarChart3 className="w-3.5 h-3.5" /> Mercado
                             </button>
                             <button className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-purple-50 text-purple-600 text-xs font-semibold">
@@ -170,18 +170,18 @@ export function LandingPortfolioDemo() {
             <div className="space-y-6">
               
               {/* AI Calendar */}
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 p-6 flex flex-col h-[320px] shadow-sm">
+              <div className="bg-gradient-to-br from-slate-50 to-zinc-100 rounded-2xl border border-slate-200 p-6 flex flex-col h-[320px] shadow-sm">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-xl bg-[#1890FF] flex items-center justify-center text-white shadow-sm">
+                    <div className="w-8 h-8 rounded-xl bg-black flex items-center justify-center text-white shadow-sm">
                       <Calendar className="w-4.5 h-4.5" />
                     </div>
                     <div>
                       <h4 className="font-bold text-slate-900 text-sm leading-none">Calendario IA</h4>
-                      <span className="text-[10px] text-[#1890FF] font-semibold">Agenda de activos</span>
+                      <span className="text-[10px] text-black font-semibold">Agenda de activos</span>
                     </div>
                   </div>
-                  <button className="flex items-center gap-1 px-2.5 py-1 bg-white border border-[#1890FF]/30 rounded-lg text-[10px] font-bold text-[#1890FF] shadow-xs">
+                  <button className="flex items-center gap-1 px-2.5 py-1 bg-white border border-black/30 rounded-lg text-[10px] font-bold text-black shadow-xs">
                     <Sparkles className="w-2.5 h-2.5" /> Hacer Calendario
                   </button>
                 </div>
@@ -195,7 +195,7 @@ export function LandingPortfolioDemo() {
                     </div>
                   </div>
                   <div className="bg-white/80 rounded-xl p-3 border border-slate-100 flex items-start gap-2.5 shadow-2xs">
-                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-black mt-1.5 shrink-0" />
                     <div>
                       <h5 className="text-xs font-bold text-slate-900">Presentación Keynote • AAPL</h5>
                       <p className="text-[10px] text-slate-500 mt-0.5">5 jun. 2026 — Lanzamiento de nuevas herramientas de IA.</p>

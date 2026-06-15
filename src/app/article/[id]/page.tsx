@@ -25,7 +25,7 @@ async function getArticleBySlugOrId(id: string) {
 export async function generateMetadata({ params }: ArticlePageProps): Promise<Metadata> {
   const { id } = await params;
   const article = await getArticleBySlugOrId(id);
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://reclu.cl";
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://maverlang.cl";
 
   if (!article) {
     return {
@@ -54,7 +54,7 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
       url: `${baseUrl}/article/${article.slug || article.id}`,
       type: "article",
       images: [{ url: ogImageUrl.toString(), width: 1200, height: 630 }],
-      siteName: "Reclu",
+      siteName: "Maverlang",
       publishedTime: article.published_at,
     },
     twitter: {
@@ -69,7 +69,7 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
 export default async function ArticlePageWrapper({ params }: ArticlePageProps) {
   const { id } = await params;
   const article = await getArticleBySlugOrId(id);
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://reclu.cl";
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://maverlang.cl";
 
   if (!article) {
     return <ArticleClient />;
@@ -85,11 +85,11 @@ export default async function ArticlePageWrapper({ params }: ArticlePageProps) {
     dateModified: article.updated_at || article.published_at,
     author: [{
       "@type": "Person",
-      name: article.author || "Reclu AI",
+      name: article.author || "Maverlang AI",
     }],
     publisher: {
       "@type": "Organization",
-      name: "Reclu",
+      name: "Maverlang",
       logo: {
         "@type": "ImageObject",
         url: `${baseUrl}/favicon.ico`,

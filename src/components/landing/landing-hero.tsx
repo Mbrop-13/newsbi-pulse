@@ -58,7 +58,7 @@ export function LandingHero({ onScrollToFeatures }: LandingHeroProps) {
       <header className="absolute top-0 left-0 right-0 z-50 h-20 flex items-center justify-between px-6 md:px-12 lg:px-20 bg-transparent">
         {/* Left: Brand Logo */}
         <div className="flex items-center shrink-0 -my-4">
-          <Logo showText={false} size="md" />
+          <Logo showText={false} size="md" forceLight={true} />
         </div>
 
         {/* Center: Navigation Links */}

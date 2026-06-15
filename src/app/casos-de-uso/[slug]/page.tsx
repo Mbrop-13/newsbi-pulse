@@ -237,7 +237,7 @@ export default async function CasoDeUsoPage({ params }: CasosPageProps) {
               
               {/* Brand Logo Display */}
               <div className="flex items-center gap-2 pb-4 border-b border-[#E9E8E4]">
-                <Logo showText={true} size="sm" />
+                <Logo showText={true} size="sm" forceLight={true} />
               </div>
 
               {/* Products used */}

@@ -9,9 +9,10 @@ interface LogoProps {
   size?: "sm" | "md" | "lg" | "xl";
   className?: string;
   variant?: 1 | 2;
+  forceLight?: boolean;
 }
 
-export function Logo({ showText = true, size = "md", className = "", variant = 1 }: LogoProps) {
+export function Logo({ showText = true, size = "md", className = "", variant = 1, forceLight = false }: LogoProps) {
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -26,7 +27,7 @@ export function Logo({ showText = true, size = "md", className = "", variant = 1
     xl: "h-16",
   };
 
-  const isDark = mounted && resolvedTheme === "dark";
+  const isDark = forceLight ? false : (mounted && resolvedTheme === "dark");
   const logoSrc = variant === 1 
     ? (isDark ? "/assets/Logo 1-Blanco.png" : "/assets/Maverlang Logo-1.png")
     : (isDark ? "/assets/Logo 2-Blanco.png" : "/assets/Maverlang Logo-2.png");

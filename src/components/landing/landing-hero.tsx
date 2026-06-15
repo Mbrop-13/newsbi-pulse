@@ -246,9 +246,8 @@ export function LandingHero({ onScrollToFeatures }: LandingHeroProps) {
         <div className="lg:col-span-5 flex flex-col items-start justify-center">
           <p 
             className="text-lg md:text-xl font-medium text-[#191919]/90 leading-relaxed mb-8"
-            style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
           >
-            La inteligencia artificial de Maverlang está diseñada para redefinir el análisis financiero. Mediante un consorcio de agentes autónomos que trabajan en paralelo, auditamos mercados globales en tiempo real y verificamos cada dato para potenciar tu portafolio sin sesgos ni desinformación.
+            La inteligencia artificial transformará nuestra relación con la información financiera. Mediante un consorcio de agentes autónomos que trabajan en paralelo, auditamos mercados globales en tiempo real y verificamos cada dato para potenciar tu portafolio sin sesgos ni desinformación.
           </p>
 
           <button

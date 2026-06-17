@@ -4,6 +4,14 @@
   - [x] Run `npm install ai @ai-sdk/openai`
   - [x] Develop high-fidelity HTML5 Canvas overlapping sinewave ribbon generator with dynamic gradients for the stats block
   - [x] Run `npm run build` to verify Next.js build compilation with new mockups
+- [x] **26. Skip multi-agent orchestrator in route.ts when webBuilder is active**
+- [x] **27. Disable tools and set toolChoice to 'none' in route.ts when webBuilder is active**
+- [x] **28. Import stripArtifactXml and clean assistant bubbles in chat-messages.tsx**
+- [x] **29. Hide tool result cards in chat-messages.tsx when isWebBuilderMode is active**
+- [x] **30. Perform compile check and verify types**
+- [x] **31. Sync WebBuilder project files strictly per chat ID on session switch or reset**
+- [x] **32. Implement database project auto-deletion by plan tier (7 days for free, 15 days for paid)**
+- [x] **33. Perform typescript build check and verify changes compile cleanly**
 - [x] 2. Update Chat State & Reset Logic
   - [x] Modify `src/lib/stores/ai-chat-store.ts` to clear messages when closed.
 - [x] 3. Refactor API Route for Streaming & Tools

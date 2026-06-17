@@ -458,6 +458,18 @@ export function ChatLanding() {
     }
   }, [currentChatId, isStoreHydrated, storeMessages, setAiMessages])
 
+  // Sync WebBuilder project files on load or chat reset
+  useEffect(() => {
+    if (!isStoreHydrated) return
+    const wbStore = useWebBuilderStore.getState()
+    if (currentChatId) {
+      wbStore.initProject(currentChatId)
+      wbStore.loadFromCloud(currentChatId)
+    } else {
+      wbStore.resetProject()
+    }
+  }, [currentChatId, isStoreHydrated])
+
   const handleModelSelect = (model: MaverlangModel) => {
     setModel(model.id)
   }

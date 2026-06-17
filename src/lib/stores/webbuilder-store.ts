@@ -253,6 +253,18 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
 
         try {
           const supabase = createClient();
+
+          // Clean up old projects based on tier (free = 7 days, pro = 15 days of inactivity)
+          const tier = user.tier || "free";
+          const expirationDays = tier === "free" ? 7 : 15;
+          const expirationDate = new Date();
+          expirationDate.setDate(expirationDate.getDate() - expirationDays);
+
+          await supabase
+            .from("ai_webbuilder_projects")
+            .delete()
+            .eq("user_id", user.id)
+            .lt("updated_at", expirationDate.toISOString());
           
           // Convert files to plain JSON for storage
           const projectFiles = Object.fromEntries(
@@ -298,6 +310,19 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
 
         try {
           const supabase = createClient();
+
+          // Clean up old projects based on tier (free = 7 days, pro = 15 days of inactivity)
+          const tier = user.tier || "free";
+          const expirationDays = tier === "free" ? 7 : 15;
+          const expirationDate = new Date();
+          expirationDate.setDate(expirationDate.getDate() - expirationDays);
+
+          await supabase
+            .from("ai_webbuilder_projects")
+            .delete()
+            .eq("user_id", user.id)
+            .lt("updated_at", expirationDate.toISOString());
+
           const { data, error } = await supabase
             .from("ai_webbuilder_projects")
             .select("project_files")

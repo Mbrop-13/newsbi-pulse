@@ -105,8 +105,7 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
       if (data && !error) {
         setDbArticles(data);
       }
-      // Small artificial delay for initial load premium feel
-      setTimeout(() => setIsTransitioning(false), 500);
+      setIsTransitioning(false);
     };
     fetchNews();
 
@@ -306,8 +305,7 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
   };
 
   const triggerTransition = () => {
-    setIsTransitioning(true);
-    setTimeout(() => setIsTransitioning(false), 600);
+    // No artificial transition delay for snappy local changes
   };
 
   const handleTabChange = (tab: FeedTab) => {
@@ -335,13 +333,13 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
       : `/${activeTab.replace('_', '-')}`;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0F172A] text-gray-900 dark:text-gray-100 font-sans">
+    <div className="min-h-screen bg-background text-foreground font-sans">
       <div className="pt-2">
       </div>
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 pb-16">
 
         {/* ── Filter Bar ── */}
-        <div className="-mx-4 px-4 pt-2 pb-3 bg-gray-50 dark:bg-[#0F172A] border-b border-gray-200/50 dark:border-white/5">
+        <div className="-mx-4 px-4 pt-2 pb-3 bg-background border-b border-border">
           <div className="flex items-center justify-between gap-4">
             <div className="flex-1 min-w-0 flex items-center gap-2.5 overflow-x-auto hide-scrollbar flex-nowrap pr-4 pb-1">
               {/* Timing filters */}
@@ -669,8 +667,8 @@ function TrendingPanel({ articles }: { articles: any[] }) {
   };
 
   return (
-    <div className="bg-white dark:bg-[#1E293B] rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
-      <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center gap-2">
+    <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+      <div className="px-5 py-4 border-b border-border flex items-center gap-2">
         <Flame className="w-4 h-4 text-orange-500" />
         <h3 className="font-bold text-sm text-gray-900 dark:text-white">Más Relevantes</h3>
       </div>

@@ -291,7 +291,7 @@ export default function PortfolioClient() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0F172A] pt-4 md:pt-6 pb-24">
+    <div className="min-h-screen bg-background pt-4 md:pt-6 pb-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {/* Header removed as requested to clean up UI */}
 
@@ -309,11 +309,11 @@ export default function PortfolioClient() {
         {assets.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
             {/* Desktop: Two separate cards. Mobile: Hidden */}
-            <div className="hidden md:block bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
+            <div className="hidden md:block bg-card rounded-2xl border border-border p-5">
               <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Valor Portafolio</p>
               <p className="text-2xl font-black text-gray-900 dark:text-white">${totalValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
             </div>
-            <div className="hidden md:block bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
+            <div className="hidden md:block bg-card rounded-2xl border border-border p-5">
               <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Cambio Promedio</p>
               <p className={`text-2xl font-black flex items-center gap-2 ${totalChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                 {totalChange >= 0 ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />} {totalChange.toFixed(2)}%
@@ -321,7 +321,7 @@ export default function PortfolioClient() {
             </div>
 
             {/* Mobile: One combined card */}
-            <div className="md:hidden bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5 flex justify-between items-center">
+            <div className="md:hidden bg-card rounded-2xl border border-border p-5 flex justify-between items-center">
               <div>
                 <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Valor Portafolio</p>
                 <p className="text-2xl font-black text-gray-900 dark:text-white">${totalValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
@@ -341,7 +341,7 @@ export default function PortfolioClient() {
           <div className="lg:col-span-2 space-y-6">
             {/* Search */}
             <div className="relative">
-              <div className="flex items-center bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-gray-800 px-4 py-3 shadow-sm focus-within:ring-2 focus-within:ring-[#1890FF]/20 focus-within:border-[#1890FF] transition-all">
+              <div className="flex items-center bg-card rounded-2xl border border-border px-4 py-3 shadow-sm focus-within:ring-2 focus-within:ring-[#1890FF]/20 focus-within:border-[#1890FF] transition-all">
                 <Search className="w-5 h-5 text-gray-400 mr-3" />
                 <input type="text" placeholder="Buscar símbolo o empresa (ej. AAPL, Tesla, MSFT)..." value={searchTerm} onChange={(e) => handleSearch(e.target.value)} className="flex-1 bg-transparent text-sm outline-none text-gray-900 dark:text-white placeholder:text-gray-400" />
                 {isSearching && <RefreshCw className="w-4 h-4 animate-spin text-[#1890FF] ml-2" />}
@@ -385,9 +385,9 @@ export default function PortfolioClient() {
             <div className="space-y-3">
               <h2 className="font-bold text-gray-900 dark:text-white text-lg">Tus Activos ({assets.length})</h2>
               {loading && assets.length === 0 ? (
-                <div className="p-12 flex justify-center bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-gray-800"><RefreshCw className="w-8 h-8 animate-spin text-[#1890FF]" /></div>
+                <div className="p-12 flex justify-center bg-card rounded-2xl border border-border"><RefreshCw className="w-8 h-8 animate-spin text-[#1890FF]" /></div>
               ) : assets.length === 0 ? (
-                <div className="p-12 text-center text-gray-500 bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-gray-800">
+                <div className="p-12 text-center text-gray-500 bg-card rounded-2xl border border-border">
                   <TrendingUp className="w-12 h-12 mx-auto mb-4 opacity-20" />
                   <p className="font-semibold">Aún no tienes activos en tu portafolio.</p>
                   <p className="text-sm mt-1">Busca una empresa arriba para agregarla.</p>
@@ -482,7 +482,7 @@ export default function PortfolioClient() {
                                     const isPnlPositive = pnlVal >= 0;
 
                                     return (
-                                      <div className="bg-slate-50/70 dark:bg-slate-900/40 backdrop-blur-md rounded-2xl border border-gray-150 dark:border-gray-800/80 p-4 mb-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                      <div className="bg-secondary/40 backdrop-blur-md rounded-2xl border border-border p-4 mb-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
                                         <div className="space-y-0.5">
                                           <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Valor Posición</span>
                                           <span className="text-sm sm:text-base font-extrabold text-gray-900 dark:text-white tabular-nums">
@@ -606,7 +606,7 @@ export default function PortfolioClient() {
                 )}
               </div>
             </div>
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
+            <div className="bg-card rounded-2xl border border-border p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center"><BellRing className="w-5 h-5 text-orange-500" /></div>
                 <div><h3 className="font-bold text-gray-900 dark:text-white">Alertas de Precio</h3><p className="text-[11px] text-gray-500">{alerts.length} activas</p></div>
@@ -644,7 +644,7 @@ export default function PortfolioClient() {
         {alertModal.open && (
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" onClick={() => setAlertModal({ open: false, symbol: "", price: 0 })} />
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl z-50 p-6 border border-gray-200 dark:border-gray-800">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-md bg-card rounded-2xl shadow-2xl z-50 p-6 border border-border">
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center"><Bell className="w-5 h-5 text-orange-500" /></div>
@@ -678,7 +678,7 @@ export default function PortfolioClient() {
                     <>
                       <div>
                         <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Precio objetivo (USD)</label>
-                        <input type="number" step="0.01" value={alertForm.targetPrice} onChange={(e) => setAlertForm(f => ({ ...f, targetPrice: e.target.value }))} placeholder={alertModal.price.toFixed(2)} className={`w-full px-4 py-3 rounded-xl border bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white text-lg font-bold outline-none transition-all ${priceError ? 'border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20' : 'border-gray-200 dark:border-gray-700 focus:border-[#1890FF] focus:ring-2 focus:ring-[#1890FF]/20'}`} />
+                        <input type="number" step="0.01" value={alertForm.targetPrice} onChange={(e) => setAlertForm(f => ({ ...f, targetPrice: e.target.value }))} placeholder={alertModal.price.toFixed(2)} className={`w-full px-4 py-3 rounded-xl border bg-secondary text-gray-900 dark:text-white text-lg font-bold outline-none transition-all ${priceError ? 'border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20' : 'border-border focus:border-[#1890FF] focus:ring-2 focus:ring-[#1890FF]/20'}`} />
                         {priceError && <p className="text-xs text-red-500 mt-1.5 font-medium">{priceError}</p>}
                       </div>
 

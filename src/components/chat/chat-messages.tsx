@@ -888,7 +888,10 @@ function AssistantAvatar({ isResponding, isWebBuilderMode }: { isResponding: boo
     );
   }
 
-  const imageSrc = "https://mail.programbi.com/uploads/Maverlang-Logo-2.png";
+  const isDark = mounted && resolvedTheme === "dark";
+  const imageSrc = isDark
+    ? "https://mail.programbi.com/uploads/Logo-2-Blanco.png"
+    : "https://mail.programbi.com/uploads/Maverlang-Logo-2.png";
 
   return (
     <div className={cn(

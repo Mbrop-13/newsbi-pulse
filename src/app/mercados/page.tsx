@@ -206,7 +206,7 @@ export default function MercadosPage() {
 
   return (
     <SidebarLayout>
-    <div className="min-h-screen bg-gray-50/50 dark:bg-[#0F0F13] pt-4">
+    <div className="min-h-screen bg-background pt-4">
       {/* ΓöÇΓöÇ TICKER TAPE ΓöÇΓöÇ */}
       <TickerTape />
 
@@ -276,12 +276,12 @@ export default function MercadosPage() {
 
           {/* RIGHT: Top Finance News Panel */}
           <div className="xl:col-span-1">
-            <div className="bg-white dark:bg-[#1A1A1E] rounded-2xl border border-gray-200 dark:border-white/5 shadow-sm overflow-hidden h-full flex flex-col" style={{ maxHeight: 552 }}>
-              <div className="px-5 py-3.5 border-b border-gray-100 dark:border-white/5 flex items-center gap-2 flex-shrink-0">
+            <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden h-full flex flex-col" style={{ maxHeight: 552 }}>
+              <div className="px-5 py-3.5 border-b border-border flex items-center gap-2 flex-shrink-0">
                 <Flame className="w-4 h-4 text-orange-500" />
                 <h3 className="font-bold text-sm text-gray-900 dark:text-white">Top Noticias Financieras</h3>
               </div>
-              <div className="flex-1 overflow-y-auto divide-y divide-gray-50 dark:divide-white/5">
+              <div className="flex-1 overflow-y-auto divide-y divide-border">
                 {financeNews.length === 0 ? (
                   <div className="p-8 flex flex-col gap-4">
                     {[1,2,3,4,5].map(i => (
@@ -335,7 +335,7 @@ export default function MercadosPage() {
               href={`/article/${featuredArticle.slug || featuredArticle.id}`}
               className="lg:col-span-3 group"
             >
-              <div className="bg-white dark:bg-[#1A1A1E] rounded-2xl border border-gray-200 dark:border-white/5 shadow-sm overflow-hidden hover:shadow-xl transition-shadow h-full flex flex-col">
+              <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden hover:shadow-xl transition-shadow h-full flex flex-col">
                 {featuredArticle.image_url && (
                   <div className="w-full h-48 sm:h-56 overflow-hidden bg-gray-100 dark:bg-white/5">
                     <img src={featuredArticle.image_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
@@ -399,7 +399,7 @@ export default function MercadosPage() {
             {(activeTab === "chile" ? SPOTLIGHT_CHILE : SPOTLIGHT_GLOBAL).map(s => {
               const yahooSymbol = toYahooSymbol(s.symbol);
               return (
-                <div key={s.symbol} className="relative group rounded-2xl overflow-hidden bg-white dark:bg-[#1A1A1E] border border-gray-200 dark:border-white/5 shadow-sm hover:border-[#1890FF]/30 transition-all duration-300">
+                <div key={s.symbol} className="relative group rounded-2xl overflow-hidden bg-card border border-border shadow-sm hover:border-[#1890FF]/30 transition-all duration-300">
                   {/* Clickable Area for Mini Chart */}
                   <Link href={`/mercados/${encodeURIComponent(s.symbol)}`} className="block">
                     <MiniChart symbol={s.symbol} height={200} />
@@ -500,7 +500,7 @@ export default function MercadosPage() {
               {financeNews.slice(2, 8).map((article) => {
                 const relatedTicker = detectTicker(article);
                 return (
-                  <div key={article.id} className="bg-white dark:bg-[#1A1A1E] rounded-2xl border border-gray-200 dark:border-white/5 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                  <div key={article.id} className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                     <Link href={`/article/${article.slug || article.id}`} className="group">
                       {article.image_url && (
                         <div className="w-full h-36 overflow-hidden bg-gray-100 dark:bg-white/5">
@@ -555,7 +555,7 @@ export default function MercadosPage() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="relative w-full max-w-md bg-white dark:bg-[#1A1A1E] rounded-3xl border border-gray-200 dark:border-white/5 p-6 shadow-2xl overflow-hidden z-10"
+              className="relative w-full max-w-md bg-card rounded-3xl border border-border p-6 shadow-2xl overflow-hidden z-10"
             >
               <div className="flex items-center justify-between mb-4">
                 <div>

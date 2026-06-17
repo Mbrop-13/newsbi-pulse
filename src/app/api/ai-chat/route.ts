@@ -214,7 +214,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Burst protection — prevents rapid-fire abuse
-    const rl = rateLimit(`ai:${userId}`, AI_CHAT_LIMIT);
+    const rl = await rateLimit(`ai:${userId}`, AI_CHAT_LIMIT);
     if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
 
     const tokenLimit = await checkTokenLimit(userId);
@@ -340,7 +340,15 @@ export async function POST(req: NextRequest) {
       // Inject the summaries as a system context instruction to the final model
       const contextMessage = {
         role: "system" as const,
-        content: `A continuación se presentan los informes de investigación en paralelo generados por tus agentes especializados. Úsalos como base fáctica y consólidalos en tu respuesta al usuario de forma integrada en español:\n\n${reportsSummary}`,
+        content: `REPORTES DE AGENTES ESPECIALIZADOS (ya ejecutados en paralelo):
+Los siguientes reportes fueron generados por tus agentes delegados. REGLAS para tu respuesta final:
+1. Consolida la información de TODOS los reportes en una respuesta UNIFICADA y coherente.
+2. NO repitas trabajo: si un agente ya analizó datos o generó código, referencíalo directamente.
+3. Presenta la síntesis de forma profesional con tablas markdown cuando compares datos numéricos.
+4. Tu respuesta debe ser el análisis FINAL integrado — el usuario NO ve los reportes individuales a menos que los expanda.
+5. Sé conciso pero completo. Prioriza insights accionables.
+
+${reportsSummary}`,
       };
 
       const lastIndex = messagesForFinalLlm.length - 1;
@@ -893,20 +901,18 @@ export async function POST(req: NextRequest) {
         const hasContent = text && text.trim().length > 0;
         const isValidFinish = finishReason !== 'error';
 
-        if (user && hasContent && isValidFinish) {
+        if (hasContent && isValidFinish) {
           // Increment message count only on successful response
-          await incrementUsage(user.id, "ai_message").catch(console.error);
-        } else if (!user) {
-          console.log(`[AI Chat] Guest chat completed successfully.`);
+          await incrementUsage(userId, "ai_message").catch(console.error);
         } else {
-          console.warn(`[AI Chat] Skipping usage increment for user ${user.id}: finishReason=${finishReason}, hasContent=${hasContent}`);
+          console.warn(`[AI Chat] Skipping usage increment for user ${userId}: finishReason=${finishReason}, hasContent=${hasContent}`);
         }
 
-        if (user && usage && usage.totalTokens) {
-          await incrementTokenUsage(user.id, usage.totalTokens).catch(console.error);
-          console.log(`[AI Chat] Saved token usage for user ${user.id}: ${usage.totalTokens} tokens.`);
+        if (usage && usage.totalTokens) {
+          await incrementTokenUsage(userId, usage.totalTokens).catch(console.error);
+          console.log(`[AI Chat] Saved token usage for user ${userId}: ${usage.totalTokens} tokens.`);
         }
-        if (text.includes("[ALERTA_SEGURIDAD]") || text.includes("ALERTA DE SEGURIDAD") || text.includes("intento de evasión detectado")) {
+        if (text && (text.includes("[ALERTA_SEGURIDAD]") || text.includes("ALERTA DE SEGURIDAD") || text.includes("intento de evasión detectado"))) {
           console.warn(`[SECURITY_ALERT] [LLM_DETECTION] El modelo Maverlang AI detectó un intento de manipulación o solicitud inusual del usuario ${userId}. Respuesta del modelo: "${text}"`);
         }
       }

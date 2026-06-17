@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
   try {
     // IP-based burst protection
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-    const rl = rateLimit(`newsletter:${ip}`, NEWSLETTER_LIMIT);
+    const rl = await rateLimit(`newsletter:${ip}`, NEWSLETTER_LIMIT);
     if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
 
     const { email } = await request.json();

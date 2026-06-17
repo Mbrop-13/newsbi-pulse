@@ -7,7 +7,7 @@ const yf = new YahooFinance();
 export async function GET(request: Request) {
   // Burst protection
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-  const rl = rateLimit(`finance-search:${ip}`, GENERAL_API_LIMIT);
+  const rl = await rateLimit(`finance-search:${ip}`, GENERAL_API_LIMIT);
   if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
 
   const { searchParams } = new URL(request.url);

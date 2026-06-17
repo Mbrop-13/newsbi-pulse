@@ -192,7 +192,12 @@ export function AIChatSidebar() {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Error de IA");
+      if (!res.ok) {
+        if (data.code === "TOKEN_LIMIT_REACHED") {
+          openModal("ai_chat");
+        }
+        throw new Error(data.error || "Error de IA");
+      }
 
       addMessage({
         id: (Date.now() + 1).toString(),

@@ -14,7 +14,10 @@
 - [x] 4. Update Frontend UI for Streaming
   - [x] Refactor `src/components/assistant/full-screen-chat.tsx` to use Vercel AI SDK logic.
   - [x] Create `AnalyzedNewsCard` component.
-  - [x] Parse and render tool invocations safely.
+- [/] 4. Update Frontend UI for Streaming
+  - [/] Refactor `src/components/assistant/full-screen-chat.tsx` to use Vercel AI SDK logic.
+  - [/] Create `AnalyzedNewsCard` component.
+  - [/] Parse and render tool invocations safely.
 - [x] 5. Verification
   - [x] Verify chat reset behavior.
   - [x] Verify live text streaming.

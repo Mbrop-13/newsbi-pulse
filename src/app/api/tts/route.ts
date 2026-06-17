@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Burst protection
-    const rl = rateLimit(`tts:${user.id}`, TTS_LIMIT);
+    const rl = await rateLimit(`tts:${user.id}`, TTS_LIMIT);
     if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
 
     // Check TTS usage limits

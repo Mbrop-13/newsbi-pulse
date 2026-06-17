@@ -168,7 +168,12 @@ DEBES responder ÚNICAMENTE con un bloque JSON en el siguiente formato (sin expl
     const agentSystemPrompt = `Actúas como el agente experto "${agent.agentName}" con el rol de "${agent.role}".
 Tu tarea asignada por el Orquestador es: "${agent.task}".
 Responde a tu tarea de forma concisa, técnica, objetiva y 100% en español.
-REGLA CRÍTICA: Enfócate estrictamente en tu sub-tarea asignada. No saludes ni des rodeos. Longitud máxima: 150 palabras.`;
+REGLAS CRÍTICAS:
+1. Enfócate estrictamente en tu sub-tarea asignada. No saludes ni des rodeos.
+2. Longitud máxima: 120 palabras. Sé directo y específico.
+3. Si generas código o fórmulas, márcalos como bloques de código reutilizables.
+4. Presenta datos como listas o tablas cuando sea posible.
+5. Tu respuesta será consolidada por el agente orquestador principal — no repitas contexto ya conocido.`;
 
     try {
       const agentPromise = generateText({

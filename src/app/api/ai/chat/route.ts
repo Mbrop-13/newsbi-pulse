@@ -26,7 +26,7 @@ export async function POST(req: Request) {
 
     // IP-based burst protection for this endpoint
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-    const rl = rateLimit(`ai-legacy:${ip}`, AI_CHAT_LIMIT);
+    const rl = await rateLimit(`ai-legacy:${ip}`, AI_CHAT_LIMIT);
     if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
 
     if (!messages || !Array.isArray(messages)) {

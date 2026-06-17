@@ -13,6 +13,7 @@ import Link from "next/link"
 import { useAIChatStore, type ChatMessage } from "@/lib/stores/ai-chat-store"
 import { useAssistantStore } from "@/lib/stores/assistant-store"
 import { useAuthStore, useAuthModalStore } from "@/lib/stores/auth-store"
+import { useConversionStore } from "@/lib/stores/conversion-store"
 import { getPlanConfig, type PlanTier, getNextTier } from "@/lib/plan-limits"
 import { useChat } from "ai/react"
 import { ShareChatDialog } from "@/components/assistant/share-chat-dialog"
@@ -110,6 +111,7 @@ export function ChatLanding() {
   const userTier = useAuthStore((s) =>
     s.user?.role === "admin" ? "ultra" : (s.user?.tier || "free")
   ) as PlanTier
+  const { openModal: openConversionModal } = useConversionStore()
 
   const {
     messages: storeMessages,
@@ -228,6 +230,21 @@ export function ChatLanding() {
     data,
   } = useChat({
     api: "/api/ai-chat",
+    fetch: async (url, options) => {
+      const response = await fetch(url, options);
+      if (!response.ok) {
+        try {
+          const clone = response.clone();
+          const errData = await clone.json();
+          if (errData?.code === "TOKEN_LIMIT_REACHED") {
+            openConversionModal("ai_chat");
+          }
+        } catch (e) {
+          // Ignore JSON parse errors
+        }
+      }
+      return response;
+    },
     onFinish: (message) => {
       // Find citations & reasoning in streamData (data) or accumulated refs
       let citationsList: string[] = accumulatedCitationsRef.current.length > 0 ? accumulatedCitationsRef.current : []

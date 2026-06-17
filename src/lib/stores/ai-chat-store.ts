@@ -18,6 +18,7 @@ export interface ChatMessage {
   isCollapsed?: boolean;
   secondsElapsed?: number;
   reasoningSteps?: any[];
+  isWebBuilder?: boolean;
 }
 
 export interface ToolResultUI {
@@ -192,14 +193,22 @@ export const useAIChatStore = create<AIChatStore>()(
           .limit(10);
           
         if (data && data.length > 0) {
-          const cloudChats: SavedChat[] = data.map(row => ({
-            id: row.chat_id,
-            title: row.title,
-            messages: row.messages,
-            attachedArticles: row.attached_articles || [],
-            attachedFiles: row.attached_files || [],
-            timestamp: new Date(row.created_at)
-          }));
+          const cloudChats: SavedChat[] = data.map(row => {
+            const msgs = (row.messages || []) as ChatMessage[];
+            const hasArtifact = msgs.some((m: any) => m.content && (m.content.includes("<maverlangArtifact") || m.content.includes("</maverlangArtifact>")));
+            const firstMsgHasWB = msgs[0]?.isWebBuilder;
+            const isWB = !!(firstMsgHasWB || hasArtifact);
+
+            return {
+              id: row.chat_id,
+              title: row.title,
+              messages: msgs,
+              attachedArticles: row.attached_articles || [],
+              attachedFiles: row.attached_files || [],
+              timestamp: new Date(row.created_at),
+              isWebBuilder: isWB
+            };
+          });
           set({ savedChats: cloudChats });
         }
       },
@@ -221,10 +230,18 @@ export const useAIChatStore = create<AIChatStore>()(
         const title = messages.find(m => m.role === "user")?.content.slice(0, 40) + "..." || "Nuevo chat";
         const isWB = useWebBuilderStore.getState().isWebBuilderMode;
         
+        // Inject metadata into the first message to survive cloud sync
+        const messagesWithMeta = messages.map((m, idx) => {
+          if (idx === 0) {
+            return { ...m, isWebBuilder: isWB };
+          }
+          return m;
+        });
+
         const chatData: SavedChat = {
           id: chatId,
           title,
-          messages,
+          messages: messagesWithMeta,
           attachedArticles,
           attachedFiles,
           timestamp: new Date(),
@@ -247,7 +264,7 @@ export const useAIChatStore = create<AIChatStore>()(
               user_id: user.id,
               chat_id: chatId,
               title,
-              messages,
+              messages: messagesWithMeta,
               attached_articles: attachedArticles,
               attached_files: attachedFiles
             });
@@ -255,7 +272,7 @@ export const useAIChatStore = create<AIChatStore>()(
           } else {
             const { error } = await supabase.from("ai_saved_chats").update({
               title,
-              messages,
+              messages: messagesWithMeta,
               attached_articles: attachedArticles,
               attached_files: attachedFiles
             }).eq("chat_id", chatId).eq("user_id", user.id);
@@ -296,7 +313,8 @@ export const useAIChatStore = create<AIChatStore>()(
 
           // Auto-restore WebBuilder mode based on saved flag or message content fallback
           const hasArtifact = chat.messages.some(m => m.content && (m.content.includes("<maverlangArtifact") || m.content.includes("</maverlangArtifact>")));
-          const isWB = !!(chat.isWebBuilder || hasArtifact);
+          const firstMsgHasWB = chat.messages[0]?.isWebBuilder;
+          const isWB = !!(chat.isWebBuilder || firstMsgHasWB || hasArtifact);
           useWebBuilderStore.getState().setWebBuilderMode(isWB);
         }
       },

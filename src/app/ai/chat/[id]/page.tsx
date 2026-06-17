@@ -4,6 +4,7 @@ import { use, useEffect, useState } from "react";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useAIChatStore } from "@/lib/stores/ai-chat-store";
 import { ChatLanding } from "@/components/chat/chat-landing";
+import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
 import { ChatMessages } from "@/components/chat/chat-messages";
 import { AuthModals } from "@/components/auth-modals";
 import { Bot, Sparkles, ArrowRight, Loader2, Home } from "lucide-react";
@@ -102,6 +103,12 @@ export default function ChatPage(props: PageProps) {
           attachedFiles: chatData.attached_files || [],
         });
 
+        // Restablecer el modo WebBuilder en base a si tiene artefactos o metadatos de WebBuilder
+        const hasArtifact = chatData.messages.some((m: any) => m.content && (m.content.includes("<maverlangArtifact") || m.content.includes("</maverlangArtifact>")));
+        const firstMsgHasWB = chatData.messages[0]?.isWebBuilder;
+        const isWB = !!(chatData.is_web_builder || firstMsgHasWB || hasArtifact);
+        useWebBuilderStore.getState().setWebBuilderMode(isWB);
+
         // Asegurar de que también se agrega al historial local para que updateCurrentChat no lo trate como nuevo
         const savedChats = useAIChatStore.getState().savedChats;
         const exists = savedChats.some((c) => c.id === chatData.chat_id);
@@ -113,6 +120,7 @@ export default function ChatPage(props: PageProps) {
             attachedArticles: chatData.attached_articles || [],
             attachedFiles: chatData.attached_files || [],
             timestamp: new Date(chatData.created_at || Date.now()),
+            isWebBuilder: isWB,
           };
           useAIChatStore.setState({
             savedChats: [newSavedChat, ...savedChats].slice(0, 10),

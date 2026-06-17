@@ -632,7 +632,7 @@ export function ChatLanding() {
   const prevStreamTextRef = useRef<string>("")
 
   useEffect(() => {
-    if (!isWebBuilderMode || !aiLoading) return
+    if (!isWebBuilderMode) return
     // Check the last assistant message for artifact XML
     const lastAssistant = [...aiMessages].reverse().find(m => m.role === 'assistant')
     if (!lastAssistant?.content) return
@@ -649,7 +649,7 @@ export function ChatLanding() {
       const merged = { ...store.files, ...newFiles }
       store.setFiles(merged)
     }
-  }, [aiMessages, aiLoading, isWebBuilderMode])
+  }, [aiMessages, isWebBuilderMode])
 
   // ── Render ──
   const chatContent = (

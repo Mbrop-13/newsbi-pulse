@@ -122,7 +122,7 @@ export function ChatMessages({
         {/* Loading indicator */}
         {isLoading && messages[messages.length - 1]?.role === 'user' && (
           <div className={cn("flex", isWebBuilderMode ? "gap-2" : "gap-3")}>
-            <AssistantAvatar isResponding={true} isWebBuilderMode={isWebBuilderMode} />
+            {!isWebBuilderMode && <AssistantAvatar isResponding={true} isWebBuilderMode={isWebBuilderMode} />}
             <div className="flex items-center gap-2 py-2">
               <div className="flex items-center gap-1">
                 <div className="w-2 h-2 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -499,7 +499,7 @@ function MessageBubble({
 
     return (
       <div className={cn("flex", isWebBuilderMode ? "gap-2" : "gap-3")}>
-        <AssistantAvatar isResponding={isResponding} isWebBuilderMode={isWebBuilderMode} />
+        {!isWebBuilderMode && <AssistantAvatar isResponding={isResponding} isWebBuilderMode={isWebBuilderMode} />}
         <div className="flex-1 min-w-0">
           {/* Orchestrator header */}
           <div className="flex items-center gap-2 mb-3">
@@ -580,7 +580,7 @@ function MessageBubble({
   // ─── Standard Assistant message ───
   return (
     <div className={cn("flex group", isWebBuilderMode ? "gap-2" : "gap-3")}>
-      <AssistantAvatar isResponding={isResponding} isWebBuilderMode={isWebBuilderMode} />
+      {!isWebBuilderMode && <AssistantAvatar isResponding={isResponding} isWebBuilderMode={isWebBuilderMode} />}
       <div className="flex-1 min-w-0">
         {/* 1. Reasoning (expandable) */}
         {renderReasoning()}

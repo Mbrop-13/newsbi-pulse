@@ -24,6 +24,43 @@ export function WebBuilderWorkspace({ chatPanel }: WebBuilderWorkspaceProps) {
     clearMessages();
   };
 
+  const [chatPercent, setChatPercent] = useState(28); // Compact chat (28%) by default
+  const [isDragging, setIsDragging] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const containerWidth = window.innerWidth;
+      if (containerWidth === 0) return;
+      
+      let newPercent = (e.clientX / containerWidth) * 100;
+      // Constrain sidebar to between 20% and 50%
+      if (newPercent < 20) newPercent = 20;
+      if (newPercent > 50) newPercent = 50;
+      
+      setChatPercent(newPercent);
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isDragging]);
+
   // On mobile, always show tabs instead of split view
   useEffect(() => {
     if (isMobile) {
@@ -92,13 +129,11 @@ export function WebBuilderWorkspace({ chatPanel }: WebBuilderWorkspaceProps) {
 
   // Desktop: Split view
   return (
-    <div className="flex h-full w-full">
+    <div className="flex h-full w-full overflow-hidden select-none">
       {/* Chat Panel - Left side */}
-      <motion.div
-        initial={{ width: "100%" }}
-        animate={{ width: isSplitView ? "35%" : "100%" }}
-        transition={{ type: "spring", damping: 30, stiffness: 300 }}
-        className="h-full min-w-[320px] flex flex-col border-r border-border/20 relative overflow-hidden bg-background"
+      <div
+        className="h-full flex flex-col relative overflow-hidden bg-background shrink-0"
+        style={{ width: isSplitView ? `${chatPercent}%` : "100%" }}
       >
         {/* Floating back button */}
         <button
@@ -110,22 +145,34 @@ export function WebBuilderWorkspace({ chatPanel }: WebBuilderWorkspaceProps) {
         </button>
 
         {chatPanel}
-      </motion.div>
+      </div>
+
+      {/* Drag Resizer Divider Handle */}
+      {isSplitView && (
+        <div
+          onMouseDown={handleMouseDown}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          className={cn(
+            "w-1.5 h-full cursor-col-resize z-50 shrink-0 relative transition-colors duration-150 bg-transparent"
+          )}
+        >
+          {/* Inner line indicator (only visible on hover/drag) */}
+          <div className={cn(
+            "absolute inset-y-0 left-[2px] w-[2px] transition-colors duration-150",
+            (isDragging || isHovered) ? "bg-primary" : "bg-transparent"
+          )} />
+        </div>
+      )}
 
       {/* Preview Panel - Right side */}
-      <AnimatePresence>
-        {isSplitView && (
-          <motion.div
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: "65%", opacity: 1 }}
-            exit={{ width: 0, opacity: 0 }}
-            transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            className="h-full flex flex-col overflow-hidden bg-background"
-          >
-            <PreviewPanel />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {isSplitView && (
+        <div
+          className="h-full flex flex-col overflow-hidden bg-background flex-1"
+        >
+          <PreviewPanel />
+        </div>
+      )}
     </div>
   );
 }

@@ -344,20 +344,19 @@ export async function POST(req: NextRequest) {
     // ── Multi-Agent Orchestration ──
     const orchestratorModel = mimo(finalModelStr);
     let orchestrationResult = { isComplex: false, agentReports: [] as any[] };
-    if (!webBuilder) {
-      orchestrationResult = await runOrchestration(
-        orchestratorModel,
-        lastUserMessage,
-        portfolioText,
-        (text) => {
-          try {
-            streamData.append({ type: 'reasoning', text });
-          } catch {
-            // StreamData may already be closed/flushed
-          }
+    orchestrationResult = await runOrchestration(
+      orchestratorModel,
+      lastUserMessage,
+      webBuilder ? "" : portfolioText,
+      (text) => {
+        try {
+          streamData.append({ type: 'reasoning', text });
+        } catch {
+          // StreamData may already be closed/flushed
         }
-      );
-    }
+      },
+      !!webBuilder
+    );
 
     let messagesForFinalLlm = processedMessages;
     if (orchestrationResult.isComplex && orchestrationResult.agentReports.length > 0) {

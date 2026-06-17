@@ -54,12 +54,13 @@ export async function runOrchestration(
   model: LanguageModel,
   userMessage: string,
   portfolioContext?: string,
-  onProgress?: (text: string) => void
+  onProgress?: (text: string) => void,
+  isWebBuilder: boolean = false
 ): Promise<OrchestrationResult> {
   const startTime = Date.now();
   
-  // Clean message for cache key lookup
-  const cacheKey = userMessage.trim().toLowerCase();
+  // Clean message for cache key lookup, including the mode to prevent collisions
+  const cacheKey = `${isWebBuilder ? 'webbuilder' : 'finance'}:${userMessage.trim().toLowerCase()}`;
   const cached = classificationCache.get(cacheKey);
   
   let isComplex = false;
@@ -74,7 +75,44 @@ export async function runOrchestration(
   } else {
     onProgress?.("🧠 [Orquestador] Iniciando análisis de complejidad de la consulta...\n");
     
-    const systemOrchestratorPrompt = `Actúas como el LLM Coordinador y Orquestador de una plataforma financiera de élite.
+    const systemOrchestratorPrompt = isWebBuilder
+      ? `Actúas como el Arquitecto de Software y Orquestador de Maverlang WebBuilder.
+Tu tarea es analizar la consulta del usuario sobre la aplicación web que desea construir o modificar, y determinar si requiere ser delegada a agentes especializados en paralelo para diseñar, codificar, estilizar e implementar la aplicación de forma óptima.
+
+CRITERIOS PARA DELEGACIÓN:
+- SÍ requiere delegación (isComplex: true) si la consulta requiere crear una nueva aplicación web desde cero, agregar múltiples componentes interactivos, realizar integraciones lógicas complejas, rediseñar layouts de forma mayoritaria, o realizar modificaciones extensas de código.
+  Ejemplos de consultas que SÍ requieren delegación:
+  * "Crea un panel de control financiero con gráficos y simulación de interés compuesto"
+  * "Agrega un sistema de autenticación ficticio y una base de datos local a la aplicación"
+  * "Rediseña la interfaz actual para que tenga glassmorphism, modo oscuro/claro y animaciones con Framer Motion"
+  * "Agrega una sección completa de mercados bursátiles interactiva"
+- NO requiere delegación (isComplex: false) si es un saludo, una pregunta general sobre programación, una modificación de texto simple, un cambio de color rápido o preguntas simples.
+  Ejemplos de consultas que NO requieren delegación:
+  * "Hola, ¿me puedes ayudar?"
+  * "¿Cómo se usa useState en React?"
+  * "Cambia el título del encabezado a 'Mi Aplicación'"
+  * "Haz que el botón sea de color rojo"
+
+Si determinas que requiere delegación, define hasta 5 agentes especializados (mínimo 2, máximo 5) con nombres, roles específicos e instrucciones de tareas claras e independientes. Ejemplos de agentes:
+- DesignerAgent (Diseñador UX/UI) - Definir paleta de colores, layouts, estructura visual y experiencia de usuario.
+- CodeAgent (Desarrollador React/TS) - Desarrollar la lógica principal del componente App.tsx, hooks y estado interactivo (useState, useEffect).
+- StyleAgent (Maquetador CSS/Tailwind) - Crear la estructura de clases Tailwind CSS y los estilos globales en styles.css.
+- LogicAgent (Ingeniero de Interacciones) - Diseñar la lógica de cálculo interna, flujos de datos y simulación de datos interactivos.
+- AnimationAgent (Especialista en Motion) - Diseñar micro-interacciones, efectos hover y animaciones del sistema con framer-motion.
+
+DEBES responder ÚNICAMENTE con un bloque JSON en el siguiente formato (sin explicaciones, sin markdown, solo el JSON):
+{
+  "isComplex": true,
+  "reason": "Explicación breve del motivo de la decisión",
+  "agents": [
+    {
+      "agentName": "Nombre del Agente",
+      "role": "Rol o especialidad del agente",
+      "task": "Tarea o sub-pregunta específica a responder"
+    }
+  ]
+}`
+      : `Actúas como el LLM Coordinador y Orquestador de una plataforma financiera de élite.
 Tu tarea es analizar la consulta del usuario y determinar si requiere ser delegada a agentes especializados en paralelo para recopilar y verificar información antes de dar la respuesta final.
 
 CRITERIOS PARA DELEGACIÓN:

@@ -12,6 +12,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ModelSelector } from "@/components/chat/model-selector";
 import { useSidebar } from "@/components/ui/sidebar";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Plus,
   Mic,
   Globe,
@@ -735,36 +743,90 @@ const detectLanguage = (text: string): string => {
 };
 
 function WebBuilderPill() {
-  const { isWebBuilderMode, setWebBuilderMode } = useWebBuilderStore();
+  const { isWebBuilderMode, setWebBuilderMode, resetProject } = useWebBuilderStore();
+  const messages = useAIChatStore((s) => s.messages);
+  const clearMessages = useAIChatStore((s) => s.clearMessages);
+  const [showNewChatDialog, setShowNewChatDialog] = useState(false);
+
+  const handleToggleBuilder = () => {
+    if (!isWebBuilderMode && messages.length > 0) {
+      setShowNewChatDialog(true);
+    } else {
+      setWebBuilderMode(!isWebBuilderMode);
+    }
+  };
+
+  const confirmNewChatBuilder = () => {
+    clearMessages();
+    resetProject();
+    setWebBuilderMode(true);
+    setShowNewChatDialog(false);
+  };
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setWebBuilderMode(!isWebBuilderMode)}
-          className={cn(
-            "rounded-full h-7 px-3 gap-1.5 transition-all duration-300 shrink-0",
-            isWebBuilderMode
-              ? "!bg-gradient-to-r !from-violet-600 !to-blue-600 !text-white !border-violet-500 shadow-lg shadow-violet-500/20"
-              : "bg-input/10 dark:bg-input/30"
-          )}
-          aria-pressed={isWebBuilderMode}
-          aria-label="Desarrollar App Web"
-        >
-          <Code2 className="h-4 w-4" />
-          {isWebBuilderMode && (
-            <span className="text-[10px] font-black tracking-wide">
-              WebBuilder
-            </span>
-          )}
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent side="top" sideOffset={6}>
-        Desarrollar App Web
-      </TooltipContent>
-    </Tooltip>
+    <>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleToggleBuilder}
+            className={cn(
+              "rounded-full h-7 px-3 gap-1.5 transition-all duration-300 shrink-0",
+              isWebBuilderMode
+                ? "!bg-gradient-to-r !from-violet-600 !to-blue-600 !text-white !border-violet-500 shadow-lg shadow-violet-500/20"
+                : "bg-input/10 dark:bg-input/30"
+            )}
+            aria-pressed={isWebBuilderMode}
+            aria-label="Activar Builder"
+          >
+            <Code2 className="h-4 w-4" />
+            {isWebBuilderMode && (
+              <span className="text-[10px] font-black tracking-wide">
+                Builder
+              </span>
+            )}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="top" sideOffset={6}>
+          Activar Builder
+        </TooltipContent>
+      </Tooltip>
+
+      <Dialog open={showNewChatDialog} onOpenChange={setShowNewChatDialog}>
+        <DialogContent className="max-w-md p-6 rounded-3xl border border-border/40 bg-background/95 backdrop-blur-xl shadow-2xl">
+          <DialogHeader className="gap-2">
+            <DialogTitle className="text-lg font-black tracking-tight flex items-center gap-2">
+              <span className="p-2 bg-violet-500/10 text-violet-500 rounded-xl">🚀</span>
+              Iniciar nuevo chat para Builder
+            </DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground leading-relaxed mt-2">
+              Para comenzar a desarrollar aplicaciones o plataformas web con el <strong>Builder</strong>, es necesario iniciar una nueva conversación limpia.
+              <br />
+              <br />
+              ¿Deseas iniciar un nuevo chat y activar el Builder ahora?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-6 flex gap-2 justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowNewChatDialog(false)}
+              className="rounded-xl font-bold"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={confirmNewChatBuilder}
+              className="rounded-xl font-bold bg-gradient-to-r from-violet-600 to-blue-600 text-white shadow-lg shadow-violet-500/20 hover:opacity-95"
+            >
+              Sí, comenzar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

@@ -27,6 +27,7 @@ import { useAuthStore } from "@/lib/stores/auth-store";
 import { ActiveArticleDrawer } from "@/components/active-article-drawer";
 
 import { useAIChatStore } from "@/lib/stores/ai-chat-store";
+import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
 import { Button } from "@/components/ui/button";
 import { Menu, Plus } from "lucide-react";
 import { ModelSelector } from "@/components/chat/model-selector";
@@ -100,6 +101,9 @@ export function ClientLayoutProviders({
   const messages = useAIChatStore((s) => s.messages);
   const hasMessages = messages.length > 0;
   
+  const isWebBuilderMode = useWebBuilderStore((s) => s.isWebBuilderMode);
+  const showBuilderWorkspace = isWebBuilderMode && hasMessages;
+
   // Show bottom nav on mobile for sidebar pages, EXCEPT when on AI page
   const showMobileNavOnSidebar = isMobile && isSidebarPage && !isAiPage;
 
@@ -122,11 +126,13 @@ export function ClientLayoutProviders({
           >
             {isSidebarPage ? (
               <SidebarProvider>
-                <AppSidebar />
-                <SidebarInset>
-                  {isMobile && <MobileMenuButton />}
+                {!showBuilderWorkspace && <AppSidebar />}
+                <SidebarInset className={cn(showBuilderWorkspace && "h-screen overflow-hidden bg-background")}>
+                  {isMobile && !showBuilderWorkspace && <MobileMenuButton />}
                   <div className={cn(
-                    "flex flex-col h-full min-h-screen w-full min-w-0 overflow-y-auto overflow-x-hidden",
+                    showBuilderWorkspace
+                      ? "flex flex-col h-screen w-full min-w-0 overflow-hidden relative"
+                      : "flex flex-col h-full min-h-screen w-full min-w-0 overflow-y-auto overflow-x-hidden",
                     showMobileNavOnSidebar && "pb-24"
                   )}>
                     {children}

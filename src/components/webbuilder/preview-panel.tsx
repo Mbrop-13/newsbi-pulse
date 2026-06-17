@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
+import { useAIChatStore } from "@/lib/stores/ai-chat-store";
 import { SandboxRunner } from "./sandbox-runner";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -215,7 +216,8 @@ function ConsolePanel() {
 
 // ─── Main Preview Panel ──────────────────────────────
 export function PreviewPanel() {
-  const { selectedTab, setSelectedTab, files, cloudSyncEnabled, isSaving, lastSavedAt } = useWebBuilderStore();
+  const { selectedTab, setSelectedTab, files, cloudSyncEnabled, isSaving, lastSavedAt, isCompiling } = useWebBuilderStore();
+  const chatLoading = useAIChatStore((s) => s.isLoading);
 
   const tabs = [
     { id: "preview" as const, label: "Vista Previa", icon: Monitor },
@@ -314,8 +316,37 @@ export function PreviewPanel() {
           <div className="flex-1 bg-white">
             {hasFiles ? (
               <SandboxRunner />
+            ) : (isCompiling || chatLoading) ? (
+              <div className="flex flex-col items-center justify-center h-full bg-slate-950 text-gray-300 p-8 text-center relative overflow-hidden">
+                {/* Visual grid pattern background */}
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-30" />
+                
+                <div className="relative z-10 flex flex-col items-center max-w-sm">
+                  <div className="relative mb-6">
+                    {/* Pulsing glow behind spinner */}
+                    <div className="absolute inset-0 bg-violet-500/20 blur-xl rounded-full animate-pulse" />
+                    <div className="relative flex items-center justify-center w-16 h-16 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
+                      <Loader2 className="w-8 h-8 text-violet-500 animate-spin" />
+                    </div>
+                  </div>
+                  <h3 className="text-base font-extrabold text-white tracking-tight mb-2">Creando plataforma...</h3>
+                  <p className="text-xs text-gray-400 leading-relaxed">
+                    Analizando requisitos, generando estructura de archivos y compilando código en tiempo real.
+                  </p>
+                  
+                  {/* Subtle terminal-like logs preview */}
+                  <div className="w-full mt-6 bg-[#090d16]/80 border border-white/5 rounded-xl p-3 font-mono text-[9px] text-gray-500 text-left space-y-1 select-none">
+                    <div className="flex items-center gap-1.5 text-violet-400 font-semibold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-ping" />
+                      <span>[BUILDER ENGINE] Inicializando</span>
+                    </div>
+                    <div className="truncate opacity-80">&gt; Generando archivos base...</div>
+                    <div className="truncate opacity-60">&gt; Importando dependencias de React & Tailwind...</div>
+                  </div>
+                </div>
+              </div>
             ) : (
-              <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+              <div className="flex items-center justify-center h-full text-gray-400 text-sm bg-slate-900/50">
                 <div className="text-center">
                   <Monitor className="w-10 h-10 mx-auto mb-3 opacity-20" />
                   <p className="font-medium">Sin proyecto activo</p>

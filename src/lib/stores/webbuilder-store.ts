@@ -67,7 +67,7 @@ const DEFAULT_FILES: Record<string, WebBuilderFile> = {
           <span className="text-4xl">🚀</span>
         </div>
         <h1 className="text-4xl font-bold text-white mb-4 tracking-tight">
-          Maverlang <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">WebBuilder</span>
+          Maverlang <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">Builder</span>
         </h1>
         <p className="text-lg text-gray-300 max-w-md mx-auto leading-relaxed">
           Describe lo que quieres construir y la IA lo creará en tiempo real.

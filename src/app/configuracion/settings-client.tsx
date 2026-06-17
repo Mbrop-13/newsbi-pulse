@@ -325,7 +325,7 @@ export default function SettingsClient() {
                                       {wbSync ? <Cloud className="w-4 h-4" /> : <CloudOff className="w-4 h-4" />}
                                     </div>
                                     <div>
-                                      <h4 className="text-sm font-bold text-gray-900 dark:text-white">Guardar Proyectos WebBuilder</h4>
+                                      <h4 className="text-sm font-bold text-gray-900 dark:text-white">Guardar Proyectos Builder</h4>
                                       <p className="text-xs text-gray-500">Guarda en vivo en la nube tus códigos de aplicaciones construidas por la IA.</p>
                                     </div>
                                   </div>

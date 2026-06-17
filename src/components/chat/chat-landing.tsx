@@ -938,8 +938,8 @@ export function ChatLanding() {
     </div>
   )
 
-  // If WebBuilder mode is active, wrap in the split-screen workspace
-  if (isWebBuilderMode) {
+  // If WebBuilder mode is active and we have messages, wrap in the split-screen workspace
+  if (isWebBuilderMode && storeMessages.length > 0) {
     return (
       <WebBuilderWorkspace chatPanel={chatContent} />
     )

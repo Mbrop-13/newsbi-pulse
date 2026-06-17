@@ -21,8 +21,7 @@ export function SidebarLogo() {
     if (isMobile) setOpenMobile(false)
   }
 
-  const isDark = mounted && resolvedTheme === "dark"
-  const logoSrc = isDark ? "/assets/maverlang-logo-small-white.png" : "/assets/maverlang-logo-small.png"
+  const logoSrc = "https://mail.programbi.com/uploads/Maverlang-Logo-2.png"
 
   return (
     <div className={`flex items-center ${state === "expanded" ? "pl-1 pr-2 py-2" : "justify-center py-2"}`}>

@@ -317,12 +317,6 @@ function MessageBubble({
           onClick={onToggleReasoning}
           className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-all duration-200 group"
         >
-          <div className={cn(
-            "w-5 h-5 rounded-md flex items-center justify-center transition-colors",
-            isReasoningOpen ? "bg-[#1890FF]/10 text-[#1890FF]" : "bg-muted text-muted-foreground group-hover:bg-[#1890FF]/10 group-hover:text-[#1890FF]"
-          )}>
-            <Cpu className="w-3 h-3" />
-          </div>
           <span>Razonamiento</span>
           <ChevronRight
             className={cn(
@@ -494,7 +488,7 @@ function MessageBubble({
 
     return (
       <div className="flex gap-3">
-        <AssistantAvatar isResponding={true} />
+        <AssistantAvatar isResponding={isResponding} />
         <div className="flex-1 min-w-0">
           {/* Orchestrator header */}
           <div className="flex items-center gap-2 mb-3">
@@ -880,8 +874,7 @@ function AssistantAvatar({ isResponding }: { isResponding: boolean }) {
     );
   }
 
-  const isDark = mounted && resolvedTheme === "dark";
-  const imageSrc = isDark ? "/assets/maverlang-logo-small-white.png" : "/assets/maverlang-logo-small.png";
+  const imageSrc = "https://mail.programbi.com/uploads/Maverlang-Logo-2.png";
 
   return (
     <div className="h-20 w-28 shrink-0 mt-1 flex items-center justify-center">

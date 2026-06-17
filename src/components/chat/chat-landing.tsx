@@ -23,6 +23,9 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Newspaper, Sparkles, Headphones, LineChart, Coins, Landmark, Briefcase, Shield, Lightbulb, Globe, Flame, Calendar, Cpu, ArrowUpRight, ArrowDownRight } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useSidebar } from "@/components/ui/sidebar"
+import { useWebBuilderStore } from "@/lib/stores/webbuilder-store"
+import { WebBuilderWorkspace } from "@/components/webbuilder/workspace"
+import { parseArtifact, actionsToFiles, containsArtifact } from "@/lib/webbuilder-parser"
 
 // Model ID mapping for our API
 const MODEL_MAP: Record<string, string> = {
@@ -437,6 +440,7 @@ export function ChatLanding() {
     }
 
     // Use AI SDK append
+    const isWB = useWebBuilderStore.getState().isWebBuilderMode
     append(
       { role: "user", content: text },
       {
@@ -447,9 +451,15 @@ export function ChatLanding() {
           activeTools: activeTools,
           webSearch: options.webSearch,
           browser: options.browser,
+          webBuilder: isWB,
         },
       }
     )
+
+    // If WebBuilder mode is active, ensure split view is shown
+    if (isWB) {
+      useWebBuilderStore.getState().setSplitView(true)
+    }
   }
 
 
@@ -516,7 +526,32 @@ export function ChatLanding() {
 
   const displayMessages = groupConsecutiveMessages(rawDisplayMessages);
 
-  return (
+  // ── WebBuilder artifact parsing from streaming AI messages ──
+  const isWebBuilderMode = useWebBuilderStore((s) => s.isWebBuilderMode)
+  const prevStreamTextRef = useRef<string>("")
+
+  useEffect(() => {
+    if (!isWebBuilderMode || !aiLoading) return
+    // Check the last assistant message for artifact XML
+    const lastAssistant = [...aiMessages].reverse().find(m => m.role === 'assistant')
+    if (!lastAssistant?.content) return
+    const text = lastAssistant.content
+    // Only parse if text changed and contains artifact
+    if (text === prevStreamTextRef.current) return
+    prevStreamTextRef.current = text
+    if (!containsArtifact(text)) return
+    const artifact = parseArtifact(text)
+    if (artifact && artifact.actions.length > 0) {
+      const newFiles = actionsToFiles(artifact.actions)
+      const store = useWebBuilderStore.getState()
+      // Merge with existing files (preserving index.tsx etc)
+      const merged = { ...store.files, ...newFiles }
+      store.setFiles(merged)
+    }
+  }, [aiMessages, aiLoading, isWebBuilderMode])
+
+  // ── Render ──
+  const chatContent = (
     <div className="flex flex-col h-full relative flex-1">
       <div className="flex flex-col h-full relative">
         {/* Main content area */}
@@ -902,6 +937,15 @@ export function ChatLanding() {
       />
     </div>
   )
+
+  // If WebBuilder mode is active, wrap in the split-screen workspace
+  if (isWebBuilderMode) {
+    return (
+      <WebBuilderWorkspace chatPanel={chatContent} />
+    )
+  }
+
+  return chatContent
 }
 
 const COUNTRY_MAP: Record<string, { name: string; flag: string }> = {

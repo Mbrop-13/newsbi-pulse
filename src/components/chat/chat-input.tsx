@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { useAIChatStore } from "@/lib/stores/ai-chat-store";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
 import { motion, AnimatePresence } from "framer-motion";
 import { ModelSelector } from "@/components/chat/model-selector";
 import { useSidebar } from "@/components/ui/sidebar";
@@ -34,6 +35,7 @@ import {
   BookOpen,
   Chrome,
   Paperclip,
+  Code2,
 } from "lucide-react";
 
 const ADVANCED_TOOLS = [
@@ -535,6 +537,7 @@ export function ChatInput({
 
               {/* Feature toggle pills scrollable row */}
               <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [scrollbar-width:none] select-none flex-nowrap pr-2 max-w-[calc(100vw-180px)] sm:max-w-none">
+                <WebBuilderPill />
                 <Pill
                   active={codeInterpreter}
                   onClick={() => setCodeInterpreter(prev => !prev)}
@@ -730,3 +733,38 @@ const detectLanguage = (text: string): string => {
   }
   return "txt";
 };
+
+function WebBuilderPill() {
+  const { isWebBuilderMode, setWebBuilderMode } = useWebBuilderStore();
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setWebBuilderMode(!isWebBuilderMode)}
+          className={cn(
+            "rounded-full h-7 px-3 gap-1.5 transition-all duration-300 shrink-0",
+            isWebBuilderMode
+              ? "!bg-gradient-to-r !from-violet-600 !to-blue-600 !text-white !border-violet-500 shadow-lg shadow-violet-500/20"
+              : "bg-input/10 dark:bg-input/30"
+          )}
+          aria-pressed={isWebBuilderMode}
+          aria-label="Desarrollar App Web"
+        >
+          <Code2 className="h-4 w-4" />
+          {isWebBuilderMode && (
+            <span className="text-[10px] font-black tracking-wide">
+              WebBuilder
+            </span>
+          )}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="top" sideOffset={6}>
+        Desarrollar App Web
+      </TooltipContent>
+    </Tooltip>
+  );
+}

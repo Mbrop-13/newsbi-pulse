@@ -2,13 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Bell, Shield, Smartphone, Mail, Globe, Palette, LogOut, Loader2, Save, Key, CheckCircle2, ChevronRight, Settings, Sparkles, Trash2, Search, Plus, Check, X } from "lucide-react";
+import { User, Bell, Shield, Smartphone, Mail, Globe, Palette, LogOut, Loader2, Save, Key, CheckCircle2, ChevronRight, Settings, Sparkles, Trash2, Search, Plus, Check, X, Cloud, CloudOff } from "lucide-react";
 import { useAuthStore, useAuthModalStore } from "@/lib/stores/auth-store";
 import { createClient } from "@/lib/supabase/client";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { useAssistantStore, type Ticker } from "@/lib/stores/assistant-store";
 import { PREDEFINED_TOPICS } from "@/components/assistant/assistant-setup";
+import { useAIChatStore } from "@/lib/stores/ai-chat-store";
+import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
 
 interface UserPreferences {
   notify_email: boolean;
@@ -31,6 +33,12 @@ export default function SettingsClient() {
   const openModal = useAuthModalStore((s) => s.openModal);
   const supabase = createClient();
   const { theme, setTheme } = useTheme();
+
+  // Cloud Sync Settings
+  const chatSync = useAIChatStore((s) => s.cloudSyncEnabled);
+  const setChatSync = useAIChatStore((s) => s.setCloudSync);
+  const wbSync = useWebBuilderStore((s) => s.cloudSyncEnabled);
+  const setWbSync = useWebBuilderStore((s) => s.setCloudSync);
 
   const [activeTab, setActiveTab] = useState("general");
   const [loading, setLoading] = useState(true);
@@ -281,6 +289,58 @@ export default function SettingsClient() {
                                 <option value="en">English (US)</option>
                                 <option value="pt">Português (Brasil)</option>
                               </select>
+                            </div>
+
+                            {/* Cloud Sync */}
+                            <div className="pt-6 border-t border-gray-100 dark:border-gray-800">
+                              <label className="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                                <Cloud className="w-4 h-4 text-gray-400" /> Sincronización en la Nube
+                              </label>
+                              <div className="space-y-4">
+                                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800/40 rounded-2xl border border-gray-250 dark:border-gray-800">
+                                  <div className="flex items-start gap-3">
+                                    <div className={`p-2 rounded-xl mt-0.5 ${chatSync ? 'bg-blue-100 dark:bg-[#1890FF]/25 text-[#1890FF]' : 'bg-gray-250 dark:bg-gray-800 text-gray-500'}`}>
+                                      {chatSync ? <Cloud className="w-4 h-4" /> : <CloudOff className="w-4 h-4" />}
+                                    </div>
+                                    <div>
+                                      <h4 className="text-sm font-bold text-gray-900 dark:text-white">Guardar Chats en la Nube</h4>
+                                      <p className="text-xs text-gray-500">Sincroniza y respalda tu historial de conversaciones automáticamente.</p>
+                                    </div>
+                                  </div>
+                                  <button 
+                                    onClick={() => setChatSync(!chatSync)}
+                                    className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${chatSync ? 'bg-[#1890FF]' : 'bg-gray-300 dark:bg-gray-700'}`}
+                                  >
+                                    <motion.div 
+                                      className="absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow-sm"
+                                      animate={{ x: chatSync ? 20 : 0 }}
+                                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                    />
+                                  </button>
+                                </div>
+
+                                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800/40 rounded-2xl border border-gray-250 dark:border-gray-800">
+                                  <div className="flex items-start gap-3">
+                                    <div className={`p-2 rounded-xl mt-0.5 ${wbSync ? 'bg-blue-100 dark:bg-[#1890FF]/25 text-[#1890FF]' : 'bg-gray-250 dark:bg-gray-800 text-gray-500'}`}>
+                                      {wbSync ? <Cloud className="w-4 h-4" /> : <CloudOff className="w-4 h-4" />}
+                                    </div>
+                                    <div>
+                                      <h4 className="text-sm font-bold text-gray-900 dark:text-white">Guardar Proyectos WebBuilder</h4>
+                                      <p className="text-xs text-gray-500">Guarda en vivo en la nube tus códigos de aplicaciones construidas por la IA.</p>
+                                    </div>
+                                  </div>
+                                  <button 
+                                    onClick={() => setWbSync(!wbSync)}
+                                    className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${wbSync ? 'bg-[#1890FF]' : 'bg-gray-300 dark:bg-gray-700'}`}
+                                  >
+                                    <motion.div 
+                                      className="absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow-sm"
+                                      animate={{ x: wbSync ? 20 : 0 }}
+                                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                    />
+                                  </button>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </div>

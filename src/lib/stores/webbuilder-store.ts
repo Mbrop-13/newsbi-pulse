@@ -26,7 +26,7 @@ interface WebBuilderStore {
   activeFilePath: string;
   
   // UI State
-  selectedTab: "preview" | "code" | "console";
+  selectedTab: "preview" | "files" | "code" | "console";
   isCompiling: boolean;
   compileLogs: string[];
   isSplitView: boolean;
@@ -43,7 +43,7 @@ interface WebBuilderStore {
   setFiles: (files: Record<string, WebBuilderFile>) => void;
   deleteFile: (path: string) => void;
   setActiveFile: (path: string) => void;
-  setSelectedTab: (tab: "preview" | "code" | "console") => void;
+  setSelectedTab: (tab: "preview" | "files" | "code" | "console") => void;
   setCompiling: (val: boolean) => void;
   addCompileLog: (log: string) => void;
   clearCompileLogs: () => void;
@@ -138,7 +138,7 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
       setWebBuilderMode: (active) => {
         set({ isWebBuilderMode: active });
         if (active && Object.keys(get().files).length === 0) {
-          set({ files: { ...DEFAULT_FILES } });
+          set({ files: {} });
         }
       },
 
@@ -169,13 +169,21 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
           for (const [path, content] of Object.entries(updates)) {
             newFiles[path] = { code: content };
           }
-          return { files: newFiles };
+          const currentActive = s.activeFilePath;
+          const newActive = !currentActive || currentActive === ""
+            ? Object.keys(newFiles).find(k => k.endsWith("/App.tsx") || k.endsWith("/App.js")) || Object.keys(newFiles)[0] || ""
+            : currentActive;
+          return { files: newFiles, activeFilePath: newActive };
         });
         debouncedSync();
       },
 
       setFiles: (files) => {
-        set({ files });
+        const currentActive = get().activeFilePath;
+        const newActive = !currentActive || currentActive === ""
+          ? Object.keys(files).find(k => k.endsWith("/App.tsx") || k.endsWith("/App.js")) || Object.keys(files)[0] || ""
+          : currentActive;
+        set({ files, activeFilePath: newActive });
         debouncedSync();
       },
 
@@ -221,8 +229,8 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
         if (state.activeProjectId === chatId) return;
         set({
           activeProjectId: chatId,
-          files: { ...DEFAULT_FILES },
-          activeFilePath: "/App.tsx",
+          files: {},
+          activeFilePath: "",
           selectedTab: "preview",
           isCompiling: false,
           compileLogs: [],

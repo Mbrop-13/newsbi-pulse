@@ -734,7 +734,7 @@ function MessageBubble({
             onClick={() => onFeedback?.(message.id, feedback === 'like' ? null : 'like')}
             aria-label="Me gusta"
           >
-            <ThumbsUp className={cn("h-3.5 w-3.5", feedback === 'like' && "text-blue-500 fill-blue-500")} />
+            <ThumbsUp className={cn("h-3.5 w-3.5 transition-colors", feedback === 'like' && "text-black fill-black dark:text-white dark:fill-white")} />
           </Button>
           <Button
             variant="ghost"
@@ -743,7 +743,7 @@ function MessageBubble({
             onClick={() => onFeedback?.(message.id, feedback === 'dislike' ? null : 'dislike')}
             aria-label="No me gusta"
           >
-            <ThumbsDown className={cn("h-3.5 w-3.5", feedback === 'dislike' && "text-red-500 fill-red-500")} />
+            <ThumbsDown className={cn("h-3.5 w-3.5 transition-colors", feedback === 'dislike' && "text-black fill-black dark:text-white dark:fill-white")} />
           </Button>
           {onRetry && (
             <Button

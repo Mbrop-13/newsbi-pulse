@@ -34,7 +34,7 @@ export function ShareChatDialog({ isOpen, onClose, question, answer }: ShareChat
       const dataUrl = await htmlToImage.toPng(cardRef.current, {
         quality: 1,
         pixelRatio: 2,
-        backgroundColor: "#ffffff",
+        backgroundColor: "#080B11",
       });
       return dataUrl;
     } catch (err) {
@@ -66,14 +66,9 @@ export function ShareChatDialog({ isOpen, onClose, question, answer }: ShareChat
     setIsGeneratingLink(true);
     try {
       const user = useAuthStore.getState().user;
-      if (!user) {
-        alert("Debes iniciar sesión para compartir.");
-        return;
-      }
-
       const { currentChatId, messages, attachedArticles, attachedFiles } = useAIChatStore.getState();
 
-      if (currentChatId && messages.length > 0) {
+      if (user && currentChatId && messages.length > 0) {
         // Force save/sync the chat to Supabase ai_saved_chats
         const supabase = createClient();
         const title = messages.find(m => m.role === "user")?.content.slice(0, 40) + "..." || "Nuevo chat";
@@ -112,7 +107,7 @@ export function ShareChatDialog({ isOpen, onClose, question, answer }: ShareChat
         setCopiedLink(true);
         setTimeout(() => setCopiedLink(false), 3000);
       } else {
-        // Fallback to legacy single Q&A sharing
+        // Fallback to legacy single Q&A sharing (or anonymous share)
         const res = await fetch("/api/share-chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -175,43 +170,51 @@ export function ShareChatDialog({ isOpen, onClose, question, answer }: ShareChat
             <div className="flex justify-center mb-6">
               <div 
                 ref={cardRef} 
-                className="w-full max-w-[400px] rounded-2xl overflow-hidden bg-gradient-to-br from-[#1890FF] to-indigo-600 p-[2px] shadow-2xl relative"
+                className="w-full max-w-[400px] rounded-3xl overflow-hidden bg-gradient-to-br from-blue-500/30 via-indigo-500/20 to-purple-500/30 p-[1px] shadow-2xl relative"
                 style={{ fontFamily: "Inter, sans-serif" }}
               >
-                <div className="bg-white dark:bg-[#0F1117] w-full h-full rounded-[14px] p-5 relative overflow-hidden flex flex-col">
-                  {/* Background decoration */}
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-[#1890FF]/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none" />
-                  <div className="absolute bottom-0 left-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl -ml-10 -mb-10 pointer-events-none" />
+                <div className="bg-[#080B11] w-full h-full rounded-[23px] p-6 relative overflow-hidden flex flex-col min-h-[340px]">
+                  {/* Neon Glow spots */}
+                  <div className="absolute top-0 right-0 w-36 h-36 bg-[#1890FF]/15 rounded-full blur-3xl -mr-12 -mt-12 pointer-events-none" />
+                  <div className="absolute bottom-0 left-0 w-36 h-36 bg-purple-500/12 rounded-full blur-3xl -ml-12 -mb-12 pointer-events-none" />
 
-                  {/* Header / Logo — bigger, no text */}
-                  <div className="flex items-center gap-2 mb-4 relative z-10">
-                    <img 
-                      src="/assets/maverlang-logo-small.png" 
-                      alt="Maverlang" 
-                      className="h-9 w-auto object-contain"
-                    />
+                  {/* Header / Logo */}
+                  <div className="flex items-center justify-between mb-5 relative z-10">
+                    <div className="flex items-center gap-2">
+                      <img 
+                        src="https://mail.programbi.com/uploads/Maverlang-Logo-2.png" 
+                        alt="Maverlang" 
+                        className="h-8 w-auto object-contain"
+                      />
+                      <span className="text-sm font-black tracking-wider text-slate-100 italic">MAVERLANG</span>
+                    </div>
+                    <div className="text-[9px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 rounded-full px-2 py-0.5 uppercase tracking-wider">
+                      Copiloto IA
+                    </div>
                   </div>
 
                   {/* Question */}
                   <div className="mb-4 relative z-10">
-                    <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 bg-gray-100/80 dark:bg-white/5 rounded-xl px-3 py-2 w-fit max-w-[90%] shadow-sm">
-                      {question.length > 100 ? question.substring(0, 100) + "..." : question}
+                    <p className="text-xs font-semibold text-slate-100 bg-white/[0.04] border border-white/[0.06] rounded-2xl px-3.5 py-2.5 w-fit max-w-[95%] shadow-sm leading-normal">
+                      💡 {question.length > 120 ? question.substring(0, 120) + "..." : question}
                     </p>
                   </div>
 
                   {/* Answer Preview */}
-                  <div className="relative z-10 w-full prose prose-sm dark:prose-invert prose-p:leading-snug max-h-[180px] overflow-hidden text-gray-600 dark:text-gray-400">
-                    <ReactMarkdown>
-                      {cleanAnswer}
-                    </ReactMarkdown>
-                    {/* Seamless fade — matches inner card bg exactly */}
-                    <div className="absolute bottom-0 left-0 right-0 h-20 pointer-events-none" style={{ background: 'linear-gradient(to top, var(--card-bg) 0%, var(--card-bg) 20%, transparent 100%)' }} />
-                    <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-white dark:from-[#0F1117] via-white/80 dark:via-[#0F1117]/80 to-transparent pointer-events-none" />
+                  <div className="relative z-10 w-full text-slate-300 text-[11.5px] leading-relaxed max-h-[170px] overflow-hidden select-none">
+                    <div className="prose prose-invert prose-p:leading-relaxed prose-xs max-w-none">
+                      <ReactMarkdown>
+                        {cleanAnswer}
+                      </ReactMarkdown>
+                    </div>
+                    {/* Seamless fade */}
+                    <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#080B11] via-[#080B11]/70 to-transparent pointer-events-none" />
                   </div>
 
                   {/* Footer watermark */}
-                  <div className="flex items-center justify-center gap-2 pt-3 mt-2 relative z-10 border-t border-gray-100 dark:border-white/5">
-                    <span className="text-[10px] font-semibold tracking-wider text-gray-300 dark:text-gray-600 uppercase">maverlang.cl</span>
+                  <div className="flex items-center justify-between pt-4 mt-auto relative z-10 border-t border-white/[0.05]">
+                    <span className="text-[8px] font-black tracking-widest text-slate-500 uppercase">Respuesta de IA</span>
+                    <span className="text-[9px] font-bold tracking-widest text-[#1890FF] uppercase">maverlang.cl</span>
                   </div>
                 </div>
               </div>

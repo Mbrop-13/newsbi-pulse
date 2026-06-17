@@ -254,7 +254,7 @@ export function ChatInput({
   };
 
   return (
-    <div className={cn("bg-transparent", "px-2 md:px-0 pb-4 md:pb-6")}>
+    <div className={cn("bg-transparent", "px-2 md:px-0 pb-2 md:pb-3")}>
       <form
         onSubmit={handleSubmit}
         className={cn("max-w-6xl px-0 mx-auto inset-x-0 pt-0 relative", className)}

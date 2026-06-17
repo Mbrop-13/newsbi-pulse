@@ -339,7 +339,7 @@ function MessageBubble({
               transition={{ duration: 0.2 }}
               className="overflow-hidden"
             >
-              <div className="mt-2 pl-3 border-l-2 border-[#1890FF]/30 text-[11px] text-muted-foreground font-mono whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto scrollbar-hide bg-muted/30 rounded-r-lg p-3">
+              <div className="mt-2 pl-3.5 border-l-2 border-black/15 dark:border-white/15 text-[12.5px] text-muted-foreground/80 font-sans whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto scrollbar-hide py-1">
                 {content}
               </div>
             </motion.div>

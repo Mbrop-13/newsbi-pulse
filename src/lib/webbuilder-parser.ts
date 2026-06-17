@@ -96,11 +96,15 @@ export function isArtifactComplete(text: string): boolean {
  * Strip artifact XML from the AI response text, leaving only the natural language.
  */
 export function stripArtifactXml(text: string): string {
-  return text
-    .replace(
-      /<maverlangArtifact[\s\S]*?<\/maverlangArtifact>/g,
-      ""
-    )
-    .replace(/<maverlangArtifact[\s\S]*$/g, "") // handle incomplete
-    .trim();
+  let clean = text;
+  
+  // 1. Remove XML artifact blocks (complete or incomplete/streaming)
+  clean = clean.replace(/<maverlangArtifact[\s\S]*?<\/maverlangArtifact>/gi, "");
+  clean = clean.replace(/<maverlangArtifact[\s\S]*$/gi, "");
+  
+  // 2. Remove markdown code blocks (complete or incomplete/streaming)
+  clean = clean.replace(/```[a-zA-Z]*[\s\S]*?```/g, "");
+  clean = clean.replace(/```[a-zA-Z]*[\s\S]*$/g, "");
+  
+  return clean.trim();
 }

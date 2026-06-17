@@ -10,6 +10,7 @@ import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import type { ChatMessage } from "@/lib/stores/ai-chat-store"
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store"
+import { stripArtifactXml } from "@/lib/webbuilder-parser"
 import { PortfolioSummaryCard } from "@/components/assistant/portfolio-summary-card"
 import { StockAnalysisCard } from "@/components/assistant/stock-analysis-card"
 import { AnalyzedNewsCard } from "@/components/assistant/analyzed-news-card"
@@ -595,7 +596,7 @@ function MessageBubble({
         <div className="prose prose-sm dark:prose-invert max-w-none text-sm">
           {message.content ? (
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {message.content}
+              {isWebBuilderMode ? stripArtifactXml(message.content) : message.content}
             </ReactMarkdown>
           ) : (
             !message.toolResults?.length && !message.toolInvocations?.length && !message.reasoning && (
@@ -609,8 +610,8 @@ function MessageBubble({
         </div>
 
         {/* 4. Tool results & charts (AFTER text) */}
-        {renderToolResults()}
-        {renderCharts()}
+        {!isWebBuilderMode && renderToolResults()}
+        {!isWebBuilderMode && renderCharts()}
 
         {/* Citations Widget */}
         {hasCitations && (

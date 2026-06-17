@@ -205,6 +205,8 @@ REGLAS CRÍTICAS:
 15. RESPONSIVE: El diseño debe funcionar bien en todas las resoluciones.
 16. Haz que las apps sean interactivas con useState, useEffect, y eventos de usuario.
 17. Respondes SIEMPRE en español.
+18. EN EL CHAT NUNCA DEBES MOSTRAR EL CÓDIGO. No uses bloques de código de markdown como \`\`\`tsx o \`\`\`css fuera del bloque de artefacto XML. Todo el código del proyecto debe estar únicamente dentro de la estructura XML <maverlangArtifact>...</maverlangArtifact>.
+19. NUNCA menciones ni intentes usar herramientas externas (como cálculos en Python, consulta de portafolio, análisis fundamental de acciones, alertas de precios o la herramienta render_chart). No tienes acceso a herramientas en este modo de construcción web. Si necesitas simular datos, gráficos o cálculos, hazlo de forma completamente interactiva dentro del código de tu componente React en /App.tsx.
 
 NUNCA digas que eres de OpenAI, Anthropic o Google. Eres Maverlang WebBuilder.`;
 }
@@ -341,18 +343,21 @@ export async function POST(req: NextRequest) {
 
     // ── Multi-Agent Orchestration ──
     const orchestratorModel = mimo(finalModelStr);
-    const orchestrationResult = await runOrchestration(
-      orchestratorModel,
-      lastUserMessage,
-      portfolioText,
-      (text) => {
-        try {
-          streamData.append({ type: 'reasoning', text });
-        } catch {
-          // StreamData may already be closed/flushed
+    let orchestrationResult = { isComplex: false, agentReports: [] as any[] };
+    if (!webBuilder) {
+      orchestrationResult = await runOrchestration(
+        orchestratorModel,
+        lastUserMessage,
+        portfolioText,
+        (text) => {
+          try {
+            streamData.append({ type: 'reasoning', text });
+          } catch {
+            // StreamData may already be closed/flushed
+          }
         }
-      }
-    );
+      );
+    }
 
     let messagesForFinalLlm = processedMessages;
     if (orchestrationResult.isComplex && orchestrationResult.agentReports.length > 0) {
@@ -402,9 +407,9 @@ ${reportsSummary}`,
         : getSystemPrompt(assistantName, assistantTone, assistantRole, assistantTopics),
       messages: messagesForFinalLlm,
       maxTokens: 8192, // MiMo is a reasoning model — needs enough budget for thinking + response
-      maxSteps: 8,
-      toolChoice: 'auto',
-      tools: {
+      maxSteps: webBuilder ? undefined : 8,
+      toolChoice: webBuilder ? 'none' : 'auto',
+      tools: webBuilder ? {} : {
         // ── PORTFOLIO TOOLS ──
         get_portfolio_summary: tool({
           description: 'Resumen en vivo del portafolio: precios, cambios diarios, posiciones. Usar cuando pregunten por "mis acciones". IMPORTANTE: El "changePercent" devuelto es SÓLO el cambio de hoy (1d). Si el usuario pide el rendimiento de "este mes" (1mo), "este año" (1y) u otro periodo, DEBES llamar primero a esta herramienta para saber qué símbolos tiene el usuario, y LUEGO llamar a la herramienta "compare_stocks" pasándole esos símbolos y el "period" correspondiente para obtener el crecimiento histórico real antes de responder o graficar.',

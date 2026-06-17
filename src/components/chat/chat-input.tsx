@@ -87,6 +87,7 @@ export function ChatInput({
   const [image, setImage] = useState(false);
   const [codeInterpreter, setCodeInterpreter] = useState(false);
   const [browser, setBrowser] = useState(false);
+  const { isWebBuilderMode } = useWebBuilderStore();
   
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [attachMenuView, setAttachMenuView] = useState<'main' | 'charts' | 'analysis'>('main');
@@ -124,7 +125,7 @@ export function ChatInput({
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "auto";
-    const max = 256;
+    const max = isWebBuilderMode ? 160 : 256;
     el.style.height = Math.min(el.scrollHeight, max) + "px";
   };
 
@@ -264,10 +265,10 @@ export function ChatInput({
   };
 
   return (
-    <div className={cn("bg-transparent", "px-2 md:px-0 pb-2 md:pb-3")}>
+    <div className={cn("bg-transparent", isWebBuilderMode ? "px-2 pb-2" : "px-2 md:px-0 pb-2 md:pb-3")}>
       <form
         onSubmit={handleSubmit}
-        className={cn("max-w-6xl px-0 mx-auto inset-x-0 pt-0 relative", className)}
+        className={cn(isWebBuilderMode ? "w-full max-w-full px-1" : "max-w-6xl px-0 mx-auto inset-x-0", "pt-0 relative", className)}
       >
         {/* Active Tool Pills & Attachments */}
         {(activeTools.length > 0 || attachedArticles.length > 0) && (
@@ -325,7 +326,8 @@ export function ChatInput({
         )}
 
         <div className={cn(
-          "rounded-3xl bg-secondary dark:bg-secondary p-2 shadow-md border transition-all duration-300 relative",
+          isWebBuilderMode ? "rounded-2xl p-1.5" : "rounded-3xl p-2",
+          "bg-secondary dark:bg-secondary shadow-md border transition-all duration-300 relative",
           isListening && "border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.15)]"
         )}>
           {/* File Previews inside the input box */}
@@ -402,9 +404,9 @@ export function ChatInput({
               name="input"
               rows={1}
               className={cn(
-                "min-h-12 max-h-72 resize-none overflow-y-auto",
-                "border-0 bg-secondary dark:bg-secondary shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 px-1",
-                "text-[16px] md:text-[16px]"
+                isWebBuilderMode ? "min-h-9 max-h-48 text-sm px-1 py-1" : "min-h-12 max-h-72 text-[16px] md:text-[16px] px-1",
+                "resize-none overflow-y-auto",
+                "border-0 bg-secondary dark:bg-secondary shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
               )}
             />
           </div>
@@ -775,7 +777,7 @@ function WebBuilderPill() {
             className={cn(
               "rounded-full h-7 px-3 gap-1.5 transition-all duration-300 shrink-0",
               isWebBuilderMode
-                ? "!bg-gradient-to-r !from-violet-600 !to-blue-600 !text-white !border-violet-500 shadow-lg shadow-violet-500/20"
+                ? "!bg-foreground !text-background !border-foreground shadow-md hover:bg-foreground/90"
                 : "bg-input/10 dark:bg-input/30"
             )}
             aria-pressed={isWebBuilderMode}

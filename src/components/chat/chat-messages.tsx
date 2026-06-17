@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import type { ChatMessage } from "@/lib/stores/ai-chat-store"
+import { useWebBuilderStore } from "@/lib/stores/webbuilder-store"
 import { PortfolioSummaryCard } from "@/components/assistant/portfolio-summary-card"
 import { StockAnalysisCard } from "@/components/assistant/stock-analysis-card"
 import { AnalyzedNewsCard } from "@/components/assistant/analyzed-news-card"
@@ -40,6 +41,7 @@ export function ChatMessages({
   openReasoning = {},
   onToggleReasoning,
 }: ChatMessagesProps) {
+  const { isWebBuilderMode } = useWebBuilderStore()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [showScrollButton, setShowScrollButton] = useState(false)
@@ -76,7 +78,10 @@ export function ChatMessages({
     <div
       ref={containerRef}
       onScroll={handleScroll}
-      className="flex-1 overflow-y-auto scrollbar-hide px-4 md:px-6 relative"
+      className={cn(
+        "flex-1 overflow-y-auto scrollbar-hide relative",
+        isWebBuilderMode ? "px-2" : "px-4 md:px-6"
+      )}
     >
       <AnimatePresence>
         {showScrollButton && (
@@ -95,7 +100,7 @@ export function ChatMessages({
         )}
       </AnimatePresence>
 
-      <div className="max-w-3xl mx-auto pt-20 pb-6 space-y-6">
+      <div className={cn("pt-16 pb-6 space-y-6", isWebBuilderMode ? "w-full max-w-full" : "max-w-3xl mx-auto")}>
         {messages.map((msg, idx) => (
           <MessageBubble
             key={msg.id}
@@ -110,13 +115,14 @@ export function ChatMessages({
             streamData={streamData}
             isLast={idx === messages.length - 1}
             isLoading={isLoading}
+            isWebBuilderMode={isWebBuilderMode}
           />
         ))}
 
         {/* Loading indicator */}
         {isLoading && messages[messages.length - 1]?.role === 'user' && (
-          <div className="flex gap-3">
-            <AssistantAvatar isResponding={true} />
+          <div className={cn("flex", isWebBuilderMode ? "gap-2" : "gap-3")}>
+            <AssistantAvatar isResponding={true} isWebBuilderMode={isWebBuilderMode} />
             <div className="flex items-center gap-2 py-2">
               <div className="flex items-center gap-1">
                 <div className="w-2 h-2 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -206,6 +212,7 @@ function MessageBubble({
   streamData,
   isLast,
   isLoading,
+  isWebBuilderMode,
 }: {
   message: ChatMessage
   feedback?: 'like' | 'dislike'
@@ -218,6 +225,7 @@ function MessageBubble({
   streamData?: any[]
   isLast: boolean
   isLoading: boolean
+  isWebBuilderMode?: boolean
 }) {
   const isUser = message.role === "user"
   const [isCitationsOpen, setIsCitationsOpen] = useState(false)
@@ -468,9 +476,12 @@ function MessageBubble({
   if (isUser) {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[85%] md:max-w-[75%]">
-          <div className="rounded-3xl bg-secondary dark:bg-secondary px-4 py-3">
-            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+        <div className={cn(isWebBuilderMode ? "max-w-[95%]" : "max-w-[85%] md:max-w-[75%]")}>
+          <div className={cn(
+            "bg-secondary dark:bg-secondary text-sm",
+            isWebBuilderMode ? "rounded-2xl px-3 py-2" : "rounded-3xl px-4 py-3"
+          )}>
+            <p className="whitespace-pre-wrap">{message.content}</p>
           </div>
         </div>
       </div>
@@ -487,8 +498,8 @@ function MessageBubble({
     const hasAgentSteps = steps.some(s => s.type === 'agent_start' || s.type === 'agent_done' || s.type === 'agent_fail');
 
     return (
-      <div className="flex gap-3">
-        <AssistantAvatar isResponding={isResponding} />
+      <div className={cn("flex", isWebBuilderMode ? "gap-2" : "gap-3")}>
+        <AssistantAvatar isResponding={isResponding} isWebBuilderMode={isWebBuilderMode} />
         <div className="flex-1 min-w-0">
           {/* Orchestrator header */}
           <div className="flex items-center gap-2 mb-3">
@@ -568,8 +579,8 @@ function MessageBubble({
 
   // ─── Standard Assistant message ───
   return (
-    <div className="flex gap-3 group">
-      <AssistantAvatar isResponding={isResponding} />
+    <div className={cn("flex group", isWebBuilderMode ? "gap-2" : "gap-3")}>
+      <AssistantAvatar isResponding={isResponding} isWebBuilderMode={isWebBuilderMode} />
       <div className="flex-1 min-w-0">
         {/* 1. Reasoning (expandable) */}
         {renderReasoning()}
@@ -851,7 +862,7 @@ function PythonResultCard({ args, result }: { args: any; result: any }) {
   );
 }
 
-function AssistantAvatar({ isResponding }: { isResponding: boolean }) {
+function AssistantAvatar({ isResponding, isWebBuilderMode }: { isResponding: boolean; isWebBuilderMode?: boolean }) {
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -861,7 +872,10 @@ function AssistantAvatar({ isResponding }: { isResponding: boolean }) {
 
   if (isResponding) {
     return (
-      <div className="h-24 w-32 shrink-0 mt-1 flex items-center justify-center rounded-2xl overflow-hidden bg-transparent dark:bg-black">
+      <div className={cn(
+        "shrink-0 mt-1 flex items-center justify-center rounded-2xl overflow-hidden bg-transparent dark:bg-black",
+        isWebBuilderMode ? "h-10 w-10 rounded-xl" : "h-24 w-32"
+      )}>
         <video 
           src="/assets/saturn-logo.mp4" 
           autoPlay 
@@ -877,11 +891,14 @@ function AssistantAvatar({ isResponding }: { isResponding: boolean }) {
   const imageSrc = "https://mail.programbi.com/uploads/Maverlang-Logo-2.png";
 
   return (
-    <div className="h-20 w-28 shrink-0 mt-1 flex items-center justify-center">
+    <div className={cn(
+      "shrink-0 mt-1 flex items-center justify-center",
+      isWebBuilderMode ? "h-10 w-10" : "h-20 w-28"
+    )}>
       <img 
         src={imageSrc} 
         alt="Chat Logo" 
-        className="w-12 h-12 object-contain"
+        className={cn("object-contain", isWebBuilderMode ? "w-8 h-8" : "w-12 h-12")}
       />
     </div>
   );

@@ -120,7 +120,7 @@ export function WebBuilderWorkspace({ chatPanel }: WebBuilderWorkspaceProps) {
             animate={{ width: "65%", opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            className="h-full flex flex-col overflow-hidden bg-[#1e1e2e] dark:bg-[#0d1117]"
+            className="h-full flex flex-col overflow-hidden bg-background"
           >
             <PreviewPanel />
           </motion.div>

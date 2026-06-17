@@ -3,7 +3,7 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { generateText } from 'ai';
 import { createClient } from "@/lib/supabase/server";
 import { containsArtifact, parseArtifact, actionsToFiles } from "@/lib/webbuilder-parser";
-import { incrementTokenUsage } from "@/lib/check-limits";
+import { incrementTokenUsage, checkTokenLimit } from "@/lib/check-limits";
 
 export const maxDuration = 30;
 
@@ -14,6 +14,14 @@ export async function POST(req: NextRequest) {
     
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const tokenLimit = await checkTokenLimit(user.id);
+    if (!tokenLimit.allowed) {
+      return NextResponse.json({ 
+        success: false, 
+        error: "Límite de tokens de IA agotado. No se pueden realizar correcciones automáticas." 
+      }, { status: 403 });
     }
 
     const { error, files } = await req.json();

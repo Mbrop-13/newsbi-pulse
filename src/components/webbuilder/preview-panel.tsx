@@ -429,29 +429,78 @@ export function PreviewPanel() {
                   <SandboxRunner />
                 </div>
               ) : (isCompiling || chatLoading) ? (
-                <div className="flex-grow w-full h-full bg-background flex flex-col items-center justify-center p-8 text-center relative z-10">
-                  <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,0,0,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.05)_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-30 animate-pulse" />
+                <div className="flex-grow w-full h-full bg-background flex flex-col items-center justify-center p-8 text-center relative z-10 overflow-hidden">
+                  {/* Grid pattern with light gradients */}
+                  <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(13,110,253,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(13,110,253,0.03)_1px,transparent_1px)] bg-[size:2.5rem_2.5rem] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)] opacity-70" />
                   
-                  <div className="relative z-10 flex flex-col items-center max-w-sm">
-                    <div className="relative mb-6">
-                      <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
-                      <div className="relative flex items-center justify-center w-16 h-16 rounded-2xl bg-card border border-border backdrop-blur-md">
-                        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                  {/* Neon radial glows */}
+                  <div className="absolute -top-12 -left-12 w-64 h-64 bg-primary/20 rounded-full blur-[80px] animate-pulse pointer-events-none" />
+                  <div className="absolute -bottom-12 -right-12 w-64 h-64 bg-violet-500/20 rounded-full blur-[80px] animate-pulse pointer-events-none" style={{ animationDelay: "1.5s" }} />
+
+                  <div className="relative z-10 flex flex-col items-center max-w-lg w-full">
+                    {/* Visual SaaS App Mockup Skeleton */}
+                    <div className="w-full bg-card/65 border border-border/40 backdrop-blur-lg rounded-2xl shadow-2xl overflow-hidden mb-8 space-y-0 animate-pulse relative">
+                      {/* Window header */}
+                      <div className="flex items-center justify-between px-4 py-3 bg-muted/40 border-b border-border/20">
+                        <div className="flex gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full bg-red-500/30" />
+                          <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/30" />
+                          <span className="w-2.5 h-2.5 rounded-full bg-green-500/30" />
+                        </div>
+                        <div className="w-36 h-3.5 bg-muted/70 rounded-full" />
+                        <div className="w-4 h-4 bg-muted/50 rounded" />
+                      </div>
+
+                      {/* Mockup dashboard grid */}
+                      <div className="p-5 flex gap-4 h-56">
+                        {/* Mock sidebar */}
+                        <div className="w-1/4 flex flex-col gap-3 border-r border-border/20 pr-4">
+                          <div className="w-full h-8 bg-muted rounded-lg" />
+                          <div className="w-5/6 h-5 bg-muted/65 rounded-lg" />
+                          <div className="w-4/5 h-5 bg-muted/65 rounded-lg" />
+                          <div className="w-full h-5 bg-muted/65 rounded-lg" />
+                        </div>
+
+                        {/* Mock main content */}
+                        <div className="flex-1 flex flex-col gap-4">
+                          {/* Row of stats cards */}
+                          <div className="grid grid-cols-3 gap-3">
+                            <div className="h-12 bg-muted/70 rounded-xl" />
+                            <div className="h-12 bg-muted/70 rounded-xl" />
+                            <div className="h-12 bg-muted/70 rounded-xl" />
+                          </div>
+                          
+                          {/* Large chart area mockup */}
+                          <div className="flex-grow bg-muted/50 rounded-xl p-3 flex flex-col justify-between">
+                            <div className="flex justify-between items-center">
+                              <div className="w-16 h-3 bg-muted rounded-full" />
+                              <div className="w-8 h-3 bg-muted rounded-full" />
+                            </div>
+                            {/* Graphic lines simulation */}
+                            <div className="flex items-end gap-1.5 h-16 pt-2">
+                              <div className="flex-1 bg-primary/10 rounded-t h-1/3" />
+                              <div className="flex-1 bg-primary/15 rounded-t h-2/3" />
+                              <div className="flex-1 bg-primary/25 rounded-t h-1/2" />
+                              <div className="flex-1 bg-primary/20 rounded-t h-4/5 animate-bounce" style={{ animationDelay: '0.1s' }} />
+                              <div className="flex-1 bg-primary/15 rounded-t h-3/5" />
+                              <div className="flex-1 bg-primary/10 rounded-t h-2/5" />
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    <h3 className="text-base font-extrabold text-foreground tracking-tight mb-2">Creando plataforma...</h3>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      Analizando requisitos, generando estructura de archivos y compilando código en tiempo real.
-                    </p>
-                    
-                    {/* Subtle terminal-like logs preview */}
-                    <div className="w-full mt-6 bg-muted border border-border rounded-xl p-3 font-mono text-[9px] text-muted-foreground text-left space-y-1 select-none">
-                      <div className="flex items-center gap-1.5 text-primary font-semibold">
-                        <span className="w-1.5 h-1.5 rounded-full bg-primary animate-ping" />
-                        <span>[BUILDER ENGINE] Inicializando</span>
+
+                    {/* Highly Premium Shimmery Loader Badge */}
+                    <div className="relative group">
+                      <div className="absolute -inset-0.5 bg-gradient-to-r from-primary via-purple-500 to-blue-500 rounded-full blur opacity-40 group-hover:opacity-60 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
+                      <div className="relative flex items-center gap-3 bg-card/90 border border-border/40 backdrop-blur-md px-6 py-3.5 rounded-full shadow-2xl">
+                        <div className="relative flex items-center justify-center shrink-0 w-5 h-5">
+                          <Loader2 className="w-full h-full text-primary animate-spin" />
+                        </div>
+                        <span className="text-xs font-bold tracking-tight text-foreground bg-clip-text">
+                          Compilando e inicializando la interfaz...
+                        </span>
                       </div>
-                      <div className="truncate opacity-80">&gt; Generando archivos base...</div>
-                      <div className="truncate opacity-60">&gt; Importando dependencias de React & Tailwind...</div>
                     </div>
                   </div>
                 </div>

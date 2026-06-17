@@ -548,18 +548,22 @@ export function ChatInput({
               {/* Feature toggle pills scrollable row */}
               <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [scrollbar-width:none] select-none flex-nowrap pr-2 max-w-[calc(100vw-180px)] sm:max-w-none">
                 <WebBuilderPill />
-                <Pill
-                  active={codeInterpreter}
-                  onClick={() => setCodeInterpreter(prev => !prev)}
-                  icon={<Terminal className="h-4 w-4" />}
-                  label="Intérprete de código"
-                />
-                <Pill
-                  active={browser}
-                  onClick={() => setBrowser(prev => !prev)}
-                  icon={<Chrome className="h-4 w-4" />}
-                  label="Navegador virtual"
-                />
+                {!isWebBuilderMode && (
+                  <>
+                    <Pill
+                      active={codeInterpreter}
+                      onClick={() => setCodeInterpreter(prev => !prev)}
+                      icon={<Terminal className="h-4 w-4" />}
+                      label="Intérprete de código"
+                    />
+                    <Pill
+                      active={browser}
+                      onClick={() => setBrowser(prev => !prev)}
+                      icon={<Chrome className="h-4 w-4" />}
+                      label="Navegador virtual"
+                    />
+                  </>
+                )}
               </div>
             </div>
 

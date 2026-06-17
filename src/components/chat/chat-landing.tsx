@@ -611,9 +611,20 @@ export function ChatLanding() {
                               </div>
                             </Link>
                           ))
-                        ) : (
-                          <div className="text-center py-6 text-xs text-muted-foreground">Cargando noticias...</div>
-                        )}
+                         ) : (
+                           <div className="flex flex-col gap-2.5 py-1">
+                             {[1, 2, 3].map((i) => (
+                               <div key={i} className="flex items-start gap-3 p-2 rounded-xl relative overflow-hidden">
+                                 <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-muted via-muted/65 to-muted bg-[length:200%_100%] animate-[shimmer_1.5s_infinite] shrink-0" />
+                                 <div className="flex-1 space-y-2 py-0.5">
+                                   <div className="h-3.5 bg-gradient-to-r from-muted via-muted/65 to-muted bg-[length:200%_100%] animate-[shimmer_1.5s_infinite] rounded-md w-full" />
+                                   <div className="h-3.5 bg-gradient-to-r from-muted via-muted/65 to-muted bg-[length:200%_100%] animate-[shimmer_1.5s_infinite] rounded-md w-[85%]" />
+                                   <div className="h-2.5 bg-gradient-to-r from-muted via-muted/65 to-muted bg-[length:200%_100%] animate-[shimmer_1.5s_infinite] rounded-md w-[35%] mt-2" />
+                                 </div>
+                               </div>
+                             ))}
+                           </div>
+                         )}
                       </div>
                       
                       <Link href="/noticias" className="text-center text-[10px] font-bold text-[#1890FF] hover:underline pt-2 border-t border-gray-100 dark:border-white/5">
@@ -734,9 +745,22 @@ export function ChatLanding() {
                               Iniciar Sesión
                             </Button>
                           </div>
-                        ) : loadingData ? (
-                          <div className="text-center py-6 text-xs text-muted-foreground">Cargando portafolio...</div>
-                        ) : portfolioList.length > 0 ? (
+                         ) : loadingData ? (
+                            <div className="flex flex-col gap-2.5 py-1">
+                              {[1, 2, 3].map((i) => (
+                                <div key={i} className="flex items-center justify-between p-2 rounded-xl relative overflow-hidden">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-muted via-muted/65 to-muted bg-[length:200%_100%] animate-[shimmer_1.5s_infinite] shrink-0" />
+                                    <div className="flex flex-col gap-1.5">
+                                      <div className="w-12 h-3.5 bg-gradient-to-r from-muted via-muted/65 to-muted bg-[length:200%_100%] animate-[shimmer_1.5s_infinite] rounded" />
+                                      <div className="w-20 h-2 bg-gradient-to-r from-muted via-muted/65 to-muted bg-[length:200%_100%] animate-[shimmer_1.5s_infinite] rounded" />
+                                    </div>
+                                  </div>
+                                  <div className="w-14 h-4 bg-gradient-to-r from-muted via-muted/65 to-muted bg-[length:200%_100%] animate-[shimmer_1.5s_infinite] rounded" />
+                                 </div>
+                              ))}
+                            </div>
+                         ) : portfolioList.length > 0 ? (
                           <div className="flex flex-col gap-1.5 max-h-[240px] overflow-y-auto pr-1">
                             {portfolioList.map((asset) => (
                               <Link 
@@ -853,9 +877,20 @@ export function ChatLanding() {
                               </Link>
                             );
                           })
-                        ) : (
-                          <div className="text-center py-6 text-xs text-muted-foreground">Cargando noticias globales...</div>
-                        )}
+                         ) : (
+                           <div className="flex flex-col gap-2.5 py-1">
+                             {[1, 2, 3].map((i) => (
+                               <div key={i} className="flex items-start gap-3 p-2 rounded-xl relative overflow-hidden">
+                                 <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-muted via-muted/65 to-muted bg-[length:200%_100%] animate-[shimmer_1.5s_infinite] shrink-0" />
+                                 <div className="flex-1 space-y-2 py-0.5">
+                                   <div className="h-3 bg-gradient-to-r from-muted via-muted/65 to-muted bg-[length:200%_100%] animate-[shimmer_1.5s_infinite] rounded-md w-[30%]" />
+                                   <div className="h-3.5 bg-gradient-to-r from-muted via-muted/65 to-muted bg-[length:200%_100%] animate-[shimmer_1.5s_infinite] rounded-md w-full" />
+                                   <div className="h-2.5 bg-gradient-to-r from-muted via-muted/65 to-muted bg-[length:200%_100%] animate-[shimmer_1.5s_infinite] rounded-md w-[40%] mt-2" />
+                                 </div>
+                               </div>
+                             ))}
+                           </div>
+                         )}
                       </div>
                       
                       <Link href="/mundo" className="text-center text-[10px] font-bold text-[#1890FF] hover:underline pt-2 border-t border-gray-100 dark:border-white/5">
@@ -895,23 +930,76 @@ export function ChatLanding() {
         ) : (
           /* Chat view - messages + input at bottom */
           <>
-            <ChatMessages
-              messages={displayMessages}
-              isLoading={aiLoading || storeLoading}
-              streamData={data}
-              onFeedback={setFeedback}
-              onRetry={() => {
-                // Re-send the last user message
-                const lastUserMsg = [...displayMessages].reverse().find(m => m.role === 'user')
-                if (lastUserMsg) {
-                  handleSend(lastUserMsg.content, { webSearch: false, image: false, codeInterpreter: false, browser: false })
-                }
-              }}
-              onShare={handleShare}
-              messageFeedback={messageFeedback}
-              openReasoning={openReasoning}
-              onToggleReasoning={toggleReasoning}
-            />
+            {(storeLoading && displayMessages.length === 0) ? (
+               <div className="flex-grow overflow-y-auto px-4 md:px-6 py-20 relative space-y-8 max-w-3xl mx-auto w-full overflow-hidden select-none">
+                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/10 to-background pointer-events-none z-10" />
+                 
+                 {/* Loading bubble timeline */}
+                 <div className="space-y-6">
+                   {/* User message skeleton */}
+                   <div className="flex justify-end">
+                     <div className="max-w-[70%] w-60 h-11 bg-secondary rounded-2xl rounded-tr-sm relative overflow-hidden">
+                       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_1.5s_infinite] bg-[length:200%_100%]" />
+                     </div>
+                   </div>
+
+                   {/* AI response skeleton 1 */}
+                   <div className="flex gap-4 items-start max-w-[85%]">
+                     <div className="w-9 h-9 rounded-xl bg-muted shrink-0 flex items-center justify-center relative overflow-hidden">
+                       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_1.5s_infinite] bg-[length:200%_100%]" />
+                     </div>
+                     <div className="flex-grow space-y-2.5 pt-1.5">
+                       <div className="h-4 bg-gradient-to-r from-muted via-muted/65 to-muted bg-[length:200%_100%] animate-[shimmer_1.5s_infinite] rounded-full w-full relative overflow-hidden" />
+                       <div className="h-4 bg-gradient-to-r from-muted via-muted/65 to-muted bg-[length:200%_100%] animate-[shimmer_1.5s_infinite] rounded-full w-[92%] relative overflow-hidden" />
+                       <div className="h-4 bg-gradient-to-r from-muted via-muted/65 to-muted bg-[length:200%_100%] animate-[shimmer_1.5s_infinite] rounded-full w-[65%] relative overflow-hidden" />
+                     </div>
+                   </div>
+
+                   {/* User message skeleton 2 */}
+                   <div className="flex justify-end">
+                     <div className="max-w-[70%] w-48 h-11 bg-secondary rounded-2xl rounded-tr-sm relative overflow-hidden">
+                       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_1.5s_infinite] bg-[length:200%_100%]" />
+                     </div>
+                   </div>
+
+                   {/* AI response skeleton 2 (Dashboard layout simulation) */}
+                   <div className="flex gap-4 items-start max-w-[90%]">
+                     <div className="w-9 h-9 rounded-xl bg-muted shrink-0 relative overflow-hidden">
+                       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_1.5s_infinite] bg-[length:200%_100%]" />
+                     </div>
+                     <div className="flex-grow space-y-4 pt-1.5">
+                       <div className="h-4 bg-gradient-to-r from-muted via-muted/65 to-muted bg-[length:200%_100%] animate-[shimmer_1.5s_infinite] rounded-full w-[80%] relative overflow-hidden" />
+                       
+                       {/* Nested mock widget card */}
+                       <div className="border border-border/40 bg-card rounded-2xl p-4 space-y-3 relative overflow-hidden">
+                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_1.5s_infinite] bg-[length:200%_100%]" />
+                         <div className="h-4 bg-muted rounded-full w-[40%]" />
+                         <div className="h-8 bg-muted rounded-xl w-[90%]" />
+                         <div className="h-3 bg-muted rounded-full w-[25%]" />
+                       </div>
+                     </div>
+                   </div>
+                 </div>
+               </div>
+             ) : (
+               <ChatMessages
+                 messages={displayMessages}
+                 isLoading={aiLoading || storeLoading}
+                 streamData={data}
+                 onFeedback={setFeedback}
+                 onRetry={() => {
+                   // Re-send the last user message
+                   const lastUserMsg = [...displayMessages].reverse().find(m => m.role === 'user')
+                   if (lastUserMsg) {
+                     handleSend(lastUserMsg.content, { webSearch: false, image: false, codeInterpreter: false, browser: false })
+                   }
+                 }}
+                 onShare={handleShare}
+                 messageFeedback={messageFeedback}
+                 openReasoning={openReasoning}
+                 onToggleReasoning={toggleReasoning}
+               />
+             )}
 
             <div className="sticky bottom-0 z-10 w-full bg-gradient-to-t from-background via-background/95 to-transparent pt-2 pb-2 md:pb-3">
               <div className="max-w-3xl mx-auto w-full">

@@ -80,7 +80,7 @@ export function ChatMessages({
       onScroll={handleScroll}
       className={cn(
         "flex-1 overflow-y-auto scrollbar-hide relative",
-        isWebBuilderMode ? "px-2" : "px-4 md:px-6"
+        isWebBuilderMode ? "pl-5 pr-3" : "px-4 md:px-6"
       )}
     >
       <AnimatePresence>
@@ -121,7 +121,7 @@ export function ChatMessages({
 
         {/* Loading indicator */}
         {isLoading && messages[messages.length - 1]?.role === 'user' && (
-          <div className={cn("flex", isWebBuilderMode ? "gap-2" : "gap-3")}>
+          <div className={cn("flex", isWebBuilderMode ? "gap-2 pl-1.5" : "gap-3")}>
             {!isWebBuilderMode && <AssistantAvatar isResponding={true} isWebBuilderMode={isWebBuilderMode} />}
             <div className="flex items-center gap-2 py-2">
               <div className="flex items-center gap-1">
@@ -498,7 +498,7 @@ function MessageBubble({
     const hasAgentSteps = steps.some(s => s.type === 'agent_start' || s.type === 'agent_done' || s.type === 'agent_fail');
 
     return (
-      <div className={cn("flex", isWebBuilderMode ? "gap-2" : "gap-3")}>
+      <div className={cn("flex", isWebBuilderMode ? "gap-2 pl-1.5" : "gap-3")}>
         {!isWebBuilderMode && <AssistantAvatar isResponding={isResponding} isWebBuilderMode={isWebBuilderMode} />}
         <div className="flex-1 min-w-0">
           {/* Orchestrator header */}
@@ -579,7 +579,7 @@ function MessageBubble({
 
   // ─── Standard Assistant message ───
   return (
-    <div className={cn("flex group", isWebBuilderMode ? "gap-2" : "gap-3")}>
+    <div className={cn("flex group", isWebBuilderMode ? "gap-2 pl-1.5" : "gap-3")}>
       {!isWebBuilderMode && <AssistantAvatar isResponding={isResponding} isWebBuilderMode={isWebBuilderMode} />}
       <div className="flex-1 min-w-0">
         {/* 1. Reasoning (expandable) */}

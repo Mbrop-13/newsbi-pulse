@@ -164,7 +164,7 @@ function CodeViewer() {
   return (
     <div className="flex-1 flex flex-col min-h-0">
       {/* File Tab */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/40 shrink-0">
+      <div className="flex items-center justify-between px-4 py-2 bg-muted/40 shrink-0">
         <div className="flex items-center gap-2">
           {getFileIcon(activeFilePath)}
           <span className="text-[11px] font-bold text-gray-300">
@@ -238,7 +238,7 @@ function FilesPanel() {
   return (
     <div className="flex-grow bg-background p-6 overflow-y-auto min-h-0">
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-6 border-b border-border pb-4">
+        <div className="flex items-center justify-between mb-6 pb-4">
           <div>
             <h3 className="text-sm font-bold text-foreground tracking-tight">Archivos del Proyecto</h3>
             <p className="text-[10px] text-muted-foreground mt-0.5">Explora y edita el código fuente de tu aplicación.</p>
@@ -259,7 +259,7 @@ function FilesPanel() {
                   setActiveFile(path);
                   setSelectedTab("code");
                 }}
-                className="group relative p-4 rounded-xl bg-card border border-border hover:border-primary/50 shadow-sm transition-all duration-200 cursor-pointer flex flex-col justify-between min-h-[110px]"
+                className="group relative p-4 rounded-xl bg-card border border-transparent hover:border-primary/50 shadow-sm transition-all duration-200 cursor-pointer flex flex-col justify-between min-h-[110px]"
               >
                 <div className="flex items-start gap-3">
                   <div className="p-2 bg-white/5 rounded-lg group-hover:bg-primary/10 transition-colors">
@@ -275,7 +275,7 @@ function FilesPanel() {
                   </div>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-[9px] text-muted-foreground font-medium">
+                <div className="mt-4 pt-3 flex items-center justify-between text-[9px] text-muted-foreground font-medium">
                   <span>{lineCount} líneas</span>
                   <span>{(charCount / 1024).toFixed(1)} KB</span>
                 </div>
@@ -304,7 +304,7 @@ export function PreviewPanel() {
   return (
     <div className="flex flex-col h-full bg-background text-foreground">
       {/* Tab Bar */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-muted/30 shrink-0">
+      <div className="flex items-center justify-between px-4 py-2.5 bg-background shrink-0">
         
         {/* Left: Tab selection */}
         <TooltipProvider>
@@ -317,17 +317,17 @@ export function PreviewPanel() {
                     <button
                       onClick={() => setSelectedTab(tab.id)}
                       className={cn(
-                        "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all duration-200 border",
+                        "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all duration-200",
                         isSelected
-                          ? "bg-card text-foreground border-border shadow-sm"
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50 border-transparent"
+                          ? "bg-card text-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                       )}
                     >
                       <tab.icon className="w-3.5 h-3.5" />
                       {isSelected && <span>{tab.label}</span>}
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" sideOffset={6} className="text-xs bg-popover text-popover-foreground border border-border px-2.5 py-1.5 rounded-xl shadow-lg font-semibold">
+                  <TooltipContent hideArrow side="bottom" sideOffset={6} className="text-xs bg-popover text-popover-foreground border border-border px-2.5 py-1.5 rounded-xl shadow-lg font-semibold">
                     {tab.description}
                   </TooltipContent>
                 </Tooltip>
@@ -343,9 +343,9 @@ export function PreviewPanel() {
             onClick={() => {
               toast.success("Enlace de compartición copiado al portapapeles!");
             }}
-            className="flex items-center gap-1 px-2.5 py-1 bg-muted hover:bg-muted/80 text-foreground border border-border rounded-lg text-[10px] font-bold active:scale-95 transition-all duration-200"
+            className="flex items-center gap-1.5 px-4 h-8 bg-secondary hover:bg-secondary/85 text-secondary-foreground rounded-full text-xs font-bold active:scale-95 transition-all duration-200"
           >
-            <Share2 className="w-3 h-3" />
+            <Share2 className="w-3.5 h-3.5" />
             Compartir
           </button>
 
@@ -355,7 +355,7 @@ export function PreviewPanel() {
               toast.info("Publicando aplicación en producción...");
               setTimeout(() => toast.success("Aplicación publicada con éxito en producción!"), 2000);
             }}
-            className="px-2.5 py-1 bg-gradient-to-r from-blue-600 to-violet-600 hover:opacity-95 text-white rounded-lg text-[10px] font-black shadow-md shadow-blue-500/10 active:scale-95 transition-all"
+            className="flex items-center gap-1.5 px-4 h-8 bg-foreground text-background hover:opacity-90 rounded-full text-xs font-bold active:scale-95 transition-all"
           >
             Publicar
           </button>
@@ -371,13 +371,13 @@ export function PreviewPanel() {
               }
             }}
             disabled={isSaving}
-            className="flex items-center gap-1.5 px-3 py-1 bg-foreground text-background hover:opacity-90 rounded-lg text-[10px] font-black active:scale-95 transition-all disabled:opacity-50"
+            className="flex items-center gap-1.5 px-4 h-8 bg-foreground text-background hover:opacity-90 rounded-full text-xs font-bold active:scale-95 transition-all disabled:opacity-50"
             title="Guardar proyecto"
           >
             {isSaving ? (
-              <Loader2 className="w-3 h-3 animate-spin" />
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
             ) : (
-              <Cloud className="w-3 h-3" />
+              <Cloud className="w-3.5 h-3.5" />
             )}
             <span>{isSaving ? "Guardando..." : "Guardar"}</span>
           </button>
@@ -385,8 +385,8 @@ export function PreviewPanel() {
       </div>
 
       {/* Content wrapper with rounded corners */}
-      <div className="flex-1 p-4 bg-muted/10 flex flex-col min-h-0">
-        <div className="flex-1 flex flex-col min-h-0 rounded-2xl border border-border bg-card shadow-lg overflow-hidden">
+      <div className="flex-1 p-4 bg-background flex flex-col min-h-0">
+        <div className="flex-1 flex flex-col min-h-0 rounded-2xl bg-card shadow-lg overflow-hidden border-none">
           
           {/* Code Editor Tab */}
           {selectedTab === "code" && (
@@ -394,7 +394,7 @@ export function PreviewPanel() {
               {hasFiles ? (
                 <>
                   {/* File Explorer Sidebar */}
-                  <div className="w-48 border-r border-border bg-muted/5 overflow-y-auto hidden-scrollbar shrink-0">
+                  <div className="w-48 bg-muted/5 overflow-y-auto hidden-scrollbar shrink-0">
                     <div className="px-3 py-2 border-b border-border">
                       <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
                         Archivos

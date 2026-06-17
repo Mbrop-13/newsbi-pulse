@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { useAuthStore } from "./auth-store";
 import { createClient } from "@/lib/supabase/client";
+import { useWebBuilderStore } from "./webbuilder-store";
 
 export interface ChatMessage {
   id: string;
@@ -50,6 +51,7 @@ export interface SavedChat {
   attachedArticles: AttachedArticle[];
   attachedFiles: AttachedFile[];
   timestamp: Date;
+  isWebBuilder?: boolean;
 }
 
 interface AIChatStore {
@@ -217,6 +219,7 @@ export const useAIChatStore = create<AIChatStore>()(
         }
 
         const title = messages.find(m => m.role === "user")?.content.slice(0, 40) + "..." || "Nuevo chat";
+        const isWB = useWebBuilderStore.getState().isWebBuilderMode;
         
         const chatData: SavedChat = {
           id: chatId,
@@ -225,6 +228,7 @@ export const useAIChatStore = create<AIChatStore>()(
           attachedArticles,
           attachedFiles,
           timestamp: new Date(),
+          isWebBuilder: isWB,
         };
 
         let updatedChats;
@@ -289,6 +293,11 @@ export const useAIChatStore = create<AIChatStore>()(
             attachedFiles: chat.attachedFiles || [],
             currentChatId: id
           });
+
+          // Auto-restore WebBuilder mode based on saved flag or message content fallback
+          const hasArtifact = chat.messages.some(m => m.content && (m.content.includes("<maverlangArtifact") || m.content.includes("</maverlangArtifact>")));
+          const isWB = !!(chat.isWebBuilder || hasArtifact);
+          useWebBuilderStore.getState().setWebBuilderMode(isWB);
         }
       },
       deleteSavedChat: async (id) => {

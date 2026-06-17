@@ -344,23 +344,26 @@ export function ChatLanding() {
               id: message.id,
               role: "assistant",
               content: finalContent,
-              timestamp: new Date(),
+              timestamp: m.timestamp || new Date(),
               model: selectedModel === "fast" ? "deepseek" : "grok",
               toolInvocations: message.toolInvocations || m.toolInvocations,
               citations: citationsList,
               reasoning: reasoningText || m.reasoning || undefined,
               reasoningSteps: agentReportsData.length > 0 ? agentReportsData : m.reasoningSteps || undefined,
+              secondsElapsed: m.secondsElapsed,
             };
           }
           return {
             id: m.id,
             role: (m.role === 'tool' ? 'assistant' : m.role) as 'user' | 'assistant',
             content: m.content,
-            timestamp: new Date(),
-            model: selectedModel === "fast" ? "deepseek" : "grok",
+            timestamp: m.timestamp || new Date(),
+            model: m.model || (selectedModel === "fast" ? "deepseek" : "grok"),
             toolInvocations: m.toolInvocations,
             citations: m.citations || [],
             reasoning: m.reasoning || undefined,
+            reasoningSteps: m.reasoningSteps || undefined,
+            secondsElapsed: m.secondsElapsed,
           };
         });
 
@@ -470,6 +473,33 @@ export function ChatLanding() {
     }
   }, [currentChatId, isStoreHydrated])
 
+  // Save messages to store on unmount (if loading/streaming was interrupted)
+  useEffect(() => {
+    return () => {
+      if (aiMessagesRef.current.length > 0) {
+        const latest = aiMessagesRef.current;
+        const lastMsg = latest[latest.length - 1];
+        if (lastMsg && lastMsg.role === 'assistant' && lastMsg.content) {
+          const storeMessages: ChatMessage[] = latest.map((m: any) => ({
+            id: m.id,
+            role: (m.role === 'tool' ? 'assistant' : m.role) as 'user' | 'assistant',
+            content: m.content,
+            timestamp: m.timestamp || new Date(),
+            model: m.model || (useAIChatStore.getState().selectedModel === "fast" ? "deepseek" : "grok"),
+            toolInvocations: m.toolInvocations,
+            citations: m.citations || [],
+            reasoning: m.reasoning || undefined,
+            reasoningSteps: m.reasoningSteps || undefined,
+            secondsElapsed: m.secondsElapsed,
+          }));
+          
+          useAIChatStore.setState({ messages: storeMessages });
+          useAIChatStore.getState().updateCurrentChat();
+        }
+      }
+    };
+  }, []);
+
   const handleModelSelect = (model: MaverlangModel) => {
     setModel(model.id)
   }
@@ -487,21 +517,28 @@ export function ChatLanding() {
     const planConfig = getPlanConfig(userTier)
     // Create chat ID if new
     let activeChatId = currentChatId
+    const userMsg: ChatMessage = {
+      id: `user-${Date.now()}`,
+      role: "user",
+      content: text,
+      timestamp: new Date(),
+    }
+
     if (!activeChatId) {
       activeChatId = Date.now().toString()
       lastLoadedChatIdRef.current = activeChatId
-      const userMsg: ChatMessage = {
-        id: `user-${Date.now()}`,
-        role: "user",
-        content: text,
-        timestamp: new Date(),
-      }
       useAIChatStore.setState({
         currentChatId: activeChatId,
         messages: [userMsg],
       })
-      useAIChatStore.getState().updateCurrentChat()
+    } else {
+      // For existing chat, append the user message to store messages immediately
+      const currentMessages = useAIChatStore.getState().messages;
+      useAIChatStore.setState({
+        messages: [...currentMessages, userMsg],
+      })
     }
+    useAIChatStore.getState().updateCurrentChat()
 
     // Use AI SDK append
     const isWB = useWebBuilderStore.getState().isWebBuilderMode

@@ -198,7 +198,7 @@ DEBES responder ÚNICAMENTE con un bloque JSON en el siguiente formato (sin expl
   onProgress?.(`🔍 [Orquestador] Consulta compleja detectada: "${reason}"\n`);
   onProgress?.(`🤖 Creando ${agents.length} agentes expertos para investigar en paralelo...\n\n`);
 
-  // Run agents in parallel with a timeout of 15 seconds per agent
+  // Run agents in parallel with a timeout of 45 seconds per agent
   const agentPromises = agents.map(async (agent): Promise<AgentReport> => {
     const agentStartTime = Date.now();
     onProgress?.(`⏳ [Agente] ${agent.agentName} (${agent.role}) iniciando tarea: "${agent.task}"...\n`);
@@ -221,11 +221,11 @@ REGLAS CRÍTICAS:
         temperature: 0.5,
       });
 
-      // Wrap the LLM call with a 15-second timeout
+      // Wrap the LLM call with a 45-second timeout
       const agentResponse = await withTimeout(
         agentPromise,
-        15000,
-        new Error("Excedió el tiempo límite de ejecución de 15 segundos")
+        45000,
+        new Error("Excedió el tiempo límite de ejecución de 45 segundos")
       );
 
       const duration = Date.now() - agentStartTime;

@@ -10,6 +10,7 @@ export interface AgentReport extends AgentInfo {
   content: string;
   durationMs: number;
   success: boolean;
+  tokensUsed?: number;
 }
 
 export interface OrchestrationResult {
@@ -18,6 +19,7 @@ export interface OrchestrationResult {
   agents: AgentInfo[];
   agentReports: AgentReport[];
   totalOrchestrationTimeMs: number;
+  totalTokensUsed: number;
 }
 
 // In-memory cache for query complexity classification
@@ -151,7 +153,7 @@ DEBES responder ÚNICAMENTE con un bloque JSON en el siguiente formato (sin expl
 }`;
 
     try {
-      const { text } = await generateText({
+      const { text, usage } = await generateText({
         model,
         system: systemOrchestratorPrompt,
         messages: [
@@ -159,6 +161,8 @@ DEBES responder ÚNICAMENTE con un bloque JSON en el siguiente formato (sin expl
         ],
         temperature: 0.1,
       });
+
+      if (usage?.totalTokens) totalTokensUsed += usage.totalTokens;
 
       const jsonText = extractJsonBlock(text);
       const result = JSON.parse(jsonText);
@@ -191,7 +195,8 @@ DEBES responder ÚNICAMENTE con un bloque JSON en el siguiente formato (sin expl
       reason,
       agents: [],
       agentReports: [],
-      totalOrchestrationTimeMs: Date.now() - startTime
+      totalOrchestrationTimeMs: Date.now() - startTime,
+      totalTokensUsed
     };
   }
 
@@ -229,13 +234,15 @@ REGLAS CRÍTICAS:
       );
 
       const duration = Date.now() - agentStartTime;
+      const tokensUsed = agentResponse.usage?.totalTokens || 0;
       onProgress?.(`✅ [Agente] ${agent.agentName} completado en ${duration}ms.\n`);
 
       return {
         ...agent,
         content: agentResponse.text,
         durationMs: duration,
-        success: true
+        success: true,
+        tokensUsed
       };
     } catch (err: any) {
       const duration = Date.now() - agentStartTime;
@@ -246,12 +253,18 @@ REGLAS CRÍTICAS:
         ...agent,
         content: `Error al procesar la tarea: ${err.message || String(err)}`,
         durationMs: duration,
-        success: false
+        success: false,
+        tokensUsed: 0
       };
     }
   });
 
   const agentReports = await Promise.all(agentPromises);
+  
+  for (const report of agentReports) {
+    if (report.tokensUsed) totalTokensUsed += report.tokensUsed;
+  }
+
   const totalDuration = Date.now() - startTime;
 
   onProgress?.(`\n📊 [Orquestador] Todos los agentes completados o finalizados por límite de tiempo. Consolidando reportes (${totalDuration}ms total)...\n\n`);
@@ -261,7 +274,8 @@ REGLAS CRÍTICAS:
     reason,
     agents,
     agentReports,
-    totalOrchestrationTimeMs: totalDuration
+    totalOrchestrationTimeMs: totalDuration,
+    totalTokensUsed
   };
 }
 
@@ -279,6 +293,7 @@ export interface WebBuilderOrchestrationResult {
   agents: WebBuilderAgentInfo[];
   agentReports: WebBuilderAgentReport[];
   totalOrchestrationTimeMs: number;
+  totalTokensUsed: number;
 }
 
 export async function runWebBuilderOrchestration(
@@ -288,6 +303,7 @@ export async function runWebBuilderOrchestration(
   onProgress?: (text: string) => void
 ): Promise<WebBuilderOrchestrationResult> {
   const startTime = Date.now();
+  let totalTokensUsed = 0;
   onProgress?.("🧠 [Orquestador WebBuilder] Iniciando planificación de arquitectura y archivos...\n");
 
   const existingFilesContext = existingFiles && Object.keys(existingFiles).length > 0;
@@ -332,7 +348,7 @@ Si determinas que no requiere delegación (isComplex: false), responde con:
   let agents: WebBuilderAgentInfo[] = [];
 
   try {
-    const { text } = await generateText({
+    const { text, usage } = await generateText({
       model,
       system: systemPlannerPrompt,
       messages: [
@@ -345,6 +361,8 @@ ${existingFilesContext ? `Archivos existentes:\n${Object.keys(existingFiles).map
       ],
       temperature: 0.1,
     });
+
+    if (usage?.totalTokens) totalTokensUsed += usage.totalTokens;
 
     const jsonText = extractJsonBlock(text);
     const result = JSON.parse(jsonText);
@@ -372,7 +390,8 @@ ${existingFilesContext ? `Archivos existentes:\n${Object.keys(existingFiles).map
       reason,
       agents: [],
       agentReports: [],
-      totalOrchestrationTimeMs: Date.now() - startTime
+      totalOrchestrationTimeMs: Date.now() - startTime,
+      totalTokensUsed
     };
   }
 
@@ -424,7 +443,7 @@ Tu tarea asignada: Generar o actualizar el archivo \`${agent.filePath}\` de acue
 Recuerda devolver ÚNICAMENTE el XML con tu código.`;
 
     try {
-      const { text: content } = await generateText({
+      const { text: content, usage } = await generateText({
         model,
         system: agentSystemPrompt,
         messages: [{ role: 'user', content: agentUserMessage }],
@@ -432,13 +451,15 @@ Recuerda devolver ÚNICAMENTE el XML con tu código.`;
       });
 
       const duration = Date.now() - agentStartTime;
+      const tokensUsed = usage?.totalTokens || 0;
       onProgress?.(`✅ [Agente] ${agent.agentName} completó la edición de \`${agent.filePath}\` en ${duration}ms.\n`);
 
       return {
         ...agent,
         content,
         durationMs: duration,
-        success: true
+        success: true,
+        tokensUsed
       };
     } catch (err: any) {
       const duration = Date.now() - agentStartTime;
@@ -449,12 +470,18 @@ Recuerda devolver ÚNICAMENTE el XML con tu código.`;
         ...agent,
         content: `Error al procesar la tarea para ${agent.filePath}: ${err.message || String(err)}`,
         durationMs: duration,
-        success: false
+        success: false,
+        tokensUsed: 0
       };
     }
   });
 
   const agentReports = await Promise.all(agentPromises);
+  
+  for (const report of agentReports) {
+    if (report.tokensUsed) totalTokensUsed += report.tokensUsed;
+  }
+
   const totalDuration = Date.now() - startTime;
 
   onProgress?.(`\n📊 [Orquestador WebBuilder] Todos los archivos generados en paralelo (${totalDuration}ms total).\n\n`);
@@ -464,6 +491,7 @@ Recuerda devolver ÚNICAMENTE el XML con tu código.`;
     reason,
     agents,
     agentReports,
-    totalOrchestrationTimeMs: totalDuration
+    totalOrchestrationTimeMs: totalDuration,
+    totalTokensUsed
   };
 }

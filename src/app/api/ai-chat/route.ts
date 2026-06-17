@@ -368,7 +368,7 @@ export async function POST(req: NextRequest) {
 
     // ── Multi-Agent Orchestration ──
     const orchestratorModel = mimo(finalModelStr);
-    let orchestrationResult = { isComplex: false, agentReports: [] as any[] };
+    let orchestrationResult = { isComplex: false, agentReports: [] as any[], totalTokensUsed: 0 };
     
     if (webBuilder) {
       orchestrationResult = await runWebBuilderOrchestration(
@@ -397,6 +397,21 @@ export async function POST(req: NextRequest) {
         },
         false
       );
+    }
+
+    // Track orchestrator tokens
+    if (orchestrationResult.totalTokensUsed > 0) {
+      await incrementTokenUsage(userId, orchestrationResult.totalTokensUsed).catch(console.error);
+      
+      // Re-verify token limit after orchestration before doing the final streamText
+      const postOrchTokenLimit = await checkTokenLimit(userId);
+      if (!postOrchTokenLimit.allowed) {
+        return new Response(JSON.stringify({
+          error: "Los agentes agotaron tu límite de tokens en esta consulta. Actualiza tu suscripción para continuar.",
+          code: "TOKEN_LIMIT_REACHED",
+          details: postOrchTokenLimit,
+        }), { status: 403 });
+      }
     }
 
     let messagesForFinalLlm = processedMessages;

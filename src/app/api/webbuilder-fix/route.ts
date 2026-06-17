@@ -3,6 +3,7 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { generateText } from 'ai';
 import { createClient } from "@/lib/supabase/server";
 import { containsArtifact, parseArtifact, actionsToFiles } from "@/lib/webbuilder-parser";
+import { incrementTokenUsage } from "@/lib/check-limits";
 
 export const maxDuration = 30;
 
@@ -60,13 +61,17 @@ import { Activity } from "lucide-react";
 </maverlangArtifact>
 `;
 
-    const { text } = await generateText({
+    const { text, usage } = await generateText({
       model: mimo("xiaomi/mimo-v2.5-pro"),
       system: "Eres un servicio automatizado de depuración de código. Devuelves únicamente XML.",
       messages: [{ role: 'user', content: debugPrompt }],
       temperature: 0.1,
       maxTokens: 4096,
     });
+
+    if (usage?.totalTokens) {
+      await incrementTokenUsage(user.id, usage.totalTokens).catch(console.error);
+    }
 
     let correctedFiles: Record<string, string> | null = null;
     if (containsArtifact(text)) {

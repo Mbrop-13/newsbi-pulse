@@ -8,7 +8,8 @@ import { rateLimit, rateLimitResponse, AI_CHAT_LIMIT } from "@/lib/rate-limit";
 import YahooFinance from "yahoo-finance2";
 import { detectSuspiciousPatterns } from "@/lib/security";
 import * as BrowserManager from "@/lib/services/browser-manager";
-import { runOrchestration } from "@/lib/services/agent-orchestrator";
+import { runOrchestration, runWebBuilderOrchestration } from "@/lib/services/agent-orchestrator";
+import { containsArtifact, parseArtifact, actionsToFiles } from "@/lib/webbuilder-parser";
 
 export const maxDuration = 60;
 
@@ -174,45 +175,70 @@ NUNCA digas que eres de OpenAI, Anthropic o Google. Eres de Maverlang.`;
 }
 
 // ── WebBuilder system prompt ──
-function getWebBuilderSystemPrompt() {
-  return `Eres Maverlang Builder, un experto desarrollador de aplicaciones web. Tu trabajo es crear aplicaciones web completas a partir de las descripciones del usuario.
+function getWebBuilderSystemPrompt(existingFiles?: Record<string, string>) {
+  const existingFilesContext = existingFiles && Object.keys(existingFiles).length > 0
+    ? `\n\nARCHIVOS EXISTENTES DEL PROYECTO:\n${Object.entries(existingFiles).map(([path, code]) => `--- ${path} ---\n${code}\n---`).join("\n\n")}\n\nCuando el usuario pida modificaciones, usa type="update" con bloques SEARCH/REPLACE para cambiar SOLO las partes necesarias de los archivos existentes. NO regeneres archivos completos a menos que los cambios afecten más del 60% del archivo.`
+    : "";
+
+  return `Eres Maverlang Builder, un experto desarrollador de aplicaciones web. Tu trabajo es crear y modificar aplicaciones web completas a partir de las descripciones del usuario.
 
 REGLAS CRÍTICAS:
 1. SIEMPRE genera código dentro de bloques de artefacto XML estructurados.
-2. Usa este formato EXACTO para emitir archivos:
+2. Para CREAR archivos nuevos o reemplazar archivos completos, usa este formato:
 
 <maverlangArtifact id="project" title="Nombre del Proyecto">
 <maverlangAction type="file" filePath="/App.tsx">
-// código React aquí
-</maverlangAction>
-<maverlangAction type="file" filePath="/styles.css">
-/* estilos CSS aquí */
+// código completo aquí
 </maverlangAction>
 </maverlangArtifact>
 
-3. El archivo principal SIEMPRE es /App.tsx con un export default del componente principal.
-4. SIEMPRE incluye /styles.css con @tailwind base; @tailwind components; @tailwind utilities; al inicio.
-5. El archivo /index.tsx ya existe en el proyecto base. NO lo incluyas a menos que necesites modificarlo.
-6. Por defecto, usa React + TypeScript + Tailwind CSS para todo. Sin embargo, si el usuario te pide explícitamente construir algo en HTML/JS/CSS puro o vanilla, genera un único archivo /index.html con todos los estilos CSS incluidos dentro de una etiqueta <style> en el <head> para evitar la creación de múltiples archivos y asegurar que la página se cargue de forma rápida, completa y sin cortes de estilo. Añade la interactividad básica mediante una etiqueta <script> al final de la página.
-7. Puedes usar estas librerías que ya están instaladas en el entorno React: lucide-react, recharts, framer-motion, react-icons.
-8. Para iconos usa: import { NombreIcono } from "lucide-react";
-9. Para gráficos usa: import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area } from "recharts";
-10. Para animaciones usa: import { motion, AnimatePresence } from "framer-motion";
-11. Crea diseños INCREÍBLEMENTE hermosos, modernos y profesionales. Usa gradientes, sombras, bordes redondeados, glassmorphism, micro-animaciones.
-12. Genera código COMPLETO y funcional. No uses placeholders ni "// TODO" ni comentarios vacíos.
-13. Antes del bloque de artefacto, escribe 1-2 frases breves describiendo lo que estás creando. Después del artefacto, puedes dar instrucciones adicionales al usuario.
-14. Si el usuario pide modificaciones a un proyecto existente, incluye ÚNICAMENTE los archivos que necesitan cambiar o ser creados (no vuelvas a generar archivos que no han cambiado).
-15. RESPONSIVE: El diseño debe funcionar bien en todas las resoluciones.
-16. Haz que las apps sean interactivas con useState, useEffect, y eventos de usuario.
-17. Responde en el mismo idioma en el que te hable el usuario (por defecto español).
-18. EN EL CHAT NUNCA DEBES MOSTRAR EL CÓDIGO. No uses bloques de código de markdown como \`\`\`tsx o \`\`\`css fuera del bloque de artefacto XML. Todo el código del proyecto debe estar únicamente dentro de la estructura XML <maverlangArtifact>...</maverlangArtifact>.
-19. NUNCA digas que eres de OpenAI, Anthropic o Google. Eres Maverlang Builder.
-20. DISEÑO DE SVGS: Si generas elementos SVG en línea (como monitores, gráficos, logos o ilustraciones), especifica siempre los atributos de dimensiones 'width' y 'height' explícitamente en la etiqueta <svg> (por ejemplo, width="100%" o con valores de píxeles fijos que mantengan la relación de aspecto) junto con el 'viewBox'. Esto evita que el navegador recorte o deforme el elemento al renderizarse en el previsualizador.`;
+3. Para MODIFICAR archivos existentes (cambios parciales), usa este formato de diffs:
+
+<maverlangArtifact id="project" title="Actualización">
+<maverlangAction type="update" filePath="/App.tsx">
+<<<SEARCH
+    <button className="bg-blue-500 text-white px-4 py-2">
+      Click
+    </button>
+===
+    <button className="bg-red-600 text-white px-6 py-3 rounded-xl shadow-lg hover:bg-red-700 transition-all">
+      Click
+    </button>
+>>>
+</maverlangAction>
+</maverlangArtifact>
+
+Reglas del formato de diffs:
+- Cada bloque empieza con <<<SEARCH, seguido del código EXACTO a buscar
+- Separador === divide el código viejo del nuevo
+- Cierra con >>>
+- Puedes incluir múltiples bloques <<<SEARCH...>>> en el mismo archivo
+- El código en SEARCH debe coincidir EXACTAMENTE con el código existente (incluyendo espacios)
+- Usa type="update" para cambios pequeños/medianos. Usa type="file" solo para archivos nuevos o reescrituras completas.
+
+4. El archivo principal SIEMPRE es /App.tsx con un export default del componente principal (en proyectos React).
+5. SIEMPRE incluye /styles.css con @tailwind base; @tailwind components; @tailwind utilities; al inicio (en proyectos React).
+6. El archivo /index.tsx ya existe en el proyecto base. NO lo incluyas a menos que necesites modificarlo.
+7. TECNOLOGÍA: Por defecto, usa React + TypeScript + Tailwind CSS. Sin embargo, si el usuario te pide explícitamente construir algo en HTML, JS, CSS puro o vanilla, genera un único archivo /index.html con todos los estilos CSS incluidos dentro de una etiqueta <style> en el <head> y la interactividad mediante una etiqueta <script> al final del <body>. NUNCA fuerces React si el usuario pidió HTML puro.
+8. Puedes usar estas librerías que ya están instaladas en el entorno React: lucide-react, recharts, framer-motion, react-icons.
+9. Para iconos usa: import { NombreIcono } from "lucide-react";
+10. Para gráficos usa: import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area } from "recharts";
+11. Para animaciones usa: import { motion, AnimatePresence } from "framer-motion";
+12. Crea diseños INCREÍBLEMENTE hermosos, modernos y profesionales. Usa gradientes, sombras, bordes redondeados, glassmorphism, micro-animaciones.
+13. Genera código COMPLETO y funcional. No uses placeholders ni "// TODO" ni comentarios vacíos.
+14. Antes del bloque de artefacto, escribe 1-2 frases breves describiendo lo que estás creando o modificando. Después del artefacto, puedes dar instrucciones adicionales al usuario.
+15. Si el usuario pide modificaciones, usa type="update" con diffs SEARCH/REPLACE para cambiar solo las partes necesarias. Solo regenera el archivo completo (type="file") si los cambios afectan la mayoría del código.
+16. RESPONSIVE: El diseño debe funcionar bien en todas las resoluciones.
+17. Haz que las apps sean interactivas con useState, useEffect, y eventos de usuario.
+18. Responde SIEMPRE en el mismo idioma en el que te hable el usuario.
+19. EN EL CHAT NUNCA DEBES MOSTRAR EL CÓDIGO. No uses bloques de código markdown. Todo el código debe estar dentro de la estructura XML <maverlangArtifact>...</maverlangArtifact>.
+20. NUNCA digas que eres de OpenAI, Anthropic o Google. Eres Maverlang Builder.
+21. DISEÑO DE SVGS: Si generas elementos SVG en línea, especifica siempre width y height explícitamente en la etiqueta <svg> junto con el viewBox.${existingFilesContext}`;
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages, articles, files, modelId, activeTools, contextOverride, webSearch, browser, webBuilder } = await req.json();
+    const { messages, articles, files, modelId, activeTools, contextOverride, webSearch, browser, webBuilder, webBuilderFiles } = await req.json();
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(JSON.stringify({ error: "Messages are required" }), { status: 400 });
@@ -343,19 +369,35 @@ export async function POST(req: NextRequest) {
     // ── Multi-Agent Orchestration ──
     const orchestratorModel = mimo(finalModelStr);
     let orchestrationResult = { isComplex: false, agentReports: [] as any[] };
-    orchestrationResult = await runOrchestration(
-      orchestratorModel,
-      lastUserMessage,
-      webBuilder ? "" : portfolioText,
-      (text) => {
-        try {
-          streamData.append({ type: 'reasoning', text });
-        } catch {
-          // StreamData may already be closed/flushed
+    
+    if (webBuilder) {
+      orchestrationResult = await runWebBuilderOrchestration(
+        orchestratorModel,
+        lastUserMessage,
+        webBuilderFiles || {},
+        (text) => {
+          try {
+            streamData.append({ type: 'reasoning', text });
+          } catch {
+            // StreamData may already be closed/flushed
+          }
         }
-      },
-      !!webBuilder
-    );
+      );
+    } else {
+      orchestrationResult = await runOrchestration(
+        orchestratorModel,
+        lastUserMessage,
+        portfolioText,
+        (text) => {
+          try {
+            streamData.append({ type: 'reasoning', text });
+          } catch {
+            // StreamData may already be closed/flushed
+          }
+        },
+        false
+      );
+    }
 
     let messagesForFinalLlm = processedMessages;
     if (orchestrationResult.isComplex && orchestrationResult.agentReports.length > 0) {
@@ -369,17 +411,60 @@ export async function POST(req: NextRequest) {
         console.error("Failed to append agent reports to streamData:", e);
       }
 
-      const reportsSummary = orchestrationResult.agentReports
-        .map(
-          (r) =>
-            `[Reporte de Agente Especializado: ${r.agentName} (Rol: ${r.role})]\nTarea: ${r.task}\nResultado del análisis:\n${r.content}`
-        )
-        .join("\n\n");
+      if (webBuilder) {
+        // Parse and send the files directly to client via streamData
+        const filesToApply: Record<string, string> = { ...(webBuilderFiles || {}) };
+        
+        for (const report of orchestrationResult.agentReports) {
+          if (report.success && containsArtifact(report.content)) {
+            const parsed = parseArtifact(report.content);
+            if (parsed && parsed.actions.length > 0) {
+              const fileChanges = actionsToFiles(parsed.actions, filesToApply);
+              Object.assign(filesToApply, fileChanges);
+            }
+          }
+        }
 
-      // Inject the summaries as a system context instruction to the final model
-      const contextMessage = {
-        role: "system" as const,
-        content: `REPORTES DE AGENTES ESPECIALIZADOS (ya ejecutados en paralelo):
+        try {
+          streamData.append({
+            type: 'webbuilder_files',
+            files: filesToApply
+          });
+        } catch (e) {
+          console.error("Failed to append webbuilder_files to streamData:", e);
+        }
+
+        // The LLM final only needs to write the conversational message (without coding)
+        const contextMessage = {
+          role: "system" as const,
+          content: `Los agentes de WebBuilder ya han generado y modificado los archivos de código correspondientes.
+Los siguientes archivos fueron creados o actualizados con éxito:
+${Object.keys(filesToApply).map(f => `- ${f}`).join('\n')}
+
+REGLAS PARA TU RESPUESTA FINAL:
+1. NO escribas bloques de código ni XML de artefactos (<maverlangArtifact>). Todo el código ya ha sido procesado y enviado al frontend.
+2. Saluda al usuario y resume de forma breve, amigable y profesional lo que se ha construido o modificado en cada archivo.
+3. Sé conciso y directo en español. Muestra entusiasmo por el resultado.`,
+        };
+
+        const lastIndex = messagesForFinalLlm.length - 1;
+        messagesForFinalLlm = [
+          ...messagesForFinalLlm.slice(0, lastIndex),
+          contextMessage,
+          messagesForFinalLlm[lastIndex],
+        ];
+      } else {
+        const reportsSummary = orchestrationResult.agentReports
+          .map(
+            (r) =>
+              `[Reporte de Agente Especializado: ${r.agentName} (Rol: ${r.role})]\nTarea: ${r.task}\nResultado del análisis:\n${r.content}`
+          )
+          .join("\n\n");
+
+        // Inject the summaries as a system context instruction to the final model
+        const contextMessage = {
+          role: "system" as const,
+          content: `REPORTES DE AGENTES ESPECIALIZADOS (ya ejecutados en paralelo):
 Los siguientes reportes fueron generados por tus agentes delegados. REGLAS para tu respuesta final:
 1. Consolida la información de TODOS los reportes en una respuesta UNIFICADA y coherente.
 2. NO repitas trabajo: si un agente ya analizó datos o generó código, referencíalo directamente.
@@ -388,23 +473,24 @@ Los siguientes reportes fueron generados por tus agentes delegados. REGLAS para 
 5. Sé conciso pero completo. Prioriza insights accionables.
 
 ${reportsSummary}`,
-      };
+        };
 
-      const lastIndex = messagesForFinalLlm.length - 1;
-      messagesForFinalLlm = [
-        ...messagesForFinalLlm.slice(0, lastIndex),
-        contextMessage,
-        messagesForFinalLlm[lastIndex],
-      ];
+        const lastIndex = messagesForFinalLlm.length - 1;
+        messagesForFinalLlm = [
+          ...messagesForFinalLlm.slice(0, lastIndex),
+          contextMessage,
+          messagesForFinalLlm[lastIndex],
+        ];
+      }
     }
 
     const result = await streamText({
       model: mimo(finalModelStr),
       system: webBuilder
-        ? getWebBuilderSystemPrompt()
+        ? getWebBuilderSystemPrompt(webBuilderFiles || undefined)
         : getSystemPrompt(assistantName, assistantTone, assistantRole, assistantTopics),
       messages: messagesForFinalLlm,
-      maxTokens: 8192, // MiMo is a reasoning model — needs enough budget for thinking + response
+      maxTokens: (webBuilder && orchestrationResult.isComplex) ? 2048 : 8192, // MiMo is a reasoning model — needs enough budget for thinking + response
       maxSteps: webBuilder ? undefined : 8,
       toolChoice: webBuilder ? 'none' : 'auto',
       tools: webBuilder ? {} : {

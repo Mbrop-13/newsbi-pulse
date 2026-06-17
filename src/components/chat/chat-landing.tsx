@@ -515,6 +515,10 @@ export function ChatLanding() {
 
     // Check chat limits
     const planConfig = getPlanConfig(userTier)
+    const isWB = useWebBuilderStore.getState().isWebBuilderMode
+    if (isWB) {
+      useWebBuilderStore.getState().resetAutoFixAttempts()
+    }
     // Create chat ID if new
     let activeChatId = currentChatId
     const userMsg: ChatMessage = {
@@ -541,7 +545,6 @@ export function ChatLanding() {
     useAIChatStore.getState().updateCurrentChat()
 
     // Use AI SDK append
-    const isWB = useWebBuilderStore.getState().isWebBuilderMode
     append(
       { role: "user", content: text },
       {
@@ -553,6 +556,7 @@ export function ChatLanding() {
           webSearch: options.webSearch,
           browser: options.browser,
           webBuilder: isWB,
+          webBuilderFiles: isWB ? useWebBuilderStore.getState().files : undefined,
         },
       }
     )
@@ -643,13 +647,32 @@ export function ChatLanding() {
     if (!containsArtifact(text)) return
     const artifact = parseArtifact(text)
     if (artifact && artifact.actions.length > 0) {
-      const newFiles = actionsToFiles(artifact.actions)
       const store = useWebBuilderStore.getState()
+      // Pass existing files so "update" (diff) actions can apply search/replace
+      const newFiles = actionsToFiles(artifact.actions, store.files)
       // Merge with existing files (preserving index.tsx etc)
       const merged = { ...store.files, ...newFiles }
       store.setFiles(merged)
     }
   }, [aiMessages, isWebBuilderMode])
+
+  // Listen for 'webbuilder_files' from streamData (data)
+  useEffect(() => {
+    if (!isWebBuilderMode || !data || data.length === 0) return
+    const webBuilderFilesObj = (data as any[]).find((d: any) => d?.type === 'webbuilder_files')
+    if (webBuilderFilesObj?.files) {
+      const store = useWebBuilderStore.getState()
+      // Merge new files from the agents
+      const merged = { ...store.files, ...webBuilderFilesObj.files }
+      
+      // Let's compare to prevent unnecessary state updates
+      const hasChanged = Object.keys(merged).some(k => merged[k] !== store.files[k]) || 
+                         Object.keys(store.files).some(k => merged[k] !== store.files[k]);
+      if (hasChanged) {
+        store.setFiles(merged)
+      }
+    }
+  }, [data, isWebBuilderMode])
 
   // ── Render ──
   const chatContent = (

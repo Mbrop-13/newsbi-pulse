@@ -51,6 +51,15 @@ interface WebBuilderStore {
   initProject: (chatId: string) => void;
   setSplitView: (val: boolean) => void;
 
+  // Auto-Fix state
+  autoFixAttempts: number;
+  isAutoFixing: boolean;
+  lastAutoFixError: string | null;
+  startAutoFix: () => void;
+  completeAutoFix: () => void;
+  failAutoFix: (error: string) => void;
+  resetAutoFixAttempts: () => void;
+
   // Cloud Sync Actions
   syncToCloud: () => Promise<void>;
   loadFromCloud: (chatId: string) => Promise<boolean>;
@@ -134,6 +143,11 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
       cloudSyncEnabled: true,
       isSaving: false,
       lastSavedAt: null,
+
+      // Auto-Fix default state
+      autoFixAttempts: 0,
+      isAutoFixing: false,
+      lastAutoFixError: null,
 
       setWebBuilderMode: (active) => {
         set({ isWebBuilderMode: active });
@@ -222,6 +236,9 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
           isCompiling: false,
           compileLogs: [],
           lastSavedAt: null,
+          autoFixAttempts: 0,
+          isAutoFixing: false,
+          lastAutoFixError: null,
         }),
 
       initProject: (chatId) => {
@@ -235,10 +252,18 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
           isCompiling: false,
           compileLogs: [],
           lastSavedAt: null,
+          autoFixAttempts: 0,
+          isAutoFixing: false,
+          lastAutoFixError: null,
         });
       },
 
       setSplitView: (val) => set({ isSplitView: val }),
+
+      startAutoFix: () => set((s) => ({ isAutoFixing: true, autoFixAttempts: s.autoFixAttempts + 1 })),
+      completeAutoFix: () => set({ isAutoFixing: false, lastAutoFixError: null }),
+      failAutoFix: (error) => set({ isAutoFixing: false, lastAutoFixError: error }),
+      resetAutoFixAttempts: () => set({ autoFixAttempts: 0, isAutoFixing: false, lastAutoFixError: null }),
 
       // ── Cloud Sync Actions ──
 

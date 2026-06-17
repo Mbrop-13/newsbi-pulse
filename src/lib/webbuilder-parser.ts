@@ -2,14 +2,25 @@
  * Maverlang WebBuilder Artifact Parser
  *
  * Parses the AI model's streaming response to extract file artifacts.
- * The AI is instructed to emit file blocks using a custom XML format:
+ * Supports two action types:
+ *
+ * 1. FULL FILE (type="file") — Creates or replaces an entire file:
  *
  * <maverlangArtifact id="project" title="Dashboard Financiero">
  *   <maverlangAction type="file" filePath="/App.tsx">
- *     // code here
+ *     // complete code here
  *   </maverlangAction>
- *   <maverlangAction type="file" filePath="/styles.css">
- *     // css here
+ * </maverlangArtifact>
+ *
+ * 2. PARTIAL UPDATE (type="update") — Modifies specific parts of an existing file:
+ *
+ * <maverlangArtifact id="project" title="Actualización">
+ *   <maverlangAction type="update" filePath="/App.tsx">
+ * <<<SEARCH
+ *     <button className="bg-blue-500">Click</button>
+ * ===
+ *     <button className="bg-red-600 shadow-lg">Click</button>
+ * >>>
  *   </maverlangAction>
  * </maverlangArtifact>
  */
@@ -20,10 +31,18 @@ export interface ParsedFileAction {
   content: string;
 }
 
+export interface ParsedUpdateAction {
+  type: "update";
+  filePath: string;
+  diffs: { search: string; replace: string }[];
+}
+
+export type ParsedAction = ParsedFileAction | ParsedUpdateAction;
+
 export interface ParsedArtifact {
   id: string;
   title: string;
-  actions: ParsedFileAction[];
+  actions: ParsedAction[];
 }
 
 /**
@@ -40,25 +59,40 @@ export function parseArtifact(text: string): ParsedArtifact | null {
   const id = artifactMatch[1];
   const title = artifactMatch[2] || "Proyecto";
 
-  // Extract all file actions (even partial ones for streaming)
-  const actions: ParsedFileAction[] = [];
+  const actions: ParsedAction[] = [];
+
+  // Extract all actions (file or update)
   const actionRegex =
-    /<maverlangAction\s+type="file"\s+filePath="([^"]+)">([\s\S]*?)(?:<\/maverlangAction>|$)/g;
+    /<maverlangAction\s+type="(file|update)"\s+filePath="([^"]+)">([\s\S]*?)(?:<\/maverlangAction>|$)/g;
 
   let match;
   while ((match = actionRegex.exec(text)) !== null) {
-    const filePath = match[1];
-    let content = match[2];
+    const actionType = match[1] as "file" | "update";
+    const filePath = match[2];
+    let content = match[3];
 
-    // Trim leading/trailing whitespace from code content
+    // Trim leading/trailing whitespace from content
     content = content.replace(/^\n/, "").replace(/\n$/, "");
 
-    if (content.length > 0) {
-      actions.push({
-        type: "file",
-        filePath,
-        content,
-      });
+    if (actionType === "file") {
+      // Full file replacement
+      if (content.length > 0) {
+        actions.push({
+          type: "file",
+          filePath,
+          content,
+        });
+      }
+    } else if (actionType === "update") {
+      // Parse search/replace diff blocks
+      const diffs = parseDiffBlocks(content);
+      if (diffs.length > 0) {
+        actions.push({
+          type: "update",
+          filePath,
+          diffs,
+        });
+      }
     }
   }
 
@@ -66,15 +100,106 @@ export function parseArtifact(text: string): ParsedArtifact | null {
 }
 
 /**
+ * Parse diff blocks from the update action content.
+ * Format:
+ * <<<SEARCH
+ * old code
+ * ===
+ * new code
+ * >>>
+ */
+function parseDiffBlocks(content: string): { search: string; replace: string }[] {
+  const diffs: { search: string; replace: string }[] = [];
+  const diffRegex = /<<<SEARCH\n([\s\S]*?)\n===\n([\s\S]*?)\n>>>/g;
+
+  let match;
+  while ((match = diffRegex.exec(content)) !== null) {
+    const search = match[1];
+    const replace = match[2];
+    if (search.length > 0) {
+      diffs.push({ search, replace });
+    }
+  }
+
+  return diffs;
+}
+
+/**
+ * Apply diff updates to an existing file's code.
+ * Returns the updated code, or the original if no matches found.
+ */
+export function applyDiffs(
+  originalCode: string,
+  diffs: { search: string; replace: string }[]
+): string {
+  let result = originalCode;
+  for (const diff of diffs) {
+    // Try exact match first
+    if (result.includes(diff.search)) {
+      result = result.replace(diff.search, diff.replace);
+    } else {
+      // Try with trimmed whitespace matching (fuzzy)
+      const searchTrimmed = diff.search.trim();
+      const lines = result.split("\n");
+      let matchStart = -1;
+      let matchEnd = -1;
+      const searchLines = searchTrimmed.split("\n").map(l => l.trim());
+
+      for (let i = 0; i <= lines.length - searchLines.length; i++) {
+        let found = true;
+        for (let j = 0; j < searchLines.length; j++) {
+          if (lines[i + j].trim() !== searchLines[j]) {
+            found = false;
+            break;
+          }
+        }
+        if (found) {
+          matchStart = i;
+          matchEnd = i + searchLines.length;
+          break;
+        }
+      }
+
+      if (matchStart !== -1) {
+        // Preserve the indentation of the first matched line
+        const indent = lines[matchStart].match(/^(\s*)/)?.[1] || "";
+        const replaceLines = diff.replace.split("\n").map((line, idx) => {
+          if (idx === 0) return indent + line.trimStart();
+          return line;
+        });
+        lines.splice(matchStart, matchEnd - matchStart, ...replaceLines);
+        result = lines.join("\n");
+      }
+    }
+  }
+  return result;
+}
+
+/**
  * Convert parsed artifact actions into a files map for the WebBuilder store.
+ * For "update" actions, requires existing files to apply diffs.
  */
 export function actionsToFiles(
-  actions: ParsedFileAction[]
+  actions: ParsedAction[],
+  existingFiles?: Record<string, { code: string }>
 ): Record<string, { code: string }> {
   const files: Record<string, { code: string }> = {};
+
   for (const action of actions) {
-    files[action.filePath] = { code: action.content };
+    if (action.type === "file") {
+      // Full file creation/replacement
+      files[action.filePath] = { code: action.content };
+    } else if (action.type === "update") {
+      // Partial update — apply diffs to existing file
+      const existing = existingFiles?.[action.filePath];
+      if (existing) {
+        const updatedCode = applyDiffs(existing.code, action.diffs);
+        files[action.filePath] = { code: updatedCode };
+      }
+      // If file doesn't exist, skip the update (can't apply diff to nothing)
+    }
   }
+
   return files;
 }
 

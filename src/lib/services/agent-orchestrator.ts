@@ -264,3 +264,206 @@ REGLAS CRÍTICAS:
     totalOrchestrationTimeMs: totalDuration
   };
 }
+
+export interface WebBuilderAgentInfo extends AgentInfo {
+  filePath: string;
+}
+
+export interface WebBuilderAgentReport extends AgentReport {
+  filePath: string;
+}
+
+export interface WebBuilderOrchestrationResult {
+  isComplex: boolean;
+  reason: string;
+  agents: WebBuilderAgentInfo[];
+  agentReports: WebBuilderAgentReport[];
+  totalOrchestrationTimeMs: number;
+}
+
+export async function runWebBuilderOrchestration(
+  model: LanguageModel,
+  userMessage: string,
+  existingFiles?: Record<string, string>,
+  onProgress?: (text: string) => void
+): Promise<WebBuilderOrchestrationResult> {
+  const startTime = Date.now();
+  onProgress?.("🧠 [Orquestador WebBuilder] Iniciando planificación de arquitectura y archivos...\n");
+
+  const existingFilesContext = existingFiles && Object.keys(existingFiles).length > 0;
+  
+  const systemPlannerPrompt = `Actúas como el Arquitecto de Software y Orquestador de Maverlang WebBuilder.
+Tu tarea es analizar la consulta del usuario y los archivos existentes en el proyecto (si los hay), y planificar los cambios de código.
+
+Determina si la consulta es simple (isComplex: false) o compleja (isComplex: true).
+- Consultas simples (isComplex: false): Saludos, preguntas conceptuales de programación, o cambios muy pequeños en un único archivo que pueden ser realizados directamente por el LLM final (ej. "cambia el color del botón a azul", "cambia el título de la página").
+- Consultas complejas (isComplex: true): Crear una nueva aplicación web desde cero, agregar múltiples componentes interactivos, realizar modificaciones extensas en más de un archivo, o cambios estructurales grandes.
+
+Si la consulta es compleja (isComplex: true), debes descomponer la tarea en archivos individuales. Asigna cada archivo a un agente constructor especializado (mínimo 2, máximo 5 archivos/agentes en total). Cada agente se encargará de crear o actualizar UN ÚNICO archivo de código.
+Por ejemplo, si necesitas crear una dashboard interactiva, podrías planificar:
+1. "src/App.tsx" -> asignado a AppAgent (Desarrollador React Principal) para el layout y estado general.
+2. "src/components/FinanceChart.tsx" -> asignado a ChartAgent (Especialista en Visualización) para el gráfico interactivo.
+3. "src/index.css" -> asignado a StyleAgent (Especialista CSS) para los estilos globales y Tailwind.
+
+DEBES responder ÚNICAMENTE con un bloque JSON en el siguiente formato (sin explicaciones, sin markdown, solo el JSON):
+{
+  "isComplex": true,
+  "reason": "Explicación del diseño y plan de archivos",
+  "agents": [
+    {
+      "agentName": "Nombre del Agente (ej: AppAgent)",
+      "role": "Rol específico del agente (ej: Desarrollador React Principal)",
+      "task": "Explicación detallada de lo que debe implementar en su archivo asignado",
+      "filePath": "Ruta exacta del archivo (ej: src/App.tsx)"
+    }
+  ]
+}
+
+Si determinas que no requiere delegación (isComplex: false), responde con:
+{
+  "isComplex": false,
+  "reason": "Explicación breve del motivo de no delegar",
+  "agents": []
+}
+`;
+
+  let isComplex = false;
+  let reason = "";
+  let agents: WebBuilderAgentInfo[] = [];
+
+  try {
+    const { text } = await generateText({
+      model,
+      system: systemPlannerPrompt,
+      messages: [
+        {
+          role: 'user',
+          content: `Consulta del usuario: "${userMessage}"
+          
+${existingFilesContext ? `Archivos existentes:\n${Object.keys(existingFiles).map(p => `- ${p}`).join('\n')}` : '(Proyecto vacío)'}`
+        }
+      ],
+      temperature: 0.1,
+    });
+
+    const jsonText = extractJsonBlock(text);
+    const result = JSON.parse(jsonText);
+
+    isComplex = !!result.isComplex;
+    reason = result.reason || 'Sin motivo';
+    const rawAgents = Array.isArray(result.agents) ? result.agents : [];
+    agents = rawAgents.slice(0, 5).map((a: any) => ({
+      agentName: a.agentName || 'BuilderAgent',
+      role: a.role || 'Desarrollador',
+      task: a.task || 'Crear código',
+      filePath: a.filePath || 'src/App.tsx'
+    }));
+  } catch (err: any) {
+    console.error("WebBuilder planning phase failed:", err);
+    isComplex = false;
+    reason = `Error en planificación: ${err.message || String(err)}`;
+    agents = [];
+  }
+
+  if (!isComplex || agents.length === 0) {
+    onProgress?.(`✅ [Orquestador WebBuilder] Análisis completo: Es una consulta simple. Se resolverá de forma directa (${reason}).\n\n`);
+    return {
+      isComplex: false,
+      reason,
+      agents: [],
+      agentReports: [],
+      totalOrchestrationTimeMs: Date.now() - startTime
+    };
+  }
+
+  onProgress?.(`🔍 [Orquestador WebBuilder] Plan de archivos creado: "${reason}"\n`);
+  onProgress?.(`🤖 Creando ${agents.length} agentes constructores en paralelo...\n\n`);
+
+  const agentPromises = agents.map(async (agent): Promise<WebBuilderAgentReport> => {
+    const agentStartTime = Date.now();
+    onProgress?.(`⏳ [Agente] ${agent.agentName} (${agent.role}) generando/actualizando \`${agent.filePath}\`...\n`);
+
+    const agentSystemPrompt = `Actúas como el agente constructor experto "${agent.agentName}" con el rol de "${agent.role}".
+Tu tarea específica es implementar o modificar el archivo "${agent.filePath}" de acuerdo a la instrucción: "${agent.task}".
+
+Debes generar el contenido de tu archivo utilizando el formato XML de Maverlang Artifacts.
+REGLAS CRÍTICAS DE RESPUESTA:
+1. Responde ÚNICAMENTE con el bloque XML <maverlangArtifact> que contiene la acción para tu archivo. No incluyes explicaciones en lenguaje natural antes ni después del bloque XML.
+2. El bloque debe tener la estructura correspondiente.
+Si vas a CREAR o REEMPLAZAR un archivo por completo, usa type="file":
+<maverlangArtifact id="project" title="Creación de archivo">
+  <maverlangAction type="file" filePath="${agent.filePath}">
+// Tu código React/HTML/CSS aquí
+  </maverlangAction>
+</maverlangArtifact>
+
+Si vas a MODIFICAR un archivo existente, usa type="update" con bloques search/replace:
+<maverlangArtifact id="project" title="Modificación de archivo">
+  <maverlangAction type="update" filePath="${agent.filePath}">
+<<<<SEARCH
+// Código exacto actual a buscar
+====
+// Código modificado de reemplazo
+>>>>
+  </maverlangAction>
+</maverlangArtifact>
+
+3. Todo código React debe usar importaciones estándar que estén disponibles en un entorno Vite + React normal.
+4. Recuerda: Tu respuesta debe contener SOLAMENTE el XML. No agregues comentarios introductorios ni de cierre en markdown fuera del XML.
+`;
+
+    const agentUserMessage = `Consulta original del usuario: "${userMessage}"
+
+PLAN DE ARCHIVOS COORDINADOS:
+${agents.map(a => `- Archivo: \`${a.filePath}\` (generado por ${a.agentName} - ${a.role}): ${a.task}`).join('\n')}
+
+ARCHIVOS EXISTENTES EN EL PROYECTO:
+${existingFilesContext ? Object.entries(existingFiles).map(([path, content]) => `--- Archivo: ${path} ---\n${content}\n`).join('\n') : '(Ninguno)'}
+
+Tu tarea asignada: Generar o actualizar el archivo \`${agent.filePath}\` de acuerdo a: "${agent.task}".
+Recuerda devolver ÚNICAMENTE el XML con tu código.`;
+
+    try {
+      const { text: content } = await generateText({
+        model,
+        system: agentSystemPrompt,
+        messages: [{ role: 'user', content: agentUserMessage }],
+        temperature: 0.2,
+      });
+
+      const duration = Date.now() - agentStartTime;
+      onProgress?.(`✅ [Agente] ${agent.agentName} completó la edición de \`${agent.filePath}\` en ${duration}ms.\n`);
+
+      return {
+        ...agent,
+        content,
+        durationMs: duration,
+        success: true
+      };
+    } catch (err: any) {
+      const duration = Date.now() - agentStartTime;
+      console.error(`Error in WebBuilder Agent ${agent.agentName}:`, err);
+      onProgress?.(`❌ [Agente] ${agent.agentName} falló para \`${agent.filePath}\` después de ${duration}ms: ${err.message || String(err)}\n`);
+
+      return {
+        ...agent,
+        content: `Error al procesar la tarea para ${agent.filePath}: ${err.message || String(err)}`,
+        durationMs: duration,
+        success: false
+      };
+    }
+  });
+
+  const agentReports = await Promise.all(agentPromises);
+  const totalDuration = Date.now() - startTime;
+
+  onProgress?.(`\n📊 [Orquestador WebBuilder] Todos los archivos generados en paralelo (${totalDuration}ms total).\n\n`);
+
+  return {
+    isComplex: true,
+    reason,
+    agents,
+    agentReports,
+    totalOrchestrationTimeMs: totalDuration
+  };
+}

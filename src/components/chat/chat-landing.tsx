@@ -182,8 +182,33 @@ export function ChatLanding() {
             .from('portfolios')
             .select('*')
             .eq('user_id', user.id);
-          if (portData) {
-            setPortfolioList(portData);
+          if (portData && portData.length > 0) {
+            const symbols = portData.map(a => a.symbol).join(",");
+            try {
+              const res = await fetch(`/api/finance/portfolio?symbols=${symbols}`);
+              if (res.ok) {
+                const liveData = await res.json();
+                const enriched = portData.map(dbA => {
+                  const live = liveData.find((l: any) => l.symbol === dbA.symbol) || {};
+                  return {
+                    ...dbA,
+                    price: live.price || 0,
+                    change: live.change || 0,
+                    changePercent: live.changePercent || 0,
+                    shares: dbA.shares || 0,
+                    average_price: dbA.average_price || 0
+                  };
+                });
+                setPortfolioList(enriched);
+              } else {
+                setPortfolioList(portData.map(a => ({ ...a, price: 0, change: 0, changePercent: 0, shares: a.shares || 0, average_price: a.average_price || 0 })));
+              }
+            } catch (err) {
+              console.error("Error fetching live portfolio data:", err);
+              setPortfolioList(portData.map(a => ({ ...a, price: 0, change: 0, changePercent: 0, shares: a.shares || 0, average_price: a.average_price || 0 })));
+            }
+          } else {
+            setPortfolioList([]);
           }
         } else {
           setPortfolioList([]);
@@ -196,6 +221,33 @@ export function ChatLanding() {
     };
     fetchData();
   }, [user, isAuthenticated, supabase]);
+
+  // Portfolio calculations
+  const totalValue = portfolioList.reduce((sum, a) => sum + ((a.price || 0) * (a.shares || 0)), 0);
+  
+  let hasShares = false;
+  portfolioList.forEach(a => { if ((a.shares || 0) > 0) hasShares = true; });
+  let totalChange = 0;
+
+  if (hasShares) {
+    let prevTotalValue = 0;
+    let totalAbsoluteChange = 0;
+    portfolioList.forEach(a => {
+      const shares = a.shares || 0;
+      if (shares > 0) {
+        const currentPosValue = (a.price || 0) * shares;
+        const prevPrice = (a.price || 0) - (a.change || 0);
+        const prevPosValue = prevPrice * shares;
+        prevTotalValue += prevPosValue;
+        totalAbsoluteChange += (a.change || 0) * shares;
+      }
+    });
+    totalChange = prevTotalValue > 0 ? (totalAbsoluteChange / prevTotalValue) * 100 : 0;
+  } else {
+    totalChange = portfolioList.length > 0 
+      ? portfolioList.reduce((sum, a) => sum + (a.changePercent || 0), 0) / portfolioList.length 
+      : 0;
+  }
 
   const [openReasoning, setOpenReasoning] = useState<Record<string, boolean>>({})
   const [shareDialog, setShareDialog] = useState({ isOpen: false, question: "", answer: "" })
@@ -725,9 +777,23 @@ export function ChatLanding() {
                       className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[340px] bg-white/95 dark:bg-[#0B1329]/95 backdrop-blur-xl border border-gray-200/50 dark:border-white/5 rounded-2xl p-4 shadow-2xl z-50 flex flex-col gap-3 font-sans text-left"
                     >
                       <div className="flex items-center justify-between px-1 border-b border-gray-100 dark:border-white/5 pb-2">
-                        <h4 className="text-[10px] font-black tracking-widest text-[#1890FF] uppercase">Mi Inversión</h4>
+                        <div className="flex flex-col">
+                          <h4 className="text-[10px] font-black tracking-widest text-[#1890FF] uppercase">Mi Inversión</h4>
+                          {isAuthenticated && portfolioList.length > 0 && (
+                            <span className="text-xs font-extrabold text-gray-900 dark:text-white mt-0.5">
+                              ${totalValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                          )}
+                        </div>
                         {isAuthenticated && portfolioList.length > 0 && (
-                          <span className="text-[10px] text-green-500 font-bold px-1.5 py-0.5 rounded-full bg-green-500/10">+5.42%</span>
+                          <span className={cn(
+                            "text-[10px] font-bold px-1.5 py-0.5 rounded-full",
+                            totalChange >= 0 
+                              ? "text-green-500 bg-green-500/10" 
+                              : "text-red-500 bg-red-500/10"
+                          )}>
+                            {totalChange >= 0 ? "+" : ""}{totalChange.toFixed(2)}%
+                          </span>
                         )}
                       </div>
                       
@@ -777,13 +843,16 @@ export function ChatLanding() {
                                 </div>
                                 <div className="flex flex-col items-end shrink-0">
                                   <span className="text-xs font-semibold text-gray-900 dark:text-white tabular-nums">
-                                    {(asset.shares || 0) * (asset.average_price || 0) > 0 
-                                      ? `$${((asset.shares || 0) * (asset.average_price || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                                      : `$${(asset.average_price || 0).toLocaleString('en-US')}`
+                                    {(asset.shares || 0) > 0 
+                                      ? `$${((asset.shares || 0) * (asset.price || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                                      : `$${(asset.price || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                                     }
                                   </span>
-                                  <span className="text-[9px] text-muted-foreground mt-0.5 tabular-nums">
-                                    {asset.shares || 0} acc.
+                                  <span className={cn(
+                                    "text-[9px] font-semibold mt-0.5 tabular-nums",
+                                    (asset.changePercent || 0) >= 0 ? "text-green-500" : "text-red-500"
+                                  )}>
+                                    {(asset.changePercent || 0) >= 0 ? "+" : ""}{(asset.changePercent || 0).toFixed(2)}%
                                   </span>
                                 </div>
                               </Link>

@@ -14,7 +14,7 @@ export function NewsCardSkeleton({ index = 0, className }: Props) {
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
       className={cn(
-        "group block bg-white dark:bg-[#1E293B]/50 border border-gray-100 dark:border-white/5 rounded-2xl overflow-hidden shadow-sm dark:shadow-none",
+        "group block bg-card/50 border border-gray-100 dark:border-white/5 rounded-2xl overflow-hidden shadow-sm dark:shadow-none",
         isFirst ? "flex flex-col md:flex-row h-full w-full" : "flex flex-col h-full",
         className
       )}

@@ -17,7 +17,7 @@ export function AuthToast() {
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
           className="fixed bottom-6 left-1/2 z-[100] w-[90%] max-w-sm"
         >
-          <div className="bg-white/90 dark:bg-[#1E293B]/90 backdrop-blur-md border border-gray-200 dark:border-white/10 shadow-2xl rounded-2xl p-4 flex flex-col gap-3">
+          <div className="bg-white/90 dark:bg-card/90 backdrop-blur-md border border-gray-200 dark:border-white/10 shadow-2xl rounded-2xl p-4 flex flex-col gap-3">
             <div className="flex items-start justify-between gap-3">
               <p className="text-sm font-medium text-gray-900 dark:text-gray-100 flex-1 leading-snug">
                 {message}

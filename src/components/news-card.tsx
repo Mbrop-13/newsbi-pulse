@@ -236,7 +236,7 @@ export function NewsCard({ article, index, layout = "default" }: NewsCardProps) 
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05, duration: 0.5, ease: "easeOut" }}
       whileHover={{ scale: 1.02 }}
-      className={`group relative w-full bg-white dark:bg-[#1E293B] rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-xl hover:shadow-[#1890FF]/15 transition-all duration-300 overflow-hidden flex flex-col ${
+      className={`group relative w-full bg-card rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-xl hover:shadow-[#1890FF]/15 transition-all duration-300 overflow-hidden flex flex-col ${
         layout !== 'default' ? 'h-full' : ''
       }`}
     >

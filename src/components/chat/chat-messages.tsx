@@ -75,66 +75,69 @@ export function ChatMessages({
   }
 
   return (
-    <div
-      ref={containerRef}
-      onScroll={handleScroll}
-      className={cn(
-        "flex-1 overflow-y-auto scrollbar-hide relative",
-        isWebBuilderMode ? "pl-5 pr-3" : "px-4 md:px-6"
-      )}
-    >
-      <AnimatePresence>
-        {showScrollButton && (
-          <div className="sticky bottom-6 left-full -translate-x-[60px] z-50 w-0 h-0 pointer-events-none flex justify-end overflow-visible">
-            <motion.button
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              onClick={scrollToBottom}
-              className="pointer-events-auto w-10 h-10 bg-[#1890FF] hover:bg-[#1890FF]/90 text-white rounded-full shadow-lg flex items-center justify-center transition-all cursor-pointer border border-[#1890FF]/20 active:scale-95"
-              title="Ir al final"
-            >
-              <ArrowDown className="w-5 h-5" />
-            </motion.button>
-          </div>
+    <div className="relative flex flex-col flex-1 min-h-0 w-full h-full">
+      <div
+        ref={containerRef}
+        onScroll={handleScroll}
+        className={cn(
+          "flex-1 overflow-y-auto scrollbar-hide w-full",
+          isWebBuilderMode ? "pl-5 pr-3" : "px-4 md:px-6"
         )}
-      </AnimatePresence>
+      >
+        <div className={cn("pt-16 pb-6 space-y-6", isWebBuilderMode ? "w-full max-w-full" : "max-w-3xl mx-auto")}>
+          {messages.map((msg, idx) => (
+            <MessageBubble
+              key={msg.id}
+              message={msg}
+              feedback={messageFeedback[msg.id]}
+              onFeedback={onFeedback}
+              onRetry={idx === messages.length - 1 && msg.role === 'assistant' ? onRetry : undefined}
+              onShare={onShare}
+              isReasoningOpen={openReasoning[msg.id] === true}
+              onToggleReasoning={() => onToggleReasoning?.(msg.id)}
+              prevMessageContent={idx > 0 ? messages[idx - 1].content : ""}
+              streamData={streamData}
+              isLast={idx === messages.length - 1}
+              isLoading={isLoading}
+              isWebBuilderMode={isWebBuilderMode}
+            />
+          ))}
 
-      <div className={cn("pt-16 pb-6 space-y-6", isWebBuilderMode ? "w-full max-w-full" : "max-w-3xl mx-auto")}>
-        {messages.map((msg, idx) => (
-          <MessageBubble
-            key={msg.id}
-            message={msg}
-            feedback={messageFeedback[msg.id]}
-            onFeedback={onFeedback}
-            onRetry={idx === messages.length - 1 && msg.role === 'assistant' ? onRetry : undefined}
-            onShare={onShare}
-            isReasoningOpen={openReasoning[msg.id] === true}
-            onToggleReasoning={() => onToggleReasoning?.(msg.id)}
-            prevMessageContent={idx > 0 ? messages[idx - 1].content : ""}
-            streamData={streamData}
-            isLast={idx === messages.length - 1}
-            isLoading={isLoading}
-            isWebBuilderMode={isWebBuilderMode}
-          />
-        ))}
-
-        {/* Loading indicator */}
-        {isLoading && messages[messages.length - 1]?.role === 'user' && (
-          <div className={cn("flex", isWebBuilderMode ? "gap-2 pl-1.5" : "gap-3")}>
-            {!isWebBuilderMode && <AssistantAvatar isResponding={true} isWebBuilderMode={isWebBuilderMode} />}
-            <div className="flex items-center gap-2 py-2">
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="w-2 h-2 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="w-2 h-2 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+          {/* Loading indicator */}
+          {isLoading && messages[messages.length - 1]?.role === 'user' && (
+            <div className={cn("flex", isWebBuilderMode ? "gap-2 pl-1.5" : "gap-3")}>
+              {!isWebBuilderMode && <AssistantAvatar isResponding={true} isWebBuilderMode={isWebBuilderMode} />}
+              <div className="flex items-center gap-2 py-2">
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-2 h-2 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-2 h-2 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        <div ref={messagesEndRef} />
+          <div ref={messagesEndRef} />
+        </div>
       </div>
+
+      <AnimatePresence>
+        {showScrollButton && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            onClick={scrollToBottom}
+            className={cn(
+              "absolute bottom-6 z-50 w-10 h-10 bg-[#1890FF] hover:bg-[#1890FF]/90 text-white rounded-full shadow-lg flex items-center justify-center transition-all cursor-pointer border border-[#1890FF]/20 active:scale-95",
+              isWebBuilderMode ? "right-6" : "right-6 md:right-12"
+            )}
+            title="Ir al final"
+          >
+            <ArrowDown className="w-5 h-5" />
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

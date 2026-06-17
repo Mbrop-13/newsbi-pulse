@@ -423,13 +423,13 @@ export function PreviewPanel() {
 
           {/* Preview Tab (Embedded within rounded container) */}
           {selectedTab === "preview" && (
-            <div className="flex-grow flex flex-col min-h-0 relative h-full w-full bg-muted/5">
+            <div className="flex-1 relative min-h-0 w-full bg-muted/5">
               {hasFiles ? (
-                <div className="flex-grow w-full h-full overflow-hidden bg-background relative z-10">
+                <div className="absolute inset-0 overflow-hidden bg-background">
                   <SandboxRunner />
                 </div>
               ) : (isCompiling || chatLoading) ? (
-                <div className="flex-grow w-full h-full bg-background flex flex-col items-center justify-center p-8 text-center relative z-10 overflow-hidden">
+                <div className="absolute inset-0 bg-background flex flex-col items-center justify-center p-8 text-center overflow-hidden">
                   {/* Grid pattern with light gradients */}
                   <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(13,110,253,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(13,110,253,0.03)_1px,transparent_1px)] bg-[size:2.5rem_2.5rem] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)] opacity-70" />
                   
@@ -505,7 +505,7 @@ export function PreviewPanel() {
                   </div>
                 </div>
               ) : (
-                <div className="flex-grow w-full h-full flex items-center justify-center text-muted-foreground z-10">
+                <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
                   <div className="text-center p-6">
                     <Monitor className="w-10 h-10 mx-auto mb-3 opacity-20 text-primary" />
                     <p className="font-semibold text-foreground">Sin proyecto activo</p>

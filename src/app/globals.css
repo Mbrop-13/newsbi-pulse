@@ -378,3 +378,46 @@
   width: 0;
   height: 0;
 }
+
+/* ── Sandpack Preview Full-Height Overrides ──────────── */
+/* Force every layer of the Sandpack component tree to fill its parent */
+.sp-wrapper,
+.sp-layout,
+.sp-stack,
+.sp-preview-container,
+.sp-preview-iframe,
+.sp-preview-actions-container {
+  height: 100% !important;
+  min-height: 0 !important;
+}
+
+.sp-layout {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.sp-stack {
+  flex: 1 1 0% !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.sp-preview-container {
+  flex: 1 1 0% !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.sp-preview-iframe {
+  flex: 1 1 0% !important;
+  border: none !important;
+}
+
+/* Remove Sandpack's default max-height restrictions */
+.sp-wrapper {
+  max-height: none !important;
+}
+
+.sp-layout {
+  max-height: none !important;
+}

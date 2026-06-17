@@ -49,43 +49,50 @@ export function SandboxRunner() {
   }
 
   return (
-    <SandpackProvider
-      template={hasReact ? "react-ts" : "vanilla-ts"}
-      files={sandpackFiles}
-      theme="dark"
-      customSetup={{
-        dependencies: {
-          "lucide-react": "latest",
-          "recharts": "latest",
-          "framer-motion": "latest",
-          "react-icons": "latest",
-        },
-      }}
-      options={{
-        externalResources: [
-          "https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4",
-        ],
-        autorun: true,
-        autoReload: true,
-      }}
-    >
-      <SandpackLayout
-        style={{
-          border: "none",
-          borderRadius: 0,
-          height: "100%",
-        }}
-      >
-        <SandpackPreview
-          style={{
-            height: "100%",
-            minHeight: "100%",
+    <div style={{ position: "relative", width: "100%", height: "100%", flex: "1 1 0%" }}>
+      <div style={{ position: "absolute", inset: 0 }}>
+        <SandpackProvider
+          template={hasReact ? "react-ts" : "vanilla-ts"}
+          files={sandpackFiles}
+          theme="dark"
+          customSetup={{
+            dependencies: {
+              "lucide-react": "latest",
+              "recharts": "latest",
+              "framer-motion": "latest",
+              "react-icons": "latest",
+            },
           }}
-          showNavigator={false}
-          showRefreshButton={true}
-          showOpenInCodeSandbox={false}
-        />
-      </SandpackLayout>
-    </SandpackProvider>
+          options={{
+            externalResources: [
+              "https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4",
+            ],
+            autorun: true,
+            autoReload: true,
+          }}
+        >
+          <SandpackLayout
+            style={{
+              border: "none",
+              borderRadius: 0,
+              height: "100%",
+              display: "flex",
+              flexDirection: "column" as const,
+            }}
+          >
+            <SandpackPreview
+              style={{
+                flex: "1 1 0%",
+                height: "100%",
+                minHeight: 0,
+              }}
+              showNavigator={false}
+              showRefreshButton={true}
+              showOpenInCodeSandbox={false}
+            />
+          </SandpackLayout>
+        </SandpackProvider>
+      </div>
+    </div>
   );
 }

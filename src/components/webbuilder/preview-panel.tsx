@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
 import { useAIChatStore } from "@/lib/stores/ai-chat-store";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
 import { SandboxRunner } from "./sandbox-runner";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -470,26 +472,41 @@ export function PreviewPanel() {
             Publicar
           </button>
 
-          {/* Save button (saying Guardar and being functional) */}
+          {/* Save & Download button */}
           <button
             onClick={async () => {
               try {
+                // 1. Generate and download ZIP
+                const zip = new JSZip();
+                const currentFiles = useWebBuilderStore.getState().files;
+                
+                Object.entries(currentFiles).forEach(([path, file]) => {
+                  // Remove leading slash if any so it unzips nicely
+                  const cleanPath = path.startsWith("/") ? path.slice(1) : path;
+                  zip.file(cleanPath, file.code);
+                });
+                
+                const blob = await zip.generateAsync({ type: "blob" });
+                saveAs(blob, "maverlang-project.zip");
+                toast.success("Proyecto descargado en ZIP!");
+
+                // 2. Sync to cloud as backup
                 await useWebBuilderStore.getState().syncToCloud();
-                toast.success("Proyecto guardado en la nube con éxito!");
               } catch (err) {
-                toast.error("Error al guardar el proyecto en la nube");
+                console.error("Error saving project:", err);
+                toast.error("Error al guardar o descargar el proyecto");
               }
             }}
             disabled={isSaving}
             className="flex items-center gap-1.5 px-4 h-8 bg-foreground text-background hover:opacity-90 rounded-full text-xs font-bold active:scale-95 transition-all disabled:opacity-50"
-            title="Guardar proyecto"
+            title="Descargar ZIP y Guardar"
           >
             {isSaving ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
             ) : (
-              <Cloud className="w-3.5 h-3.5" />
+              <Download className="w-3.5 h-3.5" />
             )}
-            <span>{isSaving ? "Guardando..." : "Guardar"}</span>
+            <span>{isSaving ? "Guardando..." : "Guardar y Descargar"}</span>
           </button>
         </div>
       </div>

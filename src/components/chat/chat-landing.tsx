@@ -383,11 +383,15 @@ export function ChatLanding() {
 
         useAIChatStore.setState({ messages: storeMessages });
         useAIChatStore.getState().updateCurrentChat();
+
+        // Signal that the AI has finished responding
+        useWebBuilderStore.getState().setAiResponding(false);
       });
     },
     onError: (error) => {
       console.error("[AI Chat] Stream error:", error);
       toast.error(error.message || "Ocurrió un error al procesar la solicitud. Por favor, intenta de nuevo.");
+      useWebBuilderStore.getState().setAiResponding(false);
     }
   })
 
@@ -518,6 +522,7 @@ export function ChatLanding() {
     const isWB = useWebBuilderStore.getState().isWebBuilderMode
     if (isWB) {
       useWebBuilderStore.getState().resetAutoFixAttempts()
+      useWebBuilderStore.getState().setAiResponding(true)
     }
     // Create chat ID if new
     let activeChatId = currentChatId

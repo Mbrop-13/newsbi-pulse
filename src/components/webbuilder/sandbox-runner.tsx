@@ -15,6 +15,7 @@ function SandboxErrorListener() {
   const { sandpack } = useSandpack();
   const store = useWebBuilderStore();
   const lastProcessedErrorRef = useRef<string | null>(null);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const error = sandpack.error;
@@ -22,8 +23,16 @@ function SandboxErrorListener() {
       if (store.lastAutoFixError) {
         store.completeAutoFix();
       }
+      // Clear any pending debounce if the error resolved itself
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
       return;
     }
+
+    // Don't attempt auto-fix while the AI is still generating code
+    if (store.isAiResponding) return;
 
     const errorMessage = error.message;
     if (errorMessage === lastProcessedErrorRef.current) return;
@@ -35,35 +44,51 @@ function SandboxErrorListener() {
       return;
     }
 
-    // Start auto-fix process
-    lastProcessedErrorRef.current = errorMessage;
-    console.log(`[Auto-Fix] Intercepted error: "${errorMessage}". Attempt #${store.autoFixAttempts + 1}`);
-    
-    store.startAutoFix();
+    // Debounce: wait 2 seconds after AI finishes before auto-fixing
+    // This gives Sandpack time to recompile with the final code
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
 
-    // Call service to get a fix
-    attemptAutoFix(errorMessage, store.files)
-      .then((fixedFiles) => {
-        if (fixedFiles) {
-          console.log("[Auto-Fix] Received code fix. Applying updates...");
-          const formatted: any = {};
-          for (const [path, code] of Object.entries(fixedFiles)) {
-            formatted[path] = { code };
+    debounceTimerRef.current = setTimeout(() => {
+      // Re-check: error might have been resolved during the debounce
+      const currentError = sandpack.error;
+      if (!currentError?.message) return;
+      if (store.isAiResponding) return;
+
+      lastProcessedErrorRef.current = currentError.message;
+      console.log(`[Auto-Fix] Intercepted error: "${currentError.message}". Attempt #${store.autoFixAttempts + 1}`);
+      
+      store.startAutoFix();
+
+      attemptAutoFix(currentError.message, store.files)
+        .then((fixedFiles) => {
+          if (fixedFiles) {
+            console.log("[Auto-Fix] Received code fix. Applying updates...");
+            const formatted: any = {};
+            for (const [path, code] of Object.entries(fixedFiles)) {
+              formatted[path] = { code };
+            }
+            const merged = { ...store.files, ...formatted };
+            store.setFiles(merged);
+            store.completeAutoFix();
+          } else {
+            console.warn("[Auto-Fix] Failed to generate code fix.");
+            store.failAutoFix(currentError.message);
           }
-          const merged = { ...store.files, ...formatted };
-          store.setFiles(merged);
-          store.completeAutoFix();
-        } else {
-          console.warn("[Auto-Fix] Failed to generate code fix.");
-          store.failAutoFix(errorMessage);
-        }
-      })
-      .catch((err) => {
-        console.error("[Auto-Fix] Error during auto-fix execution:", err);
-        store.failAutoFix(errorMessage);
-      });
+        })
+        .catch((err) => {
+          console.error("[Auto-Fix] Error during auto-fix execution:", err);
+          store.failAutoFix(currentError.message);
+        });
+    }, 2000);
 
-  }, [sandpack.error, store.autoFixAttempts]);
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [sandpack.error, store.autoFixAttempts, store.isAiResponding]);
 
   if (store.isAutoFixing) {
     return (

@@ -55,10 +55,12 @@ interface WebBuilderStore {
   autoFixAttempts: number;
   isAutoFixing: boolean;
   lastAutoFixError: string | null;
+  isAiResponding: boolean;
   startAutoFix: () => void;
   completeAutoFix: () => void;
   failAutoFix: (error: string) => void;
   resetAutoFixAttempts: () => void;
+  setAiResponding: (val: boolean) => void;
 
   // Cloud Sync Actions
   syncToCloud: () => Promise<void>;
@@ -148,6 +150,7 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
       autoFixAttempts: 0,
       isAutoFixing: false,
       lastAutoFixError: null,
+      isAiResponding: false,
 
       setWebBuilderMode: (active) => {
         set({ isWebBuilderMode: active });
@@ -264,6 +267,7 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
       completeAutoFix: () => set({ isAutoFixing: false, lastAutoFixError: null }),
       failAutoFix: (error) => set({ isAutoFixing: false, lastAutoFixError: error }),
       resetAutoFixAttempts: () => set({ autoFixAttempts: 0, isAutoFixing: false, lastAutoFixError: null }),
+      setAiResponding: (val) => set({ isAiResponding: val }),
 
       // ── Cloud Sync Actions ──
 

@@ -129,6 +129,85 @@ export function SandboxRunner() {
       }
     }
 
+    // Inject Inspector Script for React Templates
+    if (hasReact && !result["/public/index.html"]) {
+      result["/public/index.html"] = `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maverlang Preview</title>
+    <style>
+      .maverlang-inspector-hover {
+        outline: 2px solid #3b82f6 !important;
+        outline-offset: -2px !important;
+        cursor: crosshair !important;
+        box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.5) !important;
+        background-color: rgba(59, 130, 246, 0.1) !important;
+        transition: all 0.1s !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      let isInspectorActive = false;
+      
+      window.addEventListener('message', (e) => {
+        if (e.data?.type === 'TOGGLE_INSPECTOR') {
+          isInspectorActive = e.data.active;
+          if (!isInspectorActive) {
+            document.querySelectorAll('.maverlang-inspector-hover').forEach(el => el.classList.remove('maverlang-inspector-hover'));
+          }
+        }
+      });
+
+      document.addEventListener('mouseover', (e) => {
+        if (!isInspectorActive) return;
+        e.stopPropagation();
+        if (e.target !== document.body && e.target !== document.documentElement) {
+          e.target.classList.add('maverlang-inspector-hover');
+        }
+      }, true);
+
+      document.addEventListener('mouseout', (e) => {
+        if (!isInspectorActive) return;
+        e.stopPropagation();
+        if (e.target && e.target.classList) {
+          e.target.classList.remove('maverlang-inspector-hover');
+        }
+      }, true);
+
+      document.addEventListener('click', (e) => {
+        if (!isInspectorActive) return;
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const el = e.target;
+        if (!el || el === document.body || el === document.documentElement) return;
+
+        el.classList.remove('maverlang-inspector-hover');
+        
+        const clone = el.cloneNode(false);
+        let innerText = el.innerText || '';
+        if (innerText.length > 50) innerText = innerText.substring(0, 50) + '...';
+        if (innerText) clone.innerText = innerText;
+        
+        window.parent.postMessage({
+          type: 'MAVERLANG_ELEMENT_CLICKED',
+          elementHtml: clone.outerHTML,
+          tagName: el.tagName,
+          className: el.className || ''
+        }, '*');
+        
+        isInspectorActive = false;
+        window.parent.postMessage({ type: 'MAVERLANG_INSPECTOR_DISABLED' }, '*');
+      }, true);
+    </script>
+  </body>
+</html>`;
+    }
+
     return result;
   }, [files, hasReact]);
 

@@ -32,6 +32,7 @@ import {
   Redo2,
   Smartphone,
   Tablet,
+  MousePointer2,
 } from "lucide-react";
 
 // ─── File Icon Resolver ────────────────────────────
@@ -309,6 +310,26 @@ export function PreviewPanel() {
   } = useWebBuilderStore();
   const chatLoading = useAIChatStore((s) => s.isLoading);
   const [viewport, setViewport] = useState<"desktop" | "tablet" | "mobile">("desktop");
+  const [isInspectorActive, setIsInspectorActive] = useState(false);
+
+  // Sync inspector state with the preview iframe
+  useEffect(() => {
+    const iframe = document.querySelector('iframe[title="Sandpack Preview"]');
+    if (iframe && (iframe as HTMLIFrameElement).contentWindow) {
+      (iframe as HTMLIFrameElement).contentWindow?.postMessage({ type: 'TOGGLE_INSPECTOR', active: isInspectorActive }, '*');
+    }
+  }, [isInspectorActive]);
+
+  // Turn off inspector when a click happens (message from iframe)
+  useEffect(() => {
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data?.type === 'MAVERLANG_INSPECTOR_DISABLED') {
+        setIsInspectorActive(false);
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
 
   const tabs = [
     { id: "preview" as const, label: "Preview", description: "Vista previa interactiva", icon: Monitor },
@@ -400,6 +421,25 @@ export function PreviewPanel() {
                   title="Mobile"
                 >
                   <Smartphone className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
+            {/* Inspector Toggle (Only in Preview) */}
+            {selectedTab === "preview" && (
+              <div className="flex items-center bg-muted/30 rounded-lg p-1 border border-border/30">
+                <button
+                  onClick={() => setIsInspectorActive(!isInspectorActive)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md transition-all text-[11px] font-bold",
+                    isInspectorActive
+                      ? "bg-blue-500/20 text-blue-400 shadow-sm border border-blue-500/30 animate-pulse"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  )}
+                  title="Click-to-Edit"
+                >
+                  <MousePointer2 className="w-3.5 h-3.5" />
+                  {isInspectorActive && <span>Selecciona un elemento</span>}
                 </button>
               </div>
             )}

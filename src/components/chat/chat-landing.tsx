@@ -282,6 +282,7 @@ export function ChatLanding() {
     stop,
     input,
     handleInputChange,
+    setInput,
     data,
   } = useChat({
     api: "/api/ai-chat",
@@ -434,6 +435,24 @@ export function ChatLanding() {
       }
     }
   }, [currentChatId, storeMessages]);
+
+  // Listen for click-to-edit events from the Sandpack preview iframe
+  useEffect(() => {
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data?.type === 'MAVERLANG_ELEMENT_CLICKED') {
+        const html = e.data.elementHtml || '';
+        if (html) {
+          const formattedText = `Modifica este elemento:\n\`\`\`html\n${html}\n\`\`\`\n`;
+          setInput(formattedText);
+          // Optional: focus the input element here if needed, 
+          // but just setting the input is usually enough for the user to see it.
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [setInput]);
 
   // Sync store messages → useChat messages on load/chat switch
   useEffect(() => {

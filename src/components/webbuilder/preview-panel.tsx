@@ -28,6 +28,10 @@ import {
   Loader2,
   Share2,
   RefreshCw,
+  Undo2,
+  Redo2,
+  Smartphone,
+  Tablet,
 } from "lucide-react";
 
 // ─── File Icon Resolver ────────────────────────────
@@ -195,24 +199,24 @@ function CodeViewer() {
 }
 
 // ─── Console Panel ───────────────────────────────────
+import { SandpackConsole } from "@codesandbox/sandpack-react";
+
 function ConsolePanel() {
   const { compileLogs } = useWebBuilderStore();
 
   return (
-    <div className="flex-grow overflow-auto bg-muted/5 p-4 font-mono text-[11px] text-muted-foreground leading-relaxed">
-      {compileLogs.length === 0 ? (
-        <div className="flex items-center justify-center h-full text-muted-foreground/50">
-          <div className="text-center">
-            <Terminal className="w-8 h-8 mx-auto mb-2 opacity-30" />
-            <p>La consola mostrará logs de compilación aquí</p>
-          </div>
+    <div className="flex-grow flex flex-col bg-muted/5 min-h-0">
+      <div className="flex-1 overflow-auto bg-[#1e1e1e] [&_.sp-console]:!bg-transparent [&_.sp-console]:!text-[12px] [&_.sp-console-item]:!border-b-[#333]">
+        <SandpackConsole standalone resetOnPreviewRestart={false} />
+      </div>
+      
+      {/* Fallback to custom logs if any exist outside sandpack */}
+      {compileLogs.length > 0 && (
+        <div className="h-32 border-t border-border/20 p-2 overflow-auto text-[11px] font-mono text-muted-foreground">
+          {compileLogs.map((log, i) => (
+            <div key={i} className="py-0.5">{log}</div>
+          ))}
         </div>
-      ) : (
-        compileLogs.map((log, i) => (
-          <div key={i} className="py-0.5">
-            {log}
-          </div>
-        ))
       )}
     </div>
   );
@@ -289,8 +293,22 @@ function FilesPanel() {
 }
 
 export function PreviewPanel() {
-  const { selectedTab, setSelectedTab, files, cloudSyncEnabled, isSaving, lastSavedAt, isCompiling, activeFilePath } = useWebBuilderStore();
+  const { 
+    selectedTab, 
+    setSelectedTab, 
+    files, 
+    cloudSyncEnabled, 
+    isSaving, 
+    lastSavedAt, 
+    isCompiling, 
+    activeFilePath,
+    undo,
+    redo,
+    canUndo,
+    canRedo
+  } = useWebBuilderStore();
   const chatLoading = useAIChatStore((s) => s.isLoading);
+  const [viewport, setViewport] = useState<"desktop" | "tablet" | "mobile">("desktop");
 
   const tabs = [
     { id: "preview" as const, label: "Preview", description: "Vista previa interactiva", icon: Monitor },
@@ -335,6 +353,58 @@ export function PreviewPanel() {
             })}
           </div>
         </TooltipProvider>
+
+        {/* Center: Viewport & History Controls (Only show if Preview or Code is active) */}
+        {(selectedTab === "preview" || selectedTab === "code") && (
+          <div className="flex items-center gap-4">
+            {/* History */}
+            <div className="flex items-center gap-1 bg-muted/30 rounded-lg p-1 border border-border/30">
+              <button
+                onClick={undo}
+                disabled={!canUndo()}
+                className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                title="Deshacer"
+              >
+                <Undo2 className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={redo}
+                disabled={!canRedo()}
+                className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                title="Rehacer"
+              >
+                <Redo2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Viewport (Only in Preview) */}
+            {selectedTab === "preview" && (
+              <div className="flex items-center gap-1 bg-muted/30 rounded-lg p-1 border border-border/30">
+                <button
+                  onClick={() => setViewport("desktop")}
+                  className={cn("p-1.5 rounded-md transition-all", viewport === "desktop" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted")}
+                  title="Desktop"
+                >
+                  <Monitor className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setViewport("tablet")}
+                  className={cn("p-1.5 rounded-md transition-all", viewport === "tablet" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted")}
+                  title="Tablet"
+                >
+                  <Tablet className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setViewport("mobile")}
+                  className={cn("p-1.5 rounded-md transition-all", viewport === "mobile" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted")}
+                  title="Mobile"
+                >
+                  <Smartphone className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Right: Actions */}
         <div className="flex items-center gap-2.5">
@@ -423,9 +493,16 @@ export function PreviewPanel() {
 
           {/* Preview Tab (Embedded within rounded container) */}
           {selectedTab === "preview" && (
-            <div className="flex-1 relative min-h-0 w-full bg-muted/5">
+            <div className="flex-1 relative min-h-0 w-full bg-muted/5 flex items-center justify-center overflow-auto p-4">
               {hasFiles ? (
-                <div className="absolute inset-0 overflow-hidden bg-background">
+                <div 
+                  className={cn(
+                    "relative overflow-hidden bg-background shadow-2xl transition-all duration-500 ease-in-out border border-border/20",
+                    viewport === "desktop" ? "w-full h-full rounded-xl" : 
+                    viewport === "tablet" ? "w-[768px] h-[1024px] max-h-full rounded-[2rem] border-8 border-neutral-800" :
+                    "w-[375px] h-[812px] max-h-full rounded-[3rem] border-[12px] border-neutral-800"
+                  )}
+                >
                   <SandboxRunner />
                 </div>
               ) : (isCompiling || chatLoading) ? (

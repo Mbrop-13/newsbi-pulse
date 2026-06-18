@@ -51,6 +51,14 @@ interface WebBuilderStore {
   initProject: (chatId: string) => void;
   setSplitView: (val: boolean) => void;
 
+  // History (Undo/Redo)
+  history: Record<string, WebBuilderFile>[];
+  historyIndex: number;
+  undo: () => void;
+  redo: () => void;
+  canUndo: () => boolean;
+  canRedo: () => boolean;
+
   // Auto-Fix state
   autoFixAttempts: number;
   isAutoFixing: boolean;
@@ -131,6 +139,20 @@ function debouncedSync() {
   }, 2000); // 2 second debounce
 }
 
+const MAX_HISTORY = 20;
+function _pushHistory(files: Record<string, WebBuilderFile>) {
+  const store = useWebBuilderStore.getState();
+  // Truncate any "redo" entries after current index
+  const trimmed = store.history.slice(0, store.historyIndex + 1);
+  trimmed.push(files);
+  // Keep only last MAX_HISTORY entries
+  const clamped = trimmed.length > MAX_HISTORY ? trimmed.slice(trimmed.length - MAX_HISTORY) : trimmed;
+  useWebBuilderStore.setState({
+    history: clamped,
+    historyIndex: clamped.length - 1,
+  });
+}
+
 export const useWebBuilderStore = create<WebBuilderStore>()(
   persist(
     (set, get) => ({
@@ -145,6 +167,10 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
       cloudSyncEnabled: true,
       isSaving: false,
       lastSavedAt: null,
+
+      // History
+      history: [],
+      historyIndex: -1,
 
       // Auto-Fix default state
       autoFixAttempts: 0,
@@ -171,6 +197,8 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
       },
 
       updateFile: (path, content) => {
+        const prev = get().files;
+        _pushHistory(prev);
         set((s) => ({
           files: {
             ...s.files,
@@ -196,6 +224,10 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
       },
 
       setFiles: (files) => {
+        const prev = get().files;
+        if (Object.keys(prev).length > 0) {
+          _pushHistory(prev);
+        }
         const currentActive = get().activeFilePath;
         const newActive = !currentActive || currentActive === ""
           ? Object.keys(files).find(k => k.endsWith("/App.tsx") || k.endsWith("/App.js")) || Object.keys(files)[0] || ""
@@ -262,6 +294,34 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
       },
 
       setSplitView: (val) => set({ isSplitView: val }),
+
+      // History (Undo/Redo)
+      undo: () => {
+        const { history, historyIndex, files } = get();
+        if (historyIndex < 0 || history.length === 0) return;
+        // Save current state as "future" by pushing to end if we're at the latest
+        const newHistory = [...history];
+        if (historyIndex === history.length - 1) {
+          newHistory.push(files);
+        }
+        const snapshot = newHistory[historyIndex];
+        set({ files: snapshot, historyIndex: historyIndex - 1, history: newHistory });
+      },
+      redo: () => {
+        const { history, historyIndex } = get();
+        const redoIdx = historyIndex + 2;
+        if (redoIdx >= history.length) return;
+        const snapshot = history[redoIdx];
+        set({ files: snapshot, historyIndex: historyIndex + 1 });
+      },
+      canUndo: () => {
+        const { history, historyIndex } = get();
+        return historyIndex >= 0 && history.length > 0;
+      },
+      canRedo: () => {
+        const { history, historyIndex } = get();
+        return (historyIndex + 2) < history.length;
+      },
 
       startAutoFix: () => set((s) => ({ isAutoFixing: true, autoFixAttempts: s.autoFixAttempts + 1 })),
       completeAutoFix: () => set({ isAutoFixing: false, lastAutoFixError: null }),

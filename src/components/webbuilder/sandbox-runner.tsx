@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import {
   SandpackProvider,
   SandpackPreview,
@@ -104,23 +104,31 @@ function SandboxErrorListener() {
 }
 
 export function SandboxRunner() {
-  const { files } = useWebBuilderStore();
+  const { files, isAiResponding } = useWebBuilderStore();
+  const [stableFiles, setStableFiles] = useState(files);
+
+  // Sync files to preview only when the AI is NOT responding (to avoid constant reloading)
+  useEffect(() => {
+    if (!isAiResponding) {
+      setStableFiles(files);
+    }
+  }, [files, isAiResponding]);
 
   // Determine if this is a React/TS project or plain HTML
   const hasReact = useMemo(() => {
-    return Object.keys(files).some(
+    return Object.keys(stableFiles).some(
       (f) => f.endsWith(".tsx") || f.endsWith(".jsx")
     );
-  }, [files]);
+  }, [stableFiles]);
 
   // Convert our files format to Sandpack format
   const sandpackFiles = useMemo(() => {
     const result: Record<string, string> = {};
-    for (const [path, file] of Object.entries(files)) {
+    for (const [path, file] of Object.entries(stableFiles)) {
       result[path] = file.code;
     }
 
-    if (!hasReact && Object.keys(files).length > 0) {
+    if (!hasReact && Object.keys(stableFiles).length > 0) {
       const entryPoints = ["/index.ts", "/src/index.ts", "/index.js", "/src/index.js"];
       for (const ep of entryPoints) {
         if (!result[ep]) {
@@ -209,7 +217,7 @@ export function SandboxRunner() {
     }
 
     return result;
-  }, [files, hasReact]);
+  }, [stableFiles, hasReact]);
 
   if (Object.keys(sandpackFiles).length === 0) {
     return (

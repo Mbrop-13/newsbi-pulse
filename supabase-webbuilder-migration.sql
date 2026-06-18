@@ -15,14 +15,18 @@ CREATE INDEX IF NOT EXISTS idx_ai_webbuilder_projects_chat_id ON public.ai_webbu
 ALTER TABLE public.ai_webbuilder_projects ENABLE ROW LEVEL SECURITY;
 
 -- Políticas RLS para control de acceso de usuarios
+DROP POLICY IF EXISTS "Users can insert their own projects" ON public.ai_webbuilder_projects;
 CREATE POLICY "Users can insert their own projects" ON public.ai_webbuilder_projects
     FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can view their own projects" ON public.ai_webbuilder_projects;
 CREATE POLICY "Users can view their own projects" ON public.ai_webbuilder_projects
     FOR SELECT USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own projects" ON public.ai_webbuilder_projects;
 CREATE POLICY "Users can update their own projects" ON public.ai_webbuilder_projects
     FOR UPDATE USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own projects" ON public.ai_webbuilder_projects;
 CREATE POLICY "Users can delete their own projects" ON public.ai_webbuilder_projects
     FOR DELETE USING (auth.uid() = user_id);

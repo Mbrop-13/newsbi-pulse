@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
 import { useAIChatStore } from "@/lib/stores/ai-chat-store";
+import { SandpackConsole } from "@codesandbox/sandpack-react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { SandboxRunner } from "./sandbox-runner";
@@ -202,7 +203,6 @@ function CodeViewer() {
 }
 
 // ─── Console Panel ───────────────────────────────────
-import { SandpackConsole } from "@codesandbox/sandpack-react";
 
 function ConsolePanel() {
   const { compileLogs } = useWebBuilderStore();

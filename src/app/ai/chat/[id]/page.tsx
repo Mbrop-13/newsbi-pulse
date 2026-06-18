@@ -108,6 +108,15 @@ export default function ChatPage(props: PageProps) {
         const firstMsgHasWB = chatData.messages[0]?.isWebBuilder;
         const isWB = !!(chatData.is_web_builder || firstMsgHasWB || hasArtifact);
         useWebBuilderStore.getState().setWebBuilderMode(isWB);
+        
+        // Cargar proyecto desde Supabase si estamos en modo WebBuilder
+        if (isWB && chatData.chat_id) {
+          useWebBuilderStore.getState().loadFromCloud(chatData.chat_id).then(success => {
+            if (!success) {
+               console.log("No existing web builder project found or error loading, falling back to default files");
+            }
+          });
+        }
 
         // Asegurar de que también se agrega al historial local para que updateCurrentChat no lo trate como nuevo
         const savedChats = useAIChatStore.getState().savedChats;

@@ -4,6 +4,12 @@ import { generateText } from 'ai';
 import { createClient } from "@/lib/supabase/server";
 import { containsArtifact, parseArtifact, actionsToFiles } from "@/lib/webbuilder-parser";
 import { incrementTokenUsage, checkTokenLimit } from "@/lib/check-limits";
+import { z } from "zod";
+
+const webBuilderFixSchema = z.object({
+  error: z.string().min(1, "Error message is required"),
+  files: z.record(z.string(), z.any()),
+}).strict();
 
 export const maxDuration = 30;
 
@@ -24,14 +30,18 @@ export async function POST(req: NextRequest) {
       }, { status: 403 });
     }
 
-    const { error, files } = await req.json();
+    const rawBody = await req.json();
+    const parseResult = webBuilderFixSchema.safeParse(rawBody);
 
-    if (!error) {
-      return NextResponse.json({ error: "Error message is required" }, { status: 400 });
+    if (!parseResult.success) {
+      console.warn("[API_VALIDATION_ERROR]", parseResult.error.format());
+      return NextResponse.json({ 
+        error: "Invalid request payload", 
+        details: parseResult.error.format() 
+      }, { status: 400 });
     }
-    if (!files || typeof files !== "object") {
-      return NextResponse.json({ error: "Files are required" }, { status: 400 });
-    }
+
+    const { error, files } = parseResult.data;
 
     const mimo = createOpenAI({
       baseURL: 'https://api.xiaomimimo.com/v1',

@@ -326,9 +326,10 @@ export function ChatInput({
         )}
 
         <div className={cn(
-          isWebBuilderMode ? "rounded-2xl p-1.5" : "rounded-3xl p-2",
-          "bg-secondary dark:bg-secondary shadow-md border transition-all duration-300 relative",
-          isListening && "border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.15)]"
+          isWebBuilderMode ? "rounded-2xl p-1.5 glassmorphism" : "rounded-3xl p-2 bg-secondary/80 dark:bg-secondary/30",
+          "shadow-2xl border transition-all duration-500 relative group focus-within:border-white/20 dark:focus-within:border-white/20",
+          isListening && "border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.15)]",
+          isWebBuilderMode && "focus-within:neon-glow"
         )}>
           {/* File Previews inside the input box */}
           {attachedFiles.length > 0 && (

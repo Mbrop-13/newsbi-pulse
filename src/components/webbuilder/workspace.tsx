@@ -24,6 +24,19 @@ export function WebBuilderWorkspace({ chatPanel }: WebBuilderWorkspaceProps) {
     clearMessages();
   };
 
+  const { files, isAiResponding, syncToCloud, activeProjectId } = useWebBuilderStore();
+
+  // Auto-save logic
+  useEffect(() => {
+    if (isAiResponding || !activeProjectId) return;
+    
+    const timeout = setTimeout(() => {
+      syncToCloud();
+    }, 3000); // Debounce save by 3 seconds
+
+    return () => clearTimeout(timeout);
+  }, [files, isAiResponding, activeProjectId, syncToCloud]);
+
   const [chatPercent, setChatPercent] = useState(28); // Compact chat (28%) by default
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -129,10 +142,10 @@ export function WebBuilderWorkspace({ chatPanel }: WebBuilderWorkspaceProps) {
 
   // Desktop: Split view
   return (
-    <div className="flex h-full w-full overflow-hidden select-none">
+    <div className="flex h-full w-full overflow-hidden select-none bg-background p-2 gap-1">
       {/* Chat Panel - Left side */}
       <div
-        className="h-full flex flex-col relative overflow-hidden bg-background shrink-0"
+        className="h-full flex flex-col relative overflow-hidden bg-transparent shrink-0 rounded-2xl"
         style={{ width: isSplitView ? `${chatPercent}%` : "100%" }}
       >
         {/* Floating back button */}
@@ -154,13 +167,13 @@ export function WebBuilderWorkspace({ chatPanel }: WebBuilderWorkspaceProps) {
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           className={cn(
-            "w-1.5 h-full cursor-col-resize z-50 shrink-0 relative transition-colors duration-150 bg-transparent"
+            "w-2 h-full cursor-col-resize z-50 shrink-0 relative transition-colors duration-150 bg-transparent flex items-center justify-center group"
           )}
         >
           {/* Inner line indicator (only visible on hover/drag) */}
           <div className={cn(
-            "absolute inset-y-0 left-[2px] w-[2px] transition-colors duration-150",
-            (isDragging || isHovered) ? "bg-primary" : "bg-transparent"
+            "w-[3px] h-[40px] rounded-full transition-all duration-300",
+            (isDragging || isHovered) ? "bg-primary scale-y-150" : "bg-white/10 group-hover:bg-white/20"
           )} />
         </div>
       )}
@@ -168,7 +181,7 @@ export function WebBuilderWorkspace({ chatPanel }: WebBuilderWorkspaceProps) {
       {/* Preview Panel - Right side */}
       {isSplitView && (
         <div
-          className="h-full flex flex-col overflow-hidden bg-background flex-1"
+          className="h-full flex flex-col overflow-hidden bg-[#15161A] flex-1 rounded-2xl border border-white/10 shadow-2xl glassmorphism"
         >
           <PreviewPanel />
         </div>

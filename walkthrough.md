@@ -280,7 +280,19 @@ Para prevenir el consumo masivo e innecesario de tokens cuando existen múltiple
     *   El System Prompt recibe únicamente: el archivo principal `App.tsx`, los estilos `index.css`/`styles.css`, los componentes importados directamente por `App.tsx` y cualquier archivo cuyo nombre haya sido mencionado por el usuario en su pregunta.
 *   **Impacto de Ahorro:** Esta optimización disminuye el costo por mensaje del constructor web en un **40% a 75%** dependiendo del tamaño del proyecto, previniendo que el LLM final pierda contexto o alucine debido a prompts de sistema de decenas de miles de tokens.
 
+---
 
+## 15. Pulido de Carga del WebBuilder y Estabilización de la Vista Previa (WebContainers)
 
-
-
+*   **Indicador de Carga Premium de Agentes ("Delegando agentes"):**
+    *   Sustituido el icono de chip CPU de color azul y el texto "Orquestando agentes en desarrollo" por un encabezado sobrio y adaptado al tema activo con texto negro (o blanco en modo oscuro) que dice `"Delegando agentes"`.
+    *   Se agregaron tres puntos de rebote dinámicos (bouncing dots) en color negro/blanco al lado del encabezado para indicar interactividad.
+*   **Lista de Tareas de Agentes en Tiempo Real:**
+    *   Se desarrolló un parser en [chat-messages.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/chat/chat-messages.tsx) para capturar los logs crudos que el backend transmite sobre la inicialización, progreso y compleción de cada agente de desarrollo.
+    *   La burbuja de chat ahora dibuja una línea de tiempo (timeline) estilizada que enlista a cada agente, su rol, su tarea asignada, y actualiza de manera dinámica su icono de estado en tiempo real (`Amber spinner` para pendiente/ejecución, `Green check` para completado y `Red cross` para error).
+*   **Solución al Iframe en Blanco (WebContainer Preview):**
+    *   Corregida la configuración del servidor de desarrollo Vite inicializado en el WebContainer: eliminadas las directivas restrictivas de Cross-Origin-Opener-Policy (COOP) y Cross-Origin-Embedder-Policy (COEP) del archivo de configuración Vite temporal en [webcontainer-manager.ts](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/lib/services/webcontainer-manager.ts).
+    *   Esto permite al navegador descargar recursos e inyectar scripts externos de CDNs de terceros (como el motor en vivo de Tailwind CSS v4) en el iframe de previsualización sin bloqueos de seguridad de origen cruzado, resolviendo las pantallas en blanco.
+*   **Corrección de Tipados TypeScript:**
+    *   Se resolvieron errores de compilación en `route.ts` al omitir codificaciones innecesarias de chunks (ya que `toDataStream()` entrega Uint8Arrays nativos).
+    *   Se solucionó el desajuste de tipos de listeners en `webcontainer-manager.ts` e interfaces en `ai-chat-store.ts` y props en `SandpackProvider` (`activeFile` movido a `options.activeFile` en `preview-panel.tsx`), logrando que la compilación global del proyecto finalice de manera exitosa y limpia.

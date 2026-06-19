@@ -23,8 +23,8 @@ export function SidebarLogo() {
 
   const isDark = mounted && resolvedTheme === "dark"
   const logoSrc = isDark
-    ? "https://mail.programbi.com/uploads/Logo-2-Blanco.png"
-    : "https://mail.programbi.com/uploads/Maverlang-Logo-2.png"
+    ? "/assets/Logo 2-Blanco.png"
+    : "/assets/Maverlang Logo-2.png"
 
   return (
     <div className={`flex items-center ${state === "expanded" ? "pl-1 pr-2 py-2" : "justify-center py-2"}`}>

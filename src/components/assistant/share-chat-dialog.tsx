@@ -182,7 +182,7 @@ export function ShareChatDialog({ isOpen, onClose, question, answer }: ShareChat
                   <div className="flex items-center justify-between mb-5 relative z-10">
                     <div className="flex items-center gap-2">
                       <img 
-                        src="https://mail.programbi.com/uploads/Logo-2-Blanco.png" 
+                        src="/assets/Logo 2-Blanco.png" 
                         alt="Maverlang" 
                         className="h-8 w-auto object-contain"
                       />

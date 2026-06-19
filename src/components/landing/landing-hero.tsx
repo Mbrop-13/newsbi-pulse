@@ -69,14 +69,12 @@ export function LandingHero({ onScrollToFeatures }: LandingHeroProps) {
           <Link href="/mercados" className="hover:text-black transition-colors">
             Mercados
           </Link>
-          <div className="flex items-center gap-1 cursor-pointer hover:text-black transition-colors">
-            <span>Portafolio</span>
-            <ChevronDown className="w-3.5 h-3.5 opacity-60" />
-          </div>
-          <div className="flex items-center gap-1 cursor-pointer hover:text-black transition-colors">
-            <span>Suscripciones</span>
-            <ChevronDown className="w-3.5 h-3.5 opacity-60" />
-          </div>
+          <Link href="/portafolio" className="hover:text-black transition-colors">
+            Portafolio
+          </Link>
+          <Link href="/suscripcion" className="hover:text-black transition-colors">
+            Suscripciones
+          </Link>
           <Link href="/soporte" className="hover:text-black transition-colors">
             Soporte
           </Link>

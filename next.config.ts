@@ -35,6 +35,15 @@ const nextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      {
+        source: '/suscripciones',
+        destination: '/suscripcion',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

@@ -12,7 +12,7 @@ const DEFAULT_PACKAGE_JSON = {
   type: "module",
   scripts: {
     dev: "vite",
-    build: "tsc && vite build",
+    build: "vite build",
     preview: "vite preview"
   },
   dependencies: {
@@ -24,10 +24,7 @@ const DEFAULT_PACKAGE_JSON = {
     "react-icons": "^5.0.1"
   },
   devDependencies: {
-    "@types/react": "^18.2.66",
-    "@types/react-dom": "^18.2.22",
     "@vitejs/plugin-react": "^4.2.1",
-    "typescript": "^5.2.2",
     "vite": "^5.1.6"
   }
 };

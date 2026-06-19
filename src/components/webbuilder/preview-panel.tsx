@@ -885,7 +885,7 @@ export function PreviewPanel() {
                     className={cn(
                       "relative overflow-hidden bg-background transition-all duration-500 ease-in-out",
                       viewport === "desktop" 
-                        ? "w-full h-full border-none shadow-none rounded-none" 
+                        ? "absolute inset-0 w-full h-full border-none shadow-none rounded-none" 
                         : viewport === "tablet" 
                           ? "w-[768px] h-[1024px] max-h-full rounded-[2rem] border-8 border-neutral-800 shadow-2xl" 
                           : "w-[375px] h-[812px] max-h-full rounded-[3rem] border-[12px] border-neutral-800 shadow-2xl"

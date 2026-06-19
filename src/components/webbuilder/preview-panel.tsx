@@ -488,6 +488,7 @@ export function PreviewPanel() {
   };
 
   const [stableFiles, setStableFiles] = useState(files);
+  const [managerStatus, setManagerStatus] = useState<string>("idle");
 
   // Sync files to preview only when the AI is NOT responding (to avoid constant reloading)
   useEffect(() => {
@@ -495,6 +496,15 @@ export function PreviewPanel() {
       setStableFiles(files);
     }
   }, [files, isAiResponding]);
+
+  // Subscribe to WebContainer status updates
+  useEffect(() => {
+    const manager = WebContainerManager.getInstance();
+    const unsubscribe = manager.subscribe((newStatus) => {
+      setManagerStatus(newStatus);
+    });
+    return () => unsubscribe();
+  }, []);
 
   // Connect and sync stableFiles to WebContainer
   useEffect(() => {
@@ -507,16 +517,16 @@ export function PreviewPanel() {
       useWebBuilderStore.getState().addCompileLog(log);
     });
 
-    if (manager.status === "running") {
+    if (managerStatus === "running") {
       manager.mountProject(stableFiles).catch((err) => {
         console.error("WebContainer sync error:", err);
       });
-    } else if (manager.status === "idle") {
+    } else if (managerStatus === "idle") {
       manager.boot(stableFiles).catch((err) => {
         console.error("WebContainer boot error:", err);
       });
     }
-  }, [stableFiles]);
+  }, [stableFiles, managerStatus]);
 
   // Determine if this is a React/TS project or plain HTML
   const hasReact = useMemo(() => {

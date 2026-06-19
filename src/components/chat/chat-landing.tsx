@@ -295,12 +295,14 @@ export function ChatLanding() {
 
         // Signal that the AI has finished responding
         useWebBuilderStore.getState().setAiResponding(false);
+        useWebBuilderStore.getState().setActiveAgentReports(null);
       });
     },
     onError: (error) => {
       console.error("[AI Chat] Stream error:", error);
       toast.error(error.message || "Ocurrió un error al procesar la solicitud. Por favor, intenta de nuevo.");
       useWebBuilderStore.getState().setAiResponding(false);
+      useWebBuilderStore.getState().setActiveAgentReports(null);
     }
   })
 
@@ -606,6 +608,17 @@ export function ChatLanding() {
                          Object.keys(store.files).some(k => merged[k] !== store.files[k]);
       if (hasChanged) {
         store.setFiles(merged)
+      }
+    }
+  }, [data, isWebBuilderMode])
+  
+  // Listen for agent reports and set activeAgentReports in the store during code generation
+  useEffect(() => {
+    if (!isWebBuilderMode) return;
+    if (data && data.length > 0) {
+      const reportsObj = (data as any[]).find((d: any) => d?.type === 'agentReports');
+      if (reportsObj?.reports) {
+        useWebBuilderStore.getState().setActiveAgentReports(reportsObj.reports);
       }
     }
   }, [data, isWebBuilderMode])

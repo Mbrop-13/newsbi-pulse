@@ -70,6 +70,10 @@ interface WebBuilderStore {
   resetAutoFixAttempts: () => void;
   setAiResponding: (val: boolean) => void;
 
+  // Active Agent Reports
+  activeAgentReports: any[] | null;
+  setActiveAgentReports: (reports: any[] | null) => void;
+
   // Cloud Sync Actions
   syncToCloud: () => Promise<void>;
   loadFromCloud: (chatId: string) => Promise<boolean>;
@@ -177,6 +181,10 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
       isAutoFixing: false,
       lastAutoFixError: null,
       isAiResponding: false,
+
+      // Active Agent Reports
+      activeAgentReports: null,
+      setActiveAgentReports: (reports) => set({ activeAgentReports: reports }),
 
       setWebBuilderMode: (active) => {
         set({ isWebBuilderMode: active });

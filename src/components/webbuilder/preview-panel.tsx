@@ -36,6 +36,9 @@ import {
   Smartphone,
   Tablet,
   MousePointer2,
+  Cpu,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 
 // ─── File Icon Resolver ────────────────────────────
@@ -308,7 +311,9 @@ export function PreviewPanel() {
     undo,
     redo,
     canUndo,
-    canRedo
+    canRedo,
+    isAiResponding,
+    activeAgentReports
   } = useWebBuilderStore();
   const chatLoading = useAIChatStore((s) => s.isLoading);
   const [viewport, setViewport] = useState<"desktop" | "tablet" | "mobile">("desktop");
@@ -607,7 +612,7 @@ export function PreviewPanel() {
           {/* Preview Tab */}
           {selectedTab === "preview" && (
             <div className="flex-1 relative min-h-0 w-full flex items-center justify-center overflow-auto p-4 bg-muted/20 dark:bg-muted/10">
-              {hasFiles ? (
+              {(hasFiles && !isAiResponding) ? (
                 <div 
                   className={cn(
                     "relative overflow-hidden bg-background transition-all duration-500 ease-in-out border border-black/20 dark:border-white/15 shadow-lg",
@@ -618,8 +623,8 @@ export function PreviewPanel() {
                 >
                   <SandboxRunner />
                 </div>
-              ) : (isCompiling || chatLoading) ? (
-                <div className="absolute inset-0 bg-background flex flex-col items-center justify-center p-8 text-center overflow-hidden">
+              ) : (isAiResponding || isCompiling || chatLoading) ? (
+                <div className="absolute inset-0 bg-background flex flex-col items-center justify-center p-8 overflow-hidden select-none">
                   {/* Grid pattern with light gradients */}
                   <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(13,110,253,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(13,110,253,0.03)_1px,transparent_1px)] bg-[size:2.5rem_2.5rem] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)] opacity-70" />
                   
@@ -627,68 +632,115 @@ export function PreviewPanel() {
                   <div className="absolute -top-12 -left-12 w-64 h-64 bg-primary/20 rounded-full blur-[80px] animate-pulse pointer-events-none" />
                   <div className="absolute -bottom-12 -right-12 w-64 h-64 bg-violet-500/20 rounded-full blur-[80px] animate-pulse pointer-events-none" style={{ animationDelay: "1.5s" }} />
 
-                  <div className="relative z-10 flex flex-col items-center max-w-lg w-full">
-                    {/* Visual SaaS App Mockup Skeleton */}
-                    <div className="w-full bg-card/65 border border-border/40 backdrop-blur-lg rounded-2xl shadow-2xl overflow-hidden mb-8 space-y-0 animate-pulse relative">
-                      {/* Window header */}
-                      <div className="flex items-center justify-between px-4 py-3 bg-muted/40 border-b border-border/20">
-                        <div className="flex gap-1.5">
-                          <span className="w-2.5 h-2.5 rounded-full bg-red-500/30" />
-                          <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/30" />
-                          <span className="w-2.5 h-2.5 rounded-full bg-green-500/30" />
+                  <div className="relative z-10 flex flex-col items-center max-w-md w-full">
+                    {activeAgentReports && activeAgentReports.length > 0 ? (
+                      /* Live Agent Progress Box */
+                      <div className="w-full bg-card/60 border border-border/40 backdrop-blur-lg rounded-2xl shadow-2xl p-5 mb-6 space-y-4 text-left">
+                        <div className="flex items-center gap-2 pb-2 border-b border-border/40">
+                          <Cpu className="w-4 h-4 text-primary animate-pulse" />
+                          <h3 className="text-[11px] font-black text-foreground uppercase tracking-widest">
+                            Agentes de Desarrollo
+                          </h3>
+                          <span className="text-[9px] px-2 py-0.5 bg-primary/10 text-primary rounded-full font-bold ml-auto uppercase tracking-wide">
+                            Trabajando...
+                          </span>
                         </div>
-                        <div className="w-36 h-3.5 bg-muted/70 rounded-full" />
-                        <div className="w-4 h-4 bg-muted/50 rounded" />
+                        
+                        <div className="space-y-4">
+                          {activeAgentReports.map((report: any, idx: number) => {
+                            const isSuccess = report.success !== false;
+                            const isDone = report.content && report.success;
+                            const isFailed = report.success === false || (report.content && !report.success);
+                            
+                            return (
+                              <div key={idx} className="flex gap-3 items-start">
+                                <div className="mt-0.5 shrink-0 flex items-center justify-center">
+                                  {isFailed ? (
+                                    <XCircle className="w-4 h-4 text-red-500" />
+                                  ) : isDone ? (
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                  ) : (
+                                    <Loader2 className="w-4 h-4 text-amber-500 animate-spin" />
+                                  )}
+                                </div>
+                                <div className="space-y-0.5 min-w-0 flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-bold text-foreground truncate">
+                                      {report.agentName}
+                                    </span>
+                                    <span className="text-[9px] px-1.5 py-0.5 bg-muted rounded-full text-muted-foreground font-semibold uppercase tracking-wider">
+                                      {report.role}
+                                    </span>
+                                  </div>
+                                  <p className="text-[10px] text-muted-foreground leading-normal">
+                                    {report.task}
+                                  </p>
+                                  {report.filePath && (
+                                    <div className="text-[9px] font-mono text-primary/80 mt-1 select-all font-semibold bg-muted/30 px-1.5 py-0.5 rounded border border-border/20 w-fit">
+                                      {report.filePath}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
-
-                      {/* Mockup dashboard grid */}
-                      <div className="p-5 flex gap-4 h-56">
-                        {/* Mock sidebar */}
-                        <div className="w-1/4 flex flex-col gap-3 border-r border-border/20 pr-4">
-                          <div className="w-full h-8 bg-muted rounded-lg" />
-                          <div className="w-5/6 h-5 bg-muted/65 rounded-lg" />
-                          <div className="w-4/5 h-5 bg-muted/65 rounded-lg" />
-                          <div className="w-full h-5 bg-muted/65 rounded-lg" />
-                        </div>
-
-                        {/* Mock main content */}
-                        <div className="flex-1 flex flex-col gap-4">
-                          {/* Row of stats cards */}
-                          <div className="grid grid-cols-3 gap-3">
-                            <div className="h-12 bg-muted/70 rounded-xl" />
-                            <div className="h-12 bg-muted/70 rounded-xl" />
-                            <div className="h-12 bg-muted/70 rounded-xl" />
+                    ) : (
+                      /* Default visual mockup loader when no agent reports are streaming yet */
+                      <div className="w-full bg-card/65 border border-border/40 backdrop-blur-lg rounded-2xl shadow-2xl overflow-hidden mb-8 space-y-0 animate-pulse relative">
+                        {/* Window header */}
+                        <div className="flex items-center justify-between px-4 py-3 bg-muted/40 border-b border-border/20">
+                          <div className="flex gap-1.5">
+                            <span className="w-2.5 h-2.5 rounded-full bg-red-500/30" />
+                            <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/30" />
+                            <span className="w-2.5 h-2.5 rounded-full bg-green-500/30" />
                           </div>
-                          
-                          {/* Large chart area mockup */}
-                          <div className="flex-grow bg-muted/50 rounded-xl p-3 flex flex-col justify-between">
-                            <div className="flex justify-between items-center">
-                              <div className="w-16 h-3 bg-muted rounded-full" />
-                              <div className="w-8 h-3 bg-muted rounded-full" />
+                          <div className="w-36 h-3.5 bg-muted/70 rounded-full" />
+                          <div className="w-4 h-4 bg-muted/50 rounded" />
+                        </div>
+                        {/* Mockup dashboard grid */}
+                        <div className="p-5 flex gap-4 h-56">
+                          <div className="w-1/4 flex flex-col gap-3 border-r border-border/20 pr-4">
+                            <div className="w-full h-8 bg-muted rounded-lg" />
+                            <div className="w-5/6 h-5 bg-muted/65 rounded-lg" />
+                            <div className="w-4/5 h-5 bg-muted/65 rounded-lg" />
+                            <div className="w-full h-5 bg-muted/65 rounded-lg" />
+                          </div>
+                          <div className="flex-grow flex flex-col gap-4">
+                            <div className="grid grid-cols-3 gap-3">
+                              <div className="h-12 bg-muted/70 rounded-xl" />
+                              <div className="h-12 bg-muted/70 rounded-xl" />
+                              <div className="h-12 bg-muted/70 rounded-xl" />
                             </div>
-                            {/* Graphic lines simulation */}
-                            <div className="flex items-end gap-1.5 h-16 pt-2">
-                              <div className="flex-1 bg-primary/10 rounded-t h-1/3" />
-                              <div className="flex-1 bg-primary/15 rounded-t h-2/3" />
-                              <div className="flex-1 bg-primary/25 rounded-t h-1/2" />
-                              <div className="flex-1 bg-primary/20 rounded-t h-4/5 animate-bounce" style={{ animationDelay: '0.1s' }} />
-                              <div className="flex-1 bg-primary/15 rounded-t h-3/5" />
-                              <div className="flex-1 bg-primary/10 rounded-t h-2/5" />
+                            <div className="flex-grow bg-muted/50 rounded-xl p-3 flex flex-col justify-between">
+                              <div className="flex justify-between items-center">
+                                <div className="w-16 h-3 bg-muted rounded-full" />
+                                <div className="w-8 h-3 bg-muted rounded-full" />
+                              </div>
+                              <div className="flex items-end gap-1.5 h-16 pt-2">
+                                <div className="flex-1 bg-primary/10 rounded-t h-1/3" />
+                                <div className="flex-1 bg-primary/15 rounded-t h-2/3" />
+                                <div className="flex-1 bg-primary/25 rounded-t h-1/2" />
+                                <div className="flex-1 bg-primary/20 rounded-t h-4/5 animate-bounce" style={{ animationDelay: '0.1s' }} />
+                                <div className="flex-1 bg-primary/15 rounded-t h-3/5" />
+                                <div className="flex-1 bg-primary/10 rounded-t h-2/5" />
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
+                    )}
 
                     {/* Highly Premium Shimmery Loader Badge */}
-                    <div className="relative group">
+                    <div className="relative group w-full max-w-xs">
                       <div className="absolute -inset-0.5 bg-gradient-to-r from-primary via-purple-500 to-blue-500 rounded-full blur opacity-40 group-hover:opacity-60 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
-                      <div className="relative flex items-center gap-3 bg-card/90 border border-border/40 backdrop-blur-md px-6 py-3.5 rounded-full shadow-2xl">
-                        <div className="relative flex items-center justify-center shrink-0 w-5 h-5">
+                      <div className="relative flex items-center justify-center gap-3 bg-card/90 border border-border/40 backdrop-blur-md px-6 py-3 rounded-full shadow-2xl">
+                        <div className="relative flex items-center justify-center shrink-0 w-4.5 h-4.5">
                           <Loader2 className="w-full h-full text-primary animate-spin" />
                         </div>
-                        <span className="text-xs font-bold tracking-tight text-foreground bg-clip-text">
-                          Compilando e inicializando la interfaz...
+                        <span className="text-[11px] font-bold tracking-tight text-foreground bg-clip-text">
+                          {isAiResponding ? "Agentes programando..." : "Compilando e inicializando la interfaz..."}
                         </span>
                       </div>
                     </div>

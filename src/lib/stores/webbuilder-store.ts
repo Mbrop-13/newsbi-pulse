@@ -7,6 +7,38 @@ export interface WebBuilderFile {
   code: string;
 }
 
+/**
+ * Normaliza un mapa de archivos a ALWAYS { code: string }.
+ *
+ * Causa raíz de `n.code.split is not a function`: el store recibía archivos
+ * desde varias fuentes (stream webbuilder_files, loadFromCloud, updateFile,
+ * actionsToFiles) con formatos inconsistentes — a veces string plano,
+ * a veces { code }, a veces { code: undefined } o un objeto erróneo.
+ *
+ * Esta función es el PUNTO ÚNICO de normalización: acepta cualquiera de esas
+ * formas y devuelve siempre Record<string, { code: string }>.
+ */
+export function normalizeFiles(
+  files: Record<string, unknown>
+): Record<string, WebBuilderFile> {
+  const result: Record<string, WebBuilderFile> = {};
+  for (const [path, raw] of Object.entries(files)) {
+    let code: string;
+    if (typeof raw === "string") {
+      code = raw;
+    } else if (raw && typeof raw === "object" && "code" in raw) {
+      code = String((raw as any).code ?? "");
+    } else if (raw == null) {
+      code = "";
+    } else {
+      // Fallback último: stringify para no perder datos y no crashear.
+      code = String(raw);
+    }
+    result[path] = { code };
+  }
+  return result;
+}
+
 export interface WebBuilderProject {
   id: string;
   chatId: string;
@@ -236,11 +268,14 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
         if (Object.keys(prev).length > 0) {
           _pushHistory(prev);
         }
+        // Normalizar SIEMPRE: los archivos pueden venir como string plano
+        // (stream/cloud) o como { code }. Sin esto, .code.split() revienta.
+        const normalized = normalizeFiles(files);
         const currentActive = get().activeFilePath;
         const newActive = !currentActive || currentActive === ""
-          ? Object.keys(files).find(k => k.endsWith("/App.tsx") || k.endsWith("/App.js")) || Object.keys(files)[0] || ""
+          ? Object.keys(normalized).find(k => k.endsWith("/App.tsx") || k.endsWith("/App.js")) || Object.keys(normalized)[0] || ""
           : currentActive;
-        set({ files, activeFilePath: newActive });
+        set({ files: normalized, activeFilePath: newActive });
         debouncedSync();
       },
 
@@ -431,11 +466,9 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
 
           if (error || !data?.project_files) return false;
 
-          // Convert plain JSON back to WebBuilderFile format
-          const files: Record<string, WebBuilderFile> = {};
-          for (const [path, code] of Object.entries(data.project_files as Record<string, string>)) {
-            files[path] = { code };
-          }
+          // Convert plain JSON back to WebBuilderFile format.
+          // Uso normalizeFiles por si project_files quedó en formato mixto.
+          const files = normalizeFiles(data.project_files as Record<string, unknown>);
 
           set({
             activeProjectId: chatId,

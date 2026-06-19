@@ -344,32 +344,95 @@ export class WebContainerManager {
   public async mountProject(files: Record<string, { code: string }>) {
     if (!this.webcontainer) return;
     this.log("Montando archivos del proyecto...");
-    
+
     const tree = buildFileTree(files);
 
-    // Inject package.json, vite.config.ts, tsconfig.json, index.html if missing
-    if (!tree["package.json"]) {
-      tree["package.json"] = {
-        file: {
-          contents: JSON.stringify(DEFAULT_PACKAGE_JSON, null, 2),
-        },
+    // ── Validación robusta de archivos de config críticos ──
+    // Antes solo se comprobaba si faltaban. Pero si la IA generó un package.json
+    // vacío o con JSON inválido, el nodo SÍ existía y npm recibía "" → EJSONPARSE.
+    // Ahora validamos contenido real: si está vacío o es inválido, sustituimos
+    // por el default para que npm install no falle.
+
+    const isValidJson = (content: string | undefined): boolean => {
+      if (!content || !content.trim()) return false;
+      try {
+        JSON.parse(content);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+
+    // package.json: CRÍTICO para npm install.
+    // - Si no existe / vacío / JSON inválido → usar default.
+    // - Si existe y es JSON válido → MERGEAR con el default para garantizar
+    //   scripts.dev, type:module y las deps mínimas (React/Vite), respetando
+    //   las dependencias extra que añada la IA. Esto evita que un package.json
+    //   de la IA incompleto rompa el npm install.
+    const pkgNode = tree["package.json"];
+    const pkgContent = typeof pkgNode?.file?.contents === "string"
+      ? pkgNode.file.contents
+      : undefined;
+
+    let finalPackageJson: Record<string, unknown>;
+
+    if (!isValidJson(pkgContent)) {
+      if (pkgContent !== undefined) {
+        this.log(`[mountProject] package.json inválido o vacío → usando default. Contenido recibido: "${(pkgContent || "").slice(0, 60)}"`);
+      }
+      finalPackageJson = { ...DEFAULT_PACKAGE_JSON };
+    } else {
+      const parsed = JSON.parse(pkgContent as string);
+      finalPackageJson = {
+        ...DEFAULT_PACKAGE_JSON,
+        ...parsed,
+        // Merge profundo de scripts y dependencias (la IA puede añadir propias)
+        scripts: { ...DEFAULT_PACKAGE_JSON.scripts, ...(parsed.scripts || {}) },
+        dependencies: { ...DEFAULT_PACKAGE_JSON.dependencies, ...(parsed.dependencies || {}) },
+        devDependencies: { ...DEFAULT_PACKAGE_JSON.devDependencies, ...(parsed.devDependencies || {}) },
       };
+      this.log("[mountProject] package.json de la IA mergeado con defaults.");
     }
-    if (!tree["vite.config.ts"] && !tree["vite.config.js"]) {
+
+    tree["package.json"] = {
+      file: {
+        contents: JSON.stringify(finalPackageJson, null, 2),
+      },
+    };
+
+    // vite.config: debe tener contenido mínimo. Si está vacío, usar default.
+    const viteNode = tree["vite.config.ts"] || tree["vite.config.js"];
+    const viteContent = typeof viteNode?.file?.contents === "string"
+      ? viteNode.file.contents
+      : undefined;
+    if (!viteContent || !viteContent.trim()) {
+      delete tree["vite.config.js"];
       tree["vite.config.ts"] = {
         file: {
           contents: DEFAULT_VITE_CONFIG,
         },
       };
     }
-    if (!tree["tsconfig.json"]) {
+
+    // tsconfig.json: si existe pero no es JSON válido, usar default.
+    const tsNode = tree["tsconfig.json"];
+    const tsContent = typeof tsNode?.file?.contents === "string"
+      ? tsNode.file.contents
+      : undefined;
+    if (!isValidJson(tsContent)) {
       tree["tsconfig.json"] = {
         file: {
           contents: DEFAULT_TSCONFIG,
         },
       };
     }
-    if (!tree["index.html"]) {
+
+    // index.html: si falta o está vacío, usar default (es el entry de Vite).
+    const htmlNode = tree["index.html"];
+    const htmlContent = typeof htmlNode?.file?.contents === "string"
+      ? htmlNode.file.contents
+      : undefined;
+    if (!htmlContent || !htmlContent.trim()) {
       tree["index.html"] = {
         file: {
           contents: DEFAULT_INDEX_HTML,

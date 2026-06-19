@@ -295,8 +295,11 @@ function FilesPanel() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {fileList.map(([path, file]) => {
-            const charCount = file.code.length;
-            const lineCount = file.code.split("\n").length;
+            // Defensivo: file.code podría no ser string si el formato del store
+            // está corrupto (string plano, undefined, objeto). Nunca debe crashear.
+            const codeStr = typeof file?.code === "string" ? file.code : String(file?.code ?? "");
+            const charCount = codeStr.length;
+            const lineCount = codeStr.split("\n").length;
             return (
               <div
                 key={path}

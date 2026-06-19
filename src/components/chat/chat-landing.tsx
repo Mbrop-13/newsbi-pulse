@@ -189,114 +189,124 @@ export function ChatLanding() {
       return response;
     },
     onFinish: (message) => {
-      // Find citations & reasoning in streamData (data) or accumulated refs
-      let citationsList: string[] = accumulatedCitationsRef.current.length > 0 ? accumulatedCitationsRef.current : []
-      let reasoningText = accumulatedReasoningRef.current || ""
-      let agentReportsData: any[] = []
-      if (citationsList.length === 0 || !reasoningText || agentReportsData.length === 0) {
-        if (data && data.length > 0) {
-          const citationObj = (data as any[]).find((d: any) => d?.type === 'citations')
-          if (citationObj?.urls && citationsList.length === 0) {
-            citationsList = citationObj.urls
-          }
-          const reasoningChunks = (data as any[]).filter((d: any) => d?.type === 'reasoning')
-          const streamReasoning = reasoningChunks.map(c => c.text).join('')
-          if (streamReasoning && !reasoningText) reasoningText = streamReasoning
-          
-          const reportsObj = (data as any[]).find((d: any) => d?.type === 'agentReports')
-          if (reportsObj?.reports) {
-            agentReportsData = reportsObj.reports
+      try {
+        // Find citations & reasoning in streamData (data) or accumulated refs
+        let citationsList: string[] = accumulatedCitationsRef.current.length > 0 ? accumulatedCitationsRef.current : []
+        let reasoningText = accumulatedReasoningRef.current || ""
+        let agentReportsData: any[] = []
+        if (citationsList.length === 0 || !reasoningText || agentReportsData.length === 0) {
+          if (data && data.length > 0) {
+            const citationObj = (data as any[]).find((d: any) => d?.type === 'citations')
+            if (citationObj?.urls && citationsList.length === 0) {
+              citationsList = citationObj.urls
+            }
+            const reasoningChunks = (data as any[]).filter((d: any) => d?.type === 'reasoning')
+            const streamReasoning = reasoningChunks.map(c => c.text).join('')
+            if (streamReasoning && !reasoningText) reasoningText = streamReasoning
+            
+            const reportsObj = (data as any[]).find((d: any) => d?.type === 'agentReports')
+            if (reportsObj?.reports) {
+              agentReportsData = reportsObj.reports
+            }
           }
         }
-      }
 
-      // Use requestAnimationFrame to ensure aiMessages state has been flushed by React
-      requestAnimationFrame(() => {
-        const latestMessages = aiMessagesRef.current;
-        const lastAssistantIdx = [...latestMessages].reverse().findIndex(m => m.role === 'assistant' || m.role === 'tool');
-        const targetIdx = lastAssistantIdx !== -1 ? (latestMessages.length - 1 - lastAssistantIdx) : -1;
+        // Use requestAnimationFrame to ensure aiMessages state has been flushed by React
+        requestAnimationFrame(() => {
+          try {
+            const latestMessages = aiMessagesRef.current;
+            const lastAssistantIdx = [...latestMessages].reverse().findIndex(m => m.role === 'assistant' || m.role === 'tool');
+            const targetIdx = lastAssistantIdx !== -1 ? (latestMessages.length - 1 - lastAssistantIdx) : -1;
 
-        const firstMsgText = message.content || "";
-        const toolsCalled = message.toolInvocations || [];
-        const hasTools = toolsCalled.length > 0;
-        const finalContent = (firstMsgText.trim().length > 0)
-          ? firstMsgText
-          : hasTools
-            ? "He procesado los datos financieros solicitados y configurado los paneles interactivos correspondientes. Puedes revisar la información en los widgets de arriba."
-            : "Lo siento, la respuesta de la IA se detuvo inesperadamente sin generar texto. Por favor, intenta de nuevo.";
+            const firstMsgText = message.content || "";
+            const toolsCalled = message.toolInvocations || [];
+            const hasTools = toolsCalled.length > 0;
+            const finalContent = (firstMsgText.trim().length > 0)
+              ? firstMsgText
+              : hasTools
+                ? "He procesado los datos financieros solicitados y configurado los paneles interactivos correspondientes. Puedes revisar la información en los widgets de arriba."
+                : "Lo siento, la respuesta de la IA se detuvo inesperadamente sin generar texto. Por favor, intenta de nuevo.";
 
-        const currentStoreMessages = useAIChatStore.getState().messages;
+            const currentStoreMessages = useAIChatStore.getState().messages;
 
-        const storeMessages: ChatMessage[] = latestMessages.map((m: any, idx: number) => {
-          const storeMsg = currentStoreMessages.find((sm) => sm.id === m.id);
-          const isTarget = idx === targetIdx;
-          if (isTarget) {
-            return {
-              id: message.id,
-              role: "assistant",
-              content: finalContent,
-              timestamp: m.timestamp || new Date(),
-              model: selectedModel === "fast" ? "deepseek" : "grok",
-              toolInvocations: message.toolInvocations || m.toolInvocations,
-              citations: citationsList,
-              reasoning: reasoningText || m.reasoning || undefined,
-              reasoningSteps: agentReportsData.length > 0 ? agentReportsData : m.reasoningSteps || storeMsg?.reasoningSteps || undefined,
-              secondsElapsed: m.secondsElapsed,
-            };
+            const storeMessages: ChatMessage[] = latestMessages.map((m: any, idx: number) => {
+              const storeMsg = currentStoreMessages.find((sm) => sm.id === m.id);
+              const isTarget = idx === targetIdx;
+              if (isTarget) {
+                return {
+                  id: message.id,
+                  role: "assistant",
+                  content: finalContent,
+                  timestamp: m.timestamp || new Date(),
+                  model: selectedModel === "fast" ? "deepseek" : "grok",
+                  toolInvocations: message.toolInvocations || m.toolInvocations,
+                  citations: citationsList,
+                  reasoning: reasoningText || m.reasoning || undefined,
+                  reasoningSteps: agentReportsData.length > 0 ? agentReportsData : m.reasoningSteps || storeMsg?.reasoningSteps || undefined,
+                  secondsElapsed: m.secondsElapsed,
+                };
+              }
+              return {
+                id: m.id,
+                role: (m.role === 'tool' ? 'assistant' : m.role) as 'user' | 'assistant',
+                content: m.content,
+                timestamp: storeMsg?.timestamp || m.timestamp || new Date(),
+                model: storeMsg?.model || m.model || (selectedModel === "fast" ? "deepseek" : "grok"),
+                toolInvocations: m.toolInvocations,
+                citations: storeMsg?.citations || m.citations || [],
+                reasoning: storeMsg?.reasoning || m.reasoning || undefined,
+                reasoningSteps: storeMsg?.reasoningSteps || m.reasoningSteps || undefined,
+                secondsElapsed: storeMsg?.secondsElapsed || m.secondsElapsed,
+              };
+            });
+
+            if (targetIdx === -1) {
+              storeMessages.push({
+                id: message.id,
+                role: "assistant",
+                content: finalContent,
+                timestamp: new Date(),
+                model: selectedModel === "fast" ? "deepseek" : "grok",
+                toolInvocations: message.toolInvocations,
+                citations: citationsList,
+                reasoning: reasoningText || undefined,
+                reasoningSteps: agentReportsData.length > 0 ? agentReportsData : undefined,
+              });
+            }
+
+            useAIChatStore.setState({ messages: storeMessages });
+            useAIChatStore.getState().updateCurrentChat();
+
+            // Sync back to useChat's messages state so that reasoningSteps, citations, etc are preserved in aiMessages
+            setAiMessages(
+              storeMessages.map((m) => ({
+                id: m.id,
+                role: m.role,
+                content: m.content,
+                toolInvocations: m.toolInvocations,
+                reasoning: m.reasoning,
+                citations: m.citations,
+                model: m.model,
+                isCollapsed: m.isCollapsed,
+                secondsElapsed: m.secondsElapsed,
+                reasoningSteps: m.reasoningSteps,
+                timestamp: m.timestamp,
+                createdAt: m.timestamp ? new Date(m.timestamp) : undefined,
+              })) as any
+            );
+          } catch (e) {
+            console.error("Error in onFinish inner state transition:", e);
+          } finally {
+            // Signal that the AI has finished responding
+            useWebBuilderStore.getState().setAiResponding(false);
+            useWebBuilderStore.getState().setActiveAgentReports(null);
           }
-          return {
-            id: m.id,
-            role: (m.role === 'tool' ? 'assistant' : m.role) as 'user' | 'assistant',
-            content: m.content,
-            timestamp: storeMsg?.timestamp || m.timestamp || new Date(),
-            model: storeMsg?.model || m.model || (selectedModel === "fast" ? "deepseek" : "grok"),
-            toolInvocations: m.toolInvocations,
-            citations: storeMsg?.citations || m.citations || [],
-            reasoning: storeMsg?.reasoning || m.reasoning || undefined,
-            reasoningSteps: storeMsg?.reasoningSteps || m.reasoningSteps || undefined,
-            secondsElapsed: storeMsg?.secondsElapsed || m.secondsElapsed,
-          };
         });
-
-        if (targetIdx === -1) {
-          storeMessages.push({
-            id: message.id,
-            role: "assistant",
-            content: finalContent,
-            timestamp: new Date(),
-            model: selectedModel === "fast" ? "deepseek" : "grok",
-            toolInvocations: message.toolInvocations,
-            citations: citationsList,
-            reasoning: reasoningText || undefined,
-            reasoningSteps: agentReportsData.length > 0 ? agentReportsData : undefined,
-          });
-        }
-
-        useAIChatStore.setState({ messages: storeMessages });
-        useAIChatStore.getState().updateCurrentChat();
-
-        // Sync back to useChat's messages state so that reasoningSteps, citations, etc are preserved in aiMessages
-        setAiMessages(
-          storeMessages.map((m) => ({
-            id: m.id,
-            role: m.role,
-            content: m.content,
-            toolInvocations: m.toolInvocations,
-            reasoning: m.reasoning,
-            citations: m.citations,
-            model: m.model,
-            isCollapsed: m.isCollapsed,
-            secondsElapsed: m.secondsElapsed,
-            reasoningSteps: m.reasoningSteps,
-            timestamp: m.timestamp,
-            createdAt: m.timestamp ? new Date(m.timestamp) : undefined,
-          })) as any
-        );
-
-        // Signal that the AI has finished responding
+      } catch (err) {
+        console.error("Error in onFinish outer transition block:", err);
         useWebBuilderStore.getState().setAiResponding(false);
         useWebBuilderStore.getState().setActiveAgentReports(null);
-      });
+      }
     },
     onError: (error) => {
       console.error("[AI Chat] Stream error:", error);
@@ -608,6 +618,8 @@ export function ChatLanding() {
                          Object.keys(store.files).some(k => merged[k] !== store.files[k]);
       if (hasChanged) {
         store.setFiles(merged)
+        // Force an immediate save to the cloud so files aren't lost on reload!
+        store.syncToCloud()
       }
     }
   }, [data, isWebBuilderMode])
@@ -622,6 +634,87 @@ export function ChatLanding() {
       }
     }
   }, [data, isWebBuilderMode])
+
+  // Debounced local storage saving during stream
+  const localSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!aiLoading || aiMessages.length === 0) {
+      if (localSaveTimeoutRef.current) {
+        clearTimeout(localSaveTimeoutRef.current);
+        localSaveTimeoutRef.current = null;
+      }
+      return;
+    }
+
+    if (localSaveTimeoutRef.current) clearTimeout(localSaveTimeoutRef.current);
+
+    localSaveTimeoutRef.current = setTimeout(() => {
+      const latestMessages = aiMessagesRef.current;
+      if (latestMessages.length === 0) return;
+      
+      let citationsList: string[] = accumulatedCitationsRef.current || [];
+      let reasoningText = accumulatedReasoningRef.current || "";
+      let agentReportsData: any[] = [];
+      
+      if (data && data.length > 0) {
+        const citationObj = (data as any[]).find((d: any) => d?.type === 'citations');
+        if (citationObj?.urls && citationsList.length === 0) {
+          citationsList = citationObj.urls;
+        }
+        const reasoningChunks = (data as any[]).filter((d: any) => d?.type === 'reasoning');
+        const streamReasoning = reasoningChunks.map(c => c.text).join('');
+        if (streamReasoning && !reasoningText) reasoningText = streamReasoning;
+        
+        const reportsObj = (data as any[]).find((d: any) => d?.type === 'agentReports');
+        if (reportsObj?.reports) {
+          agentReportsData = reportsObj.reports;
+        }
+      }
+
+      const currentStoreMessages = useAIChatStore.getState().messages;
+      const lastAssistantIdx = [...latestMessages].reverse().findIndex(m => m.role === 'assistant' || m.role === 'tool');
+      const targetIdx = lastAssistantIdx !== -1 ? (latestMessages.length - 1 - lastAssistantIdx) : -1;
+
+      const formatted: ChatMessage[] = latestMessages.map((m: any, idx: number) => {
+        const storeMsg = currentStoreMessages.find((sm) => sm.id === m.id);
+        const isTarget = idx === targetIdx;
+        if (isTarget) {
+          return {
+            id: m.id,
+            role: "assistant",
+            content: m.content || "",
+            timestamp: m.timestamp || new Date(),
+            model: selectedModel === "fast" ? "deepseek" : "grok",
+            toolInvocations: m.toolInvocations,
+            citations: citationsList,
+            reasoning: reasoningText || m.reasoning || undefined,
+            reasoningSteps: agentReportsData.length > 0 ? agentReportsData : m.reasoningSteps || storeMsg?.reasoningSteps || undefined,
+            secondsElapsed: m.secondsElapsed,
+          };
+        }
+        return {
+          id: m.id,
+          role: (m.role === 'tool' ? 'assistant' : m.role) as 'user' | 'assistant',
+          content: m.content,
+          timestamp: storeMsg?.timestamp || m.timestamp || new Date(),
+          model: storeMsg?.model || m.model || (selectedModel === "fast" ? "deepseek" : "grok"),
+          toolInvocations: m.toolInvocations,
+          citations: storeMsg?.citations || m.citations || [],
+          reasoning: storeMsg?.reasoning || m.reasoning || undefined,
+          reasoningSteps: storeMsg?.reasoningSteps || m.reasoningSteps || undefined,
+          secondsElapsed: storeMsg?.secondsElapsed || m.secondsElapsed,
+        };
+      });
+
+      useAIChatStore.setState({ messages: formatted });
+      useAIChatStore.getState().updateCurrentChat(true); // localOnly = true
+    }, 1000); // Debounce by 1 second
+
+    return () => {
+      if (localSaveTimeoutRef.current) clearTimeout(localSaveTimeoutRef.current);
+    };
+  }, [aiMessages, aiLoading, selectedModel, data]);
 
   // ── Render ──
   const chatContent = (

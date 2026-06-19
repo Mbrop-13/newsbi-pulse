@@ -92,7 +92,7 @@ interface AIChatStore {
   deleteSavedChat: (id: string) => void;
   fetchCloudChats: () => Promise<void>;
   _saveCurrentIfPremium: () => void;
-  updateCurrentChat: () => void;
+  updateCurrentChat: (localOnly?: boolean) => Promise<void>;
   currentChatId: string | null;
 }
 
@@ -204,7 +204,7 @@ export const useAIChatStore = create<AIChatStore>()(
               title: row.title,
               messages: msgs,
               attachedArticles: row.attached_articles || [],
-              attachedFiles: row.attached_files || [],
+              attached_files: row.attached_files || [],
               timestamp: new Date(row.created_at),
               isWebBuilder: isWB
             };
@@ -213,7 +213,7 @@ export const useAIChatStore = create<AIChatStore>()(
         }
       },
       
-      updateCurrentChat: async () => {
+      updateCurrentChat: async (localOnly = false) => {
         const { messages, attachedArticles, attachedFiles, savedChats, cloudSyncEnabled, currentChatId } = get();
         if (messages.length === 0) return;
 
@@ -256,6 +256,8 @@ export const useAIChatStore = create<AIChatStore>()(
           updatedChats = [chatData, ...savedChats].slice(0, 10);
         }
         set({ savedChats: updatedChats });
+        
+        if (localOnly) return;
         
         if (cloudSyncEnabled && user) {
           const supabase = createClient();

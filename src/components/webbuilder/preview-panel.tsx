@@ -670,125 +670,49 @@ export function PreviewPanel() {
                   <div className="absolute -bottom-12 -right-12 w-64 h-64 bg-violet-500/20 rounded-full blur-[80px] animate-pulse pointer-events-none" style={{ animationDelay: "1.5s" }} />
 
                   <div className="relative z-10 flex flex-col items-center max-w-md w-full">
-                    {activeAgentReports && activeAgentReports.length > 0 ? (
-                      /* Live Agent Progress Box */
-                      <div className="w-full bg-card/60 border border-border/40 backdrop-blur-lg rounded-2xl shadow-2xl p-5 mb-6 space-y-4 text-left">
-                        <div className="flex items-center gap-2 pb-2 border-b border-border/40">
-                          <Cpu className="w-4 h-4 text-primary animate-pulse" />
-                          <h3 className="text-[11px] font-black text-foreground uppercase tracking-widest">
-                            Agentes de Desarrollo
-                          </h3>
-                          <span className="text-[9px] px-2 py-0.5 bg-primary/10 text-primary rounded-full font-bold ml-auto uppercase tracking-wide">
-                            Trabajando...
-                          </span>
+                    {/* Default visual mockup loader when compiling or loading */}
+                    <div className="w-full bg-card/65 border border-border/40 backdrop-blur-lg rounded-2xl shadow-2xl overflow-hidden mb-8 space-y-0 animate-pulse relative">
+                      {/* Window header */}
+                      <div className="flex items-center justify-between px-4 py-3 bg-muted/40 border-b border-border/20">
+                        <div className="flex gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full bg-red-500/30" />
+                          <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/30" />
+                          <span className="w-2.5 h-2.5 rounded-full bg-green-500/30" />
                         </div>
-                        
-                        <div className="space-y-4">
-                          {activeAgentReports.map((report: any, idx: number) => {
-                            const isSuccess = report.success !== false;
-                            const isDone = report.content && report.success;
-                            const isFailed = report.success === false || (report.content && !report.success);
-                            const stats = getAgentLineStats(report.content, files);
-                            
-                            return (
-                              <div key={idx} className="flex gap-3 items-start">
-                                <div className="mt-0.5 shrink-0 flex items-center justify-center">
-                                  {isFailed ? (
-                                    <XCircle className="w-4 h-4 text-red-500" />
-                                  ) : isDone ? (
-                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                  ) : (
-                                    <Loader2 className="w-4 h-4 text-amber-500 animate-spin" />
-                                  )}
-                                </div>
-                                <div className="space-y-0.5 min-w-0 flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xs font-bold text-foreground truncate">
-                                      {report.agentName}
-                                    </span>
-                                    <span className="text-[9px] px-1.5 py-0.5 bg-muted rounded-full text-muted-foreground font-semibold uppercase tracking-wider">
-                                      {report.role}
-                                    </span>
-                                  </div>
-                                  <p className="text-[10px] text-muted-foreground leading-normal">
-                                    {report.task}
-                                  </p>
-                                  {report.filePath && (
-                                    <div className="text-[9px] font-mono text-primary/80 mt-1 select-all font-semibold bg-muted/30 px-1.5 py-0.5 rounded border border-border/20 w-fit">
-                                      {report.filePath}
-                                    </div>
-                                  )}
-                                  {stats && (
-                                    <div className="flex items-center gap-2 mt-1.5 text-[9px] font-sans">
-                                      <span className={cn(
-                                        "px-1.5 py-0.5 rounded font-bold uppercase tracking-wider text-[8px]",
-                                        stats.fileStatus === "creating" ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" : "bg-blue-500/10 text-blue-500 border border-blue-500/20"
-                                      )}>
-                                        {stats.fileStatus === "creating" ? "Nuevo" : "Edición"}
-                                      </span>
-                                      {stats.addedLines > 0 && (
-                                        <span className="text-emerald-500 font-semibold flex items-center gap-0.5">
-                                          +{stats.addedLines} {stats.addedLines === 1 ? 'línea' : 'líneas'}
-                                        </span>
-                                      )}
-                                      {stats.deletedLines > 0 && (
-                                        <span className="text-red-500 font-semibold flex items-center gap-0.5">
-                                          -{stats.deletedLines} {stats.deletedLines === 1 ? 'línea' : 'líneas'}
-                                        </span>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
+                        <div className="w-36 h-3.5 bg-muted/70 rounded-full" />
+                        <div className="w-4 h-4 bg-muted/50 rounded" />
                       </div>
-                    ) : (
-                      /* Default visual mockup loader when no agent reports are streaming yet */
-                      <div className="w-full bg-card/65 border border-border/40 backdrop-blur-lg rounded-2xl shadow-2xl overflow-hidden mb-8 space-y-0 animate-pulse relative">
-                        {/* Window header */}
-                        <div className="flex items-center justify-between px-4 py-3 bg-muted/40 border-b border-border/20">
-                          <div className="flex gap-1.5">
-                            <span className="w-2.5 h-2.5 rounded-full bg-red-500/30" />
-                            <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/30" />
-                            <span className="w-2.5 h-2.5 rounded-full bg-green-500/30" />
-                          </div>
-                          <div className="w-36 h-3.5 bg-muted/70 rounded-full" />
-                          <div className="w-4 h-4 bg-muted/50 rounded" />
+                      {/* Mockup dashboard grid */}
+                      <div className="p-5 flex gap-4 h-56">
+                        <div className="w-1/4 flex flex-col gap-3 border-r border-border/20 pr-4">
+                          <div className="w-full h-8 bg-muted rounded-lg" />
+                          <div className="w-5/6 h-5 bg-muted/65 rounded-lg" />
+                          <div className="w-4/5 h-5 bg-muted/65 rounded-lg" />
+                          <div className="w-full h-5 bg-muted/65 rounded-lg" />
                         </div>
-                        {/* Mockup dashboard grid */}
-                        <div className="p-5 flex gap-4 h-56">
-                          <div className="w-1/4 flex flex-col gap-3 border-r border-border/20 pr-4">
-                            <div className="w-full h-8 bg-muted rounded-lg" />
-                            <div className="w-5/6 h-5 bg-muted/65 rounded-lg" />
-                            <div className="w-4/5 h-5 bg-muted/65 rounded-lg" />
-                            <div className="w-full h-5 bg-muted/65 rounded-lg" />
+                        <div className="flex-grow flex flex-col gap-4">
+                          <div className="grid grid-cols-3 gap-3">
+                            <div className="h-12 bg-muted/70 rounded-xl" />
+                            <div className="h-12 bg-muted/70 rounded-xl" />
+                            <div className="h-12 bg-muted/70 rounded-xl" />
                           </div>
-                          <div className="flex-grow flex flex-col gap-4">
-                            <div className="grid grid-cols-3 gap-3">
-                              <div className="h-12 bg-muted/70 rounded-xl" />
-                              <div className="h-12 bg-muted/70 rounded-xl" />
-                              <div className="h-12 bg-muted/70 rounded-xl" />
+                          <div className="flex-grow bg-muted/50 rounded-xl p-3 flex flex-col justify-between">
+                            <div className="flex justify-between items-center">
+                              <div className="w-16 h-3 bg-muted rounded-full" />
+                              <div className="w-8 h-3 bg-muted rounded-full" />
                             </div>
-                            <div className="flex-grow bg-muted/50 rounded-xl p-3 flex flex-col justify-between">
-                              <div className="flex justify-between items-center">
-                                <div className="w-16 h-3 bg-muted rounded-full" />
-                                <div className="w-8 h-3 bg-muted rounded-full" />
-                              </div>
-                              <div className="flex items-end gap-1.5 h-16 pt-2">
-                                <div className="flex-1 bg-primary/10 rounded-t h-1/3" />
-                                <div className="flex-1 bg-primary/15 rounded-t h-2/3" />
-                                <div className="flex-1 bg-primary/25 rounded-t h-1/2" />
-                                <div className="flex-1 bg-primary/20 rounded-t h-4/5 animate-bounce" style={{ animationDelay: '0.1s' }} />
-                                <div className="flex-1 bg-primary/15 rounded-t h-3/5" />
-                                <div className="flex-1 bg-primary/10 rounded-t h-2/5" />
-                              </div>
+                            <div className="flex items-end gap-1.5 h-16 pt-2">
+                              <div className="flex-1 bg-primary/10 rounded-t h-1/3" />
+                              <div className="flex-1 bg-primary/15 rounded-t h-2/3" />
+                              <div className="flex-1 bg-primary/25 rounded-t h-1/2" />
+                              <div className="flex-1 bg-primary/20 rounded-t h-4/5 animate-bounce" style={{ animationDelay: '0.1s' }} />
+                              <div className="flex-1 bg-primary/15 rounded-t h-3/5" />
+                              <div className="flex-1 bg-primary/10 rounded-t h-2/5" />
                             </div>
                           </div>
                         </div>
                       </div>
-                    )}
+                    </div>
 
                     {/* Highly Premium Shimmery Loader Badge */}
                     <div className="relative group w-full max-w-xs">

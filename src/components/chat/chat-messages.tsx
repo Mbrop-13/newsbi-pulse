@@ -236,6 +236,23 @@ function MessageBubble({
   const [activePreviewUrl, setActivePreviewUrl] = useState<string | null>(null)
   const [isAgentsExpanded, setIsAgentsExpanded] = useState(true)
   const [expandedReportIdx, setExpandedReportIdx] = useState<number | null>(null)
+  
+  const [localReasoningOpen, setLocalReasoningOpen] = useState(isReasoningOpen || (isLast && isLoading))
+  const hasManuallyToggledRef = useRef(false)
+
+  // Keep reasoning open during streaming unless the user manually toggles it
+  useEffect(() => {
+    if (isLast && isLoading && !hasManuallyToggledRef.current) {
+      setLocalReasoningOpen(true)
+    }
+  }, [isLast, isLoading])
+
+  // Sync with prop when streaming is done
+  useEffect(() => {
+    if (!isLoading) {
+      setLocalReasoningOpen(isReasoningOpen)
+    }
+  }, [isReasoningOpen, isLoading])
 
   // Check citations
   let citationsList: string[] = message.citations || []
@@ -326,14 +343,18 @@ function MessageBubble({
     return (
       <div className="mb-3">
         <button
-          onClick={onToggleReasoning}
+          onClick={() => {
+            hasManuallyToggledRef.current = true;
+            setLocalReasoningOpen(!localReasoningOpen);
+            onToggleReasoning();
+          }}
           className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-all duration-200 group"
         >
           <span>Razonamiento</span>
           <ChevronRight
             className={cn(
               "h-3 w-3 transition-transform duration-200",
-              isReasoningOpen && "rotate-90"
+              localReasoningOpen && "rotate-90"
             )}
           />
           {message.secondsElapsed && (
@@ -343,7 +364,7 @@ function MessageBubble({
           )}
         </button>
         <AnimatePresence>
-          {isReasoningOpen && (
+          {localReasoningOpen && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
@@ -495,7 +516,7 @@ function MessageBubble({
   const isResponding = isLast && isLoading;
 
   // ─── Swarm thinking / Agent Orchestration in progress ───
-  const isAgentOrchestrating = (message as any).isSwarmThinking || (isLast && isLoading && message.reasoning && !message.content);
+  const isAgentOrchestrating = !isWebBuilderMode && ((message as any).isSwarmThinking || (isLast && isLoading && message.reasoning && !message.content));
   
   if (isAgentOrchestrating) {
     const steps = parseOrchestrationSteps(message.reasoning || message.content || '');
@@ -599,12 +620,19 @@ function MessageBubble({
               {isWebBuilderMode ? stripArtifactXml(message.content) : message.content}
             </ReactMarkdown>
           ) : (
-            !message.toolResults?.length && !message.toolInvocations?.length && !message.reasoning && (
-              <div className="flex items-center gap-1 py-1.5">
-                <div className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+            isResponding ? (
+              <div className="flex items-center gap-2 py-1.5 text-muted-foreground text-xs font-semibold">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#1890FF]" />
+                <span>Escribiendo respuesta...</span>
               </div>
+            ) : (
+              !message.toolResults?.length && !message.toolInvocations?.length && !message.reasoning && (
+                <div className="flex items-center gap-1 py-1.5">
+                  <div className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+              )
             )
           )}
         </div>

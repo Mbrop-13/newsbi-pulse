@@ -6,8 +6,9 @@
   - [x] Run `npm run build` to verify Next.js build compilation with new mockups
 - [x] **26. Skip multi-agent orchestrator in route.ts when webBuilder is active**
 - [x] **27. Disable tools and set toolChoice to 'none' in route.ts when webBuilder is active**
-- [x] **28. Import stripArtifactXml and clean assistant bubbles in chat-messages.tsx**
-- [x] **29. Hide tool result cards in chat-messages.tsx when isWebBuilderMode is active**
+- [x] **28. Add try/finally to `onFinish` in `chat-landing.tsx`**
+- [x] **29. Implement immediate cloud save for files in `chat-landing.tsx`**
+- [x] **30. Implement debounced local message saving during streaming in `chat-landing.tsx` when isWebBuilderMode is active**
 - [x] **30. Perform compile check and verify types**
 - [x] **31. Sync WebBuilder project files strictly per chat ID on session switch or reset**
 - [x] **32. Implement database project auto-deletion by plan tier (7 days for free, 15 days for paid)**

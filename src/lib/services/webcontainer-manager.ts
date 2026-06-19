@@ -338,10 +338,15 @@ export class WebContainerManager {
 
     this.status = "installing";
     this.notify();
-    this.log("Instalando dependencias (pnpm install)...");
+    this.log("Instalando dependencias (npm install)...");
 
     this.installPromise = (async () => {
-      const installProcess = await this.webcontainer!.spawn("pnpm", ["install"]);
+      const installProcess = await this.webcontainer!.spawn("npm", [
+        "install",
+        "--prefer-offline",
+        "--no-audit",
+        "--no-fund"
+      ]);
       
       installProcess.output.pipeTo(
         new WritableStream({
@@ -357,7 +362,7 @@ export class WebContainerManager {
       if (exitCode !== 0) {
         this.status = "error";
         this.notify();
-        throw new Error(`pnpm install falló con el código de salida ${exitCode}`);
+        throw new Error(`npm install falló con el código de salida ${exitCode}`);
       }
       this.log("Instalación de dependencias completada.");
     })();
@@ -369,7 +374,7 @@ export class WebContainerManager {
     if (!this.webcontainer) return;
     if (this.devServerPromise) return;
 
-    this.log("Iniciando servidor de desarrollo Vite (pnpm run dev)...");
+    this.log("Iniciando servidor de desarrollo Vite (npm run dev)...");
 
     this.webcontainer.on("server-ready", (port, url) => {
       this.previewUrl = url;
@@ -379,7 +384,7 @@ export class WebContainerManager {
     });
 
     this.devServerPromise = (async () => {
-      const devProcess = await this.webcontainer!.spawn("pnpm", ["run", "dev"]);
+      const devProcess = await this.webcontainer!.spawn("npm", ["run", "dev"]);
       
       devProcess.output.pipeTo(
         new WritableStream({

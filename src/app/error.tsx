@@ -17,6 +17,10 @@ export default function Error({
     console.error(error);
   }, [error]);
 
+  const isAiRoute = typeof window !== "undefined" && window.location.pathname.startsWith("/ai");
+  const backPath = isAiRoute ? "/ai" : "/";
+  const backLabel = isAiRoute ? "Chat Principal" : "Inicio";
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <motion.div
@@ -33,12 +37,12 @@ export default function Error({
         >
           <AlertTriangle className="w-10 h-10 text-destructive" />
         </motion.div>
-
+ 
         <h1 className="font-editorial text-2xl md:text-3xl font-bold mb-3">
           Algo salió mal
         </h1>
         <p className="text-muted-foreground text-sm leading-relaxed mb-8 max-w-xs mx-auto">
-          Ocurrió un error inesperado al cargar esta página. Puedes intentar recargar o volver al inicio.
+          Ocurrió un error inesperado al cargar esta página. Puedes intentar recargar o volver.
         </p>
 
         <div className="flex items-center gap-3 justify-center">
@@ -49,10 +53,10 @@ export default function Error({
             <RefreshCw className="w-4 h-4" />
             Reintentar
           </Button>
-          <Link href="/">
+          <Link href={backPath}>
             <Button variant="outline" className="gap-2 rounded-xl h-11 px-6 border-border">
               <Home className="w-4 h-4" />
-              Inicio
+              {backLabel}
             </Button>
           </Link>
         </div>

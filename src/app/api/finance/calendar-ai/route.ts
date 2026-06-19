@@ -16,13 +16,21 @@ const openrouter = createOpenAI({
   }
 });
 
+const calendarRequestSchema = z.object({
+  symbols: z.array(z.string().min(1)).min(1, "At least one symbol is required"),
+}).strict();
+
 export async function POST(req: NextRequest) {
   try {
-    const { symbols } = await req.json();
-
-    if (!symbols || !Array.isArray(symbols) || symbols.length === 0) {
-      return NextResponse.json({ error: "Symbols are required" }, { status: 400 });
+    const rawBody = await req.json();
+    const parseResult = calendarRequestSchema.safeParse(rawBody);
+    if (!parseResult.success) {
+      return NextResponse.json({ 
+        error: "Invalid request payload", 
+        details: parseResult.error.format() 
+      }, { status: 400 });
     }
+    const { symbols } = parseResult.data;
 
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();

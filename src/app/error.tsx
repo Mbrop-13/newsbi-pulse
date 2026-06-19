@@ -17,8 +17,16 @@ export default function Error({
     console.error(error);
   }, [error]);
 
-  const isAiRoute = typeof window !== "undefined" && window.location.pathname.startsWith("/ai");
-  const backPath = isAiRoute ? "/ai" : "/";
+  let backPath = "/";
+  let isAiRoute = false;
+  if (typeof window !== "undefined") {
+    const pathname = window.location.pathname;
+    isAiRoute = pathname.includes("/ai");
+    if (isAiRoute) {
+      const aiIndex = pathname.indexOf("/ai");
+      backPath = pathname.substring(0, aiIndex) + "/ai";
+    }
+  }
   const backLabel = isAiRoute ? "Chat Principal" : "Inicio";
 
   return (

@@ -579,61 +579,58 @@ export function ChatLanding() {
 
   const displayMessages = groupConsecutiveMessages(rawDisplayMessages);
 
-  // ── WebBuilder artifact parsing from streaming AI messages ──
+  // ── WebBuilder unified stream and artifact parser ──
   const isWebBuilderMode = useWebBuilderStore((s) => s.isWebBuilderMode)
   const prevStreamTextRef = useRef<string>("")
 
   useEffect(() => {
-    if (!isWebBuilderMode) return
-    // Check the last assistant message for artifact XML
-    const lastAssistant = [...aiMessages].reverse().find(m => m.role === 'assistant')
-    if (!lastAssistant?.content) return
-    const text = lastAssistant.content
-    // Only parse if text changed and contains artifact
-    if (text === prevStreamTextRef.current) return
-    prevStreamTextRef.current = text
-    if (!containsArtifact(text)) return
-    const artifact = parseArtifact(text)
-    if (artifact && artifact.actions.length > 0) {
-      const store = useWebBuilderStore.getState()
-      // Pass existing files so "update" (diff) actions can apply search/replace
-      const newFiles = actionsToFiles(artifact.actions, store.files)
-      // Merge with existing files (preserving index.tsx etc)
-      const merged = { ...store.files, ...newFiles }
-      store.setFiles(merged)
-    }
-  }, [aiMessages, isWebBuilderMode])
-
-  // Listen for 'webbuilder_files' from streamData (data)
-  useEffect(() => {
-    if (!isWebBuilderMode || !data || data.length === 0) return
-    const webBuilderFilesObj = (data as any[]).find((d: any) => d?.type === 'webbuilder_files')
-    if (webBuilderFilesObj?.files) {
-      const store = useWebBuilderStore.getState()
-      // Merge new files from the agents
-      const merged = { ...store.files, ...webBuilderFilesObj.files }
-      
-      // Let's compare to prevent unnecessary state updates
-      const hasChanged = Object.keys(merged).some(k => merged[k] !== store.files[k]) || 
-                         Object.keys(store.files).some(k => merged[k] !== store.files[k]);
-      if (hasChanged) {
-        store.setFiles(merged)
-        // Force an immediate save to the cloud so files aren't lost on reload!
-        store.syncToCloud()
-      }
-    }
-  }, [data, isWebBuilderMode])
-  
-  // Listen for agent reports and set activeAgentReports in the store during code generation
-  useEffect(() => {
     if (!isWebBuilderMode) return;
+
+    // 1. Process structured streamData (agent reports and webbuilder files)
     if (data && data.length > 0) {
+      const store = useWebBuilderStore.getState();
+
+      // Find agent reports
       const reportsObj = (data as any[]).find((d: any) => d?.type === 'agentReports');
       if (reportsObj?.reports) {
-        useWebBuilderStore.getState().setActiveAgentReports(reportsObj.reports);
+        store.setActiveAgentReports(reportsObj.reports);
+      }
+
+      // Find webbuilder files
+      const webBuilderFilesObj = (data as any[]).find((d: any) => d?.type === 'webbuilder_files');
+      if (webBuilderFilesObj?.files) {
+        const merged = { ...store.files, ...webBuilderFilesObj.files };
+        const hasChanged = Object.keys(merged).some(k => merged[k] !== store.files[k]) || 
+                           Object.keys(store.files).some(k => merged[k] !== store.files[k]);
+        if (hasChanged) {
+          store.setFiles(merged);
+          store.syncToCloud();
+        }
       }
     }
-  }, [data, isWebBuilderMode])
+
+    // 2. Parse inline artifacts from the last assistant message
+    const lastAssistant = [...aiMessages].reverse().find(m => m.role === 'assistant');
+    if (lastAssistant?.content) {
+      const text = lastAssistant.content;
+      if (text !== prevStreamTextRef.current) {
+        prevStreamTextRef.current = text;
+        if (containsArtifact(text)) {
+          const artifact = parseArtifact(text);
+          if (artifact && artifact.actions.length > 0) {
+            const store = useWebBuilderStore.getState();
+            const newFiles = actionsToFiles(artifact.actions, store.files);
+            const merged = { ...store.files, ...newFiles };
+            const hasChanged = Object.keys(merged).some(k => merged[k] !== store.files[k]) || 
+                               Object.keys(store.files).some(k => merged[k] !== store.files[k]);
+            if (hasChanged) {
+              store.setFiles(merged);
+            }
+          }
+        }
+      }
+    }
+  }, [data, aiMessages, isWebBuilderMode]);
 
   // Debounced local storage saving during stream
   const localSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);

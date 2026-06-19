@@ -3,6 +3,12 @@ import { PollyClient, SynthesizeSpeechCommand } from "@aws-sdk/client-polly";
 import { createClient } from "@/lib/supabase/server";
 import { checkLimit, incrementUsage } from "@/lib/check-limits";
 import { rateLimit, rateLimitResponse, TTS_LIMIT } from "@/lib/rate-limit";
+import { z } from "zod";
+
+const ttsSchema = z.object({
+  text: z.string().min(1, "Text is required"),
+  mode: z.enum(["summary", "full"]).optional().default("summary"),
+}).strict();
 
 const polly = new PollyClient({
   region: process.env.AWS_REGION || "us-east-1",
@@ -40,11 +46,17 @@ function splitText(text: string): string[] {
 
 export async function POST(req: NextRequest) {
   try {
-    const { text, mode = "summary" } = await req.json();
+    const rawBody = await req.json();
+    const parseResult = ttsSchema.safeParse(rawBody);
     
-    if (!text || typeof text !== "string") {
-      return NextResponse.json({ error: "Text is required" }, { status: 400 });
+    if (!parseResult.success) {
+      return NextResponse.json({ 
+        error: "Invalid request payload", 
+        details: parseResult.error.format() 
+      }, { status: 400 });
     }
+
+    const { text, mode } = parseResult.data;
 
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();

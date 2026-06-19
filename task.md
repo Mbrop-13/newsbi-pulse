@@ -59,6 +59,11 @@
   - [x] Embed automatic inline WebPreview frame directly below stock/portfolio cards or at message end
   - [x] Update system prompt rules in backend to mandate official ticker outputs (rule 13)
   - [x] Validate TypeScript compilation and type safety (resolved TS18048 undefined checks)
-
-
-
+- [x] 11. Migración a StackBlitz WebContainers
+  - [x] Configurar cabeceras COOP/COEP restringidas a `/ai/:path*` en `next.config.ts`
+  - [x] Crear el gestor singleton `webcontainer-manager.ts` para inicializar el contenedor, instalar dependencias y controlar el servidor de desarrollo Vite
+  - [x] Implementar la sincronización en caliente (hot reload) escribiendo las actualizaciones de archivos en el sistema de archivos del contenedor
+  - [x] Modificar `sandbox-runner.tsx` para renderizar el iframe nativo del WebContainer
+  - [x] Modificar `preview-panel.tsx` para conectar la interfaz del WebContainer, capturar logs en la pestaña Console y mostrar estados de carga
+  - [x] Validar compilación global (`npm run build`)
+  - [x] Realizar verificación de ejecución

@@ -68,7 +68,8 @@ export function parseArtifact(text: string): ParsedArtifact | null {
   let match;
   while ((match = actionRegex.exec(text)) !== null) {
     const actionType = match[1] as "file" | "update";
-    const filePath = match[2];
+    const rawFilePath = match[2];
+    const filePath = rawFilePath.startsWith("/") ? rawFilePath : "/" + rawFilePath;
     let content = match[3];
 
     // Trim leading/trailing whitespace from content
@@ -186,15 +187,16 @@ export function actionsToFiles(
   const files: Record<string, { code: string }> = {};
 
   for (const action of actions) {
+    const filePath = action.filePath.startsWith("/") ? action.filePath : "/" + action.filePath;
     if (action.type === "file") {
       // Full file creation/replacement
-      files[action.filePath] = { code: action.content };
+      files[filePath] = { code: action.content };
     } else if (action.type === "update") {
       // Partial update — apply diffs to existing file
-      const existing = existingFiles?.[action.filePath];
+      const existing = existingFiles?.[filePath];
       if (existing) {
         const updatedCode = applyDiffs(existing.code, action.diffs);
-        files[action.filePath] = { code: updatedCode };
+        files[filePath] = { code: updatedCode };
       }
       // If file doesn't exist, skip the update (can't apply diff to nothing)
     }

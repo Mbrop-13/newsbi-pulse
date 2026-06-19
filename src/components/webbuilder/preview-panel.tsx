@@ -3,10 +3,12 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
 import { useAIChatStore } from "@/lib/stores/ai-chat-store";
-import { SandpackConsole, SandpackProvider } from "@codesandbox/sandpack-react";
+import { SandpackConsole, SandpackProvider, SandpackCodeEditor, useSandpack } from "@codesandbox/sandpack-react";
+import { useTheme } from "next-themes";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { SandboxRunner } from "./sandbox-runner";
+import { WebContainerManager } from "@/lib/services/webcontainer-manager";
 import { parseArtifact } from "@/lib/webbuilder-parser";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -167,29 +169,29 @@ function CodeViewer() {
 
   if (!file) {
     return (
-      <div className="flex-1 flex items-center justify-center text-gray-500 text-sm">
+      <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
         Selecciona un archivo para ver su código
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col min-h-0">
+    <div className="flex-1 flex flex-col min-h-0 bg-background">
       {/* File Tab */}
-      <div className="flex items-center justify-between px-4 py-2 bg-muted/40 shrink-0">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/40 shrink-0">
         <div className="flex items-center gap-2">
           {getFileIcon(activeFilePath)}
-          <span className="text-[11px] font-bold text-gray-300">
+          <span className="text-[11px] font-bold text-foreground">
             {activeFilePath}
           </span>
         </div>
         <button
           onClick={handleCopy}
-          className="p-1.5 rounded-lg hover:bg-white/10 text-gray-500 hover:text-gray-300 transition-colors"
+          className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
           title="Copiar código"
         >
           {copied ? (
-            <Check className="w-3.5 h-3.5 text-green-400" />
+            <Check className="w-3.5 h-3.5 text-green-500" />
           ) : (
             <Copy className="w-3.5 h-3.5" />
           )}
@@ -197,10 +199,20 @@ function CodeViewer() {
       </div>
 
       {/* Code Content */}
-      <div className="flex-1 overflow-auto bg-muted/5">
-        <pre className="p-4 text-[12px] font-mono leading-relaxed text-foreground whitespace-pre-wrap break-words">
-          <code>{file.code}</code>
-        </pre>
+      <div className="flex-1 min-h-0 overflow-auto bg-background text-foreground relative">
+        <SandpackCodeEditor
+          showLineNumbers={true}
+          showTabs={false}
+          showRunButton={false}
+          style={{
+            height: "100%",
+            width: "100%",
+            border: "none",
+            borderRadius: 0,
+            background: "transparent",
+            fontSize: "12px",
+          }}
+        />
       </div>
     </div>
   );
@@ -211,6 +223,13 @@ function CodeViewer() {
 function ConsolePanel() {
   const { compileLogs, files } = useWebBuilderStore();
   const hasFiles = Object.keys(files).length > 0;
+  const terminalEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (terminalEndRef.current) {
+      terminalEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [compileLogs]);
 
   if (!hasFiles) {
     return (
@@ -225,19 +244,19 @@ function ConsolePanel() {
   }
 
   return (
-    <div className="flex-grow flex flex-col bg-muted/5 min-h-0">
-      <div className="flex-1 overflow-auto bg-[#1e1e1e] [&_.sp-console]:!bg-transparent [&_.sp-console]:!text-[12px] [&_.sp-console-item]:!border-b-[#333]">
-        <SandpackConsole standalone resetOnPreviewRestart={false} />
+    <div className="flex-grow flex flex-col bg-[#0B0F19] min-h-0 text-gray-300 font-mono text-[11px] p-4 select-text">
+      <div className="flex-1 overflow-auto space-y-1.5 scrollbar-thin">
+        {compileLogs.length === 0 ? (
+          <div className="text-gray-500 italic">Esperando logs del contenedor...</div>
+        ) : (
+          compileLogs.map((log, i) => (
+            <div key={i} className="leading-relaxed break-all whitespace-pre-wrap">
+              {log}
+            </div>
+          ))
+        )}
+        <div ref={terminalEndRef} />
       </div>
-      
-      {/* Fallback to custom logs if any exist outside sandpack */}
-      {compileLogs.length > 0 && (
-        <div className="h-32 border-t border-border/20 p-2 overflow-auto text-[11px] font-mono text-muted-foreground">
-          {compileLogs.map((log, i) => (
-            <div key={i} className="py-0.5">{log}</div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
@@ -348,6 +367,28 @@ function getAgentLineStats(reportContent: string, existingFiles: Record<string, 
   return { addedLines, deletedLines, fileStatus };
 }
 
+function SandpackSyncListener() {
+  const { sandpack } = useSandpack();
+  const { updateFile, files } = useWebBuilderStore();
+
+  useEffect(() => {
+    const activeFile = sandpack.activeFile;
+    if (!activeFile) return;
+
+    const currentCode = sandpack.files[activeFile]?.code;
+    const storeCode = files[activeFile]?.code;
+
+    if (currentCode !== undefined && storeCode !== currentCode) {
+      const timeout = setTimeout(() => {
+        updateFile(activeFile, currentCode);
+      }, 800);
+      return () => clearTimeout(timeout);
+    }
+  }, [sandpack.files, sandpack.activeFile, files, updateFile]);
+
+  return null;
+}
+
 export function PreviewPanel() {
   const { 
     selectedTab, 
@@ -366,6 +407,8 @@ export function PreviewPanel() {
     activeAgentReports
   } = useWebBuilderStore();
   const chatLoading = useAIChatStore((s) => s.isLoading);
+  const { resolvedTheme } = useTheme();
+  const currentTheme = resolvedTheme === "dark" ? "dark" : "light";
   const [viewport, setViewport] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const [isInspectorActive, setIsInspectorActive] = useState(false);
 
@@ -377,6 +420,28 @@ export function PreviewPanel() {
       setStableFiles(files);
     }
   }, [files, isAiResponding]);
+
+  // Connect and sync stableFiles to WebContainer
+  useEffect(() => {
+    if (Object.keys(stableFiles).length === 0) return;
+
+    const manager = WebContainerManager.getInstance();
+    
+    // Bind compile logs to Zustand store
+    manager.setLogCallback((log) => {
+      useWebBuilderStore.getState().addCompileLog(log);
+    });
+
+    if (manager.status === "running") {
+      manager.mountProject(stableFiles).catch((err) => {
+        console.error("WebContainer sync error:", err);
+      });
+    } else if (manager.status === "idle") {
+      manager.boot(stableFiles).catch((err) => {
+        console.error("WebContainer boot error:", err);
+      });
+    }
+  }, [stableFiles]);
 
   // Determine if this is a React/TS project or plain HTML
   const hasReact = useMemo(() => {
@@ -485,7 +550,7 @@ export function PreviewPanel() {
 
   // Sync inspector state with the preview iframe
   useEffect(() => {
-    const iframe = document.querySelector('iframe[title="Sandpack Preview"]');
+    const iframe = document.querySelector('iframe[title="Maverlang Preview"]');
     if (iframe && (iframe as HTMLIFrameElement).contentWindow) {
       (iframe as HTMLIFrameElement).contentWindow?.postMessage({ type: 'TOGGLE_INSPECTOR', active: isInspectorActive }, '*');
     }
@@ -743,7 +808,8 @@ export function PreviewPanel() {
           <SandpackProvider
             template={hasReact ? "react-ts" : "vanilla-ts"}
             files={sandpackFiles}
-            theme="dark"
+            activeFile={activeFilePath}
+            theme={currentTheme}
             className="flex-grow flex flex-col min-h-0 w-full h-full relative bg-transparent border-none"
             style={{
               background: "transparent",
@@ -767,11 +833,12 @@ export function PreviewPanel() {
               autoReload: true,
             }}
           >
+            <SandpackSyncListener />
             {/* Code Editor Tab */}
             {selectedTab === "code" && (
               <div className="flex-grow flex min-h-0 w-full">
                 {/* File Explorer Sidebar */}
-                <div className="w-48 bg-muted/5 overflow-y-auto hidden-scrollbar shrink-0">
+                <div className="w-48 bg-muted/5 overflow-y-auto hidden-scrollbar shrink-0 border-r border-border">
                   <div className="px-3 py-2 border-b border-border">
                     <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
                       Archivos
@@ -788,14 +855,19 @@ export function PreviewPanel() {
 
             {/* Preview Tab */}
             {selectedTab === "preview" && (
-              <div className="flex-1 relative min-h-0 w-full flex items-center justify-center overflow-auto p-4 bg-muted/20 dark:bg-muted/10">
+              <div className={cn(
+                "flex-1 relative min-h-0 w-full flex items-center justify-center overflow-auto bg-muted/20 dark:bg-muted/10",
+                viewport === "desktop" ? "p-0" : "p-4"
+              )}>
                 {(!isAiResponding && !isCompiling && !chatLoading) ? (
                   <div 
                     className={cn(
-                      "relative overflow-hidden bg-background transition-all duration-500 ease-in-out border border-black/20 dark:border-white/15 shadow-lg",
-                      viewport === "desktop" ? "w-full h-full rounded-2xl" : 
-                      viewport === "tablet" ? "w-[768px] h-[1024px] max-h-full rounded-[2rem] border-8 border-neutral-800 shadow-2xl" :
-                      "w-[375px] h-[812px] max-h-full rounded-[3rem] border-[12px] border-neutral-800 shadow-2xl"
+                      "relative overflow-hidden bg-background transition-all duration-500 ease-in-out",
+                      viewport === "desktop" 
+                        ? "w-full h-full border-none shadow-none rounded-none" 
+                        : viewport === "tablet" 
+                          ? "w-[768px] h-[1024px] max-h-full rounded-[2rem] border-8 border-neutral-800 shadow-2xl" 
+                          : "w-[375px] h-[812px] max-h-full rounded-[3rem] border-[12px] border-neutral-800 shadow-2xl"
                     )}
                   >
                     <SandboxRunner />

@@ -1,4 +1,5 @@
 import { generateText, LanguageModel } from 'ai';
+import { containsArtifact, parseArtifact, ParsedAction } from '@/lib/webbuilder-parser';
 
 export interface AgentInfo {
   agentName: string;
@@ -299,6 +300,296 @@ export interface WebBuilderOrchestrationResult {
   totalTokensUsed: number;
 }
 
+/**
+ * Heuristic context selector to optimize tokens by only sending files
+ * that are relevant to the target file.
+ */
+export function selectRelevantContext(
+  agentFilePath: string,
+  allFiles: Record<string, string>
+): Record<string, string> {
+  const fileKeys = Object.keys(allFiles);
+  if (fileKeys.length <= 3) {
+    return allFiles;
+  }
+
+  const selected: Record<string, string> = {};
+  
+  // Helper to normalize paths for comparison
+  const normalize = (p: string) => p.replace(/^\.\/|^\/|\\/g, '/').toLowerCase();
+  const normalizedAgentPath = normalize(agentFilePath);
+  const agentBasename = normalizedAgentPath.split('/').pop() || '';
+  const agentNameWithoutExt = agentBasename.replace(/\.[^/.]+$/, "");
+
+  for (const path of fileKeys) {
+    const normPath = normalize(path);
+    const content = allFiles[path];
+
+    // Always include the target file if it exists, so the agent sees current code
+    if (normPath === normalizedAgentPath) {
+      selected[path] = content;
+      continue;
+    }
+
+    // Always include App.tsx/index.css/styles.css as they are core structural files
+    const basename = normPath.split('/').pop() || '';
+    if (
+      basename === 'app.tsx' ||
+      basename === 'app.jsx' ||
+      basename === 'index.css' ||
+      basename === 'styles.css'
+    ) {
+      selected[path] = content;
+      continue;
+    }
+
+    // Include if the current file imports/references the target file (excluding extension check)
+    if (agentNameWithoutExt && content.toLowerCase().includes(agentNameWithoutExt.toLowerCase())) {
+      selected[path] = content;
+      continue;
+    }
+
+    // Include if the target file (existing content in allFiles) imports/references this file
+    const targetFileContent = allFiles[agentFilePath] || '';
+    const otherBasename = basename.replace(/\.[^/.]+$/, "");
+    if (otherBasename && targetFileContent.toLowerCase().includes(otherBasename.toLowerCase())) {
+      selected[path] = content;
+      continue;
+    }
+  }
+
+  return selected;
+}
+
+/**
+ * Checks for balanced brackets, braces, and parentheses.
+ * Properly skips comments and string literals, while tracing ${ } in template literals.
+ */
+function checkBrackets(code: string): { isValid: boolean; reason?: string } {
+  const stack: string[] = [];
+  const openChars = ['{', '[', '('];
+  const closeChars = ['}', ']', ')'];
+  const matching: Record<string, string> = { '}': '{', ']': '[', ')': '(' };
+  
+  let inSingleQuote = false;
+  let inDoubleQuote = false;
+  let inTemplateLiteral = false;
+  let inLineComment = false;
+  let inBlockComment = false;
+  const templateLiteralExprStack: number[] = [];
+
+  for (let i = 0; i < code.length; i++) {
+    const char = code[i];
+    const nextChar = code[i + 1] || '';
+    
+    // 1. Handle comments
+    if (inLineComment) {
+      if (char === '\n') inLineComment = false;
+      continue;
+    }
+    if (inBlockComment) {
+      if (char === '*' && nextChar === '/') {
+        inBlockComment = false;
+        i++; // skip /
+      }
+      continue;
+    }
+    
+    // 2. Handle string literals
+    if (inSingleQuote) {
+      if (char === "'" && code[i - 1] !== '\\') inSingleQuote = false;
+      continue;
+    }
+    if (inDoubleQuote) {
+      if (char === '"' && code[i - 1] !== '\\') inDoubleQuote = false;
+      continue;
+    }
+    
+    // 3. Handle template literals and expression interpolation ${ ... }
+    if (inTemplateLiteral) {
+      // Check if entering interpolation
+      if (char === '$' && nextChar === '{') {
+        stack.push('{');
+        templateLiteralExprStack.push(stack.length);
+        i++; // skip {
+        continue;
+      }
+      // Check if closing template literal
+      if (char === '`' && code[i - 1] !== '\\') {
+        inTemplateLiteral = false;
+        continue;
+      }
+      // If we are in a template literal but NOT inside an expression block, ignore braces/parentheses
+      if (templateLiteralExprStack.length === 0) {
+        continue;
+      }
+    }
+    
+    // Start of comments/strings/template literals
+    if (char === '/' && nextChar === '/') {
+      inLineComment = true;
+      i++;
+      continue;
+    }
+    if (char === '/' && nextChar === '*') {
+      inBlockComment = true;
+      i++;
+      continue;
+    }
+    if (char === "'") {
+      inSingleQuote = true;
+      continue;
+    }
+    if (char === '"') {
+      inDoubleQuote = true;
+      continue;
+    }
+    if (char === '`') {
+      inTemplateLiteral = true;
+      continue;
+    }
+    
+    // 4. Bracket balancing
+    if (openChars.includes(char)) {
+      stack.push(char);
+    } else if (closeChars.includes(char)) {
+      const expected = matching[char];
+      if (stack.length === 0) {
+        return { isValid: false, reason: `Carácter de cierre inesperado '${char}' sin apertura correspondiente` };
+      }
+      const last = stack.pop();
+      if (last !== expected) {
+        return { isValid: false, reason: `Carácter de cierre incorrecto: se esperaba el cierre de '${last}' pero se encontró '${char}'` };
+      }
+      
+      // If we closed a ${ expression block in a template literal
+      if (inTemplateLiteral && char === '}' && templateLiteralExprStack.length > 0) {
+        const lastExprStackHeight = templateLiteralExprStack[templateLiteralExprStack.length - 1];
+        if (stack.length < lastExprStackHeight) {
+          templateLiteralExprStack.pop();
+        }
+      }
+    }
+  }
+  
+  if (stack.length > 0) {
+    return { isValid: false, reason: `Paréntesis/llaves/corchetes sin cerrar al final del archivo: ${stack.join(', ')}` };
+  }
+  
+  return { isValid: true };
+}
+
+/**
+ * Basic syntax validator for parsed action content.
+ */
+function validateBasicSyntax(action: ParsedAction): { isValid: boolean; reason?: string } {
+  if (action.type === 'file') {
+    const code = action.content;
+    const bracketCheck = checkBrackets(code);
+    if (!bracketCheck.isValid) {
+      return bracketCheck;
+    }
+    
+    // Default export check for main file: App.tsx or App.jsx
+    const isApp = action.filePath.toLowerCase().endsWith('app.tsx') || action.filePath.toLowerCase().endsWith('app.jsx');
+    if (isApp) {
+      const hasExportDefault = code.includes('export default');
+      if (!hasExportDefault) {
+        return { isValid: false, reason: `El archivo ${action.filePath} debe incluir una exportación por defecto ('export default')` };
+      }
+    }
+  } else if (action.type === 'update') {
+    if (!action.diffs || action.diffs.length === 0) {
+      return { isValid: false, reason: 'Actualización parcial no contiene bloques SEARCH/REPLACE estructurados válidos.' };
+    }
+  }
+  return { isValid: true };
+}
+
+/**
+ * Calls generateText with XML artifact structural and syntax validation.
+ * Retries once if errors are found, inserting feedback into the system prompt.
+ */
+async function generateWebBuilderCodeWithVerification(
+  model: LanguageModel,
+  agent: WebBuilderAgentInfo,
+  systemPrompt: string,
+  userMessage: string,
+  onProgress?: (text: string) => void
+): Promise<{ text: string; usage?: { totalTokens?: number } }> {
+  let attempt = 1;
+  let currentSystemPrompt = systemPrompt;
+  let totalUsageTokens = 0;
+
+  while (attempt <= 2) {
+    if (attempt > 1) {
+      onProgress?.(`⚠️ [Agente] ${agent.agentName} falló la verificación de sintaxis o estructura. Iniciando re-intento con feedback...\n`);
+    }
+
+    const { text, usage } = await generateText({
+      model,
+      system: currentSystemPrompt,
+      messages: [{ role: 'user', content: userMessage }],
+      temperature: attempt === 1 ? 0.2 : 0.1,
+    });
+
+    if (usage?.totalTokens) {
+      totalUsageTokens += usage.totalTokens;
+    }
+
+    // 1. Check if contains artifact XML tag
+    if (!containsArtifact(text)) {
+      if (attempt === 1) {
+        currentSystemPrompt = `${systemPrompt}\n\n[ERROR ANTERIOR] Tu respuesta anterior no contenía el tag XML <maverlangArtifact>. Recuerda que tu respuesta DEBE contener ÚNICAMENTE el XML <maverlangArtifact> correspondiente, sin explicaciones ni markdown fuera de él.`;
+        attempt++;
+        continue;
+      } else {
+        return { text, usage: { totalTokens: totalUsageTokens } };
+      }
+    }
+
+    // 2. Check if XML structure is parseable
+    const parsed = parseArtifact(text);
+    if (!parsed || parsed.actions.length === 0) {
+      if (attempt === 1) {
+        currentSystemPrompt = `${systemPrompt}\n\n[ERROR ANTERIOR] Tu respuesta anterior no pudo ser parseada correctamente como un bloque XML de Maverlang Artifact. Asegúrate de cerrar todos los tags <maverlangArtifact> y <maverlangAction> correctamente, y no agregues texto de introducción ni de cierre.`;
+        attempt++;
+        continue;
+      } else {
+        return { text, usage: { totalTokens: totalUsageTokens } };
+      }
+    }
+
+    // 3. Check for syntax and exports
+    let syntaxValid = true;
+    let syntaxErrorMsg = '';
+    
+    for (const action of parsed.actions) {
+      const validation = validateBasicSyntax(action);
+      if (!validation.isValid) {
+        syntaxValid = false;
+        syntaxErrorMsg = validation.reason || 'Error de sintaxis desconocido';
+        break;
+      }
+    }
+
+    if (!syntaxValid) {
+      if (attempt === 1) {
+        currentSystemPrompt = `${systemPrompt}\n\n[ERROR ANTERIOR] El código que generaste anteriormente tenía errores de compilación o de estructura:\n"${syntaxErrorMsg}"\nPor favor, corrige este error. Asegúrate de balancear todos los paréntesis, corchetes y llaves, y de incluir una exportación por defecto si es App.tsx.`;
+        attempt++;
+        continue;
+      } else {
+        return { text, usage: { totalTokens: totalUsageTokens } };
+      }
+    }
+
+    // Passed all validations
+    return { text, usage: { totalTokens: totalUsageTokens } };
+  }
+
+  return { text: '', usage: { totalTokens: totalUsageTokens } };
+}
+
 export async function runWebBuilderOrchestration(
   model: LanguageModel,
   userMessage: string,
@@ -431,27 +722,32 @@ Si vas a MODIFICAR un archivo existente, usa type="update" con bloques search/re
 </maverlangArtifact>
 
 3. Todo código React debe usar importaciones estándar que estén disponibles en un entorno Vite + React normal.
-4. Recuerda: Tu respuesta debe contener SOLAMENTE el XML. No agregues comentarios introductorios ni de cierre en markdown fuera del XML.
+4. Recuerda: Tu response debe contener SOLAMENTE el XML. No agregues comentarios introductorios ni de cierre en markdown fuera del XML.
 `;
+
+    // Filter existing files context per-agent to optimize tokens
+    const relevantFiles = selectRelevantContext(agent.filePath, existingFiles || {});
+    const relevantFilesContext = Object.keys(relevantFiles).length > 0;
 
     const agentUserMessage = `Consulta original del usuario: "${userMessage}"
 
 PLAN DE ARCHIVOS COORDINADOS:
 ${agents.map(a => `- Archivo: \`${a.filePath}\` (generado por ${a.agentName} - ${a.role}): ${a.task}`).join('\n')}
 
-ARCHIVOS EXISTENTES EN EL PROYECTO:
-${existingFilesContext ? Object.entries(existingFiles).map(([path, content]) => `--- Archivo: ${path} ---\n${content}\n`).join('\n') : '(Ninguno)'}
+ARCHIVOS EXISTENTES EN EL PROYECTO (SELECCIÓN RELEVANTE):
+${relevantFilesContext ? Object.entries(relevantFiles).map(([path, content]) => `--- Archivo: ${path} ---\n${content}\n`).join('\n') : '(Ninguno o vacío)'}
 
 Tu tarea asignada: Generar o actualizar el archivo \`${agent.filePath}\` de acuerdo a: "${agent.task}".
 Recuerda devolver ÚNICAMENTE el XML con tu código.`;
 
     try {
-      const agentPromise = generateText({
+      const agentPromise = generateWebBuilderCodeWithVerification(
         model,
-        system: agentSystemPrompt,
-        messages: [{ role: 'user', content: agentUserMessage }],
-        temperature: 0.2,
-      });
+        agent,
+        agentSystemPrompt,
+        agentUserMessage,
+        onProgress
+      );
 
       const agentResponse = await withTimeout(
         agentPromise,

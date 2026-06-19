@@ -1,6 +1,16 @@
 import { NextResponse } from 'next/server';
 import { callOpenRouter } from '@/lib/openrouter';
 import { createClient } from "@/lib/supabase/server";
+import { z } from 'zod';
+
+const impactRequestSchema = z.object({
+  articles: z.array(z.any()).min(1, "At least one article is required"),
+  userProfile: z.object({
+    topics: z.array(z.string()).optional().default([]),
+    tickers: z.array(z.any()).optional().default([]),
+    interests: z.record(z.any()).optional().default({})
+  }).strict()
+}).strict();
 
 export const maxDuration = 60; // Allow enough time for AI response
 
@@ -13,15 +23,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    const { articles, userProfile } = await req.json();
-
-    if (!articles || !Array.isArray(articles) || articles.length === 0) {
-      return NextResponse.json({ error: 'News articles required' }, { status: 400 });
+    const rawBody = await req.json();
+    const parseResult = impactRequestSchema.safeParse(rawBody);
+    if (!parseResult.success) {
+      return NextResponse.json({ 
+        error: "Invalid request payload", 
+        details: parseResult.error.format() 
+      }, { status: 400 });
     }
-
-    if (!userProfile) {
-      return NextResponse.json({ error: 'User profile required' }, { status: 400 });
-    }
+    const { articles, userProfile } = parseResult.data;
 
     const { topics = [], tickers = [], interests = {} } = userProfile;
     

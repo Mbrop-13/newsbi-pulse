@@ -20,18 +20,31 @@ const openrouter = createOpenAI({
   }
 });
 
+const chatLegacySchema = z.object({
+  messages: z.array(z.any()),
+  profile: z.object({
+    name: z.string().optional(),
+    topics: z.array(z.string()).optional(),
+    tickers: z.array(z.any()).optional()
+  }).strict().optional()
+}).strict();
+
 export async function POST(req: Request) {
   try {
-    const { messages, profile } = await req.json();
+    const rawBody = await req.json();
+    const parseResult = chatLegacySchema.safeParse(rawBody);
+    if (!parseResult.success) {
+      return new Response(JSON.stringify({ 
+        error: "Invalid request payload", 
+        details: parseResult.error.format() 
+      }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+    const { messages, profile } = parseResult.data;
 
     // IP-based burst protection for this endpoint
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
     const rl = await rateLimit(`ai-legacy:${ip}`, AI_CHAT_LIMIT);
     if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
-
-    if (!messages || !Array.isArray(messages)) {
-      return new Response('Messages array required', { status: 400 });
-    }
 
     const { name = 'AI', topics = [], tickers = [] } = profile || {};
 

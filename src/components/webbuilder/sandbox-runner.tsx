@@ -1,94 +1,82 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
-import {
-  SandpackProvider,
-  SandpackPreview,
-  SandpackLayout,
-  useSandpack,
-} from "@codesandbox/sandpack-react";
+import { useState, useEffect, useRef } from "react";
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
 import { attemptAutoFix } from "@/lib/services/auto-fix-service";
+import { WebContainerManager } from "@/lib/services/webcontainer-manager";
 import { Loader2 } from "lucide-react";
 
 function SandboxErrorListener() {
-  const { sandpack } = useSandpack();
   const store = useWebBuilderStore();
   const lastProcessedErrorRef = useRef<string | null>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    const error = sandpack.error;
-    if (!error?.message) {
-      if (store.lastAutoFixError) {
-        store.completeAutoFix();
+    const handleMessage = (e: MessageEvent) => {
+      let errorMessage = "";
+      if (e.data?.type === "MAVERLANG_PREVIEW_ERROR") {
+        errorMessage = e.data.error || e.data.message;
+      } else if (e.data?.type === "MAVERLANG_COMPILE_ERROR") {
+        errorMessage = e.data.error;
+      } else {
+        return;
       }
-      // Clear any pending debounce if the error resolved itself
+
+      if (!errorMessage) return;
+      if (store.isAiResponding) return;
+      if (errorMessage === lastProcessedErrorRef.current) return;
+
+      // Limit attempts to max 2
+      if (store.autoFixAttempts >= 2) {
+        console.warn("[Auto-Fix] Max attempts reached. Displaying error.");
+        store.failAutoFix(errorMessage);
+        return;
+      }
+
+      // Debounce: wait 2 seconds after receiving an error before auto-fixing
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
-        debounceTimerRef.current = null;
       }
-      return;
-    }
 
-    // Don't attempt auto-fix while the AI is still generating code
-    if (store.isAiResponding) return;
+      debounceTimerRef.current = setTimeout(() => {
+        if (store.isAiResponding) return;
 
-    const errorMessage = error.message;
-    if (errorMessage === lastProcessedErrorRef.current) return;
+        lastProcessedErrorRef.current = errorMessage;
+        console.log(`[Auto-Fix] Intercepted error: "${errorMessage}". Attempt #${store.autoFixAttempts + 1}`);
+        
+        store.startAutoFix();
 
-    // Limit attempts to max 2
-    if (store.autoFixAttempts >= 2) {
-      console.warn("[Auto-Fix] Max attempts reached. Displaying error.");
-      store.failAutoFix(errorMessage);
-      return;
-    }
-
-    // Debounce: wait 2 seconds after AI finishes before auto-fixing
-    // This gives Sandpack time to recompile with the final code
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-
-    debounceTimerRef.current = setTimeout(() => {
-      // Re-check: error might have been resolved during the debounce
-      const currentError = sandpack.error;
-      if (!currentError?.message) return;
-      if (store.isAiResponding) return;
-
-      lastProcessedErrorRef.current = currentError.message;
-      console.log(`[Auto-Fix] Intercepted error: "${currentError.message}". Attempt #${store.autoFixAttempts + 1}`);
-      
-      store.startAutoFix();
-
-      attemptAutoFix(currentError.message, store.files)
-        .then((fixedFiles) => {
-          if (fixedFiles) {
-            console.log("[Auto-Fix] Received code fix. Applying updates...");
-            const formatted: any = {};
-            for (const [path, code] of Object.entries(fixedFiles)) {
-              formatted[path] = { code };
+        attemptAutoFix(errorMessage, store.files)
+          .then((fixedFiles) => {
+            if (fixedFiles) {
+              console.log("[Auto-Fix] Received code fix. Applying updates...");
+              const formatted: any = {};
+              for (const [path, code] of Object.entries(fixedFiles)) {
+                formatted[path] = { code };
+              }
+              const merged = { ...store.files, ...formatted };
+              store.setFiles(merged);
+              store.completeAutoFix();
+            } else {
+              console.warn("[Auto-Fix] Failed to generate code fix.");
+              store.failAutoFix(errorMessage);
             }
-            const merged = { ...store.files, ...formatted };
-            store.setFiles(merged);
-            store.completeAutoFix();
-          } else {
-            console.warn("[Auto-Fix] Failed to generate code fix.");
-            store.failAutoFix(currentError.message);
-          }
-        })
-        .catch((err) => {
-          console.error("[Auto-Fix] Error during auto-fix execution:", err);
-          store.failAutoFix(currentError.message);
-        });
-    }, 2000);
+          })
+          .catch((err) => {
+            console.error("[Auto-Fix] Error during auto-fix execution:", err);
+            store.failAutoFix(errorMessage);
+          });
+      }, 2000);
+    };
 
+    window.addEventListener("message", handleMessage);
     return () => {
+      window.removeEventListener("message", handleMessage);
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
       }
     };
-  }, [sandpack.error, store.autoFixAttempts, store.isAiResponding]);
+  }, [store.autoFixAttempts, store.isAiResponding, store.files, store.startAutoFix, store.setFiles, store.completeAutoFix, store.failAutoFix]);
 
   if (store.isAutoFixing) {
     return (
@@ -104,30 +92,47 @@ function SandboxErrorListener() {
 }
 
 export function SandboxRunner() {
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [status, setStatus] = useState<string>("idle");
+
+  useEffect(() => {
+    const manager = WebContainerManager.getInstance();
+    const unsubscribe = manager.subscribe((newStatus, newUrl) => {
+      setStatus(newStatus);
+      setPreviewUrl(newUrl);
+    });
+    return () => unsubscribe();
+  }, []);
+
   return (
     <div style={{ position: "relative", width: "100%", height: "100%", flex: "1 1 0%" }}>
       <div style={{ position: "absolute", inset: 0 }}>
         <SandboxErrorListener />
-        <SandpackLayout
-          style={{
-            border: "none",
-            borderRadius: 0,
-            height: "100%",
-            display: "flex",
-            flexDirection: "column" as const,
-          }}
-        >
-          <SandpackPreview
+        
+        {previewUrl ? (
+          <iframe
+            src={previewUrl}
+            title="Maverlang Preview"
             style={{
-              flex: "1 1 0%",
               height: "100%",
-              minHeight: 0,
+              width: "100%",
+              border: "none",
+              background: "transparent",
             }}
-            showNavigator={false}
-            showRefreshButton={true}
-            showOpenInCodeSandbox={false}
+            allow="cross-origin-isolated; geolocation; microphone; camera; midi; vr; accelerometer; gyroscope; payment; ambient-light-sensor; encrypted-media; usb"
           />
-        </SandpackLayout>
+        ) : (
+          <div className="flex flex-col items-center justify-center w-full h-full text-muted-foreground bg-muted/10 gap-3">
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            <p className="text-xs font-semibold">
+              {status === "booting" && "Iniciando contenedor..."}
+              {status === "installing" && "Instalando dependencias..."}
+              {status === "ready" && "Iniciando dev server..."}
+              {status === "error" && "Error en el entorno"}
+              {(!status || status === "idle") && "Preparando entorno..."}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

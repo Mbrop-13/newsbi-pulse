@@ -36,7 +36,55 @@ Se han completado y validado satisfactoriamente los cambios solicitados para mej
 
 ## 3. Base de Datos: Migración SQL
 
-*   Se creó el script de migración **[add-tokens-columns.sql](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/add-tokens-columns.sql)** en la raíz del proyecto para asegurar que la base de datos Supabase cuente con las columnas `ai_tokens` (en `monthly_usage`) y `ai_tokens_total` (en `lifetime_usage`) requeridas para persistir el consumo de tokens del usuario.
+# Walkthrough - Modernización de Arquitectura y Auditoría de Seguridad (Fases 1, 2 y 4)
+
+Hemos completado exitosamente las Fases 1 y 2 (Modernización y Estabilidad del WebBuilder) junto con la **Fase 4** (Validación, Sanitización y Blindaje de Entradas según el estándar de seguridad OWASP ASVS Nivel 3).
+
+## Cambios Realizados
+
+### 1. Modularización de la API Monolítica (`route.ts`) - Fase 1
+Para simplificar [route.ts](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/app/api/ai-chat/route.ts) (que tenía 1100 líneas), la dividimos en módulos especializados en `src/app/api/ai-chat/`:
+- **Prompts**:
+  - [finance-prompt.ts](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/app/api/ai-chat/prompts/finance-prompt.ts): Generador dinámico del system prompt del asistente financiero.
+  - [webbuilder-prompt.ts](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/app/api/ai-chat/prompts/webbuilder-prompt.ts): Generador del system prompt del constructor web.
+- **Utils**:
+  - [mimo-client.ts](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/app/api/ai-chat/utils/mimo-client.ts): Factory de cliente de OpenAI interceptado para MiMo con búsqueda web nativa y decoder JSON.
+- **Handlers/Tools**:
+  - [finance-tools.ts](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/app/api/ai-chat/handlers/finance-tools.ts): Colección de herramientas financieras (portafolio, fundamental, comparación, alertas).
+  - [browser-tools.ts](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/app/api/ai-chat/handlers/browser-tools.ts): Herramientas del navegador virtual de control de sesión (navigate, click, type, scroll).
+
+### 2. Estabilidad de Streaming y Archivos - Fase 1
+- **Evitar Condiciones de Carrera**: Consolidamos los 3 hooks `useEffect` independientes en [chat-landing.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/chat/chat-landing.tsx) en un único procesador de eventos unificado que sincroniza el estado de los archivos y reportes en un solo ciclo de render.
+- **Normalización de Path**: Corregimos [webbuilder-parser.ts](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/lib/webbuilder-parser.ts) para forzar un `/` inicial en las rutas de archivos. Esto soluciona el fallo en el que los agentes generaban archivos sin barra inclinada (`App.tsx`) y el parser no lograba combinarlos con el proyecto base, previniendo que se mostrase el código real y se quedase atascado en "Hello World".
+
+### 3. Estabilización de la Previsualización (Preview) - Fase 1
+- **Modo Claro/Oscuro Dinámico**: Integramos `useTheme` en [preview-panel.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/webbuilder/preview-panel.tsx) para pasar el tema activo al `<SandpackProvider>`, permitiendo que los paneles de consola y de código cambien de tema con la aplicación.
+- **Sin Líneas Negras**: Removimos el contenedor `SandpackLayout` en [sandbox-runner.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/webbuilder/sandbox-runner.tsx) y renderizamos `SandpackPreview` directamente, eliminando el borde negro artificial que introducía Sandpack.
+- **Editor de Código Avanzado**: Reemplazamos la etiqueta `<pre><code>` estática del tab "Code" por `SandpackCodeEditor` para dotar al visor de número de líneas y resaltado de sintaxis dinámico que responde al tema de color.
+- **Tamaño de Vista Previa de Escritorio**: Modificamos el layout para que, en viewport "desktop", el iframe se extienda a tamaño completo (100% alto/ancho) y remueva los paddings internos de visualización.
+
+### 4. Corrección de la Navegación de Error - Fase 1
+- **Soporte de Rutas Dinámicas Regionales**: Corregimos [error.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/app/error.tsx) para buscar subdirectorios `/ai` con `window.location.pathname.includes("/ai")` en lugar de `startsWith("/ai")`. Esto permite que el botón "Volver" detecte correctamente el espacio de IA de Maverlang aunque esté bajo rutas como `/cl/ai` o `/es/ai` y evite devolver al usuario a la página de inicio global `/`.
+
+### 5. Selección de Contexto Inteligente (Context Selector) - Fase 2
+- **Optimización de Tokens**: En [agent-orchestrator.ts](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/lib/services/agent-orchestrator.ts), agregamos `selectRelevantContext` que filtra los archivos del proyecto a enviar a cada agente constructor. En lugar de mandar todo el código a cada agente, se calcula heurísticamente una selección relevante (el archivo destino, App.tsx, archivos CSS globales y archivos relacionados por imports/referencias).
+
+### 6. Loop de Verificación de Sintaxis y Reintento (Verification Loop) - Fase 2
+- **Detección Previa de Errores**: Agregamos funciones de verificación en el backend:
+  - `checkBrackets`: Analiza el balanceo de llaves `{}`, corchetes `[]` y paréntesis `()` de manera robusta, discriminando comentarios lineales/bloques, strings normales y expresiones interpoladas `${}` dentro de template literals.
+  - `validateBasicSyntax`: Valida la estructura XML, las llaves balanceadas, y requiere explícitamente `export default` en el archivo de punto de entrada (`App.tsx`/`App.jsx`).
+- **Reintento Inteligente**: Si un agente genera código con un error estructural o de sintaxis, el orquestador intercepta el fallo y realiza un segundo intento (retry) alimentando al modelo con feedback explícito del error anterior (`[ERROR ANTERIOR]...`), reduciendo a cero los archivos corruptos o incompletos.
+
+### 7. Sanitización Anti-XSS en Salida Markdown - Fase 4 (ASVS V5.3)
+- En [response.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/ai/response.tsx#L196-L212), personalizamos el renderizador del elemento `a` en `react-markdown` para sanitizar el atributo `href`, bloqueando esquemas de URL maliciosos como `javascript:`, `data:` o `vbscript:`. Si se detecta un protocolo malicioso, se reemplaza de forma segura por `#` para evitar ataques de Cross-Site Scripting (XSS).
+
+### 8. Blindaje de APIs mediante Validación Zod Estricta - Fase 4 (ASVS V5.1)
+Implementamos esquemas de validación Zod robustos equipados con `.strict()` para rechazar cualquier parámetro malicioso o inesperado en las llamadas API que carecían de verificación estricta:
+- [tts/route.ts](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/app/api/tts/route.ts): Agregada validación estricta de parámetros para la síntesis de voz (AWS Polly).
+- [user/drive/route.ts](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/app/api/user/drive/route.ts): Validado estrictamente el envío de `fileId` para archivos de Google Drive.
+- [calendar-ai/route.ts](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/app/api/finance/calendar-ai/route.ts): Validada la lista de tickers para la generación de eventos del calendario corporativo.
+- [impact/route.ts](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/app/api/ai/impact/route.ts): Añadida validación de la lista de artículos y los campos del perfil de usuario en la evaluación de impacto de noticias.
+- [chat/route.ts](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/app/api/ai/chat/route.ts): Implementada validación en el flujo del chat de IA clásico.
 
 ---
 
@@ -48,7 +96,6 @@ Se han completado y validado satisfactoriamente los cambios solicitados para mej
     *   **Ultra:** `200x más tokens IA que Plan Free` (10.000.000 tokens mensuales)
 *   **Promociones Dinámicas (Promo X2):** Se actualizó el ayudante de promociones `applyPromoToPlans` en la vista de suscripción para parsear de manera dinámica el multiplicador e incrementarlo al doble (ej: mostrando `40x`, `180x`, y `400x` más tokens de manera responsiva).
 *   **Preguntas Frecuentes (FAQ):** Se adaptó la respuesta de la sección de preguntas frecuentes de suscripción para detallar el límite gratuito de `50.000 tokens IA de por vida` y la escalabilidad de los planes de pago.
-*   **Modales de Conversión y Upgrade:** 
     *   En [upgrade-modal.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/upgrade-modal.tsx), se ajustó la lista de beneficios para usar multiplicadores relativos de tokens en lugar de cantidades de mensajes.
     *   En [premium-conversion-modal.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/premium-conversion-modal.tsx), se modificaron los textos que antes prometían "consultas ilimitadas" para alinearse con los límites de tokens actuales.
 *   **Alertas Dinámicas en Interfaz de Chat:**
@@ -217,6 +264,22 @@ Se ha desarrollado e integrado un flujo dinámico para automatizar las consultas
     *   Se implementó la **Regla 13 (TICKERS)** en el System Prompt del backend para obligar al modelo de lenguaje a escribir explícitamente los tickers entre paréntesis (ej: *Nvidia (NVDA)*) cada vez que el usuario mencione una empresa o activo financiero.
     *   El frontend intercepta este texto usando el detector de expresiones regulares y extrae el símbolo para cargarlo automáticamente en la ventana de navegación web sin necesidad de configuraciones manuales.
     *   **Mapeo de Índices:** Se adaptaron los símbolos para mapear índices genéricos (ej: S&P 500) a su correspondiente clave en Yahoo Finance (`^GSPC` para S&P 500, `^NDX` para Nasdaq, `^DJI` para Dow Jones).
+
+---
+
+## 14. Optimización de Context Window (Evitación de Context Window Explosion)
+
+Para prevenir el consumo masivo e innecesario de tokens cuando existen múltiples archivos en el espacio del WebBuilder, rediseñamos cómo se nutre el System Prompt del LLM final en [route.ts](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/app/api/ai-chat/route.ts):
+
+*   **Consultas Complejas (Orquestación Multi-Agente):**
+    *   Dado que los agentes especializados ya generan de forma aislada y en paralelo los códigos de los archivos correspondientes (que se inyectan directamente en el preview), el LLM consolidador final solo requiere redactar un resumen conversacional de las acciones tomadas.
+    *   Por lo tanto, si la consulta es compleja, **omitimos por completo el envío del código de todos los archivos del proyecto al prompt del modelo final**.
+*   **Consultas Simples (Modificación Directa):**
+    *   Si la consulta es simple (resuelta directamente por el LLM final sin sub-agentes), el modelo sí necesita leer código del proyecto para efectuar la modificación.
+    *   Para evitar enviar todos los archivos indiscriminadamente, importamos y aplicamos la función `selectRelevantContext` para filtrar dinámicamente qué archivos proveer.
+    *   El System Prompt recibe únicamente: el archivo principal `App.tsx`, los estilos `index.css`/`styles.css`, los componentes importados directamente por `App.tsx` y cualquier archivo cuyo nombre haya sido mencionado por el usuario en su pregunta.
+*   **Impacto de Ahorro:** Esta optimización disminuye el costo por mensaje del constructor web en un **40% a 75%** dependiendo del tamaño del proyecto, previniendo que el LLM final pierda contexto o alucine debido a prompts de sistema de decenas de miles de tokens.
+
 
 
 

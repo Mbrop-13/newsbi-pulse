@@ -196,16 +196,21 @@ const components: Options['components'] = {
       {children}
     </span>
   ),
-  a: ({ node, children, className, ...props }) => (
-    <a
-      className={cn('font-medium text-primary underline', className)}
-      rel="noreferrer"
-      target="_blank"
-      {...props}
-    >
-      {children}
-    </a>
-  ),
+  a: ({ node, children, className, href, ...props }) => {
+    const isSafe = href && !/^\s*(javascript|data|vbscript):/i.test(href);
+    const safeHref = isSafe ? href : '#';
+    return (
+      <a
+        className={cn('font-medium text-primary underline', className)}
+        rel="noreferrer"
+        target="_blank"
+        href={safeHref}
+        {...props}
+      >
+        {children}
+      </a>
+    );
+  },
   h1: ({ node, children, className, ...props }) => (
     <h1
       className={cn('mt-6 mb-2 font-semibold text-3xl', className)}

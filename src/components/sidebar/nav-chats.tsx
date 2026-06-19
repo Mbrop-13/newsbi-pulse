@@ -18,9 +18,12 @@ import {
   SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { useRouter } from "next/navigation"
+import { slugify } from "@/lib/utils"
 import { useAIChatStore, type SavedChat } from "@/lib/stores/ai-chat-store"
 
 export function NavChats() {
+  const router = useRouter()
   const { isMobile, setOpenMobile } = useSidebar()
   const handleNavigate = useCallback(() => {
     if (isMobile) setOpenMobile(false)
@@ -64,11 +67,13 @@ export function NavChats() {
   }, [savedChats])
 
   const handleLoadChat = useCallback(
-    (id: string) => {
+    (id: string, title?: string) => {
       loadChat(id)
+      const slug = title ? slugify(title.slice(0, 40)) : ''
+      router.push(`/ai/chat/${slug ? `${slug}-` : ''}${id}`)
       handleNavigate()
     },
-    [loadChat, handleNavigate]
+    [loadChat, router, handleNavigate]
   )
 
   const handleDelete = useCallback(
@@ -123,7 +128,7 @@ export function NavChats() {
                                 className="group/chat relative w-full flex items-center text-left cursor-pointer"
                               >
                                 <button
-                                  onClick={() => handleLoadChat(chat.id)}
+                                  onClick={() => handleLoadChat(chat.id, chat.title)}
                                   className="flex-1 text-left min-w-0 overflow-hidden pr-0 group-hover/chat:pr-7 py-1"
                                 >
                                   <span

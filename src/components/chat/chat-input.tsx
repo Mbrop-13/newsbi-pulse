@@ -264,11 +264,10 @@ export function ChatInput({
     }
   };
 
-  return (
-    <div className={cn("bg-transparent", isWebBuilderMode ? "px-2 pb-2" : "px-2 md:px-0 pb-2 md:pb-3")}>
+    <div className="bg-transparent px-2 md:px-0 pb-0">
       <form
         onSubmit={handleSubmit}
-        className={cn(isWebBuilderMode ? "w-full max-w-full px-1" : "max-w-6xl px-0 mx-auto inset-x-0", "pt-0 relative", className)}
+        className={cn((isWebBuilderMode && !isNewChat) ? "w-full max-w-full px-1" : "max-w-6xl px-0 mx-auto inset-x-0", "pt-0 relative", className)}
       >
         {/* Active Tool Pills & Attachments */}
         {(activeTools.length > 0 || attachedArticles.length > 0) && (
@@ -327,7 +326,7 @@ export function ChatInput({
 
         <div className={cn(
           "rounded-3xl p-2 bg-secondary/80 dark:bg-secondary/30",
-          "shadow-2xl border transition-all duration-500 relative group focus-within:border-white/20 dark:focus-within:border-white/20",
+          "shadow-none border border-border/40 transition-all duration-500 relative group focus-within:border-white/20 dark:focus-within:border-white/20",
           isListening && "border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.15)]"
         )}>
           {/* File Previews inside the input box */}
@@ -548,7 +547,7 @@ export function ChatInput({
               {/* Feature toggle pills scrollable row */}
               <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [scrollbar-width:none] select-none flex-nowrap pr-2 max-w-[calc(100vw-180px)] sm:max-w-none">
                 <WebBuilderPill />
-                {!isWebBuilderMode && (
+                {(!isWebBuilderMode || isNewChat) && (
                   <>
                     <Pill
                       active={codeInterpreter}

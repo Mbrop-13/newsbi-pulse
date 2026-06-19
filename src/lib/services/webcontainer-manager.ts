@@ -17,7 +17,11 @@ const DEFAULT_PACKAGE_JSON = {
   },
   dependencies: {
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "lucide-react": "^0.344.0",
+    "recharts": "^2.12.2",
+    "framer-motion": "^11.0.8",
+    "react-icons": "^5.0.1"
   },
   devDependencies: {
     "@vitejs/plugin-react": "^4.2.1",

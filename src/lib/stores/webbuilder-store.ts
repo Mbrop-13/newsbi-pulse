@@ -369,12 +369,13 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
           );
 
           // Upsert: insert or update
-          const { data: existing } = await supabase
+          const { data: existingList } = await supabase
             .from("ai_webbuilder_projects")
             .select("id")
             .eq("chat_id", activeProjectId)
             .eq("user_id", user.id)
-            .single();
+            .limit(1);
+          const existing = existingList && existingList.length > 0 ? existingList[0] : null;
 
           if (existing) {
             await supabase
@@ -420,12 +421,13 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
             .eq("user_id", user.id)
             .lt("updated_at", expirationDate.toISOString());
 
-          const { data, error } = await supabase
+          const { data: list, error } = await supabase
             .from("ai_webbuilder_projects")
             .select("project_files")
             .eq("chat_id", chatId)
             .eq("user_id", user.id)
-            .single();
+            .limit(1);
+          const data = list && list.length > 0 ? list[0] : null;
 
           if (error || !data?.project_files) return false;
 

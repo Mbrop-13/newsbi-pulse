@@ -927,76 +927,26 @@ export function PreviewPanel() {
 
             {/* Preview Tab */}
             {selectedTab === "preview" && (
-              <div className="flex-grow flex flex-col min-h-0 w-full h-full relative overflow-hidden bg-slate-50 dark:bg-[#07090e] p-4 md:p-5">
-                {/* Viewport Frame */}
-                {viewport === "desktop" && (
-                  <div className="flex-grow flex flex-col min-h-0 w-full h-full relative">
-                    {/* Ventana con bordes redondeados estilo plataforma (sin chrome de navegador) */}
-                    <div className="w-full h-full flex flex-col bg-white dark:bg-[#0b0f19] rounded-2xl border border-border/40 shadow-xl overflow-hidden transition-all duration-300 ease-in-out relative">
-                      {/* Barra superior ligera tipo plataforma */}
-                      <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-50/80 dark:bg-[#0f1322] border-b border-gray-100 dark:border-border/30 shrink-0">
-                        {/* Indicador de estado (punto verde = corriendo) */}
-                        <span className="flex items-center gap-1.5 shrink-0">
-                          <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                          </span>
-                        </span>
-                        {/* Barra URL estilo plataforma */}
-                        <div className="flex-grow flex items-center justify-center gap-1.5 px-3 py-1.5 max-w-sm mx-auto bg-white dark:bg-[#07090e]/40 border border-gray-200/50 dark:border-border/10 rounded-lg text-[10px] text-muted-foreground font-mono select-none">
-                          <Lock className="w-2.5 h-2.5 text-emerald-500 shrink-0" />
-                          <span className="truncate">preview.maverlang.app</span>
-                        </div>
-                        {/* Acciones */}
-                        <div className="flex items-center gap-0.5 shrink-0">
-                          <button onClick={handleRefresh} className="p-1.5 rounded-md hover:bg-muted/85 text-muted-foreground hover:text-foreground transition-all" title="Recargar preview">
-                            <RefreshCw className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                      {/* Body de la preview */}
-                      <div className="flex-grow min-h-0 relative w-full h-full bg-white dark:bg-background">
-                        {(isAiResponding || isCompiling || chatLoading) ? (
-                          <PremiumSkeletonLoader isAiResponding={isAiResponding || chatLoading} />
-                        ) : (
-                          <SandpackPreviewWrapper key={iframeKey} />
-                        )}
-                      </div>
-                    </div>
+              <div className="flex-grow flex items-center justify-center min-h-0 w-full h-full relative overflow-auto bg-slate-50 dark:bg-[#07090e] p-4 md:p-6 [&::-webkit-scrollbar]:hidden [scrollbar-width:none] [-ms-overflow-style:none]">
+                <div className={cn(
+                  "flex flex-col bg-white dark:bg-[#0b0f19] border border-border/40 shadow-xl overflow-hidden transition-all duration-300 ease-in-out relative",
+                  viewport === "desktop" && "w-full h-full rounded-2xl max-w-[1280px]",
+                  viewport === "tablet" && "w-full max-w-[768px] aspect-[768/1024] max-h-full shrink-0 rounded-2xl",
+                  viewport === "mobile" && "w-full max-w-[390px] aspect-[390/800] max-h-full shrink-0 rounded-3xl"
+                )}>
+                  {/* Body de la preview */}
+                  <div className="flex-grow min-h-0 relative w-full h-full bg-white dark:bg-background">
+                    {(isAiResponding || isCompiling || chatLoading) ? (
+                      <PremiumSkeletonLoader isAiResponding={isAiResponding || chatLoading} />
+                    ) : (
+                      <SandpackPreviewWrapper key={iframeKey} />
+                    )}
                   </div>
-                )}
-
-                {viewport === "tablet" && (
-                  <div className="flex-grow flex flex-col items-center justify-center overflow-auto min-h-0 w-full h-full relative scrollbar-thin">
-                    {/* Marco ligero de tablet (sin bezel pesado): contenedor redondeado adaptativo */}
-                    <div className="w-full max-w-[768px] max-h-full aspect-[768/1024] relative flex flex-col bg-white dark:bg-[#0b0f19] rounded-2xl border border-border/40 shadow-xl overflow-hidden shrink-0">
-                      <div className="flex-grow min-h-0 relative w-full h-full bg-white dark:bg-background overflow-hidden">
-                        {(isAiResponding || isCompiling || chatLoading) ? (
-                          <PremiumSkeletonLoader isAiResponding={isAiResponding || chatLoading} />
-                        ) : (
-                          <SandpackPreviewWrapper key={iframeKey} />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {viewport === "mobile" && (
-                  <div className="flex-grow flex flex-col items-center justify-center overflow-auto min-h-0 w-full h-full relative scrollbar-thin">
-                    {/* Marco ligero de móvil (sin bezel pesado): contenedor redondeado adaptativo */}
-                    <div className="w-full max-w-[390px] max-h-full aspect-[390/800] relative flex flex-col bg-white dark:bg-[#0b0f19] rounded-3xl border border-border/40 shadow-xl overflow-hidden shrink-0">
-                      <div className="flex-grow min-h-0 relative w-full h-full bg-white dark:bg-background overflow-hidden">
-                        {(isAiResponding || isCompiling || chatLoading) ? (
-                          <PremiumSkeletonLoader isAiResponding={isAiResponding || chatLoading} />
-                        ) : (
-                          <SandpackPreviewWrapper key={iframeKey} />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
+                </div>
               </div>
             )}
+
+
 
             {/* Console logs tab */}
             {selectedTab === "console" && <ConsolePanel />}

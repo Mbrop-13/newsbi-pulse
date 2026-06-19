@@ -16,16 +16,18 @@ const DEFAULT_PACKAGE_JSON = {
     preview: "vite preview"
   },
   dependencies: {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
+    // Alineado a React 19 (mismo major que la app host) para que el código
+    // generado por la IA no use APIs que rompan en la preview.
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "lucide-react": "^0.344.0",
     "recharts": "^2.12.2",
     "framer-motion": "^11.0.8",
     "react-icons": "^5.0.1"
   },
   devDependencies: {
-    "@vitejs/plugin-react": "^4.2.1",
-    "vite": "^5.1.6"
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^5.4.10"
   }
 };
 
@@ -198,13 +200,39 @@ function buildFileTree(files: Record<string, { code: string }>) {
   return root;
 }
 
+// Comprueba si el documento host tiene el aislamiento cross-origin que
+// WebContainer.boot() necesita (SharedArrayBuffer). Devuelve null si todo OK,
+// o un mensaje legible si falta. Exportado para poder diagnosticar antes del boot.
+export function checkCrossOriginIsolation(): string | null {
+  if (typeof window === "undefined") return null;
+  const w = window as unknown as {
+    crossOriginIsolated?: boolean;
+    SharedArrayBuffer?: unknown;
+    isSecureContext?: boolean;
+  };
+
+  if (!w.isSecureContext) {
+    return "El WebContainer requiere un contexto seguro (HTTPS o localhost). La página actual no lo es.";
+  }
+  if (typeof w.SharedArrayBuffer === "undefined") {
+    return "SharedArrayBuffer no está disponible. Falta el aislamiento cross-origin: revisa que los headers COOP/COEP lleguen a la ruta del builder (/ai/*).";
+  }
+  if (w.crossOriginIsolated === false) {
+    return "crossOriginIsolated === false. WebContainer necesita COEP (Cross-Origin-Embedder-Policy) y COOP (Cross-Origin-Opener-Policy) en la página host.";
+  }
+  return null;
+}
+
 export class WebContainerManager {
   private static instance: WebContainerManager | null = null;
   private webcontainer: WebContainer | null = null;
   private bootPromise: Promise<WebContainer> | null = null;
-  
+
   public status: "idle" | "booting" | "ready" | "installing" | "running" | "error" = "idle";
   public previewUrl: string | null = null;
+  // Mensaje legible del último error fatal (p. ej. falta SharedArrayBuffer).
+  // La UI lo lee para mostrar feedback al usuario en lugar de un loader infinito.
+  public previewError: string | null = null;
   
   private listeners: Set<(status: "idle" | "booting" | "ready" | "installing" | "running" | "error", url: string | null) => void> = new Set();
   private logCallback: ((log: string) => void) | null = null;
@@ -247,6 +275,18 @@ export class WebContainerManager {
   public async boot(files: Record<string, { code: string }>) {
     if (typeof window === "undefined") return;
 
+    // ── Diagnóstico previo: WebContainer.boot() necesita SharedArrayBuffer ──
+    // Si no hay aislamiento cross-origin, abortar con mensaje claro en lugar de
+    // dejar que boot() lance un error crudo y la preview se quede en blanco.
+    const isolationError = checkCrossOriginIsolation();
+    if (isolationError) {
+      this.status = "error";
+      this.previewError = isolationError;
+      this.notify();
+      this.log(`[DIAGNÓSTICO] ${isolationError}`);
+      return;
+    }
+
     if (this.webcontainer) {
       if (this.status === "error" || this.status === "idle") {
         this.log("WebContainer ya existe pero no está en ejecución. Reintentando...");
@@ -266,20 +306,34 @@ export class WebContainerManager {
     }
 
     this.status = "booting";
+    this.previewError = null;
     this.notify();
     this.log("Iniciando WebContainer...");
 
+    // Boot con 1 reintento (backoff de 1s). StackBlitz recomienda reintentar
+    // porque el primer boot puede fallar por causas transitorias.
     try {
       this.bootPromise = WebContainer.boot();
       const instance = await this.bootPromise;
       this.webcontainer = instance;
       this.log("WebContainer iniciado con éxito.");
     } catch (err: any) {
-      this.status = "error";
-      this.notify();
-      this.log(`Error al iniciar WebContainer: ${err.message || err}`);
       this.bootPromise = null;
-      throw err;
+      this.log(`Primer intento de boot falló: ${err.message || err}. Reintentando en 1s...`);
+      await new Promise((r) => setTimeout(r, 1000));
+      try {
+        this.bootPromise = WebContainer.boot();
+        const instance = await this.bootPromise;
+        this.webcontainer = instance;
+        this.log("WebContainer iniciado con éxito (tras reintento).");
+      } catch (err2: any) {
+        this.status = "error";
+        this.previewError = `No se pudo iniciar el WebContainer: ${err2.message || err2}`;
+        this.notify();
+        this.log(`Error al iniciar WebContainer: ${err2.message || err2}`);
+        this.bootPromise = null;
+        throw err2;
+      }
     }
 
     await this.mountProject(files);
@@ -325,20 +379,72 @@ export class WebContainerManager {
 
     await this.webcontainer.mount(tree);
     this.log("Archivos del proyecto montados con éxito.");
+
+    // Snapshot inicial: tras un mount completo, los archivos ya están en el FS.
+    // Resetear para que la siguiente syncFiles() solo escriba los cambios reales.
+    this.resetSyncSnapshot(files);
   }
 
   public async writeFile(path: string, content: string) {
     if (!this.webcontainer) return;
     const relPath = cleanPath(path);
-    
+
     const parts = relPath.split("/");
     if (parts.length > 1) {
       const dirPath = parts.slice(0, -1).join("/");
       await this.webcontainer.fs.mkdir(dirPath, { recursive: true });
     }
-    
+
     await this.webcontainer.fs.writeFile(relPath, content);
     this.log(`Archivo actualizado: ${relPath}`);
+  }
+
+  /**
+   * Sincroniza archivos al WebContainer de forma INCREMENTAL: solo escribe
+   * los archivos que cambiaron respecto a `lastSyncedFiles` usando fs.writeFile.
+   *
+   * Esto evita el "re-mount storm" (llamar a mount() en cada cambio), que
+   * reemplaza todo el sistema de archivos, reinicia Vite y pierde el HMR,
+   * dejando a menudo la preview en blanco o colgada.
+   *
+   * Usar syncFiles() cuando el manager ya está "running" y solo cambiaron
+   * archivos. mountProject() queda reservado para el boot inicial y el restart.
+   */
+  private lastSyncedFiles: Record<string, { code: string }> = {};
+
+  public async syncFiles(files: Record<string, { code: string }>) {
+    if (!this.webcontainer) return;
+
+    // Detectar archivos nuevos o modificados
+    const writes: Promise<void>[] = [];
+    for (const [path, { code }] of Object.entries(files)) {
+      const prev = this.lastSyncedFiles[path];
+      if (!prev || prev.code !== code) {
+        writes.push(
+          (async () => {
+            const relPath = cleanPath(path);
+            const parts = relPath.split("/");
+            if (parts.length > 1) {
+              const dirPath = parts.slice(0, -1).join("/");
+              await this.webcontainer!.fs.mkdir(dirPath, { recursive: true });
+            }
+            await this.webcontainer!.fs.writeFile(relPath, code);
+            this.log(`[syncFiles] Actualizado: ${relPath}`);
+          })()
+        );
+      }
+    }
+
+    if (writes.length > 0) {
+      await Promise.all(writes);
+    }
+
+    this.lastSyncedFiles = { ...files };
+  }
+
+  /** Resetea el snapshot incremental (usar tras mount completo o restart). */
+  public resetSyncSnapshot(files: Record<string, { code: string }>) {
+    this.lastSyncedFiles = { ...files };
   }
 
   public async destroyProcesses() {
@@ -456,6 +562,9 @@ export class WebContainerManager {
     this.webcontainer.on("server-ready", (port, url) => {
       this.previewUrl = url;
       this.status = "running";
+      // El dev server está vivo: limpiar cualquier error previo (p. ej.
+      // de un intento anterior que ahora sí funcionó).
+      this.previewError = null;
       this.log(`Servidor de desarrollo listo en: ${url}`);
       this.notify();
     });

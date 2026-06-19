@@ -482,24 +482,8 @@ export function PreviewPanel() {
   const [isInspectorActive, setIsInspectorActive] = useState(false);
   const [iframeKey, setIframeKey] = useState(0);
 
-  const handleRefresh = async () => {
-    const manager = WebContainerManager.getInstance();
-    const shouldForceFullWipe = manager.status === "error";
-
-    toast.promise(
-      manager.restart(stableFiles, shouldForceFullWipe).then(() => {
-        setIframeKey((prev) => prev + 1);
-      }),
-      {
-        loading: shouldForceFullWipe
-          ? "Reinstalación limpia en curso (esto puede tardar)..."
-          : "Reiniciando servidor de desarrollo...",
-        success: "Entorno reiniciado con éxito",
-        error: "Error al reiniciar el entorno",
-      }
-    );
-  };
-
+  // Declarar el estado ANTES de handleRefresh (antes estaba declarado después,
+  // lo que era un code smell frágil aunque funcionara por hoisting del closure).
   const [stableFiles, setStableFiles] = useState(files);
   const [managerStatus, setManagerStatus] = useState<string>("idle");
 
@@ -519,19 +503,40 @@ export function PreviewPanel() {
     return () => unsubscribe();
   }, []);
 
-  // Connect and sync stableFiles to WebContainer
+  const handleRefresh = async () => {
+    const manager = WebContainerManager.getInstance();
+    const shouldForceFullWipe = manager.status === "error";
+
+    toast.promise(
+      manager.restart(stableFiles, shouldForceFullWipe).then(() => {
+        setIframeKey((prev) => prev + 1);
+      }),
+      {
+        loading: shouldForceFullWipe
+          ? "Reinstalación limpia en curso (esto puede tardar)..."
+          : "Reiniciando servidor de desarrollo...",
+        success: "Entorno reiniciado con éxito",
+        error: "Error al reiniciar el entorno",
+      }
+    );
+  };
+
+  // Connect and sync stableFiles to WebContainer.
+  // IMPORTANTE: cuando el manager ya está "running" usamos syncFiles() (escritura
+  // incremental vía fs.writeFile) en lugar de mountProject(), que reemplazaría
+  // todo el FS, reiniciaría Vite y rompería el HMR — causa común de preview en blanco.
   useEffect(() => {
     if (Object.keys(stableFiles).length === 0) return;
 
     const manager = WebContainerManager.getInstance();
-    
+
     // Bind compile logs to Zustand store
     manager.setLogCallback((log) => {
       useWebBuilderStore.getState().addCompileLog(log);
     });
 
     if (managerStatus === "running") {
-      manager.mountProject(stableFiles).catch((err) => {
+      manager.syncFiles(stableFiles).catch((err) => {
         console.error("WebContainer sync error:", err);
       });
     } else if (managerStatus === "idle") {

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
 import { attemptAutoFix } from "@/lib/services/auto-fix-service";
 import { WebContainerManager } from "@/lib/services/webcontainer-manager";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertTriangle, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 function SandboxErrorListener() {
@@ -95,21 +95,77 @@ function SandboxErrorListener() {
 export function SandboxRunner() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [status, setStatus] = useState<string>("idle");
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [isRetrying, setIsRetrying] = useState(false);
 
   useEffect(() => {
     const manager = WebContainerManager.getInstance();
     const unsubscribe = manager.subscribe((newStatus, newUrl) => {
       setStatus(newStatus);
       setPreviewUrl(newUrl);
+      setPreviewError(manager.previewError);
+      setIsRetrying(false);
     });
     return () => unsubscribe();
   }, []);
+
+  const handleRetry = async () => {
+    const manager = WebContainerManager.getInstance();
+    setIsRetrying(true);
+    // Limpiar el snapshot y forzar un restart completo: es la forma fiable de
+    // recuperarse de un error fatal (p. ej. falta de SharedArrayBuffer detectada).
+    try {
+      const files = useWebBuilderStore.getState().files;
+      await manager.restart(files, true);
+    } catch (err) {
+      console.error("[SandboxRunner] Reintento falló:", err);
+      setIsRetrying(false);
+    }
+  };
+
+  // Estado de error fatal: mostramos un panel claro en lugar del loader infinito.
+  if (status === "error" && previewError) {
+    return (
+      <div style={{ position: "relative", width: "100%", height: "100%", flex: "1 1 0%" }}>
+        <div style={{ position: "absolute", inset: 0 }}>
+          <SandboxErrorListener />
+          <div className="flex-1 flex flex-col w-full h-full bg-slate-50 dark:bg-[#07090e] relative overflow-hidden select-none">
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-6 z-10">
+              <div className="w-full max-w-[320px] bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md border border-red-200 dark:border-red-900/40 rounded-2xl p-6 shadow-xl flex flex-col items-center text-center">
+                <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-950/50 flex items-center justify-center mb-4">
+                  <AlertTriangle className="w-6 h-6 text-red-500" />
+                </div>
+                <h4 className="text-xs font-bold text-foreground tracking-wide mb-2 uppercase">
+                  No se pudo iniciar la preview
+                </h4>
+                <p className="text-[11px] text-muted-foreground mb-4 leading-relaxed whitespace-pre-wrap">
+                  {previewError}
+                </p>
+                <button
+                  onClick={handleRetry}
+                  disabled={isRetrying}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity"
+                >
+                  {isRetrying ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  )}
+                  {isRetrying ? "Reintentando..." : "Reintentar"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100%", flex: "1 1 0%" }}>
       <div style={{ position: "absolute", inset: 0 }}>
         <SandboxErrorListener />
-        
+
         {previewUrl ? (
           <iframe
             src={previewUrl}
@@ -120,7 +176,7 @@ export function SandboxRunner() {
               border: "none",
               background: "white",
             }}
-            allow="cross-origin-isolated; geolocation; microphone; camera; midi; vr; accelerometer; gyroscope; payment; ambient-light-sensor; encrypted-media; usb"
+            allow="geolocation; microphone; camera; midi; accelerometer; gyroscope; payment; ambient-light-sensor; encrypted-media; usb"
           />
         ) : (
           <div className="flex-1 flex flex-col w-full h-full bg-slate-50 dark:bg-[#07090e] relative overflow-hidden select-none">

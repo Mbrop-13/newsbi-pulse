@@ -738,12 +738,19 @@ export function PreviewPanel() {
       </div>
 
       {/* Content wrapper */}
-      <div className="flex-1 flex flex-col min-h-0 bg-background overflow-hidden relative">
+      <div className="flex-1 flex flex-col min-h-0 bg-background border border-border/40 rounded-2xl overflow-hidden relative">
         {hasFiles ? (
           <SandpackProvider
             template={hasReact ? "react-ts" : "vanilla-ts"}
             files={sandpackFiles}
             theme="dark"
+            className="flex-grow flex flex-col min-h-0 w-full h-full relative bg-transparent border-none"
+            style={{
+              background: "transparent",
+              color: "inherit",
+              border: "none",
+              borderRadius: 0,
+            }}
             customSetup={{
               dependencies: {
                 "lucide-react": "latest",

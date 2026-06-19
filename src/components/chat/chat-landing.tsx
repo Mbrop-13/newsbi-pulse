@@ -590,7 +590,7 @@ export function ChatLanding() {
     <div className="flex flex-col h-full relative flex-1">
       <div className="flex flex-col h-full relative">
         {/* Main content area */}
-        {!hasMessages && !isMobile ? (
+        {!hasMessages ? (
           /* Landing view - center content with prompt suggestions */
           <div className="flex-1 flex flex-col items-center justify-between md:justify-center px-4 pt-16 relative h-full">
             {/* Top Navigation Sections removed in Phase 5 */}

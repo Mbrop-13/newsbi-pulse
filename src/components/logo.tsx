@@ -21,10 +21,10 @@ export function Logo({ showText = true, size = "md", className = "", variant = 1
   }, []);
 
   const sizeClasses = {
-    sm: "h-6",
-    md: "h-8",
-    lg: "h-12",
-    xl: "h-16",
+    sm: "h-5 md:h-6",
+    md: "h-6 md:h-8",
+    lg: "h-8 md:h-12",
+    xl: "h-10 md:h-16",
   };
 
   const isDark = forceLight ? false : (mounted && resolvedTheme === "dark");

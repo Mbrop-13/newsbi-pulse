@@ -19,7 +19,7 @@ import { useActiveArticleStore } from "@/lib/stores/active-article-store";
 interface NewsCardProps {
   article: NewsArticle;
   index: number;
-  layout?: "default" | "featured" | "compact" | "list" | "grid" | "traditional";
+  layout?: "default" | "featured" | "compact" | "horizontal" | "list" | "traditional" | "grid";
 }
 
 export function NewsCard({ article, index, layout = "default" }: NewsCardProps) {
@@ -116,119 +116,11 @@ export function NewsCard({ article, index, layout = "default" }: NewsCardProps) 
   const titleSizeClass = 
     layout === 'featured' ? 'text-2xl sm:text-3xl md:text-4xl' :
     layout === 'compact' ? 'text-lg' :
-    layout === 'traditional' ? 'text-3xl sm:text-4xl lg:text-[2.5rem]' :
     fontSize === 'sm' ? 'text-lg sm:text-xl' :
     fontSize === 'lg' ? 'text-2xl sm:text-3xl' :
     'text-xl sm:text-2xl'; // base default
 
-  if (layout === 'traditional') {
-    return (
-      <article className="group flex flex-col gap-3 py-6 border-b border-gray-200 dark:border-gray-800 relative">
-        {/* Floating Action Menu */}
-        <div className="absolute top-6 right-0 z-30">
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setShowMenu(!showMenu);
-            }}
-            className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white flex items-center justify-center transition-colors shadow-sm"
-          >
-            <MoreVertical className="w-4 h-4" />
-          </button>
-          
-          {/* Context Dropdown */}
-          <AnimatePresence>
-            {showMenu && (
-              <>
-                <div className="fixed inset-0 z-35" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowMenu(false); }} />
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute right-0 mt-1 w-44 rounded-xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-gray-150 dark:border-gray-800 shadow-xl z-40 py-1 overflow-hidden"
-                >
-                  <button
-                    onClick={handleToggleBookmark}
-                    className={`w-full text-left px-3 py-2.5 text-xs font-bold transition-colors flex items-center gap-2 ${
-                      bookmarked ? 'text-[#1890FF]' : 'text-gray-700 dark:text-gray-300'
-                    } hover:bg-gray-100 dark:hover:bg-slate-800`}
-                  >
-                    <Bookmark className={`w-3.5 h-3.5 ${bookmarked ? 'fill-current' : ''}`} />
-                    {bookmarked ? "Guardado" : "Guardar favorito"}
-                  </button>
-                  <button
-                    onClick={handleToggleReadingList}
-                    className={`w-full text-left px-3 py-2.5 text-xs font-bold transition-colors flex items-center gap-2 ${
-                      isInQueue ? 'text-[#1890FF]' : 'text-gray-700 dark:text-gray-300'
-                    } hover:bg-gray-100 dark:hover:bg-slate-800`}
-                  >
-                    <Headphones className="w-3.5 h-3.5" />
-                    {isInQueue ? "Escuchando" : "Escuchar audio"}
-                  </button>
-                  <button
-                    onClick={handleCopyLink}
-                    className="w-full text-left px-3 py-2.5 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
-                  >
-                    {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
-                    {copied ? "Copiado!" : "Copiar enlace"}
-                  </button>
-                  <button
-                    onClick={handleShare}
-                    className="w-full text-left px-3 py-2.5 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
-                  >
-                    <Share2 className="w-3.5 h-3.5" />
-                    Compartir
-                  </button>
-                </motion.div>
-              </>
-            )}
-          </AnimatePresence>
-        </div>
 
-        <Link 
-          href={`/article/${article.slug || article.id}`} 
-          onClick={handleCardClick}
-          className="group-hover:opacity-80 transition-opacity flex flex-col gap-3 focus:outline-none"
-        >
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-bold uppercase tracking-widest text-[#1890FF]">{article.category}</span>
-            <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
-            <span className="text-xs text-gray-500 font-medium uppercase tracking-widest">{article.sources?.[0]?.name || "Noticias"}</span>
-          </div>
-          
-          <h3 className={`font-serif font-medium tracking-tight leading-[1.1] text-gray-900 dark:text-gray-100 ${titleSizeClass}`}>
-            {article.title}
-          </h3>
-
-          {showImages && article.image_url && (
-            <div className="w-full mt-3 mb-2 bg-gray-100 dark:bg-gray-900">
-              <img 
-                src={imgError ? getFallbackImage(article.category) : article.image_url} 
-                onError={() => setImgError(true)}
-                alt={article.title} 
-                className="w-full h-auto object-cover grayscale-[30%]" 
-              />
-            </div>
-          )}
-
-          <div className="text-gray-700 dark:text-gray-300 leading-relaxed prose prose-base dark:prose-invert max-w-none prose-p:m-0 prose-headings:m-0 [*_>_p]:inline line-clamp-4">
-            <ReactMarkdown>{article.summary || ""}</ReactMarkdown>
-          </div>
-
-          <div className="flex items-center justify-between mt-3 text-xs text-gray-500 font-medium uppercase tracking-wider">
-            <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" />{formatDate(article.published_at)}</span>
-            {hasEnriched && (
-              <span className="flex items-center gap-1 font-bold text-gray-400 dark:text-gray-500">
-                <ShieldCheck className="w-3.5 h-3.5 text-[#1890FF]" /> IA
-              </span>
-            )}
-          </div>
-        </Link>
-      </article>
-    );
-  }
 
   return (
     <motion.article

@@ -53,7 +53,7 @@ export default function HomePage() {
       {/* Header */}
       <header className="absolute top-0 left-0 right-0 z-50 h-20 flex items-center justify-between px-6 md:px-12 lg:px-20">
         <div className="flex items-center">
-          <Logo showText={true} size="md" forceDark={true} />
+          <Logo showText={true} size="md" />
         </div>
         <div className="flex items-center gap-4">
           {isAuthenticated ? (

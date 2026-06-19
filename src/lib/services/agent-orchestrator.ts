@@ -60,6 +60,7 @@ export async function runOrchestration(
   isWebBuilder: boolean = false
 ): Promise<OrchestrationResult> {
   const startTime = Date.now();
+  let totalTokensUsed = 0;
   
   // Clean message for cache key lookup, including the mode to prevent collisions
   const cacheKey = `${isWebBuilder ? 'webbuilder' : 'finance'}:${userMessage.trim().toLowerCase()}`;
@@ -162,7 +163,7 @@ DEBES responder ÚNICAMENTE con un bloque JSON en el siguiente formato (sin expl
         temperature: 0.1,
       });
 
-      if (usage?.totalTokens) totalTokensUsed += usage.totalTokens;
+      totalTokensUsed += usage?.totalTokens || 0;
 
       const jsonText = extractJsonBlock(text);
       const result = JSON.parse(jsonText);
@@ -187,6 +188,8 @@ DEBES responder ÚNICAMENTE con un bloque JSON en el siguiente formato (sin expl
       agents = [];
     }
   }
+
+
 
   if (!isComplex || agents.length === 0) {
     onProgress?.(`✅ [Orquestador] Consulta analizada: Es simple. Resolviendo directamente (${reason}).\n\n`);

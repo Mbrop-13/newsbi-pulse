@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type ViewLayout = 'grid' | 'list' | 'traditional';
+export type ViewLayout = 'grid';
 export type ViewDensity = 'compact' | 'comfortable' | 'spacious';
 export type ViewFontSize = 'sm' | 'base' | 'lg';
 export type ArticleWidth = 'normal' | 'wide' | 'full';

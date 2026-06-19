@@ -100,7 +100,10 @@ import { Activity } from "lucide-react";
           Object.entries(files).map(([path, f]: any) => [path, typeof f === 'object' ? f.code : String(f)])
         );
         const resultFlat = actionsToFiles(parsed.actions, flatFiles);
-        correctedFiles = resultFlat;
+        // Map back to the expected Record<string, { code: string }>
+        correctedFiles = Object.fromEntries(
+          Object.entries(resultFlat).map(([path, code]) => [path, { code: String(code) }])
+        ) as any;
       }
     }
 

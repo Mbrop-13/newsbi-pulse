@@ -114,78 +114,7 @@ export function ViewSettingsDialog({ isOpen, onClose }: ViewSettingsDialogProps)
             </div>
           </div>
 
-          {/* Layout Toggle */}
-          <div className="space-y-4">
-            <label className="text-xs font-black uppercase tracking-widest text-gray-500 flex items-center gap-2">
-              <Monitor className="w-4 h-4" /> Disposición
-            </label>
-            <div className="grid grid-cols-3 gap-3">
-              <button
-                onClick={() => setLayout('grid')}
-                className={`group flex flex-col items-center gap-3 p-4 rounded-2xl border-2 transition-all ${
-                  layout === 'grid' 
-                    ? 'border-[#1890FF] bg-blue-50/50 dark:bg-[#1890FF]/10 text-[#1890FF]' 
-                    : 'border-transparent bg-gray-50 dark:bg-white/5 hover:border-gray-200 dark:hover:border-white/10 text-gray-500'
-                }`}
-              >
-                {/* Visual Grid Mockup */}
-                <div className="w-16 h-12 flex flex-col gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
-                   <div className="w-full h-1/2 bg-current rounded-sm" />
-                   <div className="flex gap-1.5 h-1/2">
-                     <div className="flex-1 h-full bg-current rounded-sm opacity-60" />
-                     <div className="flex-1 h-full bg-current rounded-sm opacity-60" />
-                   </div>
-                </div>
-                <span className="text-sm font-bold">Cuadrícula</span>
-              </button>
-              
-              <button
-                onClick={() => setLayout('list')}
-                className={`group flex flex-col items-center gap-3 p-4 rounded-2xl border-2 transition-all ${
-                  layout === 'list' 
-                    ? 'border-[#1890FF] bg-blue-50/50 dark:bg-[#1890FF]/10 text-[#1890FF]' 
-                    : 'border-transparent bg-gray-50 dark:bg-white/5 hover:border-gray-200 dark:hover:border-white/10 text-gray-500'
-                }`}
-              >
-                {/* Visual List Mockup */}
-                <div className="w-16 h-12 flex flex-col gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
-                   <div className="w-full h-1/3 bg-current rounded-sm" />
-                   <div className="w-full h-1/3 bg-current rounded-sm opacity-80" />
-                   <div className="w-full h-1/3 bg-current rounded-sm opacity-60" />
-                </div>
-                <span className="text-sm font-bold">Lista</span>
-              </button>
 
-              <button
-                onClick={() => setLayout('traditional')}
-                className={`group flex flex-col items-center gap-3 p-4 rounded-2xl border-2 transition-all ${
-                  layout === 'traditional' 
-                    ? 'border-[#1890FF] bg-blue-50/50 dark:bg-[#1890FF]/10 text-[#1890FF]' 
-                    : 'border-transparent bg-gray-50 dark:bg-white/5 hover:border-gray-200 dark:hover:border-white/10 text-gray-500'
-                }`}
-              >
-                {/* Visual Traditional Mockup */}
-                <div className="w-16 h-12 flex flex-col gap-1 opacity-80 group-hover:opacity-100 transition-opacity justify-between">
-                   <div className="w-full flex justify-center"><div className="w-8 h-1.5 bg-current rounded-sm opacity-90" /></div>
-                   <div className="w-full border-b border-current opacity-30 mt-0.5" />
-                   <div className="w-full flex gap-1 mt-0.5 flex-1 items-start">
-                     <div className="flex-1 flex flex-col gap-1 items-center">
-                       <div className="w-4 h-3 bg-current rounded-sm opacity-70" />
-                       <div className="w-full h-[1px] bg-current opacity-30" />
-                     </div>
-                     <div className="w-[1px] h-full bg-current opacity-20" />
-                     <div className="flex-1 flex flex-col gap-0.5 mt-1">
-                       <div className="w-full h-0.5 bg-current opacity-60" />
-                       <div className="w-4/5 h-0.5 bg-current opacity-50" />
-                       <div className="w-full h-0.5 bg-current opacity-40 mt-0.5" />
-                     </div>
-                   </div>
-                   <div className="w-full border-t border-current opacity-30 mt-0.5" />
-                </div>
-                <span className="text-sm font-bold">Tradicional</span>
-              </button>
-            </div>
-          </div>
 
           {/* Density Toggle */}
           <div className="space-y-4">

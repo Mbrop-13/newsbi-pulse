@@ -35,11 +35,7 @@ export function HomepageOnboarding() {
 
   if (!mounted || isAuthenticated || dismissed) return null;
 
-  const viewOptions: { id: ViewLayout; icon: React.ReactNode; label: string; desc: string }[] = [
-    { id: "traditional", icon: <Newspaper className="w-5 h-5" />, label: "Tradicional", desc: "Estilo periódico editorial" },
-    { id: "grid", icon: <LayoutGrid className="w-5 h-5" />, label: "Grid", desc: "Cards modernas" },
-    { id: "list", icon: <List className="w-5 h-5" />, label: "Lista", desc: "Lectura enfocada" },
-  ];
+
 
   return (
     <AnimatePresence>
@@ -82,26 +78,7 @@ export function HomepageOnboarding() {
               </p>
             </div>
 
-            {/* Center: View mode selector (REAL) */}
-            <div className="flex items-center gap-2">
-              {viewOptions.map((view) => (
-                <button
-                  key={view.id}
-                  onClick={() => setLayout(view.id)}
-                  className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                    layout === view.id
-                      ? "bg-black text-white dark:bg-white dark:text-black shadow-lg shadow-black/20 dark:shadow-white/10"
-                      : "bg-white dark:bg-white/5 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-800 hover:border-black/30 dark:hover:border-white/30 hover:text-black dark:hover:text-white"
-                  }`}
-                >
-                  {view.icon}
-                  <div className="hidden sm:flex flex-col items-start">
-                    <span>{view.label}</span>
-                    <span className={`text-[9px] font-medium ${layout === view.id ? 'text-white/70' : 'text-gray-400'}`}>{view.desc}</span>
-                  </div>
-                </button>
-              ))}
-            </div>
+
 
             {/* Right: Register CTA */}
             <div className="flex items-center gap-3 shrink-0">

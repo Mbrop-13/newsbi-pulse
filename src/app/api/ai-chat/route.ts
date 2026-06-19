@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { createOpenAI } from '@ai-sdk/openai';
-import { streamText, tool, StreamData, createDataStreamResponse } from 'ai';
+import { streamText, tool, StreamData } from 'ai';
 import { z } from 'zod';
 import { createClient } from "@/lib/supabase/server";
 import { checkLimit, incrementUsage, getUserTier, checkTokenLimit, incrementTokenUsage } from "@/lib/check-limits";
@@ -28,7 +28,7 @@ function decodeJsonString(escapedStr: string): string {
 }
 
 // ── MiMo client factory with web_search injection ──
-function createMimoWithWebSearch(userId: string, dataStream?: any, webSearchEnabled: boolean = true) {
+function createMimoWithWebSearch(userId: string, streamData?: StreamData, webSearchEnabled: boolean = true) {
   return createOpenAI({
     baseURL: 'https://api.xiaomimimo.com/v1',
     apiKey: process.env.MIMO_API_KEY,
@@ -67,7 +67,7 @@ function createMimoWithWebSearch(userId: string, dataStream?: any, webSearchEnab
       const res = await fetch(url, options);
 
       // If it's a stream, intercept chunks to extract MiMo's native web search annotations
-      if (res.body && dataStream) {
+      if (res.body && streamData) {
         const collectedUrls = new Set<string>();
         let buffer = "";
         const transformStream = new TransformStream({
@@ -92,7 +92,7 @@ function createMimoWithWebSearch(userId: string, dataStream?: any, webSearchEnab
                 const text = decodeJsonString(m[1]);
                 if (text && text !== 'null') {
                   try {
-                    dataStream.writeData({ type: 'reasoning', text });
+                    streamData.append({ type: 'reasoning', text });
                   } catch {
                     // StreamData may already be closed/flushed
                   }
@@ -115,7 +115,7 @@ function createMimoWithWebSearch(userId: string, dataStream?: any, webSearchEnab
                 const text = decodeJsonString(m[1]);
                 if (text && text !== 'null') {
                   try {
-                    dataStream.writeData({ type: 'reasoning', text });
+                    streamData.append({ type: 'reasoning', text });
                   } catch {}
                 }
               }
@@ -123,7 +123,7 @@ function createMimoWithWebSearch(userId: string, dataStream?: any, webSearchEnab
 
             try {
               if (collectedUrls.size > 0) {
-                dataStream.writeData({ type: 'citations', urls: Array.from(collectedUrls) });
+                streamData.append({ type: 'citations', urls: Array.from(collectedUrls) });
               }
             } catch {
               // StreamData may already be closed by toDataStreamResponse
@@ -397,9 +397,8 @@ export async function POST(req: NextRequest) {
 
     const yf = new YahooFinance();
 
-    return createDataStreamResponse({
-      execute: async (dataStream) => {
-        const mimo = createMimoWithWebSearch(userId, dataStream, webSearch !== false);
+    const streamData = new StreamData();
+    const mimo = createMimoWithWebSearch(userId, streamData, webSearch !== false);
 
     // Load user portfolio context for orchestration
     let portfolioText = "";
@@ -426,7 +425,7 @@ export async function POST(req: NextRequest) {
         webBuilderFiles || {},
         (text) => {
           try {
-            dataStream.writeData({ type: 'reasoning', text });
+            streamData.append({ type: 'reasoning', text });
           } catch {
             // StreamData may already be closed/flushed
           }
@@ -439,7 +438,7 @@ export async function POST(req: NextRequest) {
         portfolioText,
         (text) => {
           try {
-            dataStream.writeData({ type: 'reasoning', text });
+            streamData.append({ type: 'reasoning', text });
           } catch {
             // StreamData may already be closed/flushed
           }
@@ -467,7 +466,7 @@ export async function POST(req: NextRequest) {
     if (orchestrationResult.isComplex && orchestrationResult.agentReports.length > 0) {
       // Stream agent reports to client
       try {
-        dataStream.writeData({
+        streamData.append({
           type: 'agentReports',
           reports: orchestrationResult.agentReports as any
         });
@@ -477,20 +476,27 @@ export async function POST(req: NextRequest) {
 
       if (webBuilder) {
         // Parse and send the files directly to client via streamData
-        const filesToApply: Record<string, string> = { ...(webBuilderFiles || {}) };
+        const flatFiles: Record<string, string> = Object.fromEntries(
+          Object.entries(webBuilderFiles || {}).map(([path, f]: any) => [path, typeof f === 'object' ? f.code : String(f)])
+        );
         
         for (const report of orchestrationResult.agentReports) {
           if (report.success && containsArtifact(report.content)) {
             const parsed = parseArtifact(report.content);
             if (parsed && parsed.actions.length > 0) {
-              const fileChanges = actionsToFiles(parsed.actions, filesToApply);
-              Object.assign(filesToApply, fileChanges);
+              const fileChanges = actionsToFiles(parsed.actions, flatFiles as any);
+              Object.assign(flatFiles, fileChanges);
             }
           }
         }
 
+        // Map back to expected structure
+        const filesToApply = Object.fromEntries(
+          Object.entries(flatFiles).map(([path, code]) => [path, { code: String(code) }])
+        );
+
         try {
-          dataStream.writeData({
+          streamData.append({
             type: 'webbuilder_files',
             files: filesToApply
           });
@@ -548,7 +554,7 @@ ${reportsSummary}`,
       }
     }
 
-    const result = streamText({
+    const result = await streamText({
       model: mimo(finalModelStr),
       system: webBuilder
         ? getWebBuilderSystemPrompt(webBuilderFiles || undefined)
@@ -999,11 +1005,11 @@ ${reportsSummary}`,
             execute: async ({ url }) => {
               try {
                 // Create session if not exists (stored in streamData)
-                let sessionId = (dataStream as any)?._browserSessionId;
+                let sessionId = (streamData as any)?._browserSessionId;
                 if (!sessionId) {
                   sessionId = await BrowserManager.createSession();
-                  (dataStream as any)._browserSessionId = sessionId;
-                  dataStream.writeData({ type: 'browser_session', sessionId });
+                  (streamData as any)._browserSessionId = sessionId;
+                  streamData.append({ type: 'browser_session', sessionId });
                 }
                 const result = await BrowserManager.navigateTo(sessionId, url);
                 return { sessionId, url: result.url, title: result.title, textContent: result.textContent.slice(0, 4000) };
@@ -1021,7 +1027,7 @@ ${reportsSummary}`,
             }),
             execute: async ({ selector, description }) => {
               try {
-                const sessionId = (dataStream as any)?._browserSessionId;
+                const sessionId = (streamData as any)?._browserSessionId;
                 if (!sessionId) return { error: 'No hay sesión de navegador activa. Usa browser_navigate primero.' };
                 return await BrowserManager.clickElement(sessionId, selector, description);
               } catch (err: any) {
@@ -1039,7 +1045,7 @@ ${reportsSummary}`,
             }),
             execute: async ({ selector, text, description }) => {
               try {
-                const sessionId = (dataStream as any)?._browserSessionId;
+                const sessionId = (streamData as any)?._browserSessionId;
                 if (!sessionId) return { error: 'No hay sesión de navegador activa. Usa browser_navigate primero.' };
                 return await BrowserManager.typeText(sessionId, selector, text, description);
               } catch (err: any) {
@@ -1055,7 +1061,7 @@ ${reportsSummary}`,
             }),
             execute: async ({ direction }) => {
               try {
-                const sessionId = (dataStream as any)?._browserSessionId;
+                const sessionId = (streamData as any)?._browserSessionId;
                 if (!sessionId) return { error: 'No hay sesión de navegador activa.' };
                 return await BrowserManager.scrollPage(sessionId, direction);
               } catch (err: any) {
@@ -1085,17 +1091,9 @@ ${reportsSummary}`,
           console.warn(`[SECURITY_ALERT] [LLM_DETECTION] El modelo Maverlang AI detectó un intento de manipulación o solicitud inusual del usuario ${userId}. Respuesta del modelo: "${text}"`);
         }
       }
-
     });
-    
-    result.mergeIntoDataStream(dataStream);
-  },
-  onError: (error) => {
-    console.error("[AI Chat Stream] Error:", error);
-    return error instanceof Error ? error.message : String(error);
-  }
-});
 
+    return result.toDataStreamResponse({ data: streamData });
   } catch (error: any) {
     console.error("[AI Chat Stream] Error:", error);
     return new Response(JSON.stringify({ error: error.message }), { status: 500 });

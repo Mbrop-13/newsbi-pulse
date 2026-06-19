@@ -17,8 +17,8 @@ import { useAuthStore } from "@/lib/stores/auth-store";
 import { useInterestStore } from "@/lib/stores/interest-store";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useActiveArticleStore } from "@/lib/stores/active-article-store";
-
-import { TraditionalNewspaper } from "@/components/traditional-newspaper";
+import { ExpandableSources } from "@/components/expandable-sources";
+import { MarketSidebar } from "@/components/market-sidebar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -64,15 +64,11 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
     density === 'spacious' ? 'gap-8 lg:gap-10' :
     'gap-6';
 
-  const gridClass = viewLayout === 'list' 
-    ? 'grid-cols-1 max-w-3xl mx-auto'
-    : isExpanded
+  const gridClass = isExpanded
       ? 'grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3'
       : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3';
 
-  const bottomGridClass = viewLayout === 'list'
-    ? 'grid-cols-1 max-w-3xl mx-auto'
-    : isExpanded
+  const bottomGridClass = isExpanded
       ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'
       : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
 
@@ -325,6 +321,21 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
 
   const activeTabData = TABS.find(t => t.id === activeTab) || TABS[0];
 
+  const formatTimeAgo = (d: string) => {
+    try {
+      const date = new Date(d);
+      const now = new Date();
+      const diff = now.getTime() - date.getTime();
+      const mins = Math.floor(diff / 60000);
+      if (mins < 60) return `hace ${mins}m`;
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) return `hace ${hrs}h`;
+      return `hace ${Math.floor(hrs / 24)}d`;
+    } catch { return ""; }
+  };
+
+  const { openArticle } = useActiveArticleStore();
+
   // Build the "go to section" URL
   const sectionUrl = searchTag
     ? `/tema/${searchTag}`
@@ -540,78 +551,93 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
               </div>
             ) : visibleArticles.length > 0 ? (
               <div className={`flex flex-col ${gapClass}`}>
-                {/* Hero: First article large (Grid Mode Only) */}
-                {viewLayout === 'grid' && visibleArticles[0] && (
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                    <div className="lg:col-span-8">
-                      <NewsCard article={visibleArticles[0]} index={0} layout="featured" />
-                    </div>
-                    <div className="lg:col-span-4 flex flex-col gap-6">
-                      {visibleArticles[1] && (
-                        <NewsCard article={visibleArticles[1]} index={1} layout="compact" />
-                      )}
-                      {visibleArticles[2] && (
-                        <NewsCard article={visibleArticles[2]} index={2} layout="compact" />
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* List mode for first 3 items */}
-                {viewLayout === 'list' && visibleArticles.length > 0 && (
-                  <div className={`grid ${bottomGridClass} ${gapClass}`}>
-                    {visibleArticles.slice(0, 3).map((article, i) => (
-                      <NewsCard key={article.id} article={article} index={i} />
-                    ))}
-                  </div>
-                )}
-
-                {/* Traditional mode for all items */}
-                {viewLayout === 'traditional' && visibleArticles.length > 0 && (
-                  <TraditionalNewspaper articles={visibleArticles} />
-                )}
-
-                {/* ── MAIN CONTENT + TRENDING SIDEBAR (TOP SECTION) ── */}
-                {viewLayout !== 'traditional' && visibleArticles.length > 3 && (
-                  <div className={`flex flex-col lg:flex-row ${gapClass}`}>
-                    {/* Left: First batch of news (6 items = 2 rows of 3) */}
-                    <div className="flex-1 min-w-0">
-                      <div className={`grid ${gridClass} ${gapClass}`}>
-                        {visibleArticles.slice(3, 9).map((article, i) => (
-                          <NewsCard key={article.id} article={article} index={i + 3} />
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Right: Trending / Most Viewed Panel */}
-                    {viewLayout !== 'list' && (
-                      <div className="lg:w-[340px] xl:w-[380px] flex-shrink-0">
-                        <div className="space-y-5 lg:sticky lg:top-24">
-                          <TrendingPanel articles={feedArticles} />
+                {/* ── DISCOVER LAYOUT: 2-Column (Main + Sidebar) ── */}
+                <div className="flex flex-col lg:flex-row gap-8">
+                  {/* ── Main Content Column ── */}
+                  <div className="flex-1 min-w-0 flex flex-col gap-6">
+                    {/* Hero Article: Google Discover style (text left, image right) */}
+                    {visibleArticles[0] && (
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 bg-card rounded-2xl border border-border overflow-hidden hover:shadow-lg hover:shadow-blue-500/5 transition-all group">
+                        <div className="md:col-span-7 p-6 sm:p-8 flex flex-col justify-center gap-4">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold uppercase tracking-wider text-blue-500">{visibleArticles[0].category}</span>
+                            <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
+                            <span className="text-xs text-gray-500 font-medium">Publicado {formatTimeAgo(visibleArticles[0].published_at)}</span>
+                          </div>
+                          <h2 className="text-2xl sm:text-3xl font-bold leading-tight text-gray-900 dark:text-white group-hover:text-blue-500 transition-colors cursor-pointer"
+                            onClick={() => openArticle(visibleArticles[0].id, visibleArticles[0])}>
+                            {visibleArticles[0].title}
+                          </h2>
+                          <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed line-clamp-3">
+                            {visibleArticles[0].summary}
+                          </p>
+                          <div className="flex items-center gap-3 text-xs text-gray-400 font-medium mt-auto">
+                            <ExpandableSources sources={visibleArticles[0].sources || []} />
+                          </div>
                         </div>
+                        {visibleArticles[0].image_url && (
+                          <div className="md:col-span-5 aspect-[4/3] md:aspect-auto overflow-hidden cursor-pointer" onClick={() => openArticle(visibleArticles[0].id, visibleArticles[0])}>
+                            <img src={visibleArticles[0].image_url} alt={visibleArticles[0].title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                          </div>
+                        )}
                       </div>
                     )}
-                  </div>
-                )}
 
-                {/* ── PROMO BANNER (between sections, free users only) ── */}
-                <PromoBanner variant={Math.random() > 0.5 ? "referral" : "upgrade"} className="my-2" />
+                    {/* Row of 3 Square Cards */}
+                    {visibleArticles.length > 1 && (
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        {visibleArticles.slice(1, 4).map((article, i) => (
+                          <NewsCard key={article.id} article={article} index={i + 1} />
+                        ))}
+                      </div>
+                    )}
 
-                {/* ── FULL WIDTH BOTTOM GRID ── */}
-                {viewLayout !== 'traditional' && visibleArticles.length > 9 && (
-                  <div className={`grid ${bottomGridClass} ${gapClass}`}>
-                    {visibleArticles.slice(9).map((article, i) => (
-                      <NewsCard key={article.id} article={article} index={i + 9} />
+                    {/* Horizontal Articles */}
+                    {visibleArticles.slice(4).map((article, i) => (
+                      <article
+                        key={article.id}
+                        className="group flex gap-4 bg-card rounded-xl border border-border p-4 hover:shadow-md hover:shadow-blue-500/5 transition-all cursor-pointer"
+                        onClick={() => openArticle(article.id, article)}
+                      >
+                        {article.image_url && (
+                          <div className="w-32 h-24 sm:w-40 sm:h-28 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100 dark:bg-gray-800">
+                            <img src={article.image_url} alt={article.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0 flex flex-col justify-center gap-1.5">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-blue-500">{article.category}</span>
+                            <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
+                            <span className="text-[11px] text-gray-400 font-medium">{article.sources?.[0]?.name}</span>
+                          </div>
+                          <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white line-clamp-2 group-hover:text-blue-500 transition-colors leading-snug">
+                            {article.title}
+                          </h3>
+                          <p className="text-xs text-gray-400 line-clamp-1 hidden sm:block">{article.summary}</p>
+                          <div className="flex items-center gap-2 text-[10px] text-gray-400 font-medium mt-1">
+                            <ExpandableSources sources={article.sources || []} />
+                          </div>
+                        </div>
+                      </article>
                     ))}
                   </div>
-                )}
+
+                  {/* ── Right Sidebar (Desktop Only) ── */}
+                  <div className="hidden lg:block lg:w-[320px] xl:w-[360px] flex-shrink-0">
+                    <div className="sticky top-24 space-y-4">
+                      <MarketSidebar />
+                      {/* Trending Panel below market */}
+                      <TrendingPanel articles={feedArticles} />
+                    </div>
+                  </div>
+                </div>
 
                 {/* Load more */}
                 {hasMore && (
                   <div className="flex justify-center py-6">
                     <button
                       onClick={() => setVisibleCount(v => v + 12)}
-                      className="flex items-center gap-2 px-6 py-3 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl text-sm font-semibold text-gray-600 dark:text-gray-300 hover:border-[#1890FF]/50 hover:text-[#1890FF] transition-all shadow-sm"
+                      className="flex items-center gap-2 px-6 py-3 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl text-sm font-semibold text-gray-600 dark:text-gray-300 hover:border-blue-500/50 hover:text-blue-500 transition-all shadow-sm"
                     >
                       <Loader2 className="w-4 h-4" />
                       Cargar más noticias

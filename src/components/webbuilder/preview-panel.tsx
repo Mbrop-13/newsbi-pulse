@@ -64,7 +64,12 @@ function injectInspectorScript(html: string): string {
           width: 0 !important;
           height: 0 !important;
         }
-        * {
+        *::-webkit-scrollbar {
+          display: none !important;
+          width: 0 !important;
+          height: 0 !important;
+        }
+        html, body, #root, #app, * {
           scrollbar-width: none !important;
           -ms-overflow-style: none !important;
         }
@@ -126,6 +131,9 @@ function injectInspectorScript(html: string): string {
         isInspectorActive = false;
         window.parent.postMessage({ type: 'MAVERLANG_INSPECTOR_DISABLED' }, '*');
       }, true);
+
+      // Notify parent that the preview is loaded and ready
+      window.parent.postMessage({ type: 'MAVERLANG_PREVIEW_LOADED' }, '*');
     </script>
   `;
 
@@ -623,13 +631,13 @@ export function PreviewPanel() {
 
   // Sync inspector state with the preview iframe
   useEffect(() => {
-    const iframe = document.querySelector('iframe[title="Maverlang Preview"]');
-    if (iframe && (iframe as HTMLIFrameElement).contentWindow) {
-      (iframe as HTMLIFrameElement).contentWindow?.postMessage({ type: 'TOGGLE_INSPECTOR', active: isInspectorActive }, '*');
+    const iframe = document.querySelector('iframe');
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage({ type: 'TOGGLE_INSPECTOR', active: isInspectorActive }, '*');
     }
   }, [isInspectorActive]);
 
-  // Turn off inspector when a click happens (message from iframe)
+  // Turn off inspector when a click happens (message from iframe) or sync on reload
   useEffect(() => {
     const handleMessage = (e: MessageEvent) => {
       if (e.data?.type === 'MAVERLANG_INSPECTOR_DISABLED') {
@@ -645,11 +653,17 @@ export function PreviewPanel() {
           }
         });
         window.dispatchEvent(event);
+      } else if (e.data?.type === 'MAVERLANG_PREVIEW_LOADED') {
+        // Sync active state when the iframe loads or reloads
+        const iframe = document.querySelector('iframe');
+        if (iframe && iframe.contentWindow) {
+          iframe.contentWindow.postMessage({ type: 'TOGGLE_INSPECTOR', active: isInspectorActive }, '*');
+        }
       }
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, []);
+  }, [isInspectorActive]);
 
   const tabs = [
     { id: "preview" as const, label: "Preview", description: "Vista previa interactiva", icon: Monitor },
@@ -841,17 +855,14 @@ export function PreviewPanel() {
           <Tooltip>
             <TooltipTrigger asChild>
               <button 
-                onClick={() => {
-                  toast.info("Publicando aplicación en producción...");
-                  setTimeout(() => toast.success("Aplicación publicada con éxito en producción!"), 2000);
-                }}
-                className="flex items-center gap-1.5 px-4 h-8 bg-foreground text-background hover:opacity-90 rounded-full text-xs font-bold active:scale-95 transition-all"
+                disabled
+                className="flex items-center gap-1.5 px-4 h-8 bg-muted text-muted-foreground rounded-full text-xs font-bold cursor-not-allowed opacity-50"
               >
                 Publicar
               </button>
             </TooltipTrigger>
             <TooltipContent hideArrow side="bottom" sideOffset={6} className="text-xs bg-popover text-popover-foreground border border-border px-2.5 py-1.5 rounded-xl shadow-lg font-semibold">
-              Publicar a la web en producción
+              Próximamente: Publicar a la web en producción
             </TooltipContent>
           </Tooltip>
 
@@ -961,8 +972,8 @@ export function PreviewPanel() {
                 <div className={cn(
                   "flex flex-col bg-white dark:bg-[#0b0f19] transition-all duration-300 ease-in-out relative",
                   viewport === "desktop" && "w-full h-full rounded-none max-w-full border-none shadow-none",
-                  viewport === "tablet" && "w-full max-w-[768px] aspect-[768/1024] max-h-full shrink-0 rounded-2xl border border-border/40 shadow-xl overflow-hidden",
-                  viewport === "mobile" && "w-full max-w-[390px] aspect-[390/800] max-h-full shrink-0 rounded-3xl border border-border/40 shadow-xl overflow-hidden"
+                  viewport === "tablet" && "w-full max-w-[768px] aspect-[768/1024] max-h-full shrink-0 rounded-2xl border border-border/40 shadow-xl overflow-hidden [&_*::-webkit-scrollbar]:hidden [&_*]:[scrollbar-width:none] [&_*]:[-ms-overflow-style:none] [&_iframe]:[scrollbar-width:none] [&_iframe::-webkit-scrollbar]:hidden",
+                  viewport === "mobile" && "w-full max-w-[390px] aspect-[390/800] max-h-full shrink-0 rounded-3xl border border-border/40 shadow-xl overflow-hidden [&_*::-webkit-scrollbar]:hidden [&_*]:[scrollbar-width:none] [&_*]:[-ms-overflow-style:none] [&_iframe]:[scrollbar-width:none] [&_iframe::-webkit-scrollbar]:hidden"
                 )}>
                   {/* Body de la preview */}
                   <div className="flex-grow min-h-0 relative w-full h-full bg-white dark:bg-background">

@@ -264,10 +264,11 @@ export function ChatInput({
     }
   };
 
-    <div className="bg-transparent px-2 md:px-0 pb-0">
+  return (
+    <div className="bg-transparent px-2 md:px-0 pb-0 shadow-none !shadow-none">
       <form
         onSubmit={handleSubmit}
-        className={cn((isWebBuilderMode && !isNewChat) ? "w-full max-w-full px-1" : "max-w-6xl px-0 mx-auto inset-x-0", "pt-0 relative", className)}
+        className={cn("w-full max-w-full px-0 pt-0 relative", className)}
       >
         {/* Active Tool Pills & Attachments */}
         {(activeTools.length > 0 || attachedArticles.length > 0) && (
@@ -326,7 +327,7 @@ export function ChatInput({
 
         <div className={cn(
           "rounded-3xl p-2 bg-secondary/80 dark:bg-secondary/30",
-          "shadow-none border border-border/40 transition-all duration-500 relative group focus-within:border-white/20 dark:focus-within:border-white/20",
+          "shadow-none !shadow-none shadow-transparent border border-border/40 transition-all duration-500 relative group focus-within:border-white/20 dark:focus-within:border-white/20",
           isListening && "border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.15)]"
         )}>
           {/* File Previews inside the input box */}
@@ -547,7 +548,7 @@ export function ChatInput({
               {/* Feature toggle pills scrollable row */}
               <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [scrollbar-width:none] select-none flex-nowrap pr-2 max-w-[calc(100vw-180px)] sm:max-w-none">
                 <WebBuilderPill />
-                {(!isWebBuilderMode || isNewChat) && (
+                {!isStreaming && (
                   <>
                     <Pill
                       active={codeInterpreter}
@@ -780,7 +781,7 @@ function WebBuilderPill() {
             className={cn(
               "rounded-full h-7 px-3 gap-1.5 transition-all duration-300 shrink-0",
               isWebBuilderMode
-                ? "!bg-foreground !text-background !border-foreground shadow-md hover:bg-foreground/90"
+                ? "!bg-foreground !text-background !border-foreground hover:bg-foreground/90"
                 : "bg-input/10 dark:bg-input/30"
             )}
             aria-pressed={isWebBuilderMode}

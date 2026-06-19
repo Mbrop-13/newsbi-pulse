@@ -317,7 +317,7 @@ export function ChatLanding() {
         const slug = slugify(title);
         targetPath = `/ai/chat/${slug ? `${slug}-` : ''}${currentChatId}`;
       }
-      if (currentPath !== targetPath && !currentPath.startsWith('/share/')) {
+      if ((currentPath === '/ai' || currentPath === '/ai/') && targetPath !== currentPath && !currentPath.startsWith('/share/')) {
         window.history.pushState(null, '', targetPath);
       }
     }
@@ -607,7 +607,7 @@ export function ChatLanding() {
               </div>
             </div>
 
-            <div className="sticky bottom-0 z-10 w-full bg-transparent pt-2 pb-2 md:pb-3">
+            <div className="sticky bottom-0 z-10 w-full bg-transparent pt-0 pb-0">
               <div className="max-w-3xl mx-auto w-full">
                 <ChatInput
                   placeholder="Pregúntame lo que quieras..."
@@ -693,7 +693,7 @@ export function ChatLanding() {
                />
              )}
 
-            <div className="sticky bottom-0 z-10 w-full bg-transparent pt-2 pb-2 md:pb-3">
+            <div className="sticky bottom-0 z-10 w-full bg-transparent pt-0 pb-0">
               <div className="max-w-3xl mx-auto w-full">
                 <ChatInput
                   placeholder="Envía un mensaje..."

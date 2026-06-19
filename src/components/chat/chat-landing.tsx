@@ -225,7 +225,10 @@ export function ChatLanding() {
             ? "He procesado los datos financieros solicitados y configurado los paneles interactivos correspondientes. Puedes revisar la información en los widgets de arriba."
             : "Lo siento, la respuesta de la IA se detuvo inesperadamente sin generar texto. Por favor, intenta de nuevo.";
 
+        const currentStoreMessages = useAIChatStore.getState().messages;
+
         const storeMessages: ChatMessage[] = latestMessages.map((m: any, idx: number) => {
+          const storeMsg = currentStoreMessages.find((sm) => sm.id === m.id);
           const isTarget = idx === targetIdx;
           if (isTarget) {
             return {
@@ -237,7 +240,7 @@ export function ChatLanding() {
               toolInvocations: message.toolInvocations || m.toolInvocations,
               citations: citationsList,
               reasoning: reasoningText || m.reasoning || undefined,
-              reasoningSteps: agentReportsData.length > 0 ? agentReportsData : m.reasoningSteps || undefined,
+              reasoningSteps: agentReportsData.length > 0 ? agentReportsData : m.reasoningSteps || storeMsg?.reasoningSteps || undefined,
               secondsElapsed: m.secondsElapsed,
             };
           }
@@ -245,13 +248,13 @@ export function ChatLanding() {
             id: m.id,
             role: (m.role === 'tool' ? 'assistant' : m.role) as 'user' | 'assistant',
             content: m.content,
-            timestamp: m.timestamp || new Date(),
-            model: m.model || (selectedModel === "fast" ? "deepseek" : "grok"),
+            timestamp: storeMsg?.timestamp || m.timestamp || new Date(),
+            model: storeMsg?.model || m.model || (selectedModel === "fast" ? "deepseek" : "grok"),
             toolInvocations: m.toolInvocations,
-            citations: m.citations || [],
-            reasoning: m.reasoning || undefined,
-            reasoningSteps: m.reasoningSteps || undefined,
-            secondsElapsed: m.secondsElapsed,
+            citations: storeMsg?.citations || m.citations || [],
+            reasoning: storeMsg?.reasoning || m.reasoning || undefined,
+            reasoningSteps: storeMsg?.reasoningSteps || m.reasoningSteps || undefined,
+            secondsElapsed: storeMsg?.secondsElapsed || m.secondsElapsed,
           };
         });
 
@@ -271,6 +274,24 @@ export function ChatLanding() {
 
         useAIChatStore.setState({ messages: storeMessages });
         useAIChatStore.getState().updateCurrentChat();
+
+        // Sync back to useChat's messages state so that reasoningSteps, citations, etc are preserved in aiMessages
+        setAiMessages(
+          storeMessages.map((m) => ({
+            id: m.id,
+            role: m.role,
+            content: m.content,
+            toolInvocations: m.toolInvocations,
+            reasoning: m.reasoning,
+            citations: m.citations,
+            model: m.model,
+            isCollapsed: m.isCollapsed,
+            secondsElapsed: m.secondsElapsed,
+            reasoningSteps: m.reasoningSteps,
+            timestamp: m.timestamp,
+            createdAt: m.timestamp ? new Date(m.timestamp) : undefined,
+          })) as any
+        );
 
         // Signal that the AI has finished responding
         useWebBuilderStore.getState().setAiResponding(false);
@@ -494,11 +515,15 @@ export function ChatLanding() {
   const displayMessagesSource = (isSyncing || aiMessages.length === 0) ? storeMessages : aiMessages
 
   const rawDisplayMessages: ChatMessage[] = displayMessagesSource.map((m, idx) => {
+    // Find the message in our Zustand store to retrieve full metadata (like citations, reasoningSteps)
+    const storeMsg = storeMessages.find((sm) => sm.id === m.id);
+    
     const isLastAssistantLike = (m.role === "assistant" || m.role === "tool") && idx === displayMessagesSource.length - 1;
     
-    let reasoningText = (m as any).reasoning;
-    let citationsList = (m as any).citations;
-    let reasoningStepsList = (m as any).reasoningSteps;
+    let reasoningText = storeMsg?.reasoning || (m as any).reasoning;
+    let citationsList = storeMsg?.citations || (m as any).citations;
+    let reasoningStepsList = storeMsg?.reasoningSteps || (m as any).reasoningSteps;
+    
     if (isLastAssistantLike) {
       if (accumulatedReasoningRef.current) {
         reasoningText = accumulatedReasoningRef.current;
@@ -529,13 +554,13 @@ export function ChatLanding() {
       id: m.id,
       role: (m.role === 'tool' ? 'assistant' : m.role) as 'user' | 'assistant',
       content: m.content,
-      timestamp: (m as any).timestamp || new Date(),
-      model: selectedModel === "fast" ? "deepseek" : "grok",
+      timestamp: storeMsg?.timestamp || (m as any).timestamp || new Date(),
+      model: storeMsg?.model || selectedModel === "fast" ? "deepseek" : "grok",
       toolInvocations: m.toolInvocations,
       reasoning: reasoningText || undefined,
       citations: citationsList || [],
-      isCollapsed: (m as any).isCollapsed,
-      secondsElapsed: (m as any).secondsElapsed,
+      isCollapsed: storeMsg?.isCollapsed || (m as any).isCollapsed,
+      secondsElapsed: storeMsg?.secondsElapsed || (m as any).secondsElapsed,
       reasoningSteps: reasoningStepsList,
     };
   });

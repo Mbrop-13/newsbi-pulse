@@ -11,7 +11,7 @@ import * as BrowserManager from "@/lib/services/browser-manager";
 import { runOrchestration, runWebBuilderOrchestration } from "@/lib/services/agent-orchestrator";
 import { containsArtifact, parseArtifact, actionsToFiles } from "@/lib/webbuilder-parser";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 // Helper to safely decode escaped characters in JSON string slices
 function decodeJsonString(escapedStr: string): string {

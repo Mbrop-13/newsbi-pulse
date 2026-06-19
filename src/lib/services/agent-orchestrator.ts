@@ -455,8 +455,8 @@ Recuerda devolver ÚNICAMENTE el XML con tu código.`;
 
       const agentResponse = await withTimeout(
         agentPromise,
-        35000,
-        new Error("Excedió el tiempo límite de ejecución de 35 segundos")
+        120000,
+        new Error("Excedió el tiempo límite de ejecución de 120 segundos")
       );
 
       const duration = Date.now() - agentStartTime;

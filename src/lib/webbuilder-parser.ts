@@ -136,7 +136,7 @@ export function applyDiffs(
   for (const diff of diffs) {
     // Try exact match first
     if (result.includes(diff.search)) {
-      result = result.replace(diff.search, diff.replace);
+      result = result.replace(diff.search, () => diff.replace);
     } else {
       // Try with trimmed whitespace matching (fuzzy)
       const searchTrimmed = diff.search.trim();

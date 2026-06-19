@@ -877,22 +877,55 @@ export function PreviewPanel() {
             {/* Preview Tab */}
             {selectedTab === "preview" && (
               <div className={cn(
-                "flex-1 relative min-h-0 w-full flex items-center justify-center overflow-auto bg-muted/20 dark:bg-muted/10",
-                viewport === "desktop" ? "p-0" : "p-4"
+                "flex-1 relative min-h-0 w-full overflow-hidden",
+                viewport === "desktop" 
+                  ? "bg-background" 
+                  : "bg-[repeating-conic-gradient(rgba(0,0,0,0.03)_0%_25%,transparent_0%_50%)] dark:bg-[repeating-conic-gradient(rgba(255,255,255,0.02)_0%_25%,transparent_0%_50%)] bg-[length:20px_20px] flex items-center justify-center"
               )}>
                 {(!isAiResponding && !isCompiling && !chatLoading) ? (
-                  <div 
-                    className={cn(
-                      "relative overflow-hidden bg-background transition-all duration-500 ease-in-out",
-                      viewport === "desktop" 
-                        ? "absolute inset-0 w-full h-full border-none shadow-none rounded-none" 
-                        : viewport === "tablet" 
-                          ? "w-[768px] h-[1024px] max-h-full rounded-[2rem] border-8 border-neutral-800 shadow-2xl" 
-                          : "w-[375px] h-[812px] max-h-full rounded-[3rem] border-[12px] border-neutral-800 shadow-2xl"
+                  <>
+                    {viewport === "desktop" ? (
+                      /* Desktop: Full bleed, no frame */
+                      <div className="absolute inset-0 w-full h-full">
+                        <SandboxRunner key={iframeKey} />
+                      </div>
+                    ) : (
+                      /* Tablet / Mobile: Centered device frame */
+                      <div className="flex flex-col items-center gap-3">
+                        <div
+                          className={cn(
+                            "relative bg-neutral-900 dark:bg-neutral-950 overflow-hidden shadow-2xl transition-all duration-500 ease-in-out",
+                            viewport === "tablet"
+                              ? "w-[768px] h-[1024px] max-h-[calc(100vh-12rem)] rounded-[2rem] border-[6px] border-neutral-700/80"
+                              : "w-[375px] h-[812px] max-h-[calc(100vh-12rem)] rounded-[3rem] border-[6px] border-neutral-700/80"
+                          )}
+                        >
+                          {/* Notch / Camera (mobile only) */}
+                          {viewport === "mobile" && (
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10 w-[120px] h-[28px] bg-neutral-900 dark:bg-neutral-950 rounded-b-2xl flex items-center justify-center gap-2">
+                              <div className="w-2.5 h-2.5 rounded-full bg-neutral-700/60 ring-1 ring-neutral-600/30" />
+                            </div>
+                          )}
+                          {/* Status bar for tablet */}
+                          {viewport === "tablet" && (
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10 w-3 h-3 mt-2 rounded-full bg-neutral-700/50 ring-1 ring-neutral-600/20" />
+                          )}
+                          {/* Inner iframe content */}
+                          <div className="w-full h-full overflow-hidden bg-white dark:bg-background rounded-[inherit]">
+                            <SandboxRunner key={iframeKey} />
+                          </div>
+                          {/* Home indicator (mobile only) */}
+                          {viewport === "mobile" && (
+                            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-[100px] h-[4px] rounded-full bg-neutral-600/40" />
+                          )}
+                        </div>
+                        {/* Device label */}
+                        <span className="text-[10px] font-bold text-muted-foreground/50 tracking-widest uppercase">
+                          {viewport === "tablet" ? "768 × 1024" : "375 × 812"}
+                        </span>
+                      </div>
                     )}
-                  >
-                    <SandboxRunner key={iframeKey} />
-                  </div>
+                  </>
                 ) : (
                   <div className="absolute inset-0 bg-background flex flex-col items-center justify-center p-8 overflow-hidden select-none">
                     {/* Grid pattern with light gradients */}

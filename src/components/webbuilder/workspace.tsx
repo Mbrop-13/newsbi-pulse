@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
 import { useAIChatStore } from "@/lib/stores/ai-chat-store";
@@ -15,6 +16,7 @@ interface WebBuilderWorkspaceProps {
 
 export function WebBuilderWorkspace({ chatPanel }: WebBuilderWorkspaceProps) {
   const { isMobile } = useSidebar();
+  const router = useRouter();
   const { isSplitView, setSplitView, setWebBuilderMode } = useWebBuilderStore();
   const clearMessages = useAIChatStore((s) => s.clearMessages);
   const [mobileTab, setMobileTab] = useState<"chat" | "preview">("chat");
@@ -22,6 +24,7 @@ export function WebBuilderWorkspace({ chatPanel }: WebBuilderWorkspaceProps) {
   const handleBackToHome = () => {
     setWebBuilderMode(false);
     clearMessages();
+    router.push("/ai");
   };
 
   const { files, isAiResponding, syncToCloud, activeProjectId } = useWebBuilderStore();

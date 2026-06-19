@@ -893,7 +893,7 @@ function AssistantAvatar({ isResponding, isWebBuilderMode }: { isResponding: boo
   }
 
   const isDark = mounted && resolvedTheme === "dark";
-  const aiAvatarSrc = isDark
+  const imageSrc = isDark
     ? "/assets/Logo 2-Blanco.png"
     : "/assets/Maverlang Logo-2.png";
 

@@ -24,7 +24,7 @@ export function WebBuilderWorkspace({ chatPanel }: WebBuilderWorkspaceProps) {
   const handleBackToHome = () => {
     setWebBuilderMode(false);
     clearMessages();
-    router.push("/ai");
+    window.location.href = "/ai";
   };
 
   const { files, isAiResponding, syncToCloud, activeProjectId } = useWebBuilderStore();

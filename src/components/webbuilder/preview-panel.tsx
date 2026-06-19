@@ -19,6 +19,7 @@ import {
   Code2,
   Terminal,
   ChevronRight,
+  ChevronLeft,
   ChevronDown,
   FileCode2,
   FileJson,
@@ -42,6 +43,7 @@ import {
   Cpu,
   CheckCircle2,
   XCircle,
+  Lock,
 } from "lucide-react";
 
 // ─── File Icon Resolver ────────────────────────────
@@ -387,6 +389,73 @@ function SandpackSyncListener() {
   }, [sandpack.files, sandpack.activeFile, files, updateFile]);
 
   return null;
+}
+
+function PremiumSkeletonLoader({ isAiResponding }: { isAiResponding: boolean }) {
+  return (
+    <div className="absolute inset-0 bg-background flex flex-col items-center justify-center p-8 overflow-hidden select-none">
+      {/* Grid pattern with light gradients */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(13,110,253,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(13,110,253,0.015)_1px,transparent_1px)] bg-[size:1.5rem_1.5rem] opacity-60 pointer-events-none" />
+      
+      {/* Neon radial glows */}
+      <div className="absolute -top-12 -left-12 w-64 h-64 bg-primary/10 rounded-full blur-[80px] animate-pulse pointer-events-none" />
+      <div className="absolute -bottom-12 -right-12 w-64 h-64 bg-violet-500/10 rounded-full blur-[80px] animate-pulse pointer-events-none" style={{ animationDelay: "1.5s" }} />
+
+      <div className="relative z-10 flex flex-col items-center max-w-md w-full px-4">
+        {/* Default visual mockup loader when compiling or loading */}
+        <div className="w-full bg-card/45 border border-border/20 backdrop-blur-md rounded-2xl shadow-xl overflow-hidden mb-6 space-y-0 animate-pulse relative">
+          {/* Window header */}
+          <div className="flex items-center justify-between px-4 py-2.5 bg-muted/20 border-b border-border/10">
+            <div className="flex gap-1">
+              <span className="w-2 h-2 rounded-full bg-muted/50" />
+              <span className="w-2 h-2 rounded-full bg-muted/50" />
+              <span className="w-2 h-2 rounded-full bg-muted/50" />
+            </div>
+            <div className="w-24 h-2 bg-muted/40 rounded-full" />
+            <div className="w-3 h-3 bg-muted/40 rounded" />
+          </div>
+          {/* Mockup dashboard grid */}
+          <div className="p-4 flex gap-3 h-40">
+            <div className="w-1/4 flex flex-col gap-2.5 border-r border-border/10 pr-3">
+              <div className="w-full h-6 bg-muted/50 rounded-lg" />
+              <div className="w-5/6 h-4 bg-muted/30 rounded-lg" />
+              <div className="w-4/5 h-4 bg-muted/30 rounded-lg" />
+            </div>
+            <div className="flex-grow flex flex-col gap-3">
+              <div className="grid grid-cols-3 gap-2">
+                <div className="h-8 bg-muted/40 rounded-lg" />
+                <div className="h-8 bg-muted/40 rounded-lg" />
+                <div className="h-8 bg-muted/40 rounded-lg" />
+              </div>
+              <div className="flex-grow bg-muted/20 rounded-xl p-2.5 flex flex-col justify-between">
+                <div className="flex justify-between items-center">
+                  <div className="w-12 h-2 bg-muted rounded-full" />
+                  <div className="w-6 h-2 bg-muted rounded-full" />
+                </div>
+                <div className="flex items-end gap-1 h-10 pt-2">
+                  <div className="flex-1 bg-primary/10 rounded-t h-1/3" />
+                  <div className="flex-1 bg-primary/15 rounded-t h-2/3" />
+                  <div className="flex-1 bg-primary/20 rounded-t h-1/2 animate-bounce" />
+                  <div className="flex-1 bg-primary/10 rounded-t h-3/5" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Highly Premium Shimmery Loader Badge */}
+        <div className="relative group w-full max-w-xs">
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/50 to-purple-500/50 rounded-full blur opacity-30 group-hover:opacity-40 transition duration-1000 animate-tilt"></div>
+          <div className="relative flex items-center justify-center gap-2.5 bg-card/85 border border-border/30 backdrop-blur-md px-5 py-2.5 rounded-full shadow-lg">
+            <Loader2 className="w-3.5 h-3.5 text-primary animate-spin" />
+            <span className="text-[10px] font-bold tracking-tight text-foreground/80">
+              {isAiResponding ? "Agentes programando..." : "Compilando interfaz..."}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function PreviewPanel() {
@@ -876,122 +945,99 @@ export function PreviewPanel() {
 
             {/* Preview Tab */}
             {selectedTab === "preview" && (
-              <div className={cn(
-                "flex-1 relative min-h-0 w-full overflow-hidden",
-                viewport === "desktop" 
-                  ? "bg-background" 
-                  : "bg-[repeating-conic-gradient(rgba(0,0,0,0.03)_0%_25%,transparent_0%_50%)] dark:bg-[repeating-conic-gradient(rgba(255,255,255,0.02)_0%_25%,transparent_0%_50%)] bg-[length:20px_20px] flex items-center justify-center"
-              )}>
-                {(!isAiResponding && !isCompiling && !chatLoading) ? (
-                  <>
-                    {viewport === "desktop" ? (
-                      /* Desktop: Full bleed, no frame */
-                      <div className="absolute inset-0 w-full h-full">
-                        <SandboxRunner key={iframeKey} />
-                      </div>
-                    ) : (
-                      /* Tablet / Mobile: Centered device frame */
-                      <div className="flex flex-col items-center gap-3">
-                        <div
-                          className={cn(
-                            "relative bg-neutral-900 dark:bg-neutral-950 overflow-hidden shadow-2xl transition-all duration-500 ease-in-out",
-                            viewport === "tablet"
-                              ? "w-[768px] h-[1024px] max-h-[calc(100vh-12rem)] rounded-[2rem] border-[6px] border-neutral-700/80"
-                              : "w-[375px] h-[812px] max-h-[calc(100vh-12rem)] rounded-[3rem] border-[6px] border-neutral-700/80"
-                          )}
-                        >
-                          {/* Notch / Camera (mobile only) */}
-                          {viewport === "mobile" && (
-                            <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10 w-[120px] h-[28px] bg-neutral-900 dark:bg-neutral-950 rounded-b-2xl flex items-center justify-center gap-2">
-                              <div className="w-2.5 h-2.5 rounded-full bg-neutral-700/60 ring-1 ring-neutral-600/30" />
-                            </div>
-                          )}
-                          {/* Status bar for tablet */}
-                          {viewport === "tablet" && (
-                            <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10 w-3 h-3 mt-2 rounded-full bg-neutral-700/50 ring-1 ring-neutral-600/20" />
-                          )}
-                          {/* Inner iframe content */}
-                          <div className="w-full h-full overflow-hidden bg-white dark:bg-background rounded-[inherit]">
-                            <SandboxRunner key={iframeKey} />
-                          </div>
-                          {/* Home indicator (mobile only) */}
-                          {viewport === "mobile" && (
-                            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-[100px] h-[4px] rounded-full bg-neutral-600/40" />
-                          )}
+              <div className="flex-grow flex flex-col min-h-0 w-full h-full relative overflow-hidden bg-slate-50 dark:bg-[#07090e]">
+                {/* Viewport Frame */}
+                {viewport === "desktop" && (
+                  <div className="flex-grow flex flex-col items-center justify-start overflow-auto p-4 md:p-6 min-h-0 w-full h-full relative scrollbar-thin">
+                    <div className="w-full max-w-[1280px] h-full flex flex-col bg-white dark:bg-[#0b0f19] rounded-2xl border border-border/50 shadow-2xl overflow-hidden transition-all duration-300 ease-in-out relative">
+                      {/* Browser Chrome Header */}
+                      <div className="flex items-center justify-between gap-4 px-4 py-3 bg-gray-50/90 dark:bg-[#0f1322] border-b border-gray-100 dark:border-border/30 shrink-0">
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="w-2.5 h-2.5 rounded-full bg-red-500/80 shadow-sm" />
+                          <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/80 shadow-sm" />
+                          <span className="w-2.5 h-2.5 rounded-full bg-green-500/80 shadow-sm" />
                         </div>
-                        {/* Device label */}
-                        <span className="text-[10px] font-bold text-muted-foreground/50 tracking-widest uppercase">
-                          {viewport === "tablet" ? "768 × 1024" : "375 × 812"}
-                        </span>
+                        <div className="flex items-center gap-1 shrink-0 text-muted-foreground">
+                          <button className="p-1 rounded hover:bg-muted/85 transition-colors" disabled>
+                            <ChevronLeft className="w-3.5 h-3.5 opacity-40" />
+                          </button>
+                          <button className="p-1 rounded hover:bg-muted/85 transition-colors" disabled>
+                            <ChevronRight className="w-3.5 h-3.5 opacity-40" />
+                          </button>
+                          <button onClick={handleRefresh} className="p-1 rounded hover:bg-muted/85 text-muted-foreground hover:text-foreground transition-all">
+                            <RefreshCw className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        <div className="flex-grow max-w-md mx-auto flex items-center justify-center gap-1.5 px-3 py-1.5 bg-white dark:bg-[#07090e]/40 border border-gray-200/40 dark:border-border/10 rounded-lg text-[10px] text-muted-foreground font-mono select-none">
+                          <Lock className="w-2.5 h-2.5 text-emerald-500 shrink-0" />
+                          <span className="truncate">localhost:5173</span>
+                        </div>
+                        <div className="shrink-0">
+                          <button 
+                            onClick={() => {
+                              const manager = WebContainerManager.getInstance();
+                              if (manager.previewUrl) {
+                                window.open(manager.previewUrl, "_blank");
+                              } else {
+                                toast.error("El servidor de vista previa aún no está listo.");
+                              }
+                            }} 
+                            className="p-1.5 rounded-md hover:bg-muted/85 text-muted-foreground hover:text-foreground transition-all"
+                            title="Abrir en pestaña nueva"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="absolute inset-0 bg-background flex flex-col items-center justify-center p-8 overflow-hidden select-none">
-                    {/* Grid pattern with light gradients */}
-                    <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(13,110,253,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(13,110,253,0.03)_1px,transparent_1px)] bg-[size:2.5rem_2.5rem] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)] opacity-70" />
-                    
-                    {/* Neon radial glows */}
-                    <div className="absolute -top-12 -left-12 w-64 h-64 bg-primary/20 rounded-full blur-[80px] animate-pulse pointer-events-none" />
-                    <div className="absolute -bottom-12 -right-12 w-64 h-64 bg-violet-500/20 rounded-full blur-[80px] animate-pulse pointer-events-none" style={{ animationDelay: "1.5s" }} />
+                      {/* Browser Body */}
+                      <div className="flex-grow min-h-0 relative w-full h-full bg-white dark:bg-background">
+                        {(isAiResponding || isCompiling || chatLoading) ? (
+                          <PremiumSkeletonLoader isAiResponding={isAiResponding || chatLoading} />
+                        ) : (
+                          <SandboxRunner key={iframeKey} />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-                    <div className="relative z-10 flex flex-col items-center max-w-md w-full">
-                      {/* Default visual mockup loader when compiling or loading */}
-                      <div className="w-full bg-card/65 border border-border/40 backdrop-blur-lg rounded-2xl shadow-2xl overflow-hidden mb-8 space-y-0 animate-pulse relative">
-                        {/* Window header */}
-                        <div className="flex items-center justify-between px-4 py-3 bg-muted/40 border-b border-border/20">
-                          <div className="flex gap-1.5">
-                            <span className="w-2.5 h-2.5 rounded-full bg-red-500/30" />
-                            <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/30" />
-                            <span className="w-2.5 h-2.5 rounded-full bg-green-500/30" />
-                          </div>
-                          <div className="w-36 h-3.5 bg-muted/70 rounded-full" />
-                          <div className="w-4 h-4 bg-muted/50 rounded" />
-                        </div>
-                        {/* Mockup dashboard grid */}
-                        <div className="p-5 flex gap-4 h-56">
-                          <div className="w-1/4 flex flex-col gap-3 border-r border-border/20 pr-4">
-                            <div className="w-full h-8 bg-muted rounded-lg" />
-                            <div className="w-5/6 h-5 bg-muted/65 rounded-lg" />
-                            <div className="w-4/5 h-5 bg-muted/65 rounded-lg" />
-                            <div className="w-full h-5 bg-muted/65 rounded-lg" />
-                          </div>
-                          <div className="flex-grow flex flex-col gap-4">
-                            <div className="grid grid-cols-3 gap-3">
-                              <div className="h-12 bg-muted/70 rounded-xl" />
-                              <div className="h-12 bg-muted/70 rounded-xl" />
-                              <div className="h-12 bg-muted/70 rounded-xl" />
-                            </div>
-                            <div className="flex-grow bg-muted/50 rounded-xl p-3 flex flex-col justify-between">
-                              <div className="flex justify-between items-center">
-                                <div className="w-16 h-3 bg-muted rounded-full" />
-                                <div className="w-8 h-3 bg-muted rounded-full" />
-                              </div>
-                              <div className="flex items-end gap-1.5 h-16 pt-2">
-                                <div className="flex-1 bg-primary/10 rounded-t h-1/3" />
-                                <div className="flex-1 bg-primary/15 rounded-t h-2/3" />
-                                <div className="flex-1 bg-primary/25 rounded-t h-1/2" />
-                                <div className="flex-1 bg-primary/20 rounded-t h-4/5 animate-bounce" style={{ animationDelay: '0.1s' }} />
-                                <div className="flex-1 bg-primary/15 rounded-t h-3/5" />
-                                <div className="flex-1 bg-primary/10 rounded-t h-2/5" />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                {viewport === "tablet" && (
+                  <div className="flex-grow flex flex-col items-center justify-center overflow-auto p-4 md:p-6 min-h-0 w-full h-full relative scrollbar-thin">
+                    {/* Tablet device bezel */}
+                    <div className="w-full max-w-[768px] aspect-[768/1024] max-h-[82vh] relative flex flex-col border-[14px] border-zinc-950 dark:border-zinc-800 rounded-[36px] bg-zinc-950 shadow-2xl overflow-hidden shrink-0">
+                      {/* Lens */}
+                      <div className="w-2 h-2 rounded-full bg-zinc-900 absolute top-2 left-1/2 -translate-x-1/2 z-50 opacity-80" />
+                      {/* Screen */}
+                      <div className="flex-grow min-h-0 relative w-full h-full bg-white dark:bg-background rounded-[18px] overflow-hidden">
+                        {(isAiResponding || isCompiling || chatLoading) ? (
+                          <PremiumSkeletonLoader isAiResponding={isAiResponding || chatLoading} />
+                        ) : (
+                          <SandboxRunner key={iframeKey} />
+                        )}
                       </div>
+                    </div>
+                  </div>
+                )}
 
-                      {/* Highly Premium Shimmery Loader Badge */}
-                      <div className="relative group w-full max-w-xs">
-                        <div className="absolute -inset-0.5 bg-gradient-to-r from-primary via-purple-500 to-blue-500 rounded-full blur opacity-40 group-hover:opacity-60 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
-                        <div className="relative flex items-center justify-center gap-3 bg-card/90 border border-border/40 backdrop-blur-md px-6 py-3 rounded-full shadow-2xl">
-                          <div className="relative flex items-center justify-center shrink-0 w-4.5 h-4.5">
-                            <Loader2 className="w-full h-full text-primary animate-spin" />
-                          </div>
-                          <span className="text-[11px] font-bold tracking-tight text-foreground bg-clip-text">
-                            {isAiResponding ? "Agentes programando..." : "Compilando e inicializando la interfaz..."}
-                          </span>
-                        </div>
+                {viewport === "mobile" && (
+                  <div className="flex-grow flex flex-col items-center justify-center overflow-auto p-4 md:p-6 min-h-0 w-full h-full relative scrollbar-thin">
+                    {/* Mobile device bezel */}
+                    <div className="w-full max-w-[390px] aspect-[390/800] max-h-[82vh] relative flex flex-col border-[12px] border-zinc-950 dark:border-zinc-800 rounded-[48px] bg-zinc-950 shadow-2xl overflow-hidden shrink-0">
+                      {/* Dynamic Island */}
+                      <div className="w-28 h-5.5 bg-zinc-950 dark:bg-zinc-800 rounded-full absolute top-2 left-1/2 -translate-x-1/2 z-50 flex items-center justify-between px-4 border border-zinc-900/50">
+                        <span className="w-1 h-1 rounded-full bg-[#101010]" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#181818]" />
                       </div>
+                      {/* Screen */}
+                      <div className="flex-grow min-h-0 relative w-full h-full bg-white dark:bg-background rounded-[34px] overflow-hidden">
+                        {(isAiResponding || isCompiling || chatLoading) ? (
+                          <PremiumSkeletonLoader isAiResponding={isAiResponding || chatLoading} />
+                        ) : (
+                          <SandboxRunner key={iframeKey} />
+                        )}
+                      </div>
+                      {/* Home indicator bar */}
+                      <div className="w-24 h-1 bg-zinc-400/80 dark:bg-zinc-600/80 rounded-full absolute bottom-1 left-1/2 -translate-x-1/2 z-50" />
                     </div>
                   </div>
                 )}

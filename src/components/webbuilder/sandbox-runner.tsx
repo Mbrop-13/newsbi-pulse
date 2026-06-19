@@ -5,6 +5,7 @@ import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
 import { attemptAutoFix } from "@/lib/services/auto-fix-service";
 import { WebContainerManager } from "@/lib/services/webcontainer-manager";
 import { Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 function SandboxErrorListener() {
   const store = useWebBuilderStore();
@@ -117,20 +118,74 @@ export function SandboxRunner() {
               height: "100%",
               width: "100%",
               border: "none",
-              background: "transparent",
+              background: "white",
             }}
             allow="cross-origin-isolated; geolocation; microphone; camera; midi; vr; accelerometer; gyroscope; payment; ambient-light-sensor; encrypted-media; usb"
           />
         ) : (
-          <div className="flex flex-col items-center justify-center w-full h-full text-muted-foreground bg-muted/10 gap-3">
-            <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            <p className="text-xs font-semibold">
-              {status === "booting" && "Iniciando contenedor..."}
-              {status === "installing" && "Instalando dependencias..."}
-              {status === "ready" && "Iniciando dev server..."}
-              {status === "error" && "Error en el entorno"}
-              {(!status || status === "idle") && "Preparando entorno..."}
-            </p>
+          <div className="flex-1 flex flex-col w-full h-full bg-slate-50 dark:bg-[#07090e] relative overflow-hidden select-none">
+            {/* Grid pattern with light gradients */}
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(13,110,253,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(13,110,253,0.015)_1px,transparent_1px)] bg-[size:1.5rem_1.5rem] opacity-60 pointer-events-none" />
+            
+            {/* Ambient glows */}
+            <div className="absolute -top-12 -left-12 w-64 h-64 bg-primary/5 rounded-full blur-[80px] animate-pulse pointer-events-none" />
+            <div className="absolute -bottom-12 -right-12 w-64 h-64 bg-indigo-500/5 rounded-full blur-[80px] animate-pulse pointer-events-none" />
+
+            {/* Skeleton mockup background to represent a dashboard loading */}
+            <div className="absolute inset-0 p-6 flex flex-col gap-4 opacity-[0.06] pointer-events-none">
+              <div className="w-full h-12 bg-zinc-800 rounded-xl" />
+              <div className="flex-grow flex gap-4 min-h-0">
+                <div className="w-1/4 h-full bg-zinc-800 rounded-xl" />
+                <div className="flex-grow flex flex-col gap-4">
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="h-20 bg-zinc-800 rounded-xl" />
+                    <div className="h-20 bg-zinc-800 rounded-xl" />
+                    <div className="h-20 bg-zinc-800 rounded-xl" />
+                  </div>
+                  <div className="flex-grow bg-zinc-800 rounded-xl" />
+                </div>
+              </div>
+            </div>
+
+            {/* Floating glass card with details */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-6 z-10">
+              <div className="w-full max-w-[270px] bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md border border-gray-100 dark:border-zinc-800/40 rounded-2xl p-6 shadow-xl flex flex-col items-center text-center">
+                <div className="relative w-12 h-12 flex items-center justify-center mb-4">
+                  {/* Glowing thin spinning ring */}
+                  <div className="absolute inset-0 rounded-full border-2 border-primary/10" />
+                  <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                </div>
+                
+                <h4 className="text-xs font-bold text-foreground tracking-wide mb-1 uppercase">
+                  {status === "booting" && "Iniciando Entorno"}
+                  {status === "installing" && "Instalando dependencias"}
+                  {status === "ready" && "Iniciando Servidor"}
+                  {status === "error" && "Error de Servidor"}
+                  {(!status || status === "idle") && "Preparando Sandbox"}
+                </h4>
+                
+                <p className="text-[10px] text-muted-foreground mb-4 leading-normal">
+                  {status === "booting" && "Configurando el contenedor virtual en el navegador..."}
+                  {status === "installing" && "Descargando e instalando dependencias de Node.js..."}
+                  {status === "ready" && "Compilando ficheros y levantando puerto Vite..."}
+                  {status === "error" && "Ocurrió un error al iniciar la preview."}
+                  {(!status || status === "idle") && "Reservando recursos del sistema..."}
+                </p>
+
+                {/* Progress bar */}
+                <div className="w-full h-1.5 bg-gray-100 dark:bg-zinc-800/50 rounded-full overflow-hidden">
+                  <div 
+                    className={cn(
+                      "h-full rounded-full transition-all duration-500 ease-out shadow-[0_0_8px_rgba(59,130,246,0.4)]",
+                      status === "error" ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]" : "bg-gradient-to-r from-blue-500 to-indigo-600"
+                    )}
+                    style={{ 
+                      width: status === "booting" ? "25%" : status === "installing" ? "65%" : status === "ready" ? "90%" : status === "error" ? "100%" : "15%"
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

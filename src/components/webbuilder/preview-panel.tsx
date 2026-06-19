@@ -43,6 +43,108 @@ import {
   Lock,
 } from "lucide-react";
 
+// ─── Inspector Injection Helper ───────────────────
+function injectInspectorScript(html: string): string {
+  if (html.includes("MAVERLANG_ELEMENT_CLICKED")) return html;
+
+  const styleTag = `
+    <style>
+      .maverlang-inspector-hover {
+        outline: 2px solid #3b82f6 !important;
+        outline-offset: -2px !important;
+        cursor: crosshair !important;
+        box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.5) !important;
+        background-color: rgba(59, 130, 246, 0.1) !important;
+        transition: all 0.1s !important;
+      }
+
+      @media (max-width: 768px) {
+        ::-webkit-scrollbar {
+          display: none !important;
+          width: 0 !important;
+          height: 0 !important;
+        }
+        * {
+          scrollbar-width: none !important;
+          -ms-overflow-style: none !important;
+        }
+      }
+    </style>
+  `;
+
+  const scriptTag = `
+    <script>
+      let isInspectorActive = false;
+      
+      window.addEventListener('message', (e) => {
+        if (e.data?.type === 'TOGGLE_INSPECTOR') {
+          isInspectorActive = e.data.active;
+          if (!isInspectorActive) {
+            document.querySelectorAll('.maverlang-inspector-hover').forEach(el => el.classList.remove('maverlang-inspector-hover'));
+          }
+        }
+      });
+
+      document.addEventListener('mouseover', (e) => {
+        if (!isInspectorActive) return;
+        e.stopPropagation();
+        if (e.target !== document.body && e.target !== document.documentElement) {
+          e.target.classList.add('maverlang-inspector-hover');
+        }
+      }, true);
+
+      document.addEventListener('mouseout', (e) => {
+        if (!isInspectorActive) return;
+        e.stopPropagation();
+        if (e.target && e.target.classList) {
+          e.target.classList.remove('maverlang-inspector-hover');
+        }
+      }, true);
+
+      document.addEventListener('click', (e) => {
+        if (!isInspectorActive) return;
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const el = e.target;
+        if (!el || el === document.body || el === document.documentElement) return;
+
+        el.classList.remove('maverlang-inspector-hover');
+        
+        const clone = el.cloneNode(false);
+        let innerText = el.innerText || '';
+        if (innerText.length > 50) innerText = innerText.substring(0, 50) + '...';
+        if (innerText) clone.innerText = innerText;
+        
+        window.parent.postMessage({
+          type: 'MAVERLANG_ELEMENT_CLICKED',
+          elementHtml: clone.outerHTML,
+          tagName: el.tagName,
+          className: el.className || ''
+        }, '*');
+        
+        isInspectorActive = false;
+        window.parent.postMessage({ type: 'MAVERLANG_INSPECTOR_DISABLED' }, '*');
+      }, true);
+    </script>
+  `;
+
+  let modifiedHtml = html;
+  if (modifiedHtml.includes("</head>")) {
+    modifiedHtml = modifiedHtml.replace("</head>", styleTag + "</head>");
+  } else {
+    modifiedHtml = styleTag + modifiedHtml;
+  }
+
+  if (modifiedHtml.includes("</body>")) {
+    modifiedHtml = modifiedHtml.replace("</body>", scriptTag + "</body>");
+  } else {
+    modifiedHtml = modifiedHtml + scriptTag;
+  }
+
+  return modifiedHtml;
+}
+
 // ─── File Icon Resolver ────────────────────────────
 function getFileIcon(path: string) {
   if (path.endsWith(".tsx") || path.endsWith(".ts"))
@@ -198,7 +300,7 @@ function CodeViewer() {
       </div>
 
       {/* Code Content */}
-      <div className="flex-1 min-h-0 overflow-auto bg-background text-foreground relative">
+      <div className="flex-1 relative h-full min-h-0 bg-background text-foreground">
         <SandpackCodeEditor
           showLineNumbers={true}
           showTabs={false}
@@ -212,49 +314,6 @@ function CodeViewer() {
             fontSize: "12px",
           }}
         />
-      </div>
-    </div>
-  );
-}
-
-// ─── Console Panel ───────────────────────────────────
-
-function ConsolePanel() {
-  const { compileLogs, files } = useWebBuilderStore();
-  const hasFiles = Object.keys(files).length > 0;
-  const terminalEndRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (terminalEndRef.current) {
-      terminalEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [compileLogs]);
-
-  if (!hasFiles) {
-    return (
-      <div className="flex-grow flex flex-col items-center justify-center p-8 text-center text-muted-foreground bg-muted/5 min-h-[300px]">
-        <Terminal className="w-10 h-10 mb-3 opacity-30 text-primary" />
-        <p className="font-semibold text-sm text-foreground">Sin consola activa</p>
-        <p className="text-xs text-muted-foreground mt-1 max-w-xs mx-auto">
-          La consola estará disponible una vez que el proyecto tenga archivos cargados.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex-grow flex flex-col bg-[#0B0F19] min-h-0 text-gray-300 font-mono text-[11px] p-4 select-text">
-      <div className="flex-1 overflow-auto space-y-1.5 scrollbar-thin">
-        {compileLogs.length === 0 ? (
-          <div className="text-gray-500 italic">Esperando logs del contenedor...</div>
-        ) : (
-          compileLogs.map((log, i) => (
-            <div key={i} className="leading-relaxed break-all whitespace-pre-wrap">
-              {log}
-            </div>
-          ))
-        )}
-        <div ref={terminalEndRef} />
       </div>
     </div>
   );
@@ -523,7 +582,7 @@ export function PreviewPanel() {
       }
     }
 
-    // Inject Inspector Script for React Templates
+    // Default HTML index files if they do not exist
     if (hasReact && !result["/public/index.html"]) {
       result["/public/index.html"] = `<!DOCTYPE html>
 <html lang="en">
@@ -531,75 +590,32 @@ export function PreviewPanel() {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Maverlang Preview</title>
-    <style>
-      .maverlang-inspector-hover {
-        outline: 2px solid #3b82f6 !important;
-        outline-offset: -2px !important;
-        cursor: crosshair !important;
-        box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.5) !important;
-        background-color: rgba(59, 130, 246, 0.1) !important;
-        transition: all 0.1s !important;
-      }
-    </style>
   </head>
   <body>
     <div id="root"></div>
-    <script>
-      let isInspectorActive = false;
-      
-      window.addEventListener('message', (e) => {
-        if (e.data?.type === 'TOGGLE_INSPECTOR') {
-          isInspectorActive = e.data.active;
-          if (!isInspectorActive) {
-            document.querySelectorAll('.maverlang-inspector-hover').forEach(el => el.classList.remove('maverlang-inspector-hover'));
-          }
-        }
-      });
-
-      document.addEventListener('mouseover', (e) => {
-        if (!isInspectorActive) return;
-        e.stopPropagation();
-        if (e.target !== document.body && e.target !== document.documentElement) {
-          e.target.classList.add('maverlang-inspector-hover');
-        }
-      }, true);
-
-      document.addEventListener('mouseout', (e) => {
-        if (!isInspectorActive) return;
-        e.stopPropagation();
-        if (e.target && e.target.classList) {
-          e.target.classList.remove('maverlang-inspector-hover');
-        }
-      }, true);
-
-      document.addEventListener('click', (e) => {
-        if (!isInspectorActive) return;
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const el = e.target;
-        if (!el || el === document.body || el === document.documentElement) return;
-
-        el.classList.remove('maverlang-inspector-hover');
-        
-        const clone = el.cloneNode(false);
-        let innerText = el.innerText || '';
-        if (innerText.length > 50) innerText = innerText.substring(0, 50) + '...';
-        if (innerText) clone.innerText = innerText;
-        
-        window.parent.postMessage({
-          type: 'MAVERLANG_ELEMENT_CLICKED',
-          elementHtml: clone.outerHTML,
-          tagName: el.tagName,
-          className: el.className || ''
-        }, '*');
-        
-        isInspectorActive = false;
-        window.parent.postMessage({ type: 'MAVERLANG_INSPECTOR_DISABLED' }, '*');
-      }, true);
-    </script>
   </body>
 </html>`;
+    }
+
+    if (!hasReact && !result["/index.html"] && Object.keys(stableFiles).length > 0) {
+      result["/index.html"] = `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maverlang Preview</title>
+  </head>
+  <body>
+    <div id="app"></div>
+  </body>
+</html>`;
+    }
+
+    // Inject Inspector Script for all HTML files
+    for (const path of Object.keys(result)) {
+      if (path.endsWith(".html")) {
+        result[path] = injectInspectorScript(result[path]);
+      }
     }
 
     return result;
@@ -618,6 +634,17 @@ export function PreviewPanel() {
     const handleMessage = (e: MessageEvent) => {
       if (e.data?.type === 'MAVERLANG_INSPECTOR_DISABLED') {
         setIsInspectorActive(false);
+      } else if (e.data?.type === 'MAVERLANG_ELEMENT_CLICKED') {
+        setIsInspectorActive(false);
+        // Dispatch custom event for ChatInput to intercept the click
+        const event = new CustomEvent("MAVERLANG_ELEMENT_INSPECTED", {
+          detail: {
+            elementHtml: e.data.elementHtml,
+            tagName: e.data.tagName,
+            className: e.data.className
+          }
+        });
+        window.dispatchEvent(event);
       }
     };
     window.addEventListener('message', handleMessage);
@@ -628,7 +655,6 @@ export function PreviewPanel() {
     { id: "preview" as const, label: "Preview", description: "Vista previa interactiva", icon: Monitor },
     { id: "files" as const, label: "Files", description: "Explorador de archivos", icon: FolderOpen },
     { id: "code" as const, label: "Code", description: "Editor de código fuente", icon: Code2 },
-    { id: "console" as const, label: "Console", description: "Consola de compilación", icon: Terminal },
   ];
 
   const hasFiles = Object.keys(files).length > 0;
@@ -758,14 +784,13 @@ export function PreviewPanel() {
                     <button
                       onClick={() => setIsInspectorActive(!isInspectorActive)}
                       className={cn(
-                        "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md transition-all text-[11px] font-bold",
+                        "flex items-center justify-center w-8 h-8 rounded-lg transition-all",
                         isInspectorActive
-                          ? "bg-blue-500/20 text-blue-400 shadow-sm border border-blue-500/30 animate-pulse"
+                          ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
                           : "text-muted-foreground hover:text-foreground hover:bg-muted"
                       )}
                     >
                       <MousePointer2 className="w-3.5 h-3.5" />
-                      {isInspectorActive && <span>Selecciona un elemento</span>}
                     </button>
                   </TooltipTrigger>
                   <TooltipContent hideArrow side="bottom" sideOffset={6} className="text-xs bg-popover text-popover-foreground border border-border px-2.5 py-1.5 rounded-xl shadow-lg font-semibold">
@@ -927,12 +952,17 @@ export function PreviewPanel() {
 
             {/* Preview Tab */}
             {selectedTab === "preview" && (
-              <div className="flex-grow flex items-center justify-center min-h-0 w-full h-full relative overflow-auto bg-slate-50 dark:bg-[#07090e] p-4 md:p-6 [&::-webkit-scrollbar]:hidden [scrollbar-width:none] [-ms-overflow-style:none]">
+              <div className={cn(
+                "flex-grow flex items-center justify-center min-h-0 w-full h-full relative overflow-hidden",
+                viewport === "desktop"
+                  ? "bg-transparent p-0"
+                  : "bg-slate-50 dark:bg-[#07090e] p-4 md:p-6"
+              )}>
                 <div className={cn(
-                  "flex flex-col bg-white dark:bg-[#0b0f19] border border-border/40 shadow-xl overflow-hidden transition-all duration-300 ease-in-out relative",
-                  viewport === "desktop" && "w-full h-full rounded-2xl max-w-[1280px]",
-                  viewport === "tablet" && "w-full max-w-[768px] aspect-[768/1024] max-h-full shrink-0 rounded-2xl",
-                  viewport === "mobile" && "w-full max-w-[390px] aspect-[390/800] max-h-full shrink-0 rounded-3xl"
+                  "flex flex-col bg-white dark:bg-[#0b0f19] transition-all duration-300 ease-in-out relative",
+                  viewport === "desktop" && "w-full h-full rounded-none max-w-full border-none shadow-none",
+                  viewport === "tablet" && "w-full max-w-[768px] aspect-[768/1024] max-h-full shrink-0 rounded-2xl border border-border/40 shadow-xl overflow-hidden",
+                  viewport === "mobile" && "w-full max-w-[390px] aspect-[390/800] max-h-full shrink-0 rounded-3xl border border-border/40 shadow-xl overflow-hidden"
                 )}>
                   {/* Body de la preview */}
                   <div className="flex-grow min-h-0 relative w-full h-full bg-white dark:bg-background">
@@ -948,8 +978,6 @@ export function PreviewPanel() {
 
 
 
-            {/* Console logs tab */}
-            {selectedTab === "console" && <ConsolePanel />}
           </SandpackProvider>
         ) : (
           <>
@@ -981,9 +1009,6 @@ export function PreviewPanel() {
                 </div>
               </div>
             )}
-
-            {/* Console logs tab Empty state */}
-            {selectedTab === "console" && <ConsolePanel />}
           </>
         )}
       </div>

@@ -133,6 +133,42 @@ export function ChatInput({
     resizeTextarea();
   }, [value]);
 
+  const valueRef = useRef(value);
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
+
+  useEffect(() => {
+    const handleElementInspected = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const { elementHtml, tagName } = customEvent.detail || {};
+      if (!tagName) return;
+
+      let preview = elementHtml || "";
+      preview = preview.replace(/[\r\n]+/g, ' ').trim();
+      if (preview.length > 80) {
+        preview = preview.substring(0, 80) + "...";
+      }
+
+      const cleanValue = valueRef.current.replace(/^\[Editar\s+[^\]]+\]:\s*/i, "");
+      const prefix = `[Editar <${tagName.toLowerCase()}>: "${preview}"]: `;
+      setValue(prefix + cleanValue);
+
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+          const len = (prefix + cleanValue).length;
+          textareaRef.current.setSelectionRange(len, len);
+        }
+      }, 50);
+    };
+
+    window.addEventListener("MAVERLANG_ELEMENT_INSPECTED", handleElementInspected);
+    return () => {
+      window.removeEventListener("MAVERLANG_ELEMENT_INSPECTED", handleElementInspected);
+    };
+  }, []);
+
   useEffect(() => {
     return () => {
       if (recognitionRef.current) {

@@ -343,12 +343,12 @@ export function PreviewPanel() {
   const hasFiles = Object.keys(files).length > 0;
 
   return (
-    <div className="flex flex-col h-full bg-background text-foreground">
-      {/* Tab Bar */}
-      <div className="flex items-center justify-between px-4 py-2.5 bg-background shrink-0">
-        
-        {/* Left: Tab selection */}
-        <TooltipProvider>
+    <TooltipProvider>
+      <div className="flex flex-col h-full bg-background text-foreground">
+        {/* Tab Bar */}
+        <div className="flex items-center justify-between px-4 py-2.5 bg-background shrink-0">
+          
+          {/* Left: Tab selection */}
           <div className="flex items-center gap-1.5">
             {tabs.map((tab) => {
               const isSelected = selectedTab === tab.id;
@@ -375,74 +375,112 @@ export function PreviewPanel() {
               );
             })}
           </div>
-        </TooltipProvider>
 
         {/* Center: Viewport & History Controls (Only show if Preview or Code is active) */}
         {(selectedTab === "preview" || selectedTab === "code") && (
           <div className="flex items-center gap-4">
             {/* History */}
             <div className="flex items-center gap-1 bg-muted/30 rounded-lg p-1 border border-border/30">
-              <button
-                onClick={undo}
-                disabled={!canUndo()}
-                className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent transition-all"
-                title="Deshacer"
-              >
-                <Undo2 className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={redo}
-                disabled={!canRedo()}
-                className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent transition-all"
-                title="Rehacer"
-              >
-                <Redo2 className="w-3.5 h-3.5" />
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={undo}
+                    disabled={!canUndo()}
+                    className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                  >
+                    <Undo2 className="w-3.5 h-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent hideArrow side="bottom" sideOffset={6} className="text-xs bg-popover text-popover-foreground border border-border px-2.5 py-1.5 rounded-xl shadow-lg font-semibold">
+                  Deshacer cambio
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={redo}
+                    disabled={!canRedo()}
+                    className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                  >
+                    <Redo2 className="w-3.5 h-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent hideArrow side="bottom" sideOffset={6} className="text-xs bg-popover text-popover-foreground border border-border px-2.5 py-1.5 rounded-xl shadow-lg font-semibold">
+                  Rehacer cambio
+                </TooltipContent>
+              </Tooltip>
             </div>
 
             {/* Viewport (Only in Preview) */}
             {selectedTab === "preview" && (
               <div className="flex items-center gap-1 bg-muted/30 rounded-lg p-1 border border-border/30">
-                <button
-                  onClick={() => setViewport("desktop")}
-                  className={cn("p-1.5 rounded-md transition-all", viewport === "desktop" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted")}
-                  title="Desktop"
-                >
-                  <Monitor className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => setViewport("tablet")}
-                  className={cn("p-1.5 rounded-md transition-all", viewport === "tablet" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted")}
-                  title="Tablet"
-                >
-                  <Tablet className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => setViewport("mobile")}
-                  className={cn("p-1.5 rounded-md transition-all", viewport === "mobile" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted")}
-                  title="Mobile"
-                >
-                  <Smartphone className="w-3.5 h-3.5" />
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setViewport("desktop")}
+                      className={cn("p-1.5 rounded-md transition-all", viewport === "desktop" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted")}
+                    >
+                      <Monitor className="w-3.5 h-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent hideArrow side="bottom" sideOffset={6} className="text-xs bg-popover text-popover-foreground border border-border px-2.5 py-1.5 rounded-xl shadow-lg font-semibold">
+                    Vista de PC
+                  </TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setViewport("tablet")}
+                      className={cn("p-1.5 rounded-md transition-all", viewport === "tablet" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted")}
+                    >
+                      <Tablet className="w-3.5 h-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent hideArrow side="bottom" sideOffset={6} className="text-xs bg-popover text-popover-foreground border border-border px-2.5 py-1.5 rounded-xl shadow-lg font-semibold">
+                    Vista de Tablet
+                  </TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setViewport("mobile")}
+                      className={cn("p-1.5 rounded-md transition-all", viewport === "mobile" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted")}
+                    >
+                      <Smartphone className="w-3.5 h-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent hideArrow side="bottom" sideOffset={6} className="text-xs bg-popover text-popover-foreground border border-border px-2.5 py-1.5 rounded-xl shadow-lg font-semibold">
+                    Vista de Celular
+                  </TooltipContent>
+                </Tooltip>
               </div>
             )}
 
             {/* Inspector Toggle (Only in Preview) */}
             {selectedTab === "preview" && (
               <div className="flex items-center bg-muted/30 rounded-lg p-1 border border-border/30">
-                <button
-                  onClick={() => setIsInspectorActive(!isInspectorActive)}
-                  className={cn(
-                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md transition-all text-[11px] font-bold",
-                    isInspectorActive
-                      ? "bg-blue-500/20 text-blue-400 shadow-sm border border-blue-500/30 animate-pulse"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                  )}
-                  title="Click-to-Edit"
-                >
-                  <MousePointer2 className="w-3.5 h-3.5" />
-                  {isInspectorActive && <span>Selecciona un elemento</span>}
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setIsInspectorActive(!isInspectorActive)}
+                      className={cn(
+                        "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md transition-all text-[11px] font-bold",
+                        isInspectorActive
+                          ? "bg-blue-500/20 text-blue-400 shadow-sm border border-blue-500/30 animate-pulse"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                      )}
+                    >
+                      <MousePointer2 className="w-3.5 h-3.5" />
+                      {isInspectorActive && <span>Selecciona un elemento</span>}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent hideArrow side="bottom" sideOffset={6} className="text-xs bg-popover text-popover-foreground border border-border px-2.5 py-1.5 rounded-xl shadow-lg font-semibold">
+                    Inspeccionar elemento (Click para Editar)
+                  </TooltipContent>
+                </Tooltip>
               </div>
             )}
           </div>
@@ -451,68 +489,87 @@ export function PreviewPanel() {
         {/* Right: Actions */}
         <div className="flex items-center gap-2.5">
           {/* Share button */}
-          <button 
-            onClick={() => {
-              toast.success("Enlace de compartición copiado al portapapeles!");
-            }}
-            className="flex items-center gap-1.5 px-4 h-8 bg-secondary hover:bg-secondary/85 text-secondary-foreground rounded-full text-xs font-bold active:scale-95 transition-all duration-200"
-          >
-            <Share2 className="w-3.5 h-3.5" />
-            Compartir
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button 
+                onClick={() => {
+                  toast.success("Enlace de compartición copiado al portapapeles!");
+                }}
+                className="flex items-center gap-1.5 px-4 h-8 bg-secondary hover:bg-secondary/85 text-secondary-foreground rounded-full text-xs font-bold active:scale-95 transition-all duration-200"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                Compartir
+              </button>
+            </TooltipTrigger>
+            <TooltipContent hideArrow side="bottom" sideOffset={6} className="text-xs bg-popover text-popover-foreground border border-border px-2.5 py-1.5 rounded-xl shadow-lg font-semibold">
+              Copiar enlace para compartir
+            </TooltipContent>
+          </Tooltip>
 
           {/* Publish button */}
-          <button 
-            onClick={() => {
-              toast.info("Publicando aplicación en producción...");
-              setTimeout(() => toast.success("Aplicación publicada con éxito en producción!"), 2000);
-            }}
-            className="flex items-center gap-1.5 px-4 h-8 bg-foreground text-background hover:opacity-90 rounded-full text-xs font-bold active:scale-95 transition-all"
-          >
-            Publicar
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button 
+                onClick={() => {
+                  toast.info("Publicando aplicación en producción...");
+                  setTimeout(() => toast.success("Aplicación publicada con éxito en producción!"), 2000);
+                }}
+                className="flex items-center gap-1.5 px-4 h-8 bg-foreground text-background hover:opacity-90 rounded-full text-xs font-bold active:scale-95 transition-all"
+              >
+                Publicar
+              </button>
+            </TooltipTrigger>
+            <TooltipContent hideArrow side="bottom" sideOffset={6} className="text-xs bg-popover text-popover-foreground border border-border px-2.5 py-1.5 rounded-xl shadow-lg font-semibold">
+              Publicar a la web en producción
+            </TooltipContent>
+          </Tooltip>
 
           {/* Save & Download button */}
-          <button
-            onClick={async () => {
-              try {
-                // 1. Generate and download ZIP
-                const zip = new JSZip();
-                const currentFiles = useWebBuilderStore.getState().files;
-                
-                Object.entries(currentFiles).forEach(([path, file]) => {
-                  // Remove leading slash if any so it unzips nicely
-                  const cleanPath = path.startsWith("/") ? path.slice(1) : path;
-                  zip.file(cleanPath, file.code);
-                });
-                
-                const blob = await zip.generateAsync({ type: "blob" });
-                saveAs(blob, "maverlang-project.zip");
-                toast.success("Proyecto descargado en ZIP!");
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={async () => {
+                  try {
+                    // 1. Generate and download ZIP
+                    const zip = new JSZip();
+                    const currentFiles = useWebBuilderStore.getState().files;
+                    
+                    Object.entries(currentFiles).forEach(([path, file]) => {
+                      const cleanPath = path.startsWith("/") ? path.slice(1) : path;
+                      zip.file(cleanPath, file.code);
+                    });
+                    
+                    const blob = await zip.generateAsync({ type: "blob" });
+                    saveAs(blob, "maverlang-project.zip");
+                    toast.success("Proyecto descargado en ZIP!");
 
-                // 2. Sync to cloud as backup
-                await useWebBuilderStore.getState().syncToCloud();
-              } catch (err) {
-                console.error("Error saving project:", err);
-                toast.error("Error al guardar o descargar el proyecto");
-              }
-            }}
-            disabled={isSaving}
-            className="flex items-center gap-1.5 px-4 h-8 bg-foreground text-background hover:opacity-90 rounded-full text-xs font-bold active:scale-95 transition-all disabled:opacity-50"
-            title="Descargar ZIP y Guardar"
-          >
-            {isSaving ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Download className="w-3.5 h-3.5" />
-            )}
-            <span>{isSaving ? "Guardando..." : "Guardar y Descargar"}</span>
-          </button>
+                    // 2. Sync to cloud as backup
+                    await useWebBuilderStore.getState().syncToCloud();
+                  } catch (err) {
+                    console.error("Error saving project:", err);
+                    toast.error("Error al guardar o descargar el proyecto");
+                  }
+                }}
+                disabled={isSaving}
+                className="flex items-center gap-1.5 px-4 h-8 bg-foreground text-background hover:opacity-90 rounded-full text-xs font-bold active:scale-95 transition-all disabled:opacity-50"
+              >
+                {isSaving ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Download className="w-3.5 h-3.5" />
+                )}
+                <span>{isSaving ? "Guardando..." : "Guardar y Descargar"}</span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent hideArrow side="bottom" sideOffset={6} className="text-xs bg-popover text-popover-foreground border border-border px-2.5 py-1.5 rounded-xl shadow-lg font-semibold">
+              Descargar ZIP del código y guardar proyecto
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
       {/* Content wrapper */}
-      <div className="flex-1 flex flex-col min-h-0 bg-background border-t border-border/40 overflow-hidden">
+      <div className="flex-1 flex flex-col min-h-0 bg-background overflow-hidden">
           
           {/* Code Editor Tab */}
           {selectedTab === "code" && (
@@ -653,7 +710,8 @@ export function PreviewPanel() {
 
           {/* Console logs tab */}
           {selectedTab === "console" && <ConsolePanel />}
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }

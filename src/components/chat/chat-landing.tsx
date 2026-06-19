@@ -607,7 +607,7 @@ export function ChatLanding() {
               </div>
             </div>
 
-            <div className="sticky bottom-0 z-10 w-full bg-transparent pt-0 pb-0">
+            <div className="sticky bottom-0 z-10 w-full bg-transparent pt-2 pb-4 md:pb-5">
               <div className="max-w-3xl mx-auto w-full">
                 <ChatInput
                   placeholder="Pregúntame lo que quieras..."
@@ -693,7 +693,7 @@ export function ChatLanding() {
                />
              )}
 
-            <div className="sticky bottom-0 z-10 w-full bg-transparent pt-0 pb-0">
+            <div className="sticky bottom-0 z-10 w-full bg-transparent pt-2 pb-4 md:pb-5">
               <div className="max-w-3xl mx-auto w-full">
                 <ChatInput
                   placeholder="Envía un mensaje..."

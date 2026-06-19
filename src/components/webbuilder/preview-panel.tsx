@@ -153,6 +153,15 @@ function injectInspectorScript(html: string): string {
   return modifiedHtml;
 }
 
+// ─── Preview Iframe Selector Helper ───────────────
+function getPreviewIframe(): HTMLIFrameElement | null {
+  if (typeof document === "undefined") return null;
+  return document.querySelector("iframe.sp-preview-iframe") || 
+         document.querySelector(".sp-preview iframe") ||
+         document.querySelector("iframe[src*=\"codesandbox\"]") ||
+         document.querySelector("iframe");
+}
+
 // ─── File Icon Resolver ────────────────────────────
 function getFileIcon(path: string) {
   if (path.endsWith(".tsx") || path.endsWith(".ts"))
@@ -631,7 +640,7 @@ export function PreviewPanel() {
 
   // Sync inspector state with the preview iframe
   useEffect(() => {
-    const iframe = document.querySelector('iframe');
+    const iframe = getPreviewIframe();
     if (iframe && iframe.contentWindow) {
       iframe.contentWindow.postMessage({ type: 'TOGGLE_INSPECTOR', active: isInspectorActive }, '*');
     }
@@ -655,7 +664,7 @@ export function PreviewPanel() {
         window.dispatchEvent(event);
       } else if (e.data?.type === 'MAVERLANG_PREVIEW_LOADED') {
         // Sync active state when the iframe loads or reloads
-        const iframe = document.querySelector('iframe');
+        const iframe = getPreviewIframe();
         if (iframe && iframe.contentWindow) {
           iframe.contentWindow.postMessage({ type: 'TOGGLE_INSPECTOR', active: isInspectorActive }, '*');
         }
@@ -964,11 +973,29 @@ export function PreviewPanel() {
             {/* Preview Tab */}
             {selectedTab === "preview" && (
               <div className={cn(
-                "flex-grow flex items-center justify-center min-h-0 w-full h-full relative overflow-hidden",
+                "flex-grow flex items-center justify-center min-h-0 w-full h-full relative overflow-hidden preview-container-no-scrollbar",
                 viewport === "desktop"
                   ? "bg-transparent p-0"
                   : "bg-slate-50 dark:bg-[#07090e] p-4 md:p-6"
               )}>
+                <style dangerouslySetInnerHTML={{ __html: `
+                  .preview-container-no-scrollbar ::-webkit-scrollbar {
+                    display: none !important;
+                    width: 0 !important;
+                    height: 0 !important;
+                  }
+                  .preview-container-no-scrollbar *::-webkit-scrollbar {
+                    display: none !important;
+                    width: 0 !important;
+                    height: 0 !important;
+                  }
+                  .preview-container-no-scrollbar,
+                  .preview-container-no-scrollbar *,
+                  .preview-container-no-scrollbar iframe {
+                    scrollbar-width: none !important;
+                    -ms-overflow-style: none !important;
+                  }
+                `}} />
                 <div className={cn(
                   "flex flex-col bg-white dark:bg-[#0b0f19] transition-all duration-300 ease-in-out relative",
                   viewport === "desktop" && "w-full h-full rounded-none max-w-full border-none shadow-none",

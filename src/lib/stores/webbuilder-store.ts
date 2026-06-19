@@ -189,7 +189,7 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
       setWebBuilderMode: (active) => {
         set({ isWebBuilderMode: active });
         if (active && Object.keys(get().files).length === 0) {
-          set({ files: {} });
+          set({ files: DEFAULT_FILES });
         }
       },
 
@@ -273,7 +273,7 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
       resetProject: () =>
         set({
           activeProjectId: null,
-          files: {},
+          files: DEFAULT_FILES,
           activeFilePath: "/App.tsx",
           selectedTab: "preview",
           isCompiling: false,
@@ -289,8 +289,8 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
         if (state.activeProjectId === chatId) return;
         set({
           activeProjectId: chatId,
-          files: {},
-          activeFilePath: "",
+          files: DEFAULT_FILES,
+          activeFilePath: "/App.tsx",
           selectedTab: "preview",
           isCompiling: false,
           compileLogs: [],

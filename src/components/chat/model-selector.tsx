@@ -76,10 +76,10 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
               aria-expanded={open}
               className="w-fit h-8 gap-1 bg-white/5 dark:bg-white/5 border border-border/40 hover:bg-muted/50 px-2.5 py-1 rounded-full text-xs font-semibold text-muted-foreground hover:text-foreground transition-all duration-300 shadow-sm cursor-pointer"
             >
-              <span className="font-bold text-[10px] sm:text-xs group-hover:text-white transition-colors">
+              <span className="font-bold text-[10px] sm:text-xs transition-colors">
                 {selectedModel.name}
               </span>
-              <ChevronsUpDown className="h-3 w-3 shrink-0 opacity-50 ml-1 group-hover:text-white transition-colors" />
+              <ChevronsUpDown className="h-3 w-3 shrink-0 opacity-50 ml-1 transition-colors" />
             </Button>
           </PopoverTrigger>
           <PopoverContent

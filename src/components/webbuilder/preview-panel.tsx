@@ -511,9 +511,8 @@ export function PreviewPanel() {
         </div>
       </div>
 
-      {/* Content wrapper with rounded corners */}
-      <div className="flex-1 p-4 bg-background flex flex-col min-h-0">
-        <div className="flex-1 flex flex-col min-h-0 rounded-2xl bg-card shadow-lg overflow-hidden border-none">
+      {/* Content wrapper */}
+      <div className="flex-1 flex flex-col min-h-0 bg-background border-t border-border/40 overflow-hidden">
           
           {/* Code Editor Tab */}
           {selectedTab === "code" && (
@@ -548,16 +547,19 @@ export function PreviewPanel() {
           {/* Files Explorer Tab */}
           {selectedTab === "files" && <FilesPanel />}
 
-          {/* Preview Tab (Embedded within rounded container) */}
+          {/* Preview Tab */}
           {selectedTab === "preview" && (
-            <div className="flex-1 relative min-h-0 w-full bg-muted/5 flex items-center justify-center overflow-auto p-4">
+            <div className={cn(
+              "flex-1 relative min-h-0 w-full flex items-center justify-center overflow-auto",
+              viewport === "desktop" ? "p-0 bg-background" : "p-4 bg-muted/5"
+            )}>
               {hasFiles ? (
                 <div 
                   className={cn(
-                    "relative overflow-hidden bg-background shadow-2xl transition-all duration-500 ease-in-out border border-border/20",
-                    viewport === "desktop" ? "w-full h-full rounded-xl" : 
-                    viewport === "tablet" ? "w-[768px] h-[1024px] max-h-full rounded-[2rem] border-8 border-neutral-800" :
-                    "w-[375px] h-[812px] max-h-full rounded-[3rem] border-[12px] border-neutral-800"
+                    "relative overflow-hidden bg-background transition-all duration-500 ease-in-out",
+                    viewport === "desktop" ? "w-full h-full border-none shadow-none" : 
+                    viewport === "tablet" ? "w-[768px] h-[1024px] max-h-full rounded-[2rem] border-8 border-neutral-800 shadow-2xl" :
+                    "w-[375px] h-[812px] max-h-full rounded-[3rem] border-[12px] border-neutral-800 shadow-2xl"
                   )}
                 >
                   <SandboxRunner />
@@ -654,7 +656,6 @@ export function PreviewPanel() {
 
           {/* Console logs tab */}
           {selectedTab === "console" && <ConsolePanel />}
-        </div>
       </div>
     </div>
   );

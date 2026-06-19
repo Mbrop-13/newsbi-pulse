@@ -125,7 +125,7 @@ export function ChatInput({
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "auto";
-    const max = isWebBuilderMode ? 160 : 256;
+    const max = 256;
     el.style.height = Math.min(el.scrollHeight, max) + "px";
   };
 
@@ -326,10 +326,9 @@ export function ChatInput({
         )}
 
         <div className={cn(
-          isWebBuilderMode ? "rounded-2xl p-1.5 glassmorphism" : "rounded-3xl p-2 bg-secondary/80 dark:bg-secondary/30",
+          "rounded-3xl p-2 bg-secondary/80 dark:bg-secondary/30",
           "shadow-2xl border transition-all duration-500 relative group focus-within:border-white/20 dark:focus-within:border-white/20",
-          isListening && "border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.15)]",
-          isWebBuilderMode && "focus-within:neon-glow"
+          isListening && "border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.15)]"
         )}>
           {/* File Previews inside the input box */}
           {attachedFiles.length > 0 && (
@@ -405,7 +404,7 @@ export function ChatInput({
               name="input"
               rows={1}
               className={cn(
-                isWebBuilderMode ? "min-h-9 max-h-48 text-sm px-1 py-1" : "min-h-12 max-h-72 text-[16px] md:text-[16px] px-1",
+                "min-h-12 max-h-72 text-[16px] md:text-[16px] px-1",
                 "resize-none overflow-y-auto",
                 "border-0 bg-secondary dark:bg-secondary shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
               )}

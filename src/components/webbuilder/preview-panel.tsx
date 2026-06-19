@@ -7,6 +7,7 @@ import { SandpackConsole } from "@codesandbox/sandpack-react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { SandboxRunner } from "./sandbox-runner";
+import { parseArtifact } from "@/lib/webbuilder-parser";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -296,6 +297,42 @@ function FilesPanel() {
       </div>
     </div>
   );
+}
+
+function getAgentLineStats(reportContent: string, existingFiles: Record<string, any>) {
+  if (!reportContent) return null;
+  const artifact = parseArtifact(reportContent);
+  if (!artifact || !artifact.actions || artifact.actions.length === 0) return null;
+
+  let addedLines = 0;
+  let deletedLines = 0;
+  let fileStatus: "creating" | "modifying" = "creating";
+
+  for (const action of artifact.actions) {
+    if (action.type === "file") {
+      const lineCount = action.content.split("\n").length;
+      const fileExists = existingFiles && (existingFiles[action.filePath] || existingFiles["/" + action.filePath] || existingFiles[action.filePath.replace(/^\//, "")]);
+      if (fileExists) {
+        fileStatus = "modifying";
+        const oldLineCount = (fileExists.code || "").split("\n").length;
+        addedLines += lineCount;
+        deletedLines += oldLineCount;
+      } else {
+        fileStatus = "creating";
+        addedLines += lineCount;
+      }
+    } else if (action.type === "update") {
+      fileStatus = "modifying";
+      for (const diff of action.diffs) {
+        const searchLines = diff.search.split("\n").length;
+        const replaceLines = diff.replace.split("\n").length;
+        deletedLines += searchLines;
+        addedLines += replaceLines;
+      }
+    }
+  }
+
+  return { addedLines, deletedLines, fileStatus };
 }
 
 export function PreviewPanel() {
@@ -651,6 +688,7 @@ export function PreviewPanel() {
                             const isSuccess = report.success !== false;
                             const isDone = report.content && report.success;
                             const isFailed = report.success === false || (report.content && !report.success);
+                            const stats = getAgentLineStats(report.content, files);
                             
                             return (
                               <div key={idx} className="flex gap-3 items-start">
@@ -678,6 +716,26 @@ export function PreviewPanel() {
                                   {report.filePath && (
                                     <div className="text-[9px] font-mono text-primary/80 mt-1 select-all font-semibold bg-muted/30 px-1.5 py-0.5 rounded border border-border/20 w-fit">
                                       {report.filePath}
+                                    </div>
+                                  )}
+                                  {stats && (
+                                    <div className="flex items-center gap-2 mt-1.5 text-[9px] font-sans">
+                                      <span className={cn(
+                                        "px-1.5 py-0.5 rounded font-bold uppercase tracking-wider text-[8px]",
+                                        stats.fileStatus === "creating" ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" : "bg-blue-500/10 text-blue-500 border border-blue-500/20"
+                                      )}>
+                                        {stats.fileStatus === "creating" ? "Nuevo" : "Edición"}
+                                      </span>
+                                      {stats.addedLines > 0 && (
+                                        <span className="text-emerald-500 font-semibold flex items-center gap-0.5">
+                                          +{stats.addedLines} {stats.addedLines === 1 ? 'línea' : 'líneas'}
+                                        </span>
+                                      )}
+                                      {stats.deletedLines > 0 && (
+                                        <span className="text-red-500 font-semibold flex items-center gap-0.5">
+                                          -{stats.deletedLines} {stats.deletedLines === 1 ? 'línea' : 'líneas'}
+                                        </span>
+                                      )}
                                     </div>
                                   )}
                                 </div>

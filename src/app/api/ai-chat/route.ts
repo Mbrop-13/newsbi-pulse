@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { streamText, StreamData } from 'ai';
+import { streamText, StreamData, formatStreamPart } from 'ai';
 import { z } from 'zod';
 import { createClient } from "@/lib/supabase/server";
 import { checkLimit, incrementUsage, getUserTier, checkTokenLimit, incrementTokenUsage } from "@/lib/check-limits";
@@ -174,118 +174,145 @@ export async function POST(req: NextRequest) {
       };
     });
 
-    // NOTE: Usage is incremented in onFinish (after successful response), NOT here.
-    // This prevents counting a question if the AI fails to respond.
+    const encoder = new TextEncoder();
+    let streamController: any = null;
 
-    const streamData = new StreamData();
-    const mimo = createMimoWithWebSearch(userId, streamData, webSearch !== false);
-
-    // Load user portfolio context for orchestration
-    let portfolioText = "";
-    if (user) {
-      const { data: dbAssets } = await supabase
-        .from("portfolios")
-        .select("symbol, shares, company_name")
-        .eq("user_id", user.id);
-      if (dbAssets && dbAssets.length > 0) {
-        portfolioText = dbAssets
-          .map((a: any) => `- ${a.symbol}: ${a.shares || 0} acciones (${a.company_name || ""})`)
-          .join("\n");
+    const responseStream = new ReadableStream({
+      start(controller) {
+        streamController = controller;
       }
-    }
+    });
 
-    // ── Multi-Agent Orchestration ──
-    const orchestratorModel = mimo(finalModelStr);
-    let orchestrationResult = { isComplex: false, agentReports: [] as any[], totalTokensUsed: 0 };
-    
-    if (webBuilder) {
-      orchestrationResult = await runWebBuilderOrchestration(
-        orchestratorModel,
-        lastUserMessage,
-        webBuilderFiles || {},
-        (text) => {
-          try {
-            streamData.append({ type: 'reasoning', text });
-          } catch {
-            // StreamData may already be closed/flushed
-          }
-        }
-      );
-    } else {
-      orchestrationResult = await runOrchestration(
-        orchestratorModel,
-        lastUserMessage,
-        portfolioText,
-        (text) => {
-          try {
-            streamData.append({ type: 'reasoning', text });
-          } catch {
-            // StreamData may already be closed/flushed
-          }
-        },
-        false
-      );
-    }
-
-    // Track orchestrator tokens
-    if (orchestrationResult.totalTokensUsed > 0) {
-      await incrementTokenUsage(userId, orchestrationResult.totalTokensUsed).catch(console.error);
-      
-      // Re-verify token limit after orchestration before doing the final streamText
-      const postOrchTokenLimit = await checkTokenLimit(userId);
-      if (!postOrchTokenLimit.allowed) {
-        return new Response(JSON.stringify({
-          error: "Los agentes agotaron tu límite de tokens en esta consulta. Actualiza tu suscripción para continuar.",
-          code: "TOKEN_LIMIT_REACHED",
-          details: postOrchTokenLimit,
-        }), { status: 403 });
-      }
-    }
-
-    let messagesForFinalLlm = processedMessages;
-    if (orchestrationResult.isComplex && orchestrationResult.agentReports.length > 0) {
-      // Stream agent reports to client
+    const sendData = (type: 'text' | 'data' | 'error', value: any) => {
+      if (!streamController) return;
       try {
-        streamData.append({
-          type: 'agentReports',
-          reports: orchestrationResult.agentReports as any
-        });
-      } catch (e) {
-        console.error("Failed to append agent reports to streamData:", e);
+        const chunkStr = formatStreamPart(type, value);
+        streamController.enqueue(encoder.encode(chunkStr));
+      } catch (err) {
+        console.error("[DataStream] error writing chunk:", err);
       }
+    };
 
-      if (webBuilder) {
-        // Parse and send the files directly to client via streamData
-        const filesToApply: Record<string, { code: string }> = Object.fromEntries(
-          Object.entries(webBuilderFiles || {}).map(([path, f]: any) => {
-            const code = typeof f === 'object' && f !== null && 'code' in f ? String(f.code) : String(f);
-            return [path, { code }];
-          })
-        );
-        
-        for (const report of orchestrationResult.agentReports) {
-          if (report.success && containsArtifact(report.content)) {
-            const parsed = parseArtifact(report.content);
-            if (parsed && parsed.actions.length > 0) {
-              const fileChanges = actionsToFiles(parsed.actions, filesToApply);
-              Object.assign(filesToApply, fileChanges);
-            }
+    // Run async execution in the background
+    (async () => {
+      try {
+        // Create a wrapper for streamData that directs append calls to sendData
+        const fakeStreamData = {
+          append: (value: any) => {
+            // value is formatted as { type: 'reasoning', text: '...' } etc.
+            sendData('data', [value]);
+          },
+          close: () => {}
+        } as any;
+
+        const mimo = createMimoWithWebSearch(userId, fakeStreamData, webSearch !== false);
+
+        // Load user portfolio context for orchestration
+        let portfolioText = "";
+        if (user) {
+          const { data: dbAssets } = await supabase
+            .from("portfolios")
+            .select("symbol, shares, company_name")
+            .eq("user_id", user.id);
+          if (dbAssets && dbAssets.length > 0) {
+            portfolioText = dbAssets
+              .map((a: any) => `- ${a.symbol}: ${a.shares || 0} acciones (${a.company_name || ""})`)
+              .join("\n");
           }
         }
 
-        try {
-          streamData.append({
-            type: 'webbuilder_files',
-            files: filesToApply
-          });
-        } catch (e) {
-          console.error("Failed to append webbuilder_files to streamData:", e);
+        // ── Multi-Agent Orchestration ──
+        const orchestratorModel = mimo(finalModelStr);
+        let orchestrationResult = { isComplex: false, agentReports: [] as any[], totalTokensUsed: 0 };
+        
+        if (webBuilder) {
+          orchestrationResult = await runWebBuilderOrchestration(
+            orchestratorModel,
+            lastUserMessage,
+            webBuilderFiles || {},
+            (text) => {
+              try {
+                fakeStreamData.append({ type: 'reasoning', text });
+              } catch {
+                // Ignore
+              }
+            }
+          );
+        } else {
+          orchestrationResult = await runOrchestration(
+            orchestratorModel,
+            lastUserMessage,
+            portfolioText,
+            (text) => {
+              try {
+                fakeStreamData.append({ type: 'reasoning', text });
+              } catch {
+                // Ignore
+              }
+            },
+            false
+          );
         }
 
-        // The LLM final only needs to write the conversational message (without coding)
-        const contextMessage = {
-          role: "system" as const,
-          content: `Los agentes de WebBuilder ya han generado y modificado los archivos de código correspondientes.
+        // Track orchestrator tokens
+        if (orchestrationResult.totalTokensUsed > 0) {
+          await incrementTokenUsage(userId, orchestrationResult.totalTokensUsed).catch(console.error);
+          
+          // Re-verify token limit after orchestration before doing the final streamText
+          const postOrchTokenLimit = await checkTokenLimit(userId);
+          if (!postOrchTokenLimit.allowed) {
+            fakeStreamData.append({
+              type: 'error',
+              message: "Los agentes agotaron tu límite de tokens en esta consulta. Actualiza tu suscripción para continuar."
+            });
+            throw new Error("TOKEN_LIMIT_REACHED");
+          }
+        }
+
+        let messagesForFinalLlm = processedMessages;
+        if (orchestrationResult.isComplex && orchestrationResult.agentReports.length > 0) {
+          // Stream agent reports to client
+          try {
+            fakeStreamData.append({
+              type: 'agentReports',
+              reports: orchestrationResult.agentReports as any
+            });
+          } catch (e) {
+            console.error("Failed to append agent reports to streamData:", e);
+          }
+
+          if (webBuilder) {
+            // Parse and send the files directly to client
+            const filesToApply: Record<string, { code: string }> = Object.fromEntries(
+              Object.entries(webBuilderFiles || {}).map(([path, f]: any) => {
+                const code = typeof f === 'object' && f !== null && 'code' in f ? String(f.code) : String(f);
+                return [path, { code }];
+              })
+            );
+            
+            for (const report of orchestrationResult.agentReports) {
+              if (report.success && containsArtifact(report.content)) {
+                const parsed = parseArtifact(report.content);
+                if (parsed && parsed.actions.length > 0) {
+                  const fileChanges = actionsToFiles(parsed.actions, filesToApply);
+                  Object.assign(filesToApply, fileChanges);
+                }
+              }
+            }
+
+            try {
+              fakeStreamData.append({
+                type: 'webbuilder_files',
+                files: filesToApply
+              });
+            } catch (e) {
+              console.error("Failed to append webbuilder_files to streamData:", e);
+            }
+
+            // The LLM final only needs to write the conversational message (without coding)
+            const contextMessage = {
+              role: "system" as const,
+              content: `Los agentes de WebBuilder ya han generado y modificado los archivos de código correspondientes.
 Los siguientes archivos fueron creados o actualizados con éxito:
 ${Object.keys(filesToApply).map(f => `- ${f}`).join('\n')}
 
@@ -293,26 +320,26 @@ REGLAS PARA TU RESPUESTA FINAL:
 1. NO escribas bloques de código ni XML de artefactos (<maverlangArtifact>). Todo el código ya ha sido procesado y enviado al frontend.
 2. Saluda al usuario y resume de forma breve, amigable y profesional lo que se ha construido o modificado en cada archivo.
 3. Sé conciso y directo en español. Muestra entusiasmo por el resultado.`,
-        };
+            };
 
-        const lastIndex = messagesForFinalLlm.length - 1;
-        messagesForFinalLlm = [
-          ...messagesForFinalLlm.slice(0, lastIndex),
-          contextMessage,
-          messagesForFinalLlm[lastIndex],
-        ];
-      } else {
-        const reportsSummary = orchestrationResult.agentReports
-          .map(
-            (r) =>
-              `[Reporte de Agente Especializado: ${r.agentName} (Rol: ${r.role})]\nTarea: ${r.task}\nResultado del análisis:\n${r.content}`
-          )
-          .join("\n\n");
+            const lastIndex = messagesForFinalLlm.length - 1;
+            messagesForFinalLlm = [
+              ...messagesForFinalLlm.slice(0, lastIndex),
+              contextMessage,
+              messagesForFinalLlm[lastIndex],
+            ];
+          } else {
+            const reportsSummary = orchestrationResult.agentReports
+              .map(
+                (r) =>
+                  `[Reporte de Agente Especializado: ${r.agentName} (Rol: ${r.role})]\nTarea: ${r.task}\nResultado del análisis:\n${r.content}`
+              )
+              .join("\n\n");
 
-        // Inject the summaries as a system context instruction to the final model
-        const contextMessage = {
-          role: "system" as const,
-          content: `REPORTES DE AGENTES ESPECIALIZADOS (ya ejecutados en paralelo):
+            // Inject the summaries as a system context instruction to the final model
+            const contextMessage = {
+              role: "system" as const,
+              content: `REPORTES DE AGENTES ESPECIALIZADOS (ya ejecutados en paralelo):
 Los siguientes reportes fueron generados por tus agentes delegados. REGLAS para tu respuesta final:
 1. Consolida la información de TODOS los reportes en una respuesta UNIFICADA y coherente.
 2. NO repitas trabajo: si un agente ya analizó datos o generó código, referencíalo directamente.
@@ -321,86 +348,101 @@ Los siguientes reportes fueron generados por tus agentes delegados. REGLAS para 
 5. Sé conciso pero completo. Prioriza insights accionables.
 
 ${reportsSummary}`,
-        };
+            };
 
-        const lastIndex = messagesForFinalLlm.length - 1;
-        messagesForFinalLlm = [
-          ...messagesForFinalLlm.slice(0, lastIndex),
-          contextMessage,
-          messagesForFinalLlm[lastIndex],
-        ];
-      }
-    }
-
-    let finalSystemPromptFiles: Record<string, string> | undefined = undefined;
-    if (webBuilder && webBuilderFiles) {
-      if (orchestrationResult.isComplex) {
-        // Complex orchestration: agents generated code and streamed it directly; final LLM does not need code
-        finalSystemPromptFiles = undefined;
-      } else {
-        // Simple change: only load relevant context to avoid Context Window Explosion
-        const rawFiles: Record<string, string> = Object.fromEntries(
-          Object.entries(webBuilderFiles).map(([path, f]: any) => {
-            const code = typeof f === 'object' && f !== null && 'code' in f ? String(f.code) : String(f);
-            return [path, code];
-          })
-        );
-        const fileKeys = Object.keys(rawFiles);
-        const appPath = fileKeys.find(k => k.toLowerCase().endsWith('app.tsx') || k.toLowerCase().endsWith('app.jsx')) || '';
-        
-        let selected = rawFiles;
-        if (fileKeys.length > 3 && appPath) {
-          selected = selectRelevantContext(appPath, rawFiles);
-          const query = lastUserMessage.toLowerCase();
-          for (const path of fileKeys) {
-            const basename = path.split('/').pop() || '';
-            const nameWithoutExt = basename.replace(/\.[^/.]+$/, "");
-            if (nameWithoutExt && query.includes(nameWithoutExt.toLowerCase())) {
-              const extraContext = selectRelevantContext(path, rawFiles);
-              Object.assign(selected, extraContext);
-            }
+            const lastIndex = messagesForFinalLlm.length - 1;
+            messagesForFinalLlm = [
+              ...messagesForFinalLlm.slice(0, lastIndex),
+              contextMessage,
+              messagesForFinalLlm[lastIndex],
+            ];
           }
         }
-        finalSystemPromptFiles = selected;
+
+        let finalSystemPromptFiles: Record<string, string> | undefined = undefined;
+        if (webBuilder && webBuilderFiles) {
+          if (orchestrationResult.isComplex) {
+            finalSystemPromptFiles = undefined;
+          } else {
+            const rawFiles: Record<string, string> = Object.fromEntries(
+              Object.entries(webBuilderFiles).map(([path, f]: any) => {
+                const code = typeof f === 'object' && f !== null && 'code' in f ? String(f.code) : String(f);
+                return [path, code];
+              })
+            );
+            const fileKeys = Object.keys(rawFiles);
+            const appPath = fileKeys.find(k => k.toLowerCase().endsWith('app.tsx') || k.toLowerCase().endsWith('app.jsx')) || '';
+            
+            let selected = rawFiles;
+            if (fileKeys.length > 3 && appPath) {
+              selected = selectRelevantContext(appPath, rawFiles);
+              const query = lastUserMessage.toLowerCase();
+              for (const path of fileKeys) {
+                const basename = path.split('/').pop() || '';
+                const nameWithoutExt = basename.replace(/\.[^/.]+$/, "");
+                if (nameWithoutExt && query.includes(nameWithoutExt.toLowerCase())) {
+                  const extraContext = selectRelevantContext(path, rawFiles);
+                  Object.assign(selected, extraContext);
+                }
+              }
+            }
+            finalSystemPromptFiles = selected;
+          }
+        }
+
+        const result = await streamText({
+          model: mimo(finalModelStr),
+          system: webBuilder
+            ? getWebBuilderSystemPrompt(finalSystemPromptFiles)
+            : getSystemPrompt(assistantName, assistantTone, assistantRole, assistantTopics),
+          messages: messagesForFinalLlm,
+          maxTokens: (webBuilder && orchestrationResult.isComplex) ? 2048 : 8192,
+          maxSteps: webBuilder ? undefined : 8,
+          toolChoice: webBuilder ? 'none' : 'auto',
+          tools: webBuilder ? {} : {
+            ...getFinanceTools({ user, userId }),
+            ...(browser ? getBrowserTools({ streamData: fakeStreamData }) : {}),
+          },
+          onFinish: async ({ text, usage, finishReason }) => {
+            const hasContent = text && text.trim().length > 0;
+            const isValidFinish = finishReason !== 'error';
+
+            if (hasContent && isValidFinish) {
+              await incrementUsage(userId, "ai_message").catch(console.error);
+            }
+
+            if (usage && usage.totalTokens) {
+              await incrementTokenUsage(userId, usage.totalTokens).catch(console.error);
+            }
+            if (text && (text.includes("[ALERTA_SEGURIDAD]") || text.includes("ALERTA DE SEGURIDAD") || text.includes("intento de evasión detectado"))) {
+              console.warn(`[SECURITY_ALERT] [LLM_DETECTION] El modelo Maverlang AI detectó un intento de manipulación o solicitud inusual del usuario ${userId}. Respuesta del modelo: "${text}"`);
+            }
+          }
+        });
+
+        // Pipe the final LLM text data stream chunks into our custom stream
+        const textStreamReader = result.toDataStream().getReader();
+        while (true) {
+          const { done, value } = await textStreamReader.read();
+          if (done) break;
+          if (streamController && value) {
+            streamController.enqueue(value);
+          }
+        }
+      } catch (err: any) {
+        console.error("[AI Chat Stream] Error in stream execution:", err);
+        sendData('error', err.message || String(err));
+      } finally {
+        streamController?.close();
       }
-    }
+    })();
 
-    const result = await streamText({
-      model: mimo(finalModelStr),
-      system: webBuilder
-        ? getWebBuilderSystemPrompt(finalSystemPromptFiles)
-        : getSystemPrompt(assistantName, assistantTone, assistantRole, assistantTopics),
-      messages: messagesForFinalLlm,
-      maxTokens: (webBuilder && orchestrationResult.isComplex) ? 2048 : 8192, // MiMo is a reasoning model — needs enough budget for thinking + response
-      maxSteps: webBuilder ? undefined : 8,
-      toolChoice: webBuilder ? 'none' : 'auto',
-      tools: webBuilder ? {} : {
-        ...getFinanceTools({ user, userId }),
-        ...(browser ? getBrowserTools({ streamData }) : {}),
-      },
-      onFinish: async ({ text, usage, finishReason }) => {
-        // Only count usage if the model actually produced a response
-        const hasContent = text && text.trim().length > 0;
-        const isValidFinish = finishReason !== 'error';
-
-        if (hasContent && isValidFinish) {
-          // Increment message count only on successful response
-          await incrementUsage(userId, "ai_message").catch(console.error);
-        } else {
-          console.warn(`[AI Chat] Skipping usage increment for user ${userId}: finishReason=${finishReason}, hasContent=${hasContent}`);
-        }
-
-        if (usage && usage.totalTokens) {
-          await incrementTokenUsage(userId, usage.totalTokens).catch(console.error);
-          console.log(`[AI Chat] Saved token usage for user ${userId}: ${usage.totalTokens} tokens.`);
-        }
-        if (text && (text.includes("[ALERTA_SEGURIDAD]") || text.includes("ALERTA DE SEGURIDAD") || text.includes("intento de evasión detectado"))) {
-          console.warn(`[SECURITY_ALERT] [LLM_DETECTION] El modelo Maverlang AI detectó un intento de manipulación o solicitud inusual del usuario ${userId}. Respuesta del modelo: "${text}"`);
-        }
+    return new Response(responseStream, {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'x-vercel-ai-data-stream': 'v1',
       }
     });
-
-    return result.toDataStreamResponse({ data: streamData });
   } catch (error: any) {
     console.error("[AI Chat Stream] Error:", error);
     return new Response(JSON.stringify({ error: error.message }), { status: 500 });

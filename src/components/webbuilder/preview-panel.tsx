@@ -829,7 +829,6 @@ export function PreviewPanel() {
           <SandpackProvider
             template={hasReact ? "react-ts" : "vanilla-ts"}
             files={sandpackFiles}
-            activeFile={activeFilePath}
             theme={currentTheme}
             className="flex-grow flex flex-col min-h-0 w-full h-full relative bg-transparent border-none"
             style={{
@@ -847,6 +846,7 @@ export function PreviewPanel() {
               },
             }}
             options={{
+              activeFile: activeFilePath,
               externalResources: [
                 "https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4",
               ],

@@ -204,7 +204,7 @@ export const useAIChatStore = create<AIChatStore>()(
               title: row.title,
               messages: msgs,
               attachedArticles: row.attached_articles || [],
-              attached_files: row.attached_files || [],
+              attachedFiles: row.attached_files || [],
               timestamp: new Date(row.created_at),
               isWebBuilder: isWB
             };

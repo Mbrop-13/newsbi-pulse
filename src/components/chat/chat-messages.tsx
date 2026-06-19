@@ -144,63 +144,70 @@ export function ChatMessages({
                     </div>
                   </div>
 
-                  {/* 1. Live Reasoning (if any) */}
-                  {liveReasoning && (
-                    <div className="mb-2">
-                      <div className="pl-3.5 border-l-2 border-[#1890FF]/30 text-[12.5px] text-muted-foreground/80 font-sans whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto scrollbar-hide py-1">
-                        {liveReasoning}
-                      </div>
-                    </div>
-                  )}
+                  {/* Dynamic checklist or planning logs */}
+                  {(() => {
+                    const steps = parseOrchestrationSteps(liveReasoning);
+                    const agentStatuses = getAgentStatuses(steps);
+                    const hasAgentSteps = agentStatuses.length > 0;
 
-                  {/* 2. Live Agent Reports checklist (if any) */}
-                  {liveAgentReports && liveAgentReports.length > 0 && (
-                    <div className="ml-2.5 border-l border-gray-200 dark:border-slate-800 pl-4 space-y-3">
-                      {liveAgentReports.map((report: any, idx: number) => {
-                        const isSuccess = report.success !== false;
-                        const isDone = report.content && report.success;
-                        const isFailed = report.success === false || (report.content && !report.success);
-                        const duration = report.durationMs ? `${(report.durationMs / 1000).toFixed(1)}s` : null;
+                    if (hasAgentSteps) {
+                      return (
+                        <div className="ml-2.5 border-l border-gray-200 dark:border-slate-800 pl-4 space-y-3">
+                          {agentStatuses.map((agent, idx) => {
+                            const isDone = agent.status === 'done';
+                            const isFailed = agent.status === 'failed';
+                            const duration = agent.time;
 
-                        return (
-                          <div key={idx} className="relative pb-1 last:pb-0">
-                            {/* Timeline dot */}
-                            <div className={cn(
-                              "absolute -left-[21px] top-[5px] w-2.5 h-2.5 rounded-full border-2 border-white dark:border-[#0a0a0a]",
-                              isFailed ? "bg-red-500" : isDone ? "bg-emerald-500" : "bg-amber-500 animate-pulse"
-                            )} />
+                            return (
+                              <div key={idx} className="relative pb-1 last:pb-0">
+                                {/* Timeline dot */}
+                                <div className={cn(
+                                  "absolute -left-[21px] top-[5px] w-2.5 h-2.5 rounded-full border-2 border-white dark:border-[#0a0a0a]",
+                                  isFailed ? "bg-red-500" : isDone ? "bg-emerald-500" : "bg-amber-500 animate-pulse"
+                                )} />
 
-                            {/* Agent header */}
-                            <div className="flex items-center gap-2 w-full text-left">
-                              <span className="text-[11px] font-bold text-foreground">
-                                {report.agentName}
-                              </span>
-                              <span className="text-[10px] text-[#1890FF] font-medium">
-                                {report.role}
-                              </span>
-                              {duration && (
-                                <span className="text-[9px] text-muted-foreground/60 font-mono">
-                                  {duration}
-                                </span>
-                              )}
-                              {isFailed ? (
-                                <XCircle className="w-3 h-3 text-red-500 ml-auto shrink-0" />
-                              ) : isDone ? (
-                                <CheckCircle2 className="w-3 h-3 text-emerald-500 ml-auto shrink-0" />
-                              ) : (
-                                <Loader2 className="w-3 h-3 text-amber-500 ml-auto shrink-0 animate-spin" />
-                              )}
-                            </div>
+                                {/* Agent header */}
+                                <div className="flex items-center gap-2 w-full text-left">
+                                  <span className="text-[11px] font-bold text-foreground">
+                                    {agent.agentName}
+                                  </span>
+                                  <span className="text-[10px] text-[#1890FF] font-medium">
+                                    {agent.role}
+                                  </span>
+                                  {duration && (
+                                    <span className="text-[9px] text-muted-foreground/60 font-mono">
+                                      {duration}
+                                    </span>
+                                  )}
+                                  {isFailed ? (
+                                    <XCircle className="w-3 h-3 text-red-500 ml-auto shrink-0" />
+                                  ) : isDone ? (
+                                    <CheckCircle2 className="w-3 h-3 text-emerald-500 ml-auto shrink-0" />
+                                  ) : (
+                                    <Loader2 className="w-3 h-3 text-amber-500 ml-auto shrink-0 animate-spin" />
+                                  )}
+                                </div>
 
-                            {/* Task description */}
-                            <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">
-                              {report.task}
-                            </p>
+                                {/* Task description */}
+                                <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">
+                                  {agent.task}
+                                </p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    } else if (liveReasoning) {
+                      return (
+                        <div className="mb-2">
+                          <div className="pl-3.5 border-l-2 border-[#1890FF]/30 text-[12.5px] text-muted-foreground/80 font-sans whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto scrollbar-hide py-1">
+                            {liveReasoning}
                           </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
               )}
             </div>
@@ -249,21 +256,31 @@ function parseOrchestrationSteps(text: string): ParsedAgentStep[] {
   for (const line of lines) {
     const trimmed = line.trim();
     
-    // Agent starting: "⏳ [Agente] AgentName (Role) iniciando tarea: "task"..."
-    const startMatch = trimmed.match(/⏳\s*\[Agente\]\s*(.+?)\s*\((.+?)\)\s*iniciando tarea:\s*"?(.+?)"?\.{0,3}$/);
-    if (startMatch) {
-      steps.push({ type: 'agent_start', agentName: startMatch[1], role: startMatch[2], task: startMatch[3], text: trimmed });
+    // Agent starting (Format 1 & 2)
+    const startMatch1 = trimmed.match(/⏳\s*\[Agente\]\s*(.+?)\s*\((.+?)\)\s*iniciando tarea:\s*"?(.+?)"?\.{0,3}$/);
+    const startMatch2 = trimmed.match(/⏳\s*\[Agente\]\s*(.+?)\s*\((.+?)\)\s*generando\/actualizando\s*`?(.+?)`?\.{0,3}$/);
+    if (startMatch1) {
+      steps.push({ type: 'agent_start', agentName: startMatch1[1], role: startMatch1[2], task: startMatch1[3], text: trimmed });
+      continue;
+    }
+    if (startMatch2) {
+      steps.push({ type: 'agent_start', agentName: startMatch2[1], role: startMatch2[2], task: `Generando/actualizando ${startMatch2[3]}`, text: trimmed });
       continue;
     }
     
-    // Agent completed: "✅ [Agente] AgentName completado en XXXms."
-    const doneMatch = trimmed.match(/✅\s*\[Agente\]\s*(.+?)\s*completado en\s*(\d+)ms/);
-    if (doneMatch) {
-      steps.push({ type: 'agent_done', agentName: doneMatch[1], time: `${(parseInt(doneMatch[2]) / 1000).toFixed(1)}s`, text: trimmed });
+    // Agent completed (Format 1 & 2)
+    const doneMatch1 = trimmed.match(/✅\s*\[Agente\]\s*(.+?)\s*completado en\s*(\d+)ms/);
+    const doneMatch2 = trimmed.match(/✅\s*\[Agente\]\s*(.+?)\s*completó la edición de\s*`?(.+?)`?\s*en\s*(\d+)ms/);
+    if (doneMatch1) {
+      steps.push({ type: 'agent_done', agentName: doneMatch1[1], time: `${(parseInt(doneMatch1[2]) / 1000).toFixed(1)}s`, text: trimmed });
+      continue;
+    }
+    if (doneMatch2) {
+      steps.push({ type: 'agent_done', agentName: doneMatch2[1], time: `${(parseInt(doneMatch2[3]) / 1000).toFixed(1)}s`, text: trimmed });
       continue;
     }
     
-    // Agent failed: "❌ [Agente] AgentName falló..."
+    // Agent failed (Format 1 & 2)
     const failMatch = trimmed.match(/❌\s*\[Agente\]\s*(.+?)\s*falló/);
     if (failMatch) {
       steps.push({ type: 'agent_fail', agentName: failMatch[1], text: trimmed });
@@ -271,8 +288,8 @@ function parseOrchestrationSteps(text: string): ParsedAgentStep[] {
     }
     
     // Orchestrator message
-    if (trimmed.includes('[Orquestador]')) {
-      steps.push({ type: 'orchestrator', text: trimmed.replace(/🧠|🔍|📊|✅/g, '').replace('[Orquestador]', '').trim() });
+    if (trimmed.includes('[Orquestador]') || trimmed.includes('[Orquestador WebBuilder]')) {
+      steps.push({ type: 'orchestrator', text: trimmed.replace(/🧠|🔍|📊|✅/g, '').replace(/\[Orquestador\s*WebBuilder\]|\[Orquestador\]/g, '').trim() });
       continue;
     }
     
@@ -289,6 +306,57 @@ function parseOrchestrationSteps(text: string): ParsedAgentStep[] {
   }
   
   return steps;
+}
+
+interface AgentStatus {
+  agentName: string;
+  role: string;
+  task: string;
+  status: 'pending' | 'done' | 'failed';
+  time?: string;
+}
+
+function getAgentStatuses(steps: ParsedAgentStep[]): AgentStatus[] {
+  const agentsMap = new Map<string, AgentStatus>();
+  
+  for (const step of steps) {
+    if (step.type === 'agent_start' && step.agentName) {
+      agentsMap.set(step.agentName, {
+        agentName: step.agentName,
+        role: step.role || '',
+        task: step.task || '',
+        status: 'pending'
+      });
+    } else if (step.type === 'agent_done' && step.agentName) {
+      const existing = agentsMap.get(step.agentName);
+      if (existing) {
+        existing.status = 'done';
+        existing.time = step.time;
+      } else {
+        agentsMap.set(step.agentName, {
+          agentName: step.agentName,
+          role: '',
+          task: '',
+          status: 'done',
+          time: step.time
+        });
+      }
+    } else if (step.type === 'agent_fail' && step.agentName) {
+      const existing = agentsMap.get(step.agentName);
+      if (existing) {
+        existing.status = 'failed';
+      } else {
+        agentsMap.set(step.agentName, {
+          agentName: step.agentName,
+          role: '',
+          task: '',
+          status: 'failed'
+        });
+      }
+    }
+  }
+  
+  return Array.from(agentsMap.values());
 }
 
 
@@ -619,11 +687,12 @@ function MessageBubble({
   const isResponding = isLast && isLoading;
 
   // ─── Swarm thinking / Agent Orchestration in progress ───
-  const isAgentOrchestrating = !isWebBuilderMode && ((message as any).isSwarmThinking || (isLast && isLoading && message.reasoning && !message.content));
+  const isAgentOrchestrating = (message as any).isSwarmThinking || (isLast && isLoading && message.reasoning && !message.content);
   
   if (isAgentOrchestrating) {
     const steps = parseOrchestrationSteps(message.reasoning || message.content || '');
-    const hasAgentSteps = steps.some(s => s.type === 'agent_start' || s.type === 'agent_done' || s.type === 'agent_fail');
+    const agentStatuses = getAgentStatuses(steps);
+    const hasAgentSteps = agentStatuses.length > 0;
 
     return (
       <div className={cn("flex", isWebBuilderMode ? "gap-2 pl-1.5" : "gap-3")}>
@@ -631,67 +700,64 @@ function MessageBubble({
         <div className="flex-1 min-w-0">
           {/* Orchestrator header */}
           <div className="flex items-center gap-2 mb-3">
-            <div className="w-5 h-5 rounded-md bg-[#1890FF]/10 flex items-center justify-center">
-              <Cpu className="w-3 h-3 text-[#1890FF] animate-pulse" />
-            </div>
-            <span className="text-xs font-semibold text-[#1890FF]">Orquestador analizando</span>
-            <div className="flex items-center gap-1 ml-1">
-              <div className="w-1.5 h-1.5 bg-[#1890FF] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-              <div className="w-1.5 h-1.5 bg-[#1890FF] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-              <div className="w-1.5 h-1.5 bg-[#1890FF] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-            </div>
+            {isWebBuilderMode ? (
+              <>
+                <span className="text-xs font-bold text-black dark:text-white">Delegando agentes</span>
+                <div className="flex items-center gap-1 ml-1 shrink-0">
+                  <div className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="w-5 h-5 rounded-md bg-[#1890FF]/10 flex items-center justify-center shrink-0">
+                  <Cpu className="w-3 h-3 text-[#1890FF] animate-pulse" />
+                </div>
+                <span className="text-xs font-semibold text-[#1890FF]">Orquestador analizando</span>
+                <div className="flex items-center gap-1 ml-1 shrink-0">
+                  <div className="w-1.5 h-1.5 bg-[#1890FF] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-1.5 h-1.5 bg-[#1890FF] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-1.5 h-1.5 bg-[#1890FF] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+              </>
+            )}
           </div>
 
           {hasAgentSteps ? (
             /* Timeline view for agent orchestration */
-            <div className="ml-2.5 border-l border-[#1890FF]/20 pl-4 space-y-2">
-              {steps.map((step, idx) => {
-                if (step.type === 'orchestrator') {
-                  return (
-                    <div key={idx} className="relative">
-                      <div className="absolute -left-[21px] top-[5px] w-2.5 h-2.5 rounded-full bg-[#1890FF]/60 border-2 border-white dark:border-[#0a0a0a]" />
-                      <p className="text-[11px] text-muted-foreground font-medium">{step.text}</p>
+            <div className={cn(
+              "ml-2.5 pl-4 border-l",
+              isWebBuilderMode ? "border-gray-200 dark:border-slate-800 space-y-3" : "border-[#1890FF]/20 space-y-2"
+            )}>
+              {agentStatuses.map((agent, idx) => {
+                const isDone = agent.status === 'done';
+                const isFailed = agent.status === 'failed';
+                const duration = agent.time;
+
+                return (
+                  <div key={idx} className="relative">
+                    {/* Timeline dot */}
+                    <div className={cn(
+                      "absolute -left-[21px] top-[5px] w-2.5 h-2.5 rounded-full border-2 border-white dark:border-[#0a0a0a]",
+                      isFailed ? "bg-red-500" : isDone ? "bg-emerald-500" : "bg-amber-500 animate-pulse"
+                    )} />
+                    
+                    <div className="flex items-center gap-1.5">
+                      {isFailed ? (
+                        <XCircle className="w-3 h-3 text-red-500 shrink-0" />
+                      ) : isDone ? (
+                        <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
+                      ) : (
+                        <Loader2 className="w-3 h-3 text-amber-500 shrink-0 animate-spin" />
+                      )}
+                      <span className="text-[11px] font-bold text-foreground">{agent.agentName}</span>
+                      <span className="text-[10px] text-[#1890FF]">{agent.role}</span>
+                      {duration && <span className="text-[9px] text-muted-foreground/60 font-mono">{duration}</span>}
                     </div>
-                  );
-                }
-                if (step.type === 'agent_start') {
-                  return (
-                    <div key={idx} className="relative">
-                      <div className="absolute -left-[21px] top-[5px] w-2.5 h-2.5 rounded-full bg-amber-400 border-2 border-white dark:border-[#0a0a0a] animate-pulse" />
-                      <div className="flex items-center gap-1.5">
-                        <Loader2 className="w-3 h-3 text-amber-500 animate-spin" />
-                        <span className="text-[11px] font-bold text-foreground">{step.agentName}</span>
-                        <span className="text-[10px] text-[#1890FF]">{step.role}</span>
-                      </div>
-                      {step.task && <p className="text-[10px] text-muted-foreground mt-0.5">{step.task}</p>}
-                    </div>
-                  );
-                }
-                if (step.type === 'agent_done') {
-                  return (
-                    <div key={idx} className="relative">
-                      <div className="absolute -left-[21px] top-[5px] w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white dark:border-[#0a0a0a]" />
-                      <div className="flex items-center gap-1.5">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                        <span className="text-[11px] font-bold text-foreground">{step.agentName}</span>
-                        {step.time && <span className="text-[9px] text-muted-foreground/60 font-mono">{step.time}</span>}
-                      </div>
-                    </div>
-                  );
-                }
-                if (step.type === 'agent_fail') {
-                  return (
-                    <div key={idx} className="relative">
-                      <div className="absolute -left-[21px] top-[5px] w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-white dark:border-[#0a0a0a]" />
-                      <div className="flex items-center gap-1.5">
-                        <XCircle className="w-3 h-3 text-red-500" />
-                        <span className="text-[11px] font-bold text-foreground">{step.agentName}</span>
-                        <span className="text-[10px] text-red-500">Error</span>
-                      </div>
-                    </div>
-                  );
-                }
-                return null;
+                    {agent.task && <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">{agent.task}</p>}
+                  </div>
+                );
               })}
             </div>
           ) : (

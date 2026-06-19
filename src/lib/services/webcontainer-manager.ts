@@ -38,10 +38,6 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   server: {
-    headers: {
-      'Cross-Origin-Embedder-Policy': 'require-corp',
-      'Cross-Origin-Opener-Policy': 'same-origin',
-    },
     hmr: {
       overlay: false
     }
@@ -213,7 +209,7 @@ export class WebContainerManager {
   public status: "idle" | "booting" | "ready" | "installing" | "running" | "error" = "idle";
   public previewUrl: string | null = null;
   
-  private listeners: Set<(status: string, url: string | null) => void> = new Set();
+  private listeners: Set<(status: "idle" | "booting" | "ready" | "installing" | "running" | "error", url: string | null) => void> = new Set();
   private logCallback: ((log: string) => void) | null = null;
   
   private installPromise: Promise<void> | null = null;

@@ -43,7 +43,6 @@
     "@types/d3": "^7.4.3",
     "@upstash/redis": "^1.38.0",
     "@vercel/analytics": "^2.0.1",
-    "@webcontainer/api": "^1.6.4",
     "@xyflow/react": "^12.11.0",
     "ai": "^3.4.33",
     "class-variance-authority": "^0.7.1",

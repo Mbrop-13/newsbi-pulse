@@ -7,8 +7,7 @@ import { SandpackConsole, SandpackProvider, SandpackCodeEditor, useSandpack } fr
 import { useTheme } from "next-themes";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import { SandboxRunner } from "./sandbox-runner";
-import { WebContainerManager } from "@/lib/services/webcontainer-manager";
+import { SandpackPreviewWrapper } from "./sandpack-preview-wrapper";
 import { parseArtifact } from "@/lib/webbuilder-parser";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -19,13 +18,11 @@ import {
   Code2,
   Terminal,
   ChevronRight,
-  ChevronLeft,
   ChevronDown,
   FileCode2,
   FileJson,
   FileText,
   Palette,
-  ExternalLink,
   Download,
   FolderOpen,
   Folder,
@@ -485,10 +482,9 @@ export function PreviewPanel() {
   const [isInspectorActive, setIsInspectorActive] = useState(false);
   const [iframeKey, setIframeKey] = useState(0);
 
-  // Declarar el estado ANTES de handleRefresh (antes estaba declarado después,
-  // lo que era un code smell frágil aunque funcionara por hoisting del closure).
+  // stableFiles: snapshot de archivos que solo cambia cuando la IA NO está
+  // respondiendo, para evitar recompilaciones en cada token del stream.
   const [stableFiles, setStableFiles] = useState(files);
-  const [managerStatus, setManagerStatus] = useState<string>("idle");
 
   // Sync files to preview only when the AI is NOT responding (to avoid constant reloading)
   useEffect(() => {
@@ -497,57 +493,12 @@ export function PreviewPanel() {
     }
   }, [files, isAiResponding]);
 
-  // Subscribe to WebContainer status updates
-  useEffect(() => {
-    const manager = WebContainerManager.getInstance();
-    const unsubscribe = manager.subscribe((newStatus) => {
-      setManagerStatus(newStatus);
-    });
-    return () => unsubscribe();
-  }, []);
-
+  // handleRefresh: con Sandpack, forzar una recompilación del bundler.
+  // El iframe del preview se recarga limpio para resetear el estado en memoria.
   const handleRefresh = async () => {
-    const manager = WebContainerManager.getInstance();
-    const shouldForceFullWipe = manager.status === "error";
-
-    toast.promise(
-      manager.restart(stableFiles, shouldForceFullWipe).then(() => {
-        setIframeKey((prev) => prev + 1);
-      }),
-      {
-        loading: shouldForceFullWipe
-          ? "Reinstalación limpia en curso (esto puede tardar)..."
-          : "Reiniciando servidor de desarrollo...",
-        success: "Entorno reiniciado con éxito",
-        error: "Error al reiniciar el entorno",
-      }
-    );
+    setIframeKey((prev) => prev + 1);
+    toast.success("Vista previa recargada");
   };
-
-  // Connect and sync stableFiles to WebContainer.
-  // IMPORTANTE: cuando el manager ya está "running" usamos syncFiles() (escritura
-  // incremental vía fs.writeFile) en lugar de mountProject(), que reemplazaría
-  // todo el FS, reiniciaría Vite y rompería el HMR — causa común de preview en blanco.
-  useEffect(() => {
-    if (Object.keys(stableFiles).length === 0) return;
-
-    const manager = WebContainerManager.getInstance();
-
-    // Bind compile logs to Zustand store
-    manager.setLogCallback((log) => {
-      useWebBuilderStore.getState().addCompileLog(log);
-    });
-
-    if (managerStatus === "running") {
-      manager.syncFiles(stableFiles).catch((err) => {
-        console.error("WebContainer sync error:", err);
-      });
-    } else if (managerStatus === "idle") {
-      manager.boot(stableFiles).catch((err) => {
-        console.error("WebContainer boot error:", err);
-      });
-    }
-  }, [stableFiles, managerStatus]);
 
   // Determine if this is a React/TS project or plain HTML
   const hasReact = useMemo(() => {
@@ -976,56 +927,39 @@ export function PreviewPanel() {
 
             {/* Preview Tab */}
             {selectedTab === "preview" && (
-              <div className="flex-grow flex flex-col min-h-0 w-full h-full relative overflow-hidden bg-slate-50 dark:bg-[#07090e]">
+              <div className="flex-grow flex flex-col min-h-0 w-full h-full relative overflow-hidden bg-slate-50 dark:bg-[#07090e] p-4 md:p-5">
                 {/* Viewport Frame */}
                 {viewport === "desktop" && (
-                  <div className="flex-grow flex flex-col items-center justify-start overflow-auto p-4 md:p-6 min-h-0 w-full h-full relative scrollbar-thin">
-                    <div className="w-full max-w-[1280px] h-full flex flex-col bg-white dark:bg-[#0b0f19] rounded-2xl border border-border/50 shadow-2xl overflow-hidden transition-all duration-300 ease-in-out relative">
-                      {/* Browser Chrome Header */}
-                      <div className="flex items-center justify-between gap-4 px-4 py-3 bg-gray-50/90 dark:bg-[#0f1322] border-b border-gray-100 dark:border-border/30 shrink-0">
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <span className="w-2.5 h-2.5 rounded-full bg-red-500/80 shadow-sm" />
-                          <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/80 shadow-sm" />
-                          <span className="w-2.5 h-2.5 rounded-full bg-green-500/80 shadow-sm" />
+                  <div className="flex-grow flex flex-col min-h-0 w-full h-full relative">
+                    {/* Ventana con bordes redondeados estilo plataforma (sin chrome de navegador) */}
+                    <div className="w-full h-full flex flex-col bg-white dark:bg-[#0b0f19] rounded-2xl border border-border/40 shadow-xl overflow-hidden transition-all duration-300 ease-in-out relative">
+                      {/* Barra superior ligera tipo plataforma */}
+                      <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-50/80 dark:bg-[#0f1322] border-b border-gray-100 dark:border-border/30 shrink-0">
+                        {/* Indicador de estado (punto verde = corriendo) */}
+                        <span className="flex items-center gap-1.5 shrink-0">
+                          <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                          </span>
+                        </span>
+                        {/* Barra URL estilo plataforma */}
+                        <div className="flex-grow flex items-center justify-center gap-1.5 px-3 py-1.5 max-w-sm mx-auto bg-white dark:bg-[#07090e]/40 border border-gray-200/50 dark:border-border/10 rounded-lg text-[10px] text-muted-foreground font-mono select-none">
+                          <Lock className="w-2.5 h-2.5 text-emerald-500 shrink-0" />
+                          <span className="truncate">preview.maverlang.app</span>
                         </div>
-                        <div className="flex items-center gap-1 shrink-0 text-muted-foreground">
-                          <button className="p-1 rounded hover:bg-muted/85 transition-colors" disabled>
-                            <ChevronLeft className="w-3.5 h-3.5 opacity-40" />
-                          </button>
-                          <button className="p-1 rounded hover:bg-muted/85 transition-colors" disabled>
-                            <ChevronRight className="w-3.5 h-3.5 opacity-40" />
-                          </button>
-                          <button onClick={handleRefresh} className="p-1 rounded hover:bg-muted/85 text-muted-foreground hover:text-foreground transition-all">
+                        {/* Acciones */}
+                        <div className="flex items-center gap-0.5 shrink-0">
+                          <button onClick={handleRefresh} className="p-1.5 rounded-md hover:bg-muted/85 text-muted-foreground hover:text-foreground transition-all" title="Recargar preview">
                             <RefreshCw className="w-3.5 h-3.5" />
                           </button>
                         </div>
-                        <div className="flex-grow max-w-md mx-auto flex items-center justify-center gap-1.5 px-3 py-1.5 bg-white dark:bg-[#07090e]/40 border border-gray-200/40 dark:border-border/10 rounded-lg text-[10px] text-muted-foreground font-mono select-none">
-                          <Lock className="w-2.5 h-2.5 text-emerald-500 shrink-0" />
-                          <span className="truncate">localhost:5173</span>
-                        </div>
-                        <div className="shrink-0">
-                          <button 
-                            onClick={() => {
-                              const manager = WebContainerManager.getInstance();
-                              if (manager.previewUrl) {
-                                window.open(manager.previewUrl, "_blank");
-                              } else {
-                                toast.error("El servidor de vista previa aún no está listo.");
-                              }
-                            }} 
-                            className="p-1.5 rounded-md hover:bg-muted/85 text-muted-foreground hover:text-foreground transition-all"
-                            title="Abrir en pestaña nueva"
-                          >
-                            <ExternalLink className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
                       </div>
-                      {/* Browser Body */}
+                      {/* Body de la preview */}
                       <div className="flex-grow min-h-0 relative w-full h-full bg-white dark:bg-background">
                         {(isAiResponding || isCompiling || chatLoading) ? (
                           <PremiumSkeletonLoader isAiResponding={isAiResponding || chatLoading} />
                         ) : (
-                          <SandboxRunner key={iframeKey} />
+                          <SandpackPreviewWrapper key={iframeKey} />
                         )}
                       </div>
                     </div>
@@ -1033,17 +967,14 @@ export function PreviewPanel() {
                 )}
 
                 {viewport === "tablet" && (
-                  <div className="flex-grow flex flex-col items-center justify-center overflow-auto p-4 md:p-6 min-h-0 w-full h-full relative scrollbar-thin">
-                    {/* Tablet device bezel */}
-                    <div className="w-full max-w-[768px] aspect-[768/1024] max-h-[82vh] relative flex flex-col border-[14px] border-zinc-950 dark:border-zinc-800 rounded-[36px] bg-zinc-950 shadow-2xl overflow-hidden shrink-0">
-                      {/* Lens */}
-                      <div className="w-2 h-2 rounded-full bg-zinc-900 absolute top-2 left-1/2 -translate-x-1/2 z-50 opacity-80" />
-                      {/* Screen */}
-                      <div className="flex-grow min-h-0 relative w-full h-full bg-white dark:bg-background rounded-[18px] overflow-hidden">
+                  <div className="flex-grow flex flex-col items-center justify-center overflow-auto min-h-0 w-full h-full relative scrollbar-thin">
+                    {/* Marco ligero de tablet (sin bezel pesado): contenedor redondeado adaptativo */}
+                    <div className="w-full max-w-[768px] max-h-full aspect-[768/1024] relative flex flex-col bg-white dark:bg-[#0b0f19] rounded-2xl border border-border/40 shadow-xl overflow-hidden shrink-0">
+                      <div className="flex-grow min-h-0 relative w-full h-full bg-white dark:bg-background overflow-hidden">
                         {(isAiResponding || isCompiling || chatLoading) ? (
                           <PremiumSkeletonLoader isAiResponding={isAiResponding || chatLoading} />
                         ) : (
-                          <SandboxRunner key={iframeKey} />
+                          <SandpackPreviewWrapper key={iframeKey} />
                         )}
                       </div>
                     </div>
@@ -1051,24 +982,16 @@ export function PreviewPanel() {
                 )}
 
                 {viewport === "mobile" && (
-                  <div className="flex-grow flex flex-col items-center justify-center overflow-auto p-4 md:p-6 min-h-0 w-full h-full relative scrollbar-thin">
-                    {/* Mobile device bezel */}
-                    <div className="w-full max-w-[390px] aspect-[390/800] max-h-[82vh] relative flex flex-col border-[12px] border-zinc-950 dark:border-zinc-800 rounded-[48px] bg-zinc-950 shadow-2xl overflow-hidden shrink-0">
-                      {/* Dynamic Island */}
-                      <div className="w-28 h-5.5 bg-zinc-950 dark:bg-zinc-800 rounded-full absolute top-2 left-1/2 -translate-x-1/2 z-50 flex items-center justify-between px-4 border border-zinc-900/50">
-                        <span className="w-1 h-1 rounded-full bg-[#101010]" />
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#181818]" />
-                      </div>
-                      {/* Screen */}
-                      <div className="flex-grow min-h-0 relative w-full h-full bg-white dark:bg-background rounded-[34px] overflow-hidden">
+                  <div className="flex-grow flex flex-col items-center justify-center overflow-auto min-h-0 w-full h-full relative scrollbar-thin">
+                    {/* Marco ligero de móvil (sin bezel pesado): contenedor redondeado adaptativo */}
+                    <div className="w-full max-w-[390px] max-h-full aspect-[390/800] relative flex flex-col bg-white dark:bg-[#0b0f19] rounded-3xl border border-border/40 shadow-xl overflow-hidden shrink-0">
+                      <div className="flex-grow min-h-0 relative w-full h-full bg-white dark:bg-background overflow-hidden">
                         {(isAiResponding || isCompiling || chatLoading) ? (
                           <PremiumSkeletonLoader isAiResponding={isAiResponding || chatLoading} />
                         ) : (
-                          <SandboxRunner key={iframeKey} />
+                          <SandpackPreviewWrapper key={iframeKey} />
                         )}
                       </div>
-                      {/* Home indicator bar */}
-                      <div className="w-24 h-1 bg-zinc-400/80 dark:bg-zinc-600/80 rounded-full absolute bottom-1 left-1/2 -translate-x-1/2 z-50" />
                     </div>
                   </div>
                 )}

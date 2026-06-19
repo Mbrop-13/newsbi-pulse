@@ -446,15 +446,22 @@ Tu tarea asignada: Generar o actualizar el archivo \`${agent.filePath}\` de acue
 Recuerda devolver ÚNICAMENTE el XML con tu código.`;
 
     try {
-      const { text: content, usage } = await generateText({
+      const agentPromise = generateText({
         model,
         system: agentSystemPrompt,
         messages: [{ role: 'user', content: agentUserMessage }],
         temperature: 0.2,
       });
 
+      const agentResponse = await withTimeout(
+        agentPromise,
+        35000,
+        new Error("Excedió el tiempo límite de ejecución de 35 segundos")
+      );
+
       const duration = Date.now() - agentStartTime;
-      const tokensUsed = usage?.totalTokens || 0;
+      const tokensUsed = agentResponse.usage?.totalTokens || 0;
+      const content = agentResponse.text;
       onProgress?.(`✅ [Agente] ${agent.agentName} completó la edición de \`${agent.filePath}\` en ${duration}ms.\n`);
 
       return {

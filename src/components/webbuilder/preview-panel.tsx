@@ -606,11 +606,11 @@ export function PreviewPanel() {
 
           {/* Preview Tab */}
           {selectedTab === "preview" && (
-            <div className="flex-1 relative min-h-0 w-full flex items-center justify-center overflow-auto p-3 bg-muted/5">
+            <div className="flex-1 relative min-h-0 w-full flex items-center justify-center overflow-auto p-4 bg-muted/20 dark:bg-muted/10">
               {hasFiles ? (
                 <div 
                   className={cn(
-                    "relative overflow-hidden bg-background transition-all duration-500 ease-in-out border border-border/40 shadow-sm",
+                    "relative overflow-hidden bg-background transition-all duration-500 ease-in-out border border-black/20 dark:border-white/15 shadow-lg",
                     viewport === "desktop" ? "w-full h-full rounded-2xl" : 
                     viewport === "tablet" ? "w-[768px] h-[1024px] max-h-full rounded-[2rem] border-8 border-neutral-800 shadow-2xl" :
                     "w-[375px] h-[812px] max-h-full rounded-[3rem] border-[12px] border-neutral-800 shadow-2xl"

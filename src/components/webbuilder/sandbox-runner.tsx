@@ -131,16 +131,16 @@ export function SandboxRunner() {
           <SandboxErrorListener />
           <div className="flex-1 flex flex-col w-full h-full bg-slate-50 dark:bg-[#07090e] relative overflow-hidden select-none">
             <div className="absolute inset-0 flex flex-col items-center justify-center p-6 z-10">
-              <div className="w-full max-w-[320px] bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md border border-red-200 dark:border-red-900/40 rounded-2xl p-6 shadow-xl flex flex-col items-center text-center">
+              <div className="w-full max-w-[380px] bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md border border-red-200 dark:border-red-900/40 rounded-2xl p-6 shadow-xl flex flex-col items-center text-center">
                 <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-950/50 flex items-center justify-center mb-4">
                   <AlertTriangle className="w-6 h-6 text-red-500" />
                 </div>
                 <h4 className="text-xs font-bold text-foreground tracking-wide mb-2 uppercase">
                   No se pudo iniciar la preview
                 </h4>
-                <p className="text-[11px] text-muted-foreground mb-4 leading-relaxed whitespace-pre-wrap">
+                <pre className="text-[10px] text-muted-foreground mb-4 leading-relaxed whitespace-pre-wrap break-words font-mono text-left max-h-[220px] overflow-y-auto w-full rounded-lg bg-red-50/50 dark:bg-red-950/20 p-3 border border-red-100 dark:border-red-900/30">
                   {previewError}
-                </p>
+                </pre>
                 <button
                   onClick={handleRetry}
                   disabled={isRetrying}

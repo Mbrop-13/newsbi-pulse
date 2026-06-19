@@ -513,15 +513,71 @@ export class WebContainerManager {
     }
   }
 
+  /**
+   * Drena el output de un proceso de WebContainer de forma fiable:
+   * - Acumula TODO el texto (para poder mostrarlo si hay error).
+   * - Retorna una promesa que se resuelve SOLO cuando el stream se cerró por
+   *   completo, evitando el race condition de pipeTo() (que puede abortar el
+   *   stream y provocar que npm termine con código de salida 1).
+   * - Pasa cada chunk al logCallback y opcionalmente a un callback onChunk.
+   */
+  private drainOutput(
+    process: any,
+    onChunk?: (data: string) => void
+  ): { done: Promise<string> } {
+    let accumulated = "";
+    const done = new Promise<string>((resolve) => {
+      // Guard: si el proceso no tiene output (caso edge), resolver enseguida.
+      if (!process?.output) {
+        resolve("");
+        return;
+      }
+      const reader = process.output.getReader();
+      const pump = (): Promise<void> =>
+        reader.read().then(({ value, done: streamDone }: { value: string; done: boolean }) => {
+          if (streamDone) {
+            resolve(accumulated);
+            return;
+          }
+          if (value) {
+            accumulated += value;
+            this.log(value);
+            onChunk?.(value);
+          }
+          return pump();
+        });
+      pump().catch((err) => {
+        this.log(`[drainOutput] error leyendo stream: ${err}`);
+        resolve(accumulated);
+      });
+    });
+    return { done };
+  }
+
   public async install() {
     if (!this.webcontainer) return;
     if (this.installPromise) return this.installPromise;
 
     this.status = "installing";
+    this.previewError = null;
     this.notify();
     this.log("Instalando dependencias (npm install)...");
 
-    this.installPromise = (async () => {
+    this.installPromise = this.runInstallWithRetry();
+
+    return this.installPromise;
+  }
+
+  /**
+   * Ejjecuta npm install con captura completa del output y hasta 2 reintentos.
+   * El reintento es clave: el primer install en un WebContainer recién booteado
+   * puede fallar transitoriamente (DNS del registry, cold cache, etc.).
+   */
+  private async runInstallWithRetry(maxAttempts = 3) {
+    let lastOutput = "";
+    let lastExitCode: number | null = null;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       const installProcess = await this.webcontainer!.spawn("npm", [
         "install",
         "--prefer-offline",
@@ -529,28 +585,52 @@ export class WebContainerManager {
         "--no-fund"
       ]);
       this.installProcess = installProcess;
-      
-      installProcess.output.pipeTo(
-        new WritableStream({
-          write: (data) => {
-            this.log(data);
-          },
-        })
-      );
 
-      const exitCode = await installProcess.exit;
+      // Drenar el output de forma fiable (esperar a que el stream cierre).
+      const { done } = this.drainOutput(installProcess);
+
+      // Esperar AMBAS cosas: que el proceso termine Y que el stream se consuma.
+      const [exitCode, output] = await Promise.all([
+        installProcess.exit,
+        done
+      ]);
       this.installProcess = null;
-      this.installPromise = null;
+      lastOutput = output;
+      lastExitCode = exitCode;
 
-      if (exitCode !== 0) {
-        this.status = "error";
-        this.notify();
-        throw new Error(`npm install falló con el código de salida ${exitCode}`);
+      if (exitCode === 0) {
+        this.installPromise = null;
+        this.log("Instalación de dependencias completada.");
+        return;
       }
-      this.log("Instalación de dependencias completada.");
-    })();
 
-    return this.installPromise;
+      this.log(`npm install intento ${attempt}/${maxAttempts} falló (código ${exitCode}).`);
+
+      // Pequeña pausa antes de reintentar para dejar que el FS se asiente.
+      if (attempt < maxAttempts) {
+        await new Promise((r) => setTimeout(r, 800));
+      }
+    }
+
+    // Todos los intentos fallaron: capturar el output real para diagnóstico.
+    this.installPromise = null;
+    this.status = "error";
+    // Extraer las líneas más relevantes del output (errores npm/registry).
+    const relevantLines = lastOutput
+      .split("\n")
+      .filter((line) =>
+        /err!|npm error|error|enoent|eacces|eresolve|404|not found|cannot find|failed/i.test(line)
+      )
+      .slice(-8)
+      .join("\n")
+      .trim();
+
+    const detail = relevantLines || lastOutput.slice(-800).trim();
+    this.previewError =
+      `npm install falló (código ${lastExitCode}) tras ${maxAttempts} intentos.\n\n` +
+      `Salida de npm:\n${detail || "(sin output capturado)"}`;
+    this.notify();
+    throw new Error(this.previewError);
   }
 
   public async startDevServer() {
@@ -572,33 +652,29 @@ export class WebContainerManager {
     this.devServerPromise = (async () => {
       const devProcess = await this.webcontainer!.spawn("npm", ["run", "dev"]);
       this.devProcess = devProcess;
-      
-      devProcess.output.pipeTo(
-        new WritableStream({
-          write: (data) => {
-            this.log(data);
-            
-            // Catch typical Vite compilation or module resolution errors
-            if (
-              data.includes("failed to resolve") ||
-              data.includes("Error:") ||
-              data.includes("SyntaxError:") ||
-              data.includes("Internal server error")
-            ) {
-              if (typeof window !== "undefined") {
-                window.postMessage(
-                  {
-                    type: "MAVERLANG_COMPILE_ERROR",
-                    error: data.trim(),
-                  },
-                  "*"
-                );
-              }
-            }
-          },
-        })
-      );
 
+      // Drenar el output de forma fiable (mismo patrón que install).
+      const { done } = this.drainOutput(devProcess, (data) => {
+        // Catch typical Vite compilation or module resolution errors
+        if (
+          data.includes("failed to resolve") ||
+          data.includes("Error:") ||
+          data.includes("SyntaxError:") ||
+          data.includes("Internal server error")
+        ) {
+          if (typeof window !== "undefined") {
+            window.postMessage(
+              {
+                type: "MAVERLANG_COMPILE_ERROR",
+                error: data.trim(),
+              },
+              "*"
+            );
+          }
+        }
+      });
+
+      // Cuando el proceso termine (Vite cierra por error o kill), limpiar.
       devProcess.exit.then((code) => {
         this.log(`El servidor de desarrollo terminó con el código: ${code}`);
         this.devProcess = null;
@@ -608,6 +684,12 @@ export class WebContainerManager {
           this.status = "idle";
           this.notify();
         }
+      });
+
+      // Esperar a que el stream se cierre (evita race condition de pipeTo).
+      // No esperamos exit aquí porque el dev server es long-running.
+      done.catch((err) => {
+        this.log(`[startDevServer] stream cerrado: ${err}`);
       });
     })();
   }

@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
 import { useAIChatStore } from "@/lib/stores/ai-chat-store";
-import { SandpackConsole } from "@codesandbox/sandpack-react";
+import { SandpackConsole, SandpackProvider } from "@codesandbox/sandpack-react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { SandboxRunner } from "./sandbox-runner";
@@ -209,7 +209,20 @@ function CodeViewer() {
 // ─── Console Panel ───────────────────────────────────
 
 function ConsolePanel() {
-  const { compileLogs } = useWebBuilderStore();
+  const { compileLogs, files } = useWebBuilderStore();
+  const hasFiles = Object.keys(files).length > 0;
+
+  if (!hasFiles) {
+    return (
+      <div className="flex-grow flex flex-col items-center justify-center p-8 text-center text-muted-foreground bg-muted/5 min-h-[300px]">
+        <Terminal className="w-10 h-10 mb-3 opacity-30 text-primary" />
+        <p className="font-semibold text-sm text-foreground">Sin consola activa</p>
+        <p className="text-xs text-muted-foreground mt-1 max-w-xs mx-auto">
+          La consola estará disponible una vez que el proyecto tenga archivos cargados.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-grow flex flex-col bg-muted/5 min-h-0">
@@ -355,6 +368,120 @@ export function PreviewPanel() {
   const chatLoading = useAIChatStore((s) => s.isLoading);
   const [viewport, setViewport] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const [isInspectorActive, setIsInspectorActive] = useState(false);
+
+  const [stableFiles, setStableFiles] = useState(files);
+
+  // Sync files to preview only when the AI is NOT responding (to avoid constant reloading)
+  useEffect(() => {
+    if (!isAiResponding) {
+      setStableFiles(files);
+    }
+  }, [files, isAiResponding]);
+
+  // Determine if this is a React/TS project or plain HTML
+  const hasReact = useMemo(() => {
+    return Object.keys(stableFiles).some(
+      (f) => f.endsWith(".tsx") || f.endsWith(".jsx")
+    );
+  }, [stableFiles]);
+
+  // Convert our files format to Sandpack format
+  const sandpackFiles = useMemo(() => {
+    const result: Record<string, string> = {};
+    for (const [path, file] of Object.entries(stableFiles)) {
+      result[path] = file.code;
+    }
+
+    if (!hasReact && Object.keys(stableFiles).length > 0) {
+      const entryPoints = ["/index.ts", "/src/index.ts", "/index.js", "/src/index.js"];
+      for (const ep of entryPoints) {
+        if (!result[ep]) {
+          result[ep] = "// Auto-generated to prevent default entry point crash\n";
+        }
+      }
+    }
+
+    // Inject Inspector Script for React Templates
+    if (hasReact && !result["/public/index.html"]) {
+      result["/public/index.html"] = `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maverlang Preview</title>
+    <style>
+      .maverlang-inspector-hover {
+        outline: 2px solid #3b82f6 !important;
+        outline-offset: -2px !important;
+        cursor: crosshair !important;
+        box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.5) !important;
+        background-color: rgba(59, 130, 246, 0.1) !important;
+        transition: all 0.1s !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      let isInspectorActive = false;
+      
+      window.addEventListener('message', (e) => {
+        if (e.data?.type === 'TOGGLE_INSPECTOR') {
+          isInspectorActive = e.data.active;
+          if (!isInspectorActive) {
+            document.querySelectorAll('.maverlang-inspector-hover').forEach(el => el.classList.remove('maverlang-inspector-hover'));
+          }
+        }
+      });
+
+      document.addEventListener('mouseover', (e) => {
+        if (!isInspectorActive) return;
+        e.stopPropagation();
+        if (e.target !== document.body && e.target !== document.documentElement) {
+          e.target.classList.add('maverlang-inspector-hover');
+        }
+      }, true);
+
+      document.addEventListener('mouseout', (e) => {
+        if (!isInspectorActive) return;
+        e.stopPropagation();
+        if (e.target && e.target.classList) {
+          e.target.classList.remove('maverlang-inspector-hover');
+        }
+      }, true);
+
+      document.addEventListener('click', (e) => {
+        if (!isInspectorActive) return;
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const el = e.target;
+        if (!el || el === document.body || el === document.documentElement) return;
+
+        el.classList.remove('maverlang-inspector-hover');
+        
+        const clone = el.cloneNode(false);
+        let innerText = el.innerText || '';
+        if (innerText.length > 50) innerText = innerText.substring(0, 50) + '...';
+        if (innerText) clone.innerText = innerText;
+        
+        window.parent.postMessage({
+          type: 'MAVERLANG_ELEMENT_CLICKED',
+          elementHtml: clone.outerHTML,
+          tagName: el.tagName,
+          className: el.className || ''
+        }, '*');
+        
+        isInspectorActive = false;
+        window.parent.postMessage({ type: 'MAVERLANG_INSPECTOR_DISABLED' }, '*');
+      }, true);
+    </script>
+  </body>
+</html>`;
+    }
+
+    return result;
+  }, [stableFiles, hasReact]);
 
   // Sync inspector state with the preview iframe
   useEffect(() => {
@@ -611,140 +738,172 @@ export function PreviewPanel() {
       </div>
 
       {/* Content wrapper */}
-      <div className="flex-1 flex flex-col min-h-0 bg-background overflow-hidden">
-          
-          {/* Code Editor Tab */}
-          {selectedTab === "code" && (
-            <div className="flex-grow flex min-h-0 w-full">
-              {hasFiles ? (
-                <>
-                  {/* File Explorer Sidebar */}
-                  <div className="w-48 bg-muted/5 overflow-y-auto hidden-scrollbar shrink-0">
-                    <div className="px-3 py-2 border-b border-border">
-                      <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
-                        Archivos
-                      </span>
-                    </div>
-                    <FileTree />
+      <div className="flex-1 flex flex-col min-h-0 bg-background overflow-hidden relative">
+        {hasFiles ? (
+          <SandpackProvider
+            template={hasReact ? "react-ts" : "vanilla-ts"}
+            files={sandpackFiles}
+            theme="dark"
+            customSetup={{
+              dependencies: {
+                "lucide-react": "latest",
+                "recharts": "latest",
+                "framer-motion": "latest",
+                "react-icons": "latest",
+              },
+            }}
+            options={{
+              externalResources: [
+                "https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4",
+              ],
+              autorun: true,
+              autoReload: true,
+            }}
+          >
+            {/* Code Editor Tab */}
+            {selectedTab === "code" && (
+              <div className="flex-grow flex min-h-0 w-full">
+                {/* File Explorer Sidebar */}
+                <div className="w-48 bg-muted/5 overflow-y-auto hidden-scrollbar shrink-0">
+                  <div className="px-3 py-2 border-b border-border">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
+                      Archivos
+                    </span>
                   </div>
-                  <CodeViewer />
-                </>
-              ) : (
-                <div className="flex-grow flex items-center justify-center p-8 text-center text-muted-foreground bg-muted/5 min-h-[300px]">
-                  <div className="max-w-xs">
-                    <Code2 className="w-10 h-10 mx-auto mb-3 opacity-20 text-primary" />
-                    <p className="font-semibold text-sm text-foreground">No hay archivos activos</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Selecciona un archivo de la pestaña <strong>Files</strong> para inspeccionar o editar su código fuente.
-                    </p>
+                  <FileTree />
+                </div>
+                <CodeViewer />
+              </div>
+            )}
+
+            {/* Files Explorer Tab */}
+            {selectedTab === "files" && <FilesPanel />}
+
+            {/* Preview Tab */}
+            {selectedTab === "preview" && (
+              <div className="flex-1 relative min-h-0 w-full flex items-center justify-center overflow-auto p-4 bg-muted/20 dark:bg-muted/10">
+                {(!isAiResponding && !isCompiling && !chatLoading) ? (
+                  <div 
+                    className={cn(
+                      "relative overflow-hidden bg-background transition-all duration-500 ease-in-out border border-black/20 dark:border-white/15 shadow-lg",
+                      viewport === "desktop" ? "w-full h-full rounded-2xl" : 
+                      viewport === "tablet" ? "w-[768px] h-[1024px] max-h-full rounded-[2rem] border-8 border-neutral-800 shadow-2xl" :
+                      "w-[375px] h-[812px] max-h-full rounded-[3rem] border-[12px] border-neutral-800 shadow-2xl"
+                    )}
+                  >
+                    <SandboxRunner />
                   </div>
-                </div>
-              )}
-            </div>
-          )}
+                ) : (
+                  <div className="absolute inset-0 bg-background flex flex-col items-center justify-center p-8 overflow-hidden select-none">
+                    {/* Grid pattern with light gradients */}
+                    <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(13,110,253,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(13,110,253,0.03)_1px,transparent_1px)] bg-[size:2.5rem_2.5rem] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)] opacity-70" />
+                    
+                    {/* Neon radial glows */}
+                    <div className="absolute -top-12 -left-12 w-64 h-64 bg-primary/20 rounded-full blur-[80px] animate-pulse pointer-events-none" />
+                    <div className="absolute -bottom-12 -right-12 w-64 h-64 bg-violet-500/20 rounded-full blur-[80px] animate-pulse pointer-events-none" style={{ animationDelay: "1.5s" }} />
 
-          {/* Files Explorer Tab */}
-          {selectedTab === "files" && <FilesPanel />}
-
-          {/* Preview Tab */}
-          {selectedTab === "preview" && (
-            <div className="flex-1 relative min-h-0 w-full flex items-center justify-center overflow-auto p-4 bg-muted/20 dark:bg-muted/10">
-              {(hasFiles && !isAiResponding) ? (
-                <div 
-                  className={cn(
-                    "relative overflow-hidden bg-background transition-all duration-500 ease-in-out border border-black/20 dark:border-white/15 shadow-lg",
-                    viewport === "desktop" ? "w-full h-full rounded-2xl" : 
-                    viewport === "tablet" ? "w-[768px] h-[1024px] max-h-full rounded-[2rem] border-8 border-neutral-800 shadow-2xl" :
-                    "w-[375px] h-[812px] max-h-full rounded-[3rem] border-[12px] border-neutral-800 shadow-2xl"
-                  )}
-                >
-                  <SandboxRunner />
-                </div>
-              ) : (isAiResponding || isCompiling || chatLoading) ? (
-                <div className="absolute inset-0 bg-background flex flex-col items-center justify-center p-8 overflow-hidden select-none">
-                  {/* Grid pattern with light gradients */}
-                  <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(13,110,253,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(13,110,253,0.03)_1px,transparent_1px)] bg-[size:2.5rem_2.5rem] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)] opacity-70" />
-                  
-                  {/* Neon radial glows */}
-                  <div className="absolute -top-12 -left-12 w-64 h-64 bg-primary/20 rounded-full blur-[80px] animate-pulse pointer-events-none" />
-                  <div className="absolute -bottom-12 -right-12 w-64 h-64 bg-violet-500/20 rounded-full blur-[80px] animate-pulse pointer-events-none" style={{ animationDelay: "1.5s" }} />
-
-                  <div className="relative z-10 flex flex-col items-center max-w-md w-full">
-                    {/* Default visual mockup loader when compiling or loading */}
-                    <div className="w-full bg-card/65 border border-border/40 backdrop-blur-lg rounded-2xl shadow-2xl overflow-hidden mb-8 space-y-0 animate-pulse relative">
-                      {/* Window header */}
-                      <div className="flex items-center justify-between px-4 py-3 bg-muted/40 border-b border-border/20">
-                        <div className="flex gap-1.5">
-                          <span className="w-2.5 h-2.5 rounded-full bg-red-500/30" />
-                          <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/30" />
-                          <span className="w-2.5 h-2.5 rounded-full bg-green-500/30" />
-                        </div>
-                        <div className="w-36 h-3.5 bg-muted/70 rounded-full" />
-                        <div className="w-4 h-4 bg-muted/50 rounded" />
-                      </div>
-                      {/* Mockup dashboard grid */}
-                      <div className="p-5 flex gap-4 h-56">
-                        <div className="w-1/4 flex flex-col gap-3 border-r border-border/20 pr-4">
-                          <div className="w-full h-8 bg-muted rounded-lg" />
-                          <div className="w-5/6 h-5 bg-muted/65 rounded-lg" />
-                          <div className="w-4/5 h-5 bg-muted/65 rounded-lg" />
-                          <div className="w-full h-5 bg-muted/65 rounded-lg" />
-                        </div>
-                        <div className="flex-grow flex flex-col gap-4">
-                          <div className="grid grid-cols-3 gap-3">
-                            <div className="h-12 bg-muted/70 rounded-xl" />
-                            <div className="h-12 bg-muted/70 rounded-xl" />
-                            <div className="h-12 bg-muted/70 rounded-xl" />
+                    <div className="relative z-10 flex flex-col items-center max-w-md w-full">
+                      {/* Default visual mockup loader when compiling or loading */}
+                      <div className="w-full bg-card/65 border border-border/40 backdrop-blur-lg rounded-2xl shadow-2xl overflow-hidden mb-8 space-y-0 animate-pulse relative">
+                        {/* Window header */}
+                        <div className="flex items-center justify-between px-4 py-3 bg-muted/40 border-b border-border/20">
+                          <div className="flex gap-1.5">
+                            <span className="w-2.5 h-2.5 rounded-full bg-red-500/30" />
+                            <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/30" />
+                            <span className="w-2.5 h-2.5 rounded-full bg-green-500/30" />
                           </div>
-                          <div className="flex-grow bg-muted/50 rounded-xl p-3 flex flex-col justify-between">
-                            <div className="flex justify-between items-center">
-                              <div className="w-16 h-3 bg-muted rounded-full" />
-                              <div className="w-8 h-3 bg-muted rounded-full" />
+                          <div className="w-36 h-3.5 bg-muted/70 rounded-full" />
+                          <div className="w-4 h-4 bg-muted/50 rounded" />
+                        </div>
+                        {/* Mockup dashboard grid */}
+                        <div className="p-5 flex gap-4 h-56">
+                          <div className="w-1/4 flex flex-col gap-3 border-r border-border/20 pr-4">
+                            <div className="w-full h-8 bg-muted rounded-lg" />
+                            <div className="w-5/6 h-5 bg-muted/65 rounded-lg" />
+                            <div className="w-4/5 h-5 bg-muted/65 rounded-lg" />
+                            <div className="w-full h-5 bg-muted/65 rounded-lg" />
+                          </div>
+                          <div className="flex-grow flex flex-col gap-4">
+                            <div className="grid grid-cols-3 gap-3">
+                              <div className="h-12 bg-muted/70 rounded-xl" />
+                              <div className="h-12 bg-muted/70 rounded-xl" />
+                              <div className="h-12 bg-muted/70 rounded-xl" />
                             </div>
-                            <div className="flex items-end gap-1.5 h-16 pt-2">
-                              <div className="flex-1 bg-primary/10 rounded-t h-1/3" />
-                              <div className="flex-1 bg-primary/15 rounded-t h-2/3" />
-                              <div className="flex-1 bg-primary/25 rounded-t h-1/2" />
-                              <div className="flex-1 bg-primary/20 rounded-t h-4/5 animate-bounce" style={{ animationDelay: '0.1s' }} />
-                              <div className="flex-1 bg-primary/15 rounded-t h-3/5" />
-                              <div className="flex-1 bg-primary/10 rounded-t h-2/5" />
+                            <div className="flex-grow bg-muted/50 rounded-xl p-3 flex flex-col justify-between">
+                              <div className="flex justify-between items-center">
+                                <div className="w-16 h-3 bg-muted rounded-full" />
+                                <div className="w-8 h-3 bg-muted rounded-full" />
+                              </div>
+                              <div className="flex items-end gap-1.5 h-16 pt-2">
+                                <div className="flex-1 bg-primary/10 rounded-t h-1/3" />
+                                <div className="flex-1 bg-primary/15 rounded-t h-2/3" />
+                                <div className="flex-1 bg-primary/25 rounded-t h-1/2" />
+                                <div className="flex-1 bg-primary/20 rounded-t h-4/5 animate-bounce" style={{ animationDelay: '0.1s' }} />
+                                <div className="flex-1 bg-primary/15 rounded-t h-3/5" />
+                                <div className="flex-1 bg-primary/10 rounded-t h-2/5" />
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Highly Premium Shimmery Loader Badge */}
-                    <div className="relative group w-full max-w-xs">
-                      <div className="absolute -inset-0.5 bg-gradient-to-r from-primary via-purple-500 to-blue-500 rounded-full blur opacity-40 group-hover:opacity-60 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
-                      <div className="relative flex items-center justify-center gap-3 bg-card/90 border border-border/40 backdrop-blur-md px-6 py-3 rounded-full shadow-2xl">
-                        <div className="relative flex items-center justify-center shrink-0 w-4.5 h-4.5">
-                          <Loader2 className="w-full h-full text-primary animate-spin" />
+                      {/* Highly Premium Shimmery Loader Badge */}
+                      <div className="relative group w-full max-w-xs">
+                        <div className="absolute -inset-0.5 bg-gradient-to-r from-primary via-purple-500 to-blue-500 rounded-full blur opacity-40 group-hover:opacity-60 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
+                        <div className="relative flex items-center justify-center gap-3 bg-card/90 border border-border/40 backdrop-blur-md px-6 py-3 rounded-full shadow-2xl">
+                          <div className="relative flex items-center justify-center shrink-0 w-4.5 h-4.5">
+                            <Loader2 className="w-full h-full text-primary animate-spin" />
+                          </div>
+                          <span className="text-[11px] font-bold tracking-tight text-foreground bg-clip-text">
+                            {isAiResponding ? "Agentes programando..." : "Compilando e inicializando la interfaz..."}
+                          </span>
                         </div>
-                        <span className="text-[11px] font-bold tracking-tight text-foreground bg-clip-text">
-                          {isAiResponding ? "Agentes programando..." : "Compilando e inicializando la interfaz..."}
-                        </span>
                       </div>
                     </div>
                   </div>
-                </div>
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                  <div className="text-center p-6">
-                    <Monitor className="w-10 h-10 mx-auto mb-3 opacity-20 text-primary" />
-                    <p className="font-semibold text-foreground">Sin proyecto activo</p>
-                    <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-                      Envía un primer mensaje en el chat describiendo la plataforma que quieres crear.
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+                )}
+              </div>
+            )}
 
-          {/* Console logs tab */}
-          {selectedTab === "console" && <ConsolePanel />}
-        </div>
+            {/* Console logs tab */}
+            {selectedTab === "console" && <ConsolePanel />}
+          </SandpackProvider>
+        ) : (
+          <>
+            {/* Code Editor Tab Empty state */}
+            {selectedTab === "code" && (
+              <div className="flex-grow flex items-center justify-center p-8 text-center text-muted-foreground bg-muted/5 min-h-[300px]">
+                <div className="max-w-xs">
+                  <Code2 className="w-10 h-10 mx-auto mb-3 opacity-20 text-primary" />
+                  <p className="font-semibold text-sm text-foreground">No hay archivos activos</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Selecciona un archivo de la pestaña <strong>Files</strong> para inspeccionar o editar su código fuente.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Files Explorer Tab */}
+            {selectedTab === "files" && <FilesPanel />}
+
+            {/* Preview Tab Empty state */}
+            {selectedTab === "preview" && (
+              <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                <div className="text-center p-6">
+                  <Monitor className="w-10 h-10 mx-auto mb-3 opacity-20 text-primary" />
+                  <p className="font-semibold text-foreground">Sin proyecto activo</p>
+                  <p className="text-xs text-muted-foreground mt-1 max-w-xs">
+                    Envía un primer mensaje en el chat describiendo la plataforma que quieres crear.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Console logs tab Empty state */}
+            {selectedTab === "console" && <ConsolePanel />}
+          </>
+        )}
+      </div>
       </div>
     </TooltipProvider>
   );

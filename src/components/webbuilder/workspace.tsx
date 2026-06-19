@@ -181,7 +181,7 @@ export function WebBuilderWorkspace({ chatPanel }: WebBuilderWorkspaceProps) {
       {/* Preview Panel - Right side */}
       {isSplitView && (
         <div
-          className="h-full flex flex-col overflow-hidden flex-1 border-l border-border/40"
+          className="h-full flex flex-col overflow-hidden flex-1"
         >
           <PreviewPanel />
         </div>

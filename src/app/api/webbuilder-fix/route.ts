@@ -91,7 +91,7 @@ import { Activity } from "lucide-react";
       await incrementTokenUsage(user.id, usage.totalTokens).catch(console.error);
     }
 
-    let correctedFiles: Record<string, string> | null = null;
+    let correctedFiles: Record<string, { code: string }> | null = null;
     if (containsArtifact(text)) {
       const parsed = parseArtifact(text);
       if (parsed && parsed.actions.length > 0) {

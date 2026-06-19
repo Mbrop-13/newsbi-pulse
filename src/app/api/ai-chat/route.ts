@@ -476,24 +476,22 @@ export async function POST(req: NextRequest) {
 
       if (webBuilder) {
         // Parse and send the files directly to client via streamData
-        const flatFiles: Record<string, string> = Object.fromEntries(
-          Object.entries(webBuilderFiles || {}).map(([path, f]: any) => [path, typeof f === 'object' ? f.code : String(f)])
+        const filesToApply: Record<string, { code: string }> = Object.fromEntries(
+          Object.entries(webBuilderFiles || {}).map(([path, f]: any) => {
+            const code = typeof f === 'object' && f !== null && 'code' in f ? String(f.code) : String(f);
+            return [path, { code }];
+          })
         );
         
         for (const report of orchestrationResult.agentReports) {
           if (report.success && containsArtifact(report.content)) {
             const parsed = parseArtifact(report.content);
             if (parsed && parsed.actions.length > 0) {
-              const fileChanges = actionsToFiles(parsed.actions, flatFiles as any);
-              Object.assign(flatFiles, fileChanges);
+              const fileChanges = actionsToFiles(parsed.actions, filesToApply);
+              Object.assign(filesToApply, fileChanges);
             }
           }
         }
-
-        // Map back to expected structure
-        const filesToApply = Object.fromEntries(
-          Object.entries(flatFiles).map(([path, code]) => [path, { code: String(code) }])
-        );
 
         try {
           streamData.append({

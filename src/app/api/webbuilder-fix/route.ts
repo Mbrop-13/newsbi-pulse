@@ -95,15 +95,13 @@ import { Activity } from "lucide-react";
     if (containsArtifact(text)) {
       const parsed = parseArtifact(text);
       if (parsed && parsed.actions.length > 0) {
-        // Map WebBuilderFile object files back to string records, apply diffs, and return as strings
-        const flatFiles = Object.fromEntries(
-          Object.entries(files).map(([path, f]: any) => [path, typeof f === 'object' ? f.code : String(f)])
+        const typedFiles: Record<string, { code: string }> = Object.fromEntries(
+          Object.entries(files).map(([path, f]: any) => {
+            const code = typeof f === 'object' && f !== null && 'code' in f ? String(f.code) : String(f);
+            return [path, { code }];
+          })
         );
-        const resultFlat = actionsToFiles(parsed.actions, flatFiles);
-        // Map back to the expected Record<string, { code: string }>
-        correctedFiles = Object.fromEntries(
-          Object.entries(resultFlat).map(([path, code]) => [path, { code: String(code) }])
-        ) as any;
+        correctedFiles = actionsToFiles(parsed.actions, typedFiles);
       }
     }
 

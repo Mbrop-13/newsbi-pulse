@@ -211,6 +211,8 @@ export class WebContainerManager {
   
   private installPromise: Promise<void> | null = null;
   private devServerPromise: Promise<void> | null = null;
+  private installProcess: any = null;
+  private devProcess: any = null;
 
   public static getInstance(): WebContainerManager {
     if (!WebContainerManager.instance) {
@@ -246,7 +248,14 @@ export class WebContainerManager {
     if (typeof window === "undefined") return;
 
     if (this.webcontainer) {
-      await this.mountProject(files);
+      if (this.status === "error" || this.status === "idle") {
+        this.log("WebContainer ya existe pero no está en ejecución. Reintentando...");
+        await this.mountProject(files);
+        await this.install();
+        await this.startDevServer();
+      } else {
+        await this.mountProject(files);
+      }
       return;
     }
 
@@ -332,6 +341,72 @@ export class WebContainerManager {
     this.log(`Archivo actualizado: ${relPath}`);
   }
 
+  public async destroyProcesses() {
+    if (this.devProcess) {
+      try {
+        this.log("Finalizando proceso de desarrollo Vite...");
+        await this.devProcess.kill();
+      } catch (e) {
+        console.error("Error al finalizar devProcess:", e);
+      }
+      this.devProcess = null;
+    }
+    if (this.installProcess) {
+      try {
+        this.log("Finalizando proceso de instalación npm...");
+        await this.installProcess.kill();
+      } catch (e) {
+        console.error("Error al finalizar installProcess:", e);
+      }
+      this.installProcess = null;
+    }
+    this.installPromise = null;
+    this.devServerPromise = null;
+  }
+
+  public async restart(files: Record<string, { code: string }>, forceFullWipe = false) {
+    this.log(`Reiniciando WebContainer (forceFullWipe: ${forceFullWipe})...`);
+    this.status = "booting";
+    this.notify();
+
+    // 1. Detener procesos activos
+    await this.destroyProcesses();
+
+    // 2. Limpiar directorio (excepto node_modules a menos que sea forzado)
+    if (this.webcontainer) {
+      try {
+        const items = await this.webcontainer.fs.readdir(".", { withFileTypes: true });
+        for (const item of items) {
+          if (item.name === "node_modules" && !forceFullWipe) {
+            continue;
+          }
+          if (item.isDirectory()) {
+            await this.webcontainer.fs.rm(item.name, { recursive: true, force: true });
+          } else {
+            await this.webcontainer.fs.rm(item.name, { force: true });
+          }
+        }
+        this.log("Limpieza del espacio de trabajo completada.");
+      } catch (err) {
+        this.log(`Error durante la limpieza del espacio de trabajo: ${err}`);
+      }
+    }
+
+    this.previewUrl = null;
+
+    // 3. Montar y volver a ejecutar
+    try {
+      await this.mountProject(files);
+      await this.install();
+      await this.startDevServer();
+    } catch (err: any) {
+      this.status = "error";
+      this.notify();
+      this.log(`Error durante el reinicio: ${err.message || err}`);
+      throw err;
+    }
+  }
+
   public async install() {
     if (!this.webcontainer) return;
     if (this.installPromise) return this.installPromise;
@@ -347,6 +422,7 @@ export class WebContainerManager {
         "--no-audit",
         "--no-fund"
       ]);
+      this.installProcess = installProcess;
       
       installProcess.output.pipeTo(
         new WritableStream({
@@ -357,6 +433,7 @@ export class WebContainerManager {
       );
 
       const exitCode = await installProcess.exit;
+      this.installProcess = null;
       this.installPromise = null;
 
       if (exitCode !== 0) {
@@ -385,6 +462,7 @@ export class WebContainerManager {
 
     this.devServerPromise = (async () => {
       const devProcess = await this.webcontainer!.spawn("npm", ["run", "dev"]);
+      this.devProcess = devProcess;
       
       devProcess.output.pipeTo(
         new WritableStream({
@@ -414,6 +492,7 @@ export class WebContainerManager {
 
       devProcess.exit.then((code) => {
         this.log(`El servidor de desarrollo terminó con el código: ${code}`);
+        this.devProcess = null;
         this.devServerPromise = null;
         this.previewUrl = null;
         if (this.status === "running") {

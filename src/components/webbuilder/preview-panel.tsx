@@ -482,9 +482,22 @@ export function PreviewPanel() {
   const [isInspectorActive, setIsInspectorActive] = useState(false);
   const [iframeKey, setIframeKey] = useState(0);
 
-  const handleRefresh = () => {
-    setIframeKey((prev) => prev + 1);
-    toast.success("Vista previa recargada");
+  const handleRefresh = async () => {
+    const manager = WebContainerManager.getInstance();
+    const shouldForceFullWipe = manager.status === "error";
+
+    toast.promise(
+      manager.restart(stableFiles, shouldForceFullWipe).then(() => {
+        setIframeKey((prev) => prev + 1);
+      }),
+      {
+        loading: shouldForceFullWipe
+          ? "Reinstalación limpia en curso (esto puede tardar)..."
+          : "Reiniciando servidor de desarrollo...",
+        success: "Entorno reiniciado con éxito",
+        error: "Error al reiniciar el entorno",
+      }
+    );
   };
 
   const [stableFiles, setStableFiles] = useState(files);

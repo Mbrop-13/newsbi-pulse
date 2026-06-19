@@ -411,6 +411,12 @@ export function PreviewPanel() {
   const currentTheme = resolvedTheme === "dark" ? "dark" : "light";
   const [viewport, setViewport] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const [isInspectorActive, setIsInspectorActive] = useState(false);
+  const [iframeKey, setIframeKey] = useState(0);
+
+  const handleRefresh = () => {
+    setIframeKey((prev) => prev + 1);
+    toast.success("Vista previa recargada");
+  };
 
   const [stableFiles, setStableFiles] = useState(files);
 
@@ -722,6 +728,21 @@ export function PreviewPanel() {
 
         {/* Right: Actions */}
         <div className="flex items-center gap-2.5">
+          {/* Refresh button */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button 
+                onClick={handleRefresh}
+                className="flex items-center justify-center w-8 h-8 bg-secondary hover:bg-secondary/85 text-secondary-foreground rounded-full active:scale-95 transition-all duration-200"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent hideArrow side="bottom" sideOffset={6} className="text-xs bg-popover text-popover-foreground border border-border px-2.5 py-1.5 rounded-xl shadow-lg font-semibold">
+              Recargar vista previa
+            </TooltipContent>
+          </Tooltip>
+
           {/* Share button */}
           <Tooltip>
             <TooltipTrigger asChild>
@@ -870,7 +891,7 @@ export function PreviewPanel() {
                           : "w-[375px] h-[812px] max-h-full rounded-[3rem] border-[12px] border-neutral-800 shadow-2xl"
                     )}
                   >
-                    <SandboxRunner />
+                    <SandboxRunner key={iframeKey} />
                   </div>
                 ) : (
                   <div className="absolute inset-0 bg-background flex flex-col items-center justify-center p-8 overflow-hidden select-none">

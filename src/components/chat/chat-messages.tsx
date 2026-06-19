@@ -136,14 +136,11 @@ export function ChatMessages({
                 <div className="w-full flex-grow flex flex-col gap-3 min-w-0">
                   {/* Title / Header */}
                   <div className="flex items-center gap-2 mb-1">
-                    <div className="w-5 h-5 rounded-md bg-[#1890FF]/10 flex items-center justify-center shrink-0">
-                      <Cpu className="w-3 h-3 text-[#1890FF] animate-pulse" />
-                    </div>
-                    <span className="text-xs font-semibold text-[#1890FF]">Orquestando agentes de desarrollo</span>
+                    <span className="text-xs font-bold text-black dark:text-white">Delegando agentes</span>
                     <div className="flex items-center gap-1 ml-1 shrink-0">
-                      <div className="w-1.5 h-1.5 bg-[#1890FF] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <div className="w-1.5 h-1.5 bg-[#1890FF] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <div className="w-1.5 h-1.5 bg-[#1890FF] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      <div className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <div className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <div className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                     </div>
                   </div>
 
@@ -475,10 +472,15 @@ function MessageBubble({
 
   // ─── Render Agent Reports as collapsible timeline ───
   const renderAgentReports = () => {
-    if (!message.reasoningSteps || message.reasoningSteps.length === 0) return null;
+    let reports = message.reasoningSteps;
+    if ((!reports || reports.length === 0) && isLast && isLoading && streamData) {
+      const reportsObj = streamData.find((d: any) => d?.type === 'agentReports');
+      reports = reportsObj?.reports || [];
+    }
 
-    const reports = message.reasoningSteps;
-    const successCount = reports.filter((r: any) => r.success !== false).length;
+    if (!reports || reports.length === 0) return null;
+
+    const successCount = reports.filter((r: any) => r.success !== false && (r.content || r.success)).length;
     const totalTime = reports.reduce((acc: number, r: any) => acc + (r.durationMs || 0), 0);
 
     return (
@@ -498,7 +500,7 @@ function MessageBubble({
             {reports.length} Agentes Especializados
           </span>
           <span className="text-[10px] text-muted-foreground/60 font-normal">
-            {successCount}/{reports.length} completados · {(totalTime / 1000).toFixed(1)}s
+            {successCount}/{reports.length} completados {totalTime > 0 && `· ${(totalTime / 1000).toFixed(1)}s`}
           </span>
           <ChevronDown className={cn(
             "w-3 h-3 text-muted-foreground/50 transition-transform duration-200 ml-auto",
@@ -519,6 +521,8 @@ function MessageBubble({
               <div className="mt-2.5 ml-2.5 border-l border-gray-200 dark:border-slate-800 pl-4 space-y-0">
                 {reports.map((report: any, idx: number) => {
                   const isSuccess = report.success !== false;
+                  const isDone = report.content && report.success;
+                  const isFailed = report.success === false || (report.content && !report.success);
                   const isExpanded = expandedReportIdx === idx;
                   const duration = report.durationMs ? `${(report.durationMs / 1000).toFixed(1)}s` : null;
 
@@ -527,12 +531,16 @@ function MessageBubble({
                       {/* Timeline dot */}
                       <div className={cn(
                         "absolute -left-[21px] top-[5px] w-2.5 h-2.5 rounded-full border-2 border-white dark:border-[#0a0a0a]",
-                        isSuccess ? "bg-emerald-500" : "bg-red-500"
+                        isFailed ? "bg-red-500" : isDone ? "bg-emerald-500" : "bg-amber-500 animate-pulse"
                       )} />
 
                       {/* Agent header */}
                       <button
-                        onClick={() => setExpandedReportIdx(isExpanded ? null : idx)}
+                        onClick={() => {
+                          if (isDone || isFailed) {
+                            setExpandedReportIdx(isExpanded ? null : idx);
+                          }
+                        }}
                         className="flex items-center gap-2 w-full text-left group/agent"
                       >
                         <span className="text-[11px] font-bold text-foreground">
@@ -546,15 +554,19 @@ function MessageBubble({
                             {duration}
                           </span>
                         )}
-                        {isSuccess ? (
+                        {isFailed ? (
+                          <XCircle className="w-3 h-3 text-red-500 ml-auto shrink-0" />
+                        ) : isDone ? (
                           <CheckCircle2 className="w-3 h-3 text-emerald-500 ml-auto shrink-0" />
                         ) : (
-                          <XCircle className="w-3 h-3 text-red-500 ml-auto shrink-0" />
+                          <Loader2 className="w-3 h-3 text-amber-500 ml-auto shrink-0 animate-spin" />
                         )}
-                        <ChevronRight className={cn(
-                          "w-3 h-3 text-muted-foreground/40 transition-transform duration-200 shrink-0",
-                          isExpanded && "rotate-90"
-                        )} />
+                        {(isDone || isFailed) && (
+                          <ChevronRight className={cn(
+                            "w-3 h-3 text-muted-foreground/40 transition-transform duration-200 shrink-0",
+                            isExpanded && "rotate-90"
+                          )} />
+                        )}
                       </button>
 
                       {/* Task description */}
@@ -564,7 +576,7 @@ function MessageBubble({
 
                       {/* Expanded report content */}
                       <AnimatePresence>
-                        {isExpanded && (
+                        {isExpanded && (isDone || isFailed) && (
                           <motion.div
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}

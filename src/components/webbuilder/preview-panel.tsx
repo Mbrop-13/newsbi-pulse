@@ -467,6 +467,52 @@ function SandpackSyncListener() {
   return null;
 }
 
+/**
+ * Sincroniza los archivos del STORE hacia Sandpack (dirección inversa del
+ * SandpackSyncListener).
+ *
+ * PROBLEMA: SandpackProvider solo lee la prop `files` en el montaje inicial.
+ * Cuando la IA genera código nuevo y el store cambia, Sandpack NO se entera
+ * y la preview sigue mostrando los DEFAULT_FILES (la pantalla del 🚀).
+ *
+ * SOLUCIÓN: comparar cada archivo del store con su versión en Sandpack y, si
+ * difieren, inyectar el contenido vía sandpack.updateFile() / sandpack.addFile().
+ * Esto dispara la recompilación automática del bundler.
+ */
+function SandpackFileSync() {
+  const { sandpack, dispatch } = useSandpack();
+  const files = useWebBuilderStore((s) => s.files);
+  const isAiResponding = useWebBuilderStore((s) => s.isAiResponding);
+
+  useEffect(() => {
+    // No sincronizar mientras la IA responde: el stream aún no terminó y los
+    // archivos pueden estar incompletos. El stableFiles del panel ya filtra
+    // esto, pero este componente se suscribe a `files` directamente.
+    if (isAiResponding) return;
+
+    let hasChanges = false;
+
+    for (const [path, file] of Object.entries(files)) {
+      const storeCode = typeof file === "object" ? file.code : String(file);
+      const sandpackCode = sandpack.files[path]?.code;
+
+      if (storeCode !== sandpackCode) {
+        hasChanges = true;
+        // updateFile actualiza archivos existentes y crea nuevos si no existen.
+        // El tercer parámetro shouldUpdatePreview=true dispara recompilación.
+        sandpack.updateFile(path, storeCode, true);
+      }
+    }
+
+    if (hasChanges) {
+      // Forzar refresh del iframe del preview para aplicar los cambios.
+      dispatch({ type: "refresh" });
+    }
+  }, [files, isAiResponding, sandpack, dispatch]);
+
+  return null;
+}
+
 function PremiumSkeletonLoader({ isAiResponding }: { isAiResponding: boolean }) {
   return (
     <div className="absolute inset-0 bg-background flex flex-col items-center justify-center p-8 overflow-hidden select-none">
@@ -951,6 +997,7 @@ export function PreviewPanel() {
             }}
           >
             <SandpackSyncListener />
+            <SandpackFileSync />
             {/* Code Editor Tab */}
             {selectedTab === "code" && (
               <div className="flex-grow flex min-h-0 w-full">

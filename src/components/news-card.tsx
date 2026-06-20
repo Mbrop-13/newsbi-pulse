@@ -3,11 +3,10 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { Clock, Radio, ShieldCheck, MoreVertical, Bookmark, Headphones, Copy, Share2, Check } from "lucide-react";
+import { ShieldCheck, Bookmark, Headphones, Copy, Share2, Check, Clock } from "lucide-react";
 import { NewsArticle } from "@/lib/types";
-import { formatDate, getFallbackImage } from "@/lib/utils";
+import { getFallbackImage } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
-import { ExpandableSources } from "./expandable-sources";
 import { useViewStore } from "@/lib/stores/use-view-store";
 import { useBookmarkStore } from "@/lib/stores/bookmark-store";
 import { useReadingListStore } from "@/lib/stores/use-reading-list-store";
@@ -34,8 +33,6 @@ export function NewsCard({ article, index, layout = "default" }: NewsCardProps) 
     }
   };
   const [imgError, setImgError] = useState(false);
-
-  const [showMenu, setShowMenu] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const { isBookmarked, toggleBookmark } = useBookmarkStore();
@@ -45,6 +42,28 @@ export function NewsCard({ article, index, layout = "default" }: NewsCardProps) 
 
   const { addToQueue, removeFromQueue, queue } = useReadingListStore();
   const isInQueue = queue.some(q => q.id === article.id);
+
+  const formatTimeAgo = (d: string) => {
+    try {
+      const date = new Date(d);
+      const now = new Date();
+      const diff = now.getTime() - date.getTime();
+      const mins = Math.floor(diff / 60000);
+      if (mins < 60) return `hace ${mins}m`;
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) return `hace ${hrs}h`;
+      return `hace ${Math.floor(hrs / 24)}d`;
+    } catch { return ""; }
+  };
+
+  const getFavicon = (url: string) => {
+    try {
+      const hostname = new URL(url).hostname;
+      return `https://www.google.com/s2/favicons?domain=${hostname}&sz=32`;
+    } catch {
+      return null;
+    }
+  };
 
   const handleToggleBookmark = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -57,33 +76,7 @@ export function NewsCard({ article, index, layout = "default" }: NewsCardProps) 
     toast.success(bookmarked ? "Quitado de favoritos." : "Guardado en favoritos.");
   };
 
-  const handleToggleReadingList = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!isAuthenticated) {
-      showToast("Inicia sesión para escuchar noticias.");
-      return;
-    }
-    if (isInQueue) {
-      removeFromQueue(article.id);
-      toast.success("Quitado de tu lista de reproducción.");
-    } else {
-      addToQueue({
-        id: article.id,
-        title: article.title,
-        category: article.category,
-        image_url: article.image_url || undefined,
-        slug: article.slug,
-        published_at: article.published_at,
-        source: article.sources?.[0]?.name
-      });
-      toast.success("Añadido a tu lista de reproducción.");
-    }
-  };
-
-  const handleCopyLink = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleCopyLink = () => {
     const url = `${window.location.origin}/article/${article.slug || article.id}`;
     navigator.clipboard.writeText(url).then(() => {
       setCopied(true);
@@ -109,142 +102,65 @@ export function NewsCard({ article, index, layout = "default" }: NewsCardProps) 
         // share cancelled
       }
     } else {
-      handleCopyLink(e);
+      handleCopyLink();
     }
   };
 
   const titleSizeClass = 
-    layout === 'featured' ? 'text-2xl sm:text-3xl md:text-4xl' :
-    layout === 'compact' ? 'text-lg' :
-    fontSize === 'sm' ? 'text-lg sm:text-xl' :
-    fontSize === 'lg' ? 'text-2xl sm:text-3xl' :
-    'text-xl sm:text-2xl'; // base default
+    layout === 'featured' ? 'text-2xl sm:text-3xl' :
+    layout === 'compact' ? 'text-sm font-bold' :
+    fontSize === 'sm' ? 'text-sm font-semibold' :
+    fontSize === 'lg' ? 'text-base font-bold' :
+    'text-sm.5 font-bold'; // base default for Google News card style
 
-
+  // Show summary only on featured, list or horizontal layouts
+  const showSummary = layout === 'featured' || layout === 'list' || layout === 'traditional' || layout === 'horizontal';
 
   return (
     <motion.article
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05, duration: 0.5, ease: "easeOut" }}
-      whileHover={{ scale: 1.02 }}
-      className={`group relative w-full bg-card rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-xl hover:shadow-[#1890FF]/15 transition-all duration-300 overflow-hidden flex flex-col ${
+      transition={{ delay: index * 0.04, duration: 0.4, ease: "easeOut" }}
+      className={`group relative w-full bg-card rounded-2xl border border-border/60 hover:shadow-lg hover:shadow-blue-500/5 transition-all duration-300 overflow-hidden flex flex-col ${
         layout !== 'default' ? 'h-full' : ''
       }`}
     >
-      {/* Floating Action Menu */}
-      <div className="absolute top-3 right-3 z-30 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setShowMenu(!showMenu);
-          }}
-          className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-md text-white hover:bg-[#1890FF] hover:text-white border-none flex items-center justify-center transition-colors shadow-md"
-        >
-          <MoreVertical className="w-4 h-4" />
-        </button>
-        
-        {/* Context Dropdown */}
-        <AnimatePresence>
-          {showMenu && (
-            <>
-              <div className="fixed inset-0 z-35" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowMenu(false); }} />
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                transition={{ duration: 0.15 }}
-                className="absolute right-0 mt-1 w-44 rounded-xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-gray-150 dark:border-gray-800 shadow-xl z-40 py-1 overflow-hidden"
-              >
-                <button
-                  onClick={handleToggleBookmark}
-                  className={`w-full text-left px-3 py-2 text-xs font-bold transition-colors flex items-center gap-2 ${
-                    bookmarked ? 'text-[#1890FF]' : 'text-gray-700 dark:text-gray-300'
-                  } hover:bg-gray-100 dark:hover:bg-slate-800`}
-                >
-                  <Bookmark className={`w-3.5 h-3.5 ${bookmarked ? 'fill-current' : ''}`} />
-                  {bookmarked ? "Guardado" : "Guardar favorito"}
-                </button>
-                <button
-                  onClick={handleToggleReadingList}
-                  className={`w-full text-left px-3 py-2 text-xs font-bold transition-colors flex items-center gap-2 ${
-                    isInQueue ? 'text-[#1890FF]' : 'text-gray-700 dark:text-gray-300'
-                  } hover:bg-gray-100 dark:hover:bg-slate-800`}
-                >
-                  <Headphones className="w-3.5 h-3.5" />
-                  {isInQueue ? "Escuchando" : "Escuchar audio"}
-                </button>
-                <button
-                  onClick={handleCopyLink}
-                  className="w-full text-left px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
-                >
-                  {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
-                  {copied ? "Copiado!" : "Copiar enlace"}
-                </button>
-                <button
-                  onClick={handleShare}
-                  className="w-full text-left px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
-                >
-                  <Share2 className="w-3.5 h-3.5" />
-                  Compartir
-                </button>
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
-      </div>
-
       <Link 
         href={`/article/${article.slug || article.id}`} 
         onClick={handleCardClick}
         className="flex flex-col flex-1 relative focus:outline-none"
       >
-        
-        {/* Floating Ripple Effect Layer (Subtle click action) */}
         <div className="absolute inset-0 bg-[#1890FF]/0 group-active:bg-[#1890FF]/5 transition-colors z-10 pointer-events-none" />
 
         {/* Hero Image */}
         {showImages && article.image_url && (
-          <div className={`relative w-full overflow-hidden rounded-t-xl bg-gray-100 dark:bg-gray-800 shrink-0 ${
-             layout === 'featured' ? 'h-64 sm:h-80 md:h-[350px] lg:flex-1 lg:min-h-[300px]' :
-             layout === 'compact' ? 'aspect-[2/1] sm:aspect-video lg:h-36 xl:h-44' :
-             'aspect-video'
+          <div className={`relative w-full overflow-hidden rounded-t-xl bg-gray-50 dark:bg-slate-800/40 shrink-0 ${
+             layout === 'featured' ? 'h-64 sm:h-80 md:h-[350px]' :
+             layout === 'compact' ? 'aspect-[2/1] sm:aspect-video' :
+             'aspect-[16/10]'
           }`}>
             <img
               src={imgError ? getFallbackImage(article.category) : article.image_url}
               onError={() => setImgError(true)}
               alt={article.title}
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              className="w-full h-full object-cover transition-transform duration-750 group-hover:scale-[1.03]"
             />
-            
-            {/* Live / Breaking Badge */}
-            {article.is_live && (
-              <div className="absolute top-3 left-3 flex items-center gap-1.5 px-3 py-1 bg-red-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-full shadow-md">
-                <Radio className="w-3 h-3 animate-pulse" />
-                En Vivo
-              </div>
-            )}
           </div>
         )}
 
         {/* Card Body */}
-        <div className={`flex flex-col mt-auto flex-1 ${layout === 'compact' ? 'p-4 gap-2' : 'p-5 sm:p-6 gap-3'}`}>
+        <div className="flex flex-col p-4 sm:p-5 gap-2.5 flex-1 mt-auto">
           
-          {/* Top Meta */}
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-[#1890FF]">
-              {article.category}
-            </span>
-            <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600 shrink-0" />
-            <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap overflow-hidden text-ellipsis">
-              {article.sources?.[0]?.name || "Noticias"}
-            </span>
+          {/* Top Meta info */}
+          <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-gray-400">
+            <span className="uppercase text-[#1890FF] tracking-wider">{article.category}</span>
+            <span className="w-0.5 h-0.5 rounded-full bg-gray-400 shrink-0" />
+            <span>Publicado {formatTimeAgo(article.published_at)}</span>
             
             {hasEnriched && (
               <>
-                <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600 ml-auto" />
-                <span className="flex items-center gap-1 text-[10px] font-bold text-gray-400 dark:text-gray-500">
+                <span className="w-0.5 h-0.5 rounded-full bg-gray-400 shrink-0 ml-auto" />
+                <span className="flex items-center gap-0.5 text-[9px] font-bold text-gray-400 dark:text-gray-500">
                   <ShieldCheck className="w-3 h-3 text-[#1890FF]" />
                   IA
                 </span>
@@ -253,33 +169,64 @@ export function NewsCard({ article, index, layout = "default" }: NewsCardProps) 
           </div>
 
           {/* Title */}
-          <h3 className={`font-sans font-bold leading-tight transition-colors shrink-0 line-clamp-3 ${titleSizeClass} ${
-            article.is_live ? 'text-[#1890FF]' : 'text-gray-900 dark:text-gray-100 group-hover:text-[#1890FF]'
-          }`}>
+          <h3 className={`font-sans leading-tight transition-colors line-clamp-3 text-gray-950 dark:text-gray-50 group-hover:text-[#1890FF] ${titleSizeClass}`}>
             {article.title}
           </h3>
 
           {/* Summary */}
-          <div className={`text-gray-500 dark:text-gray-400 leading-relaxed shrink-0 prose prose-sm dark:prose-invert max-w-none prose-p:m-0 prose-headings:m-0 [*_>_p]:inline ${
-             layout === 'compact' ? 'text-xs sm:text-sm line-clamp-2' : 'text-sm sm:text-base line-clamp-3'
-          }`}>
-            <ReactMarkdown>{article.summary || ""}</ReactMarkdown>
-          </div>
+          {showSummary && article.summary && (
+            <div className="text-gray-500 dark:text-gray-400 text-xs.5 sm:text-sm leading-relaxed line-clamp-3 mt-1.5">
+              <ReactMarkdown>{article.summary}</ReactMarkdown>
+            </div>
+          )}
 
-
-          {/* Footer Action Bar */}
-          <div className={`flex items-center mt-auto border-t border-gray-100 dark:border-gray-800/50 ${layout === 'compact' ? 'pt-3' : 'pt-4'}`}>
-            <div className="flex items-center gap-4 text-xs text-gray-400 font-medium z-30">
-              <span className="flex items-center gap-1.5 shrink-0">
-                <Clock className="w-3.5 h-3.5" />
-                {formatDate(article.published_at)}
-              </span>
-              
-              {article.sources && article.sources.length > 0 && (
-                <div className="border-l border-border/50 pl-3">
-                  <ExpandableSources sources={article.sources} />
+          {/* Footer actions and sources */}
+          <div className="flex items-center mt-auto pt-3 border-t border-border/40 justify-between">
+            {article.sources && article.sources.length > 0 ? (
+              <div className="flex items-center gap-1.5 min-w-0 z-30">
+                <div className="flex items-center -space-x-1 shrink-0">
+                  {article.sources.slice(0, 3).map((src: any, idx: number) => {
+                    const favicon = getFavicon(src.url);
+                    return favicon ? (
+                      <img 
+                        key={idx}
+                        src={favicon} 
+                        alt="" 
+                        className="w-4 h-4 rounded-full border border-card bg-white object-contain shrink-0" 
+                      />
+                    ) : (
+                      <div key={idx} className="w-4 h-4 rounded-full border border-card bg-muted text-[7px] font-black flex items-center justify-center shrink-0">
+                        {src.name.charAt(0)}
+                      </div>
+                    );
+                  })}
                 </div>
-              )}
+                <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400 truncate">
+                  {article.sources.length} {article.sources.length === 1 ? "fuente" : "fuentes"}
+                </span>
+              </div>
+            ) : (
+              <div className="text-[11px] text-gray-400 font-medium">Maverlang</div>
+            )}
+
+            {/* Premium action buttons */}
+            <div className="flex items-center gap-2 z-30 shrink-0">
+              <button
+                onClick={handleToggleBookmark}
+                className={`p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-full transition-colors ${
+                  bookmarked ? 'text-[#1890FF]' : 'text-gray-400 hover:text-foreground'
+                }`}
+                title="Guardar favorito"
+              >
+                <Bookmark className={`w-3.5 h-3.5 ${bookmarked ? 'fill-current' : ''}`} />
+              </button>
+              <button
+                onClick={handleShare}
+                className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-full text-gray-400 hover:text-foreground transition-colors"
+                title="Compartir"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
 

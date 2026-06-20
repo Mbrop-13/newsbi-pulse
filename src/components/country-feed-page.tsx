@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, MessageSquare, RefreshCw, ArrowRight, TrendingUp, X, Search, Flame, Eye, Briefcase, Sparkles, Clock as ClockIcon } from "lucide-react";
+import { Loader2, MessageSquare, RefreshCw, ArrowRight, TrendingUp, X, Search, Flame, Eye, Briefcase, Sparkles, Clock as ClockIcon, ChevronDown, Share2, Settings2, SlidersHorizontal } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { NewsCard } from "@/components/news-card";
@@ -19,6 +19,8 @@ import { useSidebar } from "@/components/ui/sidebar";
 import { useActiveArticleStore } from "@/lib/stores/active-article-store";
 import { ExpandableSources } from "@/components/expandable-sources";
 import { MarketSidebar } from "@/components/market-sidebar";
+import { WeatherWidget } from "@/components/weather-widget";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -345,160 +347,195 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans">
-      <div className="pt-2">
-      </div>
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 pb-16">
+      {/* ── Google News Header Bar ── */}
+      <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/80">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+          {/* Left: Brand/Section Title */}
+          <div className="flex items-center gap-3">
+            <span className="text-xl font-bold tracking-tight text-gray-900 dark:text-white font-sans">Descubre</span>
+          </div>
 
-        {/* ── Filter Bar ── */}
-        <div className="-mx-4 px-4 pt-2 pb-3 bg-background border-b border-border">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex-1 min-w-0 flex items-center gap-2.5 overflow-x-auto hide-scrollbar flex-nowrap pr-4 pb-1">
-              {/* Timing filters */}
-              <button 
-                onClick={() => { triggerTransition(); setFilterMode('para_ti'); router.push('/para-ti'); }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors shrink-0 ${
-                  filterMode === 'para_ti' ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5'
-                }`}
-              >
-                {filterMode === 'para_ti' && <Sparkles className="w-3.5 h-3.5" />}
-                Para Ti
-              </button>
-              <button 
-                onClick={() => { triggerTransition(); setFilterMode('nuevo'); router.push('/nuevo'); }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors shrink-0 ${
-                  filterMode === 'nuevo' ? 'bg-blue-50 dark:bg-[#1890FF]/10 text-[#1890FF]' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5'
-                }`}
-              >
-                {filterMode === 'nuevo' && <ClockIcon className="w-3.5 h-3.5" />}
-                Nuevo
-              </button>
-              <button 
-                onClick={() => { triggerTransition(); setFilterMode('portafolio'); }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors shrink-0 ${
-                  filterMode === 'portafolio' ? 'bg-blue-50 dark:bg-[#1890FF]/10 text-[#1890FF]' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5'
-                }`}
-              >
-                {filterMode === 'portafolio' && <Briefcase className="w-3.5 h-3.5" />}
-                Portafolio
-              </button>
+          {/* Center: Navigation Tabs */}
+          <div className="flex items-center gap-6 text-sm font-semibold h-full relative">
+            <button
+              onClick={() => {
+                triggerTransition();
+                setFilterMode('para_ti');
+                router.push('/para-ti');
+              }}
+              className={`h-full border-b-2 flex items-center px-1 transition-all relative ${
+                filterMode === 'para_ti'
+                  ? 'border-foreground text-foreground font-bold'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Para ti
+              {filterMode === 'para_ti' && (
+                <motion.div
+                  layoutId="activeTabUnderline"
+                  className="absolute bottom-0 left-0 right-0 h-[2px] bg-foreground"
+                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                />
+              )}
+            </button>
 
-              {/* Divider */}
-              <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 shrink-0" />
+            <button
+              onClick={() => {
+                triggerTransition();
+                setFilterMode(null);
+                if (activeTab !== 'chile') {
+                  handleTabChange('chile');
+                }
+              }}
+              className={`h-full border-b-2 flex items-center px-1 transition-all relative ${
+                filterMode !== 'para_ti' && activeTab === 'chile'
+                  ? 'border-foreground text-foreground font-bold'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Superior
+              {filterMode !== 'para_ti' && activeTab === 'chile' && (
+                <motion.div
+                  layoutId="activeTabUnderline"
+                  className="absolute bottom-0 left-0 right-0 h-[2px] bg-foreground"
+                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                />
+              )}
+            </button>
 
-              {/* Trending Tags */}
-              {topTags.length === 0 || isTransitioning ? (
-                <>
-                  <TagSkeleton />
-                  <TagSkeleton />
-                  <TagSkeleton />
-                </>
-              ) : (
-                topTags.map((tag) => {
-                  const isSelected = selectedTags.some(t => t.toLowerCase() === tag.toLowerCase());
-                  return (
-                    <button 
+            <DropdownMenu>
+              <DropdownMenuTrigger className="h-full border-b-2 border-transparent text-muted-foreground hover:text-foreground flex items-center gap-1 transition-all outline-none">
+                Temas <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center" className="w-[180px] rounded-xl bg-card border border-border shadow-xl p-1.5 mt-1">
+                {TABS.map((tab) => (
+                  <DropdownMenuItem
+                    key={tab.id}
+                    onClick={() => handleTabChange(tab.id)}
+                    className={`cursor-pointer px-3 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-muted ${
+                      activeTab === tab.id ? 'bg-muted text-[#1890FF] font-bold' : 'text-foreground'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span>{tab.emoji || "📰"}</span>
+                      <span>{tab.label}</span>
+                    </div>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {/* Right: Actions */}
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => router.push('/configuracion')}
+              className="p-2 hover:bg-muted rounded-full text-muted-foreground hover:text-foreground transition-colors"
+              title="Configuración"
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(window.location.href);
+                toast.success("Enlace de la página copiado al portapapeles.");
+              }}
+              className="flex items-center gap-1.5 px-4 py-1.75 rounded-full border border-border text-xs.5 font-bold hover:bg-muted transition-all text-foreground shrink-0 shadow-sm"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              Compartir
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 pb-16 pt-4">
+
+        {/* ── Sub-Navigation / Topics Row ── */}
+        <div className="py-2 border-b border-border/40 overflow-x-auto hide-scrollbar flex items-center gap-2 flex-nowrap mb-6">
+          <span className="text-xs font-bold text-muted-foreground mr-1.5 shrink-0">Temas populares:</span>
+          {topTags.length === 0 || isTransitioning ? (
+            <>
+              <TagSkeleton />
+              <TagSkeleton />
+              <TagSkeleton />
+            </>
+          ) : (
+            topTags.map((tag) => {
+              const isSelected = selectedTags.some(t => t.toLowerCase() === tag.toLowerCase());
+              return (
+                <button 
+                  key={tag} 
+                  onClick={() => toggleTag(tag)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap shrink-0 border
+                    ${isSelected 
+                      ? "bg-[#1890FF] border-[#1890FF] text-white" 
+                      : "bg-muted/40 border-border/60 text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+                >
+                  {tag}
+                </button>
+              );
+            })
+          )}
+          {remainingTags.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="px-3 py-1.5 rounded-full text-xs font-bold text-[#1890FF] bg-blue-50 dark:bg-[#1890FF]/10 hover:bg-blue-100 dark:hover:bg-[#1890FF]/20 border border-[#1890FF]/20 transition-all shrink-0 outline-none">
+                Más temas
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-[240px] rounded-xl bg-card border border-border shadow-xl p-1.5 mt-1">
+                <div className="px-2 py-1.5 mb-1.5 border-b border-border flex items-center gap-2">
+                  <TrendingUp className="w-3.5 h-3.5 text-[#1890FF]" />
+                  <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Explorar Temas</h4>
+                </div>
+                <div className="max-h-[250px] overflow-y-auto hidden-scrollbar flex flex-col gap-1 px-1">
+                  {remainingTags.map(tag => (
+                    <DropdownMenuItem 
                       key={tag} 
-                      onClick={() => toggleTag(tag)}
-                      className={`group relative px-3 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap overflow-hidden flex items-center justify-center shrink-0
-                        ${isSelected 
-                          ? "bg-[#1890FF] text-white pr-7 shadow-sm ring-1 ring-[#1890FF]/50" 
-                          : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5"}`}
+                      className="cursor-pointer text-xs.5 font-semibold px-2.5 py-2 rounded-lg hover:bg-muted transition-colors flex items-center justify-between" 
+                      onSelect={() => toggleTag(tag.trim())}
                     >
-                      <span className={`${isSelected ? "transform -translate-x-1" : ""} transition-transform`}>{tag}</span>
-                      {isSelected && (
-                        <span className="absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <X className="w-3.5 h-3.5" />
-                        </span>
-                      )}
-                    </button>
-                  );
-                })
-              )}
-
-              {remainingTags.length > 0 && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger className="px-4 py-1.5 rounded-full text-xs font-bold text-[#1890FF] bg-blue-50 hover:bg-blue-100 dark:bg-[#1890FF]/10 dark:hover:bg-[#1890FF]/20 transition-all outline-none focus:ring-2 focus:ring-[#1890FF] shadow-sm shrink-0">
-                    Ver todos
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-[280px] rounded-xl border-gray-200 dark:border-gray-800 shadow-2xl p-2 bg-white dark:bg-slate-900 mt-2">
-                    <div className="px-2 py-2 mb-1 border-b border-gray-100 dark:border-gray-800 flex items-center gap-2">
-                      <TrendingUp className="w-3.5 h-3.5 text-[#1890FF]" />
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400">Explorar Temas</h4>
-                    </div>
-                    <div className="px-2 mb-2 relative">
-                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                      <input 
-                        type="text" 
-                        placeholder="Buscar tema..."
-                        value={tagSearch}
-                        onChange={(e) => setTagSearch(e.target.value)}
-                        onKeyDown={(e) => e.stopPropagation()}
-                        className="w-full bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-gray-800 rounded-lg pl-8 pr-2 py-1.5 text-xs text-gray-700 dark:text-gray-200 focus:outline-none focus:border-[#1890FF] transition-all"
-                      />
-                    </div>
-                    <div className="max-h-[350px] overflow-y-auto hidden-scrollbar flex flex-col gap-1 px-1 mt-1 pb-4">
-                      {remainingTags
-                        .filter(t => t.toLowerCase().includes(tagSearch.toLowerCase()))
-                        .map(tag => (
-                        <DropdownMenuItem 
-                          key={tag} 
-                          className="cursor-pointer text-sm font-medium px-3 py-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center justify-between group outline-none" 
-                          onSelect={() => {
-                            toggleTag(tag.trim());
-                            setTagSearch("");
-                          }}
-                        >
-                          <span className="truncate pr-4 group-hover:text-[#1890FF] transition-colors">{tag}</span>
-                          <span className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-gray-700 group-hover:bg-[#1890FF] transition-colors opacity-0 group-hover:opacity-100" />
-                        </DropdownMenuItem>
-                      ))}
-                      {remainingTags.filter(t => t.toLowerCase().includes(tagSearch.toLowerCase())).length === 0 && (
-                        <div className="py-4 text-center text-xs text-gray-500">No se encontraron temas.</div>
-                      )}
-                    </div>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-              {/* Invisible spacer so the last item isn't flush against the edge */}
-              <div className="w-4 shrink-0" />
-            </div>
-
-            {/* Right side actions */}
-            <div className="flex items-center gap-2 shrink-0">
-              {selectedSources.length > 0 && (
-                <div className="hidden md:flex items-center gap-1.5 mr-2">
-                  {selectedSources.map(source => (
-                    <div key={source} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-50 dark:bg-[#1890FF]/10 border border-[#1890FF]/20 text-[#1890FF] text-[11px] font-bold">
-                      <span className="max-w-[120px] truncate">{source}</span>
-                      <button onClick={() => toggleSource(source)} className="hover:bg-blue-100 dark:hover:bg-[#1890FF]/25 rounded-md p-0.5 ml-1 transition-colors">
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
+                      <span className="truncate">{tag}</span>
+                    </DropdownMenuItem>
                   ))}
                 </div>
-              )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
 
-              {/* Sync button */}
-              {userRole === "admin" && (
-                <button
-                  onClick={handleManualSync}
-                  disabled={isSyncing}
-                  className={`hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${
-                    syncStatus === 'success' ? 'bg-green-500 hover:bg-green-600' :
-                    syncStatus === 'error' ? 'bg-red-500 hover:bg-red-600' :
-                    'bg-[#1890FF] hover:bg-[#1890FF]/90'
-                  } text-white shrink-0`}
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
-                  <span>
-                    {isSyncing ? 'Procesando IA...' :
-                     syncStatus === 'success' ? '¡Actualizado!' :
-                     syncStatus === 'error' ? 'Error' :
-                     'Actualizar'}
-                  </span>
-                </button>
-              )}
-            </div>
+          {/* Sync / admin button and active source filters */}
+          <div className="ml-auto flex items-center gap-2 shrink-0">
+            {selectedSources.length > 0 && (
+              <div className="hidden md:flex items-center gap-1.5 mr-2">
+                {selectedSources.map(source => (
+                  <div key={source} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 dark:bg-[#1890FF]/10 border border-[#1890FF]/20 text-[#1890FF] text-[10px] font-bold">
+                    <span className="max-w-[120px] truncate">{source}</span>
+                    <button onClick={() => toggleSource(source)} className="hover:bg-blue-100 dark:hover:bg-[#1890FF]/25 rounded-full p-0.5 ml-1 transition-colors">
+                      <X className="w-2.5 h-2.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {userRole === "admin" && (
+              <button
+                onClick={handleManualSync}
+                disabled={isSyncing}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${
+                  syncStatus === 'success' ? 'bg-green-500 hover:bg-green-600' :
+                  syncStatus === 'error' ? 'bg-red-500 hover:bg-red-600' :
+                  'bg-[#1890FF] hover:bg-[#1890FF]/90'
+                } text-white shrink-0`}
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                <span>
+                  {isSyncing ? 'Procesando IA...' :
+                   syncStatus === 'success' ? '¡Actualizado!' :
+                   syncStatus === 'error' ? 'Error' :
+                   'Actualizar'}
+                </span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -625,6 +662,7 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
                   {/* ── Right Sidebar (Desktop Only) ── */}
                   <div className="hidden lg:block lg:w-[320px] xl:w-[360px] flex-shrink-0">
                     <div className="sticky top-24 space-y-4">
+                      <WeatherWidget />
                       <MarketSidebar />
                       {/* Trending Panel below market */}
                       <TrendingPanel articles={feedArticles} />

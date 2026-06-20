@@ -45,7 +45,9 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
   const [syncStatus, setSyncStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [visibleCount, setVisibleCount] = useState(25);
   const [currentTime, setCurrentTime] = useState(Date.now());
-  const [filterMode, setFilterMode] = useState<'para_ti' | 'nuevo' | 'portafolio' | null>(initialFilter || null);
+  const [filterMode, setFilterMode] = useState<'para_ti' | 'reciente' | 'tendencia' | 'portafolio' | null>(
+    initialFilter === 'nuevo' ? 'reciente' : (initialFilter || 'para_ti')
+  );
   const [portfolioSymbols, setPortfolioSymbols] = useState<string[]>([]);
   const [portfolioLoaded, setPortfolioLoaded] = useState(false);
   const currentUser = useAuthStore(s => s.user);
@@ -212,12 +214,22 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
       const aDate = new Date(a.published_at || 0).getTime();
       const bDate = new Date(b.published_at || 0).getTime();
 
-      if (filterMode === 'nuevo' || filterMode === 'portafolio') {
-        // Chronological order for Nuevo and Portafolio
+      if (filterMode === 'reciente' || filterMode === 'portafolio') {
+        // Chronological order for Reciente and Portafolio
         return bDate - aDate;
       }
 
-      if (filterMode === 'para_ti') {
+      if (filterMode === 'tendencia') {
+        // Trending: sorted by views (most clicked/interacted) + relevance score
+        const aPopularity = (a.views || 0) * 10 + (a.relevance_score || 0);
+        const bPopularity = (b.views || 0) * 10 + (b.relevance_score || 0);
+        if (aPopularity !== bPopularity) {
+          return bPopularity - aPopularity;
+        }
+        return bDate - aDate;
+      }
+
+      if (filterMode === 'para_ti' || !filterMode) {
         const now = Date.now();
         const aAgeHours = (now - aDate) / (1000 * 60 * 60);
         const bAgeHours = (now - bDate) / (1000 * 60 * 60);
@@ -350,9 +362,8 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
       {/* ── Google News Header Bar ── */}
       <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/80">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          {/* Left: Brand/Section Title */}
+          {/* Left: Empty spacer (no Descubre title) */}
           <div className="flex items-center gap-3">
-            <span className="text-xl font-bold tracking-tight text-gray-900 dark:text-white font-sans">Descubre</span>
           </div>
 
           {/* Center: Navigation Tabs */}
@@ -382,19 +393,37 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
             <button
               onClick={() => {
                 triggerTransition();
-                setFilterMode(null);
-                if (activeTab !== 'chile') {
-                  handleTabChange('chile');
-                }
+                setFilterMode('tendencia');
               }}
               className={`h-full border-b-2 flex items-center px-1 transition-all relative ${
-                filterMode !== 'para_ti' && activeTab === 'chile'
+                filterMode === 'tendencia'
                   ? 'border-foreground text-foreground font-bold'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
-              Superior
-              {filterMode !== 'para_ti' && activeTab === 'chile' && (
+              Tendencia
+              {filterMode === 'tendencia' && (
+                <motion.div
+                  layoutId="activeTabUnderline"
+                  className="absolute bottom-0 left-0 right-0 h-[2px] bg-foreground"
+                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                />
+              )}
+            </button>
+
+            <button
+              onClick={() => {
+                triggerTransition();
+                setFilterMode('reciente');
+              }}
+              className={`h-full border-b-2 flex items-center px-1 transition-all relative ${
+                filterMode === 'reciente'
+                  ? 'border-foreground text-foreground font-bold'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Reciente
+              {filterMode === 'reciente' && (
                 <motion.div
                   layoutId="activeTabUnderline"
                   className="absolute bottom-0 left-0 right-0 h-[2px] bg-foreground"
@@ -411,9 +440,12 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
                 {TABS.map((tab) => (
                   <DropdownMenuItem
                     key={tab.id}
-                    onClick={() => handleTabChange(tab.id)}
+                    onClick={() => {
+                      setFilterMode(null);
+                      handleTabChange(tab.id);
+                    }}
                     className={`cursor-pointer px-3 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-muted ${
-                      activeTab === tab.id ? 'bg-muted text-[#1890FF] font-bold' : 'text-foreground'
+                      activeTab === tab.id && filterMode === null ? 'bg-muted text-[#1890FF] font-bold' : 'text-foreground'
                     }`}
                   >
                     <div className="flex items-center gap-2">
@@ -451,59 +483,9 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
 
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 pb-16 pt-4">
 
-        {/* ── Sub-Navigation / Topics Row ── */}
-        <div className="py-2 border-b border-border/40 overflow-x-auto hide-scrollbar flex items-center gap-2 flex-nowrap mb-6">
-          <span className="text-xs font-bold text-muted-foreground mr-1.5 shrink-0">Temas populares:</span>
-          {topTags.length === 0 || isTransitioning ? (
-            <>
-              <TagSkeleton />
-              <TagSkeleton />
-              <TagSkeleton />
-            </>
-          ) : (
-            topTags.map((tag) => {
-              const isSelected = selectedTags.some(t => t.toLowerCase() === tag.toLowerCase());
-              return (
-                <button 
-                  key={tag} 
-                  onClick={() => toggleTag(tag)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap shrink-0 border
-                    ${isSelected 
-                      ? "bg-[#1890FF] border-[#1890FF] text-white" 
-                      : "bg-muted/40 border-border/60 text-muted-foreground hover:bg-muted hover:text-foreground"}`}
-                >
-                  {tag}
-                </button>
-              );
-            })
-          )}
-          {remainingTags.length > 0 && (
-            <DropdownMenu>
-              <DropdownMenuTrigger className="px-3 py-1.5 rounded-full text-xs font-bold text-[#1890FF] bg-blue-50 dark:bg-[#1890FF]/10 hover:bg-blue-100 dark:hover:bg-[#1890FF]/20 border border-[#1890FF]/20 transition-all shrink-0 outline-none">
-                Más temas
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-[240px] rounded-xl bg-card border border-border shadow-xl p-1.5 mt-1">
-                <div className="px-2 py-1.5 mb-1.5 border-b border-border flex items-center gap-2">
-                  <TrendingUp className="w-3.5 h-3.5 text-[#1890FF]" />
-                  <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Explorar Temas</h4>
-                </div>
-                <div className="max-h-[250px] overflow-y-auto hidden-scrollbar flex flex-col gap-1 px-1">
-                  {remainingTags.map(tag => (
-                    <DropdownMenuItem 
-                      key={tag} 
-                      className="cursor-pointer text-xs.5 font-semibold px-2.5 py-2 rounded-lg hover:bg-muted transition-colors flex items-center justify-between" 
-                      onSelect={() => toggleTag(tag.trim())}
-                    >
-                      <span className="truncate">{tag}</span>
-                    </DropdownMenuItem>
-                  ))}
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-
-          {/* Sync / admin button and active source filters */}
-          <div className="ml-auto flex items-center gap-2 shrink-0">
+        {/* Active source filters and Admin Sync Row */}
+        {(selectedSources.length > 0 || userRole === "admin") && (
+          <div className="flex items-center justify-end gap-2 mb-6">
             {selectedSources.length > 0 && (
               <div className="hidden md:flex items-center gap-1.5 mr-2">
                 {selectedSources.map(source => (
@@ -537,7 +519,7 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
               </button>
             )}
           </div>
-        </div>
+        )}
 
 
         {/* ── Feed Content ── */}

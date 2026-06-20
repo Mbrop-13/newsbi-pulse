@@ -11,6 +11,13 @@ import {
   ArrowRight,
   Zap,
   Sparkles,
+  User,
+  ArrowUpCircle,
+  Download,
+  Globe,
+  HelpCircle,
+  Check,
+  Monitor,
 } from "lucide-react"
 import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
@@ -28,6 +35,12 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuPortal,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu"
 import {
   SidebarMenu,
@@ -39,6 +52,7 @@ import { useAuthStore } from "@/lib/stores/auth-store"
 import Link from "next/link"
 import { ViewSettingsDialog } from "@/components/view-settings-dialog"
 import { useDiamondStore } from "@/lib/stores/diamond-store"
+import { NotificationBell } from "@/components/notification-bell"
 
 function getInitials(name: string, email: string): string {
   if (name && name.trim().length > 0) {
@@ -85,6 +99,7 @@ export function NavUser() {
   const router = useRouter()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [language, setLanguage] = useState("default")
 
   useEffect(() => {
     setMounted(true)
@@ -141,99 +156,222 @@ export function NavUser() {
         </div>
       )}
 
-      <SidebarMenu>
-        <SidebarMenuItem>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <SidebarMenuButton
-                size="lg"
-                className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-              >
-                <Avatar className={cn(
-                  "h-8 w-8 rounded-full transition-all",
-                  mounted && isAuthenticated && userTier !== "free" && "ring-2 ring-[#1890FF]"
-                )}>
-                  <AvatarImage src={mounted ? avatarSrc : undefined} alt={mounted ? displayName : "Usuario"} />
-                  <AvatarFallback className="rounded-full">
-                    {mounted ? getInitials(displayName, displayEmail) : "U"}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="truncate font-semibold">{mounted ? displayName : "Usuario"}</span>
-                    {mounted && isAuthenticated && <PlanBadge tier={userTier} />}
-                  </div>
-                  <span className="truncate text-xs text-muted-foreground">{mounted ? displayEmail : ""}</span>
-                </div>
-                <ChevronsUpDown className="ml-auto size-4 shrink-0" />
-              </SidebarMenuButton>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-              side="top"
-              align="end"
-              sideOffset={4}
-            >
-              <DropdownMenuLabel className="p-0 font-normal">
-                <div className="flex items-center justify-between px-1 py-1.5 text-left text-sm">
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <Avatar className={cn(
-                      "h-8 w-8 rounded-full transition-all",
-                      mounted && isAuthenticated && userTier !== "free" && "ring-2 ring-[#1890FF]"
-                    )}>
-                      <AvatarImage src={mounted ? avatarSrc : undefined} alt={mounted ? displayName : "Usuario"} />
-                      <AvatarFallback className="rounded-full">
-                        {mounted ? getInitials(displayName, displayEmail) : "U"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="truncate font-semibold">{mounted ? displayName : "Usuario"}</span>
-                        {mounted && isAuthenticated && <PlanBadge tier={userTier} />}
-                      </div>
-                      <span className="truncate text-xs text-muted-foreground">{mounted ? displayEmail : ""}</span>
+      <div className="flex items-center gap-1.5 w-full">
+        <SidebarMenu className="flex-1 min-w-0">
+          <SidebarMenuItem className="list-none">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton
+                  size="lg"
+                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                >
+                  <Avatar className={cn(
+                    "h-8 w-8 rounded-full transition-all",
+                    mounted && isAuthenticated && userTier !== "free" && "ring-2 ring-[#1890FF]"
+                  )}>
+                    <AvatarImage src={mounted ? avatarSrc : undefined} alt={mounted ? displayName : "Usuario"} />
+                    <AvatarFallback className="rounded-full">
+                      {mounted ? getInitials(displayName, displayEmail) : "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="truncate font-semibold">{mounted ? displayName : "Usuario"}</span>
+                      {mounted && isAuthenticated && <PlanBadge tier={userTier} />}
                     </div>
                   </div>
-                  {/* Diamond Oval Badge */}
-                  {mounted && isAuthenticated && (
-                    <Link href="/mis-diamantes" className="ml-2 flex items-center gap-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-[#1890FF]/15 dark:to-indigo-500/15 border border-blue-100/50 dark:border-blue-900/50 hover:opacity-90 transition-all shrink-0">
-                      <div className="relative w-5 h-5 flex items-center justify-center pointer-events-none">
-                        <img 
-                          src="https://cdn.shopify.com/s/files/1/0564/3812/8712/files/diamante-1.png?v=1774402513" 
-                          alt="Diamond" 
-                          className="absolute w-12 h-12 max-w-none object-contain"
-                        />
-                      </div>
-                      <span className="text-xs font-black text-gray-700 dark:text-gray-200">{balance}</span>
-                    </Link>
-                  )}
+                  <ChevronsUpDown className="ml-auto size-4 shrink-0 opacity-55" />
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                className="w-64 rounded-2xl border border-gray-200/60 dark:border-white/5 bg-white dark:bg-[#0B1329] p-1.5 shadow-xl z-[80]"
+                side="top"
+                align="end"
+                sideOffset={8}
+              >
+                {/* User email row */}
+                <div className="flex items-center gap-2.5 px-3 py-2 text-xs text-muted-foreground/80 font-medium select-none pointer-events-none">
+                  <User className="h-4 w-4 shrink-0 text-muted-foreground/60" />
+                  <span className="truncate">{mounted ? displayEmail : ""}</span>
                 </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => { if (isMobile) setOpenMobile(false); router.push("/suscripcion"); }}>
-                <Zap className="mr-2 h-4 w-4 text-[#1890FF]" />
-                {userTier === "free" ? "Suscribirse" : userTier === "ultra" ? "Gestionar Plan" : "Subir de nivel"}
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={(e) => {
-                e.preventDefault();
-                setSettingsOpen(true);
-              }}>
-                <Settings className="mr-2 h-4 w-4" />
-                Configuración
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={toggleTheme}>
-                {theme === "dark" ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
-                {theme === "dark" ? "Modo claro" : "Modo oscuro"}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleSignOut}>
-                <LogOut className="mr-2 h-4 w-4" />
-                Cerrar sesión
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </SidebarMenuItem>
-      </SidebarMenu>
+                <DropdownMenuSeparator className="bg-border/40" />
+
+                {/* Settings action */}
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    setSettingsOpen(true);
+                  }}
+                  className="text-[13px] font-medium py-2 px-3 rounded-xl cursor-pointer flex items-center justify-between focus:bg-muted focus:text-foreground"
+                >
+                  <div className="flex items-center gap-3">
+                    <Settings className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <span>Todos los ajustes</span>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground/50 font-mono">↑ ^,</span>
+                </DropdownMenuItem>
+
+                {/* Subscription plan */}
+                <DropdownMenuItem
+                  onClick={() => {
+                    if (isMobile) setOpenMobile(false);
+                    router.push("/suscripcion");
+                  }}
+                  className="text-[13px] font-medium py-2 px-3 rounded-xl cursor-pointer flex items-center gap-3 focus:bg-muted focus:text-foreground"
+                >
+                  <ArrowUpCircle className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <span>Actualizar plan</span>
+                </DropdownMenuItem>
+
+                {/* Install apps */}
+                <DropdownMenuItem
+                  className="text-[13px] font-medium py-2 px-3 rounded-xl cursor-pointer flex items-center gap-3 focus:bg-muted focus:text-foreground"
+                >
+                  <Download className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <span>Instalar apps</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-border/40" />
+
+                {/* Appearance submenu */}
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger className="text-[13px] font-medium py-2 px-3 rounded-xl cursor-pointer flex items-center justify-between focus:bg-muted focus:text-foreground data-[state=open]:bg-muted">
+                    <div className="flex items-center gap-3 text-left">
+                      <Sun className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <div className="flex flex-col">
+                        <span className="text-[13px] font-medium">Apariencia</span>
+                        <span className="text-[10px] text-muted-foreground/70 mt-0.5 font-normal">
+                          {theme === "light" ? "Claro" : theme === "dark" ? "Oscuro" : "Sistema"}
+                        </span>
+                      </div>
+                    </div>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuPortal>
+                    <DropdownMenuSubContent className="w-48 rounded-xl border border-gray-200/50 dark:border-white/5 bg-white dark:bg-[#0B1329] p-1 shadow-lg z-[90]">
+                      <DropdownMenuItem
+                        onClick={() => setTheme("light")}
+                        className="text-xs py-1.5 px-2.5 rounded-lg cursor-pointer flex items-center justify-between focus:bg-muted focus:text-foreground"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Sun className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span>Claro</span>
+                        </div>
+                        {theme === "light" && <Check className="h-3.5 w-3.5 text-teal-650 dark:text-teal-400 shrink-0" />}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setTheme("dark")}
+                        className="text-xs py-1.5 px-2.5 rounded-lg cursor-pointer flex items-center justify-between focus:bg-muted focus:text-foreground"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Moon className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span>Oscuro</span>
+                        </div>
+                        {theme === "dark" && <Check className="h-3.5 w-3.5 text-teal-650 dark:text-teal-400 shrink-0" />}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setTheme("system")}
+                        className="text-xs py-1.5 px-2.5 rounded-lg cursor-pointer flex items-center justify-between focus:bg-muted focus:text-foreground"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Monitor className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span>Sistema</span>
+                        </div>
+                        {theme === "system" && <Check className="h-3.5 w-3.5 text-teal-650 dark:text-teal-400 shrink-0" />}
+                      </DropdownMenuItem>
+                    </DropdownMenuSubContent>
+                  </DropdownMenuPortal>
+                </DropdownMenuSub>
+
+                {/* Language submenu */}
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger className="text-[13px] font-medium py-2 px-3 rounded-xl cursor-pointer flex items-center justify-between focus:bg-muted focus:text-foreground data-[state=open]:bg-muted">
+                    <div className="flex items-center gap-3 text-left">
+                      <Globe className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <div className="flex flex-col">
+                        <span className="text-[13px] font-medium">Idioma</span>
+                        <span className="text-[10px] text-muted-foreground/70 mt-0.5 font-normal">
+                          {language === "default" ? "Por defecto" : language === "en" ? "English" : "Español"}
+                        </span>
+                      </div>
+                    </div>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuPortal>
+                    <DropdownMenuSubContent className="w-44 rounded-xl border border-gray-200/50 dark:border-white/5 bg-white dark:bg-[#0B1329] p-1 shadow-lg z-[90]">
+                      <DropdownMenuItem
+                        onClick={() => setLanguage("default")}
+                        className="text-xs py-1.5 px-2.5 rounded-lg cursor-pointer flex items-center justify-between focus:bg-muted focus:text-foreground"
+                      >
+                        <span>Por defecto</span>
+                        {language === "default" && <Check className="h-3.5 w-3.5 text-teal-650 dark:text-teal-400 shrink-0" />}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setLanguage("en")}
+                        className="text-xs py-1.5 px-2.5 rounded-lg cursor-pointer flex items-center justify-between focus:bg-muted focus:text-foreground"
+                      >
+                        <span>English</span>
+                        {language === "en" && <Check className="h-3.5 w-3.5 text-teal-650 dark:text-teal-400 shrink-0" />}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setLanguage("es")}
+                        className="text-xs py-1.5 px-2.5 rounded-lg cursor-pointer flex items-center justify-between focus:bg-muted focus:text-foreground"
+                      >
+                        <span>Español</span>
+                        {language === "es" && <Check className="h-3.5 w-3.5 text-teal-650 dark:text-teal-400 shrink-0" />}
+                      </DropdownMenuItem>
+                    </DropdownMenuSubContent>
+                  </DropdownMenuPortal>
+                </DropdownMenuSub>
+
+                {/* Help submenu */}
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger className="text-[13px] font-medium py-2 px-3 rounded-xl cursor-pointer flex items-center justify-between focus:bg-muted focus:text-foreground data-[state=open]:bg-muted">
+                    <div className="flex items-center gap-3 text-left">
+                      <HelpCircle className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <span className="text-[13px] font-medium">Ayuda</span>
+                    </div>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuPortal>
+                    <DropdownMenuSubContent className="w-44 rounded-xl border border-gray-200/50 dark:border-white/5 bg-white dark:bg-[#0B1329] p-1 shadow-lg z-[90]">
+                      <DropdownMenuItem
+                        onClick={() => { if (isMobile) setOpenMobile(false); router.push("/documentacion"); }}
+                        className="text-xs py-1.5 px-2.5 rounded-lg cursor-pointer focus:bg-muted focus:text-foreground"
+                      >
+                        <span>Documentación</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => { if (isMobile) setOpenMobile(false); router.push("/soporte"); }}
+                        className="text-xs py-1.5 px-2.5 rounded-lg cursor-pointer focus:bg-muted focus:text-foreground"
+                      >
+                        <span>Soporte</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => { if (isMobile) setOpenMobile(false); router.push("/comunidad"); }}
+                        className="text-xs py-1.5 px-2.5 rounded-lg cursor-pointer focus:bg-muted focus:text-foreground"
+                      >
+                        <span>Comunidad</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuSubContent>
+                  </DropdownMenuPortal>
+                </DropdownMenuSub>
+                <DropdownMenuSeparator className="bg-border/40" />
+
+                {/* Log out */}
+                <DropdownMenuItem
+                  onClick={handleSignOut}
+                  className="text-[13px] font-medium py-2 px-3 rounded-xl cursor-pointer flex items-center gap-3 text-red-500 hover:bg-red-500/10 focus:bg-red-500/10 focus:text-red-500 focus:bg-red-500/10"
+                >
+                  <LogOut className="h-4 w-4 shrink-0" />
+                  <span>Cerrar sesión</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
+        </SidebarMenu>
+        {state === "expanded" && mounted && isAuthenticated && (
+          <div className="shrink-0 pl-1 pr-2">
+            <NotificationBell />
+          </div>
+        )}
+      </div>
 
       <ViewSettingsDialog isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </>

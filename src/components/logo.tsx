@@ -37,7 +37,7 @@ export function Logo({ showText = true, size = "md", className = "", variant = 1
       <img 
         src={logoSrc} 
         alt="Maverlang" 
-        className={`${sizeClasses[size]} w-auto object-contain transition-transform group-hover:scale-105`}
+        className={`${sizeClasses[size]} w-auto object-contain transition-transform group-hover:scale-105 select-none pointer-events-none`}
       />
       {showText && variant === 2 && (
         <div className="flex flex-col leading-none">

@@ -802,7 +802,7 @@ export function ChatLanding() {
                   <img 
                     src={chatLogoSrc} 
                     alt="Maverlang Logo" 
-                    className="h-16 w-auto object-contain"
+                    className="h-16 w-auto object-contain select-none pointer-events-none"
                   />
                 </div>
               </div>

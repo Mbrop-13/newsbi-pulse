@@ -145,7 +145,7 @@ export function WebBuilderWorkspace({ chatPanel }: WebBuilderWorkspaceProps) {
 
   // Desktop: Split view
   return (
-    <div className="flex h-full w-full overflow-hidden select-none bg-background p-2 gap-1">
+    <div className="flex h-full w-full overflow-hidden bg-background p-2 gap-1">
       {/* Chat Panel - Left side */}
       <div
         className="h-full flex flex-col relative overflow-hidden bg-transparent shrink-0 rounded-2xl"

@@ -162,7 +162,7 @@ export function Navbar() {
                <img 
                  src={mounted && resolvedTheme === "dark" ? "/assets/Logo 1-Blanco.png" : "/assets/Maverlang Logo-1.png"} 
                  alt="Maverlang" 
-                 className="h-12 w-auto object-contain max-w-none"
+                 className="h-12 w-auto object-contain max-w-none select-none pointer-events-none"
                />
             </Link>
           </div>
@@ -173,7 +173,7 @@ export function Navbar() {
                <img 
                  src={mounted && resolvedTheme === "dark" ? "/assets/Logo 1-Blanco.png" : "/assets/Maverlang Logo-1.png"} 
                  alt="Maverlang" 
-                 className="h-8 w-auto object-contain"
+                 className="h-8 w-auto object-contain select-none pointer-events-none"
                />
             </Link>
           </div>

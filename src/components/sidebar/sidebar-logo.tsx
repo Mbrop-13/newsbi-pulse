@@ -37,7 +37,7 @@ export function SidebarLogo() {
         <img 
           src={logoSrc} 
           alt="Maverlang Logo" 
-          className="h-7 w-7 object-contain shrink-0" 
+          className="h-7 w-7 object-contain shrink-0 select-none pointer-events-none" 
         />
       </Link>
       {state === "expanded" && (

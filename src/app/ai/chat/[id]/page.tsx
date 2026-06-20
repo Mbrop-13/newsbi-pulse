@@ -196,7 +196,7 @@ export default function ChatPage(props: PageProps) {
           <img 
             src="/assets/maverlang-logo-small.png" 
             alt="Maverlang Logo" 
-            className="h-8 w-auto object-contain"
+            className="h-8 w-auto object-contain select-none pointer-events-none"
           />
           <span className="font-extrabold text-sm tracking-wide text-gray-900 dark:text-white uppercase">
             MAVERLANG <span className="text-[#1890FF]">AI</span>

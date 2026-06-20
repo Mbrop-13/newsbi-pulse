@@ -62,7 +62,7 @@ export function LandingCTA() {
                 <img 
                   src="https://cdn.shopify.com/s/files/1/0564/3812/8712/files/freepik__background__94196.png?v=1771922713" 
                   alt="Maverlang Logo" 
-                  className="h-10 w-auto object-contain opacity-90"
+                  className="h-10 w-auto object-contain opacity-90 select-none pointer-events-none"
                 />
                 <span className="text-xs text-slate-500 font-bold uppercase tracking-wider">| Inteligencia Artificial Financiera</span>
               </div>

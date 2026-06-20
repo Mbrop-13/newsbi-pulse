@@ -1197,7 +1197,7 @@ function AssistantAvatar({ isResponding, isWebBuilderMode }: { isResponding: boo
       <img 
         src={imageSrc} 
         alt="Chat Logo" 
-        className={cn("object-contain", isWebBuilderMode ? "w-8 h-8" : "w-12 h-12")}
+        className={cn("object-contain select-none pointer-events-none", isWebBuilderMode ? "w-8 h-8" : "w-12 h-12")}
       />
     </div>
   );

@@ -49,6 +49,23 @@ export function AIChatSidebar() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
+  const attachMenuRef = useRef<HTMLDivElement>(null);
+
+  // Click outside listener for attachment menu
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (attachMenuRef.current && !attachMenuRef.current.contains(event.target as Node)) {
+        setShowAttachMenu(false);
+        setTimeout(() => setAttachMenuView('main'), 200);
+      }
+    }
+    if (showAttachMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showAttachMenu]);
   const pathname = usePathname();
   const supabase = createClient();
   const userTier = useAuthStore((s) => s.user?.role === "admin" ? "ultra" : (s.user?.tier || "free"));
@@ -523,7 +540,7 @@ export function AIChatSidebar() {
 
               <div className="relative flex items-end gap-1.5 bg-gray-50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700/50 rounded-2xl p-1 focus-within:ring-2 focus-within:ring-[#1890FF]/20 focus-within:border-[#1890FF]/50 transition-all shadow-sm">
                 {/* Left: + button & Web toggle */}
-                <div className="flex items-center gap-0.5 pb-0.5 pl-0.5 shrink-0 relative">
+                <div ref={attachMenuRef} className="flex items-center gap-0.5 pb-0.5 pl-0.5 shrink-0 relative">
                   <button onClick={() => setShowAttachMenu(!showAttachMenu)}
                     className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${showAttachMenu ? "bg-[#1890FF] text-white" : "text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"}`}>
                     <Plus className={`w-4 h-4 transition-transform duration-200 ${showAttachMenu ? "rotate-45" : ""}`} />
@@ -531,11 +548,9 @@ export function AIChatSidebar() {
 
                   <AnimatePresence>
                     {showAttachMenu && (
-                      <>
-                        <div className="fixed inset-0 z-20" onClick={() => { setShowAttachMenu(false); setTimeout(() => setAttachMenuView('main'), 200); }} />
-                        <motion.div initial={{ opacity: 0, y: 8, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                          className="absolute bottom-10 left-0 z-40 w-56 bg-white dark:bg-slate-900 border border-gray-100 dark:border-white/10 rounded-2xl shadow-xl overflow-hidden max-h-[300px]">
-                          <div className="p-2 space-y-2 overflow-y-auto max-h-[300px]">
+                      <motion.div initial={{ opacity: 0, y: 8, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                        className="absolute bottom-10 left-0 z-40 w-56 bg-white dark:bg-slate-900 border border-gray-100 dark:border-white/10 rounded-2xl shadow-xl overflow-hidden max-h-[300px]">
+                        <div className="p-2 space-y-2 overflow-y-auto max-h-[300px]">
                             {attachMenuView === 'main' && (
                               <motion.div key="main" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}>
                                 <div>
@@ -608,8 +623,7 @@ export function AIChatSidebar() {
                               </motion.div>
                             )}
                           </div>
-                        </motion.div>
-                      </>
+                      </motion.div>
                     )}
                   </AnimatePresence>
 

@@ -22,6 +22,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import {
   Plus,
   Mic,
   Globe,
@@ -38,6 +45,9 @@ import {
   AreaChart,
   Target,
   ChevronRight,
+  ChevronDown,
+  Check,
+  Zap,
   TrendingUp,
   Scale,
   Layers,
@@ -102,6 +112,23 @@ export function ChatInput({
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const attachMenuRef = useRef<HTMLDivElement>(null);
+
+  // Click outside listener for attachment menu
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (attachMenuRef.current && !attachMenuRef.current.contains(event.target as Node)) {
+        setShowAttachMenu(false);
+        setTimeout(() => setAttachMenuView('main'), 200);
+      }
+    }
+    if (showAttachMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showAttachMenu]);
 
   const userTier = useAuthStore((s) => s.user?.role === "admin" ? "ultra" : (s.user?.tier || "free"));
   const MAX_FILES = userTier === "free" ? 1 : userTier === "pro" ? 3 : 10;
@@ -502,7 +529,7 @@ export function ChatInput({
           <div className="mt-1 flex items-center justify-between px-1">
             <div className="flex items-center gap-2">
               {/* Attachments menu */}
-              <div className="relative shrink-0">
+              <div ref={attachMenuRef} className="relative shrink-0">
                 <Button
                   type="button"
                   variant={showAttachMenu ? "secondary" : "ghost"}
@@ -515,19 +542,17 @@ export function ChatInput({
                 </Button>
                 <AnimatePresence>
                   {showAttachMenu && (
-                    <>
-                      <div className="fixed inset-0 z-20" onClick={() => { setShowAttachMenu(false); setTimeout(() => setAttachMenuView('main'), 200); }} />
-                      <motion.div
-                        initial={{ opacity: 0, y: openUpward ? 10 : -10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: openUpward ? 10 : -10, scale: 0.95 }}
-                        transition={{ type: "spring", damping: 20, stiffness: 300 }}
-                        className={cn(
-                          "absolute left-0 z-40 w-64 flex flex-col max-h-[350px] overflow-hidden rounded-2xl border shadow-2xl",
-                          openUpward ? "bottom-12" : "top-12",
-                          "bg-white/95 dark:bg-[#0B1329]/95 backdrop-blur-xl border-gray-200/50 dark:border-white/5 shadow-blue-500/5 dark:shadow-blue-900/10"
-                        )}
-                      >
+                    <motion.div
+                      initial={{ opacity: 0, y: openUpward ? 10 : -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: openUpward ? 10 : -10, scale: 0.95 }}
+                      transition={{ type: "spring", damping: 20, stiffness: 300 }}
+                      className={cn(
+                        "absolute left-0 z-40 w-64 flex flex-col max-h-[350px] overflow-hidden rounded-2xl border shadow-2xl",
+                        openUpward ? "bottom-12" : "top-12",
+                        "bg-white/95 dark:bg-[#0B1329]/95 backdrop-blur-xl border-gray-200/50 dark:border-white/5 shadow-blue-500/5 dark:shadow-blue-900/10"
+                      )}
+                    >
                         <div className="flex-1 overflow-y-auto hidden-scrollbar p-2.5 space-y-3">
                           
                           {attachMenuView === 'main' && (
@@ -627,7 +652,6 @@ export function ChatInput({
 
                         </div>
                       </motion.div>
-                    </>
                   )}
                 </AnimatePresence>
               </div>
@@ -659,9 +683,6 @@ export function ChatInput({
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Build Mode Selector */}
-              {isWebBuilderMode && <BuildModeSelector />}
-
               {/* Inline Model Selector */}
               <ModelSelector
                 selectedModelId={selectedModel}
@@ -845,10 +866,11 @@ const detectLanguage = (text: string): string => {
 };
 
 function WebBuilderPill() {
-  const { isWebBuilderMode, setWebBuilderMode, resetProject } = useWebBuilderStore();
+  const { isWebBuilderMode, setWebBuilderMode, resetProject, buildMode, setBuildMode } = useWebBuilderStore();
   const messages = useAIChatStore((s) => s.messages);
   const clearMessages = useAIChatStore((s) => s.clearMessages);
   const [showNewChatDialog, setShowNewChatDialog] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleToggleBuilder = () => {
     if (!isWebBuilderMode && messages.length > 0) {
@@ -869,30 +891,72 @@ function WebBuilderPill() {
     <>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleToggleBuilder}
-            className={cn(
-              "rounded-full h-7 px-3 gap-1.5 transition-all duration-300 shrink-0 cursor-pointer",
-              isWebBuilderMode
-                ? "!bg-foreground !text-background !border-foreground hover:bg-foreground/90"
-                : "bg-input/10 dark:bg-input/30"
-            )}
-            aria-pressed={isWebBuilderMode}
-            aria-label={isWebBuilderMode ? "Desactivar Builder" : "Activar Builder"}
-          >
-            <Code2 className="h-4 w-4" />
-            {isWebBuilderMode && (
-              <span className="text-[10px] font-black tracking-wide">
-                Builder
-              </span>
-            )}
-          </Button>
+          {isWebBuilderMode ? (
+            <DropdownMenu onOpenChange={setIsOpen}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 gap-1 transition-colors shrink-0 cursor-pointer text-black dark:text-white font-normal hover:bg-muted/50 rounded-lg shadow-none border-none"
+                >
+                  <span className="text-xs font-normal">
+                    {buildMode === "plan" ? "Plan" : "Turbo"}
+                  </span>
+                  <ChevronDown className={cn("h-3.5 w-3.5 shrink-0 transition-transform duration-200", isOpen && "rotate-180")} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                side="top"
+                align="start"
+                className="w-48 rounded-xl border border-gray-200/50 dark:border-white/5 bg-white dark:bg-[#0B1329] p-1 shadow-lg z-[60]"
+              >
+                <DropdownMenuItem
+                  onClick={() => setBuildMode("plan")}
+                  className="flex items-center justify-between py-2 px-3 rounded-lg cursor-pointer text-xs focus:bg-muted focus:text-foreground"
+                >
+                  <div className="flex flex-col text-left">
+                    <span className="font-semibold text-foreground">Plan</span>
+                    <span className="text-[9px] text-muted-foreground">Planificar y aprobar antes de construir</span>
+                  </div>
+                  {buildMode === "plan" && <Check className="h-3.5 w-3.5 text-blue-500 shrink-0 ml-2" />}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setBuildMode("turbo")}
+                  className="flex items-center justify-between py-2 px-3 rounded-lg cursor-pointer text-xs focus:bg-muted focus:text-foreground"
+                >
+                  <div className="flex flex-col text-left">
+                    <span className="font-semibold text-foreground">Turbo</span>
+                    <span className="text-[9px] text-muted-foreground">Planificar y construir directamente</span>
+                  </div>
+                  {buildMode === "turbo" && <Check className="h-3.5 w-3.5 text-blue-500 shrink-0 ml-2" />}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="my-1 bg-border/40" />
+                <DropdownMenuItem
+                  onClick={() => setWebBuilderMode(false)}
+                  className="flex items-center gap-2 py-2 px-3 rounded-lg cursor-pointer text-xs text-red-500 hover:bg-red-500/10 focus:bg-red-500/10 focus:text-red-500"
+                >
+                  <X className="h-3.5 w-3.5 shrink-0" />
+                  <span className="font-semibold">Desactivar Builder</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleToggleBuilder}
+              className="rounded-full h-7 px-3 gap-1.5 transition-all duration-300 shrink-0 cursor-pointer bg-input/10 dark:bg-input/30"
+              aria-pressed={isWebBuilderMode}
+              aria-label="Activar Builder"
+            >
+              <Code2 className="h-4 w-4" />
+            </Button>
+          )}
         </TooltipTrigger>
         <TooltipContent side="top" sideOffset={6}>
-          {isWebBuilderMode ? "Desactivar Builder" : "Activar Builder"}
+          {isWebBuilderMode ? "Opciones de Builder" : "Activar Builder"}
         </TooltipContent>
       </Tooltip>
 

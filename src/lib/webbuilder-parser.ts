@@ -46,6 +46,25 @@ export interface ParsedArtifact {
 }
 
 /**
+ * Normaliza la ruta de un archivo a la convención del WebBuilder:
+ *  - Garantiza barra inicial ("/App.tsx", no "App.tsx").
+ *  - Colapsa la carpeta "src/" si el modelo la añade por costumbre Vite/CRA
+ *    ("/src/App.tsx" o "src/App.tsx" -> "/App.tsx").
+ * El resto del sistema (DEFAULT_FILES, prompt final, template Sandpack
+ * "react-ts") usa rutas raíz sin "src/". Sin esta normalización, el código
+ * generado aterriza en "/src/App.tsx" mientras Sandpack renderiza el entry
+ * "/App.tsx" (la pantalla del cohete por defecto), sin lanzar ningún error.
+ */
+function normalizeFilePath(filePath: string): string {
+  let path = filePath.startsWith("/") ? filePath : "/" + filePath;
+  // Colapsar el segmento "src/" inmediatamente después de la barra inicial.
+  // Solo el primer segmento (ej: /src/App.tsx -> /App.tsx, /src/components/X -> /components/X).
+  // No afecta rutas válidas que contengan "src" más adentro (raro en este sistema).
+  path = path.replace(/^\/src\//, "/");
+  return path;
+}
+
+/**
  * Parse a complete or partial artifact from the AI response text.
  * Works on the full accumulated text (not just incremental chunks).
  */
@@ -69,7 +88,7 @@ export function parseArtifact(text: string): ParsedArtifact | null {
   while ((match = actionRegex.exec(text)) !== null) {
     const actionType = match[1] as "file" | "update";
     const rawFilePath = match[2];
-    const filePath = rawFilePath.startsWith("/") ? rawFilePath : "/" + rawFilePath;
+    const filePath = normalizeFilePath(rawFilePath);
     let content = match[3];
 
     // Trim leading/trailing whitespace from content
@@ -187,7 +206,7 @@ export function actionsToFiles(
   const files: Record<string, { code: string }> = {};
 
   for (const action of actions) {
-    const filePath = action.filePath.startsWith("/") ? action.filePath : "/" + action.filePath;
+    const filePath = normalizeFilePath(action.filePath);
     if (action.type === "file") {
       // Full file creation/replacement
       files[filePath] = { code: action.content };

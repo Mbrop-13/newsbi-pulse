@@ -611,9 +611,11 @@ Determina si la consulta es simple (isComplex: false) o compleja (isComplex: tru
 
 Si la consulta es compleja (isComplex: true), debes descomponer la tarea en archivos individuales. Asigna cada archivo a un agente constructor especializado (mínimo 2, máximo 5 archivos/agentes en total). Cada agente se encargará de crear o actualizar UN ÚNICO archivo de código.
 Por ejemplo, si necesitas crear una dashboard interactiva, podrías planificar:
-1. "src/App.tsx" -> asignado a AppAgent (Desarrollador React Principal) para el layout y estado general.
-2. "src/components/FinanceChart.tsx" -> asignado a ChartAgent (Especialista en Visualización) para el gráfico interactivo.
-3. "src/index.css" -> asignado a StyleAgent (Especialista CSS) para los estilos globales y Tailwind.
+1. "/App.tsx" -> asignado a AppAgent (Desarrollador React Principal) para el layout y estado general.
+2. "/components/FinanceChart.tsx" -> asignado a ChartAgent (Especialista en Visualización) para el gráfico interactivo.
+3. "/styles.css" -> asignado a StyleAgent (Especialista CSS) para los estilos globales y Tailwind.
+
+IMPORTANTE - CONVENCIÓN DE RUTAS: Los archivos SIEMPRE se referencian con barra inicial y SIN la carpeta "src/". El archivo principal es "/App.tsx", los estilos globales son "/styles.css", y los componentes van en "/components/Nombre.tsx". NUNCA uses rutas como "src/App.tsx" o "/src/App.tsx".
 
 DEBES responder ÚNICAMENTE con un bloque JSON en el siguiente formato (sin explicaciones, sin markdown, solo el JSON):
 {
@@ -624,7 +626,7 @@ DEBES responder ÚNICAMENTE con un bloque JSON en el siguiente formato (sin expl
       "agentName": "Nombre del Agente (ej: AppAgent)",
       "role": "Rol específico del agente (ej: Desarrollador React Principal)",
       "task": "Explicación detallada de lo que debe implementar en su archivo asignado",
-      "filePath": "Ruta exacta del archivo (ej: src/App.tsx)"
+      "filePath": "Ruta exacta del archivo (ej: /App.tsx)"
     }
   ]
 }
@@ -668,7 +670,7 @@ ${existingFilesContext ? `Archivos existentes:\n${Object.keys(existingFiles).map
       agentName: a.agentName || 'BuilderAgent',
       role: a.role || 'Desarrollador',
       task: a.task || 'Crear código',
-      filePath: a.filePath || 'src/App.tsx'
+      filePath: a.filePath || '/App.tsx'
     }));
   } catch (err: any) {
     console.error("WebBuilder planning phase failed:", err);

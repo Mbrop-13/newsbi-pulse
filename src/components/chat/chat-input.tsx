@@ -661,18 +661,22 @@ export function ChatInput({
                 {!isStreaming && (
                   <>
                     <WebBuilderPill />
-                    <Pill
-                      active={codeInterpreter}
-                      onClick={() => setCodeInterpreter(prev => !prev)}
-                      icon={<Terminal className="h-4 w-4" />}
-                      label="Intérprete de código"
-                    />
-                    <Pill
-                      active={browser}
-                      onClick={() => setBrowser(prev => !prev)}
-                      icon={<Chrome className="h-4 w-4" />}
-                      label="Navegador virtual"
-                    />
+                    {(!isWebBuilderMode || messages.length === 0) && (
+                      <>
+                        <Pill
+                          active={codeInterpreter}
+                          onClick={() => setCodeInterpreter(prev => !prev)}
+                          icon={<Terminal className="h-4 w-4" />}
+                          label="Intérprete de código"
+                        />
+                        <Pill
+                          active={browser}
+                          onClick={() => setBrowser(prev => !prev)}
+                          icon={<Chrome className="h-4 w-4" />}
+                          label="Navegador virtual"
+                        />
+                      </>
+                    )}
                   </>
                 )}
               </div>
@@ -897,7 +901,7 @@ function WebBuilderPill() {
             className={cn(
               "rounded-full h-7 px-3 gap-1.5 transition-all duration-300 shrink-0 cursor-pointer",
               isWebBuilderMode
-                ? "!bg-foreground !text-background !border-foreground hover:bg-foreground/90 font-bold"
+                ? "bg-black text-white hover:bg-black/95 dark:bg-white dark:text-black dark:hover:bg-white/95 font-bold"
                 : "bg-input/10 dark:bg-input/30"
             )}
             aria-pressed={isWebBuilderMode}

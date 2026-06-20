@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { Check, ChevronsUpDown, Cpu, PanelLeft, Sparkles, Crown, X, CheckCircle2, ArrowRight } from "lucide-react"
+import { Check, ChevronsUpDown, Cpu, PanelLeft, Sparkles, Crown, X, CheckCircle2, ArrowRight, ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { motion, AnimatePresence } from "framer-motion"
@@ -74,12 +74,12 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
               variant="ghost"
               role="combobox"
               aria-expanded={open}
-              className="w-fit h-8 gap-1 bg-white/5 dark:bg-white/5 border border-border/40 hover:bg-muted/50 px-2.5 py-1 rounded-full text-xs font-semibold text-muted-foreground hover:text-foreground transition-all duration-300 shadow-sm cursor-pointer"
+              className="w-fit h-7 gap-1 bg-transparent hover:bg-muted/50 px-2 rounded-lg text-xs font-normal text-black dark:text-white cursor-pointer shrink-0 shadow-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
             >
-              <span className="font-bold text-[10px] sm:text-xs transition-colors">
+              <span className="transition-colors">
                 {selectedModel.name}
               </span>
-              <ChevronsUpDown className="h-3 w-3 shrink-0 opacity-50 ml-1 transition-colors" />
+              <ChevronDown className={cn("h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-200", open && "rotate-180")} />
             </Button>
           </PopoverTrigger>
           <PopoverContent

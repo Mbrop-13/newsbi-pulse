@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, MessageSquare, RefreshCw, ArrowRight, TrendingUp, X, Search, Flame, Eye, Briefcase, Sparkles, Clock as ClockIcon, ChevronDown, Share2, Settings2, SlidersHorizontal } from "lucide-react";
+import { Loader2, MessageSquare, ArrowRight, TrendingUp, X, Search, Flame, Eye, Briefcase, Sparkles, Clock as ClockIcon, ChevronDown, Settings2, SlidersHorizontal } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { NewsCard } from "@/components/news-card";
@@ -41,8 +41,6 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
   const defaultTab: FeedTab = (initialFeed as FeedTab) || "chile";
   const [activeTab, setActiveTab] = useState<FeedTab>(defaultTab);
   const [dbArticles, setDbArticles] = useState<any[]>([]);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [visibleCount, setVisibleCount] = useState(25);
   const [currentTime, setCurrentTime] = useState(Date.now());
   const [filterMode, setFilterMode] = useState<'para_ti' | 'reciente' | 'tendencia' | 'portafolio' | null>(
@@ -299,21 +297,6 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
   const visibleArticles = sortedArticles.slice(0, visibleCount);
   const hasMore = visibleCount < sortedArticles.length;
 
-  const handleManualSync = async () => {
-    setIsSyncing(true);
-    setSyncStatus('idle');
-    try {
-      const res = await fetch('/api/cron?manual=true');
-      if (!res.ok) throw new Error("Sync failed");
-      setSyncStatus('success');
-    } catch (e) {
-      console.error("Failed to sync", e);
-      setSyncStatus('error');
-    }
-    setIsSyncing(false);
-    setTimeout(() => setSyncStatus('idle'), 4000);
-  };
-
   const triggerTransition = () => {
     // No artificial transition delay for snappy local changes
   };
@@ -467,57 +450,25 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
             >
               <SlidersHorizontal className="w-4 h-4" />
             </button>
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(window.location.href);
-                toast.success("Enlace de la página copiado al portapapeles.");
-              }}
-              className="flex items-center gap-1.5 px-4 py-1.75 rounded-full border border-border text-xs.5 font-bold hover:bg-muted transition-all text-foreground shrink-0 shadow-sm"
-            >
-              <Share2 className="w-3.5 h-3.5" />
-              Compartir
-            </button>
           </div>
         </div>
       </header>
 
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 pb-16 pt-4">
 
-        {/* Active source filters and Admin Sync Row */}
-        {(selectedSources.length > 0 || userRole === "admin") && (
+        {/* Active source filters Row */}
+        {selectedSources.length > 0 && (
           <div className="flex items-center justify-end gap-2 mb-6">
-            {selectedSources.length > 0 && (
-              <div className="hidden md:flex items-center gap-1.5 mr-2">
-                {selectedSources.map(source => (
-                  <div key={source} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 dark:bg-[#1890FF]/10 border border-[#1890FF]/20 text-[#1890FF] text-[10px] font-bold">
-                    <span className="max-w-[120px] truncate">{source}</span>
-                    <button onClick={() => toggleSource(source)} className="hover:bg-blue-100 dark:hover:bg-[#1890FF]/25 rounded-full p-0.5 ml-1 transition-colors">
-                      <X className="w-2.5 h-2.5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            {userRole === "admin" && (
-              <button
-                onClick={handleManualSync}
-                disabled={isSyncing}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${
-                  syncStatus === 'success' ? 'bg-green-500 hover:bg-green-600' :
-                  syncStatus === 'error' ? 'bg-red-500 hover:bg-red-600' :
-                  'bg-[#1890FF] hover:bg-[#1890FF]/90'
-                } text-white shrink-0`}
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
-                <span>
-                  {isSyncing ? 'Procesando IA...' :
-                   syncStatus === 'success' ? '¡Actualizado!' :
-                   syncStatus === 'error' ? 'Error' :
-                   'Actualizar'}
-                </span>
-              </button>
-            )}
+            <div className="hidden md:flex items-center gap-1.5 mr-2">
+              {selectedSources.map(source => (
+                <div key={source} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 dark:bg-[#1890FF]/10 border border-[#1890FF]/20 text-[#1890FF] text-[10px] font-bold">
+                  <span className="max-w-[120px] truncate">{source}</span>
+                  <button onClick={() => toggleSource(source)} className="hover:bg-blue-100 dark:hover:bg-[#1890FF]/25 rounded-full p-0.5 ml-1 transition-colors">
+                    <X className="w-2.5 h-2.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -670,7 +621,7 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
                 <MessageSquare className="w-12 h-12 text-[#1890FF]/20 mx-auto mb-4" />
                 <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Sin noticias aún</h3>
                 <p className="text-gray-500 dark:text-gray-400 max-w-sm mx-auto text-sm">
-                  Presiona &quot;Actualizar&quot; para que la IA busque las últimas noticias.
+                  No hay noticias disponibles en esta sección en este momento.
                 </p>
               </div>
             )}

@@ -91,7 +91,7 @@ export function ChatInput({
   const [image, setImage] = useState(false);
   const [codeInterpreter, setCodeInterpreter] = useState(false);
   const [browser, setBrowser] = useState(false);
-  const { isWebBuilderMode } = useWebBuilderStore();
+  const { isWebBuilderMode, buildMode } = useWebBuilderStore();
   const { tokenLimitReached, tokenLimitDetails, openModal: openConversionModal, clearTokenLimitReached } = useConversionStore();
   
   const [showAttachMenu, setShowAttachMenu] = useState(false);
@@ -485,7 +485,13 @@ export function ChatInput({
               onInput={() => resizeTextarea()}
               onKeyDown={handleKeyDown}
               onPaste={handlePaste}
-              placeholder={isListening ? "Escuchando... habla ahora" : placeholder}
+              placeholder={
+                isListening
+                  ? "Escuchando... habla ahora"
+                  : isWebBuilderMode
+                    ? (buildMode === "plan" ? "plan" : "turbo")
+                    : placeholder
+              }
               disabled={Boolean(disabled && !isStreaming)}
               id="chat-input"
               name="input"
@@ -634,20 +640,25 @@ export function ChatInput({
 
               {/* Feature toggle pills scrollable row */}
               <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [scrollbar-width:none] select-none flex-nowrap pr-2 max-w-[calc(100vw-180px)] sm:max-w-none">
-                {!isStreaming && !isWebBuilderMode && (
+                {!isStreaming && (
                   <>
-                    <Pill
-                      active={codeInterpreter}
-                      onClick={() => setCodeInterpreter(prev => !prev)}
-                      icon={<Terminal className="h-4 w-4" />}
-                      label="Intérprete de código"
-                    />
-                    <Pill
-                      active={browser}
-                      onClick={() => setBrowser(prev => !prev)}
-                      icon={<Chrome className="h-4 w-4" />}
-                      label="Navegador virtual"
-                    />
+                    <WebBuilderPill />
+                    {!isWebBuilderMode && (
+                      <>
+                        <Pill
+                          active={codeInterpreter}
+                          onClick={() => setCodeInterpreter(prev => !prev)}
+                          icon={<Terminal className="h-4 w-4" />}
+                          label="Intérprete de código"
+                        />
+                        <Pill
+                          active={browser}
+                          onClick={() => setBrowser(prev => !prev)}
+                          icon={<Chrome className="h-4 w-4" />}
+                          label="Navegador virtual"
+                        />
+                      </>
+                    )}
                   </>
                 )}
               </div>
@@ -655,7 +666,7 @@ export function ChatInput({
 
             <div className="flex items-center gap-2">
               {/* Build Mode Selector */}
-              <BuildModeSelector />
+              {isWebBuilderMode && <BuildModeSelector />}
 
               {/* Inline Model Selector */}
               <ModelSelector
@@ -838,5 +849,94 @@ const detectLanguage = (text: string): string => {
   }
   return "txt";
 };
+
+function WebBuilderPill() {
+  const { isWebBuilderMode, setWebBuilderMode, resetProject } = useWebBuilderStore();
+  const messages = useAIChatStore((s) => s.messages);
+  const clearMessages = useAIChatStore((s) => s.clearMessages);
+  const [showNewChatDialog, setShowNewChatDialog] = useState(false);
+
+  const handleToggleBuilder = () => {
+    if (!isWebBuilderMode && messages.length > 0) {
+      setShowNewChatDialog(true);
+    } else {
+      setWebBuilderMode(!isWebBuilderMode);
+    }
+  };
+
+  const confirmNewChatBuilder = () => {
+    clearMessages();
+    resetProject();
+    setWebBuilderMode(true);
+    setShowNewChatDialog(false);
+  };
+
+  return (
+    <>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={isWebBuilderMode ? undefined : handleToggleBuilder}
+            className={cn(
+              "rounded-full h-7 px-3 gap-1.5 transition-all duration-300 shrink-0",
+              isWebBuilderMode
+                ? "!bg-foreground !text-background !border-foreground pointer-events-none cursor-default"
+                : "bg-input/10 dark:bg-input/30"
+            )}
+            aria-pressed={isWebBuilderMode}
+            aria-label="Activar Builder"
+          >
+            <Code2 className="h-4 w-4" />
+            {isWebBuilderMode && (
+              <span className="text-[10px] font-black tracking-wide">
+                Builder
+              </span>
+            )}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="top" sideOffset={6}>
+          Activar Builder
+        </TooltipContent>
+      </Tooltip>
+
+      <Dialog open={showNewChatDialog} onOpenChange={setShowNewChatDialog}>
+        <DialogContent className="max-w-md p-6 rounded-3xl border border-border/40 bg-background/95 backdrop-blur-xl shadow-2xl">
+          <DialogHeader className="gap-2">
+            <DialogTitle className="text-lg font-black tracking-tight flex items-center gap-2">
+              <span className="p-2 bg-violet-500/10 text-violet-500 rounded-xl">🚀</span>
+              Iniciar nuevo chat para Builder
+            </DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground leading-relaxed mt-2">
+              Para comenzar a desarrollar aplicaciones o plataformas web con el <strong>Builder</strong>, es necesario iniciar una nueva conversación limpia.
+              <br />
+              <br />
+              ¿Deseas iniciar un nuevo chat y activar el Builder ahora?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-6 flex gap-2 justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowNewChatDialog(false)}
+              className="rounded-xl font-bold"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={confirmNewChatBuilder}
+              className="rounded-xl font-bold bg-gradient-to-r from-violet-600 to-blue-600 text-white shadow-lg shadow-violet-500/20 hover:opacity-95"
+            >
+              Sí, comenzar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
 
 

@@ -485,13 +485,7 @@ export function ChatInput({
               onInput={() => resizeTextarea()}
               onKeyDown={handleKeyDown}
               onPaste={handlePaste}
-              placeholder={
-                isListening
-                  ? "Escuchando... habla ahora"
-                  : isWebBuilderMode
-                    ? (buildMode === "plan" ? "plan" : "turbo")
-                    : placeholder
-              }
+              placeholder={isListening ? "Escuchando... habla ahora" : placeholder}
               disabled={Boolean(disabled && !isStreaming)}
               id="chat-input"
               name="input"
@@ -879,15 +873,15 @@ function WebBuilderPill() {
             type="button"
             variant="outline"
             size="sm"
-            onClick={isWebBuilderMode ? undefined : handleToggleBuilder}
+            onClick={handleToggleBuilder}
             className={cn(
-              "rounded-full h-7 px-3 gap-1.5 transition-all duration-300 shrink-0",
+              "rounded-full h-7 px-3 gap-1.5 transition-all duration-300 shrink-0 cursor-pointer",
               isWebBuilderMode
-                ? "!bg-foreground !text-background !border-foreground pointer-events-none cursor-default"
+                ? "!bg-foreground !text-background !border-foreground hover:bg-foreground/90"
                 : "bg-input/10 dark:bg-input/30"
             )}
             aria-pressed={isWebBuilderMode}
-            aria-label="Activar Builder"
+            aria-label={isWebBuilderMode ? "Desactivar Builder" : "Activar Builder"}
           >
             <Code2 className="h-4 w-4" />
             {isWebBuilderMode && (
@@ -898,7 +892,7 @@ function WebBuilderPill() {
           </Button>
         </TooltipTrigger>
         <TooltipContent side="top" sideOffset={6}>
-          Activar Builder
+          {isWebBuilderMode ? "Desactivar Builder" : "Activar Builder"}
         </TooltipContent>
       </Tooltip>
 

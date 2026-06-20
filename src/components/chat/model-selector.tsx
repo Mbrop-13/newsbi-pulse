@@ -97,7 +97,7 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
                     <CommandItem
                       key={model.id}
                       value={model.name}
-                      className="group/item text-xs flex items-center py-2 px-3 rounded-lg cursor-pointer transition-all duration-300 ease-out data-selected:bg-black! data-selected:text-white! dark:data-selected:bg-slate-900! data-selected:scale-[1.02] data-selected:shadow-md select-none"
+                      className="group/item text-xs flex items-center py-2 px-3 rounded-lg cursor-pointer transition-colors duration-150 select-none data-selected:bg-muted data-selected:text-foreground"
                       onSelect={() => {
                         if (userTier === "free" && model.id === "pro") {
                           setUpsellReason("pro")
@@ -111,16 +111,16 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
                     >
                       <div className="flex flex-col w-full min-w-0">
                         <div className="flex items-center gap-1.5 min-w-0">
-                          <span className="font-bold text-xs text-gray-700 dark:text-gray-300 group-hover/item:text-white group-data-selected/item:text-white transition-colors duration-300">
+                          <span className="font-bold text-xs text-foreground transition-colors duration-150">
                             {model.name}
                           </span>
                         </div>
-                        <span className="text-[10px] text-muted-foreground truncate group-data-selected/item:text-gray-300 transition-colors">
+                        <span className="text-[10px] text-muted-foreground truncate transition-colors duration-150">
                           {model.description}
                         </span>
                       </div>
                       {selectedModel?.id === model.id && (
-                        <Check className="h-4 w-4 ml-auto text-blue-500 group-data-selected/item:text-white" />
+                        <Check className="h-4 w-4 ml-auto text-blue-500" />
                       )}
                     </CommandItem>
                   ))}
@@ -265,7 +265,7 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
                     <CommandItem
                       key={model.id}
                       value={model.name}
-                      className="group/item cursor-pointer transition-all duration-300 ease-out data-selected:bg-black! data-selected:text-white! dark:data-selected:bg-slate-900! data-selected:scale-[1.02] data-selected:shadow-md select-none"
+                      className="group/item text-xs flex items-center py-2 px-3 rounded-lg cursor-pointer transition-colors duration-150 select-none data-selected:bg-muted data-selected:text-foreground"
                       onSelect={() => {
                         if (userTier === "free" && model.id === "pro") {
                           setUpsellReason("pro")
@@ -277,18 +277,18 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
                         setOpen(false)
                       }}
                     >
-                      <div className="flex flex-col w-full">
+                      <div className="flex flex-col w-full min-w-0">
                         <div className="flex items-center gap-2 min-w-0">
-                          <span className="font-bold text-xs text-gray-700 dark:text-gray-300 group-hover/item:text-white group-data-selected/item:text-white transition-colors duration-300">
+                          <span className="font-bold text-xs text-foreground transition-colors duration-150">
                             {model.name}
                           </span>
                         </div>
-                        <span className="text-xs text-muted-foreground group-data-selected/item:text-gray-300 transition-colors">
+                        <span className="text-xs text-muted-foreground transition-colors duration-150">
                           {model.description}
                         </span>
                       </div>
                       {selectedModel?.id === model.id && (
-                        <Check className="h-4 w-4 ml-auto group-data-selected/item:text-white" />
+                        <Check className="h-4 w-4 ml-auto text-blue-500" />
                       )}
                     </CommandItem>
                   ))}

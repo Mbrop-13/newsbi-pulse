@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Check, ChevronsUpDown, Code2, Zap } from "lucide-react";
+import { Check, ChevronDown, Code2, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
@@ -61,8 +61,6 @@ export function BuildModeSelector() {
     setBuildMode(modeId);
   };
 
-  const SelectedIcon = selectedMode.icon;
-
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -71,13 +69,12 @@ export function BuildModeSelector() {
           variant="ghost"
           role="combobox"
           aria-expanded={open}
-          className="w-fit h-8 gap-1.5 bg-white/5 dark:bg-white/5 border border-border/40 hover:bg-muted/50 px-2.5 py-1 rounded-full text-xs font-semibold text-muted-foreground hover:text-foreground transition-all duration-300 shadow-sm cursor-pointer shrink-0"
+          className="w-fit h-fit gap-1 bg-transparent hover:bg-transparent border-0 p-0 text-sm font-normal text-black dark:text-white cursor-pointer shrink-0 shadow-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
         >
-          <SelectedIcon className={cn("h-3.5 w-3.5 shrink-0", selectedMode.id === "plan" ? "text-violet-500" : "text-amber-500")} />
-          <span className="font-bold text-[10px] sm:text-xs transition-colors">
-            {selectedMode.name}
+          <span className="transition-colors">
+            {selectedMode.id === "plan" ? "Plan" : "Turbo"}
           </span>
-          <ChevronsUpDown className="h-3 w-3 shrink-0 opacity-50 ml-1 transition-colors" />
+          <ChevronDown className={cn("h-4.5 w-4.5 shrink-0 text-muted-foreground transition-transform duration-200", open && "rotate-180")} />
         </Button>
       </PopoverTrigger>
       <PopoverContent
@@ -99,7 +96,7 @@ export function BuildModeSelector() {
                   <CommandItem
                     key={mode.id}
                     value={mode.name}
-                    className="group/item text-xs flex items-center py-2 px-3 rounded-lg cursor-pointer transition-all duration-300 ease-out data-selected:bg-black! data-selected:text-white! dark:data-selected:bg-slate-900! data-selected:scale-[1.02] data-selected:shadow-md select-none"
+                    className="group/item text-xs flex items-center py-2 px-3 rounded-lg cursor-pointer transition-colors duration-150 select-none data-selected:bg-muted data-selected:text-foreground"
                     onSelect={() => handleSelectMode(mode.id)}
                   >
                     <div className="flex items-center gap-2.5 w-full min-w-0">
@@ -107,16 +104,16 @@ export function BuildModeSelector() {
                         <IconComponent className="w-4 h-4" />
                       </div>
                       <div className="flex flex-col flex-1 min-w-0">
-                        <span className="font-bold text-xs text-gray-700 dark:text-gray-300 group-hover/item:text-white group-data-selected/item:text-white transition-colors duration-300">
-                          {mode.name}
+                        <span className="font-bold text-xs text-foreground transition-colors duration-150">
+                          {mode.id === "plan" ? "Plan" : "Turbo"}
                         </span>
-                        <span className="text-[10px] text-muted-foreground truncate group-hover/item:text-gray-300 group-data-selected/item:text-gray-300 transition-colors">
+                        <span className="text-[10px] text-muted-foreground truncate transition-colors duration-150">
                           {mode.description}
                         </span>
                       </div>
                     </div>
                     {isActive && (
-                      <Check className="h-4 w-4 ml-auto text-blue-500 group-data-selected/item:text-white" />
+                      <Check className="h-4 w-4 ml-auto text-blue-500" />
                     )}
                   </CommandItem>
                 );

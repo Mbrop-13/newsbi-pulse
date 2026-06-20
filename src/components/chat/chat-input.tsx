@@ -11,6 +11,7 @@ import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
 import { useConversionStore } from "@/lib/stores/conversion-store";
 import { motion, AnimatePresence } from "framer-motion";
 import { ModelSelector } from "@/components/chat/model-selector";
+import { BuildModeSelector } from "@/components/chat/build-mode-selector";
 import { useSidebar } from "@/components/ui/sidebar";
 import {
   Dialog,
@@ -90,7 +91,7 @@ export function ChatInput({
   const [image, setImage] = useState(false);
   const [codeInterpreter, setCodeInterpreter] = useState(false);
   const [browser, setBrowser] = useState(false);
-  const { isWebBuilderMode, buildMode, setBuildMode } = useWebBuilderStore();
+  const { isWebBuilderMode } = useWebBuilderStore();
   const { tokenLimitReached, tokenLimitDetails, openModal: openConversionModal, clearTokenLimitReached } = useConversionStore();
   
   const [showAttachMenu, setShowAttachMenu] = useState(false);
@@ -633,10 +634,6 @@ export function ChatInput({
 
               {/* Feature toggle pills scrollable row */}
               <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [scrollbar-width:none] select-none flex-nowrap pr-2 max-w-[calc(100vw-180px)] sm:max-w-none">
-                <WebBuilderPill />
-                {isWebBuilderMode && (
-                  <BuildModeToggle mode={buildMode} onChange={setBuildMode} />
-                )}
                 {!isStreaming && !isWebBuilderMode && (
                   <>
                     <Pill
@@ -657,6 +654,9 @@ export function ChatInput({
             </div>
 
             <div className="flex items-center gap-2">
+              {/* Build Mode Selector */}
+              <BuildModeSelector />
+
               {/* Inline Model Selector */}
               <ModelSelector
                 selectedModelId={selectedModel}
@@ -740,54 +740,7 @@ export function ChatInput({
   );
 }
 
-/**
- * Toggle segmentado Plan / Turbo para el modo WebBuilder.
- * - Plan (predefinido): planifica la arquitectura, muestra una tarjeta con el
- *   plan y espera a que el usuario escriba "aprobado" (o cambios / "no") antes
- *   de delegar a los agentes constructores.
- * - Turbo: planifica y construye de una sola vez, sin pedir aprobación
- *   (comportamiento anterior).
- */
-function BuildModeToggle({
-  mode,
-  onChange,
-}: {
-  mode: "plan" | "turbo";
-  onChange: (mode: "plan" | "turbo") => void;
-}) {
-  const options: { id: "plan" | "turbo"; label: string; icon: typeof Code2 }[] = [
-    { id: "plan", label: "Plan", icon: Code2 },
-    { id: "turbo", label: "Turbo", icon: ArrowUp },
-  ];
-  return (
-    <div
-      className="flex items-center gap-0.5 rounded-full bg-white/5 dark:bg-white/5 p-0.5 border border-border/40 shrink-0"
-      role="group"
-      aria-label="Modo de construcción"
-    >
-      {options.map((opt) => {
-        const active = mode === opt.id;
-        return (
-          <button
-            key={opt.id}
-            type="button"
-            onClick={() => onChange(opt.id)}
-            aria-pressed={active}
-            className={cn(
-              "flex items-center gap-1 rounded-full px-2.5 h-7 text-[11px] font-bold transition-all duration-200",
-              active
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground hover:bg-white/5"
-            )}
-          >
-            <opt.icon className="h-3 w-3" />
-            {opt.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
+
 
 function Pill({
   active,
@@ -886,91 +839,4 @@ const detectLanguage = (text: string): string => {
   return "txt";
 };
 
-function WebBuilderPill() {
-  const { isWebBuilderMode, setWebBuilderMode, resetProject } = useWebBuilderStore();
-  const messages = useAIChatStore((s) => s.messages);
-  const clearMessages = useAIChatStore((s) => s.clearMessages);
-  const [showNewChatDialog, setShowNewChatDialog] = useState(false);
 
-  const handleToggleBuilder = () => {
-    if (!isWebBuilderMode && messages.length > 0) {
-      setShowNewChatDialog(true);
-    } else {
-      setWebBuilderMode(!isWebBuilderMode);
-    }
-  };
-
-  const confirmNewChatBuilder = () => {
-    clearMessages();
-    resetProject();
-    setWebBuilderMode(true);
-    setShowNewChatDialog(false);
-  };
-
-  return (
-    <>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleToggleBuilder}
-            className={cn(
-              "rounded-full h-7 px-3 gap-1.5 transition-all duration-300 shrink-0",
-              isWebBuilderMode
-                ? "!bg-foreground !text-background !border-foreground hover:bg-foreground/90"
-                : "bg-input/10 dark:bg-input/30"
-            )}
-            aria-pressed={isWebBuilderMode}
-            aria-label="Activar Builder"
-          >
-            <Code2 className="h-4 w-4" />
-            {isWebBuilderMode && (
-              <span className="text-[10px] font-black tracking-wide">
-                Builder
-              </span>
-            )}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="top" sideOffset={6}>
-          Activar Builder
-        </TooltipContent>
-      </Tooltip>
-
-      <Dialog open={showNewChatDialog} onOpenChange={setShowNewChatDialog}>
-        <DialogContent className="max-w-md p-6 rounded-3xl border border-border/40 bg-background/95 backdrop-blur-xl shadow-2xl">
-          <DialogHeader className="gap-2">
-            <DialogTitle className="text-lg font-black tracking-tight flex items-center gap-2">
-              <span className="p-2 bg-violet-500/10 text-violet-500 rounded-xl">🚀</span>
-              Iniciar nuevo chat para Builder
-            </DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground leading-relaxed mt-2">
-              Para comenzar a desarrollar aplicaciones o plataformas web con el <strong>Builder</strong>, es necesario iniciar una nueva conversación limpia.
-              <br />
-              <br />
-              ¿Deseas iniciar un nuevo chat y activar el Builder ahora?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="mt-6 flex gap-2 justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowNewChatDialog(false)}
-              className="rounded-xl font-bold"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="button"
-              onClick={confirmNewChatBuilder}
-              className="rounded-xl font-bold bg-gradient-to-r from-violet-600 to-blue-600 text-white shadow-lg shadow-violet-500/20 hover:opacity-95"
-            >
-              Sí, comenzar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
-  );
-}

@@ -40,7 +40,7 @@ export function WebBuilderWorkspace({ chatPanel }: WebBuilderWorkspaceProps) {
     return () => clearTimeout(timeout);
   }, [files, isAiResponding, activeProjectId, syncToCloud]);
 
-  const [chatPercent, setChatPercent] = useState(28); // Compact chat (28%) by default
+  const [chatPercent, setChatPercent] = useState(34); // Compact chat (34%) by default
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 

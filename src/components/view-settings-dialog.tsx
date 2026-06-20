@@ -2,28 +2,113 @@
 
 import { useState, useEffect } from "react";
 import { useViewStore } from "@/lib/stores/use-view-store";
-import { useFilterStore } from "@/lib/stores/filter-store";
-import { LayoutGrid, List, Monitor, LayoutTemplate, Maximize2, Type, Image as ImageIcon, ImageOff, RefreshCw, AlignLeft, TrendingUp, TrendingDown, Clock, CalendarDays, Settings2, Zap, Search, X, Check, Rss } from "lucide-react";
+import { useAuthStore } from "@/lib/stores/auth-store";
+import { useAssistantStore } from "@/lib/stores/assistant-store";
+import { useAIChatStore } from "@/lib/stores/ai-chat-store";
+import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
+import { useTheme } from "next-themes";
 import { motion, AnimatePresence } from "framer-motion";
+import { X, Settings, Sparkles, User, Palette, Layers, Cloud, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ViewSettingsDialogProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+function SegmentControl<T extends string>({
+  options,
+  selected,
+  onChange,
+}: {
+  options: { id: T; label: string }[];
+  selected: T;
+  onChange: (val: T) => void;
+}) {
+  return (
+    <div className="flex bg-gray-50/50 dark:bg-white/[0.02] border border-gray-200/60 dark:border-white/5 rounded-xl p-0.5 relative w-full">
+      {options.map((opt) => {
+        const isSelected = selected === opt.id;
+        return (
+          <button
+            key={opt.id}
+            type="button"
+            onClick={() => onChange(opt.id)}
+            className={cn(
+              "relative z-10 flex-1 py-1 text-[11px] font-bold rounded-lg transition-colors cursor-pointer select-none",
+              isSelected
+                ? "bg-white dark:bg-slate-800 text-foreground shadow-sm"
+                : "text-muted-foreground/80 hover:text-foreground"
+            )}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function Toggle({ active, onChange }: { active: boolean; onChange: (val: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!active)}
+      className={cn(
+        "relative w-9 h-5 rounded-full transition-colors duration-300 outline-none shrink-0 cursor-pointer",
+        active ? "bg-teal-650 dark:bg-teal-400" : "bg-gray-200 dark:bg-white/10"
+      )}
+    >
+      <motion.div
+        className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm"
+        animate={{ x: active ? 16 : 0 }}
+        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+      />
+    </button>
+  );
+}
+
 export function ViewSettingsDialog({ isOpen, onClose }: ViewSettingsDialogProps) {
-  const { 
-    layout, setLayout,
+  const { theme, setTheme } = useTheme();
+  const user = useAuthStore((s) => s.user);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
+  // View preferences
+  const {
     density, setDensity,
-    fontSize, setFontSize,
     showImages, setShowImages,
-    showPredictions, setShowPredictions,
-    articleWidth, setArticleWidth,
-    timePeriod, setTimePeriod,
-    resetToDefaults
   } = useViewStore();
-  const { availableSources, selectedSources, toggleSource, clearSources } = useFilterStore();
-  const [sourceSearch, setSourceSearch] = useState("");
+
+  // Assistant preferences
+  const assistant = useAssistantStore();
+
+  // Cloud sync preferences
+  const chatSync = useAIChatStore((s) => s.cloudSyncEnabled);
+  const setChatSync = useAIChatStore((s) => s.setCloudSync);
+  const wbSync = useWebBuilderStore((s) => s.cloudSyncEnabled);
+  const setWbSync = useWebBuilderStore((s) => s.setCloudSync);
+
+  const [saving, setSaving] = useState(false);
+
+  // Load preferences from Supabase if open
+  useEffect(() => {
+    if (isOpen && isAuthenticated && user) {
+      assistant.loadFromSupabase(user.id);
+    }
+  }, [isOpen, isAuthenticated, user]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    if (isAuthenticated && user) {
+      try {
+        await assistant.saveToSupabase(user.id);
+      } catch (err) {
+        console.error("Error saving assistant to Supabase:", err);
+      }
+    }
+    setSaving(false);
+    onClose();
+  };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -35,13 +120,6 @@ export function ViewSettingsDialog({ isOpen, onClose }: ViewSettingsDialogProps)
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
-  const getFavicon = (url: string) => {
-    if (!url) return null;
-    const match = url.match(/^(?:https?:\/\/)?(?:[^@\n]+@)?(?:www\.)?([^:\/\n?]+)/im);
-    return match ? `https://www.google.com/s2/favicons?domain=${match[1]}&sz=32` : null;
-  };
-  const filteredSrcs = availableSources.filter(s => s.name.toLowerCase().includes(sourceSearch.toLowerCase()));
-
   return (
     <AnimatePresence>
       {isOpen && (
@@ -49,294 +127,175 @@ export function ViewSettingsDialog({ isOpen, onClose }: ViewSettingsDialogProps)
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+          transition={{ duration: 0.15 }}
+          className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs"
           onClick={onClose}
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="relative w-full max-w-[460px] overflow-hidden rounded-[2rem] bg-white/95 dark:bg-[#080C16]/95 backdrop-blur-3xl border border-gray-200/50 dark:border-white/5 shadow-2xl shadow-indigo-500/10 dark:shadow-blue-900/20"
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            transition={{ type: "spring", damping: 25, stiffness: 350 }}
+            className="relative w-full max-w-[380px] overflow-hidden rounded-2xl border border-gray-200/60 dark:border-white/5 bg-white dark:bg-[#0B1329] p-5 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="max-h-[75vh] overflow-y-auto hidden-scrollbar flex flex-col">
-              <div className="p-7 pb-5 border-b border-gray-100 dark:border-white/5 bg-gradient-to-b from-gray-50/50 to-transparent dark:from-white/[0.02] relative">
-                <button
-                  onClick={onClose}
-                  className="absolute top-6 right-6 w-8 h-8 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center text-gray-400 hover:text-gray-950 dark:hover:text-white transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-                <div className="text-2xl font-black flex items-center gap-2.5 text-gray-900 dark:text-white tracking-tight">
-                  <div className="p-2 bg-[#1890FF]/10 rounded-xl">
-                    <Settings2 className="w-5 h-5 text-[#1890FF]" />
-                  </div>
-                  Preferencias
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-gray-100 dark:border-white/5">
+              <div className="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white">
+                <Settings className="h-4.5 w-4.5 text-muted-foreground/80" />
+                <span>Ajustes</span>
+              </div>
+              <button
+                onClick={onClose}
+                className="w-7 h-7 rounded-full bg-gray-50 dark:bg-white/5 flex items-center justify-center text-muted-foreground/60 hover:text-foreground transition-colors cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Scrollable Contents */}
+            <div className="space-y-5 max-h-[60vh] overflow-y-auto hidden-scrollbar pr-0.5">
+              {/* 1. APARIENCIA */}
+              <div className="space-y-2.5">
+                <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-wider text-muted-foreground/60">
+                  <Palette className="w-3.5 h-3.5" />
+                  <span>Apariencia y Vista</span>
                 </div>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 font-medium">
-                  Ajusta el contenido y el diseño a tu medida. Los cambios se guardan y aplican al instante.
-                </p>
-              </div>
-
-          <div className="p-7 space-y-9">
-          
-          {/* Time Period Filter */}
-          <div className="space-y-4">
-            <label className="text-xs font-black uppercase tracking-widest text-[#1890FF] flex items-center gap-2">
-              <Clock className="w-4 h-4" /> Período de Tiempo
-            </label>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-              {[
-                { id: 'recent', label: 'Nuevas', icon: <Zap className="w-4 h-4 mb-1.5 opacity-70" /> },
-                { id: '24h', label: '24 hrs', icon: <Clock className="w-4 h-4 mb-1.5 opacity-70" /> },
-                { id: '7d', label: '7 Días', icon: <CalendarDays className="w-4 h-4 mb-1.5 opacity-70" /> },
-                { id: '30d', label: '30 Días', icon: <CalendarDays className="w-4 h-4 mb-1.5 opacity-70" /> },
-                { id: 'all', label: 'Todo', icon: <LayoutGrid className="w-4 h-4 mb-1.5 opacity-70" /> },
-              ].map((tp) => {
-                const isSelected = timePeriod === tp.id;
-                return (
-                  <button
-                    key={tp.id}
-                    onClick={() => setTimePeriod(tp.id as any)}
-                    className={`group flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all ${
-                      isSelected 
-                        ? 'border-[#1890FF] bg-[#1890FF]/5 text-[#1890FF] shadow-sm shadow-[#1890FF]/20' 
-                        : 'border-transparent bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 hover:text-gray-900 dark:hover:text-white'
-                    }`}
-                  >
-                    {tp.icon}
-                    <span className="text-[11px] font-bold">{tp.label}</span>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-
-
-          {/* Density Toggle */}
-          <div className="space-y-4">
-            <label className="text-xs font-black uppercase tracking-widest text-gray-500 flex items-center gap-2">
-              <Maximize2 className="w-4 h-4" /> Densidad de Pantalla
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { id: 'compact', label: 'Compacta', gap: 'gap-0.5' },
-                { id: 'comfortable', label: 'Cómoda', gap: 'gap-1.5' },
-                { id: 'spacious', label: 'Amplia', gap: 'gap-3' },
-              ].map((d) => {
-                const isSelected = density === d.id;
-                return (
-                  <button
-                    key={d.id}
-                    onClick={() => setDensity(d.id as any)}
-                    className={`group flex flex-col items-center gap-3 p-3 rounded-2xl border-2 transition-all ${
-                      isSelected 
-                        ? 'border-[#1890FF] bg-blue-50/50 dark:bg-[#1890FF]/10 text-[#1890FF]' 
-                        : 'border-transparent bg-gray-50 dark:bg-white/5 hover:border-gray-200 dark:hover:border-white/10 text-gray-500'
-                    }`}
-                  >
-                    {/* Visual Density Mockup */}
-                    <div className={`w-8 h-8 flex flex-col opacity-80 group-hover:opacity-100 transition-all ${d.gap}`}>
-                      <div className="w-full flex-1 bg-current rounded-sm" />
-                      <div className="w-full flex-1 bg-current rounded-sm opacity-60" />
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-4 text-xs font-semibold text-gray-700 dark:text-gray-300">
+                    <span className="shrink-0">Tema visual</span>
+                    <div className="w-48">
+                      <SegmentControl
+                        options={[
+                          { id: "light", label: "Claro" },
+                          { id: "dark", label: "Oscuro" },
+                          { id: "system", label: "Sistema" },
+                        ]}
+                        selected={theme === "light" ? "light" : theme === "dark" ? "dark" : "system"}
+                        onChange={(val) => setTheme(val)}
+                      />
                     </div>
-                    <span className="text-[11px] font-bold">{d.label}</span>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
+                  </div>
 
-          {/* Font Size */}
-          <div className="space-y-4">
-            <label className="text-xs font-black uppercase tracking-widest text-gray-500 flex items-center gap-2">
-              <Type className="w-4 h-4" /> Tamaño de Texto
-            </label>
-            <div className="flex bg-gray-100/50 dark:bg-white/5 rounded-2xl p-1 border border-gray-200/50 dark:border-white/5 relative">
-               <motion.div 
-                 className="absolute top-1 bottom-1 bg-white dark:bg-slate-800 rounded-xl shadow-sm"
-                 initial={false}
-                 animate={{
-                   width: '33.33%',
-                   left: fontSize === 'sm' ? '0%' : fontSize === 'base' ? '33.33%' : '66.66%'
-                 }}
-                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
-               />
-               
-               {[
-                 { id: 'sm', label: 'Pequeño', class: 'text-xs' },
-                 { id: 'base', label: 'Mediano', class: 'text-sm' },
-                 { id: 'lg', label: 'Grande', class: 'text-base' }
-               ].map(size => (
-                 <button
-                   key={size.id}
-                   onClick={() => setFontSize(size.id as any)}
-                   className={`relative z-10 flex-1 py-2 font-medium transition-colors ${
-                     fontSize === size.id ? 'text-[#1890FF]' : 'text-gray-500'
-                   } ${size.class}`}
-                 >
-                   {size.label}
-                 </button>
-               ))}
-            </div>
-           </div>
+                  <div className="flex items-center justify-between gap-4 text-xs font-semibold text-gray-700 dark:text-gray-300">
+                    <span className="shrink-0">Densidad</span>
+                    <div className="w-48">
+                      <SegmentControl
+                        options={[
+                          { id: "compact", label: "Compacta" },
+                          { id: "comfortable", label: "Cómoda" },
+                          { id: "spacious", label: "Amplia" },
+                        ]}
+                        selected={density}
+                        onChange={(val) => setDensity(val)}
+                      />
+                    </div>
+                  </div>
 
-          {/* Article Width */}
-          <div className="space-y-4">
-            <label className="text-xs font-black uppercase tracking-widest text-gray-500 flex items-center gap-2">
-              <AlignLeft className="w-4 h-4" /> Ancho de Lectura
-            </label>
-            <div className="flex bg-gray-100/50 dark:bg-white/5 rounded-2xl p-1 border border-gray-200/50 dark:border-white/5 relative">
-               <motion.div 
-                 className="absolute top-1 bottom-1 bg-white dark:bg-slate-800 rounded-xl shadow-sm"
-                 initial={false}
-                 animate={{
-                   width: '33.33%',
-                   left: articleWidth === 'normal' ? '0%' : articleWidth === 'wide' ? '33.33%' : '66.66%'
-                 }}
-                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
-               />
-               
-               {[
-                 { id: 'normal', label: 'Estándar' },
-                 { id: 'wide', label: 'Amplio' },
-                 { id: 'full', label: 'Completo' }
-               ].map(width => (
-                 <button
-                   key={width.id}
-                   onClick={() => setArticleWidth(width.id as any)}
-                   className={`relative z-10 flex-1 py-2 text-sm font-medium transition-colors ${
-                     articleWidth === width.id ? 'text-[#1890FF]' : 'text-gray-500'
-                   }`}
-                 >
-                   {width.label}
-                 </button>
-               ))}
-            </div>
-          </div>
+                  <div className="flex items-center justify-between py-1 text-xs font-semibold text-gray-700 dark:text-gray-300">
+                    <span>Mostrar imágenes en noticias</span>
+                    <Toggle active={showImages} onChange={setShowImages} />
+                  </div>
+                </div>
+              </div>
 
-          {/* Show Images Toggle */}
-          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-white/5 rounded-2xl border border-gray-200/50 dark:border-white/5">
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-xl ${showImages ? 'bg-blue-100 dark:bg-[#1890FF]/20 text-[#1890FF]' : 'bg-gray-200 dark:bg-gray-800 text-gray-500'}`}>
-                {showImages ? <ImageIcon className="w-4 h-4" /> : <ImageOff className="w-4 h-4" />}
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-gray-900 dark:text-white">Mostrar Imágenes</h4>
-                <p className="text-xs text-gray-500">Oculta para velocidad pura</p>
-              </div>
-            </div>
-            
-            <button 
-              onClick={() => setShowImages(!showImages)}
-              className={`relative w-11 h-6 rounded-full transition-colors ${showImages ? 'bg-[#1890FF]' : 'bg-gray-300 dark:bg-gray-700'}`}
-            >
-              <motion.div 
-                className="absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow-sm"
-                animate={{ x: showImages ? 20 : 0 }}
-                transition={{ type: "spring", stiffness: 500, damping: 30 }}
-              />
-            </button>
-          </div>
-          
-          {/* Show Predictions Toggle */}
-          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-white/5 rounded-2xl border border-gray-200/50 dark:border-white/5">
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-xl ${showPredictions ? 'bg-purple-100 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400' : 'bg-gray-200 dark:bg-gray-800 text-gray-500'}`}>
-                {showPredictions ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-gray-900 dark:text-white">Mercados de Predicción</h4>
-                <p className="text-xs text-gray-500">Mantente al tanto de apuestas en eventos</p>
-              </div>
-            </div>
-            
-            <button 
-              onClick={() => setShowPredictions(!showPredictions)}
-              className={`relative w-11 h-6 rounded-full transition-colors ${showPredictions ? 'bg-purple-500' : 'bg-gray-300 dark:bg-gray-700'}`}
-            >
-              <motion.div 
-                className="absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow-sm"
-                animate={{ x: showPredictions ? 20 : 0 }}
-                transition={{ type: "spring", stiffness: 500, damping: 30 }}
-              />
-            </button>
-         </div>
+              {/* 2. CONFIGURACIÓN DEL ASISTENTE */}
+              {isAuthenticated && (
+                <div className="space-y-3 pt-3 border-t border-gray-100 dark:border-white/5">
+                  <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-wider text-muted-foreground/60">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Copiloto AI</span>
+                  </div>
+                  
+                  <div className="space-y-2.5">
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-xs font-bold text-gray-700 dark:text-gray-300">Nombre del asistente</span>
+                      <input
+                        type="text"
+                        value={assistant.name}
+                        onChange={(e) => assistant.setName(e.target.value)}
+                        placeholder="Ej. Jarvis, Maverlang..."
+                        className="w-full bg-gray-50/50 dark:bg-white/[0.02] border border-gray-200/60 dark:border-white/5 rounded-xl px-3 py-1.5 text-xs text-foreground outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all font-medium"
+                      />
+                    </div>
 
-          {/* ── Source Filtering ── */}
-          <div className="space-y-4">
-            <label className="text-xs font-black uppercase tracking-widest text-gray-500 flex items-center gap-2">
-              <Rss className="w-4 h-4" /> Filtrar por Fuentes
-            </label>
-            {selectedSources.length > 0 && (
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-[#1890FF]">{selectedSources.length} fuente{selectedSources.length > 1 ? 's' : ''} seleccionada{selectedSources.length > 1 ? 's' : ''}</span>
-                <button onClick={clearSources} className="text-[11px] font-bold text-red-500 hover:text-red-600 transition-colors">Limpiar</button>
-              </div>
-            )}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Buscar fuente..."
-                value={sourceSearch}
-                onChange={(e) => setSourceSearch(e.target.value)}
-                className="w-full pl-9 pr-8 py-2.5 text-sm bg-gray-50 dark:bg-white/5 text-gray-800 dark:text-gray-200 rounded-xl border border-gray-200 dark:border-gray-800 focus:ring-2 focus:ring-[#1890FF] outline-none transition-all"
-              />
-              {sourceSearch && (
-                <button onClick={() => setSourceSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2"><X className="w-4 h-4 text-gray-400" /></button>
+                    <div className="flex items-center justify-between gap-4 text-xs font-semibold text-gray-700 dark:text-gray-300">
+                      <span>Rol del Asistente</span>
+                      <select
+                        value={assistant.assistantRole}
+                        onChange={(e) => assistant.setAssistantRole(e.target.value)}
+                        className="bg-gray-50/50 dark:bg-slate-800 border border-gray-200/60 dark:border-white/5 rounded-xl px-2.5 py-1 text-xs text-foreground outline-none cursor-pointer focus:ring-1 focus:ring-teal-500"
+                      >
+                        <option value="Mentor Financiero">Mentor Financiero</option>
+                        <option value="Analista de Negocios">Analista de Negocios</option>
+                        <option value="Periodista Investigativo">Periodista Investigativo</option>
+                        <option value="Desarrollador de Código">Desarrollador de Código</option>
+                        <option value="Asistente General">Asistente General</option>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-4 text-xs font-semibold text-gray-700 dark:text-gray-300">
+                      <span>Tono de respuesta</span>
+                      <select
+                        value={assistant.assistantTone}
+                        onChange={(e) => assistant.setAssistantTone(e.target.value)}
+                        className="bg-gray-50/50 dark:bg-slate-800 border border-gray-200/60 dark:border-white/5 rounded-xl px-2.5 py-1 text-xs text-foreground outline-none cursor-pointer focus:ring-1 focus:ring-teal-500"
+                      >
+                        <option value="Analítico">Analítico</option>
+                        <option value="Técnico">Técnico</option>
+                        <option value="Sencillo">Sencillo</option>
+                        <option value="Conciso">Conciso</option>
+                        <option value="Creativo">Creativo</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 3. SINCRONIZACIÓN EN LA NUBE */}
+              {isAuthenticated && (
+                <div className="space-y-3 pt-3 border-t border-gray-100 dark:border-white/5">
+                  <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-wider text-muted-foreground/60">
+                    <Cloud className="w-3.5 h-3.5" />
+                    <span>Sincronización en la Nube</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between py-0.5 text-xs font-semibold text-gray-700 dark:text-gray-300">
+                      <span>Guardar Chats</span>
+                      <Toggle active={chatSync} onChange={setChatSync} />
+                    </div>
+
+                    <div className="flex items-center justify-between py-0.5 text-xs font-semibold text-gray-700 dark:text-gray-300">
+                      <span>Guardar Proyectos Builder</span>
+                      <Toggle active={wbSync} onChange={setWbSync} />
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
-            <div className="max-h-[200px] overflow-y-auto hidden-scrollbar flex flex-col gap-1 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-white/[0.02] p-2">
-              {filteredSrcs.length === 0 ? (
-                <p className="text-xs text-center text-gray-400 py-4">No se encontraron fuentes.</p>
-              ) : filteredSrcs.map((source) => {
-                const isSelected = selectedSources.includes(source.name);
-                const favicon = getFavicon(source.url);
-                return (
-                  <button
-                    key={source.name}
-                    onClick={() => toggleSource(source.name)}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all w-full text-left ${
-                      isSelected ? 'bg-[#1890FF]/10 text-[#1890FF] ring-1 ring-[#1890FF]/20' : 'hover:bg-gray-100 dark:hover:bg-white/5 text-gray-700 dark:text-gray-300'
-                    }`}
-                  >
-                    {favicon ? (
-                      <img src={favicon} alt="" className="w-5 h-5 rounded-full bg-white object-contain shrink-0" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-                    ) : (
-                      <div className="w-5 h-5 rounded-full bg-gray-200 dark:bg-white/10 shrink-0" />
-                    )}
-                    <span className="truncate flex-1">{source.name}</span>
-                    {isSelected && <Check className="w-4 h-4 shrink-0 text-[#1890FF]" />}
-                  </button>
-                );
-              })}
+
+            {/* Footer Buttons */}
+            <div className="flex items-center justify-end gap-2.5 pt-4 mt-5 border-t border-gray-100 dark:border-white/5">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-xs font-bold text-muted-foreground/80 hover:text-foreground hover:bg-muted/40 transition-colors rounded-xl cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={saving}
+                className="flex items-center gap-1.5 px-5 py-2 text-xs font-bold bg-black text-white hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90 rounded-xl transition-all cursor-pointer shadow-md disabled:opacity-50"
+              >
+                {saving && <Loader2 className="w-3 h-3 animate-spin" />}
+                Guardar
+              </button>
             </div>
-          </div>
-
-         </div>
-         </div>
-
-        <div className="p-5 border-t border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/[0.02] flex justify-between items-center rounded-b-[2rem] z-10 shadow-[0_-4px_24px_rgba(0,0,0,0.02)]">
-          <button 
-            onClick={resetToDefaults}
-            className="flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-[#1890FF] transition-colors px-4 py-2.5 rounded-xl hover:bg-[#1890FF]/10"
-          >
-            <RefreshCw className="w-3.5 h-3.5" /> Restablecer
-          </button>
-          
-          <button 
-            onClick={onClose}
-            className="px-8 py-2.5 rounded-xl bg-gradient-to-r from-[#1890FF] to-indigo-600 text-white text-sm font-black shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all"
-          >
-            Hecho
-          </button>
-        </div>
-      </motion.div>
-    </motion.div>
+          </motion.div>
+        </motion.div>
       )}
     </AnimatePresence>
   );

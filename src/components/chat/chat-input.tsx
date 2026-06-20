@@ -924,7 +924,7 @@ function WebBuilderPill({ onActivate }: WebBuilderPillProps) {
             className={cn(
               "rounded-full h-7 px-3 gap-1.5 transition-all duration-300 shrink-0 cursor-pointer",
               isWebBuilderMode
-                ? "bg-black text-white hover:bg-black/95 dark:bg-white dark:text-black dark:hover:bg-white/95 font-bold"
+                ? "bg-black text-white hover:bg-black/95 hover:!text-white dark:bg-white dark:text-black dark:hover:bg-white/95 dark:hover:!text-black font-bold"
                 : "bg-input/10 dark:bg-input/30"
             )}
             aria-pressed={isWebBuilderMode}

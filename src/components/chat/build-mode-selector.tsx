@@ -63,7 +63,7 @@ export function BuildModeSelector() {
           variant="ghost"
           role="combobox"
           aria-expanded={open}
-          className="w-fit h-fit gap-1 bg-transparent hover:bg-transparent border-0 p-0 text-sm font-normal text-black dark:text-white cursor-pointer shrink-0 shadow-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="w-fit h-fit gap-1 bg-transparent hover:bg-transparent hover:text-black dark:hover:text-white border-0 p-0 text-sm font-normal text-black dark:text-white cursor-pointer shrink-0 shadow-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
         >
           <span className="transition-colors">
             {selectedMode.id === "plan" ? "Plan" : "Turbo"}

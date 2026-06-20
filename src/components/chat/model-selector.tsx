@@ -68,7 +68,7 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
               variant="ghost"
               role="combobox"
               aria-expanded={open}
-              className="w-fit h-7 gap-1 bg-transparent hover:bg-muted/50 px-2 rounded-lg text-xs font-normal text-black dark:text-white cursor-pointer shrink-0 shadow-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+              className="w-fit h-7 gap-1 bg-transparent hover:bg-muted/50 hover:text-black dark:hover:text-white px-2 rounded-lg text-xs font-normal text-black dark:text-white cursor-pointer shrink-0 shadow-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
             >
               <span className="transition-colors">
                 {selectedModel.name}
@@ -215,7 +215,7 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
               variant="ghost"
               role="combobox"
               aria-expanded={open}
-              className="w-fit h-12 justify-between bg-transparent hover:bg-muted/50 px-4 max-w-[90vw] md:max-w-none focus-visible:ring-0 focus-visible:ring-offset-0"
+              className="w-fit h-12 justify-between bg-transparent hover:bg-muted/50 hover:text-black dark:hover:text-white px-4 max-w-[90vw] md:max-w-none focus-visible:ring-0 focus-visible:ring-offset-0"
             >
               <div className="flex items-center gap-2 min-w-0">
                 {selectedModel ? (

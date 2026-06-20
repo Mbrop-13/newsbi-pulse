@@ -129,32 +129,14 @@ function SandpackErrorListener() {
  * Nota: debe renderizarse DENTRO de un <SandpackProvider>.
  */
 export function SandpackPreviewWrapper() {
-  const { sandpack } = useSandpack();
-  const isLoading = sandpack.status === "loading";
-
+  // SandpackPreview maneja su propio estado de carga interno (loader del bundler).
+  // No necesitamos un loader personalizado aquí: el PremiumSkeletonLoader del
+  // preview-panel ya cubre el caso "IA generando".
   return (
     <div style={{ position: "relative", width: "100%", height: "100%", flex: "1 1 0%" }}>
       <div style={{ position: "absolute", inset: 0 }}>
         <SandpackErrorListener />
         <AutoFixOverlay />
-        
-        {isLoading && (
-          <div className="absolute inset-0 bg-background flex flex-col items-center justify-center p-8 z-40 select-none">
-            {/* Grid pattern with light gradients */}
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(13,110,253,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(13,110,253,0.015)_1px,transparent_1px)] bg-[size:1.5rem_1.5rem] opacity-60 pointer-events-none" />
-            
-            <div className="relative z-10 flex flex-col items-center max-w-md w-full px-4">
-              <div className="relative w-12 h-12 flex items-center justify-center mb-4">
-                <div className="absolute inset-0 rounded-full border-2 border-primary/10" />
-                <Loader2 className="w-8 h-8 text-primary animate-spin" />
-              </div>
-              <span className="text-[10px] font-bold tracking-tight text-foreground/80 uppercase">
-                Compilando interfaz...
-              </span>
-            </div>
-          </div>
-        )}
-
         <SandpackPreview
           showOpenInCodeSandbox={false}
           showRefreshButton={false}

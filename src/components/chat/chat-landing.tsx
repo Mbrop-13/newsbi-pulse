@@ -586,6 +586,23 @@ export function ChatLanding() {
   useEffect(() => {
     if (!isWebBuilderMode) return;
 
+    // Helper: compara dos mapas de archivos por CONTENIDO (no por referencia).
+    // Sin esto, normalizeFiles crea objetos nuevos cada vez y la comparación
+    // por referencia siempre da hasChanged=true → loop infinito (React #185).
+    const filesEqual = (
+      a: Record<string, { code: string } | string>,
+      b: Record<string, { code: string } | string>
+    ): boolean => {
+      const aKeys = Object.keys(a);
+      const bKeys = Object.keys(b);
+      if (aKeys.length !== bKeys.length) return false;
+      return aKeys.every(k => {
+        const aCode = typeof a[k] === "string" ? a[k] : (a[k] as any)?.code;
+        const bCode = typeof b[k] === "string" ? b[k] : (b[k] as any)?.code;
+        return aCode === bCode;
+      });
+    };
+
     // 1. Process structured streamData (agent reports and webbuilder files)
     if (data && data.length > 0) {
       const store = useWebBuilderStore.getState();
@@ -600,9 +617,7 @@ export function ChatLanding() {
       const webBuilderFilesObj = (data as any[]).find((d: any) => d?.type === 'webbuilder_files');
       if (webBuilderFilesObj?.files) {
         const merged = { ...store.files, ...webBuilderFilesObj.files };
-        const hasChanged = Object.keys(merged).some(k => merged[k] !== store.files[k]) || 
-                           Object.keys(store.files).some(k => merged[k] !== store.files[k]);
-        if (hasChanged) {
+        if (!filesEqual(merged, store.files)) {
           store.setFiles(merged);
           store.syncToCloud();
         }
@@ -621,9 +636,7 @@ export function ChatLanding() {
             const store = useWebBuilderStore.getState();
             const newFiles = actionsToFiles(artifact.actions, store.files);
             const merged = { ...store.files, ...newFiles };
-            const hasChanged = Object.keys(merged).some(k => merged[k] !== store.files[k]) || 
-                               Object.keys(store.files).some(k => merged[k] !== store.files[k]);
-            if (hasChanged) {
+            if (!filesEqual(merged, store.files)) {
               store.setFiles(merged);
             }
           }

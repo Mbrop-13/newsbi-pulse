@@ -375,8 +375,12 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
       // ── Cloud Sync Actions ──
 
       syncToCloud: async () => {
-        const { files, activeProjectId, cloudSyncEnabled } = get();
+        const { files, activeProjectId, cloudSyncEnabled, isSaving } = get();
         if (!cloudSyncEnabled || !activeProjectId) return;
+        // Guard contra llamadas concurrentes: si ya hay un sync en curso,
+        // salir para no lanzar peticiones simultáneas que causan
+        // AbortError ("Lock broken by steal") y PATCH 500 (lock conflict).
+        if (isSaving) return;
 
         const user = useAuthStore.getState().user;
         if (!user) return;
@@ -386,47 +390,53 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
         try {
           const supabase = createClient();
 
-          // Clean up old projects based on tier (free = 7 days, pro = 15 days of inactivity)
-          const tier = user.tier || "free";
-          const expirationDays = tier === "free" ? 7 : 15;
-          const expirationDate = new Date();
-          expirationDate.setDate(expirationDate.getDate() - expirationDays);
-
-          await supabase
-            .from("ai_webbuilder_projects")
-            .delete()
-            .eq("user_id", user.id)
-            .lt("updated_at", expirationDate.toISOString());
-          
           // Convert files to plain JSON for storage
           const projectFiles = Object.fromEntries(
             Object.entries(files).map(([path, file]) => [path, file.code])
           );
 
-          // Upsert: insert or update
-          const { data: existingList } = await supabase
+          // Upsert: intentar UPDATE primero (caso común: el proyecto ya existe).
+          // Si no actualiza ninguna fila (row no existe), hacer INSERT.
+          const { error: updateError } = await supabase
+            .from("ai_webbuilder_projects")
+            .update({
+              project_files: projectFiles,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("chat_id", activeProjectId)
+            .eq("user_id", user.id);
+
+          if (updateError) {
+            console.error("WebBuilder cloud sync UPDATE error:", updateError);
+          }
+
+          // Comprobar si el UPDATE afectó alguna fila. Si no, hacer INSERT.
+          // (No podemos usar .single() porque la fila puede no existir.)
+          const { data: existingList, error: selectError } = await supabase
             .from("ai_webbuilder_projects")
             .select("id")
             .eq("chat_id", activeProjectId)
             .eq("user_id", user.id)
             .limit(1);
+
+          if (selectError) {
+            console.error("WebBuilder cloud sync SELECT error:", selectError);
+          }
+
           const existing = existingList && existingList.length > 0 ? existingList[0] : null;
 
-          if (existing) {
-            await supabase
+          if (!existing) {
+            // El row no existía: hacer INSERT.
+            const { error: insertError } = await supabase
               .from("ai_webbuilder_projects")
-              .update({
+              .insert({
+                chat_id: activeProjectId,
+                user_id: user.id,
                 project_files: projectFiles,
-                updated_at: new Date().toISOString(),
-              })
-              .eq("chat_id", activeProjectId)
-              .eq("user_id", user.id);
-          } else {
-            await supabase.from("ai_webbuilder_projects").insert({
-              chat_id: activeProjectId,
-              user_id: user.id,
-              project_files: projectFiles,
-            });
+              });
+            if (insertError) {
+              console.error("WebBuilder cloud sync INSERT error:", insertError);
+            }
           }
 
           const now = new Date().toLocaleTimeString();

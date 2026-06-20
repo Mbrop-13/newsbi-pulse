@@ -4,6 +4,18 @@ import { useAuthStore } from "./auth-store";
 import { createClient } from "@/lib/supabase/client";
 import { useWebBuilderStore } from "./webbuilder-store";
 
+export interface ChatMessagePlanAgent {
+  agentName: string;
+  role: string;
+  task: string;
+  filePath: string;
+}
+export interface ChatMessagePendingPlan {
+  planId: string;
+  reason: string;
+  agents: ChatMessagePlanAgent[];
+}
+
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant";
@@ -19,6 +31,8 @@ export interface ChatMessage {
   secondsElapsed?: number;
   reasoningSteps?: any[];
   isWebBuilder?: boolean;
+  // Plan pendiente renderizado como tarjeta en este mensaje (modo Plan).
+  pendingPlan?: ChatMessagePendingPlan;
 }
 
 export interface ToolResultUI {

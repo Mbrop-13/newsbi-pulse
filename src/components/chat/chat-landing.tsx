@@ -26,6 +26,7 @@ import { useSidebar } from "@/components/ui/sidebar"
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store"
 import { WebBuilderWorkspace } from "@/components/webbuilder/workspace"
 import { parseArtifact, actionsToFiles, containsArtifact } from "@/lib/webbuilder-parser"
+import { classifyPlanResponse } from "@/lib/webbuilder-plan-utils"
 
 // Model ID mapping for our API
 const MODEL_MAP: Record<string, string> = {
@@ -180,7 +181,10 @@ export function ChatLanding() {
           const clone = response.clone();
           const errData = await clone.json();
           if (errData?.code === "TOKEN_LIMIT_REACHED") {
-            openConversionModal("ai_chat");
+            // Mostrar el banner sobre la barra de input en lugar de abrir
+            // directamente el modal. El botón "Ver planes" del banner abre
+            // el modal de upgrade.
+            useConversionStore.getState().setTokenLimitReached(errData.details);
           }
         } catch (e) {
           // Ignore JSON parse errors
@@ -210,6 +214,14 @@ export function ChatLanding() {
             }
           }
         }
+
+        // Capturar el plan pendiente (modo Plan) para adjuntarlo a este mensaje
+        // y poder renderizar la tarjeta en el chat. Si llegó un plan en este
+        // turno, pendingPlan estará set en el store.
+        const pendingPlanData = useWebBuilderStore.getState().pendingPlan;
+        const messagePendingPlan = pendingPlanData
+          ? { planId: pendingPlanData.planId, reason: pendingPlanData.reason, agents: pendingPlanData.agents }
+          : undefined;
 
         // Use requestAnimationFrame to ensure aiMessages state has been flushed by React
         requestAnimationFrame(() => {
@@ -244,6 +256,7 @@ export function ChatLanding() {
                   reasoning: reasoningText || m.reasoning || undefined,
                   reasoningSteps: agentReportsData.length > 0 ? agentReportsData : m.reasoningSteps || storeMsg?.reasoningSteps || undefined,
                   secondsElapsed: m.secondsElapsed,
+                  pendingPlan: messagePendingPlan || storeMsg?.pendingPlan,
                 };
               }
               return {
@@ -455,6 +468,8 @@ export function ChatLanding() {
 
     accumulatedReasoningRef.current = ""
     accumulatedCitationsRef.current = []
+    // Ocultar el banner de límite de tokens al iniciar un nuevo envío.
+    useConversionStore.getState().clearTokenLimitReached()
 
     // Check chat limits
     const planConfig = getPlanConfig(userTier)
@@ -488,6 +503,34 @@ export function ChatLanding() {
     }
     useAIChatStore.getState().updateCurrentChat()
 
+    // Modo Plan: si hay un plan pendiente y el usuario responde, clasificar su
+    // intención (aprobar / cancelar / cambios) y dar forma al body en consecuencia.
+    let planBodyExtras: Record<string, any> = {};
+    if (isWB) {
+      const wbState = useWebBuilderStore.getState();
+      const pending = wbState.pendingPlan;
+      if (wbState.buildMode === "plan" && pending) {
+        const intent = classifyPlanResponse(text);
+        if (intent === "approve") {
+          planBodyExtras = {
+            approvedPlan: { reason: pending.reason, agents: pending.agents },
+            originalUserMessage: pending.originalUserMessage,
+          };
+          wbState.clearPendingPlan();
+        } else if (intent === "reject") {
+          planBodyExtras = { cancelPlan: true };
+          wbState.clearPendingPlan();
+        } else {
+          // feedback: replanificar con el texto del usuario como cambios.
+          planBodyExtras = {
+            replanFeedback: text,
+            originalUserMessage: pending.originalUserMessage,
+          };
+          wbState.clearPendingPlan();
+        }
+      }
+    }
+
     // Use AI SDK append
     append(
       { role: "user", content: text },
@@ -501,6 +544,8 @@ export function ChatLanding() {
           browser: options.browser,
           webBuilder: isWB,
           webBuilderFiles: isWB ? useWebBuilderStore.getState().files : undefined,
+          buildMode: isWB ? useWebBuilderStore.getState().buildMode : undefined,
+          ...planBodyExtras,
         },
       }
     )
@@ -607,10 +652,25 @@ export function ChatLanding() {
     if (data && data.length > 0) {
       const store = useWebBuilderStore.getState();
 
+      // Find the plan card (modo Plan): {type:'plan', planId, reason, agents}
+      const planObj = (data as any[]).find((d: any) => d?.type === 'plan');
+      if (planObj?.agents && planObj.agents.length > 0) {
+        // Último mensaje del usuario que originó el plan (para replan/ejecución).
+        const lastUserMsg = [...aiMessages].reverse().find(m => m.role === 'user')?.content || "";
+        store.setPendingPlan({
+          planId: planObj.planId || `plan-${Date.now()}`,
+          reason: planObj.reason || "",
+          agents: planObj.agents,
+          originalUserMessage: lastUserMsg,
+        });
+      }
+
       // Find agent reports
       const reportsObj = (data as any[]).find((d: any) => d?.type === 'agentReports');
       if (reportsObj?.reports) {
         store.setActiveAgentReports(reportsObj.reports);
+        // Si llegan agentReports es que se construyó: limpiar plan pendiente.
+        store.clearPendingPlan();
       }
 
       // Find webbuilder files

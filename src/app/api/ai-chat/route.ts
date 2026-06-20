@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { checkLimit, incrementUsage, getUserTier, checkTokenLimit, incrementTokenUsage } from "@/lib/check-limits";
 import { rateLimit, rateLimitResponse, AI_CHAT_LIMIT } from "@/lib/rate-limit";
 import { detectSuspiciousPatterns } from "@/lib/security";
-import { runOrchestration, runWebBuilderOrchestration, selectRelevantContext } from "@/lib/services/agent-orchestrator";
+import { runOrchestration, runWebBuilderOrchestration, planWebBuilder, executeWebBuilderAgents, selectRelevantContext } from "@/lib/services/agent-orchestrator";
 import { containsArtifact, parseArtifact, actionsToFiles } from "@/lib/webbuilder-parser";
 
 // Modular imports
@@ -28,6 +28,20 @@ const aiChatSchema = z.object({
   browser: z.boolean().optional(),
   webBuilder: z.boolean().optional(),
   webBuilderFiles: z.record(z.string(), z.any()).optional(),
+  // Modo de construcción del WebBuilder: "plan" (planifica y pide aprobación)
+  // o "turbo" (planifica y construye de una). Default implícito: turbo si no viene.
+  buildMode: z.enum(["plan", "turbo"]).optional(),
+  // Plan aprobado por el usuario (modo Plan): el servidor ejecuta solo agentes.
+  approvedPlan: z.object({
+    reason: z.string(),
+    agents: z.array(z.any()),
+  }).optional(),
+  // Feedback del usuario para replanificar (modo Plan): regenera el plan.
+  replanFeedback: z.string().optional(),
+  // Cancelación del plan (modo Plan): el usuario escribió "no" / "cancelar".
+  cancelPlan: z.boolean().optional(),
+  // Mensaje original del usuario que originó el plan (para replan / ejecución).
+  originalUserMessage: z.string().optional(),
 }).strict();
 
 export async function POST(req: NextRequest) {
@@ -43,7 +57,7 @@ export async function POST(req: NextRequest) {
       }), { status: 400 });
     }
 
-    const { messages, articles, files, modelId, activeTools, contextOverride, webSearch, browser, webBuilder, webBuilderFiles } = parseResult.data;
+    const { messages, articles, files, modelId, activeTools, contextOverride, webSearch, browser, webBuilder, webBuilderFiles, buildMode, approvedPlan, replanFeedback, cancelPlan, originalUserMessage } = parseResult.data;
 
     if (!messages || messages.length === 0) {
       return new Response(JSON.stringify({ error: "Messages are required" }), { status: 400 });
@@ -223,33 +237,93 @@ export async function POST(req: NextRequest) {
 
         // ── Multi-Agent Orchestration ──
         const orchestratorModel = mimo(finalModelStr);
-        let orchestrationResult = { isComplex: false, agentReports: [] as any[], totalTokensUsed: 0 };
-        
+        let orchestrationResult = { isComplex: false, agentReports: [] as any[], totalTokensUsed: 0, reason: "", agents: [] as any[] };
+        // Bandera: si true, el flujo de plan/cancel/replan ya resolvió todo y NO
+        // debe correr el streamText final (el plan es un "turno" que termina aquí).
+        let planTurnHandled = false;
+
+        const onOrchProgress = (text: string) => {
+          try { fakeStreamData.append({ type: 'reasoning', text }); } catch { /* Ignore */ }
+        };
+
         if (webBuilder) {
-          orchestrationResult = await runWebBuilderOrchestration(
-            orchestratorModel,
-            lastUserMessage,
-            webBuilderFiles || {},
-            (text) => {
+          // ── Modo PLAN: el usuario tiene un plan pendiente y respondió ──
+          if (buildMode === "plan" && cancelPlan) {
+            // Cancelar: el usuario escribió "no" / "cancelar". No se orquesta nada.
+            orchestrationResult = { isComplex: false, agentReports: [], totalTokensUsed: 0, reason: "Plan cancelado por el usuario.", agents: [] };
+            planTurnHandled = true;
+          } else if (buildMode === "plan" && approvedPlan && approvedPlan.agents.length > 0) {
+            // Aprobado: ejecutar SOLO los agentes con el plan ya validado.
+            const exec = await executeWebBuilderAgents(
+              orchestratorModel,
+              approvedPlan.agents,
+              originalUserMessage || lastUserMessage,
+              webBuilderFiles || {},
+              onOrchProgress
+            );
+            orchestrationResult = {
+              isComplex: true,
+              reason: approvedPlan.reason,
+              agents: approvedPlan.agents,
+              agentReports: exec.agentReports,
+              totalTokensUsed: exec.totalTokensUsed,
+            };
+          } else if (buildMode === "plan" && replanFeedback) {
+            // Replanificar: regenerar el plan incorporando el feedback del usuario.
+            const plan = await planWebBuilder(
+              orchestratorModel,
+              originalUserMessage || lastUserMessage,
+              webBuilderFiles || {},
+              onOrchProgress,
+              replanFeedback
+            );
+            if (plan.isComplex && plan.agents.length > 0) {
+              // Emitir la nueva tarjeta del plan y terminar el turno aquí.
               try {
-                fakeStreamData.append({ type: 'reasoning', text });
-              } catch {
-                // Ignore
-              }
+                fakeStreamData.append({ type: 'plan', planId: `plan-${Date.now()}`, reason: plan.reason, agents: plan.agents });
+              } catch (e) { console.error("Failed to append plan to streamData:", e); }
+              orchestrationResult = { isComplex: false, agentReports: [], totalTokensUsed: plan.totalTokensUsed, reason: plan.reason, agents: plan.agents };
+            } else {
+              // El feedback hizo que sea simple: proceder como conversación normal.
+              orchestrationResult = { isComplex: false, agentReports: [], totalTokensUsed: plan.totalTokensUsed, reason: plan.reason, agents: [] };
             }
-          );
+            planTurnHandled = true;
+          } else if (buildMode === "plan") {
+            // Primera petición en modo Plan: solo planificar y emitir la tarjeta.
+            const plan = await planWebBuilder(
+              orchestratorModel,
+              lastUserMessage,
+              webBuilderFiles || {},
+              onOrchProgress
+            );
+            if (plan.isComplex && plan.agents.length > 0) {
+              // Emitir la tarjeta del plan y terminar el turno aquí. El LLM final
+              // escribirá el mensaje "escribe aprobado / no / cambios".
+              try {
+                fakeStreamData.append({ type: 'plan', planId: `plan-${Date.now()}`, reason: plan.reason, agents: plan.agents });
+              } catch (e) { console.error("Failed to append plan to streamData:", e); }
+              orchestrationResult = { isComplex: false, agentReports: [], totalTokensUsed: plan.totalTokensUsed, reason: plan.reason, agents: plan.agents };
+              planTurnHandled = true;
+            } else {
+              // Consulta simple: no hay tarjeta, proceder como conversación normal
+              // (puede ir por artifact inline del LLM final como antes).
+              orchestrationResult = { isComplex: false, agentReports: [], totalTokensUsed: plan.totalTokensUsed, reason: plan.reason, agents: [] };
+            }
+          } else {
+            // ── Modo TURBO (o sin buildMode): planificar + ejecutar de una ──
+            orchestrationResult = await runWebBuilderOrchestration(
+              orchestratorModel,
+              lastUserMessage,
+              webBuilderFiles || {},
+              onOrchProgress
+            );
+          }
         } else {
           orchestrationResult = await runOrchestration(
             orchestratorModel,
             lastUserMessage,
             portfolioText,
-            (text) => {
-              try {
-                fakeStreamData.append({ type: 'reasoning', text });
-              } catch {
-                // Ignore
-              }
-            },
+            onOrchProgress,
             false
           );
         }
@@ -268,6 +342,33 @@ export async function POST(req: NextRequest) {
             throw new Error("TOKEN_LIMIT_REACHED");
           }
         }
+
+        if (planTurnHandled) {
+          // El turno del plan ya se resolvió (tarjeta emitida / cancelado / replanificado).
+          // No se ejecuta el streamText: emitimos un mensaje conversacional fijo.
+          let planTurnMessage = "";
+          if (cancelPlan) {
+            planTurnMessage = "He cancelado el plan. Si quieres, dime de nuevo qué construir y replanteo desde cero.";
+          } else if (replanFeedback) {
+            // Si la replanificación dio una nueva tarjeta, pedir autorización de nuevo.
+            if (orchestrationResult.agents && orchestrationResult.agents.length > 0) {
+              planTurnMessage = "He replanificado con tus cambios. Revisa el nuevo plan y, cuando estés listo, escribe **aprobado** para construir, **no** para cancelar, o dime qué más cambiar.";
+            } else {
+              planTurnMessage = "Con tus cambios la consulta pasó a ser simple. La resolveré directamente.";
+            }
+          } else {
+            // Primera tarjeta del plan.
+            const fileCount = orchestrationResult.agents?.length || 0;
+            planTurnMessage = `He preparado un plan con ${fileCount} ${fileCount === 1 ? "archivo" : "archivos"}. Revisa la tarjeta del plan: escribe **aprobado** para que lo construya, **no** para cancelar, o descríbeme los cambios que quieres y replanifico.`;
+          }
+          try {
+            // Emitir como texto del stream del asistente.
+            const textChunk = formatStreamPart('text', planTurnMessage);
+            streamController?.enqueue(encoder.encode(textChunk));
+          } catch (e) {
+            console.error("Failed to emit plan-turn message:", e);
+          }
+        } else {
 
         let messagesForFinalLlm = processedMessages;
         if (orchestrationResult.isComplex && orchestrationResult.agentReports.length > 0) {
@@ -429,6 +530,7 @@ ${reportsSummary}`,
             streamController.enqueue(value);
           }
         }
+        } // fin del else (!planTurnHandled)
       } catch (err: any) {
         console.error("[AI Chat Stream] Error in stream execution:", err);
         sendData('error', err.message || String(err));

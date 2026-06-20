@@ -8,6 +8,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip
 import { useAIChatStore } from "@/lib/stores/ai-chat-store";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
+import { useConversionStore } from "@/lib/stores/conversion-store";
 import { motion, AnimatePresence } from "framer-motion";
 import { ModelSelector } from "@/components/chat/model-selector";
 import { useSidebar } from "@/components/ui/sidebar";
@@ -44,6 +45,8 @@ import {
   Chrome,
   Paperclip,
   Code2,
+  AlertTriangle,
+  Crown,
 } from "lucide-react";
 
 const ADVANCED_TOOLS = [
@@ -87,7 +90,8 @@ export function ChatInput({
   const [image, setImage] = useState(false);
   const [codeInterpreter, setCodeInterpreter] = useState(false);
   const [browser, setBrowser] = useState(false);
-  const { isWebBuilderMode } = useWebBuilderStore();
+  const { isWebBuilderMode, buildMode, setBuildMode } = useWebBuilderStore();
+  const { tokenLimitReached, tokenLimitDetails, openModal: openConversionModal, clearTokenLimitReached } = useConversionStore();
   
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [attachMenuView, setAttachMenuView] = useState<'main' | 'charts' | 'analysis'>('main');
@@ -306,6 +310,52 @@ export function ChatInput({
         onSubmit={handleSubmit}
         className={cn("w-full max-w-full px-0 pt-0 relative", className)}
       >
+        {/* Banner de límite de tokens alcanzado (sobre la barra de input) */}
+        <AnimatePresence>
+          {tokenLimitReached && (
+            <motion.div
+              initial={{ opacity: 0, y: 8, height: 0 }}
+              animate={{ opacity: 1, y: 0, height: "auto" }}
+              exit={{ opacity: 0, y: 8, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="mb-2 overflow-hidden"
+            >
+              <div className="flex items-start gap-2.5 rounded-2xl border border-amber-500/40 bg-amber-500/10 px-3 py-2.5 backdrop-blur-sm">
+                <div className="mt-0.5 shrink-0">
+                  <AlertTriangle className="h-4 w-4 text-amber-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-amber-700 dark:text-amber-300">
+                    Has alcanzado tu límite de tokens de tu plan.
+                  </p>
+                  <p className="text-[11px] text-amber-600/80 dark:text-amber-200/70 mt-0.5">
+                    Sube de plan para seguir construyendo y chateando con la IA.
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => openConversionModal("ai_chat")}
+                    className="h-7 gap-1.5 rounded-full bg-amber-500 px-3 text-[11px] font-bold text-white hover:bg-amber-600"
+                  >
+                    <Crown className="h-3 w-3" />
+                    Ver planes
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={clearTokenLimitReached}
+                    aria-label="Cerrar aviso"
+                    className="rounded-full p-1 text-amber-500/70 transition-colors hover:bg-amber-500/10 hover:text-amber-600"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Active Tool Pills & Attachments */}
         {(activeTools.length > 0 || attachedArticles.length > 0) && (
           <div className="absolute bottom-full left-4 mb-2.5 flex flex-wrap gap-2 pointer-events-auto">
@@ -584,6 +634,9 @@ export function ChatInput({
               {/* Feature toggle pills scrollable row */}
               <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [scrollbar-width:none] select-none flex-nowrap pr-2 max-w-[calc(100vw-180px)] sm:max-w-none">
                 <WebBuilderPill />
+                {isWebBuilderMode && (
+                  <BuildModeToggle mode={buildMode} onChange={setBuildMode} />
+                )}
                 {!isStreaming && !isWebBuilderMode && (
                   <>
                     <Pill
@@ -683,6 +736,55 @@ export function ChatInput({
           />
         </div>
       </form>
+    </div>
+  );
+}
+
+/**
+ * Toggle segmentado Plan / Turbo para el modo WebBuilder.
+ * - Plan (predefinido): planifica la arquitectura, muestra una tarjeta con el
+ *   plan y espera a que el usuario escriba "aprobado" (o cambios / "no") antes
+ *   de delegar a los agentes constructores.
+ * - Turbo: planifica y construye de una sola vez, sin pedir aprobación
+ *   (comportamiento anterior).
+ */
+function BuildModeToggle({
+  mode,
+  onChange,
+}: {
+  mode: "plan" | "turbo";
+  onChange: (mode: "plan" | "turbo") => void;
+}) {
+  const options: { id: "plan" | "turbo"; label: string; icon: typeof Code2 }[] = [
+    { id: "plan", label: "Plan", icon: Code2 },
+    { id: "turbo", label: "Turbo", icon: ArrowUp },
+  ];
+  return (
+    <div
+      className="flex items-center gap-0.5 rounded-full bg-white/5 dark:bg-white/5 p-0.5 border border-border/40 shrink-0"
+      role="group"
+      aria-label="Modo de construcción"
+    >
+      {options.map((opt) => {
+        const active = mode === opt.id;
+        return (
+          <button
+            key={opt.id}
+            type="button"
+            onClick={() => onChange(opt.id)}
+            aria-pressed={active}
+            className={cn(
+              "flex items-center gap-1 rounded-full px-2.5 h-7 text-[11px] font-bold transition-all duration-200",
+              active
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+            )}
+          >
+            <opt.icon className="h-3 w-3" />
+            {opt.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

@@ -590,19 +590,36 @@ async function generateWebBuilderCodeWithVerification(
   return { text: '', usage: { totalTokens: totalUsageTokens } };
 }
 
-export async function runWebBuilderOrchestration(
+export interface WebBuilderPlan {
+  isComplex: boolean;
+  reason: string;
+  agents: WebBuilderAgentInfo[];
+  totalTokensUsed: number;
+}
+
+/**
+ * Fase de PLANIFICACIÓN del WebBuilder.
+ * Corre solo el planner LLM y devuelve el plan {isComplex, reason, agents}.
+ * No ejecuta agentes. Soporta replanFeedback para regenerar el plan
+ * incorporando los cambios que pidió el usuario (modo Plan).
+ */
+export async function planWebBuilder(
   model: LanguageModel,
   userMessage: string,
   existingFiles?: Record<string, string>,
-  onProgress?: (text: string) => void
-): Promise<WebBuilderOrchestrationResult> {
-  const startTime = Date.now();
+  onProgress?: (text: string) => void,
+  replanFeedback?: string
+): Promise<WebBuilderPlan> {
   let totalTokensUsed = 0;
-  onProgress?.("🧠 [Orquestador WebBuilder] Iniciando planificación de arquitectura y archivos...\n");
+  const isReplan = !!replanFeedback;
+  onProgress?.(isReplan
+    ? "🔁 [Orquestador WebBuilder] Replanificando con tus cambios...\n"
+    : "🧠 [Orquestador WebBuilder] Iniciando planificación de arquitectura y archivos...\n"
+  );
 
   const existingFilesContext = existingFiles && Object.keys(existingFiles).length > 0;
-  
-  const systemPlannerPrompt = `Actúas como el Arquitecto de Software y Orquestador de Maverlang WebBuilder.
+
+  const basePlannerPrompt = `Actúas como el Arquitecto de Software y Orquestador de Maverlang WebBuilder.
 Tu tarea es analizar la consulta del usuario y los archivos existentes en el proyecto (si los hay), y planificar los cambios de código.
 
 Determina si la consulta es simple (isComplex: false) o compleja (isComplex: true).
@@ -639,6 +656,12 @@ Si determinas que no requiere delegación (isComplex: false), responde con:
 }
 `;
 
+  const replanSection = isReplan
+    ? `\n\nNOTA: Ya habías generado un plan previo y el usuario solicitó cambios. Ajusta el plan anterior para incorporar el siguiente feedback del usuario, manteniendo coherencia con lo ya planificado:\nFEEDBACK DEL USUARIO: "${replanFeedback}"\n`
+    : '';
+
+  const systemPlannerPrompt = basePlannerPrompt + replanSection;
+
   let isComplex = false;
   let reason = "";
   let agents: WebBuilderAgentInfo[] = [];
@@ -651,7 +674,7 @@ Si determinas que no requiere delegación (isComplex: false), responde con:
         {
           role: 'user',
           content: `Consulta del usuario: "${userMessage}"
-          
+
 ${existingFilesContext ? `Archivos existentes:\n${Object.keys(existingFiles).map(p => `- ${p}`).join('\n')}` : '(Proyecto vacío)'}`
         }
       ],
@@ -681,17 +704,28 @@ ${existingFilesContext ? `Archivos existentes:\n${Object.keys(existingFiles).map
 
   if (!isComplex || agents.length === 0) {
     onProgress?.(`✅ [Orquestador WebBuilder] Análisis completo: Es una consulta simple. Se resolverá de forma directa (${reason}).\n\n`);
-    return {
-      isComplex: false,
-      reason,
-      agents: [],
-      agentReports: [],
-      totalOrchestrationTimeMs: Date.now() - startTime,
-      totalTokensUsed
-    };
+  } else {
+    onProgress?.(`🔍 [Orquestador WebBuilder] Plan de archivos creado: "${reason}"\n`);
   }
 
-  onProgress?.(`🔍 [Orquestador WebBuilder] Plan de archivos creado: "${reason}"\n`);
+  return { isComplex, reason, agents, totalTokensUsed };
+}
+
+/**
+ * Fase de EJECUCIÓN del WebBuilder.
+ * Recibe un plan ya aprobado {agents} y corre los agentes constructores en
+ * paralelo, generando el código de cada archivo. No planifica.
+ */
+export async function executeWebBuilderAgents(
+  model: LanguageModel,
+  agents: WebBuilderAgentInfo[],
+  userMessage: string,
+  existingFiles?: Record<string, string>,
+  onProgress?: (text: string) => void
+): Promise<{ agentReports: WebBuilderAgentReport[]; totalOrchestrationTimeMs: number; totalTokensUsed: number }> {
+  const startTime = Date.now();
+  let totalTokensUsed = 0;
+
   onProgress?.(`🤖 Creando ${agents.length} agentes constructores en paralelo...\n\n`);
 
   const agentPromises = agents.map(async (agent): Promise<WebBuilderAgentReport> => {
@@ -785,21 +819,57 @@ Recuerda devolver ÚNICAMENTE el XML con tu código.`;
   });
 
   const agentReports = await Promise.all(agentPromises);
-  
+
   for (const report of agentReports) {
     if (report.tokensUsed) totalTokensUsed += report.tokensUsed;
   }
 
   const totalDuration = Date.now() - startTime;
-
   onProgress?.(`\n📊 [Orquestador WebBuilder] Todos los archivos generados en paralelo (${totalDuration}ms total).\n\n`);
+
+  return { agentReports, totalOrchestrationTimeMs: totalDuration, totalTokensUsed };
+}
+
+/**
+ * Orquestación TURBO completa: planifica y ejecuta de una sola vez, sin pedir
+ * aprobación. Es el comportamiento previo al modo Plan.
+ */
+export async function runWebBuilderOrchestration(
+  model: LanguageModel,
+  userMessage: string,
+  existingFiles?: Record<string, string>,
+  onProgress?: (text: string) => void
+): Promise<WebBuilderOrchestrationResult> {
+  const planStartTime = Date.now();
+  const plan = await planWebBuilder(model, userMessage, existingFiles, onProgress);
+  let totalTokensUsed = plan.totalTokensUsed;
+
+  if (!plan.isComplex || plan.agents.length === 0) {
+    return {
+      isComplex: false,
+      reason: plan.reason,
+      agents: [],
+      agentReports: [],
+      totalOrchestrationTimeMs: Date.now() - planStartTime,
+      totalTokensUsed
+    };
+  }
+
+  const exec = await executeWebBuilderAgents(
+    model,
+    plan.agents,
+    userMessage,
+    existingFiles,
+    onProgress
+  );
+  totalTokensUsed += exec.totalTokensUsed;
 
   return {
     isComplex: true,
-    reason,
-    agents,
-    agentReports,
-    totalOrchestrationTimeMs: totalDuration,
+    reason: plan.reason,
+    agents: plan.agents,
+    agentReports: exec.agentReports,
+    totalOrchestrationTimeMs: Date.now() - planStartTime,
     totalTokensUsed
   };
 }

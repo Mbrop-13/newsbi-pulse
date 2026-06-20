@@ -41,6 +41,8 @@ import {
   CheckCircle2,
   XCircle,
   Lock,
+  ClipboardList,
+  Sparkles,
 } from "lucide-react";
 
 // ─── Inspector Injection Helper ───────────────────
@@ -468,50 +470,27 @@ function SandpackSyncListener() {
 }
 
 /**
- * Sincroniza los archivos del STORE hacia Sandpack (dirección inversa del
- * SandpackSyncListener).
+ * Sincronización STORE -> Sandpack.
  *
- * PROBLEMA: SandpackProvider solo lee la prop `files` en el montaje inicial.
- * Cuando la IA genera código nuevo y el store cambia, Sandpack NO se entera
- * y la preview sigue mostrando los DEFAULT_FILES (la pantalla del 🚀).
+ * PROBLEMA ORIGINAL: SandpackProvider solo lee la prop `files` en el montaje
+ * inicial, así que cuando la IA genera código nuevo el preview se quedaba
+ * pegado en los DEFAULT_FILES (la pantalla del 🚀).
  *
- * SOLUCIÓN: comparar cada archivo del store con su versión en Sandpack y, si
- * difieren, inyectar el contenido vía sandpack.updateFile() / sandpack.addFile().
- * Esto dispara la recompilación automática del bundler.
+ * SOLUCIÓN ANTERIOR (causaba React #185): un componente SandpackFileSync que
+ * empujaba cada archivo del store al bundler vía sandpack.updateFile() + un
+ * dispatch("refresh"). El effect dependía del objeto `sandpack` entero, que
+ * cambia de referencia en cada update; como updateFile es asíncromo, la
+ * comparación storeCode !== sandpackCode nunca convergía y el effect se
+ * reejecutaba infinitamente -> "Maximum update depth exceeded" -> crasheo del
+ * árbol y vuelta a la pantalla predefinida.
+ *
+ * SOLUCIÓN ACTUAL: remontar <SandpackProvider> con un `key` (buildVersion) que
+ * incrementa únicamente cuando la IA termina de responder (isAiResponding
+ * true -> false). Al remontar, Sandpack lee la prop `files` fresca (sandpackFiles,
+ * derivada de stableFiles) y compila de cero. Sin updateFile manual, sin
+ * dispatch, sin loop. La dirección inversa (edición del usuario en Sandpack ->
+ * store) la sigue cubriendo SandpackSyncListener, que es auto-limitante.
  */
-function SandpackFileSync() {
-  const { sandpack, dispatch } = useSandpack();
-  const files = useWebBuilderStore((s) => s.files);
-  const isAiResponding = useWebBuilderStore((s) => s.isAiResponding);
-
-  useEffect(() => {
-    // No sincronizar mientras la IA responde: el stream aún no terminó y los
-    // archivos pueden estar incompletos. El stableFiles del panel ya filtra
-    // esto, pero este componente se suscribe a `files` directamente.
-    if (isAiResponding) return;
-
-    let hasChanges = false;
-
-    for (const [path, file] of Object.entries(files)) {
-      const storeCode = typeof file === "object" ? file.code : String(file);
-      const sandpackCode = sandpack.files[path]?.code;
-
-      if (storeCode !== sandpackCode) {
-        hasChanges = true;
-        // updateFile actualiza archivos existentes y crea nuevos si no existen.
-        // El tercer parámetro shouldUpdatePreview=true dispara recompilación.
-        sandpack.updateFile(path, storeCode, true);
-      }
-    }
-
-    if (hasChanges) {
-      // Forzar refresh del iframe del preview para aplicar los cambios.
-      dispatch({ type: "refresh" });
-    }
-  }, [files, isAiResponding, sandpack, dispatch]);
-
-  return null;
-}
 
 function PremiumSkeletonLoader({ isAiResponding }: { isAiResponding: boolean }) {
   return (
@@ -580,22 +559,105 @@ function PremiumSkeletonLoader({ isAiResponding }: { isAiResponding: boolean }) 
   );
 }
 
+/**
+ * Vista del plan en el panel de previsualización (modo Plan).
+ * Se muestra en lugar del SandpackPreview mientras hay un pendingPlan:
+ * lista los archivos planificados con su agente, rol y tarea. Cuando el
+ * usuario aprueba y se construye, pendingPlan se limpia y vuelve Sandpack.
+ */
+function PlanView({ plan }: { plan: NonNullable<ReturnType<typeof useWebBuilderStore.getState>["pendingPlan"]> }) {
+  return (
+    <div className="flex-grow flex flex-col items-center justify-center min-h-0 w-full h-full relative overflow-auto preview-container-no-scrollbar p-6">
+      <div className="w-full max-w-2xl mx-auto">
+        {/* Cabecera del plan */}
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-10 h-10 rounded-2xl bg-[#1890FF]/10 flex items-center justify-center shrink-0">
+            <ClipboardList className="w-5 h-5 text-[#1890FF]" />
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-base font-bold text-foreground flex items-center gap-2">
+              Plan de construcción
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#1890FF] bg-[#1890FF]/10 px-2 py-0.5 rounded-full">
+                {plan.agents.length} {plan.agents.length === 1 ? "archivo" : "archivos"}
+              </span>
+            </h2>
+            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+              {plan.reason || "Revisa el plan antes de construir."}
+            </p>
+          </div>
+        </div>
+
+        {/* Lista de archivos planificados */}
+        <div className="space-y-2.5 mb-5">
+          {plan.agents.map((agent, idx) => (
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2, delay: idx * 0.04 }}
+              className="rounded-2xl border border-border/50 bg-card/40 backdrop-blur-sm p-3.5"
+            >
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-xl bg-[#1890FF]/10 flex items-center justify-center shrink-0">
+                  <FileCode2 className="w-4 h-4 text-[#1890FF]" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-mono font-bold text-foreground break-all">
+                      {agent.filePath}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span className="text-[11px] font-semibold text-foreground">
+                      {agent.agentName}
+                    </span>
+                    <span className="text-[10px] text-[#1890FF] font-medium">
+                      · {agent.role}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed">
+                    {agent.task}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Pista de acción */}
+        <div className="rounded-2xl bg-amber-500/10 border border-amber-500/25 px-4 py-3 flex items-start gap-2.5">
+          <Sparkles className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+          <div>
+            <p className="text-xs font-semibold text-amber-700 dark:text-amber-300">
+              ¿Cómo continuar?
+            </p>
+            <p className="text-[11px] text-amber-600/90 dark:text-amber-200/80 mt-0.5 leading-relaxed">
+              Escribe <span className="font-bold">aprobado</span> en el chat para que lo construya, <span className="font-bold">no</span> para cancelar, o descríbeme los cambios que quieres y replanifico.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function PreviewPanel() {
-  const { 
-    selectedTab, 
-    setSelectedTab, 
-    files, 
-    cloudSyncEnabled, 
-    isSaving, 
-    lastSavedAt, 
-    isCompiling, 
+  const {
+    selectedTab,
+    setSelectedTab,
+    files,
+    cloudSyncEnabled,
+    isSaving,
+    lastSavedAt,
+    isCompiling,
     activeFilePath,
     undo,
     redo,
     canUndo,
     canRedo,
     isAiResponding,
-    activeAgentReports
+    activeAgentReports,
+    pendingPlan
   } = useWebBuilderStore();
   const chatLoading = useAIChatStore((s) => s.isLoading);
   const { resolvedTheme } = useTheme();
@@ -614,6 +676,22 @@ export function PreviewPanel() {
       setStableFiles(files);
     }
   }, [files, isAiResponding]);
+
+  // buildVersion: incrementa SOLO cuando la IA termina de responder
+  // (isAiResponding: true -> false). Se usa como `key` del <SandpackProvider>
+  // para forzar su remontaje y que relea la prop `files` fresca (ver comentario
+  // de la sección de sincronización STORE -> Sandpack más arriba). Sin esto,
+  // Sandpack ignora los archivos nuevos y el preview se queda en la pantalla
+  // predefinida; con el sync manual anterior provocaba un loop infinito (React #185).
+  const [buildVersion, setBuildVersion] = useState(0);
+  const prevIsAiRespondingRef = useRef(false);
+  useEffect(() => {
+    const wasResponding = prevIsAiRespondingRef.current;
+    prevIsAiRespondingRef.current = isAiResponding;
+    if (wasResponding && !isAiResponding) {
+      setBuildVersion((v) => v + 1);
+    }
+  }, [isAiResponding]);
 
   // handleRefresh: con Sandpack, forzar una recompilación del bundler.
   // El iframe del preview se recarga limpio para resetear el estado en memoria.
@@ -969,6 +1047,7 @@ export function PreviewPanel() {
       <div className="flex-1 flex flex-col min-h-0 bg-background border border-border/40 rounded-2xl overflow-hidden relative">
         {hasFiles ? (
           <SandpackProvider
+            key={buildVersion}
             template={hasReact ? "react-ts" : "vanilla-ts"}
             files={sandpackFiles}
             theme={currentTheme}
@@ -997,7 +1076,6 @@ export function PreviewPanel() {
             }}
           >
             <SandpackSyncListener />
-            <SandpackFileSync />
             {/* Code Editor Tab */}
             {selectedTab === "code" && (
               <div className="flex-grow flex min-h-0 w-full">
@@ -1051,7 +1129,9 @@ export function PreviewPanel() {
                 )}>
                   {/* Body de la preview */}
                   <div className="flex-grow min-h-0 relative w-full h-full bg-white dark:bg-background">
-                    {(isAiResponding || isCompiling || chatLoading) ? (
+                    {pendingPlan ? (
+                      <PlanView plan={pendingPlan} />
+                    ) : (isAiResponding || isCompiling || chatLoading) ? (
                       <PremiumSkeletonLoader isAiResponding={isAiResponding || chatLoading} />
                     ) : (
                       <SandpackPreviewWrapper key={iframeKey} />

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useMemo } from "react"
 import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
-import { Bot, User, ThumbsUp, ThumbsDown, Share2, RefreshCw, ChevronRight, ChevronDown, Sparkles, Loader2, Globe, ExternalLink, X, ArrowDown, CheckCircle2, XCircle, Clock, Cpu } from "lucide-react"
+import { Bot, User, ThumbsUp, ThumbsDown, Share2, RefreshCw, ChevronRight, ChevronDown, Sparkles, Loader2, Globe, ExternalLink, X, ArrowDown, CheckCircle2, XCircle, Clock, Cpu, ClipboardList, FileCode2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import ReactMarkdown from "react-markdown"
@@ -392,6 +392,8 @@ function MessageBubble({
   const [activePreviewUrl, setActivePreviewUrl] = useState<string | null>(null)
   const [isAgentsExpanded, setIsAgentsExpanded] = useState(true)
   const [expandedReportIdx, setExpandedReportIdx] = useState<number | null>(null)
+  const [isPlanExpanded, setIsPlanExpanded] = useState(true)
+  const setSelectedTab = useWebBuilderStore((s) => s.setSelectedTab)
   
   const [localReasoningOpen, setLocalReasoningOpen] = useState(isReasoningOpen || (isLast && isLoading))
   const hasManuallyToggledRef = useRef(false)
@@ -539,6 +541,96 @@ function MessageBubble({
   }
 
   // ─── Render Agent Reports as collapsible timeline ───
+  const renderPlanCard = () => {
+    const plan = message.pendingPlan;
+    if (!plan || !plan.agents || plan.agents.length === 0) return null;
+
+    return (
+      <div className="mb-3">
+        {/* Contenedor de la tarjeta del plan (clickeable → abre la vista en el preview) */}
+        <div
+          onClick={() => setSelectedTab("preview")}
+          className="rounded-2xl border border-[#1890FF]/30 bg-[#1890FF]/5 dark:bg-[#1890FF]/10 overflow-hidden cursor-pointer hover:border-[#1890FF]/50 transition-colors"
+        >
+          {/* Header */}
+          <button
+            onClick={(e) => { e.stopPropagation(); setIsPlanExpanded(!isPlanExpanded); }}
+            className="flex items-center gap-2 w-full text-left px-3 py-2.5 group"
+          >
+            <div className="w-5 h-5 rounded-md flex items-center justify-center bg-[#1890FF]/10 text-[#1890FF] shrink-0">
+              <ClipboardList className="w-3 h-3" />
+            </div>
+            <span className="text-xs font-bold text-foreground">
+              Plan de construcción
+            </span>
+            <span className="text-[10px] text-muted-foreground/70 font-normal">
+              {plan.agents.length} {plan.agents.length === 1 ? "archivo" : "archivos"}
+            </span>
+            <ChevronDown className={cn(
+              "w-3 h-3 text-muted-foreground/50 transition-transform duration-200 ml-auto",
+              !isPlanExpanded && "-rotate-90"
+            )} />
+          </button>
+
+          {/* Motivo del plan */}
+          {plan.reason && (
+            <div className="px-3 pb-2.5 -mt-0.5">
+              <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">
+                {plan.reason}
+              </p>
+            </div>
+          )}
+
+          {/* Lista de archivos planificados */}
+          <AnimatePresence>
+            {isPlanExpanded && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.25 }}
+                className="overflow-hidden"
+              >
+                <div className="px-3 pb-3 space-y-1.5">
+                  {plan.agents.map((agent: any, idx: number) => (
+                    <div
+                      key={idx}
+                      className="flex items-start gap-2 rounded-xl bg-background/60 dark:bg-background/30 border border-border/40 px-2.5 py-2"
+                    >
+                      <FileCode2 className="w-3.5 h-3.5 text-[#1890FF] mt-0.5 shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[10px] font-mono font-semibold text-foreground truncate">
+                            {agent.filePath}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug line-clamp-2">
+                          {agent.agentName} · {agent.role}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground/70 mt-0.5 leading-snug line-clamp-2">
+                          {agent.task}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Pista de acción para el usuario */}
+                <div className="px-3 pb-3">
+                  <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 px-2.5 py-2">
+                    <p className="text-[10px] text-amber-700 dark:text-amber-300 leading-relaxed">
+                      Escribe <span className="font-bold">aprobado</span> para construir, <span className="font-bold">no</span> para cancelar, o descríbeme los cambios que quieres y replanifico.
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+    );
+  }
+
   const renderAgentReports = () => {
     let reports = message.reasoningSteps;
     if ((!reports || reports.length === 0) && isLast && isLoading && streamData) {
@@ -779,7 +871,10 @@ function MessageBubble({
         {/* 1. Reasoning (expandable) */}
         {renderReasoning()}
 
-        {/* 2. Agent reports timeline (if any) */}
+        {/* 2. Plan card (modo Plan: pendiente de aprobación) */}
+        {renderPlanCard()}
+
+        {/* 3. Agent reports timeline (if any) */}
         {renderAgentReports()}
         
         {/* 3. Main text content */}

@@ -7,6 +7,22 @@ export interface WebBuilderFile {
   code: string;
 }
 
+// Plan pendiente de aprobación (modo Plan del WebBuilder). Lo emite el
+// servidor como evento {type:'plan'} y se muestra como tarjeta + vista en el
+// preview. Se limpia al aprobar / cancelar / replanificar.
+export interface PendingPlanAgent {
+  agentName: string;
+  role: string;
+  task: string;
+  filePath: string;
+}
+export interface PendingPlan {
+  planId: string;
+  reason: string;
+  agents: PendingPlanAgent[];
+  originalUserMessage: string;
+}
+
 /**
  * Normaliza un mapa de archivos a ALWAYS { code: string }.
  *
@@ -51,6 +67,9 @@ interface WebBuilderStore {
   // Mode
   isWebBuilderMode: boolean;
   setWebBuilderMode: (active: boolean) => void;
+  // Build mode: "plan" (planifica y pide aprobación) o "turbo" (construye directo)
+  buildMode: "plan" | "turbo";
+  setBuildMode: (mode: "plan" | "turbo") => void;
 
   // Project
   activeProjectId: string | null;
@@ -105,6 +124,11 @@ interface WebBuilderStore {
   // Active Agent Reports
   activeAgentReports: any[] | null;
   setActiveAgentReports: (reports: any[] | null) => void;
+
+  // Plan pendiente de aprobación (modo Plan)
+  pendingPlan: PendingPlan | null;
+  setPendingPlan: (plan: PendingPlan | null) => void;
+  clearPendingPlan: () => void;
 
   // Cloud Sync Actions
   syncToCloud: () => Promise<void>;
@@ -193,6 +217,7 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
   persist(
     (set, get) => ({
       isWebBuilderMode: false,
+      buildMode: "plan",
       activeProjectId: null,
       files: {},
       activeFilePath: "/App.tsx",
@@ -218,12 +243,19 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
       activeAgentReports: null,
       setActiveAgentReports: (reports) => set({ activeAgentReports: reports }),
 
+      // Plan pendiente (modo Plan)
+      pendingPlan: null,
+      setPendingPlan: (plan) => set({ pendingPlan: plan }),
+      clearPendingPlan: () => set({ pendingPlan: null }),
+
       setWebBuilderMode: (active) => {
         set({ isWebBuilderMode: active });
         if (active && Object.keys(get().files).length === 0) {
           set({ files: DEFAULT_FILES });
         }
       },
+
+      setBuildMode: (mode) => set({ buildMode: mode }),
 
       setCloudSync: (enabled) => {
         set({ cloudSyncEnabled: enabled });
@@ -515,6 +547,7 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
       name: "maverlang-webbuilder",
       partialize: (state) => ({
         isWebBuilderMode: state.isWebBuilderMode,
+        buildMode: state.buildMode,
         activeProjectId: state.activeProjectId,
         files: state.files,
         activeFilePath: state.activeFilePath,

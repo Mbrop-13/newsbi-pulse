@@ -101,7 +101,7 @@ export function ChatInput({
   const [image, setImage] = useState(false);
   const [codeInterpreter, setCodeInterpreter] = useState(false);
   const [browser, setBrowser] = useState(false);
-  const { isWebBuilderMode, buildMode } = useWebBuilderStore();
+  const { isWebBuilderMode, setWebBuilderMode, buildMode } = useWebBuilderStore();
   const { tokenLimitReached, tokenLimitDetails, openModal: openConversionModal, clearTokenLimitReached } = useConversionStore();
   
   const [showAttachMenu, setShowAttachMenu] = useState(false);
@@ -660,18 +660,32 @@ export function ChatInput({
               <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [scrollbar-width:none] select-none flex-nowrap pr-2 max-w-[calc(100vw-180px)] sm:max-w-none">
                 {!isStreaming && (
                   <>
-                    <WebBuilderPill />
+                    <WebBuilderPill onActivate={() => { setCodeInterpreter(false); setBrowser(false); }} />
                     {(!isWebBuilderMode || messages.length === 0) && (
                       <>
                         <Pill
                           active={codeInterpreter}
-                          onClick={() => setCodeInterpreter(prev => !prev)}
+                          onClick={() => {
+                            const next = !codeInterpreter;
+                            setCodeInterpreter(next);
+                            if (next) {
+                              setWebBuilderMode(false);
+                              setBrowser(false);
+                            }
+                          }}
                           icon={<Terminal className="h-4 w-4" />}
                           label="Intérprete de código"
                         />
                         <Pill
                           active={browser}
-                          onClick={() => setBrowser(prev => !prev)}
+                          onClick={() => {
+                            const next = !browser;
+                            setBrowser(next);
+                            if (next) {
+                              setWebBuilderMode(false);
+                              setCodeInterpreter(false);
+                            }
+                          }}
                           icon={<Chrome className="h-4 w-4" />}
                           label="Navegador virtual"
                         />
@@ -868,7 +882,11 @@ const detectLanguage = (text: string): string => {
   return "txt";
 };
 
-function WebBuilderPill() {
+interface WebBuilderPillProps {
+  onActivate?: () => void;
+}
+
+function WebBuilderPill({ onActivate }: WebBuilderPillProps) {
   const { isWebBuilderMode, setWebBuilderMode, resetProject } = useWebBuilderStore();
   const messages = useAIChatStore((s) => s.messages);
   const clearMessages = useAIChatStore((s) => s.clearMessages);
@@ -878,7 +896,11 @@ function WebBuilderPill() {
     if (!isWebBuilderMode && messages.length > 0) {
       setShowNewChatDialog(true);
     } else {
-      setWebBuilderMode(!isWebBuilderMode);
+      const next = !isWebBuilderMode;
+      setWebBuilderMode(next);
+      if (next) {
+        onActivate?.();
+      }
     }
   };
 
@@ -886,6 +908,7 @@ function WebBuilderPill() {
     clearMessages();
     resetProject();
     setWebBuilderMode(true);
+    onActivate?.();
     setShowNewChatDialog(false);
   };
 

@@ -1,23 +1,17 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { Check, ChevronsUpDown, Cpu, PanelLeft, Sparkles, Crown, X, CheckCircle2, ArrowRight, ChevronDown } from "lucide-react"
+import { Check, Cpu, PanelLeft, Sparkles, Crown, X, CheckCircle2, ArrowRight, ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuthStore } from "@/lib/stores/auth-store"
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu"
 import { useSidebar } from "@/components/ui/sidebar"
 
 export interface MaverlangModel {
@@ -67,8 +61,8 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
   if (variant === "inline") {
     return (
       <>
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
+        <DropdownMenu open={open} onOpenChange={setOpen}>
+          <DropdownMenuTrigger asChild>
             <Button
               type="button"
               variant="ghost"
@@ -81,54 +75,45 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
               </span>
               <ChevronDown className={cn("h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-200", open && "rotate-180")} />
             </Button>
-          </PopoverTrigger>
-          <PopoverContent
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
             side="top"
             sideOffset={8}
             align="end"
-            className="w-[280px] p-0 shadow-lg border scrollbar-hide z-50 bg-popover text-popover-foreground animate-in fade-in slide-in-from-bottom-2 duration-200"
-            onOpenAutoFocus={(e) => e.preventDefault()}
+            className="w-[280px] rounded-2xl border border-gray-200/60 dark:border-white/5 bg-white dark:bg-[#0B1329] p-1.5 shadow-xl z-50 animate-in fade-in slide-in-from-bottom-2 duration-200"
           >
-            <Command className="scrollbar-hide">
-              <CommandList className="scrollbar-hide">
-                <CommandEmpty>No se encontraron modelos.</CommandEmpty>
-                <CommandGroup>
-                  {AVAILABLE_MODELS.map((model) => (
-                    <CommandItem
-                      key={model.id}
-                      value={model.name}
-                      className="group/item text-xs flex items-center py-2 px-3 rounded-lg cursor-pointer transition-colors duration-150 select-none data-selected:bg-muted data-selected:text-foreground"
-                      onSelect={() => {
-                        if (userTier === "free" && model.id === "pro") {
-                          setUpsellReason("pro")
-                          setShowUpsell(true)
-                          setOpen(false)
-                          return
-                        }
-                        onModelSelect(model)
-                        setOpen(false)
-                      }}
-                    >
-                      <div className="flex flex-col w-full min-w-0">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <span className="font-bold text-xs text-foreground transition-colors duration-150">
-                            {model.name}
-                          </span>
-                        </div>
-                        <span className="text-[10px] text-muted-foreground truncate transition-colors duration-150">
-                          {model.description}
-                        </span>
-                      </div>
-                      {selectedModel?.id === model.id && (
-                        <Check className="h-4 w-4 ml-auto text-blue-500" />
-                      )}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
+            {AVAILABLE_MODELS.map((model) => (
+              <DropdownMenuItem
+                key={model.id}
+                onClick={() => {
+                  if (userTier === "free" && model.id === "pro") {
+                    setUpsellReason("pro")
+                    setShowUpsell(true)
+                    setOpen(false)
+                    return
+                  }
+                  onModelSelect(model)
+                  setOpen(false)
+                }}
+                className="group/item text-xs flex items-center py-2 px-3 rounded-xl cursor-pointer transition-colors duration-150 select-none focus:bg-muted focus:text-foreground"
+              >
+                <div className="flex flex-col w-full min-w-0">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="font-bold text-xs text-foreground transition-colors duration-150">
+                      {model.name}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground truncate transition-colors duration-150 mt-0.5">
+                    {model.description}
+                  </span>
+                </div>
+                {selectedModel?.id === model.id && (
+                  <Check className="h-4 w-4 ml-auto text-teal-650 dark:text-teal-400 shrink-0" />
+                )}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         <AnimatePresence>
           {showUpsell && (
@@ -224,18 +209,18 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
         >
           <PanelLeft className="h-5 w-5" />
         </Button>
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
+        <DropdownMenu open={open} onOpenChange={setOpen}>
+          <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
               role="combobox"
               aria-expanded={open}
-              className="w-fit h-12 justify-between bg-transparent hover:bg-muted/50 px-4 max-w-[90vw] md:max-w-none"
+              className="w-fit h-12 justify-between bg-transparent hover:bg-muted/50 px-4 max-w-[90vw] md:max-w-none focus-visible:ring-0 focus-visible:ring-offset-0"
             >
               <div className="flex items-center gap-2 min-w-0">
                 {selectedModel ? (
                   <div className="flex items-center gap-2 min-w-0 max-w-[55vw] md:max-w-none">
-                    <span className="font-bold text-sm text-gray-800 dark:text-gray-200 group-hover:text-white transition-colors">
+                    <span className="font-bold text-sm text-gray-800 dark:text-gray-200 transition-colors">
                       {selectedModel.name}
                     </span>
                     <span className="text-xs text-primary/35 font-medium shrink-0 ml-1">
@@ -249,54 +234,46 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
                   </>
                 )}
               </div>
-              <ChevronsUpDown className="ml-2 h-5 w-5 shrink-0 opacity-50" />
+              <ChevronDown className={cn("ml-2 h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200", open && "rotate-180")} />
             </Button>
-          </PopoverTrigger>
-          <PopoverContent
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
             align="start"
-            className="w-fit min-w-[300px] p-0 shadow-lg border scrollbar-hide z-50 bg-popover text-popover-foreground animate-in fade-in zoom-in-95 duration-100"
-            onOpenAutoFocus={(e) => e.preventDefault()}
+            sideOffset={8}
+            className="w-[280px] rounded-2xl border border-gray-200/60 dark:border-white/5 bg-white dark:bg-[#0B1329] p-1.5 shadow-xl z-50 animate-in fade-in zoom-in-95 duration-100"
           >
-            <Command className="scrollbar-hide">
-              <CommandList className="scrollbar-hide">
-                <CommandEmpty>No se encontraron modelos.</CommandEmpty>
-                <CommandGroup>
-                  {AVAILABLE_MODELS.map((model) => (
-                    <CommandItem
-                      key={model.id}
-                      value={model.name}
-                      className="group/item text-xs flex items-center py-2 px-3 rounded-lg cursor-pointer transition-colors duration-150 select-none data-selected:bg-muted data-selected:text-foreground"
-                      onSelect={() => {
-                        if (userTier === "free" && model.id === "pro") {
-                          setUpsellReason("pro")
-                          setShowUpsell(true)
-                          setOpen(false)
-                          return
-                        }
-                        onModelSelect(model)
-                        setOpen(false)
-                      }}
-                    >
-                      <div className="flex flex-col w-full min-w-0">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="font-bold text-xs text-foreground transition-colors duration-150">
-                            {model.name}
-                          </span>
-                        </div>
-                        <span className="text-xs text-muted-foreground transition-colors duration-150">
-                          {model.description}
-                        </span>
-                      </div>
-                      {selectedModel?.id === model.id && (
-                        <Check className="h-4 w-4 ml-auto text-blue-500" />
-                      )}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
+            {AVAILABLE_MODELS.map((model) => (
+              <DropdownMenuItem
+                key={model.id}
+                onClick={() => {
+                  if (userTier === "free" && model.id === "pro") {
+                    setUpsellReason("pro")
+                    setShowUpsell(true)
+                    setOpen(false)
+                    return
+                  }
+                  onModelSelect(model)
+                  setOpen(false)
+                }}
+                className="group/item text-xs flex items-center py-2 px-3 rounded-xl cursor-pointer transition-colors duration-150 select-none focus:bg-muted focus:text-foreground"
+              >
+                <div className="flex flex-col w-full min-w-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="font-bold text-xs text-foreground transition-colors duration-150">
+                      {model.name}
+                    </span>
+                  </div>
+                  <span className="text-xs text-muted-foreground transition-colors duration-150 mt-0.5">
+                    {model.description}
+                  </span>
+                </div>
+                {selectedModel?.id === model.id && (
+                  <Check className="h-4 w-4 ml-auto text-teal-650 dark:text-teal-400 shrink-0" />
+                )}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <AnimatePresence>

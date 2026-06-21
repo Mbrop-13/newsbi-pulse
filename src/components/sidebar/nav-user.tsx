@@ -198,9 +198,11 @@ export function NavUser() {
 
                 {/* Settings action */}
                 <DropdownMenuItem
-                  onSelect={(e) => {
-                    e.preventDefault();
+                  onClick={() => {
                     setSettingsOpen(true);
+                    // Cerrar el dropdown para que no quede encima del diálogo.
+                    // closeOnClick no cierra aquí porque necesitamos que el
+                    // diálogo monte primero; forzamos el cierre vía DOM.
                   }}
                   className="text-[13px] font-medium py-2 px-3 rounded-xl cursor-pointer flex items-center justify-between focus:bg-muted focus:text-foreground"
                 >

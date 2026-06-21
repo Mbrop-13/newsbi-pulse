@@ -440,8 +440,8 @@ export function ChatInput({
         )}
 
         <div className={cn(
-          "rounded-3xl p-2 bg-secondary/80 dark:bg-secondary/30",
-          "shadow-none !shadow-none shadow-transparent border border-border/40 transition-all duration-500 relative group focus-within:border-white/20 dark:focus-within:border-white/20",
+          "rounded-3xl p-2 bg-[#F4F4F0] dark:bg-[#15161A]",
+          "shadow-none !shadow-none shadow-transparent border border-gray-200/60 dark:border-white/5 transition-all duration-500 relative group focus-within:border-black/10 dark:focus-within:border-white/10",
           isListening && "border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.15)]"
         )}>
           {/* File Previews inside the input box */}
@@ -520,7 +520,7 @@ export function ChatInput({
               className={cn(
                 "min-h-12 max-h-72 text-[16px] md:text-[16px] px-1",
                 "resize-none overflow-y-auto",
-                "border-0 bg-secondary dark:bg-secondary shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                "border-0 bg-transparent dark:bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
               )}
             />
           </div>

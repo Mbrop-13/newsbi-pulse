@@ -165,19 +165,28 @@ export function NavUser() {
                   size="lg"
                   className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                 >
-                  <Avatar className={cn(
-                    "h-8 w-8 rounded-full transition-all",
-                    mounted && isAuthenticated && userTier !== "free" && "ring-2 ring-[#1890FF]"
-                  )}>
-                    <AvatarImage src={mounted ? avatarSrc : undefined} alt={mounted ? displayName : "Usuario"} />
-                    <AvatarFallback className="rounded-full">
-                      {mounted ? getInitials(displayName, displayEmail) : "U"}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="relative shrink-0">
+                    <Avatar className={cn(
+                      "h-8 w-8 rounded-full transition-all",
+                      mounted && isAuthenticated && userTier !== "free" && "ring-[1.5px] ring-black/80 dark:ring-white/80"
+                    )}>
+                      <AvatarImage src={mounted ? avatarSrc : undefined} alt={mounted ? displayName : "Usuario"} />
+                      <AvatarFallback className="rounded-full">
+                        {mounted ? getInitials(displayName, displayEmail) : "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    
+                    {/* Overlapping Badge for Paid Tiers */}
+                    {mounted && isAuthenticated && userTier !== "free" && (
+                      <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-black text-white dark:bg-zinc-900 text-[8px] font-extrabold px-1.5 h-[14px] rounded-full border border-white dark:border-zinc-950 shadow-sm leading-none flex items-center justify-center pointer-events-none select-none z-10">
+                        {userTier === "ultra" ? "Ultra" : userTier === "max" ? "Max" : userTier === "pro" ? "Pro" : "Admin"}
+                      </div>
+                    )}
+                  </div>
                   <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
                     <div className="flex items-center gap-1.5 min-w-0">
                       <span className="truncate font-semibold">{mounted ? displayName : "Usuario"}</span>
-                      {mounted && isAuthenticated && <PlanBadge tier={userTier} />}
+                      {mounted && isAuthenticated && userTier === "free" && <PlanBadge tier={userTier} />}
                     </div>
                   </div>
                   <ChevronsUpDown className="ml-auto size-4 shrink-0 opacity-55" />

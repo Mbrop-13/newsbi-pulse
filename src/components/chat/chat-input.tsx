@@ -719,42 +719,45 @@ export function ChatInput({
                   <div className="h-2.5 w-2.5 bg-current rounded-[1px]" />
                 </Button>
               ) : (isListening || value.trim() === "") ? (
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {isListening && (
-                    <div className="flex items-end gap-[3px] h-5 px-1 shrink-0 pb-0.5">
+                <Button
+                  type="button"
+                  size="icon"
+                  onClick={toggleListening}
+                  className={cn(
+                    "rounded-full h-8 w-8 transition-all cursor-pointer flex items-center justify-center shrink-0",
+                    isListening
+                      ? "bg-red-500 text-white hover:bg-red-600 shadow-[0_0_12px_rgba(239,68,68,0.3)] animate-pulse"
+                      : "bg-foreground text-background hover:opacity-90"
+                  )}
+                  aria-label={isListening ? "Detener grabación" : "Dictar mensaje"}
+                >
+                  {isListening ? (
+                    <div className="flex items-center justify-center gap-[2px] h-3.5 w-5 select-none pointer-events-none">
                       {[1, 2, 3, 4, 5].map((bar) => (
                         <motion.span
                           key={bar}
-                          className="w-[3px] bg-red-500 rounded-full"
+                          className="w-[2px] bg-white rounded-full shrink-0"
                           animate={{
-                            height: ["6px", "18px", "6px"],
+                            height: bar === 1 || bar === 5 
+                              ? ["4px", "8px", "4px"] 
+                              : bar === 2 || bar === 4 
+                              ? ["6px", "12px", "6px"] 
+                              : ["6px", "15px", "6px"],
                           }}
                           transition={{
-                            duration: 0.8,
+                            duration: 0.6,
                             repeat: Infinity,
                             repeatType: "reverse",
-                            delay: bar * 0.12,
+                            delay: bar * 0.08,
                             ease: "easeInOut",
                           }}
                         />
                       ))}
                     </div>
-                  )}
-                  <Button
-                    type="button"
-                    size="icon"
-                    onClick={toggleListening}
-                    className={cn(
-                      "rounded-full h-8 w-8 transition-all cursor-pointer flex items-center justify-center shrink-0",
-                      isListening
-                        ? "bg-red-500 text-white hover:bg-red-650 shadow-[0_0_8px_rgba(239,68,68,0.25)] animate-pulse"
-                        : "bg-foreground text-background hover:opacity-90"
-                    )}
-                    aria-label={isListening ? "Detener grabación" : "Dictar mensaje"}
-                  >
+                  ) : (
                     <Mic className="h-4.5 w-4.5" />
-                  </Button>
-                </div>
+                  )}
+                </Button>
               ) : (
                 <Button
                   type="submit"

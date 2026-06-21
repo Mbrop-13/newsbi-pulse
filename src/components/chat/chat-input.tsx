@@ -550,7 +550,7 @@ export function ChatInput({
                       className={cn(
                         "absolute left-0 z-40 w-64 flex flex-col max-h-[350px] overflow-hidden rounded-2xl border shadow-2xl",
                         openUpward ? "bottom-12" : "top-12",
-                        "bg-white/95 dark:bg-[#0B1329]/95 backdrop-blur-xl border-gray-200/50 dark:border-white/5 shadow-blue-500/5 dark:shadow-blue-900/10"
+                        "bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl border-gray-200/50 dark:border-white/5 shadow-blue-500/5 dark:shadow-blue-900/10"
                       )}
                     >
                         <div className="flex-1 overflow-y-auto hidden-scrollbar p-2.5 space-y-3">

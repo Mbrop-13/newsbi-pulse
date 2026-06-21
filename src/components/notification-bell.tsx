@@ -5,6 +5,7 @@ import { Bell, MoreHorizontal, Inbox } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { cn } from "@/lib/utils";
 
 interface Notification {
   id: string;
@@ -132,7 +133,7 @@ export function NotificationBell({ asMenuItem }: { asMenuItem?: boolean }) {
               exit={{ opacity: 0, y: 10, scale: 0.96 }}
               transition={{ type: "spring", damping: 25, stiffness: 350 }}
               className={cn(
-                "z-50 overflow-hidden bg-white dark:bg-[#0B1329] border border-gray-200/80 dark:border-white/5 rounded-3xl shadow-2xl flex flex-col",
+                "z-50 overflow-hidden bg-white dark:bg-zinc-950 border border-gray-200/80 dark:border-white/5 rounded-3xl shadow-2xl flex flex-col",
                 asMenuItem 
                   ? "fixed inset-x-4 top-20 max-w-sm mx-auto"
                   : "absolute bottom-full mb-2.5 left-0 w-[320px]"

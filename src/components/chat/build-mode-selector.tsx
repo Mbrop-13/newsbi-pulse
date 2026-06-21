@@ -69,7 +69,7 @@ export function BuildModeSelector() {
         side="top"
         sideOffset={8}
         align="end"
-        className="w-[280px] rounded-2xl border border-gray-200/60 dark:border-white/5 bg-white dark:bg-[#0B1329] p-1.5 shadow-xl z-50 animate-in fade-in slide-in-from-bottom-2 duration-200"
+        className="w-[280px] rounded-2xl border border-gray-200/60 dark:border-white/5 bg-white dark:bg-zinc-950 p-1.5 shadow-xl z-50 animate-in fade-in slide-in-from-bottom-2 duration-200"
       >
         {BUILD_MODES.map((mode) => {
           const isActive = mode.id === buildMode;

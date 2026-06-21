@@ -156,7 +156,7 @@ export function ViewSettingsDialog({ isOpen, onClose }: ViewSettingsDialogProps)
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 8 }}
             transition={{ type: "spring", damping: 25, stiffness: 350 }}
-            className="relative w-full max-w-[820px] h-[550px] md:h-[500px] flex flex-col md:flex-row overflow-hidden rounded-3xl border border-gray-200/80 dark:border-white/5 bg-white dark:bg-[#0B1329] shadow-2xl"
+            className="relative w-full max-w-[820px] h-[550px] md:h-[500px] flex flex-col md:flex-row overflow-hidden rounded-3xl border border-gray-200/80 dark:border-white/5 bg-white dark:bg-zinc-950 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Left Sidebar navigation */}
@@ -233,7 +233,7 @@ export function ViewSettingsDialog({ isOpen, onClose }: ViewSettingsDialogProps)
             </div>
 
             {/* Right Content panel */}
-            <div className="flex-1 bg-white dark:bg-[#0B1329] flex flex-col relative min-h-0">
+            <div className="flex-1 bg-white dark:bg-zinc-950 flex flex-col relative min-h-0">
               {/* Header */}
               <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-white/5 shrink-0 select-none">
                 <h2 className="text-sm font-bold text-gray-900 dark:text-white capitalize">

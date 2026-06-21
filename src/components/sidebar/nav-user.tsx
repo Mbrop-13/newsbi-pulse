@@ -189,11 +189,10 @@ export function NavUser() {
                       {mounted && isAuthenticated && userTier === "free" && <PlanBadge tier={userTier} />}
                     </div>
                   </div>
-                  <ChevronsUpDown className="ml-auto size-4 shrink-0 opacity-55" />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent
-                className="w-64 rounded-2xl border border-gray-200/60 dark:border-white/5 bg-white dark:bg-[#0B1329] p-1.5 shadow-xl z-[80]"
+                className="w-64 rounded-2xl border border-gray-200/60 dark:border-white/5 bg-white dark:bg-zinc-950 p-1.5 shadow-xl z-[80]"
                 side="top"
                 align="end"
                 sideOffset={8}
@@ -257,7 +256,7 @@ export function NavUser() {
                     </div>
                   </DropdownMenuSubTrigger>
                   <DropdownMenuPortal>
-                    <DropdownMenuSubContent className="w-48 rounded-xl border border-gray-200/50 dark:border-white/5 bg-white dark:bg-[#0B1329] p-1 shadow-lg z-[90]">
+                    <DropdownMenuSubContent className="w-48 rounded-xl border border-gray-200/50 dark:border-white/5 bg-white dark:bg-zinc-950 p-1 shadow-lg z-[90]">
                       <DropdownMenuItem
                         onClick={() => setTheme("light")}
                         className="text-xs py-1.5 px-2.5 rounded-lg cursor-pointer flex items-center justify-between focus:bg-muted focus:text-foreground"
@@ -306,7 +305,7 @@ export function NavUser() {
                     </div>
                   </DropdownMenuSubTrigger>
                   <DropdownMenuPortal>
-                    <DropdownMenuSubContent className="w-44 rounded-xl border border-gray-200/50 dark:border-white/5 bg-white dark:bg-[#0B1329] p-1 shadow-lg z-[90]">
+                    <DropdownMenuSubContent className="w-44 rounded-xl border border-gray-200/50 dark:border-white/5 bg-white dark:bg-zinc-950 p-1 shadow-lg z-[90]">
                       <DropdownMenuItem
                         onClick={() => setLanguage("default")}
                         className="text-xs py-1.5 px-2.5 rounded-lg cursor-pointer flex items-center justify-between focus:bg-muted focus:text-foreground"
@@ -341,7 +340,7 @@ export function NavUser() {
                     </div>
                   </DropdownMenuSubTrigger>
                   <DropdownMenuPortal>
-                    <DropdownMenuSubContent className="w-44 rounded-xl border border-gray-200/50 dark:border-white/5 bg-white dark:bg-[#0B1329] p-1 shadow-lg z-[90]">
+                    <DropdownMenuSubContent className="w-44 rounded-xl border border-gray-200/50 dark:border-white/5 bg-white dark:bg-zinc-950 p-1 shadow-lg z-[90]">
                       <DropdownMenuItem
                         onClick={() => { if (isMobile) setOpenMobile(false); router.push("/documentacion"); }}
                         className="text-xs py-1.5 px-2.5 rounded-lg cursor-pointer focus:bg-muted focus:text-foreground"

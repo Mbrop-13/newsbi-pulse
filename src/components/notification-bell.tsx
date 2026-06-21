@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Bell } from "lucide-react";
+import { Bell, MoreHorizontal, Inbox } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/lib/stores/auth-store";
@@ -67,6 +67,15 @@ export function NotificationBell({ asMenuItem }: { asMenuItem?: boolean }) {
       .eq("is_read", false);
   };
 
+  const clearAll = async () => {
+    if (notifications.length === 0 || !user) return;
+    setNotifications([]);
+    await supabase
+      .from("notifications")
+      .delete()
+      .eq("user_id", user.id);
+  };
+
   if (!user) return null;
 
   return (
@@ -80,7 +89,7 @@ export function NotificationBell({ asMenuItem }: { asMenuItem?: boolean }) {
         }}
         className={asMenuItem 
           ? "w-full flex items-center justify-between py-2 px-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-sm transition-colors text-gray-900 dark:text-gray-100 cursor-pointer outline-none"
-          : "relative flex items-center justify-center w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-[#1890FF] hover:bg-[#1890FF]/10 transition-colors focus:outline-none"
+          : "relative flex items-center justify-center w-8 h-8 text-gray-500 hover:text-black dark:text-gray-400 dark:hover:text-white transition-colors focus:outline-none cursor-pointer"
         }
         title="Notificaciones"
       >
@@ -90,14 +99,14 @@ export function NotificationBell({ asMenuItem }: { asMenuItem?: boolean }) {
             <span className="font-medium">Notificaciones</span>
           </div>
         ) : (
-          <Bell className="w-4 h-4" />
+          <Bell className="w-4.5 h-4.5 stroke-[1.75]" />
         )}
         {unreadCount > 0 && (
           <span className={asMenuItem
-            ? "px-1.5 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full animate-pulse"
-            : "absolute top-0 right-0 w-4 h-4 bg-red-500 rounded-full border-2 border-white dark:border-slate-900 text-[8px] font-bold text-white flex items-center justify-center animate-pulse"
+            ? "px-1.5 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full"
+            : "absolute top-0.5 right-0.5 w-2 h-2 bg-red-500 rounded-full border border-white dark:border-slate-900"
           }>
-            {unreadCount > 9 ? "9+" : unreadCount}
+            {asMenuItem && (unreadCount > 9 ? "9+" : unreadCount)}
           </span>
         )}
       </button>
@@ -105,6 +114,7 @@ export function NotificationBell({ asMenuItem }: { asMenuItem?: boolean }) {
       <AnimatePresence>
         {isOpen && (
           <>
+            {/* Backdrop spacer */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -115,62 +125,83 @@ export function NotificationBell({ asMenuItem }: { asMenuItem?: boolean }) {
                 setIsOpen(false);
               }}
             />
+            {/* Notifications Popover aligned with left edge of sidebar, expanding rightwards */}
             <motion.div
-              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              initial={{ opacity: 0, y: 10, scale: 0.96 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 10, scale: 0.95 }}
-              transition={{ duration: 0.15 }}
-              className={`z-50 overflow-hidden bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl ${
+              exit={{ opacity: 0, y: 10, scale: 0.96 }}
+              transition={{ type: "spring", damping: 25, stiffness: 350 }}
+              className={cn(
+                "z-50 overflow-hidden bg-white dark:bg-[#0B1329] border border-gray-200/80 dark:border-white/5 rounded-3xl shadow-2xl flex flex-col",
                 asMenuItem 
                   ? "fixed inset-x-4 top-20 max-w-sm mx-auto"
-                  : "absolute right-0 mt-2 w-[320px]"
-              }`}
+                  : "absolute bottom-full mb-2.5 left-0 w-[320px]"
+              )}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50 dark:bg-slate-900">
+              {/* Header */}
+              <div className="px-4 py-3.5 border-b border-gray-100 dark:border-white/5 flex items-center justify-between select-none">
                 <h3 className="text-sm font-bold text-gray-900 dark:text-white">Notificaciones</h3>
-                {unreadCount > 0 && (
-                  <span className="text-xs text-[#1890FF] font-medium">{unreadCount} nuevas</span>
-                )}
+                
+                {/* Options button */}
+                <div className="flex items-center gap-2">
+                  {notifications.length > 0 && (
+                    <button
+                      onClick={clearAll}
+                      className="text-[10px] font-bold text-red-500 hover:text-red-600 cursor-pointer"
+                    >
+                      Limpiar
+                    </button>
+                  )}
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      if (unreadCount > 0) markAsRead();
+                      else alert("Ya están todas leídas");
+                    }}
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-white cursor-pointer flex items-center justify-center w-7 h-7 rounded-full hover:bg-gray-50 dark:hover:bg-white/5"
+                    title="Opciones"
+                  >
+                    <MoreHorizontal className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
               
-              <div className="max-h-[350px] overflow-y-auto">
+              {/* Body list */}
+              <div className="max-h-[320px] overflow-y-auto hidden-scrollbar">
                 {notifications.length === 0 ? (
-                  <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
-                    <Bell className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                    <p className="text-sm">No tienes notificaciones</p>
+                  <div className="flex flex-col items-center justify-center py-16 px-4 text-center select-none">
+                    <Inbox className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-3 stroke-[1.25]" />
+                    <p className="text-xs font-semibold text-gray-400 dark:text-gray-500">Tus notificaciones aparecerán aquí</p>
                   </div>
                 ) : (
                   <div className="flex flex-col">
                     {notifications.map((notif) => (
                       <div
                         key={notif.id}
-                        className={`px-4 py-3 border-b border-gray-50 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors ${
-                          !notif.is_read ? "bg-[#1890FF]/5 dark:bg-[#1890FF]/10" : ""
-                        }`}
+                        className={cn(
+                          "px-4 py-3.5 border-b border-gray-50 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors",
+                          !notif.is_read && "bg-teal-500/[0.03] dark:bg-teal-450/[0.03]"
+                        )}
                       >
-                        <h4 className="text-[13px] font-semibold text-gray-900 dark:text-white mb-0.5">
-                          {notif.title}
-                        </h4>
-                        <p className="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <h4 className="text-xs font-bold text-gray-900 dark:text-white mb-0.5 truncate">
+                            {notif.title}
+                          </h4>
+                          {!notif.is_read && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-teal-500 shrink-0 mt-1" />
+                          )}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground leading-relaxed mt-0.5 line-clamp-2">
                           {notif.message}
                         </p>
-                        <span className="text-[9px] text-gray-400 mt-1.5 block font-medium">
+                        <span className="text-[9px] text-gray-400 dark:text-gray-500 mt-1.5 block font-medium">
                           {new Date(notif.created_at).toLocaleString()}
                         </span>
                       </div>
                     ))}
                   </div>
                 )}
-              </div>
-              
-              <div className="px-4 py-2 bg-gray-50 dark:bg-slate-900 border-t border-gray-100 dark:border-gray-800 text-center">
-                <button 
-                  onClick={() => setIsOpen(false)}
-                  className="text-[11px] font-bold text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-                >
-                  Cerrar
-                </button>
               </div>
             </motion.div>
           </>

@@ -156,7 +156,7 @@ export function NavUser() {
         </div>
       )}
 
-      <div className="flex items-center gap-1.5 w-full">
+      <div className="flex items-center gap-0.5 w-full">
         <SidebarMenu className="flex-1 min-w-0">
           <SidebarMenuItem className="list-none">
             <DropdownMenu>
@@ -378,7 +378,7 @@ export function NavUser() {
           </SidebarMenuItem>
         </SidebarMenu>
         {state === "expanded" && mounted && isAuthenticated && (
-          <div className="shrink-0 pl-1 pr-2">
+          <div className="shrink-0 pl-0.5 pr-1">
             <NotificationBell />
           </div>
         )}

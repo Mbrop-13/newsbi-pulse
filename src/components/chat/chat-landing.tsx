@@ -792,11 +792,14 @@ export function ChatLanding() {
       <div className="flex flex-col h-full relative">
         {/* Main content area */}
         {!hasMessages ? (
-          /* Landing view - center content with prompt suggestions */
-          <div className="flex-1 flex flex-col items-center justify-between md:justify-center px-4 pt-16 relative h-full">
-            {/* Top Navigation Sections removed in Phase 5 */}
+          /* Landing view - logo + input centrados verticalmente (estilo Grok/Perplexity).
+             Al enviar el primer mensaje, hasMessages pasa a true y el input baja a su
+             posición fija en el fondo (rama del chat activo más abajo). */
+          <div className="flex-1 flex flex-col items-center justify-center px-4 relative h-full">
+            {/* Spacer superior para empujar el bloque hacia el centro visual */}
+            <div className="flex-grow" aria-hidden />
 
-            <div className="flex-grow flex flex-col items-center justify-center w-full max-w-2xl mx-auto">
+            <div className="w-full max-w-3xl mx-auto flex flex-col items-center justify-center">
               <div className="text-center mb-8">
                 <div className="flex items-center justify-center">
                   <img 
@@ -806,10 +809,8 @@ export function ChatLanding() {
                   />
                 </div>
               </div>
-            </div>
 
-            <div className="sticky bottom-0 z-10 w-full bg-transparent pt-2 pb-4 md:pb-5">
-              <div className="max-w-3xl mx-auto w-full">
+              <div className="w-full pb-4 md:pb-8">
                 <ChatInput
                   placeholder="Pregúntame lo que quieras..."
                   onSubmit={handleSend}
@@ -819,6 +820,9 @@ export function ChatLanding() {
                 />
               </div>
             </div>
+
+            {/* Spacer inferior para equilibrar el centrado visual */}
+            <div className="flex-grow" aria-hidden />
           </div>
         ) : (
           /* Chat view - messages + input at bottom */

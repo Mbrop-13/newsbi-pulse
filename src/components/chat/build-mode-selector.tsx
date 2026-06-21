@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Check, ChevronDown, Code2, Zap } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
@@ -16,8 +16,6 @@ interface BuildModeOption {
   id: "plan" | "turbo";
   name: string;
   description: string;
-  icon: React.ComponentType<any>;
-  color: string;
 }
 
 const BUILD_MODES: BuildModeOption[] = [
@@ -25,15 +23,11 @@ const BUILD_MODES: BuildModeOption[] = [
     id: "plan",
     name: "Builder: Plan",
     description: "Planifica y aprueba los cambios antes de construir",
-    icon: Code2,
-    color: "text-violet-500 bg-violet-500/10",
   },
   {
     id: "turbo",
     name: "Builder: Turbo",
     description: "Planifica y construye de una sola vez",
-    icon: Zap,
-    color: "text-amber-500 bg-amber-500/10",
   },
 ];
 
@@ -78,7 +72,6 @@ export function BuildModeSelector() {
         className="w-[280px] rounded-2xl border border-gray-200/60 dark:border-white/5 bg-white dark:bg-[#0B1329] p-1.5 shadow-xl z-50 animate-in fade-in slide-in-from-bottom-2 duration-200"
       >
         {BUILD_MODES.map((mode) => {
-          const IconComponent = mode.icon;
           const isActive = mode.id === buildMode;
 
           return (
@@ -87,18 +80,13 @@ export function BuildModeSelector() {
               onClick={() => handleSelectMode(mode.id)}
               className="group/item text-xs flex items-center py-2 px-3 rounded-xl cursor-pointer transition-colors duration-150 select-none focus:bg-muted focus:text-foreground"
             >
-              <div className="flex items-center gap-2.5 w-full min-w-0">
-                <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors", mode.color)}>
-                  <IconComponent className="w-4 h-4" />
-                </div>
-                <div className="flex flex-col flex-1 min-w-0">
-                  <span className="font-bold text-xs text-foreground transition-colors duration-150">
-                    {mode.id === "plan" ? "Plan" : "Turbo"}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground truncate transition-colors duration-150">
-                    {mode.description}
-                  </span>
-                </div>
+              <div className="flex flex-col flex-1 min-w-0">
+                <span className="font-bold text-xs text-foreground transition-colors duration-150">
+                  {mode.id === "plan" ? "Plan" : "Turbo"}
+                </span>
+                <span className="text-[10px] text-muted-foreground truncate transition-colors duration-150 mt-0.5">
+                  {mode.description}
+                </span>
               </div>
               {isActive && (
                 <Check className="h-4 w-4 ml-auto text-teal-650 dark:text-teal-400 shrink-0" />

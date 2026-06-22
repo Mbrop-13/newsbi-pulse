@@ -26,7 +26,7 @@ import {
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 import { useAudioPlayerStore } from "@/lib/stores/audio-player-store";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useFilterStore } from "@/lib/stores/filter-store";
 import { useSidebar } from "@/components/ui/sidebar";
 import { getCleanPathname } from "@/lib/utils";
@@ -35,6 +35,7 @@ export function Navbar() {
   const [mounted, setMounted] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [viewSettingsOpen, setViewSettingsOpen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<"cuenta" | "apariencia" | "comportamiento" | "customize" | "datos" | "soporte">("cuenta");
   const [temaSearch, setTemaSearch] = useState("");
   const [filtrosView, setFiltrosView] = useState<"main" | "fuentes">("main");
   const [seccionesOpen, setSeccionesOpen] = useState(false);
@@ -97,6 +98,20 @@ export function Navbar() {
   };
 
   // Auth state is now managed globally by AuthSync component
+
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const settings = searchParams.get("settings");
+    if (settings === "soporte") {
+      setSettingsTab("soporte");
+      setViewSettingsOpen(true);
+      
+      const url = new URL(window.location.href);
+      url.searchParams.delete("settings");
+      window.history.replaceState({}, "", url.pathname + url.search);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     setMounted(true);
@@ -358,20 +373,21 @@ export function Navbar() {
                   
                   {/* Preferences directly opens the ViewSettingsDialog */}
                   <DropdownMenuItem 
-                    onClick={() => setViewSettingsOpen(true)}
+                    onClick={() => { setSettingsTab("cuenta"); setViewSettingsOpen(true); }}
                     className="text-sm py-2 px-3 cursor-pointer rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                   >
                     <Settings2 className="w-4 h-4 mr-2 text-gray-500" />
                     Preferencias
                   </DropdownMenuItem>
                   
-                  {/* Support opens the new Support route */}
-                  <Link href="/soporte">
-                    <DropdownMenuItem className="text-sm py-2 px-3 cursor-pointer rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-                      <Headphones className="w-4 h-4 mr-2 text-gray-500" />
-                      Soporte
-                    </DropdownMenuItem>
-                  </Link>
+                  {/* Support opens the ViewSettingsDialog on the support tab */}
+                  <DropdownMenuItem 
+                    onClick={() => { setSettingsTab("soporte"); setViewSettingsOpen(true); }}
+                    className="text-sm py-2 px-3 cursor-pointer rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  >
+                    <Headphones className="w-4 h-4 mr-2 text-gray-500" />
+                    Soporte
+                  </DropdownMenuItem>
 
                   <DropdownMenuSeparator className="bg-gray-100 dark:bg-gray-800 mx-1 md:hidden" />
                   <div className="md:hidden px-1">
@@ -424,6 +440,7 @@ export function Navbar() {
       <ViewSettingsDialog
         isOpen={viewSettingsOpen}
         onClose={() => setViewSettingsOpen(false)}
+        defaultTab={settingsTab}
       />
     </>
   );

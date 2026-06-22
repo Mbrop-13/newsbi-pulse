@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useMemo } from "react"
 import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
-import { Bot, User, ThumbsUp, ThumbsDown, Share2, RefreshCw, ChevronRight, ChevronDown, Sparkles, Loader2, Globe, ExternalLink, X, ArrowDown, CheckCircle2, XCircle, Clock, Cpu, ClipboardList, FileCode2 } from "lucide-react"
+import { Bot, User, ThumbsUp, ThumbsDown, Share2, RefreshCw, ChevronRight, ChevronDown, Sparkles, Loader2, Globe, ExternalLink, X, ArrowDown, CheckCircle2, XCircle, Clock, Cpu, ClipboardList, FileCode2, Maximize2, Info, FolderOpen } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import ReactMarkdown from "react-markdown"
@@ -393,6 +393,7 @@ function MessageBubble({
   const [isAgentsExpanded, setIsAgentsExpanded] = useState(true)
   const [expandedReportIdx, setExpandedReportIdx] = useState<number | null>(null)
   const [isPlanExpanded, setIsPlanExpanded] = useState(true)
+  const [isPlanModalOpen, setIsPlanModalOpen] = useState(false)
   const setSelectedTab = useWebBuilderStore((s) => s.setSelectedTab)
   
   const [localReasoningOpen, setLocalReasoningOpen] = useState(isReasoningOpen || (isLast && isLoading))
@@ -540,46 +541,60 @@ function MessageBubble({
     )
   }
 
-  // ─── Render Agent Reports as collapsible timeline ───
+  // ─── Render Plan Card ───
   const renderPlanCard = () => {
     const plan = message.pendingPlan;
     if (!plan || !plan.agents || plan.agents.length === 0) return null;
 
     return (
       <div className="mb-3">
-        {/* Contenedor de la tarjeta del plan (clickeable → abre la vista en el preview) */}
+        {/* Contenedor de la tarjeta del plan (clickeable → expande/colapsa en chat) */}
         <div
-          onClick={() => setSelectedTab("preview")}
-          className="rounded-2xl border border-[#1890FF]/30 bg-[#1890FF]/5 dark:bg-[#1890FF]/10 overflow-hidden cursor-pointer hover:border-[#1890FF]/50 transition-colors"
+          onClick={() => setIsPlanExpanded(!isPlanExpanded)}
+          className="rounded-2xl border border-gray-250/80 dark:border-white/5 bg-slate-50/50 dark:bg-zinc-900/60 p-3.5 cursor-pointer hover:border-gray-300 dark:hover:border-white/10 transition-all select-none shadow-3xs flex flex-col gap-2 group"
         >
           {/* Header */}
-          <button
-            onClick={(e) => { e.stopPropagation(); setIsPlanExpanded(!isPlanExpanded); }}
-            className="flex items-center gap-2 w-full text-left px-3 py-2.5 group"
-          >
-            <div className="w-5 h-5 rounded-md flex items-center justify-center bg-[#1890FF]/10 text-[#1890FF] shrink-0">
-              <ClipboardList className="w-3 h-3" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-[#1890FF]/10 text-[#1890FF] flex items-center justify-center shrink-0 shadow-3xs">
+                <ClipboardList className="w-3.5 h-3.5" />
+              </div>
+              <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-[#1890FF] transition-colors">
+                Plan de construcción
+              </span>
             </div>
-            <span className="text-xs font-bold text-foreground">
-              Plan de construcción
-            </span>
-            <span className="text-[10px] text-muted-foreground/70 font-normal">
-              {plan.agents.length} {plan.agents.length === 1 ? "archivo" : "archivos"}
-            </span>
-            <ChevronDown className={cn(
-              "w-3 h-3 text-muted-foreground/50 transition-transform duration-200 ml-auto",
-              !isPlanExpanded && "-rotate-90"
-            )} />
-          </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsPlanModalOpen(true);
+                }}
+                title="Expandir vista completa"
+                className="w-6 h-6 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 flex items-center justify-center text-muted-foreground/70 hover:text-foreground transition-all cursor-pointer"
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+              </button>
+              <ChevronDown className={cn(
+                "w-4 h-4 text-muted-foreground/50 transition-transform duration-200",
+                !isPlanExpanded && "-rotate-90"
+              )} />
+            </div>
+          </div>
 
           {/* Motivo del plan */}
           {plan.reason && (
-            <div className="px-3 pb-2.5 -mt-0.5">
-              <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">
-                {plan.reason}
-              </p>
-            </div>
+            <p className="text-[10px] text-muted-foreground leading-relaxed font-medium line-clamp-2 -mt-0.5">
+              {plan.reason}
+            </p>
           )}
+
+          {/* Recuento de archivos y estado de expansión */}
+          <div className="flex items-center justify-between text-[9px] text-muted-foreground/60 border-t border-gray-100 dark:border-white/5 pt-2 mt-1.5 font-bold uppercase tracking-wider">
+            <span>{plan.agents.length} {plan.agents.length === 1 ? "archivo" : "archivos"} planificados</span>
+            <span className="text-[#1890FF] tracking-wide font-extrabold">
+              {isPlanExpanded ? "Ocultar" : "Ver detalles"}
+            </span>
+          </div>
 
           {/* Lista de archivos planificados */}
           <AnimatePresence>
@@ -589,37 +604,38 @@ function MessageBubble({
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.25 }}
-                className="overflow-hidden"
+                className="overflow-hidden w-full"
+                onClick={(e) => e.stopPropagation()} // Previene colapsar si hace clic adentro
               >
-                <div className="px-3 pb-3 space-y-1.5">
-                  {plan.agents.map((agent: any, idx: number) => (
-                    <div
-                      key={idx}
-                      className="flex items-start gap-2 rounded-xl bg-background/60 dark:bg-background/30 border border-border/40 px-2.5 py-2"
-                    >
-                      <FileCode2 className="w-3.5 h-3.5 text-[#1890FF] mt-0.5 shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-[10px] font-mono font-semibold text-foreground truncate">
-                            {agent.filePath}
-                          </span>
+                <div className="pt-3 space-y-2 cursor-default">
+                  <div className="space-y-1.5 max-h-[180px] overflow-y-auto pr-1 custom-scrollbar">
+                    {plan.agents.map((agent: any, idx: number) => (
+                      <div
+                        key={idx}
+                        className="flex items-start gap-2 rounded-xl bg-white dark:bg-zinc-900 border border-gray-100 dark:border-white/5 px-2.5 py-2 shadow-4xs"
+                      >
+                        <FileCode2 className="w-3.5 h-3.5 text-[#1890FF] mt-0.5 shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[9.5px] font-mono font-extrabold text-gray-900 dark:text-white truncate">
+                              {agent.filePath}
+                            </span>
+                          </div>
+                          <p className="text-[9px] text-muted-foreground mt-0.5 leading-snug line-clamp-2">
+                            {agent.agentName} · {agent.role}
+                          </p>
+                          <p className="text-[9px] text-muted-foreground/75 mt-0.5 leading-snug line-clamp-2">
+                            {agent.task}
+                          </p>
                         </div>
-                        <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug line-clamp-2">
-                          {agent.agentName} · {agent.role}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground/70 mt-0.5 leading-snug line-clamp-2">
-                          {agent.task}
-                        </p>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
 
-                {/* Pista de acción para el usuario */}
-                <div className="px-3 pb-3">
-                  <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 px-2.5 py-2">
-                    <p className="text-[10px] text-amber-700 dark:text-amber-300 leading-relaxed">
-                      Escribe <span className="font-bold">aprobado</span> para construir, <span className="font-bold">no</span> para cancelar, o descríbeme los cambios que quieres y replanifico.
+                  {/* Pista de acción para el usuario */}
+                  <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 px-2.5 py-2 mt-1">
+                    <p className="text-[9px] text-amber-700 dark:text-amber-300 leading-relaxed font-semibold">
+                      Escribe <span className="font-extrabold">aprobado</span> para construir, <span className="font-extrabold">no</span> para cancelar, o describe los cambios.
                     </p>
                   </div>
                 </div>
@@ -627,9 +643,112 @@ function MessageBubble({
             )}
           </AnimatePresence>
         </div>
+
+        {/* Modal View */}
+        <AnimatePresence>
+          {isPlanModalOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
+              onClick={() => setIsPlanModalOpen(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0, y: 15 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0, y: 15 }}
+                transition={{ type: "spring", damping: 25, stiffness: 350 }}
+                className="relative w-full max-w-[520px] max-h-[80vh] flex flex-col rounded-3xl border border-gray-200/80 dark:border-white/5 bg-white dark:bg-zinc-950 shadow-2xl overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Modal Header */}
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-150 dark:border-white/5 shrink-0 select-none">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-teal-500/10 text-teal-500 dark:text-teal-400 flex items-center justify-center shadow-3xs">
+                      <ClipboardList className="w-4 h-4" />
+                    </div>
+                    <h3 className="text-xs font-bold text-gray-900 dark:text-white">Plan de Construcción</h3>
+                  </div>
+                  <button
+                    onClick={() => setIsPlanModalOpen(false)}
+                    className="w-7 h-7 rounded-full bg-gray-55 dark:bg-white/5 flex items-center justify-center text-muted-foreground/60 hover:text-foreground transition-colors cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Modal Body */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+                  {plan.reason && (
+                    <div className="p-4 bg-[#1890FF]/5 border border-[#1890FF]/15 rounded-2xl">
+                      <h4 className="text-[10px] font-extrabold text-gray-900 dark:text-white mb-1.5 flex items-center gap-1.5 uppercase tracking-wider">
+                        <Info className="w-3.5 h-3.5 text-[#1890FF]" />
+                        Objetivo de la Construcción
+                      </h4>
+                      <p className="text-xs text-muted-foreground leading-relaxed font-medium">
+                        {plan.reason}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="space-y-3">
+                    <h4 className="text-[9.5px] font-extrabold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                      <FolderOpen className="w-3.5 h-3.5" />
+                      Archivos y Tareas Planificadas
+                    </h4>
+                    <div className="space-y-2.5">
+                      {plan.agents.map((agent: any, idx: number) => (
+                        <div key={idx} className="p-4 bg-gray-50/50 dark:bg-zinc-900/30 border border-gray-200/50 dark:border-white/5 rounded-2xl shadow-3xs space-y-2.5">
+                          <div className="flex items-center justify-between border-b border-gray-100 dark:border-white/5 pb-2">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <FileCode2 className="w-4 h-4 text-[#1890FF] shrink-0" />
+                              <span className="text-xs font-mono font-bold text-gray-900 dark:text-white truncate">
+                                {agent.filePath}
+                              </span>
+                            </div>
+                            <span className="text-[9px] font-extrabold text-teal-600 dark:text-teal-400 uppercase tracking-wider bg-teal-500/10 dark:bg-teal-500/5 border border-teal-500/10 px-2 py-0.5 rounded-full shrink-0">
+                              {agent.agentName}
+                            </span>
+                          </div>
+                          <div className="text-xs space-y-2">
+                            <div>
+                              <span className="text-[9px] font-extrabold text-muted-foreground uppercase tracking-wider block mb-0.5">Rol</span>
+                              <span className="text-gray-800 dark:text-gray-200 text-xs font-bold">{agent.role}</span>
+                            </div>
+                            <div>
+                              <span className="text-[9px] font-extrabold text-muted-foreground uppercase tracking-wider block mb-0.5">Tarea específica</span>
+                              <p className="text-muted-foreground text-xs leading-relaxed font-medium">{agent.task}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-center">
+                    <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed font-semibold">
+                      Escribe <span className="font-extrabold">aprobado</span> en el chat para ejecutar, <span className="font-extrabold">no</span> para cancelar, o describe tus cambios.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Modal Footer */}
+                <div className="p-4 bg-gray-50 dark:bg-zinc-950 border-t border-gray-150 dark:border-white/5 flex justify-end shrink-0">
+                  <button
+                    onClick={() => setIsPlanModalOpen(false)}
+                    className="px-5 py-2 bg-slate-900 dark:bg-white text-white dark:text-black rounded-full text-xs font-extrabold cursor-pointer transition-all shadow-sm hover:scale-[1.02] active:scale-95"
+                  >
+                    Cerrar Vista
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     );
-  }
+  };
 
   const renderAgentReports = () => {
     let reports = message.reasoningSteps;

@@ -105,7 +105,6 @@ export function ClientLayoutProviders({
     "/recompensas",
     "/mis-diamantes",
     "/mis-predicciones",
-    "/soporte",
     "/guardados",
     "/lista-lectura",
     "/para-ti",

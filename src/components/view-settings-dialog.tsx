@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useViewStore } from "@/lib/stores/use-view-store";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useAssistantStore } from "@/lib/stores/assistant-store";
@@ -9,17 +9,22 @@ import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, User, Palette, Layers, Sliders, Database, Globe, Sparkles, Compass } from "lucide-react";
+import { X, User, Palette, Layers, Sliders, Database, Globe, Sparkles, Compass, Headphones, Send, Loader2, Bot, PlusCircle, History, ChevronLeft, AlertCircle, CheckCircle2, MessageSquare } from "lucide-react";
 import { cn, getCleanPathname } from "@/lib/utils";
 import { useLanguageStore } from "@/lib/stores/language-store";
 import { useTranslation } from "@/lib/translations";
+import { createClient } from "@/lib/supabase/client";
+import { SupportTicket, SupportMessage } from "@/lib/types";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 interface ViewSettingsDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  defaultTab?: TabType;
 }
 
-type TabType = "cuenta" | "apariencia" | "comportamiento" | "customize" | "datos";
+type TabType = "cuenta" | "apariencia" | "comportamiento" | "customize" | "datos" | "soporte";
 
 function SegmentControl<T extends string>({
   options,
@@ -87,7 +92,7 @@ function getInitials(name: string, email: string): string {
   return "U"
 }
 
-export function ViewSettingsDialog({ isOpen, onClose }: ViewSettingsDialogProps) {
+export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettingsDialogProps) {
   const { theme, setTheme } = useTheme();
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -98,6 +103,208 @@ export function ViewSettingsDialog({ isOpen, onClose }: ViewSettingsDialogProps)
   const setPreference = useLanguageStore((s) => s.setPreference);
   const activeLanguage = useLanguageStore((s) => s.language);
   const { t } = useTranslation(activeLanguage);
+
+  useEffect(() => {
+    if (isOpen) {
+      setActiveTab(defaultTab || "cuenta");
+      setSupportView("home");
+      setSelectedTicket(null);
+    }
+  }, [isOpen, defaultTab]);
+
+  // Support state
+  const [supportView, setSupportView] = useState<"home" | "new_ticket" | "chat">("home");
+  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
+  const [tickets, setTickets] = useState<SupportTicket[]>([]);
+  const [messages, setMessages] = useState<SupportMessage[]>([]);
+  const [isLoadingTickets, setIsLoadingTickets] = useState(false);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [newMessage, setNewMessage] = useState("");
+  const [isSending, setIsSending] = useState(false);
+
+  // New ticket form
+  const [newTicketSubject, setNewTicketSubject] = useState("");
+  const [newTicketCategory, setNewTicketCategory] = useState("Soporte Técnico");
+  const [newTicketMessage, setNewTicketMessage] = useState("");
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const supabase = createClient();
+
+  const loadTickets = async () => {
+    if (!user) return;
+    setIsLoadingTickets(true);
+    try {
+      const { data, error } = await supabase
+        .from("support_tickets")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("updated_at", { ascending: false });
+
+      if (error) throw error;
+      setTickets(data || []);
+    } catch (err) {
+      console.error("Error loading tickets:", err);
+    } finally {
+      setIsLoadingTickets(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "soporte" && isAuthenticated && user) {
+      loadTickets();
+    }
+  }, [activeTab, isAuthenticated, user]);
+
+  useEffect(() => {
+    if (activeTab !== "soporte" || !selectedTicket) return;
+
+    const loadMessages = async () => {
+      setIsLoadingMessages(true);
+      try {
+        const { data, error } = await supabase
+          .from("support_messages")
+          .select("*")
+          .eq("ticket_id", selectedTicket.id)
+          .order("created_at", { ascending: true });
+
+        if (error) throw error;
+        setMessages(data || []);
+      } catch (err) {
+        console.error("Error loading messages:", err);
+      } finally {
+        setIsLoadingMessages(false);
+      }
+    };
+
+    loadMessages();
+
+    // Subscribe to new messages for this ticket
+    const channel = supabase
+      .channel(`support_chat_${selectedTicket.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'support_messages',
+        filter: `ticket_id=eq.${selectedTicket.id}`
+      }, (payload) => {
+        const newMsg = payload.new as SupportMessage;
+        setMessages((prev) => {
+          if (!prev.find(m => m.id === newMsg.id)) {
+            return [...prev, newMsg];
+          }
+          return prev;
+        });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [activeTab, selectedTicket]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, supportView]);
+
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !selectedTicket || !user || isSending) return;
+
+    const msgText = newMessage.trim();
+    setNewMessage("");
+    setIsSending(true);
+
+    try {
+      const { data, error } = await supabase
+        .from("support_messages")
+        .insert([{
+          ticket_id: selectedTicket.id,
+          user_id: user.id,
+          is_admin: false,
+          message: msgText
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setMessages(prev => [...prev, data]);
+
+      await supabase
+        .from("support_tickets")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", selectedTicket.id);
+
+      loadTickets();
+    } catch (err) {
+      console.error("Error sending message:", err);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleCreateTicket = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTicketSubject.trim() || !newTicketMessage.trim() || !user || isSending) return;
+
+    setIsSending(true);
+    try {
+      const fullSubject = `[${newTicketCategory}] ${newTicketSubject.trim()}`;
+      const { data: ticketData, error: ticketError } = await supabase
+        .from("support_tickets")
+        .insert([{
+          user_id: user.id,
+          subject: fullSubject,
+          status: 'open'
+        }])
+        .select()
+        .single();
+
+      if (ticketError) throw ticketError;
+
+      const { error: messageError } = await supabase
+        .from("support_messages")
+        .insert([{
+          ticket_id: ticketData.id,
+          user_id: user.id,
+          is_admin: false,
+          message: newTicketMessage.trim()
+        }]);
+
+      if (messageError) throw messageError;
+
+      setNewTicketSubject("");
+      setNewTicketMessage("");
+      setNewTicketCategory("Soporte Técnico");
+
+      await loadTickets();
+      setSelectedTicket(ticketData);
+      setSupportView("chat");
+    } catch (err) {
+      console.error("Error creating ticket:", err);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleCloseTicket = async (ticketId: string) => {
+    if (!confirm("¿Estás seguro de que deseas marcar esta consulta como resuelta?")) return;
+    try {
+      const { error } = await supabase
+        .from("support_tickets")
+        .update({ status: 'closed' })
+        .eq('id', ticketId);
+
+      if (error) throw error;
+      
+      setTickets(prev => prev.map(t => t.id === ticketId ? { ...t, status: 'closed' } : t));
+      if (selectedTicket?.id === ticketId) {
+        setSelectedTicket(prev => prev ? { ...prev, status: 'closed' } : null);
+      }
+    } catch (err) {
+      console.error("Error closing ticket:", err);
+    }
+  };
 
   const handleLanguageChange = (pref: "default" | "es" | "en") => {
     setPreference(pref);
@@ -257,6 +464,20 @@ export function ViewSettingsDialog({ isOpen, onClose }: ViewSettingsDialogProps)
                 <Database className="h-4 w-4 shrink-0" />
                 <span>Controles de datos</span>
               </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab("soporte")}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] transition-all cursor-pointer whitespace-nowrap md:w-full",
+                  activeTab === "soporte"
+                    ? "bg-white dark:bg-[#1E293B] border border-[#E9E8E4] dark:border-white/10 text-foreground shadow-xs font-semibold"
+                    : "text-muted-foreground/80 hover:text-foreground hover:bg-gray-100/50 dark:hover:bg-white/[0.01] font-medium"
+                )}
+              >
+                <Headphones className="h-4 w-4 shrink-0" />
+                <span>Soporte</span>
+              </button>
             </div>
 
             {/* Right Content panel */}
@@ -264,7 +485,7 @@ export function ViewSettingsDialog({ isOpen, onClose }: ViewSettingsDialogProps)
               {/* Header */}
               <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-white/5 shrink-0 select-none">
                 <h2 className="text-sm font-bold text-gray-900 dark:text-white capitalize">
-                  {activeTab === "datos" ? "Controles de datos" : activeTab === "customize" ? "Personalizar Asistente" : activeTab}
+                  {activeTab === "datos" ? "Controles de datos" : activeTab === "customize" ? "Personalizar Asistente" : activeTab === "soporte" ? "Centro de Soporte" : activeTab}
                 </h2>
                 <button
                   type="button"
@@ -277,7 +498,10 @@ export function ViewSettingsDialog({ isOpen, onClose }: ViewSettingsDialogProps)
               </div>
 
               {/* Scrollable Settings Panel */}
-              <div className="flex-1 p-6 overflow-y-auto pb-24 hidden-scrollbar">
+              <div className={cn(
+                "flex-1 hidden-scrollbar",
+                activeTab === "soporte" ? "p-0 overflow-hidden flex flex-col h-full relative" : "p-6 overflow-y-auto pb-24"
+              )}>
                 {activeTab === "cuenta" && (
                   <div className="space-y-5">
                     {/* User Profile Card */}
@@ -525,23 +749,306 @@ export function ViewSettingsDialog({ isOpen, onClose }: ViewSettingsDialogProps)
                     </div>
                   </div>
                 )}
+
+                {activeTab === "soporte" && (
+                  <div className="flex flex-col h-full bg-[#FAF9F5]/40 dark:bg-black/15 overflow-hidden">
+                    {supportView === "home" && (
+                      <div className="flex flex-col h-full overflow-hidden p-6">
+                        {/* Heading */}
+                        <div className="flex flex-col gap-1 mb-5">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0 shadow-2xs">
+                              <Headphones className="w-4 h-4 text-[#1890FF]" />
+                            </div>
+                            <div>
+                              <h3 className="text-xs font-bold text-gray-900 dark:text-white">Centro de Soporte</h3>
+                              <p className="text-[9px] text-green-500 font-semibold flex items-center gap-1">
+                                <span className="w-1 h-1 rounded-full bg-green-500 animate-pulse" />
+                                Agentes en línea
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Call to action */}
+                        <div className="grid grid-cols-1 gap-4 mb-5 shrink-0">
+                          <div className="p-4 bg-gradient-to-br from-blue-500/5 to-teal-500/5 border border-blue-500/10 dark:border-white/5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-3xs">
+                            <div>
+                              <h4 className="text-xs font-bold text-gray-950 dark:text-white">¿Tienes alguna pregunta?</h4>
+                              <p className="text-[10px] text-muted-foreground mt-0.5">Crea un ticket de soporte y te responderemos a la brevedad.</p>
+                            </div>
+                            <button
+                              onClick={() => setSupportView("new_ticket")}
+                              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-slate-900 dark:bg-white text-white dark:text-black text-[10px] font-extrabold cursor-pointer transition-all shadow-sm hover:scale-[1.02] active:scale-95 shrink-0"
+                            >
+                              <PlusCircle className="w-3.5 h-3.5" />
+                              Nuevo Ticket
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* History */}
+                        <div className="flex-1 min-h-0 flex flex-col">
+                          <div className="flex items-center gap-1.5 text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider mb-2 shrink-0">
+                            <History className="w-3.5 h-3.5" />
+                            Historial de Consultas
+                          </div>
+
+                          <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                            {isLoadingTickets ? (
+                              <div className="py-12 flex flex-col items-center gap-2 justify-center text-xs text-muted-foreground">
+                                <Loader2 className="w-5 h-5 animate-spin text-[#1890FF]" />
+                                Cargando historial...
+                              </div>
+                            ) : tickets.length === 0 ? (
+                              <div className="py-12 border border-dashed border-gray-200 dark:border-white/5 rounded-2xl flex flex-col items-center justify-center gap-2 text-center bg-white dark:bg-zinc-900/50">
+                                <MessageSquare className="w-8 h-8 text-gray-300 dark:text-zinc-700" />
+                                <p className="text-xs font-medium text-gray-800 dark:text-zinc-400">No tienes consultas anteriores</p>
+                                <p className="text-[10px] text-muted-foreground">Tu historial de soporte aparecerá aquí.</p>
+                              </div>
+                            ) : (
+                              tickets.map((t) => (
+                                <button
+                                  key={t.id}
+                                  onClick={() => { setSelectedTicket(t); setSupportView("chat"); }}
+                                  className="w-full text-left p-3.5 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/10 rounded-2xl transition-all shadow-3xs cursor-pointer hover:shadow-2xs group"
+                                >
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span className="font-bold text-xs text-gray-900 dark:text-white truncate max-w-[70%] group-hover:text-[#1890FF] transition-colors">
+                                      {t.subject}
+                                    </span>
+                                    <span className="text-[9px] text-muted-foreground font-medium shrink-0">
+                                      {format(new Date(t.updated_at), "dd MMM, HH:mm", { locale: es })}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center justify-between text-[10px]">
+                                    <span className="text-muted-foreground truncate">Ticket #{t.id.split('-')[0]}</span>
+                                    <span className={cn(
+                                      "flex items-center gap-1 font-bold uppercase tracking-wider text-[8px]",
+                                      t.status === 'open' ? 'text-green-500' : 'text-gray-500'
+                                    )}>
+                                      <span className={cn(
+                                        "w-1 h-1 rounded-full shrink-0",
+                                        t.status === 'open' ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
+                                      )} />
+                                      {t.status === 'open' ? 'Abierto' : 'Resuelto'}
+                                    </span>
+                                  </div>
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {supportView === "new_ticket" && (
+                      <div className="flex flex-col h-full overflow-hidden p-6">
+                        <div className="flex items-center gap-2 mb-4 shrink-0">
+                          <button
+                            onClick={() => setSupportView("home")}
+                            className="p-1 rounded-full bg-gray-55 dark:bg-white/5 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </button>
+                          <h3 className="text-xs font-bold text-gray-900 dark:text-white">Nueva Consulta de Soporte</h3>
+                        </div>
+
+                        <form onSubmit={handleCreateTicket} className="flex-1 overflow-y-auto pr-1 space-y-4 custom-scrollbar">
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-gray-850 dark:text-gray-200 uppercase tracking-wider">Categoría</label>
+                            <select
+                              value={newTicketCategory}
+                              onChange={(e) => setNewTicketCategory(e.target.value)}
+                              className="w-full bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-white/5 rounded-xl px-3 py-2 text-xs text-foreground outline-none cursor-pointer focus:ring-1 focus:ring-teal-500 font-semibold"
+                            >
+                              <option value="Soporte Técnico">Soporte Técnico</option>
+                              <option value="Facturación">Facturación y Planes</option>
+                              <option value="Cuenta">Cuenta y Acceso</option>
+                              <option value="Errores y Bugs">Errores y Bugs</option>
+                              <option value="Sugerencias/Otros">Sugerencia u Otro</option>
+                            </select>
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-gray-850 dark:text-gray-200 uppercase tracking-wider">Asunto</label>
+                            <input
+                              type="text"
+                              value={newTicketSubject}
+                              onChange={(e) => setNewTicketSubject(e.target.value)}
+                              placeholder="Escribe un título descriptivo..."
+                              className="w-full bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-white/5 rounded-xl px-3 py-2 text-xs text-foreground outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all font-semibold"
+                              required
+                            />
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-gray-850 dark:text-gray-200 uppercase tracking-wider">Mensaje Inicial</label>
+                            <textarea
+                              value={newTicketMessage}
+                              onChange={(e) => setNewTicketMessage(e.target.value)}
+                              placeholder="Describe tu problema o pregunta con detalle..."
+                              rows={4}
+                              className="w-full bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-white/5 rounded-xl px-3 py-2 text-xs text-foreground outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all font-medium resize-none"
+                              required
+                            />
+                          </div>
+
+                          <div className="flex gap-3 pt-2">
+                            <button
+                              type="button"
+                              onClick={() => setSupportView("home")}
+                              className="flex-1 py-2 rounded-full border border-gray-200 dark:border-white/10 hover:bg-gray-55 dark:hover:bg-white/5 text-[10px] font-extrabold text-gray-800 dark:text-gray-200 cursor-pointer transition-all shadow-3xs text-center"
+                            >
+                              Cancelar
+                            </button>
+                            <button
+                              type="submit"
+                              disabled={!newTicketSubject.trim() || !newTicketMessage.trim() || isSending}
+                              className="flex-1 py-2 rounded-full bg-[#1890FF] hover:bg-[#1890FF]/90 text-white text-[10px] font-extrabold cursor-pointer transition-all shadow-md disabled:opacity-50 text-center flex items-center justify-center gap-1.5"
+                            >
+                              {isSending ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <>
+                                  <Send className="w-3 h-3" />
+                                  Enviar Consulta
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    )}
+
+                    {supportView === "chat" && selectedTicket && (
+                      <div className="flex flex-col h-full bg-slate-50/50 dark:bg-zinc-950/30 overflow-hidden">
+                        {/* Subheader */}
+                        <div className="flex items-center justify-between px-4 py-2 bg-white dark:bg-zinc-900 border-b border-gray-100 dark:border-white/5 shrink-0 select-none">
+                          <button
+                            onClick={() => { setSupportView("home"); setSelectedTicket(null); }}
+                            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                            Atrás
+                          </button>
+                          <div className="flex items-center gap-2">
+                            <span className={cn(
+                              "text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shadow-3xs",
+                              selectedTicket.status === 'open' 
+                                ? "bg-green-500/10 text-green-500 border border-green-500/20" 
+                                : "bg-gray-500/10 text-gray-500 border border-gray-500/20"
+                            )}>
+                              {selectedTicket.status === 'open' ? 'Abierto' : 'Resuelto'}
+                            </span>
+                            {selectedTicket.status === 'open' && (
+                              <button 
+                                onClick={() => handleCloseTicket(selectedTicket.id)}
+                                title="Marcar como resuelto"
+                                className="flex items-center gap-1 text-[9px] font-bold text-gray-500 dark:text-gray-400 bg-white dark:bg-zinc-950 border border-gray-250 dark:border-white/5 hover:border-green-500 dark:hover:border-green-500/30 px-2 py-1 rounded-lg transition-colors cursor-pointer"
+                              >
+                                <CheckCircle2 className="w-3 h-3 text-green-500" />
+                                Marcar como resuelto
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Messages Box */}
+                        <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#E5DDD5]/10 dark:bg-[#0B141A]/20 custom-scrollbar animate-fadeIn">
+                          {isLoadingMessages ? (
+                            <div className="h-full flex items-center justify-center">
+                              <Loader2 className="w-5 h-5 animate-spin text-[#1890FF]" />
+                            </div>
+                          ) : messages.length === 0 ? (
+                            <div className="h-full flex items-center justify-center text-xs text-muted-foreground">
+                              No hay mensajes en este chat.
+                            </div>
+                          ) : (
+                            <div className="space-y-3 flex flex-col">
+                              {messages.map((msg, idx) => {
+                                const isMe = !msg.is_admin;
+                                return (
+                                  <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                    <div className="flex max-w-[85%] items-end gap-1.5">
+                                      {!isMe && (
+                                        <div className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-[#1890FF] shrink-0 shadow-3xs">
+                                          <Headphones className="w-2.5 h-2.5" />
+                                        </div>
+                                      )}
+                                      <div className={cn(
+                                        "px-3 py-1.5 text-xs leading-relaxed shadow-3xs rounded-xl",
+                                        isMe 
+                                          ? "bg-teal-600 text-white rounded-tr-none" 
+                                          : "bg-white dark:bg-zinc-900 text-foreground border border-gray-100 dark:border-white/5 rounded-tl-none"
+                                      )}>
+                                        <p className="whitespace-pre-wrap break-words">{msg.message}</p>
+                                        <span className="block text-[8px] text-right mt-1 opacity-60">
+                                          {format(new Date(msg.created_at), "HH:mm")}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                              <div ref={messagesEndRef} />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Message Input Form */}
+                        <div className="p-3 bg-white dark:bg-zinc-900 border-t border-gray-100 dark:border-white/5 shrink-0">
+                          {selectedTicket.status === 'closed' ? (
+                            <div className="text-center text-xs text-muted-foreground py-1 bg-gray-50 dark:bg-zinc-950 rounded-xl">
+                              Este ticket está resuelto. No puedes enviar más mensajes.
+                            </div>
+                          ) : (
+                            <form onSubmit={handleSendMessage} className="flex gap-2">
+                              <input
+                                type="text"
+                                value={newMessage}
+                                onChange={(e) => setNewMessage(e.target.value)}
+                                placeholder="Escribe un mensaje..."
+                                className="flex-1 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-white/5 rounded-full px-4 py-2 text-xs text-foreground outline-none focus:border-[#1890FF] focus:ring-1 focus:ring-[#1890FF] transition-all"
+                                disabled={isSending}
+                              />
+                              <button
+                                type="submit"
+                                disabled={!newMessage.trim() || isSending}
+                                className="w-8 h-8 rounded-full bg-[#1890FF] hover:bg-[#1890FF]/90 text-white flex items-center justify-center shrink-0 disabled:opacity-50 transition-colors shadow-sm cursor-pointer"
+                              >
+                                {isSending ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <Send className="w-3 h-3 ml-0.5" />
+                                )}
+                              </button>
+                            </form>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Bottom Promo Banner (Starry dark background) */}
-              <div className="absolute bottom-0 left-0 right-0 h-[60px] bg-gradient-to-r from-zinc-950 via-slate-900 to-zinc-950 text-white flex items-center justify-between px-6 border-t border-white/5 z-10 select-none">
-                <div className="flex items-center gap-2">
-                  <span className="font-extrabold italic text-sm tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-emerald-400">Maverlang Ultra</span>
-                  <span className="text-xs font-semibold text-slate-300/90 hidden sm:inline">— Menos límites de consulta, más capacidades</span>
-                  <span className="text-[10px] font-semibold text-slate-300/90 sm:hidden">— Más capacidades</span>
+              {activeTab !== "soporte" && (
+                <div className="absolute bottom-0 left-0 right-0 h-[60px] bg-gradient-to-r from-zinc-950 via-slate-900 to-zinc-950 text-white flex items-center justify-between px-6 border-t border-white/5 z-10 select-none animate-fadeIn">
+                  <div className="flex items-center gap-2">
+                    <span className="font-extrabold italic text-sm tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-emerald-400">Maverlang Ultra</span>
+                    <span className="text-xs font-semibold text-slate-300/90 hidden sm:inline">— Menos límites de consulta, más capacidades</span>
+                    <span className="text-[10px] font-semibold text-slate-300/90 sm:hidden">— Más capacidades</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { handleClose(); router.push("/suscripcion"); }}
+                    className="bg-white hover:bg-white/90 text-black text-[11px] font-extrabold px-5 py-2 rounded-full cursor-pointer transition-all shadow-md active:scale-95 shrink-0"
+                  >
+                    Probar gratis
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => { handleClose(); router.push("/suscripcion"); }}
-                  className="bg-white hover:bg-white/90 text-black text-[11px] font-extrabold px-5 py-2 rounded-full cursor-pointer transition-all shadow-md active:scale-95 shrink-0"
-                >
-                  Probar gratis
-                </button>
-              </div>
+              )}
             </div>
           </motion.div>
         </motion.div>

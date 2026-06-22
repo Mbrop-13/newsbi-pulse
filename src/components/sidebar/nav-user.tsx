@@ -106,6 +106,7 @@ export function NavUser() {
   const { t } = useTranslation(activeLanguage)
 
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [settingsTab, setSettingsTab] = useState<"cuenta" | "apariencia" | "comportamiento" | "customize" | "datos" | "soporte">("cuenta")
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -240,6 +241,7 @@ export function NavUser() {
                 {/* Settings action */}
                 <DropdownMenuItem
                   onClick={() => {
+                    setSettingsTab("cuenta");
                     setSettingsOpen(true);
                   }}
                   className="text-[13px] font-medium py-2 px-3 rounded-xl cursor-pointer flex items-center justify-between focus:bg-muted focus:text-foreground"
@@ -378,7 +380,11 @@ export function NavUser() {
                         <span>Documentación</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => { if (isMobile) setOpenMobile(false); router.push("/soporte"); }}
+                        onClick={() => {
+                          if (isMobile) setOpenMobile(false);
+                          setSettingsTab("soporte");
+                          setSettingsOpen(true);
+                        }}
                         className="text-xs py-1.5 px-2.5 rounded-lg cursor-pointer focus:bg-muted focus:text-foreground"
                       >
                         <span>Soporte</span>
@@ -426,7 +432,7 @@ export function NavUser() {
         )}
       </div>
 
-      <ViewSettingsDialog isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <ViewSettingsDialog isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} defaultTab={settingsTab} />
     </>
   )
 }

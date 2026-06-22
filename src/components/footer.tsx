@@ -90,7 +90,7 @@ export function Footer() {
             <ul className="space-y-2">
               <li><Link href="/privacidad" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Política de Privacidad</Link></li>
               <li><Link href="/terminos" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Términos y Condiciones</Link></li>
-              <li><Link href="/soporte" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Soporte</Link></li>
+              <li><Link href="/?settings=soporte" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Soporte</Link></li>
             </ul>
           </div>
 

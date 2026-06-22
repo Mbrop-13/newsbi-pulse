@@ -150,7 +150,7 @@ export function LandingCTA() {
               <ul className="space-y-2.5">
                 <li><Link href="/privacidad" className="text-sm text-slate-500 hover:text-black transition-colors">Privacidad</Link></li>
                 <li><Link href="/terminos" className="text-sm text-slate-500 hover:text-black transition-colors">Términos</Link></li>
-                <li><Link href="/soporte" className="text-sm text-slate-500 hover:text-black transition-colors">Soporte</Link></li>
+                <li><Link href="/?settings=soporte" className="text-sm text-slate-500 hover:text-black transition-colors">Soporte</Link></li>
               </ul>
             </div>
 

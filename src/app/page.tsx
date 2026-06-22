@@ -7,16 +7,6 @@ function ChatSkeleton() {
   const skeletonWidths = ["75%", "65%", "85%", "70%"];
   return (
     <div className="flex min-h-screen bg-background">
-      {/* Sidebar Skeleton (desktop only) */}
-      <div className="hidden md:flex w-64 border-r border-border flex-col p-4 space-y-6 shrink-0 bg-card">
-        <div className="h-8 w-32 bg-muted/60 rounded-lg animate-pulse" />
-        <div className="space-y-3 flex-1">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-6 bg-muted/40 rounded-lg animate-pulse" style={{ width: skeletonWidths[i % skeletonWidths.length] }} />
-          ))}
-        </div>
-        <div className="h-10 bg-muted/40 rounded-lg animate-pulse" />
-      </div>
       
       {/* Main Chat Area Skeleton */}
       <div className="flex-1 flex flex-col h-screen">

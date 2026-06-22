@@ -9,7 +9,7 @@ import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, User, Palette, Layers, Sliders, Database, Globe, Sparkles, Compass, Headphones, Send, Loader2, Bot, PlusCircle, History, ChevronLeft, AlertCircle, CheckCircle2, MessageSquare } from "lucide-react";
+import { X, User, Palette, Layers, Sliders, Database, Globe, Sparkles, Compass, Headphones, Send, Loader2, Bot, PlusCircle, History, ChevronLeft, AlertCircle, CheckCircle2, MessageSquare, BarChart3, Brain, Cpu, Volume2, BellRing, Briefcase, Zap, Crown, ArrowUpRight, RefreshCw } from "lucide-react";
 import { cn, getCleanPathname } from "@/lib/utils";
 import { useLanguageStore } from "@/lib/stores/language-store";
 import { useTranslation } from "@/lib/translations";
@@ -24,7 +24,7 @@ interface ViewSettingsDialogProps {
   defaultTab?: TabType;
 }
 
-type TabType = "cuenta" | "apariencia" | "comportamiento" | "customize" | "datos" | "soporte";
+type TabType = "cuenta" | "usage" | "apariencia" | "comportamiento" | "customize" | "datos" | "soporte";
 
 function SegmentControl<T extends string>({
   options,
@@ -66,7 +66,7 @@ function Toggle({ active, onChange }: { active: boolean; onChange: (val: boolean
       onClick={() => onChange(!active)}
       className={cn(
         "relative w-9 h-5 rounded-full transition-colors duration-300 outline-none shrink-0 cursor-pointer",
-        active ? "bg-teal-650 dark:bg-teal-400" : "bg-gray-200 dark:bg-white/10"
+        active ? "bg-[#1890FF]" : "bg-gray-300 dark:bg-white/10"
       )}
     >
       <motion.div
@@ -343,6 +343,34 @@ export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettings
   const wbSync = useWebBuilderStore((s) => s.cloudSyncEnabled);
   const setWbSync = useWebBuilderStore((s) => s.setCloudSync);
 
+  // Plan consumption state
+  const [usageData, setUsageData] = useState<any | null>(null);
+  const [usageLoading, setUsageLoading] = useState(false);
+  const [usageError, setUsageError] = useState(false);
+
+  const fetchUsageData = async () => {
+    setUsageLoading(true);
+    setUsageError(false);
+    try {
+      const res = await fetch("/api/user/usage");
+      if (res.ok) {
+        setUsageData(await res.json());
+      } else {
+        setUsageError(true);
+      }
+    } catch {
+      setUsageError(true);
+    } finally {
+      setUsageLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated && activeTab === "usage") {
+      fetchUsageData();
+    }
+  }, [isAuthenticated, activeTab]);
+
   // Load preferences from Supabase if open
   useEffect(() => {
     if (isOpen && isAuthenticated && user) {
@@ -407,6 +435,20 @@ export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettings
               >
                 <User className="h-4 w-4 shrink-0" />
                 <span>Cuenta</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab("usage")}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] transition-all cursor-pointer whitespace-nowrap md:w-full",
+                  activeTab === "usage"
+                    ? "bg-white dark:bg-[#1E293B] border border-[#E9E8E4] dark:border-white/10 text-foreground shadow-xs font-semibold"
+                    : "text-muted-foreground/80 hover:text-foreground hover:bg-gray-100/50 dark:hover:bg-white/[0.01] font-medium"
+                )}
+              >
+                <BarChart3 className="h-4 w-4 shrink-0" />
+                <span>Plan y Consumo</span>
               </button>
 
               <button
@@ -485,7 +527,7 @@ export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettings
               {/* Header */}
               <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-white/5 shrink-0 select-none">
                 <h2 className="text-sm font-bold text-gray-900 dark:text-white capitalize">
-                  {activeTab === "datos" ? "Controles de datos" : activeTab === "customize" ? "Personalizar Asistente" : activeTab === "soporte" ? "Centro de Soporte" : activeTab}
+                  {activeTab === "datos" ? "Controles de datos" : activeTab === "customize" ? "Personalizar Asistente" : activeTab === "soporte" ? "Centro de Soporte" : activeTab === "usage" ? "Plan y Consumo" : activeTab}
                 </h2>
                 <button
                   type="button"
@@ -500,7 +542,7 @@ export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettings
               {/* Scrollable Settings Panel */}
               <div className={cn(
                 "flex-1 hidden-scrollbar",
-                activeTab === "soporte" ? "p-0 overflow-hidden flex flex-col h-full relative" : "p-6 overflow-y-auto pb-24"
+                activeTab === "soporte" ? "p-0 overflow-hidden flex flex-col h-full relative" : "p-6 overflow-y-auto pb-6"
               )}>
                 {activeTab === "cuenta" && (
                   <div className="space-y-5">
@@ -539,23 +581,8 @@ export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettings
                       </button>
                     </div>
 
-                    {/* Social connection */}
-                    <div className="flex items-center justify-between py-2.5 border-b border-gray-100 dark:border-white/5">
-                      <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
-                        <span className="text-[14px] font-black w-4.5 text-center font-mono shrink-0 select-none">𝕏</span>
-                        <span className="text-[11px] font-semibold">Cuenta 𝕏</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => alert("Conexión con 𝕏 está en desarrollo")}
-                        className="px-4 py-1.5 rounded-full border border-gray-200 dark:border-white/10 hover:bg-gray-55 dark:hover:bg-white/5 text-[11px] font-semibold text-gray-800 dark:text-gray-200 cursor-pointer transition-all shrink-0"
-                      >
-                        Conectar
-                      </button>
-                    </div>
-
                     {/* Language setting */}
-                    <div className="flex items-center justify-between py-2.5 border-b border-gray-100 dark:border-white/5">
+                    <div className="flex items-center justify-between py-2.5">
                       <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
                         <Globe className="w-4.5 h-4.5 text-muted-foreground shrink-0" />
                         <span className="text-[11px] font-semibold">
@@ -570,14 +597,160 @@ export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettings
                         {t("change")}
                       </button>
                     </div>
+                  </div>
+                )}
 
-                    {/* Birth year */}
-                    <div className="py-2.5">
-                      <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300 text-[11px] font-semibold">
-                        <User className="w-4.5 h-4.5 text-muted-foreground shrink-0" />
-                        <span>Año de nacimiento: <span className="font-bold text-gray-900 dark:text-white">2007</span></span>
+                {activeTab === "usage" && (
+                  <div className="space-y-4">
+                    {/* Plan Header */}
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1890FF] via-[#6366F1] to-[#8B5CF6] p-4 text-white">
+                      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE4YzEuNjU3IDAgMyAxLjM0MyAzIDNzLTEuMzQzIDMtMyAzLTMtMS4zNDMtMy0zIDEuMzQzLTMgMy0zek0xOCAzNmMxLjY1NyAwIDMgMS4zNDMgMyAzcy0xLjM0MyAzLTMgMy0zLTEuMzQzLTMtMyAxLjM0My0zIDMtM3oiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-30" />
+                      <div className="relative z-10 flex items-center justify-between">
+                        <div>
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <Crown className="w-4 h-4" />
+                            <span className="text-[10px] font-medium opacity-80">Tu plan actual</span>
+                          </div>
+                          <h3 className="text-base font-black">
+                            {usageData?.planName || (user?.tier === "free" ? "Gratuito" : user?.tier?.toUpperCase()) || "Cargando..."}
+                          </h3>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={fetchUsageData}
+                            disabled={usageLoading}
+                            className="p-1.5 rounded-lg bg-white/15 hover:bg-white/25 transition-colors backdrop-blur-sm"
+                            title="Actualizar datos"
+                          >
+                            <RefreshCw className={`w-3.5 h-3.5 ${usageLoading ? "animate-spin" : ""}`} />
+                          </button>
+                          {usageData?.tier === "free" && (
+                            <button
+                              type="button"
+                              onClick={() => { handleClose(); router.push("/suscripcion"); }}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-white text-[#6366F1] font-bold text-[10px] rounded-lg hover:bg-white/90 transition-colors shadow-sm"
+                            >
+                              <Zap className="w-3 h-3 animate-pulse" />
+                              Mejorar
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
+
+                    {/* Resources */}
+                    {usageLoading && !usageData ? (
+                      <div className="flex justify-center py-8">
+                        <Loader2 className="w-6 h-6 animate-spin text-[#1890FF]" />
+                      </div>
+                    ) : usageError ? (
+                      <div className="text-center py-6">
+                        <p className="text-xs text-gray-500 mb-2">No se pudo cargar el consumo.</p>
+                        <button
+                          type="button"
+                          onClick={fetchUsageData}
+                          className="px-3 py-1 bg-[#1890FF] text-white text-[10px] font-bold rounded-lg"
+                        >
+                          Reintentar
+                        </button>
+                      </div>
+                    ) : usageData ? (
+                      <div className="space-y-3">
+                        {usageData.resources.map((resource: any) => {
+                          const isUnlimited = resource.limit === -1;
+                          const percentageUsed = isUnlimited ? 0 : resource.limit === 0 ? 100 : Math.min(100, Math.round((resource.used / resource.limit) * 100));
+                          const percentageRemaining = isUnlimited ? 100 : Math.max(0, 100 - percentageUsed);
+                          const isWarning = percentageRemaining <= 20 && percentageRemaining > 0;
+                          const isDanger = percentageRemaining === 0;
+                          const statusColor = isDanger ? "#EF4444" : isWarning ? "#F59E0B" : resource.color;
+
+                          const IconMap: Record<string, typeof Brain> = {
+                            brain: Brain,
+                            cpu: Cpu,
+                            volume: Volume2,
+                            bell: BellRing,
+                            briefcase: Briefcase,
+                          };
+                          const IconComponent = IconMap[resource.icon] || Cpu;
+
+                          const formatNumber = (n: number, asK?: boolean) => {
+                            if (asK && n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
+                            if (asK && n >= 1000) return `${(n / 1000).toFixed(0)}K`;
+                            return n.toLocaleString("es-CL");
+                          };
+
+                          return (
+                            <div
+                              key={resource.id}
+                              className="p-3 rounded-xl border border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-[#070B16] hover:border-gray-200 dark:hover:border-white/10 transition-all"
+                            >
+                              <div className="flex items-start justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <div 
+                                    className="p-1.5 rounded-lg"
+                                    style={{ backgroundColor: `${statusColor}15` }}
+                                  >
+                                    <IconComponent className="w-4 h-4" style={{ color: statusColor }} />
+                                  </div>
+                                  <div>
+                                    <h4 className="text-xs font-bold text-gray-900 dark:text-white">{resource.label}</h4>
+                                    <p className="text-[9px] text-gray-400 capitalize">{resource.period}</p>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  {isUnlimited ? (
+                                    <span className="text-[10px] font-bold text-emerald-500">Ilimitado</span>
+                                  ) : (
+                                    <div className="flex flex-col items-end">
+                                      <span className="text-xs font-black" style={{ color: statusColor }}>
+                                        {percentageRemaining}%
+                                      </span>
+                                      <span className="text-[8px] font-semibold text-gray-400">
+                                        {isDanger ? "Agotado" : "disponible"}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Bar */}
+                              <div className="relative h-1.5 rounded-full bg-gray-200/60 dark:bg-white/5 overflow-hidden">
+                                {isUnlimited ? (
+                                  <div className="absolute inset-0 bg-emerald-500 opacity-20 rounded-full" />
+                                ) : (
+                                  <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${percentageUsed}%` }}
+                                    transition={{ duration: 0.8 }}
+                                    className="absolute inset-y-0 left-0 rounded-full"
+                                    style={{
+                                      background: isDanger 
+                                        ? `linear-gradient(90deg, ${statusColor}, #DC2626)` 
+                                        : isWarning
+                                          ? `linear-gradient(90deg, ${resource.color}, ${statusColor})`
+                                          : `linear-gradient(90deg, ${resource.color}90, ${resource.color})`,
+                                    }}
+                                  />
+                                )}
+                              </div>
+
+                              {/* Footer text */}
+                              <div className="flex justify-between mt-1.5 text-[9px] font-semibold">
+                                <span className="text-gray-500">
+                                  {formatNumber(resource.used, resource.formatAsK)} de {isUnlimited ? "∞" : formatNumber(resource.limit, resource.formatAsK)} usados
+                                </span>
+                                {!isUnlimited && (
+                                  <span className="text-gray-400">
+                                    Quedan {formatNumber(Math.max(0, resource.limit - resource.used), resource.formatAsK)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : null}
                   </div>
                 )}
 
@@ -1032,23 +1205,7 @@ export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettings
                 )}
               </div>
 
-              {/* Bottom Promo Banner (Starry dark background) */}
-              {activeTab !== "soporte" && (
-                <div className="absolute bottom-0 left-0 right-0 h-[60px] bg-gradient-to-r from-zinc-950 via-slate-900 to-zinc-950 text-white flex items-center justify-between px-6 border-t border-white/5 z-10 select-none animate-fadeIn">
-                  <div className="flex items-center gap-2">
-                    <span className="font-extrabold italic text-sm tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-emerald-400">Maverlang Ultra</span>
-                    <span className="text-xs font-semibold text-slate-300/90 hidden sm:inline">— Menos límites de consulta, más capacidades</span>
-                    <span className="text-[10px] font-semibold text-slate-300/90 sm:hidden">— Más capacidades</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => { handleClose(); router.push("/suscripcion"); }}
-                    className="bg-white hover:bg-white/90 text-black text-[11px] font-extrabold px-5 py-2 rounded-full cursor-pointer transition-all shadow-md active:scale-95 shrink-0"
-                  >
-                    Probar gratis
-                  </button>
-                </div>
-              )}
+
             </div>
           </motion.div>
         </motion.div>

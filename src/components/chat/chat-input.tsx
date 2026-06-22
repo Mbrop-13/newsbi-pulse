@@ -240,9 +240,9 @@ export function ChatInput({
           console.error("Microphone permission denied", permErr);
           setIsListening(false);
           if (permErr?.name === "NotAllowedError") {
-            toast.error("Permiso de micrófono denegado. Actívalo en los permisos del sitio para dictar mensajes.");
+            toast.error("Permiso de micrófono denegado. Haz clic en el icono del candado (o controles del sitio) a la izquierda de la barra de direcciones y cambia 'Micrófono' a 'Permitir'.");
           } else {
-            toast.error("No se pudo acceder al micrófono. Revisa los permisos del sitio.");
+            toast.error("No se pudo acceder al micrófono. Revisa los permisos de tu dispositivo y navegador.");
           }
         });
     } else {
@@ -277,7 +277,7 @@ export function ChatInput({
         // "no-speech" son esperados al parar / tras silencio y no se muestran.
         const code = err?.error || err?.type;
         if (code === "not-allowed" || code === "service-not-allowed") {
-          toast.error("Permiso de micrófono denegado. Actívalo en los permisos del sitio.");
+          toast.error("Permiso de micrófono denegado. Haz clic en el icono del candado (o controles del sitio) a la izquierda de la barra de direcciones y cambia 'Micrófono' a 'Permitir'.");
         } else if (code === "network") {
           toast.error("Error de red en el servicio de transcripción. Revisa tu conexión.");
         } else if (code !== "aborted" && code !== "no-speech" && code !== "audio-capture") {

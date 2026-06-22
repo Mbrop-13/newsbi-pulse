@@ -140,22 +140,21 @@ const DEFAULT_FILES: Record<string, WebBuilderFile> = {
   "/App.tsx": {
     code: `export default function App() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-8">
-      <div className="text-center">
-        <div className="mb-6 inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20">
-          <span className="text-4xl">🚀</span>
+    <div className="min-h-screen bg-[#07090e] flex items-center justify-center p-8 text-white select-none">
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.01)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.01)_1px,transparent_1px)] bg-[size:1.5rem_1.5rem] opacity-30 pointer-events-none" />
+      <div className="absolute -top-12 -left-12 w-64 h-64 bg-blue-500/10 rounded-full blur-[80px] pointer-events-none" />
+      <div className="absolute -bottom-12 -right-12 w-64 h-64 bg-purple-500/5 rounded-full blur-[80px] pointer-events-none" />
+      <div className="relative z-10 text-center max-w-sm">
+        <div className="w-12 h-12 rounded-2xl bg-white/[0.03] border border-white/[0.08] flex items-center justify-center mx-auto mb-4 shadow-xl">
+          <svg className="w-5 h-5 text-gray-400 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
         </div>
-        <h1 className="text-4xl font-bold text-white mb-4 tracking-tight">
-          Maverlang <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">Builder</span>
-        </h1>
-        <p className="text-lg text-gray-300 max-w-md mx-auto leading-relaxed">
-          Describe lo que quieres construir y la IA lo creará en tiempo real.
+        <h2 className="text-sm font-bold text-gray-200 tracking-wide">Workspace Ready</h2>
+        <p className="text-[11px] text-gray-400 mt-1.5 leading-relaxed">
+          Describe lo que quieres construir en el chat. La IA creará y actualizará la interfaz en tiempo real.
         </p>
-        <div className="mt-8 flex items-center justify-center gap-3 text-sm text-gray-400">
-          <span className="px-3 py-1.5 bg-white/5 rounded-full border border-white/10">React</span>
-          <span className="px-3 py-1.5 bg-white/5 rounded-full border border-white/10">Tailwind CSS</span>
-          <span className="px-3 py-1.5 bg-white/5 rounded-full border border-white/10">TypeScript</span>
-        </div>
       </div>
     </div>
   );

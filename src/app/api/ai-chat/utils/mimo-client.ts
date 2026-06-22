@@ -52,7 +52,51 @@ export function createMimoWithWebSearch(userId: string, streamData?: StreamData,
           // If parsing fails, proceed with original request
         }
       }
-      const res = await fetch(url, options);
+      let res = await fetch(url, options);
+
+      // If MiMo fails with payment/balance/server error, fall back to OpenRouter!
+      if (!res.ok) {
+        const clone = res.clone();
+        try {
+          const errText = await clone.text();
+          let errBody = null;
+          try { errBody = JSON.parse(errText); } catch {}
+          const errMsg = errBody?.error?.message || errBody?.message || errText || "";
+          
+          if (res.status === 402 || errMsg.toLowerCase().includes("balance") || errMsg.toLowerCase().includes("insufficient")) {
+            console.warn("[MIMO-CLIENT] Insufficient balance or error from MiMo. Falling back to OpenRouter...");
+            
+            const urlString = typeof url === 'string' ? url : 'href' in url ? url.href : String(url);
+            const openRouterUrl = urlString.replace('https://api.xiaomimimo.com/v1', 'https://openrouter.ai/api/v1');
+            const openRouterHeaders = new Headers(options?.headers);
+            openRouterHeaders.set('Authorization', `Bearer ${process.env.OPENROUTER_API_KEY}`);
+            openRouterHeaders.set('HTTP-Referer', 'https://maverlang.cl');
+            openRouterHeaders.set('X-Title', 'Maverlang');
+            
+            let newBody = options?.body;
+            if (options?.body && typeof options.body === 'string') {
+              try {
+                const body = JSON.parse(options.body);
+                // Map MiMo models to OpenRouter fallback models
+                if (body.model && body.model.includes("pro")) {
+                  body.model = "google/gemini-2.5-pro";
+                } else {
+                  body.model = "google/gemini-2.5-flash";
+                }
+                newBody = JSON.stringify(body);
+              } catch {}
+            }
+            
+            res = await fetch(openRouterUrl, {
+              ...options,
+              headers: openRouterHeaders,
+              body: newBody
+            });
+          }
+        } catch (e) {
+          console.error("[MIMO-CLIENT] Failed to fall back to OpenRouter:", e);
+        }
+      }
 
       // If it's a stream, intercept chunks to extract MiMo's native web search annotations
       if (res.body && streamData) {

@@ -90,7 +90,7 @@ interface ChatInputProps {
 }
 
 export function ChatInput({
-  placeholder = "Envía un mensaje",
+  placeholder: customPlaceholder,
   disabled,
   className,
   isStreaming = false,
@@ -114,6 +114,52 @@ export function ChatInput({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const attachMenuRef = useRef<HTMLDivElement>(null);
+
+  // Rotating/typing placeholder logic
+  const placeholders = [
+    "Pregúntame lo que quieras...",
+    "Analiza mi portafolio...",
+    "Analiza esta acción...",
+    "Construye una web de...",
+    "Crea una alerta de precio para...",
+    "Compara Tesla vs Apple...",
+    "¿Qué opinas sobre el mercado hoy?...",
+    "Construye un clon de Twitter...",
+    "Analiza las finanzas de NVIDIA..."
+  ];
+
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+  const [currentPlaceholder, setCurrentPlaceholder] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    if (value) return;
+
+    let timer: NodeJS.Timeout;
+    const fullText = placeholders[placeholderIndex];
+    const typingSpeed = isDeleting ? 30 : 60;
+    const delayBetweenWords = 2500;
+
+    if (!isDeleting && currentPlaceholder === fullText) {
+      timer = setTimeout(() => setIsDeleting(true), delayBetweenWords);
+    } else if (isDeleting && currentPlaceholder === "") {
+      setIsDeleting(false);
+      setPlaceholderIndex((prev) => (prev + 1) % placeholders.length);
+    } else {
+      timer = setTimeout(() => {
+        const nextText = isDeleting
+          ? fullText.substring(0, currentPlaceholder.length - 1)
+          : fullText.substring(0, currentPlaceholder.length + 1);
+        setCurrentPlaceholder(nextText);
+      }, typingSpeed);
+    }
+
+    return () => clearTimeout(timer);
+  }, [currentPlaceholder, isDeleting, placeholderIndex, value]);
+
+  const displayedPlaceholder = isListening 
+    ? "Escuchando... habla ahora" 
+    : (value ? "" : currentPlaceholder || customPlaceholder || "Envía un mensaje...");
 
   // Click outside listener for attachment menu
   useEffect(() => {
@@ -545,7 +591,7 @@ export function ChatInput({
               onInput={() => resizeTextarea()}
               onKeyDown={handleKeyDown}
               onPaste={handlePaste}
-              placeholder={isListening ? "Escuchando... habla ahora" : placeholder}
+              placeholder={displayedPlaceholder}
               disabled={Boolean(disabled && !isStreaming)}
               id="chat-input"
               name="input"

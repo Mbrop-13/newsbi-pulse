@@ -601,17 +601,17 @@ export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettings
                 )}
 
                 {activeTab === "usage" && (
-                  <div className="space-y-4">
+                  <div className="space-y-4 animate-fadeIn">
                     {/* Plan Header */}
-                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1890FF] via-[#6366F1] to-[#8B5CF6] p-4 text-white">
-                      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE4YzEuNjU3IDAgMyAxLjM0MyAzIDNzLTEuMzQzIDMtMyAzLTMtMS4zNDMtMy0zIDEuMzQzLTMgMy0zek0xOCAzNmMxLjY1NyAwIDMgMS4zNDMgMyAzcy0xLjM0MyAzLTMgMy0zLTEuMzQzLTMtMyAxLjM0My0zIDMtM3oiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-30" />
+                    <div className="relative overflow-hidden rounded-2xl bg-zinc-950 border border-zinc-800 p-4 text-white shadow-md">
+                      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-zinc-900 via-zinc-950 to-zinc-950 opacity-80" />
                       <div className="relative z-10 flex items-center justify-between">
                         <div>
-                          <div className="flex items-center gap-1.5 mb-0.5">
-                            <Crown className="w-4 h-4" />
-                            <span className="text-[10px] font-medium opacity-80">Tu plan actual</span>
+                          <div className="flex items-center gap-1.5 mb-0.5 text-zinc-400">
+                            <Crown className="w-4 h-4 text-[#8B5CF6]" />
+                            <span className="text-[10px] font-medium">Tu plan actual</span>
                           </div>
-                          <h3 className="text-base font-black">
+                          <h3 className="text-base font-black text-white">
                             {usageData?.planName || (user?.tier === "free" ? "Gratuito" : user?.tier?.toUpperCase()) || "Cargando..."}
                           </h3>
                         </div>
@@ -620,18 +620,18 @@ export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettings
                             type="button"
                             onClick={fetchUsageData}
                             disabled={usageLoading}
-                            className="p-1.5 rounded-lg bg-white/15 hover:bg-white/25 transition-colors backdrop-blur-sm"
+                            className="p-1.5 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 transition-colors"
                             title="Actualizar datos"
                           >
-                            <RefreshCw className={`w-3.5 h-3.5 ${usageLoading ? "animate-spin" : ""}`} />
+                            <RefreshCw className={`w-3.5 h-3.5 text-zinc-300 ${usageLoading ? "animate-spin" : ""}`} />
                           </button>
                           {usageData?.tier === "free" && (
                             <button
                               type="button"
                               onClick={() => { handleClose(); router.push("/suscripcion"); }}
-                              className="flex items-center gap-1 px-3 py-1.5 bg-white text-[#6366F1] font-bold text-[10px] rounded-lg hover:bg-white/90 transition-colors shadow-sm"
+                              className="flex items-center gap-1 px-3 py-1 bg-white text-black font-bold text-[10px] rounded-lg hover:bg-zinc-100 transition-colors shadow-sm"
                             >
-                              <Zap className="w-3 h-3 animate-pulse" />
+                              <Zap className="w-3 h-3 text-[#8B5CF6] animate-pulse" />
                               Mejorar
                             </button>
                           )}
@@ -646,11 +646,11 @@ export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettings
                       </div>
                     ) : usageError ? (
                       <div className="text-center py-6">
-                        <p className="text-xs text-gray-500 mb-2">No se pudo cargar el consumo.</p>
+                        <p className="text-xs text-zinc-500 mb-2">No se pudo cargar el consumo.</p>
                         <button
                           type="button"
                           onClick={fetchUsageData}
-                          className="px-3 py-1 bg-[#1890FF] text-white text-[10px] font-bold rounded-lg"
+                          className="px-3 py-1 bg-zinc-900 border border-zinc-850 text-white text-[10px] font-bold rounded-lg"
                         >
                           Reintentar
                         </button>
@@ -663,7 +663,7 @@ export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettings
                           const percentageRemaining = isUnlimited ? 100 : Math.max(0, 100 - percentageUsed);
                           const isWarning = percentageRemaining <= 20 && percentageRemaining > 0;
                           const isDanger = percentageRemaining === 0;
-                          const statusColor = isDanger ? "#EF4444" : isWarning ? "#F59E0B" : resource.color;
+                          const statusColor = isDanger ? "#EF4444" : isWarning ? "#F59E0B" : "#8B5CF6";
 
                           const IconMap: Record<string, typeof Brain> = {
                             brain: Brain,
@@ -674,39 +674,32 @@ export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettings
                           };
                           const IconComponent = IconMap[resource.icon] || Cpu;
 
-                          const formatNumber = (n: number, asK?: boolean) => {
-                            if (asK && n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
-                            if (asK && n >= 1000) return `${(n / 1000).toFixed(0)}K`;
-                            return n.toLocaleString("es-CL");
-                          };
-
                           return (
                             <div
                               key={resource.id}
-                              className="p-3 rounded-xl border border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-[#070B16] hover:border-gray-200 dark:hover:border-white/10 transition-all"
+                              className="p-3.5 rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-zinc-950 text-white transition-all shadow-sm"
                             >
                               <div className="flex items-start justify-between mb-2">
                                 <div className="flex items-center gap-2">
                                   <div 
-                                    className="p-1.5 rounded-lg"
-                                    style={{ backgroundColor: `${statusColor}15` }}
+                                    className="p-1.5 rounded-lg bg-zinc-900 border border-zinc-850"
                                   >
-                                    <IconComponent className="w-4 h-4" style={{ color: statusColor }} />
+                                    <IconComponent className="w-4 h-4 text-[#8B5CF6]" />
                                   </div>
                                   <div>
-                                    <h4 className="text-xs font-bold text-gray-900 dark:text-white">{resource.label}</h4>
-                                    <p className="text-[9px] text-gray-400 capitalize">{resource.period}</p>
+                                    <h4 className="text-xs font-bold text-white">{resource.label}</h4>
+                                    <p className="text-[9px] text-zinc-400 capitalize">{resource.period}</p>
                                   </div>
                                 </div>
                                 <div className="text-right">
                                   {isUnlimited ? (
-                                    <span className="text-[10px] font-bold text-emerald-500">Ilimitado</span>
+                                    <span className="text-[10px] font-bold text-emerald-400">Ilimitado</span>
                                   ) : (
                                     <div className="flex flex-col items-end">
-                                      <span className="text-xs font-black" style={{ color: statusColor }}>
+                                      <span className="text-xs font-black text-white">
                                         {percentageRemaining}%
                                       </span>
-                                      <span className="text-[8px] font-semibold text-gray-400">
+                                      <span className="text-[8px] font-semibold text-zinc-450 dark:text-zinc-400 mt-0.5">
                                         {isDanger ? "Agotado" : "disponible"}
                                       </span>
                                     </div>
@@ -715,34 +708,27 @@ export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettings
                               </div>
 
                               {/* Bar */}
-                              <div className="relative h-1.5 rounded-full bg-gray-200/60 dark:bg-white/5 overflow-hidden">
+                              <div className="relative h-1.5 rounded-full bg-zinc-900 overflow-hidden border border-zinc-800/50">
                                 {isUnlimited ? (
-                                  <div className="absolute inset-0 bg-emerald-500 opacity-20 rounded-full" />
+                                  <div className="absolute inset-0 bg-emerald-500/20 rounded-full" />
                                 ) : (
                                   <motion.div
                                     initial={{ width: 0 }}
                                     animate={{ width: `${percentageUsed}%` }}
                                     transition={{ duration: 0.8 }}
-                                    className="absolute inset-y-0 left-0 rounded-full"
-                                    style={{
-                                      background: isDanger 
-                                        ? `linear-gradient(90deg, ${statusColor}, #DC2626)` 
-                                        : isWarning
-                                          ? `linear-gradient(90deg, ${resource.color}, ${statusColor})`
-                                          : `linear-gradient(90deg, ${resource.color}90, ${resource.color})`,
-                                    }}
+                                    className="absolute inset-y-0 left-0 rounded-full bg-[#8B5CF6]"
                                   />
                                 )}
                               </div>
 
                               {/* Footer text */}
                               <div className="flex justify-between mt-1.5 text-[9px] font-semibold">
-                                <span className="text-gray-500">
-                                  {formatNumber(resource.used, resource.formatAsK)} de {isUnlimited ? "∞" : formatNumber(resource.limit, resource.formatAsK)} usados
+                                <span className="text-zinc-400">
+                                  {isUnlimited ? "0% ocupado" : `${percentageUsed}% ocupado`}
                                 </span>
                                 {!isUnlimited && (
-                                  <span className="text-gray-400">
-                                    Quedan {formatNumber(Math.max(0, resource.limit - resource.used), resource.formatAsK)}
+                                  <span className="text-zinc-400">
+                                    Quedan {percentageRemaining}%
                                   </span>
                                 )}
                               </div>

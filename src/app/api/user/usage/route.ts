@@ -19,41 +19,24 @@ export async function GET() {
     const serviceClient = createServiceClient();
 
     const currentMonth = new Date().toISOString().slice(0, 7) + "-01";
-    const today = new Date().toISOString().slice(0, 10);
 
-    // Fetch all usage data in parallel
-    const [monthlyRes, lifetimeRes, dailyRes, alertsRes, portfolioRes] = await Promise.all([
+    // Fetch only token usage in parallel
+    const [monthlyRes, lifetimeRes] = await Promise.all([
       serviceClient
         .from("monthly_usage")
-        .select("ai_messages, tts_audios, ai_tokens")
+        .select("ai_tokens")
         .eq("user_id", user.id)
         .eq("month", currentMonth)
         .maybeSingle(),
       serviceClient
         .from("lifetime_usage")
-        .select("ai_messages_total, ai_tokens_total")
+        .select("ai_tokens_total")
         .eq("user_id", user.id)
         .maybeSingle(),
-      serviceClient
-        .from("daily_usage")
-        .select("tts_audios")
-        .eq("user_id", user.id)
-        .eq("date", today)
-        .maybeSingle(),
-      serviceClient
-        .from("price_alerts")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", user.id)
-        .eq("is_active", true),
-      serviceClient
-        .from("portfolio_assets")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", user.id),
     ]);
 
     const monthly = monthlyRes.data;
     const lifetime = lifetimeRes.data;
-    const daily = dailyRes.data;
 
     // Build usage response based on tier
     const isFree = tier === "free";
@@ -62,17 +45,6 @@ export async function GET() {
       tier,
       planName: baseConfig.name,
       resources: [
-        {
-          id: "ai_messages",
-          label: "Mensajes IA",
-          icon: "brain",
-          used: isFree 
-            ? (lifetime?.ai_messages_total || 0) 
-            : (monthly?.ai_messages || 0),
-          limit: isFree ? config.aiLifetimeMessages : config.aiMessagesPerMonth,
-          period: isFree ? "de por vida" : "este mes",
-          color: "#6366F1", // indigo
-        },
         {
           id: "ai_tokens",
           label: "Tokens IA",
@@ -84,35 +56,6 @@ export async function GET() {
           period: isFree ? "de por vida" : "este mes",
           color: "#8B5CF6", // violet
           formatAsK: true,
-        },
-        {
-          id: "tts_audios",
-          label: "Audios TTS",
-          icon: "volume",
-          used: isFree 
-            ? (daily?.tts_audios || 0) 
-            : (monthly?.tts_audios || 0),
-          limit: isFree ? config.ttsDailyLimit : config.ttsAudiosPerMonth,
-          period: isFree ? "hoy" : "este mes",
-          color: "#EC4899", // pink
-        },
-        {
-          id: "price_alerts",
-          label: "Alertas Activas",
-          icon: "bell",
-          used: alertsRes.count || 0,
-          limit: config.maxActiveAlerts,
-          period: "activas",
-          color: "#F59E0B", // amber
-        },
-        {
-          id: "portfolio_assets",
-          label: "Activos en Portafolio",
-          icon: "briefcase",
-          used: portfolioRes.count || 0,
-          limit: config.maxPortfolioAssets,
-          period: "total",
-          color: "#10B981", // emerald
         },
       ],
     };

@@ -263,7 +263,7 @@ async function checkAiMessageLimit(userId: string, tier: PlanTier): Promise<Limi
     remaining: Math.max(0, limit - used),
     limit,
     tier,
-    upgradeRequired: used >= limit ? (tier === "pro" ? "max" : tier === "max" ? "ultra" : undefined) : undefined,
+    upgradeRequired: used >= limit ? (tier === "pro" ? "max" : tier === "max" ? "ultra" : tier === "ultra" ? "ultra_x20" : undefined) : undefined,
   };
 }
 
@@ -317,7 +317,7 @@ async function checkTtsAudioLimit(userId: string, tier: PlanTier): Promise<Limit
     remaining: Math.max(0, limit - used),
     limit,
     tier,
-    upgradeRequired: used >= limit ? (tier === "pro" ? "max" : tier === "max" ? "ultra" : undefined) : undefined,
+    upgradeRequired: used >= limit ? (tier === "pro" ? "max" : tier === "max" ? "ultra" : tier === "ultra" ? "ultra_x20" : undefined) : undefined,
   };
 }
 
@@ -346,7 +346,7 @@ async function checkAlertLimit(userId: string, tier: PlanTier): Promise<LimitChe
     remaining: Math.max(0, limit - used),
     limit,
     tier,
-    upgradeRequired: used >= limit ? (tier === "free" ? "pro" : tier === "pro" ? "max" : "ultra") : undefined,
+    upgradeRequired: used >= limit ? (tier === "free" ? "pro" : tier === "pro" ? "max" : tier === "max" ? "ultra" : "ultra_x20") : undefined,
   };
 }
 
@@ -374,7 +374,7 @@ async function checkPortfolioLimit(userId: string, tier: PlanTier): Promise<Limi
     remaining: Math.max(0, limit - used),
     limit,
     tier,
-    upgradeRequired: used >= limit ? (tier === "free" ? "pro" : tier === "pro" ? "max" : "ultra") : undefined,
+    upgradeRequired: used >= limit ? (tier === "free" ? "pro" : tier === "pro" ? "max" : tier === "max" ? "ultra" : "ultra_x20") : undefined,
   };
 }
 

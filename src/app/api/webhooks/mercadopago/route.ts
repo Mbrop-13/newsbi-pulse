@@ -63,15 +63,19 @@ async function handleSubscriptionEvent(preapprovalId: string) {
 
   const sub = await res.json();
   
-  // Determine the plan tier from the plan ID
-  const tier = PLAN_ID_TO_TIER[sub.preapproval_plan_id];
-  
-  // Try to get user_id from external_reference
+  // Try to get user_id and plan tier from external_reference
   let userId: string | null = null;
+  let tier: PlanTier | null = null;
   try {
     const ref = JSON.parse(sub.external_reference || "{}");
     userId = ref.user_id || null;
+    tier = ref.plan || null;
   } catch {}
+
+  // Fallback to PLAN_ID_TO_TIER if not in external_reference
+  if (!tier) {
+    tier = PLAN_ID_TO_TIER[sub.preapproval_plan_id] || null;
+  }
 
   // If no user found from external_reference, look up by email
   if (!userId && sub.payer_email) {
@@ -81,7 +85,7 @@ async function handleSubscriptionEvent(preapprovalId: string) {
   }
 
   if (!userId || !tier) {
-    console.error("[Webhook] Cannot resolve user or tier:", { userId, tier, planId: sub.preapproval_plan_id });
+    console.error("[Webhook] Cannot resolve user or tier:", { userId, tier, planId: sub.preapproval_plan_id, externalRef: sub.external_reference });
     return NextResponse.json({ error: "Cannot resolve user or tier" }, { status: 400 });
   }
 

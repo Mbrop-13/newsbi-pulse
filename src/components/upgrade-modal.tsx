@@ -42,21 +42,27 @@ const FEATURE_MESSAGES: Record<string, { title: string; message: string; icon: R
 const TIER_BENEFITS: Record<PlanTier, string[]> = {
   free: [],
   pro: [
-    "20x más tokens IA que Plan Free",
+    "1.000.000 tokens IA al mes",
     "50 audios de noticias al mes",
     "5 alertas de precio",
     "Sin publicidad",
   ],
   max: [
-    "90x más tokens IA que Plan Free",
-    "150 audios al mes",
-    "15 alertas + SMS",
+    "2.000.000 tokens IA (x2 Pro)",
+    "100 audios al mes (x2 Pro)",
+    "10 alertas de precio (x2 Pro)",
     "Informe semanal IA",
   ],
   ultra: [
-    "200x más tokens IA que Plan Free",
-    "300 audios al mes",
-    "IA con búsqueda web",
+    "5.000.000 tokens IA (x5 Pro)",
+    "250 audios al mes (x5 Pro)",
+    "IA con búsqueda web activa",
+    "Soporte dedicado 24/7",
+  ],
+  ultra_x20: [
+    "20.000.000 tokens IA (x20 Pro)",
+    "1.000 audios al mes (x20 Pro)",
+    "100 alertas de precio (x20 Pro)",
     "Soporte dedicado 24/7",
   ],
 };

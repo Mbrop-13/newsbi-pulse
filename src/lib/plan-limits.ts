@@ -5,7 +5,7 @@
  * Edita SOLO este archivo para ajustar cualquier límite de la plataforma.
  */
 
-export type PlanTier = "free" | "pro" | "max" | "ultra";
+export type PlanTier = "free" | "pro" | "max" | "ultra" | "ultra_x20";
 
 export interface PlanConfig {
   id: PlanTier;
@@ -132,29 +132,29 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
   max: {
     id: "max",
     name: "Max",
-    price: 44990,
-    priceUSD: 49.99,
+    price: 43990,
+    priceUSD: 45.99,
     annualDiscount: 0.2,
     
-    aiMessagesPerMonth: 300,
+    aiMessagesPerMonth: 200, // x2 Pro
     aiLifetimeMessages: -1,
-    aiTokensPerMonth: 4500000,
+    aiTokensPerMonth: 2000000, // x2 Pro
     aiLifetimeTokens: -1,
     aiModel: "x-ai/grok-4.1-fast:online",
-    aiChatHistory: 50,
+    aiChatHistory: 20, // x2 Pro
     aiFileAttachments: true,
     aiAdvancedAnalysis: true,
     aiWebSearch: false,
-    maxAgents: 50,
+    maxAgents: 40, // x2 Pro
     
-    ttsAudiosPerMonth: 150,
+    ttsAudiosPerMonth: 100, // x2 Pro
     ttsDailyLimit: -1,
     
-    maxActiveAlerts: 15,
+    maxActiveAlerts: 10, // x2 Pro
     emailAlerts: true,
     smsAlerts: true,
     
-    maxPortfolioAssets: 100,
+    maxPortfolioAssets: 50, // x2 Pro
     portfolioAnalysis: "advanced",
     weeklyPortfolioReport: true,
     
@@ -170,29 +170,29 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
   ultra: {
     id: "ultra",
     name: "Ultra",
-    price: 79990,
-    priceUSD: 89.99,
+    price: 97990,
+    priceUSD: 99.99,
     annualDiscount: 0.2,
     
-    aiMessagesPerMonth: 600,
+    aiMessagesPerMonth: 500, // x5 Pro
     aiLifetimeMessages: -1,
-    aiTokensPerMonth: 10000000,
+    aiTokensPerMonth: 5000000, // x5 Pro
     aiLifetimeTokens: -1,
     aiModel: "x-ai/grok-4.1-fast:online",
-    aiChatHistory: -1,
+    aiChatHistory: 50, // x5 Pro
     aiFileAttachments: true,
     aiAdvancedAnalysis: true,
     aiWebSearch: true,
-    maxAgents: 100,
+    maxAgents: 100, // x5 Pro
     
-    ttsAudiosPerMonth: 300,
+    ttsAudiosPerMonth: 250, // x5 Pro
     ttsDailyLimit: -1,
     
-    maxActiveAlerts: 30,
+    maxActiveAlerts: 25, // x5 Pro
     emailAlerts: true,
     smsAlerts: true,
     
-    maxPortfolioAssets: -1,
+    maxPortfolioAssets: 125, // x5 Pro
     portfolioAnalysis: "premium",
     weeklyPortfolioReport: true,
     
@@ -201,6 +201,44 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     adFree: true,
     
     diamondMultiplier: 5,
+    
+    supportLevel: "dedicated",
+  },
+
+  ultra_x20: {
+    id: "ultra_x20",
+    name: "Ultra x20",
+    price: 195980, // 97990 * 2
+    priceUSD: 199.99,
+    annualDiscount: 0.2,
+    
+    aiMessagesPerMonth: 2000, // x20 Pro
+    aiLifetimeMessages: -1,
+    aiTokensPerMonth: 20000000, // x20 Pro
+    aiLifetimeTokens: -1,
+    aiModel: "x-ai/grok-4.1-fast:online",
+    aiChatHistory: 200, // x20 Pro
+    aiFileAttachments: true,
+    aiAdvancedAnalysis: true,
+    aiWebSearch: true,
+    maxAgents: 400, // x20 Pro
+    
+    ttsAudiosPerMonth: 1000, // x20 Pro
+    ttsDailyLimit: -1,
+    
+    maxActiveAlerts: 100, // x20 Pro
+    emailAlerts: true,
+    smsAlerts: true,
+    
+    maxPortfolioAssets: 500, // x20 Pro
+    portfolioAnalysis: "premium",
+    weeklyPortfolioReport: true,
+    
+    weeklyNewsReport: true,
+    analysisRecommendations: true,
+    adFree: true,
+    
+    diamondMultiplier: 20,
     
     supportLevel: "dedicated",
   },
@@ -237,7 +275,7 @@ export function getPlanConfig(tier: PlanTier): PlanConfig {
  * Get the next upgrade tier
  */
 export function getNextTier(currentTier: PlanTier): PlanTier | null {
-  const order: PlanTier[] = ["free", "pro", "max", "ultra"];
+  const order: PlanTier[] = ["free", "pro", "max", "ultra", "ultra_x20"];
   const idx = order.indexOf(currentTier);
   return idx < order.length - 1 ? order[idx + 1] : null;
 }

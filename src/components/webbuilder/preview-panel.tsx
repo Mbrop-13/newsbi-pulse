@@ -641,6 +641,64 @@ function PlanView({ plan }: { plan: NonNullable<ReturnType<typeof useWebBuilderS
   );
 }
 
+function BuildErrorView({ error }: { error: string }) {
+  const resetAutoFixAttempts = useWebBuilderStore((s) => s.resetAutoFixAttempts);
+
+  return (
+    <div className="flex-grow flex flex-col items-center justify-center min-h-0 w-full h-full relative overflow-auto p-6 bg-slate-955 text-white select-none">
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(239,68,68,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(239,68,68,0.015)_1px,transparent_1px)] bg-[size:1.5rem_1.5rem] opacity-60 pointer-events-none" />
+      <div className="absolute -top-12 -left-12 w-64 h-64 bg-red-500/10 rounded-full blur-[80px] pointer-events-none" />
+      <div className="absolute -bottom-12 -right-12 w-64 h-64 bg-amber-500/5 rounded-full blur-[80px] pointer-events-none" />
+
+      <div className="relative z-10 w-full max-w-xl mx-auto space-y-5 px-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-red-500/10 flex items-center justify-center shrink-0 border border-red-500/25">
+            <XCircle className="w-5 h-5 text-red-500" />
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-sm font-bold text-white flex items-center gap-2">
+              Error de compilación
+              <span className="text-[9px] font-black uppercase tracking-wider bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded-full">
+                Build Failed
+              </span>
+            </h2>
+            <p className="text-[10px] text-gray-400 mt-0.5">
+              El empaquetador de módulos detectó un error al compilar los archivos.
+            </p>
+          </div>
+        </div>
+
+        {/* Error Code Diagnostic */}
+        <div className="rounded-2xl border border-red-500/15 bg-red-950/10 p-4 font-mono text-[11px] leading-relaxed overflow-x-auto select-text shadow-inner">
+          <span className="text-red-400 font-bold block mb-1">Diagnostic Log:</span>
+          <pre className="whitespace-pre-wrap text-gray-300 break-words max-h-40 overflow-y-auto hidden-scrollbar">{error}</pre>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex flex-col sm:flex-row gap-3 pt-2">
+          <button
+            onClick={() => {
+              resetAutoFixAttempts();
+            }}
+            className="flex-grow py-2.5 px-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-bold text-white transition-all cursor-pointer text-center active:scale-98"
+          >
+            Reintentar Compilación
+          </button>
+          
+          <button
+            onClick={() => {
+              useWebBuilderStore.getState().resetProject();
+            }}
+            className="flex-grow py-2.5 px-4 rounded-xl border border-red-500/20 bg-red-500/10 hover:bg-red-500/20 text-xs font-bold text-red-400 transition-all cursor-pointer text-center active:scale-98"
+          >
+            Restaurar Plantilla Limpia
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function PreviewPanel() {
   const {
     selectedTab,
@@ -657,7 +715,8 @@ export function PreviewPanel() {
     canRedo,
     isAiResponding,
     activeAgentReports,
-    pendingPlan
+    pendingPlan,
+    lastAutoFixError
   } = useWebBuilderStore();
   const chatLoading = useAIChatStore((s) => s.isLoading);
   const { resolvedTheme } = useTheme();
@@ -1133,6 +1192,8 @@ export function PreviewPanel() {
                       <PlanView plan={pendingPlan} />
                     ) : (isAiResponding || isCompiling || chatLoading) ? (
                       <PremiumSkeletonLoader isAiResponding={isAiResponding || chatLoading} />
+                    ) : lastAutoFixError ? (
+                      <BuildErrorView error={lastAutoFixError} />
                     ) : (
                       <SandpackPreviewWrapper key={iframeKey} />
                     )}

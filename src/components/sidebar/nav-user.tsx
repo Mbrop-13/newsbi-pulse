@@ -48,7 +48,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { useAuthStore } from "@/lib/stores/auth-store"
+import { useAuthStore, useAuthModalStore } from "@/lib/stores/auth-store"
 import Link from "next/link"
 import { ViewSettingsDialog } from "@/components/view-settings-dialog"
 import { useDiamondStore } from "@/lib/stores/diamond-store"
@@ -107,7 +107,8 @@ export function NavUser() {
   
   const user = useAuthStore((s) => s.user)
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
-  const displayName = user?.name || "User"
+  const openModal = useAuthModalStore((s) => s.openModal)
+  const displayName = user?.name || (isAuthenticated ? "Usuario" : "Invitado")
   const displayEmail = user?.email || ""
   const avatarSrc = user?.avatar
 
@@ -200,7 +201,9 @@ export function NavUser() {
                 {/* User email row */}
                 <div className="flex items-center gap-2.5 px-3 py-2 text-xs text-muted-foreground/80 font-medium select-none pointer-events-none">
                   <User className="h-4 w-4 shrink-0 text-muted-foreground/60" />
-                  <span className="truncate">{mounted ? displayEmail : ""}</span>
+                  <span className="truncate">
+                    {mounted ? (isAuthenticated ? displayEmail : "Usuario Invitado") : ""}
+                  </span>
                 </div>
                 <DropdownMenuSeparator className="bg-border/40" />
 
@@ -364,14 +367,27 @@ export function NavUser() {
                 </DropdownMenuSub>
                 <DropdownMenuSeparator className="bg-border/40" />
 
-                {/* Log out */}
-                <DropdownMenuItem
-                  onClick={handleSignOut}
-                  className="text-[13px] font-medium py-2 px-3 rounded-xl cursor-pointer flex items-center gap-3 text-red-500 hover:bg-red-500/10 focus:bg-red-500/10 focus:text-red-500 focus:bg-red-500/10"
-                >
-                  <LogOut className="h-4 w-4 shrink-0" />
-                  <span>Cerrar sesión</span>
-                </DropdownMenuItem>
+                {/* Log out / Register */}
+                {isAuthenticated ? (
+                  <DropdownMenuItem
+                    onClick={handleSignOut}
+                    className="text-[13px] font-medium py-2 px-3 rounded-xl cursor-pointer flex items-center gap-3 text-red-500 hover:bg-red-500/10 focus:bg-red-500/10 focus:text-red-500"
+                  >
+                    <LogOut className="h-4 w-4 shrink-0" />
+                    <span>Cerrar sesión</span>
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem
+                    onClick={() => {
+                      if (isMobile) setOpenMobile(false);
+                      openModal("register");
+                    }}
+                    className="text-[13px] font-medium py-2 px-3 rounded-xl cursor-pointer flex items-center gap-3 text-[#1890FF] hover:bg-[#1890FF]/10 focus:bg-[#1890FF]/10 focus:text-[#1890FF]"
+                  >
+                    <Sparkles className="h-4 w-4 shrink-0 animate-pulse" />
+                    <span>Registrarse</span>
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarMenuItem>

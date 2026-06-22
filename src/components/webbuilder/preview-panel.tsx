@@ -1188,9 +1188,7 @@ export function PreviewPanel() {
                 )}>
                   {/* Body de la preview */}
                   <div className="flex-grow min-h-0 relative w-full h-full bg-white dark:bg-background">
-                    {pendingPlan ? (
-                      <PlanView plan={pendingPlan} />
-                    ) : (isAiResponding || isCompiling || chatLoading) ? (
+                    {(isAiResponding || isCompiling || chatLoading) ? (
                       <PremiumSkeletonLoader isAiResponding={isAiResponding || chatLoading} />
                     ) : lastAutoFixError ? (
                       <BuildErrorView error={lastAutoFixError} />

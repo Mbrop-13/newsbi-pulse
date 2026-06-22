@@ -9,28 +9,19 @@ import {
   X,
   Sparkles,
   Shield,
-  TrendingUp,
   ChevronDown,
   Crown,
-  ArrowRight,
-  Star,
-  Bot,
-  Gem,
-  Bell,
-  FileText,
-  LineChart,
   Gift,
   Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSubscriptionStore } from "@/lib/stores/subscription-store";
 import { createClient } from "@/lib/supabase/client";
-import { PLAN_CONFIGS, formatCLP, getAnnualMonthlyPrice, isPromoX2Active, type PlanTier } from "@/lib/plan-limits";
+import { PLAN_CONFIGS, getAnnualMonthlyPrice, isPromoX2Active, type PlanTier } from "@/lib/plan-limits";
 
 function SubscriptionPageContent() {
   const searchParams = useSearchParams();
   const statusParam = searchParams.get("status");
-  const planParam = searchParams.get("plan");
 
   const { tier: currentTier } = useSubscriptionStore();
   const [activeSegment, setActiveSegment] = useState<"individual" | "empresarial">("individual");
@@ -92,6 +83,13 @@ function SubscriptionPageContent() {
     }
   };
 
+  const isInferiorPlan = (planId: PlanTier) => {
+    const order: PlanTier[] = ["free", "pro", "max", "ultra", "ultra_x20"];
+    const currentIdx = order.indexOf(currentTier);
+    const planIdx = order.indexOf(planId);
+    return planIdx < currentIdx;
+  };
+
   const getDisplayPrice = (planId: PlanTier): string => {
     const config = PLAN_CONFIGS[planId];
     if (config.price === 0) return "0";
@@ -106,7 +104,7 @@ function SubscriptionPageContent() {
     return basePrice.toLocaleString("es-CL");
   };
 
-  const getTrialSubtitle = (planId: PlanTier): string => {
+  const getPlanDescription = (planId: PlanTier): string => {
     const isUltra = planId === "ultra";
     const actualPlanId = isUltra && isUltraX20Toggled ? "ultra_x20" : planId;
     const config = PLAN_CONFIGS[actualPlanId];
@@ -117,16 +115,12 @@ function SubscriptionPageContent() {
       ? (isReferred ? Math.round(getAnnualMonthlyPrice(actualPlanId) * 0.8) : getAnnualMonthlyPrice(actualPlanId))
       : discountPrice;
 
-    if (isUltra && isUltraX20Toggled) {
+    // Only Pro has 7 days free trial, and only if user is currently Free
+    if (planId === "pro" && currentTier === "free") {
       return `Prueba 7 días por $0, luego $${finalMonthlyPrice.toLocaleString("es-CL")} mensual`;
     }
-    if (planId === "pro") {
-      return "Sigue chateando con acceso básico y herramientas";
-    }
-    if (planId === "max") {
-      return `Prueba 7 días por $0, luego $${finalMonthlyPrice.toLocaleString("es-CL")} mensual`;
-    }
-    return `Prueba 7 días por $0, luego $${finalMonthlyPrice.toLocaleString("es-CL")} mensual`;
+    
+    return `$${finalMonthlyPrice.toLocaleString("es-CL")} mensual`;
   };
 
   // Build features dynamically based on states
@@ -198,7 +192,7 @@ function SubscriptionPageContent() {
     },
     {
       q: "¿Cómo funciona la prueba gratuita?",
-      a: "Todos nuestros planes de pago incluyen 7 días de prueba gratuita. Se te pedirá ingresar un medio de pago al registrarte, pero no se realizará ningún cargo hasta que termine el periodo de prueba. Puedes cancelar antes sin pagar nada.",
+      a: "Nuestra prueba gratuita de 7 días está disponible de forma exclusiva para el plan Pro si actualmente no posees una suscripción activa. Puedes cancelar antes de terminar los 7 días y no se realizará ningún cargo.",
     },
     {
       q: "¿Qué es la opción Ultra x20?",
@@ -208,6 +202,14 @@ function SubscriptionPageContent() {
 
   return (
     <div className="min-h-screen bg-[#f8f8fb] dark:bg-zinc-950 text-neutral-900 dark:text-neutral-100 transition-colors duration-300 relative overflow-hidden pb-24">
+      {/* Floating Close Button in top right corner */}
+      <Link
+        href="/home"
+        className="absolute top-6 right-6 p-2 rounded-full bg-neutral-200/60 hover:bg-neutral-200 dark:bg-zinc-850/60 dark:hover:bg-zinc-800 text-neutral-500 hover:text-neutral-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-all duration-300 z-50 shadow-sm border border-neutral-300/20 dark:border-zinc-700/20"
+      >
+        <X className="w-5 h-5" />
+      </Link>
+
       {/* Background radial effects */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[1400px] h-[500px] pointer-events-none rounded-full bg-gradient-to-b from-neutral-200/30 via-transparent to-transparent dark:from-zinc-900/40 blur-3xl" />
 
@@ -221,20 +223,36 @@ function SubscriptionPageContent() {
             <span className="text-xl font-black tracking-tight text-neutral-900 dark:text-white">Maverlang</span>
           </div>
           
-          <h1 className="text-3xl md:text-5xl font-black tracking-tight mt-6 mb-3 text-neutral-900 dark:text-white leading-tight">
-            Pruébalo por <span className="text-orange-500 font-extrabold">$0</span> durante 7 días
-          </h1>
+          {currentTier === "free" ? (
+            <>
+              <h1 className="text-3xl md:text-5xl font-black tracking-tight mt-6 mb-3 text-neutral-900 dark:text-white leading-tight">
+                Prueba Pro gratis durante <span className="text-neutral-950 dark:text-white underline decoration-2 decoration-neutral-950 dark:decoration-white font-extrabold">7 días</span>
+              </h1>
+              <p className="text-neutral-500 dark:text-neutral-400 text-xs md:text-sm max-w-lg mt-1">
+                Comienza hoy con nuestro periodo de prueba en el plan Pro o sube de nivel con nuestros planes ilimitados.
+              </p>
+            </>
+          ) : (
+            <>
+              <h1 className="text-3xl md:text-5xl font-black tracking-tight mt-6 mb-3 text-neutral-900 dark:text-white leading-tight">
+                Planes y Suscripciones Premium
+              </h1>
+              <p className="text-neutral-500 dark:text-neutral-400 text-xs md:text-sm max-w-lg mt-1">
+                Gestiona o sube el nivel de tu cuenta para continuar operando con las máximas capacidades financieras.
+              </p>
+            </>
+          )}
 
-          {isReferred && (
-            <div className="inline-flex items-center gap-2 mt-2 mb-4 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-black shadow-sm shadow-emerald-500/5">
+          {currentTier === "free" && isReferred && (
+            <div className="inline-flex items-center gap-2 mt-4 mb-2 px-4 py-1.5 rounded-full bg-neutral-200/50 dark:bg-zinc-800 border border-neutral-350 dark:border-zinc-700 text-neutral-800 dark:text-neutral-200 text-xs font-black shadow-sm">
               <Gift className="w-4 h-4" />
               ¡Descuento de referido aplicado! 20% OFF en todos los planes.
             </div>
           )}
 
-          {isPromoX2Active() && (
-            <div className="inline-flex items-center gap-2 mt-2 mb-4 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-black shadow-sm shadow-amber-500/5">
-              <Zap className="w-4 h-4 animate-bounce" />
+          {currentTier === "free" && isPromoX2Active() && (
+            <div className="inline-flex items-center gap-2 mt-4 mb-2 px-4 py-1.5 rounded-full bg-neutral-200/50 dark:bg-zinc-800 border border-neutral-350 dark:border-zinc-700 text-neutral-800 dark:text-neutral-200 text-xs font-black shadow-sm">
+              <Zap className="w-4 h-4" />
               ¡PROMO ACTIVA! Doble de consultas IA y audios en planes de pago este mes.
             </div>
           )}
@@ -294,10 +312,24 @@ function SubscriptionPageContent() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
               transition={{ duration: 0.3 }}
-              className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 items-stretch"
+              className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 items-stretch animate-fade-in"
             >
               {/* Plan 1: Pro */}
-              <div className="bg-white dark:bg-zinc-900 border border-neutral-200/80 dark:border-zinc-800/80 rounded-[32px] p-8 shadow-sm flex flex-col justify-between hover:shadow-md transition-all duration-300 group">
+              <div
+                className={`bg-white dark:bg-zinc-900 border rounded-[32px] p-8 shadow-sm flex flex-col justify-between transition-all duration-300 relative group ${
+                  isInferiorPlan("pro")
+                    ? "opacity-40 grayscale bg-neutral-100/30 dark:bg-zinc-900/10 pointer-events-none select-none border-dashed border-neutral-300 dark:border-zinc-800"
+                    : currentTier === "pro"
+                    ? "border-2 border-neutral-900 dark:border-white shadow-md"
+                    : "border-neutral-200/80 dark:border-zinc-800/80 hover:shadow-md"
+                }`}
+              >
+                {isInferiorPlan("pro") && (
+                  <div className="absolute top-4 left-6 bg-neutral-250 dark:bg-zinc-800 text-neutral-800 dark:text-neutral-300 text-[9px] font-black px-2 py-0.5 rounded-full border border-neutral-300 dark:border-zinc-700 uppercase">
+                    Plan Superado
+                  </div>
+                )}
+
                 <div>
                   <div className="flex justify-between items-center mb-6">
                     <h3 className="text-xl font-black text-neutral-900 dark:text-white">Pro</h3>
@@ -311,19 +343,21 @@ function SubscriptionPageContent() {
                       <span className="text-neutral-500 dark:text-neutral-400 font-bold text-sm">CLP/mes</span>
                     </div>
                     <p className="text-[12px] md:text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
-                      {getTrialSubtitle("pro")}
+                      {getPlanDescription("pro")}
                     </p>
                   </div>
 
                   <Button
                     onClick={() => handleSelectPlan("pro")}
-                    disabled={currentTier === "pro" || loadingPlan === "pro"}
+                    disabled={isInferiorPlan("pro") || currentTier === "pro" || loadingPlan === "pro"}
                     className="w-full h-11 rounded-full font-bold text-sm transition-all duration-300 bg-neutral-200 hover:bg-neutral-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-neutral-900 dark:text-white mb-8"
                   >
                     {loadingPlan === "pro" ? (
                       <span className="animate-pulse">Cargando...</span>
                     ) : currentTier === "pro" ? (
                       "Plan Actual"
+                    ) : isInferiorPlan("pro") ? (
+                      "Ya Incluido"
                     ) : (
                       "Mejorar a Pro"
                     )}
@@ -348,10 +382,26 @@ function SubscriptionPageContent() {
               </div>
 
               {/* Plan 2: Max */}
-              <div className="bg-white dark:bg-zinc-900 border-2 border-orange-500/50 dark:border-orange-500/30 rounded-[32px] p-8 shadow-md flex flex-col justify-between hover:shadow-lg transition-all duration-300 relative group">
-                <div className="absolute -top-3.5 right-6 bg-[#ffede6] dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 text-[10px] md:text-[11px] font-extrabold px-3 py-1 rounded-full border border-orange-200 dark:border-orange-900/30 uppercase tracking-wider">
-                  Oferta por tiempo limitado
-                </div>
+              <div
+                className={`bg-white dark:bg-zinc-900 border rounded-[32px] p-8 shadow-sm flex flex-col justify-between transition-all duration-300 relative group ${
+                  isInferiorPlan("max")
+                    ? "opacity-40 grayscale bg-neutral-100/30 dark:bg-zinc-900/10 pointer-events-none select-none border-dashed border-neutral-300 dark:border-zinc-800"
+                    : currentTier === "max"
+                    ? "border-2 border-neutral-900 dark:border-white shadow-md"
+                    : "border-neutral-900/50 dark:border-neutral-100/30 hover:shadow-md"
+                }`}
+              >
+                {isInferiorPlan("max") && (
+                  <div className="absolute top-4 left-6 bg-neutral-250 dark:bg-zinc-800 text-neutral-800 dark:text-neutral-300 text-[9px] font-black px-2 py-0.5 rounded-full border border-neutral-300 dark:border-zinc-700 uppercase">
+                    Plan Superado
+                  </div>
+                )}
+                
+                {!isInferiorPlan("max") && (
+                  <div className="absolute -top-3.5 right-6 bg-neutral-950 text-white dark:bg-white dark:text-black text-[10px] md:text-[11px] font-extrabold px-3 py-1 rounded-full border border-neutral-800 dark:border-neutral-200 uppercase tracking-wider">
+                    Oferta Especial
+                  </div>
+                )}
 
                 <div>
                   <div className="flex justify-between items-center mb-6">
@@ -366,21 +416,23 @@ function SubscriptionPageContent() {
                       <span className="text-neutral-500 dark:text-neutral-400 font-bold text-sm">CLP/mes</span>
                     </div>
                     <p className="text-[12px] md:text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
-                      {getTrialSubtitle("max")}
+                      {getPlanDescription("max")}
                     </p>
                   </div>
 
                   <Button
                     onClick={() => handleSelectPlan("max")}
-                    disabled={currentTier === "max" || loadingPlan === "max"}
+                    disabled={isInferiorPlan("max") || currentTier === "max" || loadingPlan === "max"}
                     className="w-full h-11 rounded-full font-bold text-sm transition-all duration-300 bg-neutral-950 dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-100 mb-8"
                   >
                     {loadingPlan === "max" ? (
                       <span className="animate-pulse">Cargando...</span>
                     ) : currentTier === "max" ? (
                       "Plan Actual"
+                    ) : isInferiorPlan("max") ? (
+                      "Ya Incluido"
                     ) : (
-                      "Aprovechar oferta de $0.00"
+                      "Adquirir Plan Max"
                     )}
                   </Button>
 
@@ -403,16 +455,60 @@ function SubscriptionPageContent() {
               </div>
 
               {/* Plan 3: Ultra */}
-              <div className="bg-white dark:bg-zinc-900 border border-neutral-200/80 dark:border-zinc-800/80 rounded-[32px] p-8 shadow-sm flex flex-col justify-between hover:shadow-md transition-all duration-300 group relative">
-                <div className="absolute -top-3.5 right-6 bg-[#ffede6] dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 text-[10px] md:text-[11px] font-extrabold px-3 py-1 rounded-full border border-orange-200 dark:border-orange-900/30 uppercase tracking-wider">
-                  67% de descuento por 3 meses
-                </div>
+              <div
+                className={`bg-white dark:bg-zinc-900 border rounded-[32px] p-8 shadow-sm flex flex-col justify-between transition-all duration-300 relative group ${
+                  isInferiorPlan(isUltraX20Toggled ? "ultra_x20" : "ultra")
+                    ? "opacity-40 grayscale bg-neutral-100/30 dark:bg-zinc-900/10 pointer-events-none select-none border-dashed border-neutral-300 dark:border-zinc-800"
+                    : (isUltraX20Toggled ? currentTier === "ultra_x20" : currentTier === "ultra")
+                    ? "border-2 border-neutral-900 dark:border-white shadow-md"
+                    : "border-neutral-200/80 dark:border-zinc-800/80 hover:shadow-md"
+                }`}
+              >
+                {isInferiorPlan(isUltraX20Toggled ? "ultra_x20" : "ultra") && (
+                  <div className="absolute top-4 left-6 bg-neutral-250 dark:bg-zinc-800 text-neutral-800 dark:text-neutral-300 text-[9px] font-black px-2 py-0.5 rounded-full border border-neutral-300 dark:border-zinc-700 uppercase">
+                    Plan Superado
+                  </div>
+                )}
+
+                {!isInferiorPlan(isUltraX20Toggled ? "ultra_x20" : "ultra") && (
+                  <div className="absolute -top-3.5 right-6 bg-neutral-950 text-white dark:bg-white dark:text-black text-[10px] md:text-[11px] font-extrabold px-3 py-1 rounded-full border border-neutral-800 dark:border-neutral-200 uppercase tracking-wider">
+                    {isUltraX20Toggled ? "Límites Máximos x20" : "67% Descuento"}
+                  </div>
+                )}
 
                 <div>
-                  <div className="flex justify-between items-center mb-6">
+                  <div className="flex justify-between items-center mb-2">
                     <h3 className="text-xl font-black text-neutral-900 dark:text-white">
                       {isUltraX20Toggled ? "Ultra x20" : "Ultra"}
                     </h3>
+                  </div>
+
+                  {/* Dynamic Option Selector Switch (x5 vs x20) inside Ultra card header */}
+                  <div className="flex justify-start mt-2 mb-6">
+                    <div className="inline-flex p-0.5 bg-neutral-100 dark:bg-zinc-800 rounded-full border border-neutral-200 dark:border-zinc-700/50 shadow-inner">
+                      <button
+                        onClick={() => setIsUltraX20Toggled(false)}
+                        disabled={isInferiorPlan(isUltraX20Toggled ? "ultra_x20" : "ultra")}
+                        className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider transition-all duration-200 ${
+                          !isUltraX20Toggled
+                            ? "bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-sm"
+                            : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900"
+                        }`}
+                      >
+                        x5
+                      </button>
+                      <button
+                        onClick={() => setIsUltraX20Toggled(true)}
+                        disabled={isInferiorPlan(isUltraX20Toggled ? "ultra_x20" : "ultra")}
+                        className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider transition-all duration-200 ${
+                          isUltraX20Toggled
+                            ? "bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-sm"
+                            : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900"
+                        }`}
+                      >
+                        x20
+                      </button>
+                    </div>
                   </div>
 
                   <div className="mb-6">
@@ -423,42 +519,27 @@ function SubscriptionPageContent() {
                       <span className="text-neutral-500 dark:text-neutral-400 font-bold text-sm">CLP/mes</span>
                     </div>
                     <p className="text-[12px] md:text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
-                      {getTrialSubtitle("ultra")}
+                      {getPlanDescription(isUltraX20Toggled ? "ultra_x20" : "ultra")}
                     </p>
-                  </div>
-
-                  {/* Ultra x20 Toggle Checkbox */}
-                  <div className="mb-6 p-4 bg-orange-50/50 dark:bg-orange-950/10 border border-orange-200/50 dark:border-orange-900/30 rounded-2xl">
-                    <label className="flex items-start gap-3 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={isUltraX20Toggled}
-                        onChange={(e) => setIsUltraX20Toggled(e.target.checked)}
-                        className="w-5 h-5 mt-0.5 accent-orange-500 rounded border-neutral-300 dark:border-zinc-700"
-                      />
-                      <div>
-                        <div className="text-xs font-black text-neutral-900 dark:text-white flex items-center gap-1.5">
-                          Ultra x20 (+ límite aumentado)
-                          <span className="px-1.5 py-0.5 bg-orange-100 dark:bg-orange-900/30 text-[9px] font-black text-orange-600 dark:text-orange-400 rounded">x2 costo</span>
-                        </div>
-                        <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5 leading-snug">
-                          Cuesta el doble pero ofrece x20 límites de el plan pro.
-                        </p>
-                      </div>
-                    </label>
                   </div>
 
                   <Button
                     onClick={() => handleSelectPlan("ultra")}
-                    disabled={(isUltraX20Toggled ? currentTier === "ultra_x20" : currentTier === "ultra") || loadingPlan === "ultra"}
+                    disabled={
+                      isInferiorPlan(isUltraX20Toggled ? "ultra_x20" : "ultra") ||
+                      (isUltraX20Toggled ? currentTier === "ultra_x20" : currentTier === "ultra") ||
+                      loadingPlan === "ultra"
+                    }
                     className="w-full h-11 rounded-full font-bold text-sm transition-all duration-300 bg-neutral-950 dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-100 mb-8"
                   >
                     {loadingPlan === "ultra" ? (
                       <span className="animate-pulse">Cargando...</span>
                     ) : (isUltraX20Toggled ? currentTier === "ultra_x20" : currentTier === "ultra") ? (
                       "Plan Actual"
+                    ) : isInferiorPlan(isUltraX20Toggled ? "ultra_x20" : "ultra") ? (
+                      "Ya Incluido"
                     ) : (
-                      "Aprovechar oferta"
+                      "Adquirir Plan Ultra"
                     )}
                   </Button>
 
@@ -489,7 +570,7 @@ function SubscriptionPageContent() {
               transition={{ duration: 0.3 }}
               className="max-w-2xl mx-auto bg-white dark:bg-zinc-900 border border-neutral-200/80 dark:border-zinc-800/80 rounded-[32px] p-8 md:p-12 text-center shadow-sm"
             >
-              <div className="w-14 h-14 rounded-2xl bg-orange-100 dark:bg-orange-950/20 flex items-center justify-center mx-auto mb-6 text-orange-600">
+              <div className="w-14 h-14 rounded-2xl bg-neutral-100 dark:bg-zinc-800 flex items-center justify-center mx-auto mb-6 text-neutral-900 dark:text-white">
                 <Crown className="w-7 h-7" />
               </div>
               <h2 className="text-2xl md:text-3xl font-black text-neutral-900 dark:text-white mb-4">
@@ -511,7 +592,7 @@ function SubscriptionPageContent() {
 
         {/* Facturación Anual switch at the bottom */}
         {activeSegment === "individual" && (
-          <div className="flex flex-col items-center justify-center mt-16 mb-20 text-center">
+          <div className="flex flex-col items-center justify-center mt-16 mb-20 text-center animate-fade-in">
             <div className="flex items-center gap-3 bg-neutral-200/60 dark:bg-zinc-800/80 p-1.5 rounded-full border border-neutral-300/40 dark:border-zinc-700/40 shadow-inner">
               <span className={`text-xs md:text-sm font-bold px-3 transition-colors ${billingCycle === "monthly" ? "text-neutral-900 dark:text-white" : "text-neutral-400"}`}>
                 Mensual
@@ -528,7 +609,7 @@ function SubscriptionPageContent() {
               </button>
               <span className={`text-xs md:text-sm font-bold px-3 flex items-center gap-1.5 transition-colors ${billingCycle === "annual" ? "text-neutral-900 dark:text-white" : "text-neutral-400"}`}>
                 Anual
-                <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black rounded-full">
+                <span className="px-2 py-0.5 bg-neutral-950 text-white dark:bg-white dark:text-black text-[10px] font-black rounded-full">
                   Ahorra 20%
                 </span>
               </span>
@@ -599,7 +680,7 @@ function SubscriptionPageContent() {
               className="bg-white dark:bg-zinc-900 border border-neutral-200 dark:border-zinc-800 rounded-[32px] p-8 max-w-md w-full text-center relative shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-950/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 mx-auto mb-6">
+              <div className="w-16 h-16 rounded-full bg-neutral-100 dark:bg-zinc-800 flex items-center justify-center text-neutral-900 dark:text-white mx-auto mb-6">
                 <Check className="w-8 h-8" />
               </div>
               <h3 className="text-xl md:text-2xl font-black text-neutral-900 dark:text-white mb-2">

@@ -49,10 +49,10 @@ export async function POST(request: NextRequest) {
         frequency_type: "months",
         transaction_amount: finalPrice,
         currency_id: "CLP",
-        free_trial: {
+        free_trial: plan === "pro" ? {
           frequency: 7,
           frequency_type: "days",
-        },
+        } : undefined,
       },
       payer_email: user.email,
       external_reference: JSON.stringify({

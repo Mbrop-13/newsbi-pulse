@@ -156,9 +156,9 @@ export function ClientLayoutProviders({
           >
             {isSidebarPage ? (
               <SidebarProvider>
-                {!showBuilderWorkspace && <AppSidebar />}
+                {!showBuilderWorkspace && pathname !== "/suscripcion" && <AppSidebar />}
                 <SidebarInset className={cn(showBuilderWorkspace && "h-screen overflow-hidden bg-background")}>
-                  {isMobile && !showBuilderWorkspace && <MobileMenuButton />}
+                  {isMobile && !showBuilderWorkspace && pathname !== "/suscripcion" && <MobileMenuButton />}
                   <div className={cn(
                     showBuilderWorkspace
                       ? "flex flex-col h-screen w-full min-w-0 overflow-hidden relative"

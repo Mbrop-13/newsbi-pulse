@@ -10,6 +10,7 @@ import { useAuthStore } from "@/lib/stores/auth-store";
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
 import { useConversionStore } from "@/lib/stores/conversion-store";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 import { ModelSelector } from "@/components/chat/model-selector";
 import { BuildModeSelector } from "@/components/chat/build-mode-selector";
 import { useSidebar } from "@/components/ui/sidebar";
@@ -213,38 +214,87 @@ export function ChatInput({
     if (isListening) {
       recognitionRef.current?.stop();
       setIsListening(false);
+      return;
+    }
+
+    // Comprobar soporte de la Web Speech API. Solo Chrome/Edge la soportan
+    // (y requiere un contexto seguro: https:// o localhost).
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast.error("La transcripción de voz no está soportada en este navegador. Usa Chrome o Edge.");
+      return;
+    }
+
+    // 1) Verificar permisos de micrófono antes de iniciar. Si el usuario los
+    //    bloqueó antes, SpeechRecognition.start() falla silenciosamente y el
+    //    botón parece no responder. Dar feedback claro en ese caso.
+    if (navigator.mediaDevices?.getUserMedia) {
+      navigator.mediaDevices
+        .getUserMedia({ audio: true })
+        .then((stream) => {
+          // Liberar el micrófono inmediatamente: SpeechRecognition lo pide de nuevo.
+          stream.getTracks().forEach((t) => t.stop());
+          startRecognition(SpeechRecognition);
+        })
+        .catch((permErr) => {
+          console.error("Microphone permission denied", permErr);
+          setIsListening(false);
+          if (permErr?.name === "NotAllowedError") {
+            toast.error("Permiso de micrófono denegado. Actívalo en los permisos del sitio para dictar mensajes.");
+          } else {
+            toast.error("No se pudo acceder al micrófono. Revisa los permisos del sitio.");
+          }
+        });
     } else {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        alert("La transcripción de voz no está soportada en este navegador.");
-        return;
-      }
-      
+      // Sin API de permisos (navegador antiguo): intentar directo.
+      startRecognition(SpeechRecognition);
+    }
+  };
+
+  // Inicia el reconocimiento de voz. Separado para poder llamarlo tras la
+  // comprobación de permisos. Envuelve start() en try/catch porque puede
+  // lanzar si el permiso se revoca entre la comprobación y el inicio.
+  const startRecognition = (SpeechRecognition: any) => {
+    try {
       const rec = new SpeechRecognition();
       rec.continuous = true;
       rec.interimResults = false;
       rec.lang = "es-ES";
-      
+
       rec.onstart = () => {
         setIsListening(true);
       };
-      
+
       rec.onresult = (event: any) => {
         const transcript = event.results[event.results.length - 1][0].transcript;
-        setValue(prev => prev + (prev ? " " : "") + transcript);
+        setValue((prev) => prev + (prev ? " " : "") + transcript);
       };
-      
+
       rec.onerror = (err: any) => {
         console.error("Speech recognition error", err);
         setIsListening(false);
+        // Distinguir el tipo de error para dar feedback útil. "aborted" y
+        // "no-speech" son esperados al parar / tras silencio y no se muestran.
+        const code = err?.error || err?.type;
+        if (code === "not-allowed" || code === "service-not-allowed") {
+          toast.error("Permiso de micrófono denegado. Actívalo en los permisos del sitio.");
+        } else if (code === "network") {
+          toast.error("Error de red en el servicio de transcripción. Revisa tu conexión.");
+        } else if (code !== "aborted" && code !== "no-speech" && code !== "audio-capture") {
+          toast.error("No se pudo transcribir la voz. Inténtalo de nuevo.");
+        }
       };
-      
+
       rec.onend = () => {
         setIsListening(false);
       };
-      
+
       recognitionRef.current = rec;
       rec.start();
+    } catch (startErr) {
+      console.error("Failed to start speech recognition", startErr);
+      setIsListening(false);
+      toast.error("No se pudo iniciar la transcripción de voz. Inténtalo de nuevo.");
     }
   };
 

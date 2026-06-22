@@ -40,7 +40,7 @@ export default function MundoPage() {
       
       {/* Mobile Back Button */}
       <Link 
-        href="/" 
+        href="/home" 
         className="md:hidden absolute top-4 left-4 z-50 flex items-center justify-center w-10 h-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-full shadow-lg border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:text-[#1890FF] transition-colors"
       >
         <ArrowLeft className="w-5 h-5" />

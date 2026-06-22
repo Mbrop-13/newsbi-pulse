@@ -225,30 +225,13 @@ export function ChatInput({
       return;
     }
 
-    // 1) Verificar permisos de micrófono antes de iniciar. Si el usuario los
-    //    bloqueó antes, SpeechRecognition.start() falla silenciosamente y el
-    //    botón parece no responder. Dar feedback claro en ese caso.
-    if (navigator.mediaDevices?.getUserMedia) {
-      navigator.mediaDevices
-        .getUserMedia({ audio: true })
-        .then((stream) => {
-          // Liberar el micrófono inmediatamente: SpeechRecognition lo pide de nuevo.
-          stream.getTracks().forEach((t) => t.stop());
-          startRecognition(SpeechRecognition);
-        })
-        .catch((permErr) => {
-          console.error("Microphone permission denied", permErr);
-          setIsListening(false);
-          if (permErr?.name === "NotAllowedError") {
-            toast.error("Permiso de micrófono denegado. Haz clic en el icono del candado (o controles del sitio) a la izquierda de la barra de direcciones y cambia 'Micrófono' a 'Permitir'.");
-          } else {
-            toast.error("No se pudo acceder al micrófono. Revisa los permisos de tu dispositivo y navegador.");
-          }
-        });
-    } else {
-      // Sin API de permisos (navegador antiguo): intentar directo.
-      startRecognition(SpeechRecognition);
-    }
+    // IMPORTANTE: NO pre-validar con getUserMedia. webkitSpeechRecognition pide
+    // el permiso del micrófono por su cuenta al llamar start(), y pedir permiso
+    // antes con getUserMedia es contraproducente: en contextos no seguros
+    // (http:// en una IP que no es localhost) getUserMedia lanza sin mostrar el
+    // prompt y bloquearía el arranque aunque el reconocimiento sí funcionaría.
+    // El permiso real lo gestiona el navegador al hacer start().
+    startRecognition(SpeechRecognition);
   };
 
   // Inicia el reconocimiento de voz. Separado para poder llamarlo tras la

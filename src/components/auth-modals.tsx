@@ -112,8 +112,10 @@ export function AuthModals({
           });
         }
         onClose();
-        if (pathname === "/") {
-          router.push("/ai");
+        // Tras login: si venía de la landing de marketing (/home), llevarlo al chat (/).
+        // Si ya está en / (el chat), no forzar navegación.
+        if (pathname === "/home") {
+          router.push("/");
         }
       } else if (view === "register") {
         const { error } = await supabase.auth.signUp({
@@ -234,8 +236,9 @@ export function AuthModals({
           avatar: data.user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=U&background=1890FF&color=fff`,
         });
         onClose();
-        if (pathname === "/") {
-          router.push("/ai");
+        // Tras registro verificado: si venía de /home, llevarlo al chat (/).
+        if (pathname === "/home") {
+          router.push("/");
         }
       } else {
         // Sometimes session is not immediately returned depending on settings

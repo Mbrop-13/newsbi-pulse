@@ -116,6 +116,9 @@ export function ChatLanding() {
     s.user?.role === "admin" ? "ultra" : (s.user?.tier || "free")
   ) as PlanTier
   const { openModal: openConversionModal } = useConversionStore()
+  // openModal del auth modal store: para abrir el popup de registro/login cuando
+  // un usuario no autenticado intenta enviar un mensaje.
+  const { openModal: openAuthModal } = useAuthModalStore()
 
   const {
     messages: storeMessages,
@@ -363,7 +366,7 @@ export function ChatLanding() {
         const slug = slugify(title);
         targetPath = `/ai/chat/${slug ? `${slug}-` : ''}${currentChatId}`;
       }
-      if ((currentPath === '/ai' || currentPath === '/ai/') && targetPath !== currentPath && !currentPath.startsWith('/share/')) {
+      if ((currentPath === '/ai' || currentPath === '/ai/' || currentPath === '/' || currentPath === '') && targetPath !== currentPath && !currentPath.startsWith('/share/')) {
         window.history.pushState(null, '', targetPath);
       }
     }
@@ -465,6 +468,15 @@ export function ChatLanding() {
     options: { webSearch: boolean; image: boolean; codeInterpreter: boolean; browser: boolean }
   ) => {
     if (!text.trim() || aiLoading) return
+
+    // Gate de autenticación: si el usuario no ha iniciado sesión, el chat es
+    // "no funcional". Al intentar enviar el primer mensaje, abrimos el popup de
+    // registro en vez de procesar el envío. Su texto queda en la barra (no se
+    // borra) para que, tras autenticarse, pueda reenviarlo.
+    if (!isAuthenticated) {
+      openAuthModal("register");
+      return;
+    }
 
     accumulatedReasoningRef.current = ""
     accumulatedCitationsRef.current = []
@@ -789,6 +801,25 @@ export function ChatLanding() {
   // ── Render ──
   const chatContent = (
     <div className="flex flex-col h-full relative flex-1">
+      {/* Botones de auth para usuarios no autenticados (esquina superior derecha).
+          El chat es "no funcional": al enviar se pide registro, y aquí damos una
+          entrada directa a login/registro estilo ChatGPT/OpenAI. */}
+      {!isAuthenticated && (
+        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-50 flex items-center gap-2 sm:gap-3">
+          <button
+            onClick={() => openAuthModal("login")}
+            className="text-[13px] sm:text-sm font-semibold text-foreground/80 hover:text-foreground transition-all px-2 py-1.5"
+          >
+            Entrar
+          </button>
+          <button
+            onClick={() => openAuthModal("register")}
+            className="bg-foreground text-background hover:opacity-90 text-[13px] sm:text-sm font-semibold px-3.5 py-2 sm:px-4 rounded-full transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 whitespace-nowrap"
+          >
+            Registrarse
+          </button>
+        </div>
+      )}
       <div className="flex flex-col h-full relative">
         {/* Main content area */}
         {!hasMessages ? (

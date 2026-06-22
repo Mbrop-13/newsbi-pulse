@@ -46,7 +46,7 @@ export default function NotFound() {
 
         {/* Actions */}
         <div className="flex items-center gap-3 justify-center">
-          <Link href="/">
+          <Link href="/home">
             <Button className="bg-accent hover:bg-accent/90 text-white font-bold gap-2 rounded-xl h-11 px-6 shadow-lg shadow-accent/20">
               <Home className="w-4 h-4" />
               Ir al inicio

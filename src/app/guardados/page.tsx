@@ -34,7 +34,7 @@ export default function GuardadosPage() {
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 pb-6 editorial-rule-double">
           <div>
             <Link
-              href="/"
+              href="/home"
               className="inline-flex items-center gap-1.5 text-[12px] font-medium text-muted-foreground hover:text-foreground transition-colors mb-4"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
@@ -68,7 +68,7 @@ export default function GuardadosPage() {
             <p className="text-muted-foreground mb-8 max-w-md">
               Explora las noticias y presiona el ícono del marcador en cualquier artículo para guardarlo y leerlo más tarde.
             </p>
-            <Link href="/">
+            <Link href="/home">
               <Button className="bg-foreground text-background font-bold tracking-widest uppercase text-xs h-11 px-8 rounded-full">
                 Explorar Noticias
               </Button>

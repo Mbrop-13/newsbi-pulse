@@ -612,7 +612,7 @@ export default function SuscripcionesPage() {
                 Comenzar prueba gratis
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
-              <Link href="/" className="w-full sm:w-auto">
+              <Link href="/home" className="w-full sm:w-auto">
                 <Button variant="outline" className="rounded-2xl h-14 px-10 font-bold text-lg w-full sm:w-auto hover:bg-secondary border-2">
                   Explorar gratis
                 </Button>

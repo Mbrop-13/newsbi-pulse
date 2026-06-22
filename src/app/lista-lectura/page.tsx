@@ -59,7 +59,7 @@ export default function ListaLecturaPage() {
         <h1 className="font-editorial text-3xl font-bold mb-4">Tu lista está vacía</h1>
         <p className="text-muted-foreground mb-8">Añade noticias desde el feed para leerlas en modo continuo aquí.</p>
         <Link 
-          href="/"
+          href="/home"
           className="bg-[#1890FF] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#1890FF]/90 transition-colors"
         >
           Volver al Inicio
@@ -77,7 +77,7 @@ export default function ListaLecturaPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-12 border-b border-border pb-6">
           <div>
             <Link
-              href="/"
+              href="/home"
               className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors mb-4"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -154,7 +154,7 @@ export default function ListaLecturaPage() {
           <h3 className="font-editorial text-2xl font-bold mb-2">¡Has llegado al final!</h3>
           <p className="text-muted-foreground mb-8">Has terminado tu lista de lectura actual.</p>
           <Link 
-            href="/"
+            href="/home"
             className="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 font-bold transition-all"
           >
             Descubrir más noticias

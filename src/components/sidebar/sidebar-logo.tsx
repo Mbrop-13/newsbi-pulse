@@ -29,7 +29,7 @@ export function SidebarLogo() {
   return (
     <div className={`flex items-center ${state === "expanded" ? "pl-1 pr-2 py-2" : "justify-center py-2"}`}>
       <Link
-        href="/"
+        href="/home"
         aria-label="Go to home"
         className={`flex items-center ${state === "expanded" ? "flex-1 h-full pl-2" : "justify-center"}`}
         onClick={handleHomeClick}

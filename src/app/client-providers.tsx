@@ -66,7 +66,9 @@ export function ClientLayoutProviders({
   }, []);
 
   const pathname = usePathname();
-  const isLandingPage = pathname === "/";
+  // La landing de marketing ahora vive en /home (ahí sí van footer + bottom nav).
+  // "/" es el chat, que al igual que /ai no muestra footer ni bottom nav.
+  const isLandingPage = pathname === "/home";
   // Pages that use the sidebar layout (no navbar/footer)
   const sidebarPages = [
     "/ai",
@@ -101,7 +103,7 @@ export function ClientLayoutProviders({
   const { isAuthenticated, isLoaded: authLoaded } = useAuthStore();
   const isSidebarPage = isSidebarRoute && mounted && (!authLoaded || isAuthenticated);
   const isFullscreenPage = isSidebarPage;
-  const isAiPage = pathname === "/ai" || pathname.startsWith("/ai/");
+  const isAiPage = pathname === "/ai" || pathname.startsWith("/ai/") || pathname === "/" || pathname === "";
   const isAdminPage = pathname.startsWith("/admin");
   const audioMode = useAudioPlayerStore((s) => s.mode);
   const pinnedWidth = useAudioPlayerStore((s) => s.pinnedWidth);

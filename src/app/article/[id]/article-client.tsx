@@ -132,7 +132,7 @@ export default function ArticlePage() {
           <p className="text-muted-foreground text-sm mb-6">
             El artículo que buscas no existe o ha sido removido.
           </p>
-          <Link href="/">
+          <Link href="/home">
             <Button variant="outline" className="gap-2">
               <ArrowLeft className="w-4 h-4" />
               Volver al inicio
@@ -163,7 +163,7 @@ export default function ArticlePage() {
         {/* Back and Live badge */}
         <div className="flex items-center justify-between mb-8">
           <Link
-            href="/"
+            href="/home"
             className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
           >
             <ArrowLeft className="w-4 h-4" />

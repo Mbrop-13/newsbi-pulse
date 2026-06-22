@@ -196,7 +196,7 @@ export default async function CasoDeUsoPage({ params }: CasosPageProps) {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-6 mb-12">
           {/* Left Breadcrumbs */}
           <div className="text-xs font-semibold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-            <Link href="/" className="hover:text-blue-600 flex items-center gap-1">
+            <Link href="/home" className="hover:text-blue-600 flex items-center gap-1">
               <ArrowLeft className="w-3.5 h-3.5" /> Inicio
             </Link>
             <span className="text-slate-300 font-normal">/</span>
@@ -208,7 +208,7 @@ export default async function CasoDeUsoPage({ params }: CasosPageProps) {
           {/* Right Links */}
           <div className="flex items-center gap-6 text-xs font-bold text-slate-500">
             <span className="text-[#1890FF]">Resumen del caso</span>
-            <Link href="/" className="hover:text-slate-900 transition-colors">Todos los casos de uso</Link>
+            <Link href="/home" className="hover:text-slate-900 transition-colors">Todos los casos de uso</Link>
           </div>
         </div>
 

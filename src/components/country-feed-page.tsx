@@ -309,7 +309,7 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
     setVisibleCount(25);
     // Root-level URLs for global feed
     if (tab === 'chile') {
-      router.push('/');
+      router.push('/noticias');
     } else {
       const feedSlug = tab.replace('_', '-');
       router.push(`/${feedSlug}`);

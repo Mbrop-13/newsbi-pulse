@@ -32,7 +32,7 @@ export function MobileBottomNav() {
       <div className="glass rounded-full border border-border/50 shadow-2xl bg-background/80 backdrop-blur-xl pointer-events-auto">
         <div className="flex items-center justify-around px-2 h-14">
           {tabs.map((tab) => {
-            const isActive = tab.id !== "ai" && tab.id !== "search" && (pathname === tab.href || (tab.id === "home" && pathname === "/"));
+            const isActive = tab.id !== "ai" && tab.id !== "search" && (pathname === tab.href || (tab.id === "home" && pathname === "/home"));
             const Icon = tab.icon;
             return (
               <Link

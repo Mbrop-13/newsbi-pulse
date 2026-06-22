@@ -60,7 +60,7 @@ export default async function SharedChatPage({ params }: PageProps) {
 
       {/* Header / Logo */}
       <div className="mb-10 text-center relative z-10">
-        <Link href="/" className="inline-flex items-center gap-2 mb-4 hover:opacity-80 transition-opacity">
+        <Link href="/home" className="inline-flex items-center gap-2 mb-4 hover:opacity-80 transition-opacity">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#1890FF] to-indigo-600 flex items-center justify-center shadow-md">
             <Sparkles className="w-4 h-4 text-white" />
           </div>
@@ -114,7 +114,7 @@ export default async function SharedChatPage({ params }: PageProps) {
         <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
           Únete a Maverlang y accede a la Inteligencia Artificial financiera más avanzada del mercado, datos en tiempo real y análisis profundo.
         </p>
-        <Link href="/">
+        <Link href="/home">
           <button className="bg-gray-900 dark:bg-white text-white dark:text-black font-bold py-3.5 px-8 rounded-full flex items-center gap-2 hover:opacity-90 transition-opacity mx-auto shadow-xl">
             Comenzar gratis
             <ArrowRight className="w-4 h-4" />

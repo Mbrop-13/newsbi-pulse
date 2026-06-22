@@ -119,7 +119,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {/* Footer */}
             <div className="p-4 border-t border-slate-200 dark:border-white/5 space-y-2">
               <Link
-                href="/"
+                href="/home"
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium text-slate-500 dark:text-gray-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />

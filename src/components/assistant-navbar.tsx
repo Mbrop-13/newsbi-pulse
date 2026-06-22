@@ -47,7 +47,7 @@ export function AssistantNavbar() {
 
         {/* Left: Logo + Preferencias */}
         <div className="flex-shrink-0 flex items-center gap-4">
-          <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
+          <Link href="/home" className="flex items-center hover:opacity-80 transition-opacity">
              <span className="font-bold text-[26px] tracking-tight text-[#1890FF]">Maverlang</span>
           </Link>
 

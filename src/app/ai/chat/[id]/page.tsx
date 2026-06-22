@@ -192,7 +192,7 @@ export default function ChatPage(props: PageProps) {
 
       {/* Top Header */}
       <header className="sticky top-0 z-20 w-full border-b border-gray-100 dark:border-white/5 bg-white/80 dark:bg-[#0F1117]/80 backdrop-blur-md px-6 py-4 flex items-center justify-between shrink-0">
-        <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+        <Link href="/home" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
           <img 
             src="/assets/maverlang-logo-small.png" 
             alt="Maverlang Logo" 

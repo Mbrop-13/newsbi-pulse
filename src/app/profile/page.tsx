@@ -153,7 +153,7 @@ export default function ProfilePage() {
           <p className="text-muted-foreground text-sm mb-6">
             Necesitas una cuenta para ver tu perfil, artículos guardados y preferencias.
           </p>
-          <Link href="/">
+          <Link href="/home">
             <Button className="bg-accent hover:bg-accent/90 text-white font-bold rounded-xl h-11 px-6">
               Volver al inicio
             </Button>
@@ -326,7 +326,7 @@ export default function ProfilePage() {
                 <p className="text-sm text-muted-foreground max-w-xs mx-auto mb-6">
                   Guarda artículos presionando el ícono de marcador en cualquier noticia.
                 </p>
-                <Link href="/">
+                <Link href="/home">
                   <Button variant="outline" className="gap-2 rounded-xl">
                     <Newspaper className="w-4 h-4" />
                     Explorar noticias

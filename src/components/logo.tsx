@@ -33,7 +33,7 @@ export function Logo({ showText = true, size = "md", className = "", variant = 1
     : (isDark ? "/assets/Logo 2-Blanco.png" : "/assets/Maverlang Logo-2.png");
 
   return (
-    <Link href="/" className={`flex items-center gap-3 group ${className}`} aria-label="Maverlang Home">
+    <Link href="/home" className={`flex items-center gap-3 group ${className}`} aria-label="Maverlang Home">
       <img 
         src={logoSrc} 
         alt="Maverlang" 

@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { useAudioPlayerStore, AudioTrack } from "@/lib/stores/audio-player-store";
 import { createClient } from "@/lib/supabase/client";
+import { getCleanPathname } from "@/lib/utils";
 import { useSubscriptionStore } from "@/lib/stores/subscription-store";
 import { useConversionStore } from "@/lib/stores/conversion-store";
 import { toast } from "sonner";
@@ -66,7 +67,8 @@ export function AudioPlayerSidebar() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const sidebarRef = useRef<HTMLDivElement | null>(null);
   const supabase = createClient();
-  const pathname = usePathname();
+  const rawPathname = usePathname();
+  const pathname = getCleanPathname(rawPathname);
   const { openModal } = useConversionStore();
   const { tier, dailyTtsAudios, incrementTtsAudios } = useSubscriptionStore();
 

@@ -4,6 +4,8 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useAIChatStore } from "@/lib/stores/ai-chat-store";
+import { useLanguageStore } from "@/lib/stores/language-store";
+import { getCleanPathname } from "@/lib/utils";
 import {
   Home,
   Flame,
@@ -25,7 +27,9 @@ const tabs = [
 ];
 
 export function MobileBottomNav() {
-  const pathname = usePathname();
+  const rawPathname = usePathname();
+  const pathname = getCleanPathname(rawPathname);
+  const language = useLanguageStore((s) => s.language);
 
   return (
     <nav className="fixed bottom-4 left-4 right-4 z-50 md:hidden pointer-events-none">
@@ -37,7 +41,7 @@ export function MobileBottomNav() {
             return (
               <Link
                 key={tab.id}
-                href={tab.href}
+                href={`/${language}${tab.href}`}
                 onClick={(e) => {
                   if (tab.id === "search") {
                     e.preventDefault();

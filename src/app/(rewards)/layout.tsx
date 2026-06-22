@@ -3,13 +3,15 @@
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Diamond, Gift, Users } from "lucide-react";
+import { getCleanPathname } from "@/lib/utils";
 
 export default function RewardsLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const pathname = usePathname();
+  const rawPathname = usePathname();
+  const pathname = getCleanPathname(rawPathname);
   const isMisDiamantes = pathname === "/mis-diamantes";
   const isRecompensas = pathname === "/recompensas";
   const isReferidos = pathname === "/referidos";

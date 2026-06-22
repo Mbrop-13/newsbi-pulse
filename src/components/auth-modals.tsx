@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { getCleanPathname } from "@/lib/utils";
 import {
   Mail,
   Lock,
@@ -36,7 +37,8 @@ export function AuthModals({
   defaultView = "login",
 }: AuthModalsProps) {
   const router = useRouter();
-  const pathname = usePathname();
+  const rawPathname = usePathname();
+  const pathname = getCleanPathname(rawPathname);
   const [view, setView] = useState<AuthView>(defaultView === "forgot" ? "forgot" : defaultView);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);

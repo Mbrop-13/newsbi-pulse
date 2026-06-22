@@ -49,6 +49,9 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { useAuthStore, useAuthModalStore } from "@/lib/stores/auth-store"
+import { useLanguageStore } from "@/lib/stores/language-store"
+import { useTranslation, type TranslationKey } from "@/lib/translations"
+import { getCleanPathname } from "@/lib/utils"
 import Link from "next/link"
 import { ViewSettingsDialog } from "@/components/view-settings-dialog"
 import { useDiamondStore } from "@/lib/stores/diamond-store"
@@ -97,20 +100,47 @@ export function NavUser() {
   const { isMobile, state, setOpenMobile } = useSidebar()
   const { theme, setTheme } = useTheme()
   const router = useRouter()
+  const preference = useLanguageStore((s) => s.preference)
+  const setPreference = useLanguageStore((s) => s.setPreference)
+  const activeLanguage = useLanguageStore((s) => s.language)
+  const { t } = useTranslation(activeLanguage)
+
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
-  const [language, setLanguage] = useState("default")
 
   useEffect(() => {
     setMounted(true)
+    useLanguageStore.getState().initializeLanguage()
   }, [])
   
   const user = useAuthStore((s) => s.user)
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const openModal = useAuthModalStore((s) => s.openModal)
-  const displayName = user?.name || (isAuthenticated ? "Usuario" : "Invitado")
+  const displayName = user?.name || (isAuthenticated ? (activeLanguage === "es" ? "Usuario" : "User") : t("guest"))
   const displayEmail = user?.email || ""
   const avatarSrc = user?.avatar
+
+  const handleLanguageChange = (pref: "default" | "es" | "en") => {
+    setPreference(pref)
+    
+    // Determine the target locale to push to URL
+    let targetLang: "es" | "en" = "es"
+    if (pref === "default") {
+      const browserLang = typeof navigator !== "undefined" ? navigator.language : "es";
+      targetLang = browserLang.toLowerCase().startsWith("es") ? "es" : "en";
+    } else {
+      targetLang = pref
+    }
+
+    // Rewrite the browser URL
+    const rawPath = window.location.pathname
+    // Clean it of any es/en prefixes
+    const cleanPath = getCleanPathname(rawPath)
+    const search = window.location.search
+    const newPath = `/${targetLang}${cleanPath === '/' ? '' : cleanPath}${search}`
+    
+    router.push(newPath)
+  }
 
   const { balance, loadDiamonds } = useDiamondStore()
 
@@ -142,16 +172,16 @@ export function NavUser() {
               <div className="p-1 rounded-md bg-blue-500/10">
                 <Crown className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
               </div>
-              <span className="text-xs font-bold text-gray-800 dark:text-gray-200">Plan Gratuito</span>
+              <span className="text-xs font-bold text-gray-800 dark:text-gray-200">{t("free_plan")}</span>
             </div>
           </div>
-          <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-relaxed font-medium">Actualiza a Pro para acceder a modelos avanzados y agentes.</p>
+          <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-relaxed font-medium">{t("pro_upgrade_desc")}</p>
           <Link 
             href="/suscripcion"
             onClick={() => { if (isMobile) setOpenMobile(false) }}
             className="w-full text-center py-1.5 px-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-[11px] font-bold shadow-md shadow-blue-500/20 transition-all flex items-center justify-center gap-1 mt-1 group-hover:scale-[1.02]"
           >
-            <span>Subir de Nivel</span>
+            <span>{t("upgrade_button")}</span>
             <ArrowRight className="w-3 h-3" />
           </Link>
         </div>
@@ -202,7 +232,7 @@ export function NavUser() {
                 <div className="flex items-center gap-2.5 px-3 py-2 text-xs text-muted-foreground/80 font-medium select-none pointer-events-none">
                   <User className="h-4 w-4 shrink-0 text-muted-foreground/60" />
                   <span className="truncate">
-                    {mounted ? (isAuthenticated ? displayEmail : "Usuario Invitado") : ""}
+                    {mounted ? (isAuthenticated ? displayEmail : t("guest_user")) : ""}
                   </span>
                 </div>
                 <DropdownMenuSeparator className="bg-border/40" />
@@ -211,15 +241,12 @@ export function NavUser() {
                 <DropdownMenuItem
                   onClick={() => {
                     setSettingsOpen(true);
-                    // Cerrar el dropdown para que no quede encima del diálogo.
-                    // closeOnClick no cierra aquí porque necesitamos que el
-                    // diálogo monte primero; forzamos el cierre vía DOM.
                   }}
                   className="text-[13px] font-medium py-2 px-3 rounded-xl cursor-pointer flex items-center justify-between focus:bg-muted focus:text-foreground"
                 >
                   <div className="flex items-center gap-3">
                     <Settings className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    <span>Todos los ajustes</span>
+                    <span>{t("all_settings")}</span>
                   </div>
                   <span className="text-[10px] text-muted-foreground/50 font-mono">↑ ^,</span>
                 </DropdownMenuItem>
@@ -233,7 +260,7 @@ export function NavUser() {
                   className="text-[13px] font-medium py-2 px-3 rounded-xl cursor-pointer flex items-center gap-3 focus:bg-muted focus:text-foreground"
                 >
                   <ArrowUpCircle className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  <span>Actualizar plan</span>
+                  <span>{t("update_plan")}</span>
                 </DropdownMenuItem>
 
                 {/* Install apps */}
@@ -241,7 +268,7 @@ export function NavUser() {
                   className="text-[13px] font-medium py-2 px-3 rounded-xl cursor-pointer flex items-center gap-3 focus:bg-muted focus:text-foreground"
                 >
                   <Download className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  <span>Instalar apps</span>
+                  <span>{t("install_apps")}</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-border/40" />
 
@@ -251,9 +278,9 @@ export function NavUser() {
                     <div className="flex items-center gap-3 text-left">
                       <Sun className="h-4 w-4 shrink-0 text-muted-foreground" />
                       <div className="flex flex-col">
-                        <span className="text-[13px] font-medium">Apariencia</span>
+                        <span className="text-[13px] font-medium">{t("appearance")}</span>
                         <span className="text-[10px] text-muted-foreground/70 mt-0.5 font-normal">
-                          {theme === "light" ? "Claro" : theme === "dark" ? "Oscuro" : "Sistema"}
+                          {theme === "light" ? t("light") : theme === "dark" ? t("dark") : t("system")}
                         </span>
                       </div>
                     </div>
@@ -266,7 +293,7 @@ export function NavUser() {
                       >
                         <div className="flex items-center gap-2">
                           <Sun className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span>Claro</span>
+                          <span>{t("light")}</span>
                         </div>
                         {theme === "light" && <Check className="h-3.5 w-3.5 text-teal-650 dark:text-teal-400 shrink-0" />}
                       </DropdownMenuItem>
@@ -276,7 +303,7 @@ export function NavUser() {
                       >
                         <div className="flex items-center gap-2">
                           <Moon className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span>Oscuro</span>
+                          <span>{t("dark")}</span>
                         </div>
                         {theme === "dark" && <Check className="h-3.5 w-3.5 text-teal-650 dark:text-teal-400 shrink-0" />}
                       </DropdownMenuItem>
@@ -286,7 +313,7 @@ export function NavUser() {
                       >
                         <div className="flex items-center gap-2">
                           <Monitor className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span>Sistema</span>
+                          <span>{t("system")}</span>
                         </div>
                         {theme === "system" && <Check className="h-3.5 w-3.5 text-teal-650 dark:text-teal-400 shrink-0" />}
                       </DropdownMenuItem>
@@ -300,9 +327,9 @@ export function NavUser() {
                     <div className="flex items-center gap-3 text-left">
                       <Globe className="h-4 w-4 shrink-0 text-muted-foreground" />
                       <div className="flex flex-col">
-                        <span className="text-[13px] font-medium">Idioma</span>
+                        <span className="text-[13px] font-medium">{t("language")}</span>
                         <span className="text-[10px] text-muted-foreground/70 mt-0.5 font-normal">
-                          {language === "default" ? "Por defecto" : language === "en" ? "English" : "Español"}
+                          {preference === "default" ? t("default") : preference === "en" ? "English" : "Español"}
                         </span>
                       </div>
                     </div>
@@ -310,25 +337,25 @@ export function NavUser() {
                   <DropdownMenuPortal>
                     <DropdownMenuSubContent className="w-44 rounded-xl border border-gray-200/50 dark:border-white/5 bg-white dark:bg-zinc-950 p-1 shadow-lg z-[90]">
                       <DropdownMenuItem
-                        onClick={() => setLanguage("default")}
+                        onClick={() => handleLanguageChange("default")}
                         className="text-xs py-1.5 px-2.5 rounded-lg cursor-pointer flex items-center justify-between focus:bg-muted focus:text-foreground"
                       >
-                        <span>Por defecto</span>
-                        {language === "default" && <Check className="h-3.5 w-3.5 text-teal-650 dark:text-teal-400 shrink-0" />}
+                        <span>{t("default")}</span>
+                        {preference === "default" && <Check className="h-3.5 w-3.5 text-teal-650 dark:text-teal-400 shrink-0" />}
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => setLanguage("en")}
+                        onClick={() => handleLanguageChange("en")}
                         className="text-xs py-1.5 px-2.5 rounded-lg cursor-pointer flex items-center justify-between focus:bg-muted focus:text-foreground"
                       >
                         <span>English</span>
-                        {language === "en" && <Check className="h-3.5 w-3.5 text-teal-650 dark:text-teal-400 shrink-0" />}
+                        {preference === "en" && <Check className="h-3.5 w-3.5 text-teal-650 dark:text-teal-400 shrink-0" />}
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => setLanguage("es")}
+                        onClick={() => handleLanguageChange("es")}
                         className="text-xs py-1.5 px-2.5 rounded-lg cursor-pointer flex items-center justify-between focus:bg-muted focus:text-foreground"
                       >
                         <span>Español</span>
-                        {language === "es" && <Check className="h-3.5 w-3.5 text-teal-650 dark:text-teal-400 shrink-0" />}
+                        {preference === "es" && <Check className="h-3.5 w-3.5 text-teal-650 dark:text-teal-400 shrink-0" />}
                       </DropdownMenuItem>
                     </DropdownMenuSubContent>
                   </DropdownMenuPortal>
@@ -339,7 +366,7 @@ export function NavUser() {
                   <DropdownMenuSubTrigger className="text-[13px] font-medium py-2 px-3 rounded-xl cursor-pointer flex items-center justify-between focus:bg-muted focus:text-foreground data-[state=open]:bg-muted">
                     <div className="flex items-center gap-3 text-left">
                       <HelpCircle className="h-4 w-4 shrink-0 text-muted-foreground" />
-                      <span className="text-[13px] font-medium">Ayuda</span>
+                      <span className="text-[13px] font-medium">{t("help")}</span>
                     </div>
                   </DropdownMenuSubTrigger>
                   <DropdownMenuPortal>
@@ -374,7 +401,7 @@ export function NavUser() {
                     className="text-[13px] font-medium py-2 px-3 rounded-xl cursor-pointer flex items-center gap-3 text-red-500 hover:bg-red-500/10 focus:bg-red-500/10 focus:text-red-500"
                   >
                     <LogOut className="h-4 w-4 shrink-0" />
-                    <span>Cerrar sesión</span>
+                    <span>{t("logout")}</span>
                   </DropdownMenuItem>
                 ) : (
                   <DropdownMenuItem
@@ -385,7 +412,7 @@ export function NavUser() {
                     className="text-[13px] font-medium py-2 px-3 rounded-xl cursor-pointer flex items-center gap-3 text-[#1890FF] hover:bg-[#1890FF]/10 focus:bg-[#1890FF]/10 focus:text-[#1890FF]"
                   >
                     <Sparkles className="h-4 w-4 shrink-0 animate-pulse" />
-                    <span>Registrarse</span>
+                    <span>{t("register")}</span>
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>

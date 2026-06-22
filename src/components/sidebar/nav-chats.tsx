@@ -21,6 +21,8 @@ import {
 import { useRouter } from "next/navigation"
 import { slugify } from "@/lib/utils"
 import { useAIChatStore, type SavedChat } from "@/lib/stores/ai-chat-store"
+import { useLanguageStore } from "@/lib/stores/language-store"
+import { useTranslation, type TranslationKey } from "@/lib/translations"
 
 export function NavChats() {
   const router = useRouter()
@@ -35,6 +37,9 @@ export function NavChats() {
   const deleteSavedChat = useAIChatStore((s) => s.deleteSavedChat)
   const currentChatId = useAIChatStore((s) => s.currentChatId)
 
+  const language = useLanguageStore((s) => s.language)
+  const { t } = useTranslation(language)
+
   // Group chats by date buckets: Today, Yesterday, Previous
   const sections = useMemo(() => {
     const sorted = [...savedChats].sort(
@@ -46,10 +51,10 @@ export function NavChats() {
     const yesterdayStart = new Date(todayStart)
     yesterdayStart.setDate(yesterdayStart.getDate() - 1)
 
-    const buckets: { label: string; items: SavedChat[] }[] = [
-      { label: "Hoy", items: [] },
-      { label: "Ayer", items: [] },
-      { label: "Anteriores", items: [] },
+    const buckets: { label: "today" | "yesterday" | "previous"; items: SavedChat[] }[] = [
+      { label: "today", items: [] },
+      { label: "yesterday", items: [] },
+      { label: "previous", items: [] },
     ]
 
     for (const chat of sorted) {
@@ -105,18 +110,18 @@ export function NavChats() {
                 {savedChats.length === 0 ? (
                   <SidebarMenuSubItem>
                     <div className="px-2 py-1 text-sm text-muted-foreground">
-                      Aún no hay chats
+                      {t("no_chats")}
                     </div>
                   </SidebarMenuSubItem>
                 ) : (
                   sections.map(({ label, items }) => (
                     <div key={label} className="space-y-1">
                       <div className="px-2 pt-2 pb-1 text-xs font-medium text-muted-foreground tracking-wide">
-                        {label}
+                        {t(label as TranslationKey)}
                       </div>
                       {items.map((chat) => {
                         const isActive = currentChatId === chat.id
-                        const displayTitle = chat.title || "Nuevo Chat"
+                        const displayTitle = chat.title || t("new_chat")
                         return (
                           <SidebarMenuSubItem key={chat.id}>
                             <SidebarMenuSubButton

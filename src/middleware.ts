@@ -1,9 +1,77 @@
-import { NextResponse, type NextRequest } from 'next/server'
+import { NextResponse, NextRequest } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 
 export async function middleware(request: NextRequest) {
-  // update user's auth session on every request
-  return await updateSession(request)
+  const url = request.nextUrl.clone()
+  const pathname = url.pathname
+
+  // 1. Ignore static files, API routes, auth callback routes
+  if (
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/api') ||
+    pathname.startsWith('/auth') ||
+    pathname.includes('.')
+  ) {
+    return await updateSession(request)
+  }
+
+  // 2. Check if the URL pathname starts with a language prefix (/es or /en)
+  const langMatch = pathname.match(/^\/(es|en)(\/.*)?$/)
+  if (langMatch) {
+    const lang = langMatch[1]
+    const rest = langMatch[2] || '/'
+    
+    // Set internal rewrite to the clean path (e.g. /es/ai -> /ai)
+    url.pathname = rest
+    const requestHeaders = new Headers(request.headers)
+    requestHeaders.set('x-next-intl-locale', lang)
+    
+    // Create internal rewrite response
+    let response = NextResponse.rewrite(url, {
+      request: {
+        headers: requestHeaders,
+      }
+    })
+    
+    // Sync with Supabase session update (pass rewritten request path)
+    const rewrittenRequest = new NextRequest(url, {
+      headers: request.headers,
+      body: request.body,
+      method: request.method,
+      signal: request.signal,
+    })
+    const sessionResponse = await updateSession(rewrittenRequest)
+    
+    // Merge headers/cookies from updateSession
+    sessionResponse.headers.forEach((value, key) => {
+      response.headers.set(key, value)
+    })
+    
+    // Set the locale cookie
+    response.cookies.set('maverlang_locale', lang, { 
+      maxAge: 60 * 60 * 24 * 365, // 1 year
+      path: '/' 
+    })
+    return response
+  }
+
+  // 3. No language prefix: Redirect based on cookie or Accept-Language header
+  const localeCookie = request.cookies.get('maverlang_locale')?.value
+  let locale = localeCookie
+
+  if (!locale) {
+    const acceptLanguage = request.headers.get('accept-language') || ''
+    locale = acceptLanguage.toLowerCase().includes('es') ? 'es' : 'en'
+  }
+
+  // Redirect to localized URL (e.g., /ai -> /es/ai)
+  url.pathname = `/${locale}${pathname}`
+  const response = NextResponse.redirect(url)
+  response.cookies.set('maverlang_locale', locale, { 
+    maxAge: 60 * 60 * 24 * 365, // 1 year
+    path: '/' 
+  })
+  return response
 }
 
 export const config = {

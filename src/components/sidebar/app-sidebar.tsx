@@ -25,6 +25,8 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { useAIChatStore } from "@/lib/stores/ai-chat-store"
+import { useLanguageStore } from "@/lib/stores/language-store"
+import { useTranslation } from "@/lib/translations"
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const { state } = useSidebar()
@@ -36,44 +38,47 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
     setMounted(true)
   }, [])
 
+  const language = useLanguageStore((s) => s.language)
+  const { t } = useTranslation(language)
+
   // Navigation data for main buttons
   const mainButtons = React.useMemo(
     () => [
       {
-        title: "Nuevo chat",
-        url: "/ai",
+        title: t("new_chat"),
+        url: `/${language}/ai`,
         icon: MessageSquarePlus,
         onClick: clearMessages,
       },
       {
-        title: "Buscar",
+        title: t("search"),
         url: "#",
         icon: Search,
         isAction: true,
         onClick: () => setSearchOpen(true),
       },
       {
-        title: "Portafolio",
-        url: "/portafolio",
+        title: t("portfolio"),
+        url: `/${language}/portafolio`,
         icon: Briefcase,
       },
       {
-        title: "Mercados",
-        url: "/mercados",
+        title: t("markets"),
+        url: `/${language}/mercados`,
         icon: TrendingUp,
       },
       {
-        title: "Noticias",
-        url: "/noticias",
+        title: t("news"),
+        url: `/${language}/noticias`,
         icon: Newspaper,
       },
       {
-        title: "Mundo",
-        url: "/mundo",
+        title: t("world"),
+        url: `/${language}/mundo`,
         icon: Globe,
       },
     ],
-    [clearMessages]
+    [clearMessages, t, language]
   )
 
   return (

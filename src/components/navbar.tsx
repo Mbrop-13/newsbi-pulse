@@ -29,6 +29,7 @@ import { useAudioPlayerStore } from "@/lib/stores/audio-player-store";
 import { usePathname, useRouter } from "next/navigation";
 import { useFilterStore } from "@/lib/stores/filter-store";
 import { useSidebar } from "@/components/ui/sidebar";
+import { getCleanPathname } from "@/lib/utils";
 export function Navbar() {
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -68,7 +69,8 @@ export function Navbar() {
   const supabase = createClient();
 
   const router = useRouter();
-  const pathname = usePathname();
+  const rawPathname = usePathname();
+  const pathname = getCleanPathname(rawPathname);
   const isPublicRoute = pathname === "/" || pathname === "/login" || pathname === "/register" || pathname?.startsWith("/share/");
 
   const renderNavLink = (href: string, label: string) => {

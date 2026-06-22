@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import Link from "next/link";
+import { getCleanPathname } from "@/lib/utils";
 import { AnalyzedNewsCard } from './assistant/analyzed-news-card';
 import { PortfolioSummaryCard } from './assistant/portfolio-summary-card';
 import { StockAnalysisCard } from './assistant/stock-analysis-card';
@@ -66,7 +67,8 @@ export function AIChatSidebar() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [showAttachMenu]);
-  const pathname = usePathname();
+  const rawPathname = usePathname();
+  const pathname = getCleanPathname(rawPathname);
   const supabase = createClient();
   const userTier = useAuthStore((s) => s.user?.role === "admin" ? "ultra" : (s.user?.tier || "free"));
   const user = useAuthStore((s) => s.user);

@@ -10,7 +10,9 @@ import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, User, Palette, Layers, Sliders, Database, Globe, Sparkles, Compass } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, getCleanPathname } from "@/lib/utils";
+import { useLanguageStore } from "@/lib/stores/language-store";
+import { useTranslation } from "@/lib/translations";
 
 interface ViewSettingsDialogProps {
   isOpen: boolean;
@@ -92,7 +94,32 @@ export function ViewSettingsDialog({ isOpen, onClose }: ViewSettingsDialogProps)
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<TabType>("cuenta");
-  const [language, setLanguage] = useState("default");
+  const preference = useLanguageStore((s) => s.preference);
+  const setPreference = useLanguageStore((s) => s.setPreference);
+  const activeLanguage = useLanguageStore((s) => s.language);
+  const { t } = useTranslation(activeLanguage);
+
+  const handleLanguageChange = (pref: "default" | "es" | "en") => {
+    setPreference(pref);
+    
+    // Determine the target locale to push to URL
+    let targetLang: "es" | "en" = "es";
+    if (pref === "default") {
+      const browserLang = typeof navigator !== "undefined" ? navigator.language : "es";
+      targetLang = browserLang.toLowerCase().startsWith("es") ? "es" : "en";
+    } else {
+      targetLang = pref;
+    }
+
+    // Rewrite the browser URL
+    const rawPath = window.location.pathname;
+    // Clean it of any es/en prefixes
+    const cleanPath = getCleanPathname(rawPath);
+    const search = window.location.search;
+    const newPath = `/${targetLang}${cleanPath === '/' ? '' : cleanPath}${search}`;
+    
+    router.push(newPath);
+  };
 
   // View preferences
   const {
@@ -308,15 +335,15 @@ export function ViewSettingsDialog({ isOpen, onClose }: ViewSettingsDialogProps)
                       <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
                         <Globe className="w-4.5 h-4.5 text-muted-foreground shrink-0" />
                         <span className="text-[11px] font-semibold">
-                          Idioma: <span className="font-bold text-gray-900 dark:text-white">{language === "default" ? "Por defecto" : language === "en" ? "English" : "Español"}</span>
+                          {t("language")}: <span className="font-bold text-gray-900 dark:text-white">{preference === "default" ? t("default") : preference === "en" ? "English" : "Español"}</span>
                         </span>
                       </div>
                       <button
                         type="button"
-                        onClick={() => setLanguage(language === "es" ? "en" : "es")}
+                        onClick={() => handleLanguageChange(activeLanguage === "es" ? "en" : "es")}
                         className="px-4 py-1.5 rounded-full border border-gray-200 dark:border-white/10 hover:bg-gray-55 dark:hover:bg-white/5 text-[11px] font-semibold text-gray-800 dark:text-gray-200 cursor-pointer transition-all shrink-0"
                       >
-                        Cambiar
+                        {t("change")}
                       </button>
                     </div>
 

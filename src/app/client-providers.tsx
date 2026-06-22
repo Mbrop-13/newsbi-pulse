@@ -28,7 +28,8 @@ import { Button } from "@/components/ui/button";
 import { Menu, Plus } from "lucide-react";
 import { ModelSelector } from "@/components/chat/model-selector";
 import { useSidebar } from "@/components/ui/sidebar";
-import { cn } from "@/lib/utils";
+import { useLanguageStore } from "@/lib/stores/language-store";
+import { cn, getCleanPathname } from "@/lib/utils";
 
 import { useState, useEffect } from "react";
 
@@ -65,7 +66,22 @@ export function ClientLayoutProviders({
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  const pathname = usePathname();
+  const rawPathname = usePathname();
+  const pathname = getCleanPathname(rawPathname);
+
+  // Sync URL language prefix with Zustand language store
+  useEffect(() => {
+    if (rawPathname) {
+      const match = rawPathname.match(/^\/(es|en)(\/|$)/);
+      if (match) {
+        const urlLang = match[1] as "es" | "en";
+        const { language, setLanguage } = useLanguageStore.getState();
+        if (language !== urlLang) {
+          setLanguage(urlLang);
+        }
+      }
+    }
+  }, [rawPathname]);
   // La landing de marketing ahora vive en /home (ahí sí van footer + bottom nav).
   // "/" es el chat, que al igual que /ai no muestra footer ni bottom nav.
   const isLandingPage = pathname === "/home";

@@ -107,3 +107,14 @@ export function getFallbackImage(category: string): string {
   // Default generic news placeholder
   return "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&auto=format&fit=crop";
 }
+
+export function getCleanPathname(path: string): string {
+  if (!path) return "/";
+  // Remove language prefix (e.g. /es/ai -> /ai, /en -> /, /es -> /)
+  let clean = path.replace(/^\/(es|en)(\/|$)/, '/');
+  // Remove trailing slash unless it's just "/"
+  if (clean.length > 1 && clean.endsWith('/')) {
+    clean = clean.slice(0, -1);
+  }
+  return clean;
+}

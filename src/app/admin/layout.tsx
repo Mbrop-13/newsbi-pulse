@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "next-themes";
+import { getCleanPathname } from "@/lib/utils";
 import {
   LayoutDashboard,
   Newspaper,
@@ -38,7 +39,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
-  const pathname = usePathname();
+  const rawPathname = usePathname();
+  const pathname = getCleanPathname(rawPathname);
 
   useEffect(() => {
     setMounted(true);

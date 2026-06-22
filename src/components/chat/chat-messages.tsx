@@ -543,7 +543,32 @@ function MessageBubble({
 
   // ─── Render Plan Card ───
   const renderPlanCard = () => {
-    const plan = message.pendingPlan;
+    let plan = message.pendingPlan;
+
+    // Fallback to active store plan during streaming or on direct entry
+    if (!plan && isLast) {
+      if (streamData && streamData.length > 0) {
+        const planObj = (streamData as any[]).find((d: any) => d?.type === 'plan');
+        if (planObj?.agents && planObj.agents.length > 0) {
+          plan = {
+            planId: planObj.planId || `plan-${Date.now()}`,
+            reason: planObj.reason || "",
+            agents: planObj.agents
+          };
+        }
+      }
+      if (!plan) {
+        const storePlan = useWebBuilderStore.getState().pendingPlan;
+        if (storePlan) {
+          plan = {
+            planId: storePlan.planId,
+            reason: storePlan.reason,
+            agents: storePlan.agents
+          };
+        }
+      }
+    }
+
     if (!plan || !plan.agents || plan.agents.length === 0) return null;
 
     return (

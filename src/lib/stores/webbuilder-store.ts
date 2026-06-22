@@ -551,6 +551,7 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
         files: state.files,
         activeFilePath: state.activeFilePath,
         cloudSyncEnabled: state.cloudSyncEnabled,
+        pendingPlan: state.pendingPlan,
       }),
     }
   )

@@ -1,9 +1,6 @@
 "use client";
 
-import { useState } from "react";
 import { useAuthStore } from "@/lib/stores/auth-store";
-import { AuthModals } from "@/components/auth-modals";
-import { AssistantLanding } from "@/components/assistant/assistant-landing";
 import { ChatLanding } from "@/components/chat/chat-landing";
 
 function ChatSkeleton() {
@@ -45,34 +42,11 @@ function ChatSkeleton() {
 }
 
 export default function AIPage() {
-  const { isAuthenticated, isLoaded } = useAuthStore();
-
-  const [authModal, setAuthModal] = useState<{ isOpen: boolean; view: "login" | "register" }>({
-    isOpen: false,
-    view: "login"
-  });
-
-  const handleAuthRequest = (view: "login" | "register") => {
-    setAuthModal({ isOpen: true, view });
-  };
+  const { isLoaded } = useAuthStore();
 
   if (!isLoaded) {
     return <ChatSkeleton />;
   }
 
-  return (
-    <>
-      <AuthModals 
-        isOpen={authModal.isOpen} 
-        onClose={() => setAuthModal({ ...authModal, isOpen: false })} 
-        defaultView={authModal.view} 
-      />
-
-      {!isAuthenticated ? (
-        <AssistantLanding onAuthReq={handleAuthRequest} />
-      ) : (
-        <ChatLanding />
-      )}
-    </>
-  );
+  return <ChatLanding />;
 }

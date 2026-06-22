@@ -102,12 +102,12 @@ export function ClientLayoutProviders({
   const isCountryPage = countrySlugs.some(slug => pathname === `/${slug}` || pathname.startsWith(`/${slug}/`));
   const isSidebarRoute = isStaticSidebar || isArticlePage || isCountryPage;
   const { isAuthenticated, isLoaded: authLoaded } = useAuthStore();
-  // El sidebar se muestra en rutas con sidebar. Para "/" (el chat de inicio)
+  // El sidebar se muestra en rutas con sidebar. Para "/" y "/ai" (el chat de inicio)
   // lo mostramos SIEMPRE, incluso sin auth: así un visitante ve la plataforma
   // completa y al intentar navegar a una página protegida aparece el popup de
   // registro (gate en nav-main.tsx + AuthGuard en cada página). El resto de
   // rutas con sidebar sí requieren auth (sus páginas tienen AuthGuard).
-  const isSidebarPage = isSidebarRoute && mounted && (pathname === "/" || !authLoaded || isAuthenticated);
+  const isSidebarPage = isSidebarRoute && mounted && (pathname === "/" || pathname === "/ai" || !authLoaded || isAuthenticated);
   const isFullscreenPage = isSidebarPage;
   const isAiPage = pathname === "/ai" || pathname.startsWith("/ai/") || pathname === "/" || pathname === "";
   const isAdminPage = pathname.startsWith("/admin");

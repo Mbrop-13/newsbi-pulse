@@ -4,10 +4,10 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { useTheme } from "next-themes";
 import {
   Check,
   X,
-  Sparkles,
   ChevronDown,
   Gift,
   Zap,
@@ -20,6 +20,16 @@ import { PLAN_CONFIGS, getAnnualMonthlyPrice, isPromoX2Active, type PlanTier } f
 function SubscriptionPageContent() {
   const searchParams = useSearchParams();
   const statusParam = searchParams.get("status");
+
+  const { resolvedTheme } = useTheme();
+  const [themeMounted, setThemeMounted] = useState(false);
+  useEffect(() => {
+    setThemeMounted(true);
+  }, []);
+
+  const logoSrc = themeMounted && resolvedTheme === "dark" 
+    ? "/assets/maverlang-logo-white.png" 
+    : "/assets/maverlang-logo.png";
 
   const { tier: currentTier } = useSubscriptionStore();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
@@ -190,7 +200,7 @@ function SubscriptionPageContent() {
     },
     {
       q: "¿Hay descuento por pago anual?",
-      a: "¡Sí! Si seleccionas la facturación anual, obtienes el equivalente a 2 meses gratis por año en todos los planes de pago.",
+      a: "¡Sí! Si seleccionas la facturación anual, obtienes un descuento en la tarifa al facturar de forma anual (pagas 10 meses en lugar de 12 por año en todos los planes de pago).",
     },
     {
       q: "¿Qué métodos de pago aceptan?",
@@ -208,9 +218,9 @@ function SubscriptionPageContent() {
 
   return (
     <div className="min-h-screen bg-[#f8f8fb] dark:bg-zinc-950 text-neutral-900 dark:text-neutral-100 transition-colors duration-300 relative overflow-hidden pb-24 animate-fade-in">
-      {/* Floating Close Button in top right corner */}
+      {/* Floating Close Button in top right corner (redirects to "/") */}
       <Link
-        href="/home"
+        href="/"
         className="absolute top-6 right-6 p-2 rounded-full bg-neutral-200/60 hover:bg-neutral-200 dark:bg-zinc-850/60 dark:hover:bg-zinc-800 text-neutral-500 hover:text-neutral-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-all duration-300 z-50 shadow-sm border border-neutral-300/20 dark:border-zinc-700/20"
       >
         <X className="w-5 h-5" />
@@ -222,16 +232,18 @@ function SubscriptionPageContent() {
       {/* Centered Header */}
       <header className="max-w-4xl mx-auto text-center pt-20 pb-6 px-4 relative z-10">
         <div className="flex flex-col items-center justify-center">
-          <div className="flex items-center gap-2.5 mb-2 hover:scale-105 transition-transform duration-300">
-            <div className="w-9 h-9 rounded-xl bg-neutral-950 dark:bg-white flex items-center justify-center text-white dark:text-black shadow-md">
-              <Sparkles className="w-5 h-5 animate-pulse" />
-            </div>
-            <span className="text-xl font-black tracking-tight text-neutral-900 dark:text-white">Maverlang</span>
+          {/* Official Chat Logo Image */}
+          <div className="flex items-center justify-center mb-6">
+            <img 
+              src={logoSrc} 
+              alt="Maverlang Logo" 
+              className="h-16 w-auto object-contain select-none pointer-events-none"
+            />
           </div>
           
           {currentTier === "free" ? (
             <>
-              <h1 className="text-3xl md:text-5xl font-black tracking-tight mt-6 mb-3 text-neutral-900 dark:text-white leading-tight">
+              <h1 className="text-3xl md:text-5xl font-black tracking-tight mt-2 mb-3 text-neutral-900 dark:text-white leading-tight">
                 Planes y Suscripciones Premium
               </h1>
               <p className="text-neutral-500 dark:text-neutral-400 text-xs md:text-sm max-w-lg mt-1">
@@ -240,7 +252,7 @@ function SubscriptionPageContent() {
             </>
           ) : (
             <>
-              <h1 className="text-3xl md:text-5xl font-black tracking-tight mt-6 mb-3 text-neutral-900 dark:text-white leading-tight">
+              <h1 className="text-3xl md:text-5xl font-black tracking-tight mt-2 mb-3 text-neutral-900 dark:text-white leading-tight">
                 Gestiona tu Suscripción Premium
               </h1>
               <p className="text-neutral-500 dark:text-neutral-400 text-xs md:text-sm max-w-lg mt-1">
@@ -279,16 +291,13 @@ function SubscriptionPageContent() {
             </button>
             <button
               onClick={() => setBillingCycle("annual")}
-              className={`px-6 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 flex items-center gap-2.5 ${
+              className={`px-6 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 ${
                 billingCycle === "annual"
                   ? "bg-white dark:bg-zinc-700 text-neutral-900 dark:text-white shadow-sm"
                   : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
               }`}
             >
               Anual
-              <span className="px-2 py-0.5 bg-neutral-950 text-white dark:bg-white dark:text-black text-[9px] font-black rounded-full shadow-sm">
-                2 Meses Gratis
-              </span>
             </button>
           </div>
         </div>
@@ -301,7 +310,7 @@ function SubscriptionPageContent() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="mb-8 max-w-xl mx-auto p-4 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-xs md:text-sm font-bold rounded-2xl border border-red-200 dark:border-red-500/20 flex items-center gap-3 relative z-10"
+            className="mb-8 max-w-xl mx-auto p-4 bg-red-50 dark:bg-red-500/10 text-red-650 dark:text-red-400 text-xs md:text-sm font-bold rounded-2xl border border-red-200 dark:border-red-500/20 flex items-center gap-3 relative z-10"
           >
             <X className="w-5 h-5 shrink-0" />
             <span>{checkoutError}</span>
@@ -338,16 +347,20 @@ function SubscriptionPageContent() {
               <div className="mb-6">
                 <div className="flex items-baseline gap-1">
                   <span className="text-4xl md:text-5xl font-black text-neutral-900 dark:text-white tracking-tight">
-                    ${getDisplayPrice("pro")}
+                    {billingCycle === "annual" ? `$${getAnnualTotal("pro")}` : `$${getDisplayPrice("pro")}`}
                   </span>
-                  <span className="text-neutral-500 dark:text-neutral-400 font-bold text-sm">CLP/mes</span>
+                  <span className="text-neutral-500 dark:text-neutral-400 font-bold text-sm">
+                    {billingCycle === "annual" ? "CLP/año" : "CLP/mes"}
+                  </span>
                 </div>
-                <p className="text-[12px] md:text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
-                  {getPlanDescription("pro")}
-                </p>
-                {billingCycle === "annual" && (
-                  <p className="text-[10px] md:text-[11px] font-black text-neutral-400 dark:text-neutral-500 mt-1 uppercase tracking-wider">
-                    Total ${getAnnualTotal("pro")} facturado al año
+                
+                {billingCycle === "annual" ? (
+                  <p className="text-[12px] md:text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
+                    equivalente a ${getDisplayPrice("pro")} CLP/mes
+                  </p>
+                ) : (
+                  <p className="text-[12px] md:text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
+                    {getPlanDescription("pro")}
                   </p>
                 )}
               </div>
@@ -416,16 +429,20 @@ function SubscriptionPageContent() {
               <div className="mb-6">
                 <div className="flex items-baseline gap-1">
                   <span className="text-4xl md:text-5xl font-black text-neutral-900 dark:text-white tracking-tight">
-                    ${getDisplayPrice("max")}
+                    {billingCycle === "annual" ? `$${getAnnualTotal("max")}` : `$${getDisplayPrice("max")}`}
                   </span>
-                  <span className="text-neutral-500 dark:text-neutral-400 font-bold text-sm">CLP/mes</span>
+                  <span className="text-neutral-500 dark:text-neutral-400 font-bold text-sm">
+                    {billingCycle === "annual" ? "CLP/año" : "CLP/mes"}
+                  </span>
                 </div>
-                <p className="text-[12px] md:text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
-                  {getPlanDescription("max")}
-                </p>
-                {billingCycle === "annual" && (
-                  <p className="text-[10px] md:text-[11px] font-black text-neutral-400 dark:text-neutral-500 mt-1 uppercase tracking-wider">
-                    Total ${getAnnualTotal("max")} facturado al año
+                
+                {billingCycle === "annual" ? (
+                  <p className="text-[12px] md:text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
+                    equivalente a ${getDisplayPrice("max")} CLP/mes
+                  </p>
+                ) : (
+                  <p className="text-[12px] md:text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
+                    {getPlanDescription("max")}
                   </p>
                 )}
               </div>
@@ -524,16 +541,20 @@ function SubscriptionPageContent() {
               <div className="mb-6">
                 <div className="flex items-baseline gap-1">
                   <span className="text-4xl md:text-5xl font-black text-neutral-900 dark:text-white tracking-tight">
-                    ${getDisplayPrice(isUltraX20Toggled ? "ultra_x20" : "ultra")}
+                    {billingCycle === "annual" ? `$${getAnnualTotal("ultra")}` : `$${getDisplayPrice(isUltraX20Toggled ? "ultra_x20" : "ultra")}`}
                   </span>
-                  <span className="text-neutral-500 dark:text-neutral-400 font-bold text-sm">CLP/mes</span>
+                  <span className="text-neutral-500 dark:text-neutral-400 font-bold text-sm">
+                    {billingCycle === "annual" ? "CLP/año" : "CLP/mes"}
+                  </span>
                 </div>
-                <p className="text-[12px] md:text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
-                  {getPlanDescription(isUltraX20Toggled ? "ultra_x20" : "ultra")}
-                </p>
-                {billingCycle === "annual" && (
-                  <p className="text-[10px] md:text-[11px] font-black text-neutral-400 dark:text-neutral-500 mt-1 uppercase tracking-wider">
-                    Total ${getAnnualTotal("ultra")} facturado al año
+                
+                {billingCycle === "annual" ? (
+                  <p className="text-[12px] md:text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
+                    equivalente a ${getDisplayPrice(isUltraX20Toggled ? "ultra_x20" : "ultra")} CLP/mes
+                  </p>
+                ) : (
+                  <p className="text-[12px] md:text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
+                    {getPlanDescription(isUltraX20Toggled ? "ultra_x20" : "ultra")}
                   </p>
                 )}
               </div>
@@ -576,15 +597,6 @@ function SubscriptionPageContent() {
             </div>
           </div>
         </div>
-
-        {/* Saving details text below grid */}
-        {billingCycle === "annual" && (
-          <div className="flex justify-center mt-12 mb-6">
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 font-bold bg-neutral-100 dark:bg-zinc-900 border border-neutral-200 dark:border-zinc-850 px-5 py-2.5 rounded-full shadow-sm">
-              💡 La suscripción anual te descuenta el equivalente a 2 meses completos por año.
-            </p>
-          </div>
-        )}
 
         {/* FAQ Section */}
         <section className="mt-16 max-w-3xl mx-auto border-t border-neutral-200 dark:border-zinc-800 pt-16">

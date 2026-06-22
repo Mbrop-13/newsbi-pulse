@@ -10,6 +10,7 @@ import { MiniChart } from "@/components/tradingview/mini-chart";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { SidebarLayout } from "@/components/sidebar/sidebar-layout";
+import { AuthGuard } from "@/components/auth-guard";
 
 // Mapping TradingView symbols to Yahoo Finance symbols for portfolio & alerts compatibility
 function toYahooSymbol(tvSymbol: string): string {
@@ -206,6 +207,7 @@ export default function MercadosPage() {
 
   return (
     <SidebarLayout>
+    <AuthGuard>
     <div className="min-h-screen bg-background pt-4">
       {/* ΓöÇΓöÇ TICKER TAPE ΓöÇΓöÇ */}
       <TickerTape />
@@ -628,6 +630,7 @@ export default function MercadosPage() {
         )}
       </AnimatePresence>
     </div>
+    </AuthGuard>
     </SidebarLayout>
   );
 }

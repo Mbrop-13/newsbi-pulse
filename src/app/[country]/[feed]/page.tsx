@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { isValidCountry } from "@/lib/country-config";
 import { CountryFeedPage } from "@/components/country-feed-page";
 import { SidebarLayout } from "@/components/sidebar/sidebar-layout";
+import { AuthGuard } from "@/components/auth-guard";
 
 const VALID_FEEDS = ['tech-global', 'impacto-global', 'finanzas', 'inversiones', 'economia'];
 
@@ -24,7 +25,9 @@ export default async function FeedPage({ params }: Props) {
 
   return (
     <SidebarLayout>
-      <CountryFeedPage initialFeed={feedTagMap[feed]} />
+      <AuthGuard>
+        <CountryFeedPage initialFeed={feedTagMap[feed]} />
+      </AuthGuard>
     </SidebarLayout>
   );
 }

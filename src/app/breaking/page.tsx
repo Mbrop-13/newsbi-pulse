@@ -1,5 +1,10 @@
 import { CountryFeedPage } from "@/components/country-feed-page";
+import { AuthGuard } from "@/components/auth-guard";
 
 export default function BreakingPage() {
-  return <CountryFeedPage initialFilter="nuevo" />;
+  return (
+    <AuthGuard>
+      <CountryFeedPage initialFilter="nuevo" />
+    </AuthGuard>
+  );
 }

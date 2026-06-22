@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Lock, Gift, User, Diamond } from "lucide-react";
 import { useDiamondStore } from "@/lib/stores/diamond-store";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { AuthGuard } from "@/components/auth-guard";
 
 const REWARDS = [
   {
@@ -35,6 +36,14 @@ const REWARDS = [
 ];
 
 export default function RecompensasPage() {
+  return (
+    <AuthGuard>
+      <RecompensasContent />
+    </AuthGuard>
+  );
+}
+
+function RecompensasContent() {
   const { balance } = useDiamondStore();
   const [selectedReward, setSelectedReward] = useState<typeof REWARDS[0] | null>(null);
 

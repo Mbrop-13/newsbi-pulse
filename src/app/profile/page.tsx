@@ -32,6 +32,7 @@ import { useAuthStore } from "@/lib/stores/auth-store";
 import { useBookmarkStore } from "@/lib/stores/bookmark-store";
 import { usePersonalizationStore } from "@/lib/stores/personalization-store";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AuthGuard } from "@/components/auth-guard";
 import { MOCK_ARTICLES } from "@/lib/mock-data";
 import { NewsCard } from "@/components/news-card";
 import { createClient } from "@/lib/supabase/client";
@@ -55,6 +56,14 @@ type BetActivity = {
 };
 
 export default function ProfilePage() {
+  return (
+    <AuthGuard>
+      <ProfileContent />
+    </AuthGuard>
+  );
+}
+
+function ProfileContent() {
   const { user, isAuthenticated } = useAuthStore();
   const bookmarks = useBookmarkStore((s) => s.bookmarkedArticleIds);
   const [activeTab, setActiveTab] = useState<"guardados" | "actividad" | "preferencias">("guardados");

@@ -2,11 +2,14 @@
 
 import { SidebarLayout } from "@/components/sidebar/sidebar-layout";
 import { CountryFeedPage } from "@/components/country-feed-page";
+import { AuthGuard } from "@/components/auth-guard";
 
 export default function NoticiasPage() {
   return (
     <SidebarLayout>
-      <CountryFeedPage />
+      <AuthGuard>
+        <CountryFeedPage />
+      </AuthGuard>
     </SidebarLayout>
   );
 }

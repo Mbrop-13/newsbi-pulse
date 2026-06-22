@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Users, Copy, Sparkles, CheckCircle2, Share2, Loader2, Trophy, Medal, Star, Crown, Gift, Rocket, ShieldAlert, ArrowRight, Twitter, Mail } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { AuthGuard } from "@/components/auth-guard";
 
 interface ReferralData {
   code: string | null;
@@ -34,6 +35,14 @@ function GemIcon(props: any) {
 }
 
 export default function ReferralsPage() {
+  return (
+    <AuthGuard>
+      <ReferralsContent />
+    </AuthGuard>
+  );
+}
+
+function ReferralsContent() {
   const [data, setData] = useState<ReferralData | null>(null);
   const [loading, setLoading] = useState(true);
   const [claiming, setClaiming] = useState<number | null>(null);

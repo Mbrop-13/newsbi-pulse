@@ -7,8 +7,17 @@ import { NewsCard } from "@/components/news-card";
 import { Bookmark, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { AuthGuard } from "@/components/auth-guard";
 
 export default function GuardadosPage() {
+  return (
+    <AuthGuard>
+      <GuardadosContent />
+    </AuthGuard>
+  );
+}
+
+function GuardadosContent() {
   const { bookmarkedArticleIds } = useBookmarkStore();
   const [mounted, setMounted] = useState(false);
 

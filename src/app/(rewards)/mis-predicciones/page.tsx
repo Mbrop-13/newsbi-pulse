@@ -7,6 +7,7 @@ import { useDiamondStore } from "@/lib/stores/diamond-store";
 import { createClient } from "@/lib/supabase/client";
 import { Loader2, Trophy, TrendingUp, Gem, BarChart3, CheckCircle, XCircle } from "lucide-react";
 import Link from "next/link";
+import { AuthGuard } from "@/components/auth-guard";
 
 interface Bet {
   id: string;
@@ -30,6 +31,14 @@ interface Bet {
 }
 
 export default function MisPrediccionesPage() {
+  return (
+    <AuthGuard>
+      <MisPrediccionesContent />
+    </AuthGuard>
+  );
+}
+
+function MisPrediccionesContent() {
   const [bets, setBets] = useState<Bet[]>([]);
   const [loading, setLoading] = useState(true);
   const user = useAuthStore((s) => s.user);

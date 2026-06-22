@@ -1,5 +1,6 @@
 import SettingsClient from "./settings-client";
 import { SidebarLayoutWrapper } from "./sidebar-wrapper";
+import { AuthGuard } from "@/components/auth-guard";
 
 export const metadata = {
   title: "Configuración | Maverlang",
@@ -9,7 +10,9 @@ export const metadata = {
 export default function SettingsPage() {
   return (
     <SidebarLayoutWrapper>
-      <SettingsClient />
+      <AuthGuard>
+        <SettingsClient />
+      </AuthGuard>
     </SidebarLayoutWrapper>
   );
 }

@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import PortfolioClient from "./portfolio-client";
 import { SidebarLayoutWrapper } from "./sidebar-wrapper";
+import { AuthGuard } from "@/components/auth-guard";
 
 export const metadata: Metadata = {
   title: "Portafolio | Maverlang",
@@ -10,7 +11,9 @@ export const metadata: Metadata = {
 export default function PortfolioPage() {
   return (
     <SidebarLayoutWrapper>
-      <PortfolioClient />
+      <AuthGuard>
+        <PortfolioClient />
+      </AuthGuard>
     </SidebarLayoutWrapper>
   );
 }

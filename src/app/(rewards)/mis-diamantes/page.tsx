@@ -5,6 +5,7 @@ import { CheckCircle2 } from "lucide-react";
 import { useDiamondStore } from "@/lib/stores/diamond-store";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { AuthModals } from "@/components/auth-modals";
+import { AuthGuard } from "@/components/auth-guard";
 
 const DIAMOND_IMAGES = [
   "https://cdn.shopify.com/s/files/1/0564/3812/8712/files/diamante-1.png?v=1774402513",
@@ -17,6 +18,14 @@ const DIAMOND_IMAGES = [
 ];
 
 export default function MisDiamantesPage() {
+  return (
+    <AuthGuard>
+      <MisDiamantesContent />
+    </AuthGuard>
+  );
+}
+
+function MisDiamantesContent() {
   const { user, isAuthenticated } = useAuthStore();
   const { balance, consecutiveDays, lastClaimDate, loadDiamonds, claimDiamonds, canClaimToday, isLoading } = useDiamondStore();
   const [justClaimed, setJustClaimed] = useState(false);

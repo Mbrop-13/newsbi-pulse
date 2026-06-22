@@ -10,8 +10,17 @@ import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import { formatDate } from "@/lib/utils";
 import { BookmarkButton } from "@/components/bookmark-button";
+import { AuthGuard } from "@/components/auth-guard";
 
 export default function ListaLecturaPage() {
+  return (
+    <AuthGuard>
+      <ListaLecturaContent />
+    </AuthGuard>
+  );
+}
+
+function ListaLecturaContent() {
   const { queue } = useReadingListStore();
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(true);

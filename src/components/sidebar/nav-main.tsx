@@ -10,6 +10,11 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { useAuthStore, useAuthModalStore } from "@/lib/stores/auth-store"
+
+// Rutas accesibles sin autenticación. Todo lo demás del sidebar es protegido:
+// al clicar sin sesión se abre el popup de registro en vez de navegar.
+const PUBLIC_ROUTES = ["/", "#", "/ai", "/home", "/suscripcion"]
 
 export function NavMain({
   items,
@@ -23,6 +28,8 @@ export function NavMain({
   }[]
 }) {
   const { isMobile, setOpenMobile } = useSidebar()
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const openModal = useAuthModalStore((s) => s.openModal)
 
   function handleNavigate() {
     if (isMobile) setOpenMobile(false)
@@ -48,7 +55,14 @@ export function NavMain({
               ) : (
                 <Link
                   href={item.url}
-                  onClick={() => {
+                  onClick={(e) => {
+                    // Gate: si no está autenticado y la ruta no es pública, abrir
+                    // el popup de registro y bloquear la navegación.
+                    if (!isAuthenticated && !PUBLIC_ROUTES.includes(item.url)) {
+                      e.preventDefault()
+                      openModal("register")
+                      return
+                    }
                     handleNavigate()
                     item.onClick?.()
                   }}

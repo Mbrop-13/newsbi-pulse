@@ -1,5 +1,10 @@
 import { CountryFeedPage } from "@/components/country-feed-page";
+import { AuthGuard } from "@/components/auth-guard";
 
 export default function ParaTiPage() {
-  return <CountryFeedPage initialFilter="para_ti" />;
+  return (
+    <AuthGuard>
+      <CountryFeedPage initialFilter="para_ti" />
+    </AuthGuard>
+  );
 }

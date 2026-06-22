@@ -96,7 +96,7 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     name: "Pro",
     price: 22990,
     priceUSD: 24.99,
-    annualDiscount: 0.2,
+    annualDiscount: 2 / 12,
     
     aiMessagesPerMonth: 100,
     aiLifetimeMessages: -1,
@@ -134,7 +134,7 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     name: "Max",
     price: 43990,
     priceUSD: 45.99,
-    annualDiscount: 0.2,
+    annualDiscount: 2 / 12,
     
     aiMessagesPerMonth: 200, // x2 Pro
     aiLifetimeMessages: -1,
@@ -172,7 +172,7 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     name: "Ultra",
     price: 97990,
     priceUSD: 99.99,
-    annualDiscount: 0.2,
+    annualDiscount: 2 / 12,
     
     aiMessagesPerMonth: 500, // x5 Pro
     aiLifetimeMessages: -1,
@@ -210,7 +210,7 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     name: "Ultra x20",
     price: 195980, // 97990 * 2
     priceUSD: 199.99,
-    annualDiscount: 0.2,
+    annualDiscount: 2 / 12,
     
     aiMessagesPerMonth: 2000, // x20 Pro
     aiLifetimeMessages: -1,

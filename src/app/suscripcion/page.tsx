@@ -8,9 +8,7 @@ import {
   Check,
   X,
   Sparkles,
-  Shield,
   ChevronDown,
-  Crown,
   Gift,
   Zap,
 } from "lucide-react";
@@ -24,7 +22,6 @@ function SubscriptionPageContent() {
   const statusParam = searchParams.get("status");
 
   const { tier: currentTier } = useSubscriptionStore();
-  const [activeSegment, setActiveSegment] = useState<"individual" | "empresarial">("individual");
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
   const [isUltraX20Toggled, setIsUltraX20Toggled] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -115,12 +112,21 @@ function SubscriptionPageContent() {
       ? (isReferred ? Math.round(getAnnualMonthlyPrice(actualPlanId) * 0.8) : getAnnualMonthlyPrice(actualPlanId))
       : discountPrice;
 
-    // Only Pro has 7 days free trial, and only if user is currently Free
-    if (planId === "pro" && currentTier === "free") {
+    // Only Pro has 7 days free trial, and only if user is currently Free and billing is monthly
+    if (planId === "pro" && currentTier === "free" && billingCycle === "monthly") {
       return `Prueba 7 días por $0, luego $${finalMonthlyPrice.toLocaleString("es-CL")} mensual`;
     }
     
     return `$${finalMonthlyPrice.toLocaleString("es-CL")} mensual`;
+  };
+
+  const getAnnualTotal = (planId: PlanTier): string => {
+    const actualPlanId = planId === "ultra" && isUltraX20Toggled ? "ultra_x20" : planId;
+    const config = PLAN_CONFIGS[actualPlanId];
+    let basePrice = config.price;
+    if (isReferred) basePrice = Math.round(basePrice * 0.8);
+    // Annual total is 10 times the monthly price (because of 2 months free!)
+    return Math.round(basePrice * 10).toLocaleString("es-CL");
   };
 
   // Build features dynamically based on states
@@ -184,7 +190,7 @@ function SubscriptionPageContent() {
     },
     {
       q: "¿Hay descuento por pago anual?",
-      a: "¡Sí! Si seleccionas la facturación anual, obtienes un 20% de descuento automático en la mensualidad de todos los planes de pago.",
+      a: "¡Sí! Si seleccionas la facturación anual, obtienes el equivalente a 2 meses gratis por año en todos los planes de pago.",
     },
     {
       q: "¿Qué métodos de pago aceptan?",
@@ -192,7 +198,7 @@ function SubscriptionPageContent() {
     },
     {
       q: "¿Cómo funciona la prueba gratuita?",
-      a: "Nuestra prueba gratuita de 7 días está disponible de forma exclusiva para el plan Pro si actualmente no posees una suscripción activa. Puedes cancelar antes de terminar los 7 días y no se realizará ningún cargo.",
+      a: "Nuestra prueba gratuita de 7 días está disponible de forma exclusiva para el plan Pro en la modalidad mensual. Puedes cancelar antes de terminar los 7 días y no se realizará ningún cargo.",
     },
     {
       q: "¿Qué es la opción Ultra x20?",
@@ -201,7 +207,7 @@ function SubscriptionPageContent() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#f8f8fb] dark:bg-zinc-950 text-neutral-900 dark:text-neutral-100 transition-colors duration-300 relative overflow-hidden pb-24">
+    <div className="min-h-screen bg-[#f8f8fb] dark:bg-zinc-950 text-neutral-900 dark:text-neutral-100 transition-colors duration-300 relative overflow-hidden pb-24 animate-fade-in">
       {/* Floating Close Button in top right corner */}
       <Link
         href="/home"
@@ -226,19 +232,19 @@ function SubscriptionPageContent() {
           {currentTier === "free" ? (
             <>
               <h1 className="text-3xl md:text-5xl font-black tracking-tight mt-6 mb-3 text-neutral-900 dark:text-white leading-tight">
-                Prueba Pro gratis durante <span className="text-neutral-950 dark:text-white underline decoration-2 decoration-neutral-950 dark:decoration-white font-extrabold">7 días</span>
+                Planes y Suscripciones Premium
               </h1>
               <p className="text-neutral-500 dark:text-neutral-400 text-xs md:text-sm max-w-lg mt-1">
-                Comienza hoy con nuestro periodo de prueba en el plan Pro o sube de nivel con nuestros planes ilimitados.
+                Elige la facturación que prefieras. El plan Pro incluye 7 días de prueba gratis en la modalidad mensual.
               </p>
             </>
           ) : (
             <>
               <h1 className="text-3xl md:text-5xl font-black tracking-tight mt-6 mb-3 text-neutral-900 dark:text-white leading-tight">
-                Planes y Suscripciones Premium
+                Gestiona tu Suscripción Premium
               </h1>
               <p className="text-neutral-500 dark:text-neutral-400 text-xs md:text-sm max-w-lg mt-1">
-                Gestiona o sube el nivel de tu cuenta para continuar operando con las máximas capacidades financieras.
+                Sube el nivel de tu cuenta para continuar operando con las máximas capacidades financieras.
               </p>
             </>
           )}
@@ -258,28 +264,31 @@ function SubscriptionPageContent() {
           )}
         </div>
 
-        {/* Individual vs Empresarial Selector */}
+        {/* Mensual vs Anual Toggle Switch at the top */}
         <div className="flex justify-center mt-6">
           <div className="inline-flex p-1 bg-neutral-200/60 dark:bg-zinc-800 rounded-full border border-neutral-300/40 dark:border-zinc-700/40 shadow-inner">
             <button
-              onClick={() => setActiveSegment("individual")}
+              onClick={() => setBillingCycle("monthly")}
               className={`px-6 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 ${
-                activeSegment === "individual"
+                billingCycle === "monthly"
                   ? "bg-white dark:bg-zinc-700 text-neutral-900 dark:text-white shadow-sm"
                   : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
               }`}
             >
-              Individual
+              Mensual
             </button>
             <button
-              onClick={() => setActiveSegment("empresarial")}
-              className={`px-6 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 ${
-                activeSegment === "empresarial"
+              onClick={() => setBillingCycle("annual")}
+              className={`px-6 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 flex items-center gap-2.5 ${
+                billingCycle === "annual"
                   ? "bg-white dark:bg-zinc-700 text-neutral-900 dark:text-white shadow-sm"
                   : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
               }`}
             >
-              Empresarial
+              Anual
+              <span className="px-2 py-0.5 bg-neutral-950 text-white dark:bg-white dark:text-black text-[9px] font-black rounded-full shadow-sm">
+                2 Meses Gratis
+              </span>
             </button>
           </div>
         </div>
@@ -304,324 +313,281 @@ function SubscriptionPageContent() {
       </AnimatePresence>
 
       <main className="max-w-6xl mx-auto px-4 relative z-10">
-        <AnimatePresence mode="wait">
-          {activeSegment === "individual" ? (
-            <motion.div
-              key="individual-grid"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.3 }}
-              className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 items-stretch animate-fade-in"
-            >
-              {/* Plan 1: Pro */}
-              <div
-                className={`bg-white dark:bg-zinc-900 border rounded-[32px] p-8 shadow-sm flex flex-col justify-between transition-all duration-300 relative group ${
-                  isInferiorPlan("pro")
-                    ? "opacity-40 grayscale bg-neutral-100/30 dark:bg-zinc-900/10 pointer-events-none select-none border-dashed border-neutral-300 dark:border-zinc-800"
-                    : currentTier === "pro"
-                    ? "border-2 border-neutral-900 dark:border-white shadow-md"
-                    : "border-neutral-200/80 dark:border-zinc-800/80 hover:shadow-md"
-                }`}
-              >
-                {isInferiorPlan("pro") && (
-                  <div className="absolute top-4 left-6 bg-neutral-250 dark:bg-zinc-800 text-neutral-800 dark:text-neutral-300 text-[9px] font-black px-2 py-0.5 rounded-full border border-neutral-300 dark:border-zinc-700 uppercase">
-                    Plan Superado
-                  </div>
-                )}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 items-stretch">
+          {/* Plan 1: Pro */}
+          <div
+            className={`bg-white dark:bg-zinc-900 border rounded-[32px] p-8 shadow-sm flex flex-col justify-between transition-all duration-300 relative group ${
+              isInferiorPlan("pro")
+                ? "opacity-40 grayscale bg-neutral-100/30 dark:bg-zinc-900/10 pointer-events-none select-none border-dashed border-neutral-300 dark:border-zinc-800"
+                : currentTier === "pro"
+                ? "border-2 border-neutral-900 dark:border-white shadow-md"
+                : "border-neutral-200/80 dark:border-zinc-800/80 hover:shadow-md"
+            }`}
+          >
+            {isInferiorPlan("pro") && (
+              <div className="absolute top-4 left-6 bg-neutral-250 dark:bg-zinc-800 text-neutral-800 dark:text-neutral-300 text-[9px] font-black px-2 py-0.5 rounded-full border border-neutral-300 dark:border-zinc-700 uppercase">
+                Plan Superado
+              </div>
+            )}
 
-                <div>
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-xl font-black text-neutral-900 dark:text-white">Pro</h3>
-                  </div>
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-black text-neutral-900 dark:text-white">Pro</h3>
+              </div>
 
-                  <div className="mb-6">
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-4xl md:text-5xl font-black text-neutral-900 dark:text-white tracking-tight">
-                        ${getDisplayPrice("pro")}
-                      </span>
-                      <span className="text-neutral-500 dark:text-neutral-400 font-bold text-sm">CLP/mes</span>
-                    </div>
-                    <p className="text-[12px] md:text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
-                      {getPlanDescription("pro")}
-                    </p>
-                  </div>
-
-                  <Button
-                    onClick={() => handleSelectPlan("pro")}
-                    disabled={isInferiorPlan("pro") || currentTier === "pro" || loadingPlan === "pro"}
-                    className="w-full h-11 rounded-full font-bold text-sm transition-all duration-300 bg-neutral-200 hover:bg-neutral-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-neutral-900 dark:text-white mb-8"
-                  >
-                    {loadingPlan === "pro" ? (
-                      <span className="animate-pulse">Cargando...</span>
-                    ) : currentTier === "pro" ? (
-                      "Plan Actual"
-                    ) : isInferiorPlan("pro") ? (
-                      "Ya Incluido"
-                    ) : (
-                      "Mejorar a Pro"
-                    )}
-                  </Button>
-
-                  <div className="space-y-4">
-                    <p className="text-[10px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
-                      ¿Qué incluye?
-                    </p>
-                    <ul className="space-y-3">
-                      {getPlanFeatures("pro").map((feat, index) => (
-                        <li key={index} className="flex items-start gap-3 text-xs md:text-sm">
-                          <div className="w-5 h-5 rounded-full bg-neutral-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 border border-neutral-200/50 dark:border-zinc-700/50 mt-0.5">
-                            <Check className="w-3 h-3 text-neutral-900 dark:text-white" />
-                          </div>
-                          <span className="text-neutral-600 dark:text-neutral-300 leading-snug">{feat.text}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+              <div className="mb-6">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl md:text-5xl font-black text-neutral-900 dark:text-white tracking-tight">
+                    ${getDisplayPrice("pro")}
+                  </span>
+                  <span className="text-neutral-500 dark:text-neutral-400 font-bold text-sm">CLP/mes</span>
                 </div>
+                <p className="text-[12px] md:text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
+                  {getPlanDescription("pro")}
+                </p>
+                {billingCycle === "annual" && (
+                  <p className="text-[10px] md:text-[11px] font-black text-neutral-400 dark:text-neutral-500 mt-1 uppercase tracking-wider">
+                    Total ${getAnnualTotal("pro")} facturado al año
+                  </p>
+                )}
               </div>
 
-              {/* Plan 2: Max */}
-              <div
-                className={`bg-white dark:bg-zinc-900 border rounded-[32px] p-8 shadow-sm flex flex-col justify-between transition-all duration-300 relative group ${
-                  isInferiorPlan("max")
-                    ? "opacity-40 grayscale bg-neutral-100/30 dark:bg-zinc-900/10 pointer-events-none select-none border-dashed border-neutral-300 dark:border-zinc-800"
-                    : currentTier === "max"
-                    ? "border-2 border-neutral-900 dark:border-white shadow-md"
-                    : "border-neutral-900/50 dark:border-neutral-100/30 hover:shadow-md"
-                }`}
+              <Button
+                onClick={() => handleSelectPlan("pro")}
+                disabled={isInferiorPlan("pro") || currentTier === "pro" || loadingPlan === "pro"}
+                className="w-full h-11 rounded-full font-bold text-sm transition-all duration-300 bg-neutral-200 hover:bg-neutral-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-neutral-900 dark:text-white mb-8"
               >
-                {isInferiorPlan("max") && (
-                  <div className="absolute top-4 left-6 bg-neutral-250 dark:bg-zinc-800 text-neutral-800 dark:text-neutral-300 text-[9px] font-black px-2 py-0.5 rounded-full border border-neutral-300 dark:border-zinc-700 uppercase">
-                    Plan Superado
-                  </div>
+                {loadingPlan === "pro" ? (
+                  <span className="animate-pulse">Cargando...</span>
+                ) : currentTier === "pro" ? (
+                  "Plan Actual"
+                ) : isInferiorPlan("pro") ? (
+                  "Ya Incluido"
+                ) : (
+                  "Mejorar a Pro"
                 )}
-                
-                {!isInferiorPlan("max") && (
-                  <div className="absolute -top-3.5 right-6 bg-neutral-950 text-white dark:bg-white dark:text-black text-[10px] md:text-[11px] font-extrabold px-3 py-1 rounded-full border border-neutral-800 dark:border-neutral-200 uppercase tracking-wider">
-                    Oferta Especial
-                  </div>
-                )}
+              </Button>
 
-                <div>
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-xl font-black text-neutral-900 dark:text-white">Plan Max</h3>
-                  </div>
-
-                  <div className="mb-6">
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-4xl md:text-5xl font-black text-neutral-900 dark:text-white tracking-tight">
-                        ${getDisplayPrice("max")}
-                      </span>
-                      <span className="text-neutral-500 dark:text-neutral-400 font-bold text-sm">CLP/mes</span>
-                    </div>
-                    <p className="text-[12px] md:text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
-                      {getPlanDescription("max")}
-                    </p>
-                  </div>
-
-                  <Button
-                    onClick={() => handleSelectPlan("max")}
-                    disabled={isInferiorPlan("max") || currentTier === "max" || loadingPlan === "max"}
-                    className="w-full h-11 rounded-full font-bold text-sm transition-all duration-300 bg-neutral-950 dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-100 mb-8"
-                  >
-                    {loadingPlan === "max" ? (
-                      <span className="animate-pulse">Cargando...</span>
-                    ) : currentTier === "max" ? (
-                      "Plan Actual"
-                    ) : isInferiorPlan("max") ? (
-                      "Ya Incluido"
-                    ) : (
-                      "Adquirir Plan Max"
-                    )}
-                  </Button>
-
-                  <div className="space-y-4">
-                    <p className="text-[10px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
-                      ¿Qué incluye?
-                    </p>
-                    <ul className="space-y-3">
-                      {getPlanFeatures("max").map((feat, index) => (
-                        <li key={index} className="flex items-start gap-3 text-xs md:text-sm">
-                          <div className="w-5 h-5 rounded-full bg-neutral-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 border border-neutral-200/50 dark:border-zinc-700/50 mt-0.5">
-                            <Check className="w-3 h-3 text-neutral-900 dark:text-white" />
-                          </div>
-                          <span className="text-neutral-600 dark:text-neutral-300 leading-snug font-medium">{feat.text}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
+              <div className="space-y-4">
+                <p className="text-[10px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
+                  ¿Qué incluye?
+                </p>
+                <ul className="space-y-3">
+                  {getPlanFeatures("pro").map((feat, index) => (
+                    <li key={index} className="flex items-start gap-3 text-xs md:text-sm">
+                      <div className="w-5 h-5 rounded-full bg-neutral-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 border border-neutral-200/50 dark:border-zinc-700/50 mt-0.5">
+                        <Check className="w-3 h-3 text-neutral-900 dark:text-white" />
+                      </div>
+                      <span className="text-neutral-600 dark:text-neutral-300 leading-snug">{feat.text}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-
-              {/* Plan 3: Ultra */}
-              <div
-                className={`bg-white dark:bg-zinc-900 border rounded-[32px] p-8 shadow-sm flex flex-col justify-between transition-all duration-300 relative group ${
-                  isInferiorPlan(isUltraX20Toggled ? "ultra_x20" : "ultra")
-                    ? "opacity-40 grayscale bg-neutral-100/30 dark:bg-zinc-900/10 pointer-events-none select-none border-dashed border-neutral-300 dark:border-zinc-800"
-                    : (isUltraX20Toggled ? currentTier === "ultra_x20" : currentTier === "ultra")
-                    ? "border-2 border-neutral-900 dark:border-white shadow-md"
-                    : "border-neutral-200/80 dark:border-zinc-800/80 hover:shadow-md"
-                }`}
-              >
-                {isInferiorPlan(isUltraX20Toggled ? "ultra_x20" : "ultra") && (
-                  <div className="absolute top-4 left-6 bg-neutral-250 dark:bg-zinc-800 text-neutral-800 dark:text-neutral-300 text-[9px] font-black px-2 py-0.5 rounded-full border border-neutral-300 dark:border-zinc-700 uppercase">
-                    Plan Superado
-                  </div>
-                )}
-
-                {!isInferiorPlan(isUltraX20Toggled ? "ultra_x20" : "ultra") && (
-                  <div className="absolute -top-3.5 right-6 bg-neutral-950 text-white dark:bg-white dark:text-black text-[10px] md:text-[11px] font-extrabold px-3 py-1 rounded-full border border-neutral-800 dark:border-neutral-200 uppercase tracking-wider">
-                    {isUltraX20Toggled ? "Límites Máximos x20" : "67% Descuento"}
-                  </div>
-                )}
-
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <h3 className="text-xl font-black text-neutral-900 dark:text-white">
-                      {isUltraX20Toggled ? "Ultra x20" : "Ultra"}
-                    </h3>
-                  </div>
-
-                  {/* Dynamic Option Selector Switch (x5 vs x20) inside Ultra card header */}
-                  <div className="flex justify-start mt-2 mb-6">
-                    <div className="inline-flex p-0.5 bg-neutral-100 dark:bg-zinc-800 rounded-full border border-neutral-200 dark:border-zinc-700/50 shadow-inner">
-                      <button
-                        onClick={() => setIsUltraX20Toggled(false)}
-                        disabled={isInferiorPlan(isUltraX20Toggled ? "ultra_x20" : "ultra")}
-                        className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider transition-all duration-200 ${
-                          !isUltraX20Toggled
-                            ? "bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-sm"
-                            : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900"
-                        }`}
-                      >
-                        x5
-                      </button>
-                      <button
-                        onClick={() => setIsUltraX20Toggled(true)}
-                        disabled={isInferiorPlan(isUltraX20Toggled ? "ultra_x20" : "ultra")}
-                        className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider transition-all duration-200 ${
-                          isUltraX20Toggled
-                            ? "bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-sm"
-                            : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900"
-                        }`}
-                      >
-                        x20
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="mb-6">
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-4xl md:text-5xl font-black text-neutral-900 dark:text-white tracking-tight">
-                        ${getDisplayPrice(isUltraX20Toggled ? "ultra_x20" : "ultra")}
-                      </span>
-                      <span className="text-neutral-500 dark:text-neutral-400 font-bold text-sm">CLP/mes</span>
-                    </div>
-                    <p className="text-[12px] md:text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
-                      {getPlanDescription(isUltraX20Toggled ? "ultra_x20" : "ultra")}
-                    </p>
-                  </div>
-
-                  <Button
-                    onClick={() => handleSelectPlan("ultra")}
-                    disabled={
-                      isInferiorPlan(isUltraX20Toggled ? "ultra_x20" : "ultra") ||
-                      (isUltraX20Toggled ? currentTier === "ultra_x20" : currentTier === "ultra") ||
-                      loadingPlan === "ultra"
-                    }
-                    className="w-full h-11 rounded-full font-bold text-sm transition-all duration-300 bg-neutral-950 dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-100 mb-8"
-                  >
-                    {loadingPlan === "ultra" ? (
-                      <span className="animate-pulse">Cargando...</span>
-                    ) : (isUltraX20Toggled ? currentTier === "ultra_x20" : currentTier === "ultra") ? (
-                      "Plan Actual"
-                    ) : isInferiorPlan(isUltraX20Toggled ? "ultra_x20" : "ultra") ? (
-                      "Ya Incluido"
-                    ) : (
-                      "Adquirir Plan Ultra"
-                    )}
-                  </Button>
-
-                  <div className="space-y-4">
-                    <p className="text-[10px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
-                      ¿Qué incluye?
-                    </p>
-                    <ul className="space-y-3">
-                      {getPlanFeatures("ultra").map((feat, index) => (
-                        <li key={index} className="flex items-start gap-3 text-xs md:text-sm">
-                          <div className="w-5 h-5 rounded-full bg-neutral-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 border border-neutral-200/50 dark:border-zinc-700/50 mt-0.5">
-                            <Check className="w-3 h-3 text-neutral-900 dark:text-white" />
-                          </div>
-                          <span className="text-neutral-600 dark:text-neutral-300 leading-snug">{feat.text}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="empresarial-card"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.3 }}
-              className="max-w-2xl mx-auto bg-white dark:bg-zinc-900 border border-neutral-200/80 dark:border-zinc-800/80 rounded-[32px] p-8 md:p-12 text-center shadow-sm"
-            >
-              <div className="w-14 h-14 rounded-2xl bg-neutral-100 dark:bg-zinc-800 flex items-center justify-center mx-auto mb-6 text-neutral-900 dark:text-white">
-                <Crown className="w-7 h-7" />
-              </div>
-              <h2 className="text-2xl md:text-3xl font-black text-neutral-900 dark:text-white mb-4">
-                Planes Empresariales & Corporativos
-              </h2>
-              <p className="text-neutral-500 dark:text-neutral-400 max-w-md mx-auto mb-8 leading-relaxed text-sm md:text-base">
-                Ofrecemos integraciones a medida, multi-agentes personalizados, límites corporativos de tokens de IA y soporte prioritario 24/7 para equipos de análisis financiero.
-              </p>
-              <div className="flex flex-col sm:flex-row justify-center gap-4">
-                <a href="mailto:soporte@maverlang.cl?subject=Consulta Plan Empresarial" className="w-full sm:w-auto">
-                  <Button className="w-full sm:w-auto px-8 py-5 bg-neutral-950 hover:bg-neutral-800 dark:bg-neutral-50 dark:hover:bg-neutral-200 text-white dark:text-black font-extrabold rounded-2xl shadow-sm transition-all text-sm">
-                    Contactar a Ventas
-                  </Button>
-                </a>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Facturación Anual switch at the bottom */}
-        {activeSegment === "individual" && (
-          <div className="flex flex-col items-center justify-center mt-16 mb-20 text-center animate-fade-in">
-            <div className="flex items-center gap-3 bg-neutral-200/60 dark:bg-zinc-800/80 p-1.5 rounded-full border border-neutral-300/40 dark:border-zinc-700/40 shadow-inner">
-              <span className={`text-xs md:text-sm font-bold px-3 transition-colors ${billingCycle === "monthly" ? "text-neutral-900 dark:text-white" : "text-neutral-400"}`}>
-                Mensual
-              </span>
-              <button
-                onClick={() => setBillingCycle(c => c === "monthly" ? "annual" : "monthly")}
-                className="w-11 h-6 rounded-full bg-neutral-950 dark:bg-white p-0.5 transition-colors relative flex items-center"
-              >
-                <div
-                  className={`w-5 h-5 rounded-full bg-white dark:bg-neutral-950 shadow-sm transition-transform duration-300 transform ${
-                    billingCycle === "annual" ? "translate-x-5" : "translate-x-0"
-                  }`}
-                />
-              </button>
-              <span className={`text-xs md:text-sm font-bold px-3 flex items-center gap-1.5 transition-colors ${billingCycle === "annual" ? "text-neutral-900 dark:text-white" : "text-neutral-400"}`}>
-                Anual
-                <span className="px-2 py-0.5 bg-neutral-950 text-white dark:bg-white dark:text-black text-[10px] font-black rounded-full">
-                  Ahorra 20%
-                </span>
-              </span>
             </div>
-            <p className="text-[11px] text-neutral-400 dark:text-neutral-500 font-bold uppercase tracking-widest mt-4">
-              Ahorra con facturación anual
+          </div>
+
+          {/* Plan 2: Max */}
+          <div
+            className={`bg-white dark:bg-zinc-900 border rounded-[32px] p-8 shadow-sm flex flex-col justify-between transition-all duration-300 relative group ${
+              isInferiorPlan("max")
+                ? "opacity-40 grayscale bg-neutral-100/30 dark:bg-zinc-900/10 pointer-events-none select-none border-dashed border-neutral-300 dark:border-zinc-800"
+                : currentTier === "max"
+                ? "border-2 border-neutral-900 dark:border-white shadow-md"
+                : "border-neutral-900/50 dark:border-neutral-100/30 hover:shadow-md"
+            }`}
+          >
+            {isInferiorPlan("max") && (
+              <div className="absolute top-4 left-6 bg-neutral-250 dark:bg-zinc-800 text-neutral-800 dark:text-neutral-300 text-[9px] font-black px-2 py-0.5 rounded-full border border-neutral-300 dark:border-zinc-700 uppercase">
+                Plan Superado
+              </div>
+            )}
+            
+            {!isInferiorPlan("max") && (
+              <div className="absolute -top-3.5 right-6 bg-neutral-950 text-white dark:bg-white dark:text-black text-[10px] md:text-[11px] font-extrabold px-3 py-1 rounded-full border border-neutral-800 dark:border-neutral-200 uppercase tracking-wider">
+                Recomendado
+              </div>
+            )}
+
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-black text-neutral-900 dark:text-white">Plan Max</h3>
+              </div>
+
+              <div className="mb-6">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl md:text-5xl font-black text-neutral-900 dark:text-white tracking-tight">
+                    ${getDisplayPrice("max")}
+                  </span>
+                  <span className="text-neutral-500 dark:text-neutral-400 font-bold text-sm">CLP/mes</span>
+                </div>
+                <p className="text-[12px] md:text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
+                  {getPlanDescription("max")}
+                </p>
+                {billingCycle === "annual" && (
+                  <p className="text-[10px] md:text-[11px] font-black text-neutral-400 dark:text-neutral-500 mt-1 uppercase tracking-wider">
+                    Total ${getAnnualTotal("max")} facturado al año
+                  </p>
+                )}
+              </div>
+
+              <Button
+                onClick={() => handleSelectPlan("max")}
+                disabled={isInferiorPlan("max") || currentTier === "max" || loadingPlan === "max"}
+                className="w-full h-11 rounded-full font-bold text-sm transition-all duration-300 bg-neutral-950 dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-100 mb-8"
+              >
+                {loadingPlan === "max" ? (
+                  <span className="animate-pulse">Cargando...</span>
+                ) : currentTier === "max" ? (
+                  "Plan Actual"
+                ) : isInferiorPlan("max") ? (
+                  "Ya Incluido"
+                ) : (
+                  "Adquirir Plan Max"
+                )}
+              </Button>
+
+              <div className="space-y-4">
+                <p className="text-[10px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
+                  ¿Qué incluye?
+                </p>
+                <ul className="space-y-3">
+                  {getPlanFeatures("max").map((feat, index) => (
+                    <li key={index} className="flex items-start gap-3 text-xs md:text-sm">
+                      <div className="w-5 h-5 rounded-full bg-neutral-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 border border-neutral-200/50 dark:border-zinc-700/50 mt-0.5">
+                        <Check className="w-3 h-3 text-neutral-900 dark:text-white" />
+                      </div>
+                      <span className="text-neutral-600 dark:text-neutral-300 leading-snug font-medium">{feat.text}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Plan 3: Ultra */}
+          <div
+            className={`bg-white dark:bg-zinc-900 border rounded-[32px] p-8 shadow-sm flex flex-col justify-between transition-all duration-300 relative group ${
+              isInferiorPlan(isUltraX20Toggled ? "ultra_x20" : "ultra")
+                ? "opacity-40 grayscale bg-neutral-100/30 dark:bg-zinc-900/10 pointer-events-none select-none border-dashed border-neutral-300 dark:border-zinc-800"
+                : (isUltraX20Toggled ? currentTier === "ultra_x20" : currentTier === "ultra")
+                ? "border-2 border-neutral-900 dark:border-white shadow-md"
+                : "border-neutral-250/80 dark:border-zinc-800/80 hover:shadow-md"
+            }`}
+          >
+            {isInferiorPlan(isUltraX20Toggled ? "ultra_x20" : "ultra") && (
+              <div className="absolute top-4 left-6 bg-neutral-250 dark:bg-zinc-800 text-neutral-800 dark:text-neutral-300 text-[9px] font-black px-2 py-0.5 rounded-full border border-neutral-300 dark:border-zinc-700 uppercase">
+                Plan Superado
+              </div>
+            )}
+
+            {!isInferiorPlan(isUltraX20Toggled ? "ultra_x20" : "ultra") && (
+              <div className="absolute -top-3.5 right-6 bg-neutral-950 text-white dark:bg-white dark:text-black text-[10px] md:text-[11px] font-extrabold px-3 py-1 rounded-full border border-neutral-800 dark:border-neutral-200 uppercase tracking-wider">
+                {isUltraX20Toggled ? "Límites Máximos x20" : "Límites Máximos"}
+              </div>
+            )}
+
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-xl font-black text-neutral-900 dark:text-white">
+                  {isUltraX20Toggled ? "Ultra x20" : "Ultra"}
+                </h3>
+              </div>
+
+              {/* Dynamic Option Selector Switch (x5 vs x20) inside Ultra card header */}
+              <div className="flex justify-start mt-2 mb-6">
+                <div className="inline-flex p-0.5 bg-neutral-100 dark:bg-zinc-800 rounded-full border border-neutral-200 dark:border-zinc-700/50 shadow-inner">
+                  <button
+                    onClick={() => setIsUltraX20Toggled(false)}
+                    disabled={isInferiorPlan(isUltraX20Toggled ? "ultra_x20" : "ultra")}
+                    className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider transition-all duration-200 ${
+                      !isUltraX20Toggled
+                        ? "bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-sm"
+                        : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900"
+                    }`}
+                  >
+                    x5
+                  </button>
+                  <button
+                    onClick={() => setIsUltraX20Toggled(true)}
+                    disabled={isInferiorPlan(isUltraX20Toggled ? "ultra_x20" : "ultra")}
+                    className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider transition-all duration-200 ${
+                      isUltraX20Toggled
+                        ? "bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-sm"
+                        : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900"
+                    }`}
+                  >
+                    x20
+                  </button>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl md:text-5xl font-black text-neutral-900 dark:text-white tracking-tight">
+                    ${getDisplayPrice(isUltraX20Toggled ? "ultra_x20" : "ultra")}
+                  </span>
+                  <span className="text-neutral-500 dark:text-neutral-400 font-bold text-sm">CLP/mes</span>
+                </div>
+                <p className="text-[12px] md:text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
+                  {getPlanDescription(isUltraX20Toggled ? "ultra_x20" : "ultra")}
+                </p>
+                {billingCycle === "annual" && (
+                  <p className="text-[10px] md:text-[11px] font-black text-neutral-400 dark:text-neutral-500 mt-1 uppercase tracking-wider">
+                    Total ${getAnnualTotal("ultra")} facturado al año
+                  </p>
+                )}
+              </div>
+
+              <Button
+                onClick={() => handleSelectPlan("ultra")}
+                disabled={
+                  isInferiorPlan(isUltraX20Toggled ? "ultra_x20" : "ultra") ||
+                  (isUltraX20Toggled ? currentTier === "ultra_x20" : currentTier === "ultra") ||
+                  loadingPlan === "ultra"
+                }
+                className="w-full h-11 rounded-full font-bold text-sm transition-all duration-300 bg-neutral-950 dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-100 mb-8"
+              >
+                {loadingPlan === "ultra" ? (
+                  <span className="animate-pulse">Cargando...</span>
+                ) : (isUltraX20Toggled ? currentTier === "ultra_x20" : currentTier === "ultra") ? (
+                  "Plan Actual"
+                ) : isInferiorPlan(isUltraX20Toggled ? "ultra_x20" : "ultra") ? (
+                  "Ya Incluido"
+                ) : (
+                  "Adquirir Plan Ultra"
+                )}
+              </Button>
+
+              <div className="space-y-4">
+                <p className="text-[10px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
+                  ¿Qué incluye?
+                </p>
+                <ul className="space-y-3">
+                  {getPlanFeatures("ultra").map((feat, index) => (
+                    <li key={index} className="flex items-start gap-3 text-xs md:text-sm">
+                      <div className="w-5 h-5 rounded-full bg-neutral-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 border border-neutral-200/50 dark:border-zinc-700/50 mt-0.5">
+                        <Check className="w-3 h-3 text-neutral-900 dark:text-white" />
+                      </div>
+                      <span className="text-neutral-600 dark:text-neutral-300 leading-snug">{feat.text}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Saving details text below grid */}
+        {billingCycle === "annual" && (
+          <div className="flex justify-center mt-12 mb-6">
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 font-bold bg-neutral-100 dark:bg-zinc-900 border border-neutral-200 dark:border-zinc-850 px-5 py-2.5 rounded-full shadow-sm">
+              💡 La suscripción anual te descuenta el equivalente a 2 meses completos por año.
             </p>
           </div>
         )}
 
         {/* FAQ Section */}
-        <section className="mt-12 max-w-3xl mx-auto border-t border-neutral-200 dark:border-zinc-800 pt-16">
+        <section className="mt-16 max-w-3xl mx-auto border-t border-neutral-200 dark:border-zinc-800 pt-16">
           <div className="text-center mb-12">
             <h2 className="text-2xl md:text-3xl font-black text-neutral-900 dark:text-white">Preguntas frecuentes</h2>
             <p className="text-neutral-500 dark:text-neutral-400 text-sm mt-2">

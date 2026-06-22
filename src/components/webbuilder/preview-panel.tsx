@@ -1123,6 +1123,7 @@ export function PreviewPanel() {
                 "recharts": "latest",
                 "framer-motion": "latest",
                 "react-icons": "latest",
+                "react-router-dom": "latest",
               },
             }}
             options={{

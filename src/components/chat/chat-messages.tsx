@@ -576,12 +576,12 @@ function MessageBubble({
         {/* Contenedor de la tarjeta del plan (clickeable → expande/colapsa en chat) */}
         <div
           onClick={() => setIsPlanExpanded(!isPlanExpanded)}
-          className="rounded-2xl border border-gray-200/60 dark:border-white/5 bg-white dark:bg-zinc-950 p-4 cursor-pointer hover:border-gray-300 dark:hover:border-white/10 transition-all duration-300 select-none shadow-xl hover:shadow-2xl flex flex-col gap-3 group"
+          className="rounded-2xl border border-gray-200/60 dark:border-white/5 bg-white dark:bg-zinc-950 p-4 cursor-pointer hover:border-gray-300 dark:hover:border-white/10 transition-all duration-300 select-none flex flex-col gap-3 group"
         >
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-xl bg-[#1890FF]/10 text-[#1890FF] flex items-center justify-center shrink-0 shadow-sm border border-[#1890FF]/10">
+              <div className="w-7 h-7 rounded-xl bg-[#1890FF]/10 text-[#1890FF] flex items-center justify-center shrink-0 border border-[#1890FF]/10">
                 <ClipboardList className="w-4 h-4" />
               </div>
               <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-[#1890FF] transition-colors">
@@ -637,7 +637,7 @@ function MessageBubble({
                     {plan.agents.map((agent: any, idx: number) => (
                       <div
                         key={idx}
-                        className="flex items-start gap-2.5 rounded-xl bg-gray-50/50 dark:bg-white/[0.02] border border-gray-200/50 dark:border-white/5 px-3 py-2.5 shadow-sm hover:bg-gray-100/50 dark:hover:bg-white/[0.04] transition-colors duration-200"
+                        className="flex items-start gap-2.5 rounded-xl bg-gray-50/50 dark:bg-white/[0.02] border border-gray-200/50 dark:border-white/5 px-3 py-2.5 hover:bg-gray-100/50 dark:hover:bg-white/[0.04] transition-colors duration-200"
                       >
                         <FileCode2 className="w-4 h-4 text-[#1890FF] mt-0.5 shrink-0" />
                         <div className="min-w-0 flex-1">

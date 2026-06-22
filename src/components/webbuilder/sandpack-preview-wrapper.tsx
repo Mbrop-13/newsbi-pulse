@@ -48,6 +48,10 @@ function SandpackErrorListener() {
           const ce = (message as any).compileError;
           errorMessage = Array.isArray(ce) ? ce.join("\n") : String(ce);
         }
+      } else if ((message as any).type === "error" && (message as any).error) {
+        // Errores de ejecución (runtime errors)
+        const errObj = (message as any).error;
+        errorMessage = errObj.message || String(errObj);
       } else if (message.type === "action") {
         // Errores en runtime (uncaught errors dentro del iframe)
         if ((message as any).action === "show-error") {

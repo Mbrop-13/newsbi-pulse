@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,7 +21,9 @@ export async function POST() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { data: dbRecord, error: dbError } = await supabase
+  // Use service client to bypass RLS for user_diamonds updates
+  const serviceClient = createServiceClient();
+  const { data: dbRecord, error: dbError } = await serviceClient
     .from('user_diamonds')
     .select('*')
     .eq('user_id', user.id)
@@ -36,7 +39,7 @@ export async function POST() {
   if (!dbRecord) {
     // First time claim!
     const reward = calculateReward(1);
-    const { data: newRecord, error: insertError } = await supabase
+    const { data: newRecord, error: insertError } = await serviceClient
       .from('user_diamonds')
       .insert({
         user_id: user.id,
@@ -47,7 +50,10 @@ export async function POST() {
       .select()
       .single();
 
-    if (insertError) return NextResponse.json({ error: 'Failed to claim' }, { status: 500 });
+    if (insertError) {
+      console.error("Diamonds insert error:", insertError);
+      return NextResponse.json({ error: 'Failed to claim' }, { status: 500 });
+    }
     
     return NextResponse.json({
       success: true,
@@ -77,7 +83,7 @@ export async function POST() {
   const reward = calculateReward(newConsecutive);
   const newBalance = (dbRecord.balance || 0) + reward;
 
-  const { data: updateRecord, error: updateError } = await supabase
+  const { data: updateRecord, error: updateError } = await serviceClient
     .from('user_diamonds')
     .update({
       balance: newBalance,

@@ -130,7 +130,8 @@ interface WebBuilderStore {
   setPendingPlan: (plan: PendingPlan | null) => void;
   clearPendingPlan: () => void;
 
-  // Cloud Sync Actions
+  // Cloud Sync state and actions
+  hasPendingSave: boolean;
   syncToCloud: () => Promise<void>;
   loadFromCloud: (chatId: string) => Promise<boolean>;
   deleteFromCloud: (chatId: string) => Promise<void>;
@@ -241,6 +242,9 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
       // Active Agent Reports
       activeAgentReports: null,
       setActiveAgentReports: (reports) => set({ activeAgentReports: reports }),
+
+      // Cloud Sync state
+      hasPendingSave: false,
 
       // Plan pendiente (modo Plan)
       pendingPlan: null,
@@ -408,15 +412,19 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
       syncToCloud: async () => {
         const { files, activeProjectId, cloudSyncEnabled, isSaving } = get();
         if (!cloudSyncEnabled || !activeProjectId) return;
+        
         // Guard contra llamadas concurrentes: si ya hay un sync en curso,
-        // salir para no lanzar peticiones simultáneas que causan
-        // AbortError ("Lock broken by steal") y PATCH 500 (lock conflict).
-        if (isSaving) return;
+        // marcar que hay cambios pendientes para que se guarden al terminar
+        // y salir.
+        if (isSaving) {
+          set({ hasPendingSave: true });
+          return;
+        }
 
         const user = useAuthStore.getState().user;
         if (!user) return;
 
-        set({ isSaving: true });
+        set({ isSaving: true, hasPendingSave: false });
 
         try {
           const supabase = createClient();
@@ -471,10 +479,15 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
           }
 
           const now = new Date().toLocaleTimeString();
-          set({ lastSavedAt: now, isSaving: false });
+          set({ lastSavedAt: now });
         } catch (error) {
           console.error("WebBuilder cloud sync error:", error);
+        } finally {
           set({ isSaving: false });
+          // Si hubo cambios adicionales mientras guardábamos, ejecutar otro guardado con la última versión.
+          if (get().hasPendingSave) {
+            get().syncToCloud();
+          }
         }
       },
 

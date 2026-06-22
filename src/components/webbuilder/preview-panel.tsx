@@ -1124,6 +1124,10 @@ export function PreviewPanel() {
                 "framer-motion": "latest",
                 "react-icons": "latest",
                 "react-router-dom": "latest",
+                "clsx": "latest",
+                "tailwind-merge": "latest",
+                "canvas-confetti": "latest",
+                "@types/canvas-confetti": "latest",
               },
             }}
             options={{

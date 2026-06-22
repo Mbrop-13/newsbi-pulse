@@ -4,6 +4,7 @@ import { generateText } from 'ai';
 import { createClient } from "@/lib/supabase/server";
 import { containsArtifact, parseArtifact, actionsToFiles } from "@/lib/webbuilder-parser";
 import { incrementTokenUsage, checkTokenLimit } from "@/lib/check-limits";
+import { rateLimit, rateLimitResponse, GENERAL_API_LIMIT } from "@/lib/rate-limit";
 import { z } from "zod";
 
 const webBuilderFixSchema = z.object({
@@ -21,6 +22,10 @@ export async function POST(req: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Rate Limit check
+    const rl = await rateLimit(`wb-fix:${user.id}`, GENERAL_API_LIMIT);
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
 
     const tokenLimit = await checkTokenLimit(user.id);
     if (!tokenLimit.allowed) {
@@ -59,9 +64,10 @@ ${Object.entries(files).map(([path, code]) => `--- Archivo: ${path} ---\n${code}
 REGLAS DE RESPUESTA:
 1. Analiza con precisión la causa del error (por ejemplo, importaciones faltantes, referencias a variables no definidas, errores de sintaxis, etc.).
 2. Genera las modificaciones correspondientes en formato XML de Maverlang Artifacts.
-3. Responde ÚNICAMENTE con el bloque XML <maverlangArtifact> que contiene la o las acciones de tipo "update" (diff search/replace) o "file" (reemplazo completo) para corregir el error.
-4. No incluyas explicaciones en lenguaje natural antes ni después del bloque XML. El formato debe ser estrictamente procesable por código.
-5. Reglas del formato de diffs:
+3. Responde ÚNICAMENTE con el bloque XML <maverlangArtifact> que contiene la o las acciones para corregir el error.
+4. NUNCA uses acciones de tipo "file" para archivos que ya existen en el proyecto (puesto que esto sobrescribiría el archivo completo y borraría código útil). Debes usar exclusivamente type="update" con bloques SEARCH/REPLACE para realizar cambios puntuales que corrijan el error sin afectar el resto del código.
+5. No incluyas explicaciones en lenguaje natural antes ni después del bloque XML. El formato debe ser estrictamente procesable por código.
+6. Reglas del formato de diffs:
    - Cada bloque de modificación empieza con <<<SEARCH, seguido del código EXACTO a buscar
    - Separador === divide el código viejo del nuevo
    - Cierra con >>>

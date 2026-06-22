@@ -44,7 +44,7 @@ Reglas del formato de diffs:
 5. SIEMPRE incluye /styles.css con @tailwind base; @tailwind components; @tailwind utilities; al inicio (en proyectos React).
 6. El archivo /index.tsx ya existe en el proyecto base. NO lo incluyas a menos que necesites modificarlo.
 7. TECNOLOGÍA: Por defecto, usa React + TypeScript + Tailwind CSS. Sin embargo, si el usuario te pide explícitamente construir algo en HTML, JS, CSS puro o vanilla, genera un único archivo /index.html con todos los estilos CSS incluidos dentro de una etiqueta <style> en el <head> y la interactividad mediante una etiqueta <script> al final del <body>. NUNCA fuerces React si el usuario pidió HTML puro.
-8. Puedes usar estas librerías que ya están instaladas en el entorno React: lucide-react, recharts, framer-motion, react-icons.
+8. Puedes usar estas librerías que ya están instaladas en el entorno React: lucide-react, recharts, framer-motion, react-icons, clsx, tailwind-merge, canvas-confetti.
 9. Para iconos usa: import { NombreIcono } from "lucide-react";
 10. Para gráficos usa: import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area } from "recharts";
 11. Para animaciones usa: import { motion, AnimatePresence } from "framer-motion";

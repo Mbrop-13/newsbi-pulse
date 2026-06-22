@@ -531,6 +531,7 @@ async function generateWebBuilderCodeWithVerification(
       system: currentSystemPrompt,
       messages: [{ role: 'user', content: userMessage }],
       temperature: attempt === 1 ? 0.2 : 0.1,
+      maxTokens: 8192,
     });
 
     if (usage?.totalTokens) {
@@ -759,6 +760,7 @@ Si vas a MODIFICAR un archivo existente, usa type="update" con bloques search/re
 
 3. Todo código React debe usar importaciones estándar que estén disponibles en un entorno Vite + React normal.
 4. Recuerda: Tu response debe contener SOLAMENTE el XML. No agregues comentarios introductorios ni de cierre en markdown fuera del XML.
+5. EVITA EL TRUNCADO: Si vas a modificar un archivo existente en el proyecto, DEBES usar preferiblemente type="update" con bloques search/replace para realizar modificaciones locales, en lugar de type="file" que reescribe todo. Usa type="file" para archivos existentes SOLO si necesitas cambiar más del 60% del código y tienes la capacidad de escribir el archivo completo al 100% de manera íntegra, sin placeholders ni truncados.
 `;
 
     // Filter existing files context per-agent to optimize tokens

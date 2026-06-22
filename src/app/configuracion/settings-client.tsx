@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Bell, Shield, Smartphone, Mail, Globe, Palette, LogOut, Loader2, Save, Key, CheckCircle2, ChevronRight, Settings, Sparkles, Trash2, Search, Plus, Check, X, Cloud, CloudOff } from "lucide-react";
+import { User, Bell, Shield, Smartphone, Mail, Globe, Palette, LogOut, Loader2, Save, Key, CheckCircle2, ChevronRight, Settings, Sparkles, Trash2, Search, Plus, Check, X, Cloud, CloudOff, BarChart3, Brain, Cpu, Volume2, BellRing, Briefcase, Zap, Crown, ArrowUpRight, RefreshCw } from "lucide-react";
 import { useAuthStore, useAuthModalStore } from "@/lib/stores/auth-store";
 import { createClient } from "@/lib/supabase/client";
 import { useTheme } from "next-themes";
 import Link from "next/link";
+import { type PlanTier } from "@/lib/plan-limits";
 import { useAssistantStore, type Ticker } from "@/lib/stores/assistant-store";
 import { PREDEFINED_TOPICS } from "@/components/assistant/assistant-setup";
 import { useAIChatStore } from "@/lib/stores/ai-chat-store";
@@ -23,6 +24,7 @@ interface UserPreferences {
 
 const TABS = [
   { id: "general", label: "General", icon: User },
+  { id: "usage", label: "Plan y Consumo", icon: BarChart3 },
   { id: "assistant", label: "Asistente AI", icon: Sparkles },
   { id: "notifications", label: "Notificaciones", icon: Bell },
   { id: "security", label: "Seguridad", icon: Shield },
@@ -44,6 +46,49 @@ export default function SettingsClient() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Usage / Plan consumption
+  interface UsageResource {
+    id: string;
+    label: string;
+    icon: string;
+    used: number;
+    limit: number;
+    period: string;
+    color: string;
+    formatAsK?: boolean;
+  }
+  interface UsageData {
+    tier: PlanTier;
+    planName: string;
+    resources: UsageResource[];
+  }
+  const [usageData, setUsageData] = useState<UsageData | null>(null);
+  const [usageLoading, setUsageLoading] = useState(false);
+  const [usageError, setUsageError] = useState(false);
+
+  const fetchUsageData = async () => {
+    setUsageLoading(true);
+    setUsageError(false);
+    try {
+      const res = await fetch("/api/user/usage");
+      if (res.ok) {
+        setUsageData(await res.json());
+      } else {
+        setUsageError(true);
+      }
+    } catch {
+      setUsageError(true);
+    } finally {
+      setUsageLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated && activeTab === "usage") {
+      fetchUsageData();
+    }
+  }, [isAuthenticated, activeTab]);
   
   // Security
   const [resetEmailSent, setResetEmailSent] = useState(false);
@@ -351,6 +396,208 @@ export default function SettingsClient() {
                             <LogOut className="w-4 h-4" /> Cerrar Sesión
                           </button>
                         </div>
+                      </motion.div>
+                    )}
+
+                    {/* USAGE / PLAN TAB */}
+                    {activeTab === "usage" && (
+                      <motion.div
+                        key="usage"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="space-y-8"
+                      >
+                        {/* Plan Header */}
+                        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1890FF] via-[#6366F1] to-[#8B5CF6] p-6 text-white">
+                          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE4YzEuNjU3IDAgMyAxLjM0MyAzIDNzLTEuMzQzIDMtMyAzLTMtMS4zNDMtMy0zIDEuMzQzLTMgMy0zek0xOCAzNmMxLjY1NyAwIDMgMS4zNDMgMyAzcy0xLjM0MyAzLTMgMy0zLTEuMzQzLTMtMyAxLjM0My0zIDMtM3oiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-50" />
+                          <div className="relative z-10 flex items-center justify-between">
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <Crown className="w-5 h-5" />
+                                <span className="text-sm font-medium opacity-80">Tu plan actual</span>
+                              </div>
+                              <h2 className="text-2xl font-black">
+                                {usageData?.planName || user?.tier?.toUpperCase() || "Gratuito"}
+                              </h2>
+                              <p className="text-sm opacity-70 mt-1">
+                                {usageData?.tier === "free" 
+                                  ? "Actualiza para desbloquear más recursos" 
+                                  : "Gestiona el consumo de tu suscripción"}
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={fetchUsageData}
+                                disabled={usageLoading}
+                                className="p-2 rounded-xl bg-white/15 hover:bg-white/25 transition-colors backdrop-blur-sm"
+                                title="Actualizar datos"
+                              >
+                                <RefreshCw className={`w-4 h-4 ${usageLoading ? "animate-spin" : ""}`} />
+                              </button>
+                              {usageData?.tier === "free" && (
+                                <Link
+                                  href="/pricing"
+                                  className="flex items-center gap-1.5 px-4 py-2 bg-white text-[#6366F1] font-bold text-sm rounded-xl hover:bg-white/90 transition-colors shadow-lg"
+                                >
+                                  <Zap className="w-4 h-4" />
+                                  Mejorar Plan
+                                </Link>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Usage Cards */}
+                        {usageLoading && !usageData ? (
+                          <div className="flex justify-center py-12">
+                            <Loader2 className="w-8 h-8 animate-spin text-[#1890FF]" />
+                          </div>
+                        ) : usageError ? (
+                          <div className="text-center py-12">
+                            <p className="text-gray-500 mb-4">No se pudo cargar la información de consumo.</p>
+                            <button
+                              onClick={fetchUsageData}
+                              className="px-4 py-2 bg-[#1890FF] text-white text-sm font-bold rounded-xl hover:opacity-90 transition-opacity"
+                            >
+                              Reintentar
+                            </button>
+                          </div>
+                        ) : usageData ? (
+                          <div className="space-y-6">
+                            <div>
+                              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Consumo de Recursos</h3>
+                              <p className="text-sm text-gray-500 mb-5">Uso actual de cada recurso incluido en tu plan.</p>
+                            </div>
+
+                            <div className="grid gap-4">
+                              {usageData.resources.map((resource, idx) => {
+                                const isUnlimited = resource.limit === -1;
+                                const percentageUsed = isUnlimited ? 0 : resource.limit === 0 ? 100 : Math.min(100, Math.round((resource.used / resource.limit) * 100));
+                                const percentageRemaining = isUnlimited ? 100 : Math.max(0, 100 - percentageUsed);
+                                const isWarning = percentageRemaining <= 20 && percentageRemaining > 0;
+                                const isDanger = percentageRemaining === 0;
+                                const statusColor = isDanger ? "#EF4444" : isWarning ? "#F59E0B" : resource.color;
+
+                                const IconMap: Record<string, typeof Brain> = {
+                                  brain: Brain,
+                                  cpu: Cpu,
+                                  volume: Volume2,
+                                  bell: BellRing,
+                                  briefcase: Briefcase,
+                                };
+                                const IconComponent = IconMap[resource.icon] || Cpu;
+
+                                const formatNumber = (n: number, asK?: boolean) => {
+                                  if (asK && n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
+                                  if (asK && n >= 1000) return `${(n / 1000).toFixed(0)}K`;
+                                  return n.toLocaleString("es-CL");
+                                };
+
+                                return (
+                                  <motion.div
+                                    key={resource.id}
+                                    initial={{ opacity: 0, y: 15 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: idx * 0.08 }}
+                                    className="group relative p-5 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-800/40 hover:border-gray-300 dark:hover:border-gray-700 transition-all hover:shadow-md"
+                                  >
+                                    <div className="flex items-start justify-between mb-4">
+                                      <div className="flex items-center gap-3">
+                                        <div 
+                                          className="p-2.5 rounded-xl"
+                                          style={{ backgroundColor: `${statusColor}15` }}
+                                        >
+                                          <IconComponent className="w-5 h-5" style={{ color: statusColor }} />
+                                        </div>
+                                        <div>
+                                          <h4 className="text-sm font-bold text-gray-900 dark:text-white">{resource.label}</h4>
+                                          <p className="text-xs text-gray-400 capitalize">{resource.period}</p>
+                                        </div>
+                                      </div>
+                                      <div className="text-right">
+                                        {isUnlimited ? (
+                                          <div className="flex items-center gap-1 text-emerald-500">
+                                            <Zap className="w-3.5 h-3.5" />
+                                            <span className="text-xs font-bold">Ilimitado</span>
+                                          </div>
+                                        ) : (
+                                          <div className="flex flex-col items-end">
+                                            <span className="text-lg font-black" style={{ color: statusColor }}>
+                                              {percentageRemaining}%
+                                            </span>
+                                            <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 mt-0.5">
+                                              {isDanger ? "Agotado" : "disponible"}
+                                            </span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* Progress Bar */}
+                                    <div className="relative h-2.5 rounded-full bg-gray-100 dark:bg-gray-700/50 overflow-hidden">
+                                      {isUnlimited ? (
+                                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-emerald-500 opacity-30 rounded-full" />
+                                      ) : (
+                                        <motion.div
+                                          initial={{ width: 0 }}
+                                          animate={{ width: `${percentageUsed}%` }}
+                                          transition={{ duration: 1, ease: "easeOut", delay: idx * 0.1 }}
+                                          className="absolute inset-y-0 left-0 rounded-full"
+                                          style={{
+                                            background: isDanger 
+                                              ? `linear-gradient(90deg, ${statusColor}, #DC2626)` 
+                                              : isWarning
+                                                ? `linear-gradient(90deg, ${resource.color}, ${statusColor})`
+                                                : `linear-gradient(90deg, ${resource.color}90, ${resource.color})`,
+                                          }}
+                                        />
+                                      )}
+                                    </div>
+
+                                    {/* Usage Numbers */}
+                                    <div className="flex justify-between mt-2.5">
+                                      <span className="text-xs font-semibold text-gray-500">
+                                        {formatNumber(resource.used, resource.formatAsK)} de {isUnlimited ? "∞" : formatNumber(resource.limit, resource.formatAsK)} usados ({percentageUsed}% ocupado)
+                                      </span>
+                                      {!isUnlimited && (
+                                        <span className="text-xs font-semibold text-gray-400">
+                                          Quedan {formatNumber(Math.max(0, resource.limit - resource.used), resource.formatAsK)}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </motion.div>
+                                );
+                              })}
+                            </div>
+
+                            {/* Upgrade CTA for free users */}
+                            {usageData.tier === "free" && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.5 }}
+                                className="relative overflow-hidden p-6 rounded-2xl border border-[#1890FF]/20 bg-gradient-to-r from-[#1890FF]/5 to-[#6366F1]/5"
+                              >
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                  <div>
+                                    <h4 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                      <Sparkles className="w-4 h-4 text-[#1890FF]" />
+                                      ¿Necesitas más capacidad?
+                                    </h4>
+                                    <p className="text-sm text-gray-500 mt-1">Desbloquea mensajes ilimitados, análisis avanzado y más con un plan premium.</p>
+                                  </div>
+                                  <Link
+                                    href="/pricing"
+                                    className="flex items-center gap-1.5 px-5 py-2.5 bg-[#1890FF] text-white font-bold text-sm rounded-xl hover:opacity-90 transition-opacity shadow-lg shadow-[#1890FF]/25 whitespace-nowrap shrink-0"
+                                  >
+                                    Ver Planes <ArrowUpRight className="w-4 h-4" />
+                                  </Link>
+                                </div>
+                              </motion.div>
+                            )}
+                          </div>
+                        ) : null}
                       </motion.div>
                     )}
 

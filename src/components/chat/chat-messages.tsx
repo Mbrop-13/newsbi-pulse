@@ -163,7 +163,7 @@ export function ChatMessages({
                                 {/* Timeline dot */}
                                 <div className={cn(
                                   "absolute -left-[21px] top-[5px] w-2.5 h-2.5 rounded-full border-2 border-white dark:border-[#0a0a0a]",
-                                  isFailed ? "bg-red-500" : isDone ? "bg-emerald-500" : "bg-amber-500 animate-pulse"
+                                  isFailed ? "bg-red-500" : isDone ? "bg-black dark:bg-white" : "bg-amber-500 animate-pulse"
                                 )} />
 
                                 {/* Agent header */}
@@ -182,7 +182,7 @@ export function ChatMessages({
                                   {isFailed ? (
                                     <XCircle className="w-3 h-3 text-red-500 ml-auto shrink-0" />
                                   ) : isDone ? (
-                                    <CheckCircle2 className="w-3 h-3 text-emerald-500 ml-auto shrink-0" />
+                                    <CheckCircle2 className="w-3 h-3 text-black dark:text-white ml-auto shrink-0" />
                                   ) : (
                                     <Loader2 className="w-3 h-3 text-amber-500 ml-auto shrink-0 animate-spin" />
                                   )}
@@ -390,7 +390,7 @@ function MessageBubble({
   const isUser = message.role === "user"
   const [isCitationsOpen, setIsCitationsOpen] = useState(false)
   const [activePreviewUrl, setActivePreviewUrl] = useState<string | null>(null)
-  const [isAgentsExpanded, setIsAgentsExpanded] = useState(true)
+  const [isAgentsExpanded, setIsAgentsExpanded] = useState(false)
   const [expandedReportIdx, setExpandedReportIdx] = useState<number | null>(null)
   const [isPlanExpanded, setIsPlanExpanded] = useState(true)
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false)
@@ -794,12 +794,6 @@ function MessageBubble({
           onClick={() => setIsAgentsExpanded(!isAgentsExpanded)}
           className="flex items-center gap-2 w-full text-left group"
         >
-          <div className={cn(
-            "w-5 h-5 rounded-md flex items-center justify-center transition-colors",
-            isAgentsExpanded ? "bg-[#1890FF]/10 text-[#1890FF]" : "bg-muted text-muted-foreground group-hover:bg-[#1890FF]/10 group-hover:text-[#1890FF]"
-          )}>
-            <Sparkles className="w-3 h-3" />
-          </div>
           <span className="text-xs font-semibold text-muted-foreground group-hover:text-foreground transition-colors">
             {reports.length} Agentes Especializados
           </span>
@@ -835,7 +829,7 @@ function MessageBubble({
                       {/* Timeline dot */}
                       <div className={cn(
                         "absolute -left-[21px] top-[5px] w-2.5 h-2.5 rounded-full border-2 border-white dark:border-[#0a0a0a]",
-                        isFailed ? "bg-red-500" : isDone ? "bg-emerald-500" : "bg-amber-500 animate-pulse"
+                        isFailed ? "bg-red-500" : isDone ? "bg-black dark:bg-white" : "bg-amber-500 animate-pulse"
                       )} />
 
                       {/* Agent header */}
@@ -861,7 +855,7 @@ function MessageBubble({
                         {isFailed ? (
                           <XCircle className="w-3 h-3 text-red-500 ml-auto shrink-0" />
                         ) : isDone ? (
-                          <CheckCircle2 className="w-3 h-3 text-emerald-500 ml-auto shrink-0" />
+                          <CheckCircle2 className="w-3 h-3 text-black dark:text-white ml-auto shrink-0" />
                         ) : (
                           <Loader2 className="w-3 h-3 text-amber-500 ml-auto shrink-0 animate-spin" />
                         )}
@@ -976,14 +970,14 @@ function MessageBubble({
                     {/* Timeline dot */}
                     <div className={cn(
                       "absolute -left-[21px] top-[5px] w-2.5 h-2.5 rounded-full border-2 border-white dark:border-[#0a0a0a]",
-                      isFailed ? "bg-red-500" : isDone ? "bg-emerald-500" : "bg-amber-500 animate-pulse"
+                      isFailed ? "bg-red-500" : isDone ? "bg-black dark:bg-white" : "bg-amber-500 animate-pulse"
                     )} />
                     
                     <div className="flex items-center gap-1.5">
                       {isFailed ? (
                         <XCircle className="w-3 h-3 text-red-500 shrink-0" />
                       ) : isDone ? (
-                        <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
+                        <CheckCircle2 className="w-3 h-3 text-black dark:text-white shrink-0" />
                       ) : (
                         <Loader2 className="w-3 h-3 text-amber-500 shrink-0 animate-spin" />
                       )}

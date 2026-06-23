@@ -104,6 +104,21 @@ export function ChatInput({
   const [browser, setBrowser] = useState(false);
   const { isWebBuilderMode, setWebBuilderMode, buildMode } = useWebBuilderStore();
   const { tokenLimitReached, tokenLimitDetails, openModal: openConversionModal, clearTokenLimitReached } = useConversionStore();
+  const {
+    messages,
+    activeTools,
+    favoriteTools,
+    toggleTool,
+    toggleFavoriteTool,
+    attachedFiles,
+    attachedArticles,
+    removeFile,
+    removeArticle,
+    attachFile,
+    selectedModel,
+    setModel,
+  } = useAIChatStore();
+  const isNewChat = messages.length === 0;
   
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [attachMenuView, setAttachMenuView] = useState<'main' | 'charts' | 'analysis'>('main');
@@ -128,38 +143,65 @@ export function ChatInput({
     "Analiza las finanzas de NVIDIA..."
   ];
 
-  const [placeholderIndex, setPlaceholderIndex] = useState(0);
-  const [currentPlaceholder, setCurrentPlaceholder] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [typewriter, setTypewriter] = useState({
+    text: "",
+    isDeleting: false,
+    index: 0,
+  });
+
+  // Reset typewriter when starting a new chat
+  useEffect(() => {
+    if (isNewChat) {
+      setTypewriter({
+        text: "",
+        isDeleting: false,
+        index: 0,
+      });
+    }
+  }, [isNewChat]);
 
   useEffect(() => {
-    if (value) return;
+    if (value || !isNewChat) return;
 
     let timer: NodeJS.Timeout;
-    const fullText = placeholders[placeholderIndex];
-    const typingSpeed = isDeleting ? 30 : 60;
+    const fullText = placeholders[typewriter.index];
+    const typingSpeed = typewriter.isDeleting ? 30 : 60;
     const delayBetweenWords = 2500;
 
-    if (!isDeleting && currentPlaceholder === fullText) {
-      timer = setTimeout(() => setIsDeleting(true), delayBetweenWords);
-    } else if (isDeleting && currentPlaceholder === "") {
-      setIsDeleting(false);
-      setPlaceholderIndex((prev) => (prev + 1) % placeholders.length);
+    if (!typewriter.isDeleting && typewriter.text === fullText) {
+      timer = setTimeout(() => {
+        setTypewriter((prev) => ({ ...prev, isDeleting: true }));
+      }, delayBetweenWords);
+    } else if (typewriter.isDeleting && typewriter.text === "") {
+      setTypewriter((prev) => ({
+        text: "",
+        isDeleting: false,
+        index: (prev.index + 1) % placeholders.length,
+      }));
     } else {
       timer = setTimeout(() => {
-        const nextText = isDeleting
-          ? fullText.substring(0, currentPlaceholder.length - 1)
-          : fullText.substring(0, currentPlaceholder.length + 1);
-        setCurrentPlaceholder(nextText);
+        setTypewriter((prev) => {
+          const currentFullText = placeholders[prev.index];
+          const nextText = prev.isDeleting
+            ? currentFullText.substring(0, prev.text.length - 1)
+            : currentFullText.substring(0, prev.text.length + 1);
+          return {
+            ...prev,
+            text: nextText,
+          };
+        });
       }, typingSpeed);
     }
 
     return () => clearTimeout(timer);
-  }, [currentPlaceholder, isDeleting, placeholderIndex, value]);
+  }, [typewriter, value, isNewChat]);
 
   const displayedPlaceholder = isListening 
     ? "Escuchando... habla ahora" 
-    : (value ? "" : currentPlaceholder || customPlaceholder || "Envía un mensaje...");
+    : (value 
+        ? "" 
+        : (isNewChat ? (typewriter.text || " ") : (customPlaceholder || "Envía un mensaje..."))
+      );
 
   // Click outside listener for attachment menu
   useEffect(() => {
@@ -180,23 +222,7 @@ export function ChatInput({
   const userTier = useAuthStore((s) => s.user?.role === "admin" ? "ultra" : (s.user?.tier || "free"));
   const MAX_FILES = userTier === "free" ? 1 : userTier === "pro" ? 3 : 10;
 
-  const {
-    messages,
-    activeTools,
-    favoriteTools,
-    toggleTool,
-    toggleFavoriteTool,
-    attachedFiles,
-    attachedArticles,
-    removeFile,
-    removeArticle,
-    attachFile,
-    selectedModel,
-    setModel,
-  } = useAIChatStore();
-
   const { isMobile } = useSidebar();
-  const isNewChat = messages.length === 0;
   const openUpward = !isNewChat || isMobile;
 
   // Auto-resize the textarea as content grows

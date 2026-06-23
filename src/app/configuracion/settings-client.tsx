@@ -477,7 +477,6 @@ export default function SettingsClient() {
                                 const percentageRemaining = isUnlimited ? 100 : Math.max(0, 100 - percentageUsed);
                                 const isWarning = percentageRemaining <= 20 && percentageRemaining > 0;
                                 const isDanger = percentageRemaining === 0;
-                                const statusColor = isDanger ? "#EF4444" : isWarning ? "#F59E0B" : "#8B5CF6";
 
                                 const IconMap: Record<string, typeof Brain> = {
                                   brain: Brain,
@@ -494,29 +493,51 @@ export default function SettingsClient() {
                                     initial={{ opacity: 0, y: 15 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: idx * 0.08 }}
-                                    className="group relative p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800/80 bg-zinc-950 text-white transition-all shadow-md"
+                                    className="group relative p-6 rounded-3xl border border-black/10 dark:border-white/10 bg-white/40 dark:bg-zinc-900/40 backdrop-blur-xl shadow-lg shadow-black/5 dark:shadow-black/20 hover:border-[#8B5CF6]/50 dark:hover:border-[#8B5CF6]/40 hover:shadow-[0_8px_32px_0_rgba(139,92,246,0.1)] transition-all duration-500 overflow-hidden"
                                   >
-                                    <div className="flex items-start justify-between mb-4">
+                                    {/* Glowing spots */}
+                                    <div 
+                                      className="absolute -right-12 -top-12 w-28 h-28 rounded-full blur-2xl group-hover:scale-125 transition-transform duration-700 pointer-events-none opacity-80"
+                                      style={{
+                                        background: `radial-gradient(circle, ${resource.color}33 0%, transparent 70%)`
+                                      }}
+                                    />
+                                    <div 
+                                      className="absolute -left-12 -bottom-12 w-28 h-28 rounded-full blur-2xl pointer-events-none opacity-50"
+                                      style={{
+                                        background: `radial-gradient(circle, ${resource.color}15 0%, transparent 70%)`
+                                      }}
+                                    />
+
+                                    <div className="relative z-10 flex items-start justify-between mb-4">
                                       <div className="flex items-center gap-3">
                                         <div 
-                                          className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800"
+                                          className="p-2.5 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 flex items-center justify-center shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_1px_2px_rgba(255,255,255,0.05)]"
                                         >
-                                          <IconComponent className="w-5 h-5 text-[#8B5CF6]" />
+                                          <IconComponent 
+                                            className="w-5 h-5 transition-transform duration-500 group-hover:scale-110" 
+                                            style={{ color: resource.color }}
+                                          />
                                         </div>
                                         <div>
-                                          <h4 className="text-sm font-bold text-white">{resource.label}</h4>
-                                          <p className="text-xs text-zinc-400 capitalize">{resource.period}</p>
+                                          <h4 className="text-sm font-black text-gray-900 dark:text-white leading-none">{resource.label}</h4>
+                                          <p className="text-[10px] text-gray-500 dark:text-zinc-400 capitalize mt-1">{resource.period}</p>
                                         </div>
                                       </div>
                                       <div className="text-right">
                                         {isUnlimited ? (
-                                          <span className="text-xs font-bold text-emerald-400">Ilimitado</span>
+                                          <span className="text-xs font-bold text-emerald-500 dark:text-emerald-400">Ilimitado</span>
                                         ) : (
                                           <div className="flex flex-col items-end">
-                                            <span className="text-lg font-black text-white">
+                                            <span 
+                                              className="text-lg font-black leading-none bg-clip-text text-transparent bg-gradient-to-r"
+                                              style={{
+                                                backgroundImage: `linear-gradient(to right, ${resource.color}, #D946EF)`
+                                              }}
+                                            >
                                               {percentageRemaining}%
                                             </span>
-                                            <span className="text-[10px] font-semibold text-zinc-400 mt-0.5">
+                                            <span className="text-[9px] font-bold text-gray-500 dark:text-zinc-400 mt-1 uppercase tracking-wider">
                                               {isDanger ? "Agotado" : "disponible"}
                                             </span>
                                           </div>
@@ -525,26 +546,30 @@ export default function SettingsClient() {
                                     </div>
 
                                     {/* Progress Bar */}
-                                    <div className="relative h-1.5 rounded-full bg-zinc-900 overflow-hidden border border-zinc-800/50">
+                                    <div className="relative h-2.5 rounded-full bg-black/5 dark:bg-white/10 overflow-hidden border border-black/5 dark:border-white/[0.03] shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)] dark:shadow-[inset_0_1px_2px_rgba(0,0,0,0.3)]">
                                       {isUnlimited ? (
                                         <div className="absolute inset-0 bg-emerald-500/20 rounded-full" />
                                       ) : (
                                         <motion.div
                                           initial={{ width: 0 }}
                                           animate={{ width: `${percentageUsed}%` }}
-                                          transition={{ duration: 1, ease: "easeOut", delay: idx * 0.1 }}
-                                          className="absolute inset-y-0 left-0 rounded-full bg-[#8B5CF6]"
+                                          transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: idx * 0.1 }}
+                                          className="absolute inset-y-0 left-0 rounded-full"
+                                          style={{
+                                            background: `linear-gradient(90deg, ${resource.color} 0%, #D946EF 50%, #EC4899 100%)`,
+                                            boxShadow: `0 0 10px ${resource.color}80`
+                                          }}
                                         />
                                       )}
                                     </div>
 
                                     {/* Usage Numbers */}
-                                    <div className="flex justify-between mt-2.5 text-xs font-semibold">
-                                      <span className="text-zinc-400">
+                                    <div className="flex justify-between mt-3 text-[10px] font-bold text-gray-500 dark:text-zinc-400 select-none font-sans">
+                                      <span>
                                         {isUnlimited ? "0% ocupado" : `${percentageUsed}% ocupado`}
                                       </span>
                                       {!isUnlimited && (
-                                        <span className="text-zinc-400">
+                                        <span>
                                           Quedan {percentageRemaining}%
                                         </span>
                                       )}

@@ -379,88 +379,142 @@ async function checkPortfolioLimit(userId: string, tier: PlanTier): Promise<Limi
 }
 
 /**
- * Check if user has enough tokens remaining
+ * Check if user has enough tokens remaining (checking monthly/lifetime, 5-hour, and weekly limits in parallel)
  */
 export async function checkTokenLimit(userId: string): Promise<{ allowed: boolean; remaining: number; limit: number; tier: PlanTier }> {
   const tier = await getUserTier(userId);
   const config = getPlanConfig(tier);
   const isGuest = userId.startsWith("guest-");
-  
-  if (tier === "free") {
-    const limit = config.aiLifetimeTokens;
-    try {
-      let used = 0;
-      if (isGuest) {
-        const { data, error } = await supabase
-          .from("guest_usage")
-          .select("ai_tokens_total")
-          .eq("ip_address", userId)
-          .maybeSingle();
-        
-        if (error) throw error;
-        used = data?.ai_tokens_total || 0;
-      } else {
-        const { data, error } = await supabase
-          .from("lifetime_usage")
-          .select("ai_tokens_total")
-          .eq("user_id", userId)
-          .maybeSingle();
-        
-        if (error) throw error;
-        used = data?.ai_tokens_total || 0;
-      }
-      return { allowed: used < limit, remaining: Math.max(0, limit - used), limit, tier };
-    } catch (dbErr) {
-      console.warn("[checkTokenLimit] Column ai_tokens_total or guest_usage table might not exist yet, skipping DB check:", dbErr);
-      return { allowed: true, remaining: limit, limit, tier };
-    }
-  }
-  
-  const limit = config.aiTokensPerMonth;
-  if (limit === -1) {
-    return { allowed: true, remaining: 9999999, limit: -1, tier };
-  }
+
+  // Define limits based on tier
+  const monthlyLimit = tier === "free" ? config.aiLifetimeTokens : config.aiTokensPerMonth;
+  const fiveHourLimit = config.aiTokensPer5Hours;
+  const weeklyLimit = config.aiTokensPerWeek;
+
+  let monthlyUsed = 0;
+  let fiveHourUsed = 0;
+  let weeklyUsed = 0;
 
   const currentMonth = new Date().toISOString().slice(0, 7) + "-01";
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const fiveHoursAgo = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString();
+
   try {
-    const { data, error } = await supabase
-      .from("monthly_usage")
-      .select("ai_tokens")
+    // 1. Fetch general limit usage (monthly or lifetime)
+    const generalPromise = (async () => {
+      if (tier === "free") {
+        if (isGuest) {
+          const { data } = await supabase
+            .from("guest_usage")
+            .select("ai_tokens_total")
+            .eq("ip_address", userId)
+            .maybeSingle();
+          return data?.ai_tokens_total || 0;
+        } else {
+          const { data } = await supabase
+            .from("lifetime_usage")
+            .select("ai_tokens_total")
+            .eq("user_id", userId)
+            .maybeSingle();
+          return data?.ai_tokens_total || 0;
+        }
+      } else {
+        const { data } = await supabase
+          .from("monthly_usage")
+          .select("ai_tokens")
+          .eq("user_id", userId)
+          .eq("month", currentMonth)
+          .maybeSingle();
+        return data?.ai_tokens || 0;
+      }
+    })();
+
+    // 2. Fetch rolling time window logs from token_usage_logs (last 7 days covers weekly and 5h)
+    const logsPromise = supabase
+      .from("token_usage_logs")
+      .select("tokens, created_at")
       .eq("user_id", userId)
-      .eq("month", currentMonth)
-      .maybeSingle();
-    
-    if (error) throw error;
-    const used = data?.ai_tokens || 0;
-    return { allowed: used < limit, remaining: Math.max(0, limit - used), limit, tier };
+      .gte("created_at", sevenDaysAgo);
+
+    const [genUsed, { data: logs }] = await Promise.all([generalPromise, logsPromise]);
+    monthlyUsed = genUsed;
+
+    if (logs) {
+      logs.forEach((log) => {
+        const t = log.tokens || 0;
+        weeklyUsed += t;
+        if (new Date(log.created_at) >= new Date(fiveHoursAgo)) {
+          fiveHourUsed += t;
+        }
+      });
+    }
   } catch (dbErr) {
-    console.warn("[checkTokenLimit] Column ai_tokens might not exist yet, skipping DB check:", dbErr);
-    return { allowed: true, remaining: limit, limit, tier };
+    console.warn("[checkTokenLimit] Database error checking token windows, falling back:", dbErr);
   }
+
+  // Calculate remaining capacities for each limit
+  const monthlyRemaining = monthlyLimit === -1 ? 9999999 : Math.max(0, monthlyLimit - monthlyUsed);
+  const fiveHourRemaining = fiveHourLimit === -1 ? 9999999 : Math.max(0, fiveHourLimit - fiveHourUsed);
+  const weeklyRemaining = weeklyLimit === -1 ? 9999999 : Math.max(0, weeklyLimit - weeklyUsed);
+
+  // The true limit is the bottleneck limit (lowest remaining capacity)
+  const minRemaining = Math.min(monthlyRemaining, fiveHourRemaining, weeklyRemaining);
+  const allowed = minRemaining > 0;
+
+  // Find which limit is the bottleneck to return correct capacity info
+  let activeLimit = monthlyLimit;
+  if (fiveHourRemaining < monthlyRemaining && fiveHourRemaining < weeklyRemaining) {
+    activeLimit = fiveHourLimit;
+  } else if (weeklyRemaining < monthlyRemaining) {
+    activeLimit = weeklyLimit;
+  }
+
+  return {
+    allowed,
+    remaining: minRemaining,
+    limit: activeLimit,
+    tier
+  };
 }
 
 /**
- * Increment user's token usage in database
+ * Increment user's token usage in database (updating lifetime/monthly counters and logging to token_usage_logs)
  */
 export async function incrementTokenUsage(userId: string, tokens: number): Promise<void> {
   const currentMonth = new Date().toISOString().slice(0, 7) + "-01";
   const isGuest = userId.startsWith("guest-");
-  
+
+  // 1. Log event in token_usage_logs for time window checks
+  try {
+    await supabase
+      .from("token_usage_logs")
+      .insert({ user_id: userId, tokens });
+
+    // Clean up older records asynchronously to keep the table size small
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    supabase
+      .from("token_usage_logs")
+      .delete()
+      .lt("created_at", sevenDaysAgo)
+      .then(({ error }) => {
+        if (error) console.warn("[incrementTokenUsage] Failed to purge old logs:", error);
+      });
+  } catch (dbErr) {
+    console.warn("[incrementTokenUsage] Failed to write token_usage_logs:", dbErr);
+  }
+
   if (isGuest) {
     try {
-      const { data: existingGuest, error: selectErr } = await supabase
+      const { data: existingGuest } = await supabase
         .from("guest_usage")
         .select("ai_tokens_total")
         .eq("ip_address", userId)
         .maybeSingle();
 
-      if (selectErr) throw selectErr;
-
       if (existingGuest) {
-        const currentTokens = (existingGuest.ai_tokens_total || 0);
         await supabase
           .from("guest_usage")
-          .update({ ai_tokens_total: currentTokens + tokens, updated_at: new Date().toISOString() })
+          .update({ ai_tokens_total: (existingGuest.ai_tokens_total || 0) + tokens, updated_at: new Date().toISOString() })
           .eq("ip_address", userId);
       } else {
         await supabase
@@ -473,22 +527,19 @@ export async function incrementTokenUsage(userId: string, tokens: number): Promi
     return;
   }
 
-  // 1. Monthly usage tokens
+  // 2. Increment monthly usage tokens
   try {
-    const { data: existingMonthly, error: selectErr } = await supabase
+    const { data: existingMonthly } = await supabase
       .from("monthly_usage")
       .select("ai_tokens")
       .eq("user_id", userId)
       .eq("month", currentMonth)
       .maybeSingle();
 
-    if (selectErr) throw selectErr;
-
     if (existingMonthly) {
-      const currentTokens = (existingMonthly.ai_tokens || 0);
       await supabase
         .from("monthly_usage")
-        .update({ ai_tokens: currentTokens + tokens })
+        .update({ ai_tokens: (existingMonthly.ai_tokens || 0) + tokens })
         .eq("user_id", userId)
         .eq("month", currentMonth);
     } else {
@@ -497,24 +548,21 @@ export async function incrementTokenUsage(userId: string, tokens: number): Promi
         .insert({ user_id: userId, month: currentMonth, ai_tokens: tokens });
     }
   } catch (dbErr) {
-    console.warn("[incrementTokenUsage] Failed to update monthly ai_tokens, column might be missing:", dbErr);
+    console.warn("[incrementTokenUsage] Failed to update monthly ai_tokens:", dbErr);
   }
 
-  // 2. Lifetime usage tokens
+  // 3. Increment lifetime usage tokens
   try {
-    const { data: existingLifetime, error: selectErr } = await supabase
+    const { data: existingLifetime } = await supabase
       .from("lifetime_usage")
       .select("ai_tokens_total")
       .eq("user_id", userId)
       .maybeSingle();
 
-    if (selectErr) throw selectErr;
-
     if (existingLifetime) {
-      const currentTokensTotal = (existingLifetime.ai_tokens_total || 0);
       await supabase
         .from("lifetime_usage")
-        .update({ ai_tokens_total: currentTokensTotal + tokens })
+        .update({ ai_tokens_total: (existingLifetime.ai_tokens_total || 0) + tokens })
         .eq("user_id", userId);
     } else {
       await supabase
@@ -522,6 +570,6 @@ export async function incrementTokenUsage(userId: string, tokens: number): Promi
         .insert({ user_id: userId, ai_tokens_total: tokens });
     }
   } catch (dbErr) {
-    console.warn("[incrementTokenUsage] Failed to update lifetime ai_tokens_total, column might be missing:", dbErr);
+    console.warn("[incrementTokenUsage] Failed to update lifetime ai_tokens_total:", dbErr);
   }
 }

@@ -19,9 +19,11 @@ export async function GET() {
     const serviceClient = createServiceClient();
 
     const currentMonth = new Date().toISOString().slice(0, 7) + "-01";
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const fiveHoursAgo = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString();
 
-    // Fetch only token usage in parallel
-    const [monthlyRes, lifetimeRes] = await Promise.all([
+    // Fetch token usage logs for rolling windows and monthly/lifetime values in parallel
+    const [monthlyRes, lifetimeRes, logsRes] = await Promise.all([
       serviceClient
         .from("monthly_usage")
         .select("ai_tokens")
@@ -33,10 +35,29 @@ export async function GET() {
         .select("ai_tokens_total")
         .eq("user_id", user.id)
         .maybeSingle(),
+      serviceClient
+        .from("token_usage_logs")
+        .select("tokens, created_at")
+        .eq("user_id", user.id)
+        .gte("created_at", sevenDaysAgo),
     ]);
 
     const monthly = monthlyRes.data;
     const lifetime = lifetimeRes.data;
+    const logs = logsRes.data;
+
+    let fiveHourUsed = 0;
+    let weeklyUsed = 0;
+
+    if (logs) {
+      logs.forEach((log) => {
+        const t = log.tokens || 0;
+        weeklyUsed += t;
+        if (new Date(log.created_at) >= new Date(fiveHoursAgo)) {
+          fiveHourUsed += t;
+        }
+      });
+    }
 
     // Build usage response based on tier
     const isFree = tier === "free";
@@ -46,8 +67,28 @@ export async function GET() {
       planName: baseConfig.name,
       resources: [
         {
+          id: "ai_tokens_5h",
+          label: "Tokens IA (5 horas)",
+          icon: "brain",
+          used: fiveHourUsed,
+          limit: config.aiTokensPer5Hours,
+          period: "últimas 5 horas",
+          color: "#D946EF", // fuchsia
+          formatAsK: true,
+        },
+        {
+          id: "ai_tokens_weekly",
+          label: "Tokens IA (Semanal)",
+          icon: "briefcase",
+          used: weeklyUsed,
+          limit: config.aiTokensPerWeek,
+          period: "últimos 7 días",
+          color: "#EC4899", // pink
+          formatAsK: true,
+        },
+        {
           id: "ai_tokens",
-          label: "Tokens IA",
+          label: isFree ? "Tokens IA (Vida)" : "Tokens IA (Mensual)",
           icon: "cpu",
           used: isFree 
             ? (lifetime?.ai_tokens_total || 0) 

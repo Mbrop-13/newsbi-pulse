@@ -19,6 +19,8 @@ export interface PlanConfig {
   aiLifetimeMessages: number; // Solo aplica a free (total de por vida)
   aiTokensPerMonth: number; // Límite de tokens mensuales (-1 = sin límite)
   aiLifetimeTokens: number; // Límite de tokens de por vida (solo free)
+  aiTokensPer5Hours: number; // Límite de tokens por 5 horas
+  aiTokensPerWeek: number; // Límite de tokens por semana
   aiModel: string; // Modelo de IA a usar
   aiChatHistory: number; // Cantidad de chats guardados (-1 = ilimitado)
   aiFileAttachments: boolean;
@@ -64,6 +66,8 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     aiLifetimeMessages: 5,
     aiTokensPerMonth: 0,
     aiLifetimeTokens: 50000,
+    aiTokensPer5Hours: 10000,
+    aiTokensPerWeek: 25000,
     aiModel: "x-ai/grok-4.1-fast",
     aiChatHistory: 0,
     aiFileAttachments: false,
@@ -102,6 +106,8 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     aiLifetimeMessages: -1,
     aiTokensPerMonth: 1000000,
     aiLifetimeTokens: -1,
+    aiTokensPer5Hours: 150000,
+    aiTokensPerWeek: 400000,
     aiModel: "x-ai/grok-4.1-fast",
     aiChatHistory: 10,
     aiFileAttachments: true,
@@ -140,6 +146,8 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     aiLifetimeMessages: -1,
     aiTokensPerMonth: 2000000, // x2 Pro
     aiLifetimeTokens: -1,
+    aiTokensPer5Hours: 300000,
+    aiTokensPerWeek: 800000,
     aiModel: "x-ai/grok-4.1-fast:online",
     aiChatHistory: 20, // x2 Pro
     aiFileAttachments: true,
@@ -178,6 +186,8 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     aiLifetimeMessages: -1,
     aiTokensPerMonth: 5000000, // x5 Pro
     aiLifetimeTokens: -1,
+    aiTokensPer5Hours: 750000,
+    aiTokensPerWeek: 2000000,
     aiModel: "x-ai/grok-4.1-fast:online",
     aiChatHistory: 50, // x5 Pro
     aiFileAttachments: true,
@@ -216,6 +226,8 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     aiLifetimeMessages: -1,
     aiTokensPerMonth: 20000000, // x20 Pro
     aiLifetimeTokens: -1,
+    aiTokensPer5Hours: 3000000,
+    aiTokensPerWeek: 8000000,
     aiModel: "x-ai/grok-4.1-fast:online",
     aiChatHistory: 200, // x20 Pro
     aiFileAttachments: true,
@@ -264,6 +276,8 @@ export function getPlanConfig(tier: PlanTier): PlanConfig {
       ...baseConfig,
       aiMessagesPerMonth: baseConfig.aiMessagesPerMonth * 2,
       aiTokensPerMonth: baseConfig.aiTokensPerMonth * 2,
+      aiTokensPer5Hours: baseConfig.aiTokensPer5Hours * 2,
+      aiTokensPerWeek: baseConfig.aiTokensPerWeek * 2,
       ttsAudiosPerMonth: baseConfig.ttsAudiosPerMonth * 2,
     };
   }

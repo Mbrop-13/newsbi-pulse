@@ -663,7 +663,6 @@ export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettings
                           const percentageRemaining = isUnlimited ? 100 : Math.max(0, 100 - percentageUsed);
                           const isWarning = percentageRemaining <= 20 && percentageRemaining > 0;
                           const isDanger = percentageRemaining === 0;
-                          const statusColor = isDanger ? "#EF4444" : isWarning ? "#F59E0B" : "#8B5CF6";
 
                           const IconMap: Record<string, typeof Brain> = {
                             brain: Brain,
@@ -675,20 +674,39 @@ export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettings
                           const IconComponent = IconMap[resource.icon] || Cpu;
 
                           return (
-                            <div
+                            <motion.div
                               key={resource.id}
-                              className="p-3.5 rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-zinc-950 text-white transition-all shadow-sm"
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="group relative p-4 rounded-2xl border border-black/10 dark:border-white/10 bg-white/40 dark:bg-zinc-900/40 backdrop-blur-xl shadow-md hover:border-[#8B5CF6]/50 dark:hover:border-[#8B5CF6]/40 hover:shadow-[0_4px_20px_0_rgba(139,92,246,0.08)] transition-all duration-500 overflow-hidden"
                             >
-                              <div className="flex items-start justify-between mb-2">
-                                <div className="flex items-center gap-2">
+                              {/* Glowing spots */}
+                              <div 
+                                className="absolute -right-10 -top-10 w-24 h-24 rounded-full blur-2xl group-hover:scale-125 transition-transform duration-700 pointer-events-none opacity-80"
+                                style={{
+                                  background: `radial-gradient(circle, ${resource.color}25 0%, transparent 70%)`
+                                }}
+                              />
+                              <div 
+                                className="absolute -left-10 -bottom-10 w-24 h-24 rounded-full blur-2xl pointer-events-none opacity-40"
+                                style={{
+                                  background: `radial-gradient(circle, ${resource.color}10 0%, transparent 70%)`
+                                }}
+                              />
+
+                              <div className="relative z-10 flex items-start justify-between mb-3">
+                                <div className="flex items-center gap-2.5">
                                   <div 
-                                    className="p-1.5 rounded-lg bg-zinc-900 border border-zinc-850"
+                                    className="p-2 rounded-xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 flex items-center justify-center shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_1px_2px_rgba(255,255,255,0.05)]"
                                   >
-                                    <IconComponent className="w-4 h-4 text-[#8B5CF6]" />
+                                    <IconComponent 
+                                      className="w-4.5 h-4.5 transition-transform duration-500 group-hover:scale-110" 
+                                      style={{ color: resource.color }}
+                                    />
                                   </div>
                                   <div>
-                                    <h4 className="text-xs font-bold text-white">{resource.label}</h4>
-                                    <p className="text-[9px] text-zinc-400 capitalize">{resource.period}</p>
+                                    <h4 className="text-xs font-black text-gray-900 dark:text-white leading-none">{resource.label}</h4>
+                                    <p className="text-[9px] text-gray-500 dark:text-zinc-400 capitalize mt-1">{resource.period}</p>
                                   </div>
                                 </div>
                                 <div className="text-right">
@@ -696,10 +714,15 @@ export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettings
                                     <span className="text-[10px] font-bold text-emerald-400">Ilimitado</span>
                                   ) : (
                                     <div className="flex flex-col items-end">
-                                      <span className="text-xs font-black text-white">
+                                      <span 
+                                        className="text-sm font-black leading-none bg-clip-text text-transparent bg-gradient-to-r"
+                                        style={{
+                                          backgroundImage: `linear-gradient(to right, ${resource.color}, #D946EF)`
+                                        }}
+                                      >
                                         {percentageRemaining}%
                                       </span>
-                                      <span className="text-[8px] font-semibold text-zinc-450 dark:text-zinc-400 mt-0.5">
+                                      <span className="text-[8px] font-bold text-gray-500 dark:text-zinc-400 mt-1 uppercase tracking-wider">
                                         {isDanger ? "Agotado" : "disponible"}
                                       </span>
                                     </div>
@@ -708,31 +731,35 @@ export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettings
                               </div>
 
                               {/* Bar */}
-                              <div className="relative h-1.5 rounded-full bg-zinc-900 overflow-hidden border border-zinc-800/50">
+                              <div className="relative h-2 rounded-full bg-black/5 dark:bg-white/10 overflow-hidden border border-black/5 dark:border-white/[0.03] shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)] dark:shadow-[inset_0_1px_2px_rgba(0,0,0,0.3)]">
                                 {isUnlimited ? (
                                   <div className="absolute inset-0 bg-emerald-500/20 rounded-full" />
                                 ) : (
                                   <motion.div
                                     initial={{ width: 0 }}
                                     animate={{ width: `${percentageUsed}%` }}
-                                    transition={{ duration: 0.8 }}
-                                    className="absolute inset-y-0 left-0 rounded-full bg-[#8B5CF6]"
+                                    transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+                                    className="absolute inset-y-0 left-0 rounded-full"
+                                    style={{
+                                      background: `linear-gradient(90deg, ${resource.color} 0%, #D946EF 50%, #EC4899 100%)`,
+                                      boxShadow: `0 0 10px ${resource.color}80`
+                                    }}
                                   />
                                 )}
                               </div>
 
                               {/* Footer text */}
-                              <div className="flex justify-between mt-1.5 text-[9px] font-semibold">
-                                <span className="text-zinc-400">
+                              <div className="flex justify-between mt-2.5 text-[9px] font-bold text-gray-500 dark:text-zinc-400 select-none font-sans">
+                                <span>
                                   {isUnlimited ? "0% ocupado" : `${percentageUsed}% ocupado`}
                                 </span>
                                 {!isUnlimited && (
-                                  <span className="text-zinc-400">
+                                  <span>
                                     Quedan {percentageRemaining}%
                                   </span>
                                 )}
                               </div>
-                            </div>
+                            </motion.div>
                           );
                         })}
                       </div>

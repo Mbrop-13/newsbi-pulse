@@ -3,11 +3,13 @@
 import { useEffect, useRef, useState, useMemo } from "react"
 import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
-import { Bot, User, ThumbsUp, ThumbsDown, Share2, RefreshCw, ChevronRight, ChevronDown, Sparkles, Loader2, Globe, ExternalLink, X, ArrowDown, CheckCircle2, XCircle, Clock, Cpu, ClipboardList, FileCode2, Maximize2, Info, FolderOpen } from "lucide-react"
+import { Bot, User, ThumbsUp, ThumbsDown, Share2, RefreshCw, ChevronRight, ChevronDown, Sparkles, Loader2, Globe, ExternalLink, X, ArrowDown, CheckCircle2, XCircle, Clock, Cpu, ClipboardList, FileCode2, Maximize2, Info, FolderOpen, Code2, Terminal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
+import { useCanvasStore } from "@/lib/stores/canvas-store"
+import { CanvasFileCard } from "@/components/chat/canvas-file-card"
 import type { ChatMessage } from "@/lib/stores/ai-chat-store"
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store"
 import { stripArtifactXml } from "@/lib/webbuilder-parser"
@@ -1004,7 +1006,44 @@ function MessageBubble({
         {/* 3. Main text content */}
         <div className="prose dark:prose-invert max-w-none text-[15px] leading-relaxed">
           {message.content ? (
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                code({ node, className, children, ...props }) {
+                  const match = /language-(\w+)/.exec(className || '');
+                  const lang = match ? match[1] : '';
+                  const codeValue = String(children).replace(/\n$/, '');
+                  
+                  if (match && lang) {
+                    // Extract title from comment
+                    let title = lang === 'python' ? 'Script de Python' : `Código ${lang.toUpperCase()}`;
+                    const firstLine = codeValue.split('\n')[0].trim();
+                    const filenameMatch = firstLine.match(/(?:filename|archivo|title)\s*:\s*([^\s][^\n\r]*)/i) || 
+                                          firstLine.match(/(?:\/\/\/|\/\/|#|\/\*)\s*([a-zA-Z0-9_\-\.\s]+\.[a-zA-Z0-9]+)/i);
+                    if (filenameMatch) {
+                      title = filenameMatch[1].replace(/\*\/$/, '').trim();
+                    }
+
+                    // Render as a beautiful canvas file card
+                    return (
+                      <div className="my-3">
+                        <CanvasFileCard
+                          title={title}
+                          code={codeValue}
+                          language={lang}
+                        />
+                      </div>
+                    );
+                  }
+                  
+                  return (
+                    <code className={cn("bg-muted px-1.5 py-0.5 rounded-md font-mono text-[13.5px]", className)} {...props}>
+                      {children}
+                    </code>
+                  );
+                }
+              }}
+            >
               {isWebBuilderMode ? stripArtifactXml(message.content) : message.content}
             </ReactMarkdown>
           ) : (
@@ -1222,63 +1261,42 @@ const getGoogleFinanceSymbol = (symbol: string): string => {
 };
 
 function PythonResultCard({ args, result }: { args: any; result: any }) {
-  const [showCode, setShowCode] = useState(false);
+  const openCanvas = useCanvasStore((s) => s.openCanvas);
+  
+  const handleOpen = () => {
+    openCanvas({
+      title: "Script de Python",
+      code: args?.script || "",
+      language: "python",
+      stdout: result?.stdout || "",
+      output: result?.output !== undefined && result?.output !== null ? String(result.output) : undefined,
+      error: result?.stderr || result?.error || undefined,
+      durationMs: result?.durationMs || 0,
+      success: result?.success !== false,
+    });
+  };
 
   return (
-    <div className="border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-5 shadow-sm space-y-4 max-w-xl text-left">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 py-1 rounded-lg bg-amber-500/10 text-amber-500 font-black text-xs">
-            PY
-          </div>
-          <div>
-            <h4 className="text-sm font-bold text-gray-900 dark:text-white">Cálculo Python Ejecutado</h4>
-            <p className="text-[10px] text-gray-400">Sandbox de WebAssembly · {result?.durationMs || 0}ms</p>
-          </div>
-        </div>
-        
-        <button
-          onClick={() => setShowCode(!showCode)}
-          className="text-xs font-semibold text-[#1890FF] hover:underline"
-        >
-          {showCode ? "Ocultar Código" : "Ver Código"}
-        </button>
+    <button
+      onClick={handleOpen}
+      className={cn(
+        "w-full max-w-md text-left flex items-start gap-4 p-4 rounded-[20px] transition-all duration-300",
+        "bg-amber-500/10 hover:bg-amber-500/15 dark:bg-amber-950/20 dark:hover:bg-amber-950/30",
+        "border border-amber-500/20 shadow-sm group relative hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+      )}
+    >
+      <div className="p-3 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 shrink-0">
+        <Terminal className="w-5 h-5" />
       </div>
-
-      {showCode && args?.script && (
-        <pre className="text-xs p-3.5 bg-slate-950 text-slate-100 rounded-2xl overflow-x-auto font-mono border border-slate-800 max-h-48">
-          <code>{args.script}</code>
-        </pre>
-      )}
-
-      {result?.success ? (
-        <div className="space-y-2">
-          {result.stdout && (
-            <div className="space-y-1">
-              <span className="text-[9px] uppercase font-bold text-gray-400 tracking-wider">Consola (stdout)</span>
-              <pre className="text-xs p-3 bg-gray-50 dark:bg-slate-950 text-emerald-500 dark:text-emerald-400 rounded-2xl overflow-x-auto font-mono border border-gray-100 dark:border-slate-900">
-                <code>{result.stdout}</code>
-              </pre>
-            </div>
-          )}
-          {result.output !== undefined && result.output !== null && (
-            <div className="space-y-1">
-              <span className="text-[9px] uppercase font-bold text-gray-400 tracking-wider">Retorno de Función</span>
-              <pre className="text-xs p-3 bg-gray-50 dark:bg-slate-950 text-blue-500 dark:text-blue-400 rounded-2xl overflow-x-auto font-mono border border-gray-100 dark:border-slate-900">
-                <code>{typeof result.output === 'object' ? JSON.stringify(result.output, null, 2) : String(result.output)}</code>
-              </pre>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="space-y-1">
-          <span className="text-[9px] uppercase font-bold text-red-500 tracking-wider">Error de Ejecución</span>
-          <pre className="text-xs p-3 bg-red-50 dark:bg-red-500/5 text-red-600 dark:text-red-400 rounded-2xl overflow-x-auto font-mono border border-red-100 dark:border-red-500/10">
-            <code>{result?.stderr || result?.error || "Error desconocido en el script."}</code>
-          </pre>
-        </div>
-      )}
-    </div>
+      <div className="flex-1 min-w-0">
+        <h4 className="text-sm font-bold text-gray-900 dark:text-white truncate group-hover:text-amber-500 transition-colors">
+          Cálculo Python Ejecutado
+        </h4>
+        <p className="text-[11px] text-gray-400 dark:text-slate-400 mt-0.5">
+          {result?.success ? "Completado" : "Error en ejecución"} · {result?.durationMs || 0}ms
+        </p>
+      </div>
+    </button>
   );
 }
 

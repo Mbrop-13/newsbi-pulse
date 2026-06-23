@@ -778,8 +778,8 @@ export function ChatInput({
                               setBrowser(false);
                             }
                           }}
-                          icon={<Terminal className="h-4 w-4" />}
-                          label="Intérprete de código"
+                          icon={<Code2 className="h-4 w-4" />}
+                          label="Canvas"
                         />
                         <Pill
                           active={browser}

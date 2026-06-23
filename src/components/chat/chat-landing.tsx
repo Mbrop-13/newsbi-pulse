@@ -34,6 +34,9 @@ import { useWebBuilderStore } from "@/lib/stores/webbuilder-store"
 import { WebBuilderWorkspace } from "@/components/webbuilder/workspace"
 import { parseArtifact, actionsToFiles, containsArtifact } from "@/lib/webbuilder-parser"
 import { classifyPlanResponse } from "@/lib/webbuilder-plan-utils"
+import { CanvasWorkspace } from "@/components/chat/canvas-workspace"
+import { useBrowserStore } from "@/lib/stores/browser-store"
+import { BrowserWorkspace } from "@/components/chat/browser-workspace"
 
 // Model ID mapping for our API
 const MODEL_MAP: Record<string, string> = {
@@ -152,6 +155,63 @@ export function ChatLanding() {
   const lastLoadedChatIdRef = useRef<string | null>(null)
 
   const router = useRouter()
+
+  const browserSessionId = useBrowserStore((s) => s.sessionId);
+  const updateScreenshot = useBrowserStore((s) => s.updateScreenshot);
+  const addStep = useBrowserStore((s) => s.addStep);
+  const updateUrl = useBrowserStore((s) => s.updateUrl);
+  const clearSession = useBrowserStore((s) => s.clearSession);
+
+  useEffect(() => {
+    return () => {
+      clearSession();
+    };
+  }, [clearSession]);
+
+  useEffect(() => {
+    if (!browserSessionId) return;
+
+    console.log("[Browser SSE] Connecting to session:", browserSessionId);
+    const eventSource = new EventSource(`/api/browser/stream?sessionId=${browserSessionId}`);
+
+    eventSource.onmessage = (event) => {
+      try {
+        const parsed = JSON.parse(event.data);
+        
+        if (parsed.type === "frame" && parsed.image) {
+          updateScreenshot(parsed.image);
+        } else if (parsed.type === "step") {
+          addStep({
+            action: parsed.action,
+            description: parsed.description,
+            status: parsed.status,
+          });
+          if (parsed.action === "navigate" && parsed.status === "done") {
+            const urlMatch = parsed.description.match(/Navegó a (https?:\/\/[^\s]+)/);
+            if (urlMatch) {
+              updateUrl(urlMatch[1]);
+            }
+          }
+        } else if (parsed.type === "closed") {
+          eventSource.close();
+          clearSession();
+          toast.error("La sesión de navegación ha finalizado");
+        }
+      } catch (e) {
+        console.error("[Browser SSE] Error parsing message:", e);
+      }
+    };
+
+    eventSource.onerror = (err) => {
+      console.error("[Browser SSE] Connection error:", err);
+      eventSource.close();
+    };
+
+    return () => {
+      console.log("[Browser SSE] Closing connection for:", browserSessionId);
+      eventSource.close();
+    };
+  }, [browserSessionId, updateScreenshot, addStep, updateUrl, clearSession]);
 
   const handleNewChat = () => {
     clearMessages()
@@ -398,6 +458,11 @@ export function ChatLanding() {
           ...accumulatedCitationsRef.current,
           ...citationObj.urls
         ]));
+      }
+
+      const browserSessionObj = (data as any[]).find((d: any) => d?.type === 'browser_session');
+      if (browserSessionObj?.sessionId) {
+        useBrowserStore.getState().setSessionId(browserSessionObj.sessionId);
       }
     }
   }, [data]);
@@ -1052,7 +1117,12 @@ export function ChatLanding() {
     )
   }
 
-  return chatContent
+  // Wrap in Canvas/Browser workspace (will render split-pane if active)
+  return (
+    <BrowserWorkspace chatPanel={
+      <CanvasWorkspace chatPanel={chatContent} />
+    } />
+  )
 }
 
 const COUNTRY_MAP: Record<string, { name: string; flag: string }> = {

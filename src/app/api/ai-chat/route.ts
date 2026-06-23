@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
-import { streamText, StreamData, formatStreamPart } from 'ai';
+import { streamText, StreamData, formatStreamPart, tool } from 'ai';
 import { z } from 'zod';
+import { runPythonCode } from "@/lib/services/pyodide-sandbox";
 import { createClient } from "@/lib/supabase/server";
 import { checkLimit, incrementUsage, getUserTier, checkTokenLimit, incrementTokenUsage } from "@/lib/check-limits";
 import { rateLimit, rateLimitResponse, AI_CHAT_LIMIT } from "@/lib/rate-limit";
@@ -42,6 +43,7 @@ const aiChatSchema = z.object({
   cancelPlan: z.boolean().optional(),
   // Mensaje original del usuario que originó el plan (para replan / ejecución).
   originalUserMessage: z.string().optional(),
+  codeInterpreter: z.boolean().optional(),
 }).strict();
 
 export async function POST(req: NextRequest) {
@@ -57,7 +59,7 @@ export async function POST(req: NextRequest) {
       }), { status: 400 });
     }
 
-    const { messages, articles, files, modelId, activeTools, contextOverride, webSearch, browser, webBuilder, webBuilderFiles, buildMode, approvedPlan, replanFeedback, cancelPlan, originalUserMessage } = parseResult.data;
+    const { messages, articles, files, modelId, activeTools, contextOverride, webSearch, browser, webBuilder, webBuilderFiles, buildMode, approvedPlan, replanFeedback, cancelPlan, originalUserMessage, codeInterpreter } = parseResult.data;
 
     if (!messages || messages.length === 0) {
       return new Response(JSON.stringify({ error: "Messages are required" }), { status: 400 });
@@ -491,11 +493,26 @@ ${reportsSummary}`,
           }
         }
 
+        let systemPrompt = webBuilder
+          ? getWebBuilderSystemPrompt(finalSystemPromptFiles)
+          : getSystemPrompt(assistantName, assistantTone, assistantRole, assistantTopics);
+
+        if (codeInterpreter) {
+          systemPrompt += `\n\n[MODO CANVAS / INTÉRPRETE DE CÓDIGO ACTIVADO]:
+Tienes acceso a la herramienta 'run_python' para ejecutar scripts de Python en un entorno de sandbox seguro.
+REGLAS PARA EL MODO CANVAS:
+1. Para tareas complejas de análisis de datos financieros, simulaciones matemáticas, optimizaciones de portafolio o cálculos avanzados, DEBES escribir y ejecutar código Python con la herramienta 'run_python'.
+2. Si el usuario te pide crear código o un script, agrégale un comentario de nombre de archivo en la primera línea para que el editor canvas lo identifique correctamente, por ejemplo:
+# Pop-up Power BI Avanzado.html
+o
+# optimizacion.py
+3. Las respuestas finales con código o scripts deben ir en un bloque de código markdown regular, el cual automáticamente renderizará un botón de "Abrir en Canvas" para el usuario.
+4. Explícale al usuario los resultados de la ejecución del script y los insights financieros obtenidos.`;
+        }
+
         const result = await streamText({
           model: mimo(finalModelStr),
-          system: webBuilder
-            ? getWebBuilderSystemPrompt(finalSystemPromptFiles)
-            : getSystemPrompt(assistantName, assistantTone, assistantRole, assistantTopics),
+          system: systemPrompt,
           messages: messagesForFinalLlm,
           maxTokens: (webBuilder && orchestrationResult.isComplex) ? 2048 : 8192,
           maxSteps: webBuilder ? undefined : 8,
@@ -503,6 +520,23 @@ ${reportsSummary}`,
           tools: webBuilder ? {} : {
             ...getFinanceTools({ user, userId }),
             ...(browser ? getBrowserTools({ streamData: fakeStreamData }) : {}),
+            ...(codeInterpreter ? {
+              run_python: tool({
+                description: 'Ejecuta código Python en un sandbox seguro de WebAssembly y retorna la salida (stdout, valor de retorno y errores). Úsalo para cálculos matemáticos, análisis de datos complejos, procesamiento de texto o cualquier lógica algorítmica.',
+                parameters: z.object({
+                  script: z.string().describe('El script de Python completo que deseas ejecutar. Puedes imprimir resultados usando print().'),
+                  packages: z.array(z.string()).optional().describe('Lista de paquetes de pip para instalar antes de la ejecución (ej: ["numpy", "pandas"]).'),
+                }),
+                execute: async ({ script, packages }) => {
+                  try {
+                    const result = await runPythonCode(script, {}, packages || []);
+                    return result;
+                  } catch (err: any) {
+                    return { success: false, error: err.message || String(err), stdout: "", stderr: err.message || String(err), durationMs: 0 };
+                  }
+                }
+              })
+            } : {}),
           },
           onFinish: async ({ text, usage, finishReason }) => {
             const hasContent = text && text.trim().length > 0;

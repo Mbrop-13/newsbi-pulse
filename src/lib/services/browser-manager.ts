@@ -60,15 +60,24 @@ export async function createSession(): Promise<string> {
   }
 
   const ch = await getChromium();
-  const browser = await ch.launch({
-    headless: true,
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-      "--disable-gpu",
-    ],
-  });
+  const wsUrl = process.env.BROWSERLESS_WS_URL;
+  let browser;
+
+  if (wsUrl) {
+    console.log("[BrowserManager] Connecting to remote CDP instance:", wsUrl);
+    browser = await ch.connectOverCDP(wsUrl);
+  } else {
+    console.log("[BrowserManager] Launching local Chromium instance");
+    browser = await ch.launch({
+      headless: true,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+      ],
+    });
+  }
 
   const context = await browser.newContext({
     viewport: { width: 1280, height: 800 },
@@ -277,6 +286,24 @@ export async function destroySession(sessionId: string): Promise<void> {
  */
 export function hasSession(sessionId: string): boolean {
   return sessions.has(sessionId);
+}
+
+/**
+ * Returns the page associated with the session.
+ */
+export function getSessionPage(sessionId: string): any {
+  const session = sessions.get(sessionId);
+  return session ? session.page : null;
+}
+
+/**
+ * Manually triggers a screen capture and emits it to listeners.
+ */
+export async function refreshSessionFrame(sessionId: string): Promise<void> {
+  const session = sessions.get(sessionId);
+  if (session) {
+    await captureAndEmitFrame(session);
+  }
 }
 
 // ─── Internal Helpers ───

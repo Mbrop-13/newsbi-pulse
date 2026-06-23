@@ -272,13 +272,15 @@ Se ha desarrollado e integrado un flujo dinámico para automatizar las consultas
 Para prevenir el consumo masivo e innecesario de tokens cuando existen múltiples archivos en el espacio del WebBuilder, rediseñamos cómo se nutre el System Prompt del LLM final en [route.ts](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/app/api/ai-chat/route.ts):
 
 *   **Consultas Complejas (Orquestación Multi-Agente):**
+       - Contiene el editor de código integrado: una caja de texto premium con números de línea alineados y sincronizados en scroll, barra superior de acciones rápidas (deshacer, rehacer, descargar archivo con su extensión correspondiente, copiar código y un menú de historial de archivos recientes) y una consola/consola terminal interactiva al estilo de un entorno de desarrollo integrado que muestra stderr, stdout y retornos de ejecución con sus tiempos.
+
+---
     *   Dado que los agentes especializados ya generan de forma aislada y en paralelo los códigos de los archivos correspondientes (que se inyectan directamente en el preview), el LLM consolidador final solo requiere redactar un resumen conversacional de las acciones tomadas.
-    *   Por lo tanto, si la consulta es compleja, **omitimos por completo el envío del código de todos los archivos del proyecto al prompt del modelo final**.
 *   **Consultas Simples (Modificación Directa):**
     *   Si la consulta es simple (resuelta directamente por el LLM final sin sub-agentes), el modelo sí necesita leer código del proyecto para efectuar la modificación.
     *   Para evitar enviar todos los archivos indiscriminadamente, importamos y aplicamos la función `selectRelevantContext` para filtrar dinámicamente qué archivos proveer.
     *   El System Prompt recibe únicamente: el archivo principal `App.tsx`, los estilos `index.css`/`styles.css`, los componentes importados directamente por `App.tsx` y cualquier archivo cuyo nombre haya sido mencionado por el usuario en su pregunta.
-*   **Impacto de Ahorro:** Esta optimización disminuye el costo por mensaje del constructor web en un **40% a 75%** dependiendo del tamaño del proyecto, previniendo que el LLM final pierda contexto o alucine debido a prompts de sistema de decenas de miles de tokens.
+    *   **Impacto de Ahorro:** Esta optimización disminuye el costo por mensaje del constructor web en un **40% a 75%** dependiendo del tamaño del proyecto, previniendo que el LLM final pierda contexto o alucine debido a prompts de sistema de decenas de miles de tokens.
 
 ---
 
@@ -296,3 +298,42 @@ Para prevenir el consumo masivo e innecesario de tokens cuando existen múltiple
 *   **Corrección de Tipados TypeScript:**
     *   Se resolvieron errores de compilación en `route.ts` al omitir codificaciones innecesarias de chunks (ya que `toDataStream()` entrega Uint8Arrays nativos).
     *   Se solucionó el desajuste de tipos de listeners en `webcontainer-manager.ts` e interfaces en `ai-chat-store.ts` y props en `SandpackProvider` (`activeFile` movido a `options.activeFile` en `preview-panel.tsx`), logrando que la compilación global del proyecto finalice de manera exitosa y limpia.
+
+---
+
+## 16. Navegador Virtual Interactivo (Browser Workspace)
+
+Desarrollamos e integramos con éxito el **Navegador Virtual** en la plataforma, permitiendo a la IA navegar por internet y al usuario interactuar en tiempo real con las capturas de la sesión remota:
+
+*   **Gestión de Estado Centralizada (Zustand)**:
+    *   **Archivo**: [browser-store.ts](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/lib/stores/browser-store.ts)
+    *   Realiza el seguimiento del identificador de sesión (`sessionId`), URL actual (`currentUrl`), título del sitio (`pageTitle`), frame activo en base64 (`screenshot`), timeline de acciones de navegación (`steps`) y estado de carga.
+*   **Conexión CDP y Servidor Playwright**:
+    *   **Archivo**: [browser-manager.ts](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/lib/services/browser-manager.ts)
+    *   Soporta conexiones WebSocket CDP usando la variable de entorno `BROWSERLESS_WS_URL` para evadir las restricciones de tamaño de binarios de Chromium en funciones Serverless de Vercel. De lo contrario, cae automáticamente a un Chromium local en entornos de desarrollo.
+    *   Refresca y emite capturas optimizadas inmediatamente después de cada acción para una visualización fluida.
+*   **API de Clics por Coordenadas**:
+    *   **Archivo**: [route.ts](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/app/api/browser/click/route.ts)
+    *   Recibe la coordenada X/Y en la que hizo clic el usuario, interactúa con el cursor nativo de Playwright en la sesión correspondiente, y refresca el viewport del navegador.
+*   **Componente Visual Premium**:
+    *   **Archivo**: [browser-panel.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/chat/browser-panel.tsx)
+    *   Diseñado bajo la estética de ventana minimalista estilo macOS (con barra de direcciones protegida con SSL, loaders de carga integrados en la barra, y overlays de difuminado).
+    *   Registra clics en el viewport y mapea las coordenadas del cliente `(clientX, clientY)` de acuerdo con la caja de visualización de vuelta a las dimensiones nativas del navegador virtual (`1280x800`) antes de transmitirlas a la API.
+    *   Incluye un terminal de actividad inferior que reporta los pasos actuales que realiza el navegador.
+*   **Layout Dividido Ajustable**:
+    *   **Archivo**: [browser-workspace.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/chat/browser-workspace.tsx)
+    *   En ordenadores: Renderiza una vista dividida con un resizer de arrastre fluido que delimita el chat a la izquierda y el viewport a la derecha.
+    *   En dispositivos móviles: Utiliza pestañas superiores (`💬 Chat` vs `🌐 Navegador`) para optimizar la pantalla táctil de smartphones.
+*   **Acoplamiento de Eventos SSE y Cierre**:
+    *   **Archivo**: [chat-landing.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/chat/chat-landing.tsx)
+    *   Configura el procesador del stream de la IA para capturar el token de inicio de la sesión del navegador. Cuando se genera, se conecta un receptor `EventSource` al canal SSE `/api/browser/stream`, actualizando dinámicamente el store con cada frame de imagen y paso logueado.
+    *   Libera todos los recursos cerrando la sesión del navegador y la conexión SSE cuando la conversación es eliminada o reiniciada.
+
+---
+
+## 17. Verificación de Compilación
+
+Garantizamos que la base de código permanezca 100% segura y libre de errores tras la integración:
+- Ejecutamos `npx tsc --noEmit` de forma exitosa, obteniendo una compilación limpia sin advertencias ni errores en ninguno de los módulos del proyecto.
+- Se resolvieron errores de compilación en `route.ts` al omitir codificaciones innecesarias de chunks (ya que `toDataStream()` entrega Uint8Arrays nativos).
+- Se solucionó el desajuste de tipos de listeners en `webcontainer-manager.ts` e interfaces en `ai-chat-store.ts` y props en `SandpackProvider` (`activeFile` movido a `options.activeFile` en `preview-panel.tsx`), logrando que la compilación global del proyecto finalice de manera exitosa y limpia.

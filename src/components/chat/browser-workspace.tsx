@@ -61,6 +61,10 @@ export function BrowserWorkspace({ chatPanel }: BrowserWorkspaceProps) {
     }
   }, [isOpen]);
 
+  if (!isOpen) {
+    return <>{chatPanel}</>;
+  }
+
   if (isMobile) {
     return (
       <div className="flex flex-col h-full w-full">

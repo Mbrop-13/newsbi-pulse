@@ -23,7 +23,7 @@ export async function GET() {
     const fiveHoursAgo = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString();
 
     // Fetch token usage logs for rolling windows and monthly/lifetime values in parallel
-    const [monthlyRes, lifetimeRes, logsRes] = await Promise.all([
+    const [monthlyRes, lifetimeRes, logsRes, subRes] = await Promise.all([
       serviceClient
         .from("monthly_usage")
         .select("ai_tokens")
@@ -40,55 +40,92 @@ export async function GET() {
         .select("tokens, created_at")
         .eq("user_id", user.id)
         .gte("created_at", sevenDaysAgo),
+      serviceClient
+        .from("subscriptions")
+        .select("status, current_period_end")
+        .eq("user_id", user.id)
+        .maybeSingle(),
     ]);
 
     const monthly = monthlyRes.data;
     const lifetime = lifetimeRes.data;
     const logs = logsRes.data;
+    const subData = subRes?.data;
 
     let fiveHourUsed = 0;
     let weeklyUsed = 0;
+    let oldest5hLog: any = null;
+    let oldestWeeklyLog: any = null;
 
     if (logs) {
       logs.forEach((log) => {
         const t = log.tokens || 0;
+        const logTime = new Date(log.created_at).getTime();
+        
+        // Weekly calculations
         weeklyUsed += t;
-        if (new Date(log.created_at) >= new Date(fiveHoursAgo)) {
+        if (!oldestWeeklyLog || logTime < new Date(oldestWeeklyLog.created_at).getTime()) {
+          oldestWeeklyLog = log;
+        }
+
+        // 5-hour calculations
+        if (logTime >= new Date(fiveHoursAgo).getTime()) {
           fiveHourUsed += t;
+          if (!oldest5hLog || logTime < new Date(oldest5hLog.created_at).getTime()) {
+            oldest5hLog = log;
+          }
         }
       });
     }
 
+    const fiveHourReset = oldest5hLog 
+      ? new Date(new Date(oldest5hLog.created_at).getTime() + 5 * 60 * 60 * 1000).toISOString()
+      : null;
+
+    const weeklyReset = oldestWeeklyLog
+      ? new Date(new Date(oldestWeeklyLog.created_at).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString()
+      : null;
+
     // Build usage response based on tier
     const isFree = tier === "free";
+    const currentPeriodEnd = subData && subData.status !== "expired" && subData.status !== "canceled"
+      ? subData.current_period_end
+      : null;
+
+    const now = new Date();
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
+    const monthlyReset = currentPeriodEnd || endOfMonth;
 
     const usage = {
       tier,
       planName: baseConfig.name,
+      currentPeriodEnd,
       resources: [
         {
           id: "ai_tokens_5h",
-          label: "Tokens IA (5 horas)",
+          label: "5-hour remaining",
           icon: "brain",
           used: fiveHourUsed,
           limit: config.aiTokensPer5Hours,
           period: "últimas 5 horas",
           color: "#D946EF", // fuchsia
           formatAsK: true,
+          resetTime: fiveHourReset,
         },
         {
           id: "ai_tokens_weekly",
-          label: "Tokens IA (Semanal)",
+          label: "Weekly remaining",
           icon: "briefcase",
           used: weeklyUsed,
           limit: config.aiTokensPerWeek,
           period: "últimos 7 días",
           color: "#EC4899", // pink
           formatAsK: true,
+          resetTime: weeklyReset,
         },
         {
           id: "ai_tokens",
-          label: isFree ? "Tokens IA (Vida)" : "Tokens IA (Mensual)",
+          label: isFree ? "Lifetime quota" : "Monthly quota",
           icon: "cpu",
           used: isFree 
             ? (lifetime?.ai_tokens_total || 0) 
@@ -97,6 +134,7 @@ export async function GET() {
           period: isFree ? "de por vida" : "este mes",
           color: "#8B5CF6", // violet
           formatAsK: true,
+          resetTime: isFree ? null : monthlyReset,
         },
       ],
     };

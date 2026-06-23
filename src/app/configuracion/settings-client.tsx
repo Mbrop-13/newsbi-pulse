@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Bell, Shield, Smartphone, Mail, Globe, Palette, LogOut, Loader2, Save, Key, CheckCircle2, ChevronRight, Settings, Sparkles, Trash2, Search, Plus, Check, X, Cloud, CloudOff, BarChart3, Brain, Cpu, Volume2, BellRing, Briefcase, Zap, Crown, ArrowUpRight, RefreshCw } from "lucide-react";
+import { User, Bell, Shield, Smartphone, Mail, Globe, Palette, LogOut, Loader2, Save, Key, CheckCircle2, ChevronRight, Settings, Sparkles, Trash2, Search, Plus, Check, X, Cloud, CloudOff, BarChart3, Brain, Cpu, Volume2, BellRing, Briefcase, Zap, Crown, ArrowUpRight, RefreshCw, Info, Rocket } from "lucide-react";
 import { useAuthStore, useAuthModalStore } from "@/lib/stores/auth-store";
 import { createClient } from "@/lib/supabase/client";
 import { useTheme } from "next-themes";
@@ -12,6 +12,8 @@ import { useAssistantStore, type Ticker } from "@/lib/stores/assistant-store";
 import { PREDEFINED_TOPICS } from "@/components/assistant/assistant-setup";
 import { useAIChatStore } from "@/lib/stores/ai-chat-store";
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 interface UserPreferences {
   notify_email: boolean;
@@ -61,6 +63,7 @@ export default function SettingsClient() {
   interface UsageData {
     tier: PlanTier;
     planName: string;
+    currentPeriodEnd?: string | null;
     resources: UsageResource[];
   }
   const [usageData, setUsageData] = useState<UsageData | null>(null);
@@ -406,206 +409,145 @@ export default function SettingsClient() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className="space-y-8"
+                        className="space-y-6"
                       >
-                        {/* Plan Header */}
-                        <div className="relative overflow-hidden rounded-2xl bg-zinc-950 border border-zinc-800 p-6 text-white shadow-xl">
-                          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-zinc-900 via-zinc-950 to-zinc-950 opacity-80" />
-                          <div className="relative z-10 flex items-center justify-between">
-                            <div>
-                              <div className="flex items-center gap-2 mb-1 text-zinc-400">
-                                <Crown className="w-5 h-5 text-[#8B5CF6]" />
-                                <span className="text-sm font-medium">Tu plan actual</span>
-                              </div>
-                              <h2 className="text-2xl font-black text-white">
-                                {usageData?.planName || user?.tier?.toUpperCase() || "Gratuito"}
-                              </h2>
-                              <p className="text-sm text-zinc-400 mt-1">
-                                {usageData?.tier === "free" 
-                                  ? "Actualiza para desbloquear más recursos" 
-                                  : "Gestiona el consumo de tu suscripción"}
-                              </p>
-                            </div>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={fetchUsageData}
-                                disabled={usageLoading}
-                                className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 transition-colors"
-                                title="Actualizar datos"
-                              >
-                                <RefreshCw className={`w-4 h-4 text-zinc-300 ${usageLoading ? "animate-spin" : ""}`} />
-                              </button>
-                              {usageData?.tier === "free" && (
-                                <Link
-                                  href="/pricing"
-                                  className="flex items-center gap-1.5 px-4 py-2 bg-white text-black font-bold text-sm rounded-xl hover:bg-zinc-100 transition-colors shadow-lg"
-                                >
-                                  <Zap className="w-4 h-4 text-[#8B5CF6]" />
-                                  Mejorar Plan
-                                </Link>
-                              )}
-                            </div>
-                          </div>
-                        </div>
+                        {(() => {
+                          const formatResetDate = (dateString?: string | null) => {
+                            if (!dateString) return "";
+                            try {
+                              const d = new Date(dateString);
+                              return format(d, "d 'de' MMM", { locale: es });
+                            } catch {
+                              return "";
+                            }
+                          };
 
-                        {/* Usage Cards */}
-                        {usageLoading && !usageData ? (
-                          <div className="flex justify-center py-12">
-                            <Loader2 className="w-8 h-8 animate-spin text-[#1890FF]" />
-                          </div>
-                        ) : usageError ? (
-                          <div className="text-center py-12">
-                            <p className="text-zinc-500 mb-4">No se pudo cargar la información de consumo.</p>
-                            <button
-                              onClick={fetchUsageData}
-                              className="px-4 py-2 bg-zinc-900 border border-zinc-850 text-white text-sm font-bold rounded-xl hover:bg-zinc-850 transition-colors"
-                            >
-                              Reintentar
-                            </button>
-                          </div>
-                        ) : usageData ? (
-                          <div className="space-y-6">
-                            <div>
-                              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Consumo de Recursos</h3>
-                              <p className="text-sm text-gray-500 mb-5">Uso actual de cada recurso incluido en tu plan.</p>
-                            </div>
+                          const formatTimeReset = (dateString?: string | null) => {
+                            if (!dateString) return "";
+                            try {
+                              const d = new Date(dateString);
+                              return format(d, "MMM d, HH:mm", { locale: es });
+                            } catch {
+                              return "";
+                            }
+                          };
 
-                            <div className="grid gap-4">
-                              {usageData.resources.map((resource, idx) => {
-                                const isUnlimited = resource.limit === -1;
-                                const percentageUsed = isUnlimited ? 0 : resource.limit === 0 ? 100 : Math.min(100, Math.round((resource.used / resource.limit) * 100));
-                                const percentageRemaining = isUnlimited ? 100 : Math.max(0, 100 - percentageUsed);
-                                const isWarning = percentageRemaining <= 20 && percentageRemaining > 0;
-                                const isDanger = percentageRemaining === 0;
-
-                                const IconMap: Record<string, typeof Brain> = {
-                                  brain: Brain,
-                                  cpu: Cpu,
-                                  volume: Volume2,
-                                  bell: BellRing,
-                                  briefcase: Briefcase,
-                                };
-                                const IconComponent = IconMap[resource.icon] || Cpu;
-
-                                return (
-                                  <motion.div
-                                    key={resource.id}
-                                    initial={{ opacity: 0, y: 15 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: idx * 0.08 }}
-                                    className="group relative p-6 rounded-3xl border border-black/10 dark:border-white/10 bg-white/40 dark:bg-zinc-900/40 backdrop-blur-xl shadow-lg shadow-black/5 dark:shadow-black/20 hover:border-[#8B5CF6]/50 dark:hover:border-[#8B5CF6]/40 hover:shadow-[0_8px_32px_0_rgba(139,92,246,0.1)] transition-all duration-500 overflow-hidden"
-                                  >
-                                    {/* Glowing spots */}
-                                    <div 
-                                      className="absolute -right-12 -top-12 w-28 h-28 rounded-full blur-2xl group-hover:scale-125 transition-transform duration-700 pointer-events-none opacity-80"
-                                      style={{
-                                        background: `radial-gradient(circle, ${resource.color}33 0%, transparent 70%)`
-                                      }}
-                                    />
-                                    <div 
-                                      className="absolute -left-12 -bottom-12 w-28 h-28 rounded-full blur-2xl pointer-events-none opacity-50"
-                                      style={{
-                                        background: `radial-gradient(circle, ${resource.color}15 0%, transparent 70%)`
-                                      }}
-                                    />
-
-                                    <div className="relative z-10 flex items-start justify-between mb-4">
-                                      <div className="flex items-center gap-3">
-                                        <div 
-                                          className="p-2.5 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 flex items-center justify-center shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_1px_2px_rgba(255,255,255,0.05)]"
-                                        >
-                                          <IconComponent 
-                                            className="w-5 h-5 transition-transform duration-500 group-hover:scale-110" 
-                                            style={{ color: resource.color }}
-                                          />
-                                        </div>
-                                        <div>
-                                          <h4 className="text-sm font-black text-gray-900 dark:text-white leading-none">{resource.label}</h4>
-                                          <p className="text-[10px] text-gray-500 dark:text-zinc-400 capitalize mt-1">{resource.period}</p>
-                                        </div>
-                                      </div>
-                                      <div className="text-right">
-                                        {isUnlimited ? (
-                                          <span className="text-xs font-bold text-emerald-500 dark:text-emerald-400">Ilimitado</span>
-                                        ) : (
-                                          <div className="flex flex-col items-end">
-                                            <span 
-                                              className="text-lg font-black leading-none bg-clip-text text-transparent bg-gradient-to-r"
-                                              style={{
-                                                backgroundImage: `linear-gradient(to right, ${resource.color}, #D946EF)`
-                                              }}
-                                            >
-                                              {percentageRemaining}%
-                                            </span>
-                                            <span className="text-[9px] font-bold text-gray-500 dark:text-zinc-400 mt-1 uppercase tracking-wider">
-                                              {isDanger ? "Agotado" : "disponible"}
-                                            </span>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-
-                                    {/* Progress Bar */}
-                                    <div className="relative h-2.5 rounded-full bg-black/5 dark:bg-white/10 overflow-hidden border border-black/5 dark:border-white/[0.03] shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)] dark:shadow-[inset_0_1px_2px_rgba(0,0,0,0.3)]">
-                                      {isUnlimited ? (
-                                        <div className="absolute inset-0 bg-emerald-500/20 rounded-full" />
-                                      ) : (
-                                        <motion.div
-                                          initial={{ width: 0 }}
-                                          animate={{ width: `${percentageUsed}%` }}
-                                          transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: idx * 0.1 }}
-                                          className="absolute inset-y-0 left-0 rounded-full"
-                                          style={{
-                                            background: `linear-gradient(90deg, ${resource.color} 0%, #D946EF 50%, #EC4899 100%)`,
-                                            boxShadow: `0 0 10px ${resource.color}80`
-                                          }}
-                                        />
-                                      )}
-                                    </div>
-
-                                    {/* Usage Numbers */}
-                                    <div className="flex justify-between mt-3 text-[10px] font-bold text-gray-500 dark:text-zinc-400 select-none font-sans">
-                                      <span>
-                                        {isUnlimited ? "0% ocupado" : `${percentageUsed}% ocupado`}
-                                      </span>
-                                      {!isUnlimited && (
-                                        <span>
-                                          Quedan {percentageRemaining}%
-                                        </span>
-                                      )}
-                                    </div>
-                                  </motion.div>
-                                );
-                              })}
-                            </div>
-
-                            {/* Upgrade CTA for free users */}
-                            {usageData.tier === "free" && (
-                              <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.5 }}
-                                className="relative overflow-hidden p-6 rounded-2xl border border-[#1890FF]/20 bg-gradient-to-r from-[#1890FF]/5 to-[#6366F1]/5"
-                              >
-                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                                  <div>
-                                    <h4 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                      <Sparkles className="w-4 h-4 text-[#1890FF]" />
-                                      ¿Necesitas más capacidad?
-                                    </h4>
-                                    <p className="text-sm text-gray-500 mt-1">Desbloquea mensajes ilimitados, análisis avanzado y más con un plan premium.</p>
-                                  </div>
-                                  <Link
-                                    href="/pricing"
-                                    className="flex items-center gap-1.5 px-5 py-2.5 bg-[#1890FF] text-white font-bold text-sm rounded-xl hover:opacity-90 transition-opacity shadow-lg shadow-[#1890FF]/25 whitespace-nowrap shrink-0"
-                                  >
-                                    Ver Planes <ArrowUpRight className="w-4 h-4" />
-                                  </Link>
+                          return (
+                            <>
+                              {usageLoading && !usageData ? (
+                                <div className="flex justify-center py-12">
+                                  <Loader2 className="w-8 h-8 animate-spin text-[#1890FF]" />
                                 </div>
-                              </motion.div>
-                            )}
-                          </div>
-                        ) : null}
+                              ) : usageError ? (
+                                <div className="text-center py-12">
+                                  <p className="text-zinc-500 mb-4">No se pudo cargar la información de consumo.</p>
+                                  <button
+                                    onClick={fetchUsageData}
+                                    className="px-4 py-2 bg-zinc-900 border border-zinc-850 text-white text-sm font-bold rounded-xl hover:bg-zinc-850 transition-colors"
+                                  >
+                                    Reintentar
+                                  </button>
+                                </div>
+                              ) : usageData ? (
+                                <div className="bg-[#FAF9F5] dark:bg-[#0B0F19]/60 border border-gray-200/80 dark:border-white/5 rounded-3xl p-6 shadow-xl relative overflow-hidden">
+                                  {/* Card Header matching image */}
+                                  <div className="flex items-center justify-between gap-4">
+                                    <div>
+                                      <div className="flex items-center gap-1.5">
+                                        <h2 className="text-lg font-black text-gray-900 dark:text-white leading-none">
+                                          {usageData.planName}
+                                        </h2>
+                                        <Info className="w-4 h-4 text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-400 cursor-pointer" />
+                                      </div>
+                                      <div className="flex items-center gap-1 text-[11px] text-zinc-500 mt-1 select-none font-medium">
+                                        <span>
+                                          {usageData.currentPeriodEnd 
+                                            ? `Renueva el ${formatResetDate(usageData.currentPeriodEnd)}`
+                                            : "Plan Gratuito"}
+                                        </span>
+                                        <span>·</span>
+                                        <Link href="/suscripcion" className="font-semibold text-gray-900 dark:text-white hover:underline">
+                                          Gestionar
+                                        </Link>
+                                      </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        onClick={fetchUsageData}
+                                        disabled={usageLoading}
+                                        className="p-1.5 rounded-lg border border-gray-200/60 dark:border-white/5 bg-white dark:bg-zinc-900 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
+                                        title="Actualizar datos"
+                                      >
+                                        <RefreshCw className={`w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400 ${usageLoading ? "animate-spin" : ""}`} />
+                                      </button>
+                                      
+                                      <Link
+                                        href="/suscripcion"
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-black dark:bg-white text-white dark:text-black font-black text-[11px] rounded-xl hover:opacity-90 transition-opacity shadow-sm"
+                                      >
+                                        <Rocket className="w-3.5 h-3.5" />
+                                        Upgrade
+                                      </Link>
+                                    </div>
+                                  </div>
+
+                                  {/* Divider Line */}
+                                  <div className="border-t border-gray-200/60 dark:border-white/5 my-4" />
+
+                                  {/* Metrics Row */}
+                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                    {usageData.resources.map((resource: any, idx: number) => {
+                                      const isUnlimited = resource.limit === -1;
+                                      const percentageUsed = isUnlimited ? 0 : resource.limit === 0 ? 100 : Math.min(100, Math.round((resource.used / resource.limit) * 100));
+                                      const percentageRemaining = isUnlimited ? 100 : Math.max(0, 100 - percentageUsed);
+
+                                      return (
+                                        <div
+                                          key={resource.id}
+                                          className="bg-white/50 dark:bg-zinc-900/20 border border-gray-200/40 dark:border-white/5 p-4 rounded-2xl flex flex-col justify-between"
+                                        >
+                                          <div>
+                                            {/* Resource label */}
+                                            <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider block">
+                                              {resource.label}
+                                            </span>
+
+                                            {/* Resource Value & Reset time */}
+                                            <div className="flex items-baseline gap-1.5 mt-1 mb-2.5">
+                                              <span className="text-lg font-black text-gray-900 dark:text-white leading-none">
+                                                {isUnlimited ? "Ilimitado" : `${percentageRemaining}%`}
+                                              </span>
+                                              {!isUnlimited && resource.resetTime && (
+                                                <span className="text-[9px] font-semibold text-zinc-400 dark:text-zinc-500">
+                                                  {formatTimeReset(resource.resetTime)}
+                                                </span>
+                                              )}
+                                            </div>
+                                          </div>
+
+                                          {/* Progress Bar (Black / White) */}
+                                          <div className="relative h-1 rounded-full bg-gray-200/80 dark:bg-zinc-800 overflow-hidden">
+                                            {isUnlimited ? (
+                                              <div className="absolute inset-0 bg-emerald-500/20 rounded-full" />
+                                            ) : (
+                                              <motion.div
+                                                initial={{ width: 0 }}
+                                                animate={{ width: `${percentageUsed}%` }}
+                                                transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: idx * 0.1 }}
+                                                className="absolute inset-y-0 left-0 bg-black dark:bg-white rounded-full"
+                                              />
+                                            )}
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              ) : null}
+                            </>
+                          );
+                        })()}
                       </motion.div>
                     )}
 

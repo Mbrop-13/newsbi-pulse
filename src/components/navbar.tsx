@@ -190,7 +190,7 @@ export function Navbar() {
                <img 
                  src={mounted && resolvedTheme === "dark" ? "/assets/Logo 1-Blanco.png" : "/assets/Maverlang Logo-1.png"} 
                  alt="Maverlang" 
-                 className="h-8 w-auto object-contain select-none pointer-events-none"
+                 className="h-6 w-auto object-contain select-none pointer-events-none"
                />
             </Link>
           </div>

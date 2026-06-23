@@ -71,7 +71,8 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
               className="w-fit h-7 gap-1 bg-transparent hover:bg-muted/50 hover:text-black dark:hover:text-white px-2 rounded-lg text-xs font-normal text-black dark:text-white cursor-pointer shrink-0 shadow-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
             >
               <span className="transition-colors">
-                {selectedModel.name}
+                <span className="hidden md:inline">{selectedModel.name}</span>
+                <span className="inline md:hidden">{selectedModel.id === "pro" ? "v2.5 Pro" : "v2.5"}</span>
               </span>
               <ChevronDown className={cn("h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-200", open && "rotate-180")} />
             </Button>
@@ -221,7 +222,8 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
                 {selectedModel ? (
                   <div className="flex items-center gap-2 min-w-0 max-w-[55vw] md:max-w-none">
                     <span className="font-bold text-sm text-gray-800 dark:text-gray-200 transition-colors">
-                      {selectedModel.name}
+                      <span className="hidden md:inline">{selectedModel.name}</span>
+                      <span className="inline md:hidden">{selectedModel.id === "pro" ? "v2.5 Pro" : "v2.5"}</span>
                     </span>
                     <span className="text-xs text-primary/35 font-medium shrink-0 ml-1">
                       {selectedModel.provider}

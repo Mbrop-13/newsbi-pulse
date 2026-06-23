@@ -449,7 +449,7 @@ export default function SettingsClient() {
                                   </button>
                                 </div>
                               ) : usageData ? (
-                                <div className="bg-[#FAF9F5] dark:bg-[#0B0F19]/60 border border-gray-200/80 dark:border-white/5 rounded-3xl p-6 shadow-xl relative overflow-hidden">
+                                <div className="bg-[#FAF9F5] dark:bg-[#0A0A0A]/60 border border-gray-200/80 dark:border-white/5 rounded-3xl p-6 shadow-xl relative overflow-hidden">
                                   {/* Card Header matching image */}
                                   <div className="flex items-center justify-between gap-4">
                                     <div>

@@ -109,7 +109,7 @@ export function AssistantSetup() {
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none">
         <div className="w-full h-full flex">
           {/* Mock Chat Panel */}
-          <div className="w-[35%] h-full bg-white dark:bg-[#0F1629] border-r border-gray-100 dark:border-white/5 flex flex-col">
+          <div className="w-[35%] h-full bg-white dark:bg-[#000000] border-r border-gray-100 dark:border-white/5 flex flex-col">
             {/* Mock Header */}
             <div className="px-4 py-3 border-b border-gray-100 dark:border-white/5 flex items-center gap-3">
               <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#1890FF] to-indigo-600" />
@@ -139,7 +139,7 @@ export function AssistantSetup() {
           </div>
 
           {/* Mock News Panel */}
-          <div className="flex-1 h-full bg-[#F8F9FB] dark:bg-[#080C16] flex flex-col">
+          <div className="flex-1 h-full bg-[#F8F9FB] dark:bg-[#000000] flex flex-col">
             {/* Mock News Header */}
             <div className="px-6 py-4 border-b border-gray-100 dark:border-white/5 flex items-center gap-3">
               <div className="h-3 w-20 bg-gray-300 dark:bg-white/15 rounded-full" />

@@ -422,7 +422,7 @@ export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettings
             onClick={(e) => e.stopPropagation()}
           >
             {/* Left Sidebar navigation */}
-            <div className="w-full md:w-[210px] bg-[#FAF9F5] dark:bg-[#080C16] p-4 flex flex-row md:flex-col gap-1 overflow-x-auto md:overflow-x-visible md:overflow-y-auto border-b md:border-b-0 md:border-r border-[#E9E8E4] dark:border-white/5 shrink-0 select-none hidden-scrollbar">
+            <div className="w-full md:w-[210px] bg-[#FAF9F5] dark:bg-black p-4 flex flex-row md:flex-col gap-1 overflow-x-auto md:overflow-x-visible md:overflow-y-auto border-b md:border-b-0 md:border-r border-[#E9E8E4] dark:border-white/5 shrink-0 select-none hidden-scrollbar">
               <button
                 type="button"
                 onClick={() => setActiveTab("cuenta")}
@@ -640,7 +640,7 @@ export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettings
                               </button>
                             </div>
                           ) : usageData ? (
-                            <div className="bg-[#FAF9F5] dark:bg-[#0B0F19]/60 border border-gray-200/80 dark:border-white/5 rounded-3xl p-5 shadow-xl relative overflow-hidden w-full">
+                            <div className="bg-[#FAF9F5] dark:bg-[#0A0A0A]/60 border border-gray-200/80 dark:border-white/5 rounded-3xl p-5 shadow-xl relative overflow-hidden w-full">
                               {/* Card Header matching image */}
                               <div className="flex items-center justify-between gap-4">
                                 <div>
@@ -828,7 +828,7 @@ export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettings
                         value={assistant.name}
                         onChange={(e) => assistant.setName(e.target.value)}
                         placeholder="Ej. Jarvis, Maverlang..."
-                        className="w-full bg-gray-50/50 dark:bg-[#070B16] border border-gray-200/60 dark:border-white/5 rounded-xl px-3 py-2 text-xs text-foreground outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all font-semibold"
+                        className="w-full bg-gray-50/50 dark:bg-[#0A0A0A] border border-gray-200/60 dark:border-white/5 rounded-xl px-3 py-2 text-xs text-foreground outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all font-semibold"
                       />
                     </div>
 
@@ -837,7 +837,7 @@ export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettings
                       <select
                         value={assistant.assistantRole}
                         onChange={(e) => assistant.setAssistantRole(e.target.value)}
-                        className="w-full bg-gray-55 dark:bg-[#070B16] border border-gray-200/60 dark:border-white/5 rounded-xl px-3 py-2 text-xs text-foreground outline-none cursor-pointer focus:ring-1 focus:ring-teal-500 font-semibold"
+                        className="w-full bg-gray-55 dark:bg-[#0A0A0A] border border-gray-200/60 dark:border-white/5 rounded-xl px-3 py-2 text-xs text-foreground outline-none cursor-pointer focus:ring-1 focus:ring-teal-500 font-semibold"
                       >
                         <option value="Mentor Financiero">Mentor Financiero</option>
                         <option value="Analista de Negocios">Analista de Negocios</option>
@@ -852,7 +852,7 @@ export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettings
                       <select
                         value={assistant.assistantTone}
                         onChange={(e) => assistant.setAssistantTone(e.target.value)}
-                        className="w-full bg-gray-55 dark:bg-[#070B16] border border-gray-200/60 dark:border-white/5 rounded-xl px-3 py-2 text-xs text-foreground outline-none cursor-pointer focus:ring-1 focus:ring-teal-500 font-semibold"
+                        className="w-full bg-gray-55 dark:bg-[#0A0A0A] border border-gray-200/60 dark:border-white/5 rounded-xl px-3 py-2 text-xs text-foreground outline-none cursor-pointer focus:ring-1 focus:ring-teal-500 font-semibold"
                       >
                         <option value="Analítico">Analítico</option>
                         <option value="Técnico">Técnico</option>
@@ -1122,7 +1122,7 @@ export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettings
                         </div>
 
                         {/* Messages Box */}
-                        <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#E5DDD5]/10 dark:bg-[#0B141A]/20 custom-scrollbar animate-fadeIn">
+                        <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#E5DDD5]/10 dark:bg-black/20 custom-scrollbar animate-fadeIn">
                           {isLoadingMessages ? (
                             <div className="h-full flex items-center justify-center">
                               <Loader2 className="w-5 h-5 animate-spin text-[#1890FF]" />

@@ -396,22 +396,8 @@ function MessageBubble({
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false)
   const setSelectedTab = useWebBuilderStore((s) => s.setSelectedTab)
   
-  const [localReasoningOpen, setLocalReasoningOpen] = useState(isReasoningOpen || (isLast && isLoading))
+  const [localReasoningOpen, setLocalReasoningOpen] = useState(false)
   const hasManuallyToggledRef = useRef(false)
-
-  // Keep reasoning open during streaming unless the user manually toggles it
-  useEffect(() => {
-    if (isLast && isLoading && !hasManuallyToggledRef.current) {
-      setLocalReasoningOpen(true)
-    }
-  }, [isLast, isLoading])
-
-  // Sync with prop when streaming is done
-  useEffect(() => {
-    if (!isLoading) {
-      setLocalReasoningOpen(isReasoningOpen)
-    }
-  }, [isReasoningOpen, isLoading])
 
   // Check citations
   let citationsList: string[] = message.citations || []

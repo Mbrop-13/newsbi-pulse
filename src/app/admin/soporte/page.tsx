@@ -243,7 +243,7 @@ export default function AdminSupportPage() {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#f0f2f5] dark:bg-[#0B141A]">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#f0f2f5] dark:bg-black">
               {isLoadingMessages ? (
                 <div className="flex-1 h-full flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-[#1890FF]" /></div>
               ) : (

@@ -1165,7 +1165,7 @@ export function PreviewPanel() {
                 "flex-grow flex items-center justify-center min-h-0 w-full h-full relative overflow-hidden preview-container-no-scrollbar",
                 viewport === "desktop"
                   ? "bg-transparent p-0"
-                  : "bg-slate-50 dark:bg-[#07090e] p-4 md:p-6"
+                  : "bg-slate-50 dark:bg-black p-4 md:p-6"
               )}>
                 <style dangerouslySetInnerHTML={{ __html: `
                   .preview-container-no-scrollbar ::-webkit-scrollbar {
@@ -1186,7 +1186,7 @@ export function PreviewPanel() {
                   }
                 `}} />
                 <div className={cn(
-                  "flex flex-col bg-white dark:bg-[#0b0f19] transition-all duration-300 ease-in-out relative",
+                  "flex flex-col bg-white dark:bg-black transition-all duration-300 ease-in-out relative",
                   viewport === "desktop" && "w-full h-full rounded-none max-w-full border-none shadow-none",
                   viewport === "tablet" && "w-full max-w-[768px] aspect-[768/1024] max-h-full shrink-0 rounded-2xl border border-border/40 shadow-xl overflow-hidden [&_*::-webkit-scrollbar]:hidden [&_*]:[scrollbar-width:none] [&_*]:[-ms-overflow-style:none] [&_iframe]:[scrollbar-width:none] [&_iframe::-webkit-scrollbar]:hidden",
                   viewport === "mobile" && "w-full max-w-[390px] aspect-[390/800] max-h-full shrink-0 rounded-3xl border border-border/40 shadow-xl overflow-hidden [&_*::-webkit-scrollbar]:hidden [&_*]:[scrollbar-width:none] [&_*]:[-ms-overflow-style:none] [&_iframe]:[scrollbar-width:none] [&_iframe::-webkit-scrollbar]:hidden"

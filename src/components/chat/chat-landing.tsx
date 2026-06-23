@@ -18,9 +18,16 @@ import { getPlanConfig, type PlanTier, getNextTier } from "@/lib/plan-limits"
 import { useChat } from "ai/react"
 import { ShareChatDialog } from "@/components/assistant/share-chat-dialog"
 import { toast } from "sonner"
+import { useRouter } from "next/navigation"
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu"
 import { cn, formatDate as fmtDate, getFallbackImage, slugify } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
-import { Newspaper, Sparkles, Headphones, LineChart, Coins, Landmark, Briefcase, Shield, Lightbulb, Globe, Flame, Calendar, Cpu, ArrowUpRight, ArrowDownRight } from "lucide-react"
+import { Newspaper, Sparkles, Headphones, LineChart, Coins, Landmark, Briefcase, Shield, Lightbulb, Globe, Flame, Calendar, Cpu, ArrowUpRight, ArrowDownRight, MoreHorizontal, Link2, SquarePen, Trash2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useSidebar } from "@/components/ui/sidebar"
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store"
@@ -143,6 +150,45 @@ export function ChatLanding() {
   const [openReasoning, setOpenReasoning] = useState<Record<string, boolean>>({})
   const [shareDialog, setShareDialog] = useState({ isOpen: false, question: "", answer: "" })
   const lastLoadedChatIdRef = useRef<string | null>(null)
+
+  const router = useRouter()
+
+  const handleNewChat = () => {
+    clearMessages()
+    useWebBuilderStore.setState({
+      isWebBuilderMode: false,
+      files: {},
+      activeProjectId: null,
+      activeFilePath: "/App.tsx",
+      pendingPlan: null
+    })
+    router.push("/ai")
+  }
+
+  const handleDeleteCurrentChat = async () => {
+    const chatId = currentChatId
+    if (chatId) {
+      if (confirm("¿Estás seguro de que deseas eliminar esta conversación?")) {
+        await useAIChatStore.getState().deleteSavedChat(chatId)
+        clearMessages()
+        useWebBuilderStore.setState({
+          isWebBuilderMode: false,
+          files: {},
+          activeProjectId: null,
+          activeFilePath: "/App.tsx",
+          pendingPlan: null
+        })
+        router.push("/ai")
+      }
+    }
+  }
+
+  const handleCopyLink = () => {
+    if (typeof window !== "undefined") {
+      navigator.clipboard.writeText(window.location.href)
+      toast.success("Enlace del chat copiado al portapapeles")
+    }
+  }
 
   const accumulatedReasoningRef = useRef<string>("")
   const accumulatedCitationsRef = useRef<string[]>([]);
@@ -817,6 +863,51 @@ export function ChatLanding() {
             className="bg-foreground text-background hover:opacity-90 text-[13px] sm:text-sm font-semibold px-3.5 py-2 sm:px-4 rounded-full transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 whitespace-nowrap"
           >
             Registrarse
+          </button>
+        </div>
+      )}
+      {isAuthenticated && hasMessages && (
+        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-50 flex items-center gap-1.5 select-none">
+          {/* Dropdown Menu (Más) */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button 
+                type="button" 
+                title="Más" 
+                className="w-9 h-9 rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-850 dark:hover:bg-zinc-850/80 flex items-center justify-center text-gray-700 dark:text-gray-200 transition-all cursor-pointer shadow-xs border border-transparent dark:border-white/5 active:scale-95"
+              >
+                <MoreHorizontal className="w-4.5 h-4.5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 rounded-xl border border-gray-250 dark:border-white/5 bg-white dark:bg-zinc-950 p-1 shadow-lg z-[90]">
+              <DropdownMenuItem 
+                onClick={handleDeleteCurrentChat}
+                className="text-red-650 dark:text-red-400 focus:bg-red-500/10 focus:text-red-650 dark:focus:text-red-400 py-2.5 px-3 rounded-xl cursor-pointer text-xs font-semibold flex items-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                Eliminar conversación
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Copy link */}
+          <button 
+            type="button" 
+            onClick={handleCopyLink} 
+            title="Copiar enlace" 
+            className="w-9 h-9 rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-850 dark:hover:bg-zinc-850/80 flex items-center justify-center text-gray-700 dark:text-gray-200 transition-all cursor-pointer shadow-xs border border-transparent dark:border-white/5 active:scale-95"
+          >
+            <Link2 className="w-4.5 h-4.5" />
+          </button>
+
+          {/* New Chat */}
+          <button 
+            type="button" 
+            onClick={handleNewChat} 
+            title="Nueva conversación" 
+            className="w-9 h-9 rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-850 dark:hover:bg-zinc-850/80 flex items-center justify-center text-gray-700 dark:text-gray-200 transition-all cursor-pointer shadow-xs border border-transparent dark:border-white/5 active:scale-95"
+          >
+            <SquarePen className="w-4.5 h-4.5" />
           </button>
         </div>
       )}

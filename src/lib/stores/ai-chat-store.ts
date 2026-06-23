@@ -338,6 +338,13 @@ export const useAIChatStore = create<AIChatStore>()(
         const { cloudSyncEnabled } = get();
         set((s) => ({ savedChats: s.savedChats.filter(c => c.id !== id) }));
         
+        // Delete associated webbuilder project first to avoid constraint issues
+        try {
+          await useWebBuilderStore.getState().deleteFromCloud(id);
+        } catch (wbErr) {
+          console.error("Error deleting WebBuilder project from cloud:", wbErr);
+        }
+        
         if (cloudSyncEnabled) {
           const user = useAuthStore.getState().user;
           if (user) {

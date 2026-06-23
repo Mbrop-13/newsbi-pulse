@@ -890,7 +890,7 @@ function MessageBubble({
       <div className="flex justify-end">
         <div className={cn(isWebBuilderMode ? "max-w-[95%]" : "max-w-[85%] md:max-w-[75%]")}>
           <div className={cn(
-            "bg-secondary dark:bg-secondary text-sm",
+            "bg-secondary dark:bg-secondary text-[15px]",
             isWebBuilderMode ? "rounded-2xl px-3 py-2" : "rounded-3xl px-4 py-3"
           )}>
             <p className="whitespace-pre-wrap">{message.content}</p>
@@ -1002,7 +1002,7 @@ function MessageBubble({
         {renderAgentReports()}
         
         {/* 3. Main text content */}
-        <div className="prose prose-sm dark:prose-invert max-w-none text-sm">
+        <div className="prose dark:prose-invert max-w-none text-[15px] leading-relaxed">
           {message.content ? (
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {isWebBuilderMode ? stripArtifactXml(message.content) : message.content}

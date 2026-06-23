@@ -623,7 +623,7 @@ export function ChatInput({
               name="input"
               rows={1}
               className={cn(
-                "min-h-12 max-h-72 text-[16px] md:text-[16px] px-1",
+                "min-h-12 max-h-72 text-[15px] md:!text-[15px] px-1",
                 "resize-none overflow-y-auto",
                 "border-0 bg-transparent dark:bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
               )}

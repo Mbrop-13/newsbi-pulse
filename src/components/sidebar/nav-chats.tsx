@@ -21,6 +21,7 @@ import {
 import { useRouter } from "next/navigation"
 import { slugify } from "@/lib/utils"
 import { useAIChatStore, type SavedChat } from "@/lib/stores/ai-chat-store"
+import { useWebBuilderStore } from "@/lib/stores/webbuilder-store"
 import { useLanguageStore } from "@/lib/stores/language-store"
 import { useTranslation, type TranslationKey } from "@/lib/translations"
 
@@ -85,9 +86,23 @@ export function NavChats() {
     (e: React.MouseEvent, id: string) => {
       e.preventDefault()
       e.stopPropagation()
+      
+      const isActive = currentChatId === id
       deleteSavedChat(id)
+      
+      if (isActive) {
+        useAIChatStore.getState().clearMessages()
+        useWebBuilderStore.setState({
+          isWebBuilderMode: false,
+          files: {},
+          activeProjectId: null,
+          activeFilePath: "/App.tsx",
+          pendingPlan: null
+        })
+        router.push("/ai")
+      }
     },
-    [deleteSavedChat]
+    [deleteSavedChat, currentChatId, router]
   )
 
   return (

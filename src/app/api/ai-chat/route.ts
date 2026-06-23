@@ -510,6 +510,14 @@ o
 4. Explícale al usuario los resultados de la ejecución del script y los insights financieros obtenidos.`;
         }
 
+        if (browser) {
+          systemPrompt += `\n\n[MODO NAVEGADOR VIRTUAL ACTIVADO]:
+Tienes acceso a herramientas de navegación web real (browser_navigate, browser_click, browser_type, browser_scroll) para visitar páginas, buscar información en Google o extraer datos en tiempo real de cualquier sitio.
+REGLAS PARA EL MODO NAVEGADOR:
+1. Si el usuario te pide buscar información en internet, visitar una página específica o investigar algo en vivo, DEBES priorizar el uso del navegador virtual llamando a 'browser_navigate' con la URL correspondiente.
+2. Explícale al usuario los pasos que vas realizando y los resultados que vas observando en la pantalla del navegador virtual.`;
+        }
+
         const result = await streamText({
           model: mimo(finalModelStr),
           system: systemPrompt,

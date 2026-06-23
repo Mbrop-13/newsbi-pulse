@@ -35,6 +35,7 @@ import { WebBuilderWorkspace } from "@/components/webbuilder/workspace"
 import { parseArtifact, actionsToFiles, containsArtifact } from "@/lib/webbuilder-parser"
 import { classifyPlanResponse } from "@/lib/webbuilder-plan-utils"
 import { CanvasWorkspace } from "@/components/chat/canvas-workspace"
+import { useCanvasStore } from "@/lib/stores/canvas-store"
 import { useBrowserStore } from "@/lib/stores/browser-store"
 import { BrowserWorkspace } from "@/components/chat/browser-workspace"
 
@@ -442,6 +443,76 @@ export function ChatLanding() {
   useEffect(() => {
     aiMessagesRef.current = aiMessages
   }, [aiMessages])
+
+  const lastAutoOpenedRef = useRef<string>("");
+
+  useEffect(() => {
+    lastAutoOpenedRef.current = "";
+  }, [currentChatId]);
+
+  useEffect(() => {
+    if (aiMessages.length === 0) {
+      lastAutoOpenedRef.current = "";
+      return;
+    }
+
+    const lastMsg = aiMessages[aiMessages.length - 1];
+    if (!lastMsg || lastMsg.role !== "assistant") return;
+
+    // 1. Check for run_python tool calls
+    const runPythonInvocation = lastMsg.toolInvocations?.find(
+      (inv: any) => inv.toolName === "run_python"
+    );
+
+    if (runPythonInvocation && runPythonInvocation.state === "result") {
+      const scriptCode = runPythonInvocation.args?.script || "";
+      if (scriptCode && scriptCode !== lastAutoOpenedRef.current) {
+        lastAutoOpenedRef.current = scriptCode;
+        
+        const result = (runPythonInvocation as any).result;
+        useCanvasStore.getState().openCanvas({
+          title: "Script de Python",
+          code: scriptCode,
+          language: "python",
+          stdout: result?.stdout || "",
+          output: result?.output !== undefined && result?.output !== null ? String(result.output) : undefined,
+          error: result?.stderr || result?.error || undefined,
+          durationMs: result?.durationMs || 0,
+          success: result?.success !== false,
+        });
+      }
+      return;
+    }
+
+    // 2. Check for markdown code blocks in content
+    const content = lastMsg.content || "";
+    if (content) {
+      const codeBlockMatch = /```(\w+)\n([\s\S]+?)```/.exec(content);
+      if (codeBlockMatch) {
+        const lang = codeBlockMatch[1];
+        const codeValue = codeBlockMatch[2].trim();
+
+        if (codeValue && codeValue !== lastAutoOpenedRef.current) {
+          lastAutoOpenedRef.current = codeValue;
+
+          // Extract title from comment in the first line
+          let title = lang === 'python' ? 'Script de Python' : `Código ${lang.toUpperCase()}`;
+          const firstLine = codeValue.split('\n')[0].trim();
+          const filenameMatch = firstLine.match(/(?:filename|archivo|title)\s*:\s*([^\s][^\n\r]*)/i) || 
+                                firstLine.match(/(?:\/\/\/|\/\/|#|\/\*)\s*([a-zA-Z0-9_\-\.\s]+\.[a-zA-Z0-9]+)/i);
+          if (filenameMatch) {
+            title = filenameMatch[1].replace(/\*\/$/, '').trim();
+          }
+
+          useCanvasStore.getState().openCanvas({
+            title,
+            code: codeValue,
+            language: lang,
+          });
+        }
+      }
+    }
+  }, [aiMessages]);
 
   // Accumulate citations & reasoning from streamData to prevent them from vanishing during tool execution steps
   useEffect(() => {

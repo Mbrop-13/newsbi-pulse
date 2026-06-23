@@ -1304,14 +1304,20 @@ function AssistantAvatar({ isResponding, isWebBuilderMode }: { isResponding: boo
     setMounted(true);
   }, []);
 
+  const isDark = mounted && resolvedTheme === "dark";
+
   if (isResponding) {
+    const videoSrc = isDark
+      ? "https://mail.programbi.com/uploads/Letras_se_mueven_planeta_c%C3%ADrculo%E2%80%A6_202606230457.mp4"
+      : "/assets/saturn-logo.mp4";
+
     return (
       <div className={cn(
-        "shrink-0 mt-1 flex items-center justify-center rounded-2xl overflow-hidden bg-transparent dark:bg-black",
+        "shrink-0 mt-1 flex items-center justify-center rounded-2xl overflow-hidden bg-transparent",
         isWebBuilderMode ? "h-10 w-10 rounded-xl" : "h-24 w-32"
       )}>
         <video 
-          src="/assets/saturn-logo.mp4" 
+          src={videoSrc} 
           autoPlay 
           loop 
           muted 
@@ -1322,7 +1328,6 @@ function AssistantAvatar({ isResponding, isWebBuilderMode }: { isResponding: boo
     );
   }
 
-  const isDark = mounted && resolvedTheme === "dark";
   const imageSrc = isDark
     ? "/assets/Logo 2-Blanco.png"
     : "/assets/Maverlang Logo-2.png";

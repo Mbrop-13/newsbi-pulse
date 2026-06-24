@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getSessionPage, refreshSessionFrame } from "@/lib/services/browser-manager";
+import { clickCoordinate } from "@/lib/services/browser-manager";
 import { z } from "zod";
 
 const clickSchema = z.object({
@@ -26,22 +26,13 @@ export async function POST(req: NextRequest) {
     }
 
     const { sessionId, x, y } = parsed.data;
-    const page = getSessionPage(sessionId);
+    const result = await clickCoordinate(sessionId, x, y);
     
-    if (!page) {
-      return NextResponse.json({ error: "Sesión del navegador no encontrada o inactiva" }, { status: 404 });
+    if (!result.success) {
+      return NextResponse.json({ error: result.message || "Error al hacer clic" }, { status: 404 });
     }
 
-    // Perform mouse click on the remote page
-    await page.mouse.click(x, y, { delay: 100 });
-    
-    // Automatically wait a brief moment for page transitions
-    await page.waitForTimeout(500);
-    
-    // Trigger screenshot refresh
-    await refreshSessionFrame(sessionId);
-
-    return NextResponse.json({ success: true, url: page.url() });
+    return NextResponse.json({ success: true, url: result.url });
   } catch (error: any) {
     console.error("[Browser Click API] Error:", error);
     return NextResponse.json({ success: false, error: error.message || String(error) }, { status: 500 });

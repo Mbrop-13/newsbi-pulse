@@ -1,19 +1,24 @@
 import { NextRequest } from "next/server";
-import { onFrame, onStep, hasSession, refreshSessionFrame } from "@/lib/services/browser-manager";
+import { hasSession } from "@/lib/services/browser-manager";
+import { Redis } from "@upstash/redis";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+const redisUrl = process.env.UPSTASH_REDIS_REST_URL || "";
+const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN || "";
+const redis = redisUrl && redisToken ? new Redis({ url: redisUrl, token: redisToken }) : null;
 
 /**
  * GET /api/browser/stream?sessionId=xxx
  * 
  * Server-Sent Events endpoint that streams live browser frames and
- * step updates to the client's VirtualBrowserCard component.
+ * step updates from Upstash Redis to support stateless serverless environments.
  */
 export async function GET(req: NextRequest) {
   const sessionId = req.nextUrl.searchParams.get("sessionId");
 
-  if (!sessionId || !hasSession(sessionId)) {
+  if (!sessionId || !(await hasSession(sessionId))) {
     return new Response(
       JSON.stringify({ error: "Session not found" }),
       { status: 404, headers: { "Content-Type": "application/json" } }
@@ -29,53 +34,65 @@ export async function GET(req: NextRequest) {
         encoder.encode(`data: ${JSON.stringify({ type: "connected", sessionId })}\n\n`)
       );
 
-      // Register frame callback
-      onFrame(sessionId, (frame: string) => {
-        try {
-          controller.enqueue(
-            encoder.encode(
-              `data: ${JSON.stringify({ type: "frame", image: frame })}\n\n`
-            )
-          );
-        } catch {
-          // Stream closed
-        }
-      });
+      let lastFrame = "";
+      let lastStepCount = 0;
+      let intervalId: NodeJS.Timeout;
 
-      // Register step callback
-      onStep(sessionId, (step) => {
+      // Polling helper
+      const checkUpdates = async () => {
         try {
-          controller.enqueue(
-            encoder.encode(
-              `data: ${JSON.stringify({ type: "step", ...step })}\n\n`
-            )
-          );
-        } catch {
-          // Stream closed
-        }
-      });
+          if (redis) {
+            // 1. Check if session exists
+            const sessionExists = await redis.exists(`browser:session:${sessionId}`);
+            if (!sessionExists) {
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({ type: "closed" })}\n\n`)
+              );
+              controller.close();
+              clearInterval(intervalId);
+              return;
+            }
 
-      // Immediately trigger a frame capture in the background
-      refreshSessionFrame(sessionId).catch(() => {});
+            // 2. Fetch and check frame
+            const frame = await redis.get(`browser:frame:${sessionId}`);
+            if (frame && typeof frame === "string" && frame !== lastFrame) {
+              lastFrame = frame;
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({ type: "frame", image: frame })}\n\n`)
+              );
+            }
 
-      // Keep-alive ping every 15 seconds
-      const keepAlive = setInterval(() => {
-        try {
-          if (!hasSession(sessionId)) {
-            controller.enqueue(
-              encoder.encode(
-                `data: ${JSON.stringify({ type: "closed" })}\n\n`
-              )
-            );
-            controller.close();
-            clearInterval(keepAlive);
-            return;
+            // 3. Fetch and check steps
+            const stepsRaw = await redis.get(`browser:steps:${sessionId}`);
+            if (stepsRaw) {
+              const steps = typeof stepsRaw === "string" ? JSON.parse(stepsRaw) : stepsRaw;
+              if (steps.length > lastStepCount) {
+                const newSteps = steps.slice(lastStepCount);
+                for (const step of newSteps) {
+                  controller.enqueue(
+                    encoder.encode(`data: ${JSON.stringify({ type: "step", ...step })}\n\n`)
+                  );
+                }
+                lastStepCount = steps.length;
+              }
+            }
           }
-          controller.enqueue(encoder.encode(`: keepalive\n\n`));
-        } catch {
-          clearInterval(keepAlive);
+        } catch (err) {
+          // Controller might have been closed, stop interval
+          clearInterval(intervalId);
         }
-      }, 15000);
+      };
+
+      // Perform initial check
+      checkUpdates();
+
+      // Poll every 1 second
+      intervalId = setInterval(checkUpdates, 1000);
+
+      // Clear interval on abort
+      req.signal.addEventListener("abort", () => {
+        clearInterval(intervalId);
+      });
     },
   });
 

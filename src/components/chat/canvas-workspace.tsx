@@ -81,14 +81,14 @@ export function CanvasWorkspace({ chatPanel }: CanvasWorkspaceProps) {
       <div className="flex flex-col h-full w-full">
         {/* Mobile Tab Bar */}
         {isOpen && (
-          <div className="flex border-b border-border/40 bg-[#0A0A0A] shrink-0 z-20">
+          <div className="flex border-b border-gray-250 dark:border-white/5 bg-white dark:bg-[#0A0A0A] shrink-0 z-20">
             <button
               onClick={() => setMobileTab("chat")}
               className={cn(
                 "flex-1 py-3 text-xs font-bold text-center transition-all cursor-pointer",
                 mobileTab === "chat"
-                  ? "text-white border-b-2 border-blue-500"
-                  : "text-zinc-450"
+                  ? "text-zinc-900 dark:text-white border-b-2 border-blue-500"
+                  : "text-zinc-500 dark:text-zinc-400"
               )}
             >
               💬 Chat
@@ -98,8 +98,8 @@ export function CanvasWorkspace({ chatPanel }: CanvasWorkspaceProps) {
               className={cn(
                 "flex-1 py-3 text-xs font-bold text-center transition-all cursor-pointer",
                 mobileTab === "canvas"
-                  ? "text-white border-b-2 border-blue-500"
-                  : "text-zinc-450"
+                  ? "text-zinc-900 dark:text-white border-b-2 border-blue-500"
+                  : "text-zinc-500 dark:text-zinc-400"
               )}
             >
               📝 Canvas
@@ -110,11 +110,11 @@ export function CanvasWorkspace({ chatPanel }: CanvasWorkspaceProps) {
         {/* Mobile Content */}
         <div className="flex-1 min-h-0 relative">
           {!isOpen || mobileTab === "chat" ? (
-            <div className="absolute inset-0">
+            <div className="absolute inset-0 bg-white dark:bg-[#0A0A0A]">
               {chatPanel}
             </div>
           ) : (
-            <div className="absolute inset-0 p-1.5 bg-[#000]">
+            <div className="absolute inset-0 p-1.5 bg-zinc-50 dark:bg-black">
               <CanvasPanel />
             </div>
           )}
@@ -125,10 +125,10 @@ export function CanvasWorkspace({ chatPanel }: CanvasWorkspaceProps) {
 
   // Desktop Split Layout
   return (
-    <div className="flex h-full w-full overflow-hidden bg-[#0A0A0A] p-2 gap-1">
+    <div className="flex h-full w-full overflow-hidden bg-zinc-100 dark:bg-[#050505] p-2 gap-2">
       {/* Chat Panel - Left side */}
       <div
-        className="h-full flex flex-col relative overflow-hidden bg-transparent shrink-0"
+        className="h-full flex flex-col relative overflow-hidden bg-white dark:bg-[#0A0A0A] rounded-[20px] border border-gray-250 dark:border-white/5 shrink-0"
         style={{ width: isOpen ? `${chatPercent}%` : "100%" }}
       >
         {chatPanel}
@@ -145,7 +145,7 @@ export function CanvasWorkspace({ chatPanel }: CanvasWorkspaceProps) {
           {/* Inner line indicator */}
           <div className={cn(
             "w-[3px] h-[40px] rounded-full transition-all duration-300",
-            (isDragging || isHovered) ? "bg-blue-500 scale-y-150" : "bg-white/10 group-hover:bg-white/20"
+            (isDragging || isHovered) ? "bg-blue-500 scale-y-150" : "bg-zinc-300 dark:bg-white/10 group-hover:bg-zinc-400 dark:group-hover:bg-white/20"
           )} />
         </div>
       )}

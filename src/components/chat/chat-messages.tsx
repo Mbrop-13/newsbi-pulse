@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { useCanvasStore } from "@/lib/stores/canvas-store"
+import { useBrowserStore } from "@/lib/stores/browser-store"
 import { CanvasFileCard } from "@/components/chat/canvas-file-card"
 import type { ChatMessage } from "@/lib/stores/ai-chat-store"
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store"
@@ -45,6 +46,9 @@ export function ChatMessages({
   onToggleReasoning,
 }: ChatMessagesProps) {
   const { isWebBuilderMode } = useWebBuilderStore()
+  const isBrowserOpen = useBrowserStore((s) => s.isOpen)
+  const isCanvasOpen = useCanvasStore((s) => s.isOpen)
+  const isSplitMode = isWebBuilderMode || isBrowserOpen || isCanvasOpen
 
   // Extract live streaming data for WebBuilder loading indicator
   const liveReasoning = useMemo(() => {
@@ -97,10 +101,10 @@ export function ChatMessages({
         onScroll={handleScroll}
         className={cn(
           "flex-1 overflow-y-auto scrollbar-hide w-full",
-          isWebBuilderMode ? "pl-5 pr-3" : "px-4 md:px-6"
+          isSplitMode ? "pl-5 pr-3" : "px-4 md:px-6"
         )}
       >
-        <div className={cn("pt-16 pb-6 space-y-6", isWebBuilderMode ? "w-full max-w-full" : "max-w-3xl mx-auto")}>
+        <div className={cn("pt-16 pb-6 space-y-6", isSplitMode ? "w-full max-w-full" : "max-w-3xl mx-auto")}>
           {messages.map((msg, idx) => (
             <MessageBubble
               key={msg.id}

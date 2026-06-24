@@ -230,6 +230,8 @@ export function ChatLanding() {
 
   const handleNewChat = () => {
     clearMessages()
+    useCanvasStore.getState().clearCanvas()
+    useBrowserStore.getState().clearSession()
     useWebBuilderStore.setState({
       isWebBuilderMode: false,
       files: {},
@@ -246,6 +248,8 @@ export function ChatLanding() {
       if (confirm("¿Estás seguro de que deseas eliminar esta conversación?")) {
         await useAIChatStore.getState().deleteSavedChat(chatId)
         clearMessages()
+        useCanvasStore.getState().clearCanvas()
+        useBrowserStore.getState().clearSession()
         useWebBuilderStore.setState({
           isWebBuilderMode: false,
           files: {},
@@ -1182,8 +1186,8 @@ export function ChatLanding() {
                />
              )}
 
-            <div className="sticky bottom-0 z-10 w-full bg-transparent pt-2 pb-4 md:pb-5">
-              <div className="max-w-3xl mx-auto w-full">
+            <div className="sticky bottom-0 z-10 w-full bg-transparent pt-2 pb-4 md:pb-5 px-4">
+              <div className={cn("w-full transition-all", (isBrowserOpen || isCanvasOpen || isWebBuilderMode) ? "max-w-full" : "max-w-3xl mx-auto")}>
                 <ChatInput
                   placeholder="Envía un mensaje..."
                   onSubmit={handleSend}

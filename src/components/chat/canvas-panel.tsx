@@ -14,11 +14,16 @@ import {
   Loader2, 
   Check, 
   Terminal, 
-  AlertCircle 
+  AlertCircle,
+  Eye,
+  Code,
+  Columns
 } from "lucide-react";
 import { toast } from "sonner";
 import { saveAs } from "file-saver";
 import { cn } from "@/lib/utils";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 export function CanvasPanel() {
   const { 
@@ -37,6 +42,7 @@ export function CanvasPanel() {
   const [isRunning, setIsRunning] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [viewMode, setViewMode] = useState<"split" | "editor" | "preview">("split");
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
@@ -57,10 +63,29 @@ export function CanvasPanel() {
     };
   }, [showHistory]);
 
-  if (!activeFile) return null;
+  if (!activeFile) {
+    return (
+      <div className="h-full w-full bg-[#0A0A0A] rounded-[28px] border border-white/5 flex flex-col items-center justify-center text-center p-6 space-y-4 shadow-2xl relative select-none">
+        <div className="w-16 h-16 rounded-3xl bg-amber-500/10 text-amber-500 flex items-center justify-center shadow-lg border border-amber-500/10">
+          <Terminal className="w-8 h-8 animate-pulse" />
+        </div>
+        <div className="space-y-1.5">
+          <h4 className="text-sm font-bold text-white">Intérprete de Código (Canvas)</h4>
+          <p className="text-xs text-gray-400 max-w-[280px]">
+            Escribe un mensaje para que el asistente genere código, analice datos o ejecute scripts en Python.
+          </p>
+        </div>
+        <Loader2 className="w-5 h-5 text-amber-500 animate-spin" />
+      </div>
+    );
+  }
 
   const lineCount = activeFile.code.split("\n").length;
   const isPython = activeFile.language.toLowerCase() === "python";
+  const isHtml = activeFile.language.toLowerCase() === "html" || activeFile.language.toLowerCase() === "htm";
+  const isSvg = activeFile.language.toLowerCase() === "svg";
+  const isMarkdown = activeFile.language.toLowerCase() === "markdown" || activeFile.language.toLowerCase() === "md";
+  const hasPreview = isHtml || isSvg || isMarkdown;
 
   // Sync scroll between textarea and line numbers
   const handleScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
@@ -263,6 +288,44 @@ export function CanvasPanel() {
             {isCopied ? <Check className="w-4 h-4 text-emerald-500" /> : <Share2 className="w-4 h-4" />}
           </button>
 
+          {hasPreview && (
+            <div className="flex items-center bg-white/5 rounded-lg p-0.5 border border-white/5 mr-1.5 shrink-0 select-none">
+              <button
+                onClick={() => setViewMode("editor")}
+                className={cn(
+                  "px-2 py-1 rounded-md text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer",
+                  viewMode === "editor" ? "bg-white/10 text-white" : "text-gray-400 hover:text-white"
+                )}
+                title="Mostrar solo código"
+              >
+                <Code className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">Código</span>
+              </button>
+              <button
+                onClick={() => setViewMode("split")}
+                className={cn(
+                  "px-2 py-1 rounded-md text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer",
+                  viewMode === "split" ? "bg-white/10 text-white" : "text-gray-400 hover:text-white"
+                )}
+                title="Mostrar código y vista previa"
+              >
+                <Columns className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">Dividido</span>
+              </button>
+              <button
+                onClick={() => setViewMode("preview")}
+                className={cn(
+                  "px-2 py-1 rounded-md text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer",
+                  viewMode === "preview" ? "bg-white/10 text-white" : "text-gray-400 hover:text-white"
+                )}
+                title="Mostrar solo vista previa"
+              >
+                <Eye className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">Vista Previa</span>
+              </button>
+            </div>
+          )}
+
           <div className="h-4 w-px bg-white/10 mx-0.5" />
 
           {/* Close Panel */}
@@ -278,34 +341,74 @@ export function CanvasPanel() {
 
       {/* Editor Body */}
       <div className="flex-1 flex min-h-0 relative font-mono text-sm leading-relaxed overflow-hidden">
-        {/* Custom Editor Layout */}
-        <div className="flex h-full w-full overflow-hidden p-2 relative bg-[#090909]">
-          {/* Scrollable Line Numbers column */}
-          <div
-            ref={lineNumbersRef}
-            className="w-11 py-3 text-right select-none text-white/20 dark:text-zinc-700 bg-transparent pr-3 border-r border-white/5 overflow-hidden shrink-0 font-mono text-xs text-slate-600 font-bold"
-          >
-            {Array.from({ length: lineCount }).map((_, i) => (
-              <div key={i} className="h-6 leading-6">
-                {i + 1}
+        <div className="flex h-full w-full overflow-hidden p-2 gap-2 relative bg-[#090909]">
+          
+          {/* 1. Code Editor (visible when viewMode is "editor" or "split") */}
+          {(viewMode === "editor" || viewMode === "split" || !hasPreview) && (
+            <div className="flex-1 h-full flex overflow-hidden bg-transparent">
+              {/* Scrollable Line Numbers column */}
+              <div
+                ref={lineNumbersRef}
+                className="w-11 py-3 text-right select-none text-white/20 dark:text-zinc-700 bg-transparent pr-3 border-r border-white/5 overflow-hidden shrink-0 font-mono text-xs text-slate-600 font-bold"
+              >
+                {Array.from({ length: lineCount }).map((_, i) => (
+                  <div key={i} className="h-6 leading-6">
+                    {i + 1}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          {/* Main text area */}
-          <textarea
-            ref={textareaRef}
-            value={activeFile.code}
-            onChange={(e) => updateActiveFileCode(e.target.value)}
-            onScroll={handleScroll}
-            className={cn(
-              "flex-1 h-full py-3 px-4 resize-none outline-none border-none bg-transparent overflow-auto",
-              "text-[#E4E4E7] placeholder-[#3F3F46] font-mono text-xs leading-6 selection:bg-blue-500/30 selection:text-white",
-              "[scrollbar-width:thin] scrollbar-thin scrollbar-thumb-white/10"
-            )}
-            placeholder="Escribe tu código aquí..."
-            spellCheck={false}
-          />
+              {/* Main text area */}
+              <textarea
+                ref={textareaRef}
+                value={activeFile.code}
+                onChange={(e) => updateActiveFileCode(e.target.value)}
+                onScroll={handleScroll}
+                className={cn(
+                  "flex-1 h-full py-3 px-4 resize-none outline-none border-none bg-transparent overflow-auto",
+                  "text-[#E4E4E7] placeholder-[#3F3F46] font-mono text-xs leading-6 selection:bg-blue-500/30 selection:text-white",
+                  "[scrollbar-width:thin] scrollbar-thin scrollbar-thumb-white/10"
+                )}
+                placeholder="Escribe tu código aquí..."
+                spellCheck={false}
+              />
+            </div>
+          )}
+
+          {/* Vertical divider handle for split view */}
+          {hasPreview && viewMode === "split" && (
+            <div className="w-[1px] h-full bg-white/5 shrink-0" />
+          )}
+
+          {/* 2. Previewer Pane (visible when hasPreview is true and viewMode is "preview" or "split") */}
+          {hasPreview && (viewMode === "preview" || viewMode === "split") && (
+            <div className="flex-1 h-full overflow-hidden flex flex-col bg-[#050505] rounded-2xl border border-white/5 p-2 animate-in fade-in duration-200">
+              {isHtml && (
+                <iframe
+                  srcDoc={activeFile.code}
+                  title="HTML Preview"
+                  sandbox="allow-scripts"
+                  className="w-full h-full bg-white rounded-xl border-0"
+                />
+              )}
+              {isSvg && (
+                <div className="w-full h-full flex items-center justify-center bg-zinc-950/40 p-4 overflow-auto rounded-xl">
+                  <div 
+                    dangerouslySetInnerHTML={{ __html: activeFile.code }}
+                    className="max-w-full max-h-full flex items-center justify-center"
+                  />
+                </div>
+              )}
+              {isMarkdown && (
+                <div className="w-full h-full overflow-auto bg-[#070707] p-6 text-gray-200 rounded-xl font-sans prose prose-invert max-w-none text-xs [scrollbar-width:thin] scrollbar-thin scrollbar-thumb-white/10 leading-relaxed">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {activeFile.code}
+                  </ReactMarkdown>
+                </div>
+              )}
+            </div>
+          )}
+
         </div>
       </div>
 

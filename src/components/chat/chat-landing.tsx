@@ -158,6 +158,8 @@ export function ChatLanding() {
   const router = useRouter()
 
   const browserSessionId = useBrowserStore((s) => s.sessionId);
+  const isBrowserOpen = useBrowserStore((s) => s.isOpen);
+  const isCanvasOpen = useCanvasStore((s) => s.isOpen);
   const updateScreenshot = useBrowserStore((s) => s.updateScreenshot);
   const addStep = useBrowserStore((s) => s.addStep);
   const updateUrl = useBrowserStore((s) => s.updateUrl);
@@ -1026,7 +1028,7 @@ export function ChatLanding() {
           </button>
         </div>
       )}
-      {isAuthenticated && hasMessages && (
+      {isAuthenticated && hasMessages && !isBrowserOpen && !isCanvasOpen && (
         <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-50 flex items-center gap-1.5 select-none">
           {/* Dropdown Menu (Más) */}
           <DropdownMenu>

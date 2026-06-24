@@ -357,3 +357,19 @@ Mejoramos sustancialmente la integración visual y la interactividad de los ento
 *   **Corrección de Clics Fantasma y Hovering en el Navegador**:
     *   **Archivo modificado**: [browser-panel.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/chat/browser-panel.tsx)
     *   Añadimos un escuchador de eventos global (`window.addEventListener("mouseup", ...)`) en un hook `useEffect` que limpia las coordenadas de clic `mouseDownCoords.current` ante cualquier liberación del ratón fuera del área del navegador (por ejemplo, al redimensionar la pantalla o hacer scroll). Esto impide que pasar el cursor o realizar arrastres registre clics de navegación involuntarios.
+
+---
+
+## 19. Inteligencia Ampliada: Ejecución de Scripts y Modo Canvas en Cualquier Conversación
+
+Mejoramos la capacidad del asistente financiero principal para integrar habilidades de programación y cálculo avanzado de forma transparente en cualquier chat normal:
+
+*   **Intérprete de Python Nativo Disponible Siempre**:
+    *   **Archivo modificado**: [route.ts](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/app/api/ai-chat/route.ts)
+    *   Registramos la herramienta `run_python` (sandbox de WebAssembly) de manera predeterminada en todas las peticiones al LLM principal. Ahora el modelo puede efectuar simulaciones matemáticas, cálculos de interés compuesto, análisis de series de tiempo y procesamiento algorítmico sin necesidad de que el usuario active previamente un interruptor de "Canvas/Intérprete".
+*   **Reglas de Formato Canvas en el System Prompt General**:
+    *   **Archivo modificado**: [route.ts](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/app/api/ai-chat/route.ts)
+    *   Añadimos de forma permanente las reglas e instrucciones del Modo Canvas en el System Prompt principal. El LLM ahora sabe estructurar de forma proactiva todos los fragmentos y programas que escribe usando nombres de archivo descriptivos en comentarios (ej: `# calculo.py`, `<!-- grafico.html -->`) y bloques de código markdown normales.
+*   **Apertura y Cierre Dinámico del Canvas**:
+    *   **Comportamiento**: Cuando el LLM escribe código, la interfaz en [chat-landing.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/chat/chat-landing.tsx) detecta la presencia del bloque de código y abre automáticamente el panel de Canvas a la derecha (split-screen).
+    *   Al finalizar el análisis y cerrar el Canvas usando el botón de "X", la pantalla vuelve a su distribución normal de chat conversacional centrado, manteniendo el acceso de un solo clic a la tarjeta del código generado en el historial de mensajes por si el usuario desea volver a abrirlo y ejecutarlo.

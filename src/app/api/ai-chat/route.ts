@@ -497,8 +497,8 @@ ${reportsSummary}`,
           ? getWebBuilderSystemPrompt(finalSystemPromptFiles)
           : getSystemPrompt(assistantName, assistantTone, assistantRole, assistantTopics);
 
-        if (codeInterpreter) {
-          systemPrompt += `\n\n[MODO CANVAS / INTÉRPRETE DE CÓDIGO ACTIVADO (CRÍTICO)]:
+        // Always include Canvas / Code Interpreter instructions so the LLM is smart enough to generate Canvas artifacts in any chat
+        systemPrompt += `\n\n[MODO CANVAS / INTÉRPRETE DE CÓDIGO (CRÍTICO)]:
 Tienes acceso de ejecución total a la herramienta 'run_python' para ejecutar scripts de Python en un entorno de sandbox seguro (WebAssembly/Pyodide).
 REGLAS OBLIGATORIAS PARA EL MODO CANVAS:
 1. Para tareas de análisis de datos, simulaciones matemáticas, cálculos financieros, graficación, procesamiento de texto o lógica algorítmica, DEBES escribir y ejecutar código Python llamando a la herramienta 'run_python'.
@@ -509,7 +509,6 @@ o
 # optimizacion.py
 4. Las respuestas finales con código o scripts deben ir en un bloque de código markdown regular (por ejemplo: \`\`\`python ... \`\`\`), el cual automáticamente renderizará un botón de "Abrir en Canvas" para el usuario.
 5. Imprime siempre tus resultados y variables usando 'print()' dentro del script de Python para poder verlos en la salida. Explícale al usuario los resultados de la ejecución del script y los insights financieros obtenidos.`;
-        }
 
         if (browser) {
           systemPrompt += `\n\n[MODO NAVEGADOR VIRTUAL ACTIVADO (CRÍTICO)]:
@@ -531,23 +530,21 @@ REGLAS OBLIGATORIAS PARA EL MODO NAVEGADOR:
           tools: webBuilder ? {} : {
             ...getFinanceTools({ user, userId }),
             ...(browser ? getBrowserTools({ streamData: fakeStreamData }) : {}),
-            ...(codeInterpreter ? {
-              run_python: tool({
-                description: 'Ejecuta código Python en un sandbox seguro de WebAssembly y retorna la salida (stdout, valor de retorno y errores). Úsalo para cálculos matemáticos, análisis de datos complejos, procesamiento de texto o cualquier lógica algorítmica.',
-                parameters: z.object({
-                  script: z.string().describe('El script de Python completo que deseas ejecutar. Puedes imprimir resultados usando print().'),
-                  packages: z.array(z.string()).optional().describe('Lista de paquetes de pip para instalar antes de la ejecución (ej: ["numpy", "pandas"]).'),
-                }),
-                execute: async ({ script, packages }) => {
-                  try {
-                    const result = await runPythonCode(script, {}, packages || []);
-                    return result;
-                  } catch (err: any) {
-                    return { success: false, error: err.message || String(err), stdout: "", stderr: err.message || String(err), durationMs: 0 };
-                  }
+            run_python: tool({
+              description: 'Ejecuta código Python en un sandbox seguro de WebAssembly y retorna la salida (stdout, valor de retorno y errores). Úsalo para cálculos matemáticos, análisis de datos complejos, procesamiento de texto o cualquier lógica algorítmica.',
+              parameters: z.object({
+                script: z.string().describe('El script de Python completo que deseas ejecutar. Puedes imprimir resultados usando print().'),
+                packages: z.array(z.string()).optional().describe('Lista de paquetes de pip para instalar antes de la ejecución (ej: ["numpy", "pandas"]).'),
+              }),
+              execute: async ({ script, packages }) => {
+                try {
+                  const result = await runPythonCode(script, {}, packages || []);
+                  return result;
+                } catch (err: any) {
+                  return { success: false, error: err.message || String(err), stdout: "", stderr: err.message || String(err), durationMs: 0 };
                 }
-              })
-            } : {}),
+              }
+            })
           },
           onFinish: async ({ text, usage, finishReason }) => {
             const hasContent = text && text.trim().length > 0;

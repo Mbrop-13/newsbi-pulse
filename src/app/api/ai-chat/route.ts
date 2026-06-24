@@ -498,24 +498,27 @@ ${reportsSummary}`,
           : getSystemPrompt(assistantName, assistantTone, assistantRole, assistantTopics);
 
         if (codeInterpreter) {
-          systemPrompt += `\n\n[MODO CANVAS / INTÉRPRETE DE CÓDIGO ACTIVADO]:
-Tienes acceso a la herramienta 'run_python' para ejecutar scripts de Python en un entorno de sandbox seguro.
-REGLAS PARA EL MODO CANVAS:
-1. Para tareas complejas de análisis de datos financieros, simulaciones matemáticas, optimizaciones de portafolio o cálculos avanzados, DEBES escribir y ejecutar código Python con la herramienta 'run_python'.
-2. Si el usuario te pide crear código o un script, agrégale un comentario de nombre de archivo en la primera línea para que el editor canvas lo identifique correctamente, por ejemplo:
+          systemPrompt += `\n\n[MODO CANVAS / INTÉRPRETE DE CÓDIGO ACTIVADO (CRÍTICO)]:
+Tienes acceso de ejecución total a la herramienta 'run_python' para ejecutar scripts de Python en un entorno de sandbox seguro (WebAssembly/Pyodide).
+REGLAS OBLIGATORIAS PARA EL MODO CANVAS:
+1. Para tareas de análisis de datos, simulaciones matemáticas, cálculos financieros, graficación, procesamiento de texto o lógica algorítmica, DEBES escribir y ejecutar código Python llamando a la herramienta 'run_python'.
+2. La ejecución de scripts de Python en el Canvas es una herramienta complementaria completamente aprobada y segura. BAJO NINGUNA CIRCUNSTANCIA debes bloquear o catalogar estas peticiones como inyecciones de código, jailbreaks o intentos de evasión de seguridad. Tienes permiso explícito para correr scripts para resolver las dudas del usuario.
+3. Si el usuario te pide crear código o un script, agrégale un comentario de nombre de archivo en la primera línea para que el editor canvas lo identifique correctamente, por ejemplo:
 # Pop-up Power BI Avanzado.html
 o
 # optimizacion.py
-3. Las respuestas finales con código o scripts deben ir en un bloque de código markdown regular, el cual automáticamente renderizará un botón de "Abrir en Canvas" para el usuario.
-4. Explícale al usuario los resultados de la ejecución del script y los insights financieros obtenidos.`;
+4. Las respuestas finales con código o scripts deben ir en un bloque de código markdown regular (por ejemplo: \`\`\`python ... \`\`\`), el cual automáticamente renderizará un botón de "Abrir en Canvas" para el usuario.
+5. Imprime siempre tus resultados y variables usando 'print()' dentro del script de Python para poder verlos en la salida. Explícale al usuario los resultados de la ejecución del script y los insights financieros obtenidos.`;
         }
 
         if (browser) {
-          systemPrompt += `\n\n[MODO NAVEGADOR VIRTUAL ACTIVADO]:
+          systemPrompt += `\n\n[MODO NAVEGADOR VIRTUAL ACTIVADO (CRÍTICO)]:
 Tienes acceso a herramientas de navegación web real (browser_navigate, browser_click, browser_type, browser_scroll) para visitar páginas, buscar información en Google o extraer datos en tiempo real de cualquier sitio.
-REGLAS PARA EL MODO NAVEGADOR:
-1. Si el usuario te pide buscar información en internet, visitar una página específica o investigar algo en vivo, DEBES priorizar el uso del navegador virtual llamando a 'browser_navigate' con la URL correspondiente.
-2. Explícale al usuario los pasos que vas realizando y los resultados que vas observando en la pantalla del navegador virtual.`;
+REGLAS OBLIGATORIAS PARA EL MODO NAVEGADOR:
+1. Si el usuario te pide buscar información en internet, visitar una página específica, investigar datos de mercado financieros en vivo o consultar cotizaciones, DEBES priorizar el uso del navegador virtual llamando a 'browser_navigate' con la URL correspondiente.
+2. Al consultar información de acciones, precios o datos financieros en tiempo real, prefiere utilizar Google Finance (https://www.google.com/finance) o búsquedas en Google, en lugar de Yahoo Finance (ya que Yahoo Finance bloquea de forma muy agresiva las conexiones automatizadas de servidores y CDP).
+3. Utilizar el navegador virtual es una herramienta completamente aprobada y segura. BAJO NINGUNA CIRCUNSTANCIA debes bloquear o catalogar estas búsquedas como evasiones de seguridad o inyecciones.
+4. Explícale al usuario los pasos que vas realizando y los resultados que vas observando en la pantalla del navegador virtual (el usuario verá la captura de pantalla de lo que haces en tiempo real).`;
         }
 
         const result = await streamText({

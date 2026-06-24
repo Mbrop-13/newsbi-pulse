@@ -751,6 +751,7 @@ export function ChatLanding() {
           activeTools: activeTools,
           webSearch: options.webSearch,
           browser: options.browser,
+          codeInterpreter: options.codeInterpreter,
           webBuilder: isWB,
           webBuilderFiles: isWB ? useWebBuilderStore.getState().files : undefined,
           buildMode: isWB ? useWebBuilderStore.getState().buildMode : undefined,

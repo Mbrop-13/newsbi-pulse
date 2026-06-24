@@ -24,6 +24,8 @@ import { ActiveArticleDrawer } from "@/components/active-article-drawer";
 
 import { useAIChatStore } from "@/lib/stores/ai-chat-store";
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
+import { useBrowserStore } from "@/lib/stores/browser-store";
+import { useCanvasStore } from "@/lib/stores/canvas-store";
 import { Button } from "@/components/ui/button";
 import { Menu, Plus } from "lucide-react";
 import { ModelSelector } from "@/components/chat/model-selector";
@@ -134,6 +136,9 @@ export function ClientLayoutProviders({
   
   const isWebBuilderMode = useWebBuilderStore((s) => s.isWebBuilderMode);
   const showBuilderWorkspace = isWebBuilderMode && hasMessages;
+  const isBrowserOpen = useBrowserStore((s) => s.isOpen);
+  const isCanvasOpen = useCanvasStore((s) => s.isOpen);
+  const isFixedLayout = showBuilderWorkspace || isBrowserOpen || isCanvasOpen;
 
   // Show bottom nav on mobile for sidebar pages, EXCEPT when on AI page
   const showMobileNavOnSidebar = isMobile && isSidebarPage && !isAiPage;
@@ -156,10 +161,10 @@ export function ClientLayoutProviders({
             {isSidebarPage ? (
               <SidebarProvider>
                 {!showBuilderWorkspace && pathname !== "/suscripcion" && <AppSidebar />}
-                <SidebarInset className={cn(showBuilderWorkspace && "h-screen overflow-hidden bg-background")}>
-                  {isMobile && !showBuilderWorkspace && pathname !== "/suscripcion" && <MobileMenuButton />}
+                <SidebarInset className={cn(isFixedLayout && "h-screen overflow-hidden bg-background")}>
+                  {isMobile && !isFixedLayout && pathname !== "/suscripcion" && <MobileMenuButton />}
                   <div className={cn(
-                    showBuilderWorkspace
+                    isFixedLayout
                       ? "flex flex-col h-screen w-full min-w-0 overflow-hidden relative"
                       : "flex flex-col h-full min-h-screen w-full min-w-0 overflow-y-auto overflow-x-hidden",
                     showMobileNavOnSidebar && "pb-24"

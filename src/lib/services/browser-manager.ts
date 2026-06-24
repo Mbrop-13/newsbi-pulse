@@ -24,7 +24,16 @@ interface BrowserSession {
   stepCallback: ((step: { action: string; description: string; status: string }) => void) | null;
 }
 
-const sessions = new Map<string, BrowserSession>();
+// Prevent Map recreation during development hot-reloads by storing it on globalThis
+const globalForBrowser = globalThis as unknown as {
+  browserSessions: Map<string, BrowserSession>;
+};
+
+const sessions = globalForBrowser.browserSessions ?? new Map<string, BrowserSession>();
+
+if (process.env.NODE_ENV !== "production") {
+  globalForBrowser.browserSessions = sessions;
+}
 
 const MAX_SESSIONS = 5;
 const SESSION_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes

@@ -760,6 +760,14 @@ export function ChatLanding() {
       }
     )
 
+    // Open workspaces immediately if user requested those modes
+    if (options.browser) {
+      useBrowserStore.getState().setOpen(true);
+    }
+    if (options.codeInterpreter) {
+      useCanvasStore.getState().setOpen(true);
+    }
+
     // If WebBuilder mode is active, ensure split view is shown
     if (isWB) {
       useWebBuilderStore.getState().setSplitView(true)

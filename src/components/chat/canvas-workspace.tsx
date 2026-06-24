@@ -125,10 +125,10 @@ export function CanvasWorkspace({ chatPanel }: CanvasWorkspaceProps) {
 
   // Desktop Split Layout
   return (
-    <div className="flex h-full w-full overflow-hidden bg-zinc-100 dark:bg-[#050505] p-2 gap-2">
+    <div className="flex h-full w-full overflow-hidden bg-white dark:bg-[#0A0A0A]">
       {/* Chat Panel - Left side */}
       <div
-        className="h-full flex flex-col relative overflow-hidden bg-white dark:bg-[#0A0A0A] rounded-[20px] border border-gray-250 dark:border-white/5 shrink-0"
+        className="h-full flex flex-col relative overflow-hidden bg-white dark:bg-[#0A0A0A] shrink-0"
         style={{ width: isOpen ? `${chatPercent}%` : "100%" }}
       >
         {chatPanel}
@@ -140,19 +140,19 @@ export function CanvasWorkspace({ chatPanel }: CanvasWorkspaceProps) {
           onMouseDown={handleMouseDown}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
-          className="w-2 h-full cursor-col-resize z-50 shrink-0 relative transition-colors duration-150 bg-transparent flex items-center justify-center group"
+          className="w-1.5 h-full cursor-col-resize z-50 shrink-0 relative transition-colors duration-150 bg-gray-200 dark:bg-white/10 hover:bg-blue-500 flex items-center justify-center"
         >
           {/* Inner line indicator */}
           <div className={cn(
-            "w-[3px] h-[40px] rounded-full transition-all duration-300",
-            (isDragging || isHovered) ? "bg-blue-500 scale-y-150" : "bg-zinc-300 dark:bg-white/10 group-hover:bg-zinc-400 dark:group-hover:bg-white/20"
+            "w-[2px] h-[30px] rounded-full transition-all duration-300",
+            (isDragging || isHovered) ? "bg-blue-500 scale-y-150" : "bg-transparent"
           )} />
         </div>
       )}
 
       {/* Canvas Panel - Right side */}
       {isOpen && (
-        <div className="h-full flex flex-col overflow-hidden flex-1">
+        <div className="h-full flex flex-col overflow-hidden flex-1 bg-white dark:bg-[#0A0A0A]">
           <CanvasPanel />
         </div>
       )}

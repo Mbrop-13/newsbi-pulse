@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useBrowserStore } from "@/lib/stores/browser-store";
 import { 
   X, 
@@ -30,10 +30,34 @@ export function BrowserPanel() {
   } = useBrowserStore();
 
   const imageRef = useRef<HTMLImageElement>(null);
+  const mouseDownCoords = useRef<{ x: number; y: number } | null>(null);
 
-  // Handle coordinates click on the screenshot viewport
-  const handleImageClick = async (e: React.MouseEvent<HTMLImageElement>) => {
-    if (!sessionId || isLoading || !screenshot) return;
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      mouseDownCoords.current = null;
+    };
+    window.addEventListener("mouseup", handleGlobalMouseUp);
+    return () => {
+      window.removeEventListener("mouseup", handleGlobalMouseUp);
+    };
+  }, []);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    mouseDownCoords.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handleMouseUp = async (e: React.MouseEvent<HTMLImageElement>) => {
+    if (!sessionId || isLoading || !screenshot || !mouseDownCoords.current) return;
+    
+    const deltaX = Math.abs(e.clientX - mouseDownCoords.current.x);
+    const deltaY = Math.abs(e.clientY - mouseDownCoords.current.y);
+    mouseDownCoords.current = null;
+    
+    // If mouse moved more than 5px (e.g. dragging or moving cursor), ignore it
+    if (deltaX > 5 || deltaY > 5) return;
+    
+    // Only register primary (left) click
+    if (e.button !== 0) return;
     
     const rect = e.currentTarget.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
@@ -73,25 +97,19 @@ export function BrowserPanel() {
   const currentStep = steps[steps.length - 1];
 
   return (
-    <div className="h-full w-full bg-[#0A0A0A] rounded-[28px] border border-white/5 flex flex-col overflow-hidden shadow-2xl relative">
+    <div className="h-full w-full bg-white dark:bg-[#0A0A0A] flex flex-col overflow-hidden relative">
       {/* simulated Browser Chrome Header */}
-      <div className="px-5 py-3.5 bg-[#0C0C0C] border-b border-white/5 flex items-center justify-between shrink-0 select-none gap-4">
-        {/* macOS style buttons + nav controls */}
-        <div className="flex items-center gap-4 shrink-0">
-          <div className="flex gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-red-500/80" />
-            <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
-            <div className="w-3 h-3 rounded-full bg-green-500/80" />
-          </div>
-          
+      <div className="px-5 py-3.5 bg-gray-50/50 dark:bg-[#0C0C0C] border-b border-gray-200 dark:border-white/5 flex items-center justify-between shrink-0 select-none gap-4">
+        {/* Nav controls */}
+        <div className="flex items-center gap-2 shrink-0">
           <div className="flex items-center gap-0.5">
-            <button className="w-7 h-7 rounded-lg hover:bg-white/5 text-gray-500 hover:text-white flex items-center justify-center transition-colors disabled:opacity-20 cursor-pointer" disabled>
+            <button className="w-7 h-7 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 text-gray-400 hover:text-white flex items-center justify-center transition-colors disabled:opacity-20 cursor-pointer" disabled>
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <button className="w-7 h-7 rounded-lg hover:bg-white/5 text-gray-500 hover:text-white flex items-center justify-center transition-colors disabled:opacity-20 cursor-pointer" disabled>
+            <button className="w-7 h-7 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 text-gray-400 hover:text-white flex items-center justify-center transition-colors disabled:opacity-20 cursor-pointer" disabled>
               <ChevronRight className="w-4 h-4" />
             </button>
-            <button className="w-7 h-7 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer">
+            <button className="w-7 h-7 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 text-gray-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer">
               <RotateCw className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -102,7 +120,7 @@ export function BrowserPanel() {
           <div className="absolute left-3 flex items-center gap-1 text-emerald-500">
             <Lock className="w-3 h-3" />
           </div>
-          <div className="w-full h-8 pl-8 pr-8 rounded-lg bg-black border border-white/5 text-xs text-gray-300 flex items-center truncate">
+          <div className="w-full h-8 pl-8 pr-8 rounded-lg bg-gray-100 dark:bg-black border border-gray-200 dark:border-white/5 text-xs text-zinc-800 dark:text-gray-300 flex items-center truncate">
             {currentUrl || "Cargando página..."}
           </div>
           {isLoading && (
@@ -114,12 +132,12 @@ export function BrowserPanel() {
 
         {/* Close Browser */}
         <div className="flex items-center gap-3 shrink-0">
-          <span className="hidden sm:inline text-[10px] text-gray-500 font-bold tracking-wide uppercase truncate max-w-[120px]">
+          <span className="hidden sm:inline text-[10px] text-zinc-500 dark:text-gray-500 font-bold tracking-wide uppercase truncate max-w-[120px]">
             {pageTitle || "Navegador"}
           </span>
           <button
             onClick={clearSession}
-            className="w-8 h-8 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+            className="w-8 h-8 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 text-zinc-500 dark:text-gray-400 hover:text-zinc-900 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer"
             title="Cerrar Navegador"
           >
             <X className="w-4.5 h-4.5" />
@@ -135,7 +153,8 @@ export function BrowserPanel() {
               ref={imageRef}
               src={`data:image/jpeg;base64,${screenshot}`}
               alt="Navegador Virtual"
-              onClick={handleImageClick}
+              onMouseDown={handleMouseDown}
+              onMouseUp={handleMouseUp}
               className={cn(
                 "w-full h-full object-contain cursor-crosshair transition-all duration-300 selection:bg-transparent select-none",
                 isLoading && "brightness-50"

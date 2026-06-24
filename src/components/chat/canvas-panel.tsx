@@ -169,7 +169,7 @@ export function CanvasPanel() {
   };
 
   return (
-    <div className="h-full w-full bg-white dark:bg-[#0A0A0A] rounded-[28px] border border-gray-200 dark:border-white/5 flex flex-col overflow-hidden shadow-2xl relative">
+    <div className="h-full w-full bg-white dark:bg-[#0A0A0A] flex flex-col overflow-hidden relative">
       {/* Top Header Panel */}
       <div className="px-6 py-4 border-b border-gray-200 dark:border-white/5 flex items-center justify-between shrink-0 bg-gray-50/50 dark:bg-[#0c0c0c] select-none">
         <div className="flex items-center gap-3">

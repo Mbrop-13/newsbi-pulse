@@ -337,3 +337,23 @@ Garantizamos que la base de código permanezca 100% segura y libre de errores tr
 - Ejecutamos `npx tsc --noEmit` de forma exitosa, obteniendo una compilación limpia sin advertencias ni errores en ninguno de los módulos del proyecto.
 - Se resolvieron errores de compilación en `route.ts` al omitir codificaciones innecesarias de chunks (ya que `toDataStream()` entrega Uint8Arrays nativos).
 - Se solucionó el desajuste de tipos de listeners en `webcontainer-manager.ts` e interfaces en `ai-chat-store.ts` y props en `SandpackProvider` (`activeFile` movido a `options.activeFile` en `preview-panel.tsx`), logrando que la compilación global del proyecto finalice de manera exitosa y limpia.
+
+---
+
+## 18. Rediseño del Layout a Pantalla Completa (Edge-to-Edge) y Prevención de Clics Accidentales
+
+Mejoramos sustancialmente la integración visual y la interactividad de los entornos de trabajo (Browser y Canvas) en ordenadores de escritorio:
+
+*   **Diseño Edge-to-Edge Integrado (Sin Rectángulos ni Capas)**:
+    *   **Archivos modificados**: [browser-workspace.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/chat/browser-workspace.tsx) y [canvas-workspace.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/chat/canvas-workspace.tsx)
+    *   Eliminamos el fondo flotante (`bg-zinc-100 dark:bg-[#050505] p-2 gap-2`), removiendo los paddings y márgenes externos para que el layout ocupe el 100% del alto y ancho de la pantalla de manera fluida.
+    *   Quitamos los bordes y esquinas redondeadas (`rounded-[20px] border border-gray-250`) de la columna del chat de la izquierda, logrando que fluya de manera nativa con el color de fondo general de la aplicación (`bg-white dark:bg-[#0A0A0A]`).
+    *   Sustituimos el resizer grueso por una línea divisoria minimalista de 1.5 píxeles que cambia de color al pasar el cursor o arrastrarla.
+*   **Paneles Planos y Sin Decoraciones Apple**:
+    *   **Archivo modificado**: [canvas-panel.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/chat/canvas-panel.tsx)
+    *   Eliminamos los bordes redondeados, bordes externos y sombras intensas del panel del Canvas (`rounded-[28px] border shadow-2xl`), adaptándolo al nuevo estilo integrado plano.
+    *   **Archivo modificado**: [browser-panel.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/chat/browser-panel.tsx)
+    *   Eliminamos los botones simulados de macOS (los tres puntos de control de ventana roja/amarilla/verde) de la cabecera del navegador virtual, haciéndolo lucir como una herramienta de navegación integrada y profesional en lugar de una ventana flotante.
+*   **Corrección de Clics Fantasma y Hovering en el Navegador**:
+    *   **Archivo modificado**: [browser-panel.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/chat/browser-panel.tsx)
+    *   Añadimos un escuchador de eventos global (`window.addEventListener("mouseup", ...)`) en un hook `useEffect` que limpia las coordenadas de clic `mouseDownCoords.current` ante cualquier liberación del ratón fuera del área del navegador (por ejemplo, al redimensionar la pantalla o hacer scroll). Esto impide que pasar el cursor o realizar arrastres registre clics de navegación involuntarios.

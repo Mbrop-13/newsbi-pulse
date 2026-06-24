@@ -163,6 +163,18 @@ export function ChatLanding() {
   const updateUrl = useBrowserStore((s) => s.updateUrl);
   const clearSession = useBrowserStore((s) => s.clearSession);
 
+  const updateScreenshotRef = useRef(updateScreenshot);
+  const addStepRef = useRef(addStep);
+  const updateUrlRef = useRef(updateUrl);
+  const clearSessionRef = useRef(clearSession);
+
+  useEffect(() => {
+    updateScreenshotRef.current = updateScreenshot;
+    addStepRef.current = addStep;
+    updateUrlRef.current = updateUrl;
+    clearSessionRef.current = clearSession;
+  });
+
   useEffect(() => {
     return () => {
       clearSession();
@@ -178,11 +190,12 @@ export function ChatLanding() {
     eventSource.onmessage = (event) => {
       try {
         const parsed = JSON.parse(event.data);
+        console.log("[Browser SSE] Received event type:", parsed.type);
         
         if (parsed.type === "frame" && parsed.image) {
-          updateScreenshot(parsed.image);
+          updateScreenshotRef.current(parsed.image);
         } else if (parsed.type === "step") {
-          addStep({
+          addStepRef.current({
             action: parsed.action,
             description: parsed.description,
             status: parsed.status,
@@ -190,12 +203,12 @@ export function ChatLanding() {
           if (parsed.action === "navigate" && parsed.status === "done") {
             const urlMatch = parsed.description.match(/Navegó a (https?:\/\/[^\s]+)/);
             if (urlMatch) {
-              updateUrl(urlMatch[1]);
+              updateUrlRef.current(urlMatch[1]);
             }
           }
         } else if (parsed.type === "closed") {
           eventSource.close();
-          clearSession();
+          clearSessionRef.current();
           toast.error("La sesión de navegación ha finalizado");
         }
       } catch (e) {
@@ -204,15 +217,14 @@ export function ChatLanding() {
     };
 
     eventSource.onerror = (err) => {
-      console.error("[Browser SSE] Connection error:", err);
-      eventSource.close();
+      console.error("[Browser SSE] Connection error (standard EventSource will attempt reconnect):", err);
     };
 
     return () => {
       console.log("[Browser SSE] Closing connection for:", browserSessionId);
       eventSource.close();
     };
-  }, [browserSessionId, updateScreenshot, addStep, updateUrl, clearSession]);
+  }, [browserSessionId]);
 
   const handleNewChat = () => {
     clearMessages()
@@ -533,7 +545,10 @@ export function ChatLanding() {
 
       const browserSessionObj = (data as any[]).find((d: any) => d?.type === 'browser_session');
       if (browserSessionObj?.sessionId) {
-        useBrowserStore.getState().setSessionId(browserSessionObj.sessionId);
+        const currentSessionId = useBrowserStore.getState().sessionId;
+        if (currentSessionId !== browserSessionObj.sessionId) {
+          useBrowserStore.getState().setSessionId(browserSessionObj.sessionId);
+        }
       }
     }
   }, [data]);

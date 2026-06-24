@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { onFrame, onStep, hasSession } from "@/lib/services/browser-manager";
+import { onFrame, onStep, hasSession, refreshSessionFrame } from "@/lib/services/browser-manager";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,6 +54,9 @@ export async function GET(req: NextRequest) {
           // Stream closed
         }
       });
+
+      // Immediately trigger a frame capture in the background
+      refreshSessionFrame(sessionId).catch(() => {});
 
       // Keep-alive ping every 15 seconds
       const keepAlive = setInterval(() => {

@@ -11,7 +11,7 @@ interface BrowserWorkspaceProps {
 }
 
 export function BrowserWorkspace({ chatPanel }: BrowserWorkspaceProps) {
-  const { isMobile } = useSidebar();
+  const { isMobile, setOpen, setOpenMobile } = useSidebar();
   const { isOpen } = useBrowserStore();
   const [mobileTab, setMobileTab] = useState<"chat" | "browser">("chat");
 
@@ -60,6 +60,17 @@ export function BrowserWorkspace({ chatPanel }: BrowserWorkspaceProps) {
       setMobileTab("chat");
     }
   }, [isOpen]);
+
+  // Collapse sidebar when browser workspace opens
+  useEffect(() => {
+    if (isOpen) {
+      if (isMobile) {
+        setOpenMobile(false);
+      } else {
+        setOpen(false);
+      }
+    }
+  }, [isOpen, isMobile, setOpen, setOpenMobile]);
 
   if (!isOpen) {
     return <>{chatPanel}</>;

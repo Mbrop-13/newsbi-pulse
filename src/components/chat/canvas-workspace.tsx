@@ -11,7 +11,7 @@ interface CanvasWorkspaceProps {
 }
 
 export function CanvasWorkspace({ chatPanel }: CanvasWorkspaceProps) {
-  const { isMobile } = useSidebar();
+  const { isMobile, setOpen, setOpenMobile } = useSidebar();
   const { isOpen } = useCanvasStore();
   const [mobileTab, setMobileTab] = useState<"chat" | "canvas">("chat");
 
@@ -60,6 +60,17 @@ export function CanvasWorkspace({ chatPanel }: CanvasWorkspaceProps) {
       setMobileTab("chat");
     }
   }, [isOpen]);
+
+  // Collapse sidebar when canvas workspace opens
+  useEffect(() => {
+    if (isOpen) {
+      if (isMobile) {
+        setOpenMobile(false);
+      } else {
+        setOpen(false);
+      }
+    }
+  }, [isOpen, isMobile, setOpen, setOpenMobile]);
 
   if (!isOpen) {
     return <>{chatPanel}</>;

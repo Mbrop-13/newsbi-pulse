@@ -586,6 +586,9 @@ function MessageBubble({
         });
       });
     } else {
+      const liveReasoning = (streamData && streamData.length > 0)
+        ? streamData.filter((d: any) => d?.type === 'reasoning').map((c: any) => c.text).join('')
+        : "";
       const logText = (isLast && isLoading && streamData) ? liveReasoning : (message.reasoning || '');
       if (isOrchestrationLog(logText)) {
         const parsedSteps = parseOrchestrationSteps(logText);

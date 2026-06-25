@@ -373,3 +373,14 @@ Mejoramos la capacidad del asistente financiero principal para integrar habilida
 *   **Apertura y Cierre Dinámico del Canvas**:
     *   **Comportamiento**: Cuando el LLM escribe código, la interfaz en [chat-landing.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/chat/chat-landing.tsx) detecta la presencia del bloque de código y abre automáticamente el panel de Canvas a la derecha (split-screen).
     *   Al finalizar el análisis y cerrar el Canvas usando el botón de "X", la pantalla vuelve a su distribución normal de chat conversacional centrado, manteniendo el acceso de un solo clic a la tarjeta del código generado en el historial de mensajes por si el usuario desea volver a abrirlo y ejecutarlo.
+
+---
+
+## 20. Corrección de Error de Referencia de Ámbito (ReferenceError) en Chat
+
+Corregimos un fallo de ejecución en la renderización de los burbujas de mensaje que impedía el correcto inicio de las conversaciones en el chat normal:
+
+*   **Cálculo de Razonamiento en Tiempo Real Localizado**:
+    *   **Archivo modificado**: [chat-messages.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/chat/chat-messages.tsx)
+    *   **Problema**: Se estaba intentando usar la variable `liveReasoning` dentro del componente secundario `MessageBubble` durante la renderización de la fase de pensamiento (`renderThinkingPhase`), pero dicha variable estaba declarada únicamente dentro del ámbito del componente principal `ChatMessages`, provocando un error en caliente de tipo `ReferenceError: liveReasoning is not defined` y rompiendo el flujo visual con un mensaje de "Algo salió mal".
+    *   **Solución**: Implementamos el cálculo en caliente de `liveReasoning` de forma local y autocontenida dentro del propio `renderThinkingPhase` utilizando el prop `streamData` que ya recibe el componente. Esto aísla la lógica, previene el error de ámbito y garantiza que los logs de razonamiento se parseen y muestren correctamente en tiempo real sin colapsos de interfaz.

@@ -25,10 +25,24 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { cn, formatDate as fmtDate, getFallbackImage, slugify, getCleanPathname } from "@/lib/utils"
 import { useLanguageStore } from "@/lib/stores/language-store"
 import { motion, AnimatePresence } from "framer-motion"
-import { Newspaper, Sparkles, Headphones, LineChart, Coins, Landmark, Briefcase, Shield, Lightbulb, Globe, Flame, Calendar, Cpu, ArrowUpRight, ArrowDownRight, MoreHorizontal, Link2, SquarePen, Trash2 } from "lucide-react"
+import { Newspaper, Sparkles, Headphones, LineChart, Coins, Landmark, Briefcase, Shield, Lightbulb, Globe, Flame, Calendar, Cpu, ArrowUpRight, ArrowDownRight, MoreHorizontal, Link2, SquarePen, Trash2, FolderOpen, Code2, FileCode2, ChevronRight } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useSidebar } from "@/components/ui/sidebar"
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store"
@@ -159,6 +173,30 @@ export function ChatLanding() {
   const lastLoadedChatIdRef = useRef<string | null>(null)
 
   const router = useRouter()
+
+  const chatFiles = React.useMemo(() => {
+    const files: { id: string, title: string, lang: string, code: string }[] = [];
+    storeMessages.forEach((msg, mIdx) => {
+      if (msg.role === 'assistant' && msg.content) {
+        const matches = [...msg.content.matchAll(/```(\w+)\n([\s\S]+?)```/g)];
+        matches.forEach((match, idx) => {
+          const lang = match[1];
+          const codeValue = match[2].trim();
+          let title = lang === 'python' ? 'Script de Python' : `Código ${lang.toUpperCase()}`;
+          const firstLine = codeValue.split('\n')[0].trim();
+          const filenameMatch = firstLine.match(/(?:filename|archivo|title)\s*:\s*([^\s][^\n\r]*)/i) || 
+                                firstLine.match(/(?:\/\/\/|\/\/|#|\/\*)\s*([a-zA-Z0-9_\-\.\s]+\.[a-zA-Z0-9]+)/i);
+          if (filenameMatch) {
+            title = filenameMatch[1].replace(/\*\/$/, '').trim();
+          } else {
+            title = `${title} ${idx + 1}`;
+          }
+          files.push({ id: `${mIdx}-${idx}`, title, lang, code: codeValue });
+        });
+      }
+    });
+    return files.reverse(); // Más recientes primero
+  }, [storeMessages]);
 
   const browserSessionId = useBrowserStore((s) => s.sessionId);
   const isBrowserOpen = useBrowserStore((s) => s.isOpen);
@@ -1060,49 +1098,118 @@ export function ChatLanding() {
         </div>
       )}
       {isAuthenticated && hasMessages && !isBrowserOpen && !isCanvasOpen && (
-        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-50 flex items-center gap-1.5 select-none">
-          {/* Dropdown Menu (Más) */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button 
-                type="button" 
-                title="Más" 
-                className="w-9 h-9 rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-850 dark:hover:bg-zinc-850/80 flex items-center justify-center text-gray-700 dark:text-gray-200 transition-all cursor-pointer shadow-xs border border-transparent dark:border-white/5 active:scale-95"
-              >
-                <MoreHorizontal className="w-4.5 h-4.5" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 rounded-xl border border-gray-250 dark:border-white/5 bg-white dark:bg-zinc-950 p-1 shadow-lg z-[90]">
-              <DropdownMenuItem 
-                onClick={handleDeleteCurrentChat}
-                className="text-red-650 dark:text-red-400 focus:bg-red-500/10 focus:text-red-650 dark:focus:text-red-400 py-2.5 px-3 rounded-xl cursor-pointer text-xs font-semibold flex items-center gap-2"
-              >
-                <Trash2 className="w-4 h-4" />
-                Eliminar conversación
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+        <TooltipProvider delayDuration={300}>
+          <div className="fixed top-3 right-3 sm:top-4 sm:right-4 z-50 flex items-center gap-1.5 select-none">
+            {/* Sheet Menu (Más / Archivos) */}
+            <Sheet>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <SheetTrigger asChild>
+                    <button 
+                      type="button" 
+                      className="w-9 h-9 rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-850 dark:hover:bg-zinc-850/80 flex items-center justify-center text-gray-700 dark:text-gray-200 transition-all cursor-pointer shadow-xs border border-transparent dark:border-white/5 active:scale-95"
+                    >
+                      <MoreHorizontal className="w-4.5 h-4.5" />
+                    </button>
+                  </SheetTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs font-semibold">
+                  Archivos y Opciones
+                </TooltipContent>
+              </Tooltip>
 
-          {/* Copy link */}
-          <button 
-            type="button" 
-            onClick={handleCopyLink} 
-            title="Copiar enlace" 
-            className="w-9 h-9 rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-850 dark:hover:bg-zinc-850/80 flex items-center justify-center text-gray-700 dark:text-gray-200 transition-all cursor-pointer shadow-xs border border-transparent dark:border-white/5 active:scale-95"
-          >
-            <Link2 className="w-4.5 h-4.5" />
-          </button>
+              <SheetContent side="right" className="w-[340px] sm:w-[400px] flex flex-col p-0 border-l border-border/50">
+                <SheetHeader className="px-5 py-4 border-b border-border/50 bg-muted/20">
+                  <SheetTitle className="text-sm font-semibold flex items-center gap-2">
+                    <FolderOpen className="w-4 h-4 text-primary" />
+                    Archivos del Chat
+                  </SheetTitle>
+                  <SheetDescription className="text-xs">
+                    Códigos y artefactos generados en esta conversación.
+                  </SheetDescription>
+                </SheetHeader>
+                
+                <div className="flex-1 overflow-y-auto p-3 space-y-2 bg-muted/10 scrollbar-hide">
+                  {chatFiles.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-40 text-center px-4">
+                      <Code2 className="w-8 h-8 text-muted-foreground/30 mb-3" />
+                      <p className="text-xs text-muted-foreground">No hay archivos ni códigos generados en este chat todavía.</p>
+                    </div>
+                  ) : (
+                    chatFiles.map((file) => (
+                      <div 
+                        key={file.id}
+                        onClick={() => {
+                          useCanvasStore.getState().openCanvas({
+                            title: file.title,
+                            code: file.code,
+                            language: file.lang,
+                          });
+                        }}
+                        className="group flex items-start gap-3 p-3 rounded-xl border border-border/50 bg-background hover:border-primary/30 hover:shadow-sm transition-all cursor-pointer"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                          <FileCode2 className="w-4 h-4 text-primary" />
+                        </div>
+                        <div className="flex flex-col min-w-0 flex-1">
+                          <span className="text-xs font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+                            {file.title}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground mt-0.5 uppercase tracking-wider">
+                            {file.lang}
+                          </span>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-primary/70 transition-colors self-center shrink-0" />
+                      </div>
+                    ))
+                  )}
+                </div>
 
-          {/* New Chat */}
-          <button 
-            type="button" 
-            onClick={handleNewChat} 
-            title="Nueva conversación" 
-            className="w-9 h-9 rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-850 dark:hover:bg-zinc-850/80 flex items-center justify-center text-gray-700 dark:text-gray-200 transition-all cursor-pointer shadow-xs border border-transparent dark:border-white/5 active:scale-95"
-          >
-            <SquarePen className="w-4.5 h-4.5" />
-          </button>
-        </div>
+                <div className="p-4 border-t border-border/50 bg-background">
+                  <button 
+                    onClick={handleDeleteCurrentChat}
+                    className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-xs font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Eliminar conversación
+                  </button>
+                </div>
+              </SheetContent>
+            </Sheet>
+
+            {/* Copy link */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button 
+                  type="button" 
+                  onClick={handleCopyLink} 
+                  className="w-9 h-9 rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-850 dark:hover:bg-zinc-850/80 flex items-center justify-center text-gray-700 dark:text-gray-200 transition-all cursor-pointer shadow-xs border border-transparent dark:border-white/5 active:scale-95"
+                >
+                  <Link2 className="w-4.5 h-4.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs font-semibold">
+                Copiar enlace
+              </TooltipContent>
+            </Tooltip>
+
+            {/* New Chat */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button 
+                  type="button" 
+                  onClick={handleNewChat} 
+                  className="w-9 h-9 rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-850 dark:hover:bg-zinc-850/80 flex items-center justify-center text-gray-700 dark:text-gray-200 transition-all cursor-pointer shadow-xs border border-transparent dark:border-white/5 active:scale-95"
+                >
+                  <SquarePen className="w-4.5 h-4.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs font-semibold">
+                Nueva conversación
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </TooltipProvider>
       )}
       <div className="flex flex-col h-full relative">
         {/* Main content area */}

@@ -231,7 +231,11 @@ export function LiquidGlassLens({
       {/* Layer 1: The optical Glass Lens (deformed in rim/border, contains specular border lighting) */}
       <div
         className="absolute inset-0 z-10 rounded-xl pointer-events-none bg-gradient-to-b from-white/70 to-white/40 dark:from-zinc-900/60 dark:to-black/30 border border-white/45 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.45)]"
-        style={mapUrl ? { filter: `url(#${filterId})` } : undefined}
+        style={mapUrl ? { 
+          filter: `url(#${filterId})`,
+          backdropFilter: `url(#${filterId})`,
+          WebkitBackdropFilter: `url(#${filterId})`
+        } : undefined}
       />
 
       {/* Layer 2: Fully interactive, un-distorted text & option items on top */}

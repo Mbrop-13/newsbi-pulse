@@ -69,7 +69,7 @@
 
 /* ── Light Mode (Default) ──────────────────────── */
 :root {
-  --background: #FFFFFF;
+  --background: #F5F5F7;
   --foreground: #1E293B;
   --card: #FFFFFF;
   --card-foreground: #1E293B;

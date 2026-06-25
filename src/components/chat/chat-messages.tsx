@@ -1175,6 +1175,9 @@ function MessageBubble({
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
+                pre({ node, children, ...props }) {
+                  return <>{children}</>;
+                },
                 code({ node, className, children, ...props }) {
                   const match = /language-(\w+)/.exec(className || '');
                   const lang = match ? match[1] : '';
@@ -1189,10 +1192,10 @@ function MessageBubble({
                     if (filenameMatch) {
                       title = filenameMatch[1].replace(/\*\/$/, '').trim();
                     }
-
+ 
                     // Render as a beautiful canvas file card
                     return (
-                      <div className="my-3">
+                      <div className="my-1.5">
                         <CanvasFileCard
                           title={title}
                           code={codeValue}

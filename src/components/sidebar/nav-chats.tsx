@@ -76,10 +76,10 @@ export function NavChats() {
     (id: string, title?: string) => {
       loadChat(id)
       const slug = title ? slugify(title.slice(0, 40)) : ''
-      router.push(`/ai/chat/${slug ? `${slug}-` : ''}${id}`)
+      router.push(`/${language}/ai/chat/${slug ? `${slug}-` : ''}${id}`)
       handleNavigate()
     },
-    [loadChat, router, handleNavigate]
+    [loadChat, router, handleNavigate, language]
   )
 
   const handleDelete = useCallback(
@@ -99,10 +99,10 @@ export function NavChats() {
           activeFilePath: "/App.tsx",
           pendingPlan: null
         })
-        router.push("/ai")
+        router.push(`/${language}/ai`)
       }
     },
-    [deleteSavedChat, currentChatId, router]
+    [deleteSavedChat, currentChatId, router, language]
   )
 
   return (

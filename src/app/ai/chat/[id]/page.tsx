@@ -10,6 +10,7 @@ import { AuthModals } from "@/components/auth-modals";
 import { Bot, Sparkles, ArrowRight, Loader2, Home } from "lucide-react";
 import Link from "next/link";
 import { extractIdFromSlug } from "@/lib/utils";
+import { useLanguageStore } from "@/lib/stores/language-store";
 
 interface PageProps {
   params: Promise<{
@@ -20,6 +21,7 @@ interface PageProps {
 export default function ChatPage(props: PageProps) {
   const params = use(props.params);
   const chatId = extractIdFromSlug(params.id);
+  const language = useLanguageStore((s) => s.language);
 
   const { user, isAuthenticated, isLoaded: isAuthLoaded } = useAuthStore();
 
@@ -155,7 +157,7 @@ export default function ChatPage(props: PageProps) {
       <div className="flex flex-col items-center justify-center min-h-screen bg-white dark:bg-[#0F1117] p-4 text-center">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{error}</h2>
         <p className="text-gray-500 dark:text-gray-400 mb-6">El chat que buscas no está disponible o no existe.</p>
-        <Link href="/ai">
+        <Link href={`/${language}/ai`}>
           <button className="bg-[#1890FF] text-white font-bold py-2.5 px-6 rounded-xl hover:bg-blue-600 transition-all">
             Ir al Chat Principal
           </button>
@@ -205,7 +207,7 @@ export default function ChatPage(props: PageProps) {
 
         <div className="flex items-center gap-3">
           {isAuthenticated ? (
-            <Link href="/ai">
+            <Link href={`/${language}/ai`}>
               <button className="flex items-center gap-1.5 py-2 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-white/5 dark:hover:bg-white/10 text-gray-800 dark:text-gray-200 rounded-xl text-xs font-bold transition-all">
                 <Home className="w-3.5 h-3.5" />
                 Ir al Chat Principal

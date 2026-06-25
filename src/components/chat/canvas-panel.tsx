@@ -210,69 +210,76 @@ export function CanvasPanel() {
     <div className="h-full w-full flex flex-col overflow-hidden rounded-2xl border border-gray-200/80 dark:border-white/[0.06] bg-white dark:bg-[#0C0C0E] shadow-2xl shadow-black/5 dark:shadow-black/40 relative">
       
       {/* ═══════════════════════════════════════════════════ */}
-      {/*  TOP HEADER BAR — macOS-inspired window chrome     */}
+      {/*  TOP HEADER BAR — macOS/Bolt.new-inspired chrome   */}
       {/* ═══════════════════════════════════════════════════ */}
-      <div className="px-4 py-3 flex items-center justify-between shrink-0 border-b border-gray-200/80 dark:border-white/[0.06] bg-gray-50/70 dark:bg-[#111114] backdrop-blur-sm select-none">
+      <div className="px-4 py-3 flex items-center justify-between shrink-0 border-b border-gray-250/70 dark:border-white/[0.06] bg-[#fafafa] dark:bg-[#111114] select-none">
         
-        {/* Left: File Info */}
-        <div className="flex items-center gap-2.5 min-w-0">
-          {/* Colored dot indicator */}
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/30 shrink-0" />
-          
-          <span className="text-[13px] font-semibold text-zinc-800 dark:text-white truncate max-w-[180px]">
+        {/* Left: View Tabs (Code / Preview) and File Title */}
+        <div className="flex items-center gap-3.5 min-w-0">
+          {hasPreview ? (
+            <div className="flex items-center gap-0.5 bg-zinc-100/80 dark:bg-zinc-900/80 p-0.5 rounded-lg border border-zinc-200/50 dark:border-zinc-800/80">
+              <button
+                onClick={() => setActiveTab("code")}
+                className={cn(
+                  "w-7 h-7 flex items-center justify-center rounded-md transition-all cursor-pointer",
+                  activeTab === "code"
+                    ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-xs border border-zinc-200/30 dark:border-zinc-700/50"
+                    : "text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
+                )}
+                title="Mostrar código"
+              >
+                <Code className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => setActiveTab("preview")}
+                className={cn(
+                  "w-7 h-7 flex items-center justify-center rounded-md transition-all cursor-pointer",
+                  activeTab === "preview"
+                    ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-xs border border-zinc-200/30 dark:border-zinc-700/50"
+                    : "text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
+                )}
+                title="Mostrar vista previa"
+              >
+                <Eye className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : (
+            <div className="w-7 h-7 rounded-md bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center text-zinc-400 border border-zinc-250/30 dark:border-zinc-800">
+              <Code className="w-3.5 h-3.5" />
+            </div>
+          )}
+
+          {/* Vertical Separator */}
+          <div className="h-4 w-px bg-zinc-200 dark:bg-white/[0.08]" />
+
+          {/* File name */}
+          <span className="text-[12px] font-mono font-bold text-zinc-850 dark:text-zinc-200 truncate max-w-[150px] sm:max-w-[200px]">
             {activeFile.title}
           </span>
 
-          {/* Language badge */}
+          {/* Language tag */}
           <div className={cn(
-            "flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md border",
+            "hidden xs:flex items-center gap-1 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded border scale-95",
             langColor.bg, langColor.text, langColor.border
           )}>
             {activeFile.language}
           </div>
-
-          {/* Sync status */}
-          <div className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-500 font-medium">
-            <Cloud className="w-3 h-3" />
-            <span className="hidden sm:inline">Sincronizado</span>
-          </div>
         </div>
 
         {/* Right: Actions */}
-        <div className="flex items-center gap-1">
-          {/* Undo */}
-          <button
-            onClick={undo}
-            disabled={undoStack.length === 0}
-            className="w-7 h-7 rounded-lg hover:bg-gray-200/60 dark:hover:bg-white/5 text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-white flex items-center justify-center transition-all disabled:opacity-20 disabled:pointer-events-none cursor-pointer"
-            title="Deshacer"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-          </button>
-          {/* Redo */}
-          <button
-            onClick={redo}
-            disabled={redoStack.length === 0}
-            className="w-7 h-7 rounded-lg hover:bg-gray-200/60 dark:hover:bg-white/5 text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-white flex items-center justify-center transition-all disabled:opacity-20 disabled:pointer-events-none cursor-pointer"
-            title="Rehacer"
-          >
-            <RotateCw className="w-3.5 h-3.5" />
-          </button>
-
-          <div className="h-4 w-px bg-gray-200 dark:bg-white/[0.06] mx-0.5" />
-
-          {/* Python Run button */}
+        <div className="flex items-center gap-2">
+          {/* Python execution button */}
           {isPython && (
             <button
               onClick={handleRunCode}
               disabled={isRunning}
               className={cn(
-                "h-7 gap-1.5 rounded-lg px-3 flex items-center justify-center text-[11px] font-bold transition-all cursor-pointer",
+                "h-8 gap-1.5 rounded-lg px-3 flex items-center justify-center text-xs font-bold transition-all cursor-pointer select-none",
                 isRunning 
                   ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20" 
-                  : "bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-400 hover:to-orange-400 shadow-md shadow-amber-500/20 hover:shadow-lg hover:shadow-amber-500/30 hover:scale-[1.02] active:scale-[0.98]"
+                  : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs hover:scale-[1.01] active:scale-[0.99]"
               )}
-              title="Ejecutar"
+              title="Ejecutar script"
             >
               {isRunning ? (
                 <Loader2 className="w-3 h-3 animate-spin" />
@@ -283,124 +290,63 @@ export function CanvasPanel() {
             </button>
           )}
 
-          {/* Download */}
+          {/* Share button - Styled premium black like the image */}
+          <button
+            onClick={handleCopy} // Using copy code link as primary sharing action
+            className="h-8 gap-1.5 rounded-lg px-3 bg-zinc-950 hover:bg-zinc-850 dark:bg-zinc-100 dark:hover:bg-zinc-200 text-white dark:text-zinc-950 text-xs font-bold transition-all flex items-center shadow-sm select-none cursor-pointer"
+            title="Compartir código"
+          >
+            <Share2 className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Compartir</span>
+          </button>
+
+          {/* Edit (Focus editor) button */}
+          <button
+            onClick={() => textareaRef.current?.focus()}
+            className="w-8 h-8 rounded-lg hover:bg-zinc-150/50 dark:hover:bg-zinc-900 border border-transparent text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 flex items-center justify-center transition-all cursor-pointer"
+            title="Editar código"
+          >
+            <Play className="w-3.5 h-3.5 rotate-90" /> {/* Generic indicator icon or pencil representation */}
+          </button>
+
+          {/* Copy button with text - light border style */}
+          <button
+            onClick={handleCopy}
+            className="h-8 gap-1.5 rounded-lg px-3 border border-zinc-250 dark:border-zinc-800 bg-white hover:bg-zinc-50 dark:bg-zinc-950 dark:hover:bg-zinc-900 text-zinc-750 dark:text-zinc-350 text-xs font-bold transition-all flex items-center shadow-xs select-none cursor-pointer"
+            title="Copiar código al portapapeles"
+          >
+            {isCopied ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-500" />
+                <span>Copiado</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-3.5 h-3.5" />
+                <span>Copiar</span>
+              </>
+            )}
+          </button>
+
+          {/* Export / Download icon button */}
           <button
             onClick={handleDownload}
-            className="w-7 h-7 rounded-lg hover:bg-gray-200/60 dark:hover:bg-white/5 text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-white flex items-center justify-center transition-all cursor-pointer"
-            title="Descargar"
+            className="w-8 h-8 rounded-lg hover:bg-zinc-150/50 dark:hover:bg-zinc-900 border border-transparent text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 flex items-center justify-center transition-all cursor-pointer"
+            title="Descargar archivo"
           >
             <Download className="w-3.5 h-3.5" />
           </button>
 
-          {/* Copy */}
-          <button
-            onClick={handleCopy}
-            className="w-7 h-7 rounded-lg hover:bg-gray-200/60 dark:hover:bg-white/5 text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-white flex items-center justify-center transition-all cursor-pointer"
-            title="Copiar código"
-          >
-            {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-          </button>
-
-          {/* History */}
-          <div className="relative" ref={historyRef}>
-            <button
-              onClick={() => setShowHistory(!showHistory)}
-              className={cn(
-                "w-7 h-7 rounded-lg text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-white flex items-center justify-center transition-all cursor-pointer",
-                showHistory && "bg-gray-200/60 dark:bg-white/5 text-zinc-700 dark:text-white"
-              )}
-              title="Historial"
-            >
-              <History className="w-3.5 h-3.5" />
-            </button>
-            
-            {showHistory && (
-              <div className="absolute right-0 top-9 w-72 rounded-xl border border-gray-200/80 dark:border-white/[0.08] bg-white/95 dark:bg-[#151518]/95 backdrop-blur-xl p-1.5 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                <div className="px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-                  Archivos recientes · {history.length}
-                </div>
-                {history.length === 0 ? (
-                  <div className="text-[11px] text-zinc-400 p-3 text-center font-medium">Sin historial</div>
-                ) : (
-                  <div className="space-y-0.5 max-h-52 overflow-y-auto scrollbar-thin">
-                    {history.map((file, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => {
-                          openCanvas(file);
-                          setShowHistory(false);
-                        }}
-                        className={cn(
-                          "w-full text-left text-[12px] px-3 py-2 rounded-lg flex items-center gap-2.5 transition-all cursor-pointer",
-                          activeFile.title === file.title 
-                            ? "bg-blue-50 dark:bg-blue-500/5 text-blue-600 dark:text-blue-400 font-semibold" 
-                            : "text-zinc-600 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-white/[0.04] font-medium"
-                        )}
-                      >
-                        <div className={cn(
-                          "w-1.5 h-1.5 rounded-full shrink-0",
-                          activeFile.title === file.title ? "bg-blue-500" : "bg-zinc-300 dark:bg-zinc-600"
-                        )} />
-                        <span className="truncate flex-1">{file.title}</span>
-                        <span className={cn(
-                          "text-[9px] uppercase font-mono px-1.5 py-0.5 rounded",
-                          LANG_COLORS[file.language.toLowerCase()]?.bg || "bg-zinc-100 dark:bg-white/5",
-                          LANG_COLORS[file.language.toLowerCase()]?.text || "text-zinc-500"
-                        )}>
-                          {file.language}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div className="h-4 w-px bg-gray-200 dark:bg-white/[0.06] mx-0.5" />
-
-          {/* Close */}
+          {/* Close button */}
           <button
             onClick={closeCanvas}
-            className="w-7 h-7 rounded-lg hover:bg-red-100 dark:hover:bg-red-500/10 text-zinc-400 hover:text-red-600 dark:text-zinc-500 dark:hover:text-red-400 flex items-center justify-center transition-all cursor-pointer"
-            title="Cerrar Canvas"
+            className="w-8 h-8 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 border border-transparent text-zinc-450 hover:text-red-650 dark:hover:text-red-400 flex items-center justify-center transition-all cursor-pointer"
+            title="Cerrar panel"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
       </div>
-
-      {/* ═══════════════════════════════════════════════════ */}
-      {/*  TAB BAR — Code / Preview toggle                   */}
-      {/* ═══════════════════════════════════════════════════ */}
-      {hasPreview && (
-        <div className="px-4 py-1.5 flex items-center gap-1 border-b border-gray-200/60 dark:border-white/[0.04] bg-gray-50/40 dark:bg-[#0e0e11] shrink-0 select-none">
-          <button
-            onClick={() => setActiveTab("code")}
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer",
-              activeTab === "code"
-                ? "bg-white dark:bg-white/[0.07] text-zinc-900 dark:text-white shadow-sm border border-gray-200/80 dark:border-white/[0.08]"
-                : "text-zinc-500 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-gray-100/60 dark:hover:bg-white/[0.03]"
-            )}
-          >
-            <Code className="w-3.5 h-3.5" />
-            <span>Código</span>
-          </button>
-          <button
-            onClick={() => setActiveTab("preview")}
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer",
-              activeTab === "preview"
-                ? "bg-white dark:bg-white/[0.07] text-zinc-900 dark:text-white shadow-sm border border-gray-200/80 dark:border-white/[0.08]"
-                : "text-zinc-500 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-gray-100/60 dark:hover:bg-white/[0.03]"
-            )}
-          >
-            <Eye className="w-3.5 h-3.5" />
-            <span>Vista Previa</span>
-          </button>
-        </div>
-      )}
 
       {/* ═══════════════════════════════════════════════════ */}
       {/*  MAIN CONTENT AREA                                 */}
@@ -410,10 +356,10 @@ export function CanvasPanel() {
         {/* Code Editor View */}
         {(activeTab === "code" || !hasPreview) && (
           <div className="flex-1 flex min-h-0 overflow-hidden bg-white dark:bg-[#0C0C0E]">
-            {/* Line Numbers gutter */}
+            {/* Line Numbers gutter - clean blended look without borders/backgrounds */}
             <div
               ref={lineNumbersRef}
-              className="w-12 py-4 text-right select-none bg-gray-50/50 dark:bg-[#0a0a0c] pr-3 border-r border-gray-200/60 dark:border-white/[0.04] overflow-hidden shrink-0 font-mono text-[11px] leading-6 text-zinc-300 dark:text-zinc-700"
+              className="w-12 py-4 text-right select-none bg-transparent pr-4 overflow-hidden shrink-0 font-mono text-[11px] leading-6 text-zinc-350 dark:text-zinc-650"
             >
               {Array.from({ length: lineCount }).map((_, i) => (
                 <div key={i} className="h-6 flex items-center justify-end tabular-nums">
@@ -429,7 +375,7 @@ export function CanvasPanel() {
               onChange={(e) => updateActiveFileCode(e.target.value)}
               onScroll={handleScroll}
               className={cn(
-                "flex-1 h-full py-4 px-4 resize-none outline-none border-none bg-transparent overflow-auto",
+                "flex-1 h-full py-4 px-2 resize-none outline-none border-none bg-transparent overflow-auto",
                 "text-zinc-800 dark:text-zinc-200 placeholder-zinc-300 dark:placeholder-zinc-700",
                 "font-mono text-[12px] leading-6 selection:bg-blue-500/20 selection:text-blue-900 dark:selection:text-blue-200",
                 "[scrollbar-width:thin] scrollbar-thin scrollbar-thumb-zinc-200/60 dark:scrollbar-thumb-white/[0.06]"
@@ -444,10 +390,10 @@ export function CanvasPanel() {
         {hasPreview && activeTab === "preview" && (
           <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-gray-50/50 dark:bg-[#090909]">
             {/* Preview header */}
-            <div className="px-4 py-2 flex items-center gap-2 border-b border-gray-200/50 dark:border-white/[0.04] bg-white/50 dark:bg-white/[0.02] shrink-0 select-none">
+            <div className="px-4 py-2 flex items-center gap-2 border-b border-gray-250/50 dark:border-white/[0.04] bg-white/50 dark:bg-white/[0.02] shrink-0 select-none">
               <Eye className="w-3.5 h-3.5 text-zinc-400" />
               <span className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500">
-                {isHtml ? "HTML Preview" : isSvg ? "SVG Preview" : "Markdown Preview"}
+                {isHtml ? "Vista Previa HTML" : isSvg ? "Vista Previa SVG" : "Vista Previa Markdown"}
               </span>
               <div className="flex-1" />
               <div className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-500 font-medium">
@@ -458,7 +404,7 @@ export function CanvasPanel() {
 
             {/* Preview content */}
             <div className="flex-1 overflow-auto p-3">
-              <div className="h-full rounded-xl overflow-hidden border border-gray-200/60 dark:border-white/[0.04] bg-white dark:bg-[#0C0C0E] shadow-inner">
+              <div className="h-full rounded-xl overflow-hidden border border-gray-250/60 dark:border-white/[0.04] bg-white dark:bg-[#0C0C0E] shadow-inner">
                 {isHtml && (
                   <iframe
                     srcDoc={activeFile.code}

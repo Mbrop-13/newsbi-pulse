@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAIChatStore } from "@/lib/stores/ai-chat-store";
+import { useLanguageStore } from "@/lib/stores/language-store";
 
 function getLogoUrl(symbol: string): string {
   return `https://assets.parqet.com/logos/symbol/${symbol}`;
@@ -55,6 +56,7 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
   const [autoFocus, setAutoFocus] = useState(false);
   const isSearching = isSearchingNews || isSearchingAssets;
   const router = useRouter();
+  const language = useLanguageStore((s) => s.language);
   const supabase = createClient();
   const savedChats = useAIChatStore((s) => s.savedChats);
   const loadChat = useAIChatStore((s) => s.loadChat);
@@ -215,7 +217,7 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
     if (query.trim()) saveSearch(query.trim());
     loadChat(chatId);
     onClose();
-    router.push("/ai");
+    router.push(`/${language}/ai`);
   };
 
   const handleSearchSubmit = (e: React.FormEvent) => {

@@ -855,6 +855,22 @@ function MessageBubble({
 
     return (
       <div className="mb-4">
+        {/* Toggle Button at the top */}
+        <Button
+          variant="ghost"
+          size="sm"
+          className={cn(
+            "h-7 w-fit px-3 rounded-full text-xs font-semibold gap-1.5 border border-slate-250/60 dark:border-zinc-800/60 hover:bg-slate-100 dark:hover:bg-zinc-900 cursor-pointer transition-colors mb-2",
+            localReasoningOpen ? "text-[#1890FF] border-[#1890FF]/30 bg-blue-500/5" : "text-muted-foreground hover:text-foreground"
+          )}
+          onClick={() => setLocalReasoningOpen(!localReasoningOpen)}
+          title="Toggles deep reasoning visibility"
+        >
+          <Brain className="h-3.5 w-3.5" />
+          <span>Razonamiento</span>
+          <ChevronRight className={cn("h-3 w-3 transition-transform", localReasoningOpen && "rotate-90")} />
+        </Button>
+
         <AnimatePresence>
           {localReasoningOpen && (
             <motion.div
@@ -1242,19 +1258,7 @@ function MessageBubble({
 
         {/* Actions bar */}
         <div className="flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          {(extractedReasoning || message.thinkingSteps?.length > 0) && !isResponding && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn("h-7 w-fit px-2 rounded-full text-xs font-medium gap-1.5", localReasoningOpen ? "text-[#1890FF]" : "text-muted-foreground hover:text-foreground")}
-              onClick={() => setLocalReasoningOpen(!localReasoningOpen)}
-              title="Mostrar razonamiento"
-            >
-              <Brain className="h-3.5 w-3.5" />
-              Razonamiento
-              <ChevronRight className={cn("h-3 w-3 transition-transform", localReasoningOpen && "rotate-90")} />
-            </Button>
-          )}
+
           <Button
             variant="ghost"
             size="icon"

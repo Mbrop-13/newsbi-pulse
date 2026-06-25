@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, useMemo } from "react"
+import { useState, useEffect, useRef, useMemo, Suspense } from "react"
 import { useTheme } from "next-themes"
 
 import { ChatInput } from "@/components/chat/chat-input"
@@ -18,7 +18,7 @@ import { getPlanConfig, type PlanTier, getNextTier } from "@/lib/plan-limits"
 import { useChat } from "ai/react"
 import { ShareChatDialog } from "@/components/assistant/share-chat-dialog"
 import { toast } from "sonner"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -134,7 +134,7 @@ function groupConsecutiveMessages(messages: ChatMessage[]): ChatMessage[] {
 }
 
 
-export function ChatLanding() {
+function ChatLandingContent() {
   const { isMobile } = useSidebar()
   const user = useAuthStore((s) => s.user)
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
@@ -321,27 +321,7 @@ export function ChatLanding() {
     return () => unsub()
   }, [])
 
-  // Check for auto-start prompt in URL parameters
-  useEffect(() => {
-    if (!isStoreHydrated) return;
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const promptParam = params.get("prompt");
-      if (promptParam) {
-        // Clear search params to prevent loop on reload/navigation
-        const newUrl = window.location.pathname;
-        window.history.replaceState(null, '', newUrl);
 
-        // Start new chat with this prompt
-        handleNewChat();
-        
-        // Wait for state to clear, then submit the prompt
-        setTimeout(() => {
-          handleSend(promptParam, { webSearch: true, image: false, codeInterpreter: false, browser: false });
-        }, 150);
-      }
-    }
-  }, [isStoreHydrated]);
 
   // Track theme mounting for dark mode logo swapping
   const { resolvedTheme } = useTheme()
@@ -519,6 +499,27 @@ export function ChatLanding() {
       useWebBuilderStore.getState().setActiveAgentReports(null);
     }
   })
+
+  const searchParams = useSearchParams();
+
+  // Check for auto-start prompt in URL parameters
+  useEffect(() => {
+    if (!isStoreHydrated) return;
+    const promptParam = searchParams.get("prompt");
+    if (promptParam) {
+      // Clear search params to prevent loop on reload/navigation
+      const newUrl = window.location.pathname;
+      window.history.replaceState(null, '', newUrl);
+
+      // Start new chat with this prompt
+      handleNewChat();
+      
+      // Paste the prompt in the input bar instead of sending automatically
+      setTimeout(() => {
+        setInput(promptParam);
+      }, 150);
+    }
+  }, [isStoreHydrated, searchParams, setInput]);
 
   const aiMessagesRef = useRef<any[]>([])
   useEffect(() => {
@@ -1104,14 +1105,16 @@ export function ChatLanding() {
             <Sheet>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <SheetTrigger asChild>
-                    <button 
-                      type="button" 
-                      className="w-9 h-9 rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-850 dark:hover:bg-zinc-850/80 flex items-center justify-center text-gray-700 dark:text-gray-200 transition-all cursor-pointer shadow-xs border border-transparent dark:border-white/5 active:scale-95"
-                    >
-                      <MoreHorizontal className="w-4.5 h-4.5" />
-                    </button>
-                  </SheetTrigger>
+                  <span>
+                    <SheetTrigger asChild>
+                      <button 
+                        type="button" 
+                        className="w-9 h-9 rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-850 dark:hover:bg-zinc-850/80 flex items-center justify-center text-gray-700 dark:text-gray-200 transition-all cursor-pointer shadow-xs border border-transparent dark:border-white/5 active:scale-95"
+                      >
+                        <MoreHorizontal className="w-4.5 h-4.5" />
+                      </button>
+                    </SheetTrigger>
+                  </span>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="text-xs font-semibold">
                   Archivos y Opciones
@@ -1239,6 +1242,8 @@ export function ChatLanding() {
                   disabled={false}
                   isStreaming={aiLoading}
                   onStop={stop}
+                  value={input}
+                  onChange={setInput}
                 />
               </div>
             </div>
@@ -1328,6 +1333,8 @@ export function ChatLanding() {
                   disabled={false}
                   isStreaming={aiLoading}
                   onStop={stop}
+                  value={input}
+                  onChange={setInput}
                 />
               </div>
             </div>
@@ -1444,5 +1451,20 @@ function StockLogo({ symbol, className }: { symbol: string; className?: string }
       onError={() => setError(true)}
       className={cn("w-8 h-8 rounded-full object-cover shrink-0 bg-white p-0.5 border border-gray-100 dark:border-white/10 shadow-sm", className)}
     />
+  );
+}
+
+export function ChatLanding() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen bg-white dark:bg-[#0F1117]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 text-[#1890FF] animate-spin border-2 border-t-transparent rounded-full" />
+          <p className="text-sm text-gray-500 dark:text-gray-400">Cargando...</p>
+        </div>
+      </div>
+    }>
+      <ChatLandingContent />
+    </Suspense>
   );
 }

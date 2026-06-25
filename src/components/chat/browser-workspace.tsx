@@ -140,7 +140,10 @@ export function BrowserWorkspace({ chatPanel }: BrowserWorkspaceProps) {
           onMouseDown={handleMouseDown}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
-          className="w-1.5 h-full cursor-col-resize z-50 shrink-0 relative transition-colors duration-150 bg-gray-200 dark:bg-white/10 hover:bg-blue-500 flex items-center justify-center"
+          className={cn(
+            "w-1.5 h-full cursor-col-resize z-50 shrink-0 relative transition-colors duration-150 flex items-center justify-center",
+            (isDragging || isHovered) ? "bg-gray-150 dark:bg-white/5" : "bg-transparent"
+          )}
         >
           {/* Inner line indicator */}
           <div className={cn(

@@ -87,6 +87,8 @@ interface ChatInputProps {
       browser: boolean;
     }
   ) => void;
+  value?: string;
+  onChange?: (val: string) => void;
 }
 
 export function ChatInput({
@@ -96,8 +98,24 @@ export function ChatInput({
   isStreaming = false,
   onStop,
   onSubmit,
+  value: controlledValue,
+  onChange: controlledOnChange,
 }: ChatInputProps) {
-  const [value, setValue] = useState("");
+  const [localValue, setLocalValue] = useState("");
+  const isControlled = controlledValue !== undefined;
+  const value = isControlled ? controlledValue : localValue;
+  
+  const setValue = useCallback((val: string | ((prev: string) => string)) => {
+    if (isControlled) {
+      if (typeof val === 'function') {
+        controlledOnChange?.(val(controlledValue || ""));
+      } else {
+        controlledOnChange?.(val);
+      }
+    } else {
+      setLocalValue(val);
+    }
+  }, [isControlled, controlledValue, controlledOnChange]);
   const [webSearch, setWebSearch] = useState(false);
   const [image, setImage] = useState(false);
   const [codeInterpreter, setCodeInterpreter] = useState(false);

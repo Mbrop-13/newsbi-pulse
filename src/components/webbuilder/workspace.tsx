@@ -176,7 +176,7 @@ export function WebBuilderWorkspace({ chatPanel }: WebBuilderWorkspaceProps) {
           {/* Inner line indicator (only visible on hover/drag) */}
           <div className={cn(
             "w-[3px] h-[40px] rounded-full transition-all duration-300",
-            (isDragging || isHovered) ? "bg-primary scale-y-150" : "bg-white/10 group-hover:bg-white/20"
+            (isDragging || isHovered) ? "bg-primary scale-y-150" : "bg-transparent"
           )} />
         </div>
       )}

@@ -21,7 +21,6 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
-  SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar"
 import { useAIChatStore } from "@/lib/stores/ai-chat-store"
@@ -97,7 +96,6 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
         <SidebarFooter>
           <NavUser />
         </SidebarFooter>
-        <SidebarRail />
       </Sidebar>
 
       {/* Search Dialog Overlay */}

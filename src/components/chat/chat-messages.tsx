@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useMemo } from "react"
 import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
-import { Bot, User, ThumbsUp, ThumbsDown, Share2, RefreshCw, ChevronRight, ChevronDown, Sparkles, Loader2, Globe, ExternalLink, X, ArrowDown, CheckCircle2, XCircle, Clock, Cpu, ClipboardList, FileCode2, Maximize2, Info, FolderOpen, Code2, Terminal } from "lucide-react"
+import { Bot, User, ThumbsUp, ThumbsDown, Share2, RefreshCw, ChevronRight, ChevronDown, Sparkles, Loader2, Globe, ExternalLink, X, ArrowDown, CheckCircle2, XCircle, Clock, Cpu, ClipboardList, FileCode2, Maximize2, Info, FolderOpen, Code2, Terminal, Search, Brain, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import ReactMarkdown from "react-markdown"
@@ -244,6 +244,56 @@ export function ChatMessages({
   )
 }
 
+// ─── Format citation URL into clean titles and sources ───
+function formatCitationSource(url: string) {
+  let hostname = "";
+  let title = "";
+  try {
+    const urlObj = new URL(url);
+    hostname = urlObj.hostname.replace("www.", "");
+    
+    // Generate a readable title from the path
+    const pathSegments = urlObj.pathname.split('/').filter(Boolean);
+    if (pathSegments.length > 0) {
+      const lastSegment = pathSegments[pathSegments.length - 1];
+      // Clean extension if present (.html, .php, etc)
+      const cleanSegment = lastSegment.replace(/\.[^/.]+$/, "");
+      // Replace dashes/underscores with spaces
+      title = cleanSegment
+        .replace(/[-_]+/g, ' ')
+        .trim();
+      // Capitalize first letters of each word
+      title = title.replace(/\b\w/g, c => c.toUpperCase());
+    }
+  } catch {
+    hostname = url;
+  }
+  
+  // Fallback to hostname if title is too short or empty
+  if (!title || title.length < 3) {
+    title = hostname;
+  }
+  
+  // Format source name from hostname (e.g. bloomberg.com -> Bloomberg)
+  let sourceName = hostname.split('.')[0] || "";
+  if (sourceName) {
+    sourceName = sourceName.charAt(0).toUpperCase() + sourceName.slice(1);
+  } else {
+    sourceName = hostname;
+  }
+  
+  return { title, sourceName, hostname };
+}
+
+// ─── Check if text is orchestration log ───
+function isOrchestrationLog(text: string): boolean {
+  if (!text) return false;
+  return text.includes('[Orquestador]') || 
+         text.includes('[Agente]') || 
+         text.includes('agentes expertos') ||
+         text.includes('agentes especializados');
+}
+
 // ─── Parse orchestration log lines from reasoning text ───
 interface ParsedAgentStep {
   type: 'orchestrator' | 'agent_start' | 'agent_done' | 'agent_fail' | 'info';
@@ -366,6 +416,15 @@ function getAgentStatuses(steps: ParsedAgentStep[]): AgentStatus[] {
 }
 
 
+interface UnifiedThinkingStep {
+  name: string;
+  role: string;
+  task: string;
+  status: 'pending' | 'done' | 'failed';
+  duration?: string;
+  content?: string;
+}
+
 function MessageBubble({
   message,
   feedback,
@@ -402,8 +461,29 @@ function MessageBubble({
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false)
   const setSelectedTab = useWebBuilderStore((s) => s.setSelectedTab)
   
-  const [localReasoningOpen, setLocalReasoningOpen] = useState(false)
+  // Custom states for redesigned thinking/reasoning blocks
+  const [showAllSources, setShowAllSources] = useState(false)
+  const [isThinkingExpanded, setIsThinkingExpanded] = useState(isLast && isLoading)
+  const [localExpandedReportIdx, setLocalExpandedReportIdx] = useState<number | null>(null)
+  const [localReasoningOpen, setLocalReasoningOpen] = useState(isLast && isLoading)
   const hasManuallyToggledRef = useRef(false)
+
+  // Keep track of loading transition to auto-collapse/expand states
+  const isResponding = isLast && isLoading;
+  const prevLoadingRef = useRef(isLoading);
+  
+  useEffect(() => {
+    if (isResponding) {
+      setIsThinkingExpanded(true);
+      if (message.reasoning || message.thinkingSteps?.length) {
+        setLocalReasoningOpen(true);
+      }
+    } else if (prevLoadingRef.current && !isLoading) {
+      // Collapse thinking phase once finished loading
+      setIsThinkingExpanded(false);
+    }
+    prevLoadingRef.current = isLoading;
+  }, [isLoading, isResponding, message.reasoning, message.thinkingSteps]);
 
   // Check citations
   let citationsList: string[] = message.citations || []
@@ -485,37 +565,99 @@ function MessageBubble({
     )
   }
 
-  // ─── Render reasoning / thinking steps (elegant design) ───
-  const renderReasoning = () => {
-    if (!message.reasoning && !message.thinkingSteps?.length) return null
-    const content = message.reasoning || message.thinkingSteps?.join('\n') || ''
-    if (!content) return null
+  // ─── Render Thinking Phase (Search, Agents, Citations) ───
+  const renderThinkingPhase = () => {
+    let reports = message.reasoningSteps || [];
+    if (reports.length === 0 && isLast && isLoading && streamData) {
+      const reportsObj = streamData.find((d: any) => d?.type === 'agentReports');
+      reports = reportsObj?.reports || [];
+    }
+
+    const thinkingSteps: UnifiedThinkingStep[] = [];
+    if (reports && reports.length > 0) {
+      reports.forEach((r: any) => {
+        thinkingSteps.push({
+          name: r.agentName,
+          role: r.role,
+          task: r.task,
+          status: r.success === false ? 'failed' : (r.content && r.success) ? 'done' : 'pending',
+          duration: r.durationMs ? `${(r.durationMs / 1000).toFixed(1)}s` : undefined,
+          content: r.content
+        });
+      });
+    } else {
+      const logText = (isLast && isLoading && streamData) ? liveReasoning : (message.reasoning || '');
+      if (isOrchestrationLog(logText)) {
+        const parsedSteps = parseOrchestrationSteps(logText);
+        const agentStatuses = getAgentStatuses(parsedSteps);
+        agentStatuses.forEach((a: any) => {
+          thinkingSteps.push({
+            name: a.agentName,
+            role: a.role,
+            task: a.task,
+            status: a.status,
+            duration: a.time,
+          });
+        });
+      }
+    }
+
+    const hasCitations = citationsList.length > 0;
+    const hasSteps = thinkingSteps.length > 0;
+
+    if (!hasCitations && !hasSteps) return null;
+
+    // Determine titles & icons
+    let headerTitle = "Búsqueda y análisis";
+    let headerIcon = <Compass className="w-4 h-4 text-[#1890FF] dark:text-blue-400 shrink-0 animate-pulse" />;
+
+    if (isLoading) {
+      headerTitle = hasSteps ? "Ejecutando agentes de investigación..." : "Buscando en la web...";
+      headerIcon = <Loader2 className="w-4 h-4 text-[#1890FF] dark:text-blue-400 shrink-0 animate-spin" />;
+    } else {
+      headerTitle = hasSteps 
+        ? `Investigación completada • ${thinkingSteps.length} agentes` 
+        : `Fuentes consultadas • ${citationsList.length} sitios`;
+      headerIcon = <CheckCircle2 className="w-4 h-4 text-emerald-505 dark:text-emerald-400 shrink-0" />;
+    }
+
+    // Dynamic timer
+    const totalDurationMs = reports.reduce((acc: number, r: any) => acc + (r.durationMs || 0), 0);
+    const displayDuration = totalDurationMs > 0 
+      ? `${(totalDurationMs / 1000).toFixed(1)}s` 
+      : message.secondsElapsed 
+        ? `${message.secondsElapsed}s` 
+        : null;
 
     return (
-      <div className="mb-3">
-        <button
-          onClick={() => {
-            hasManuallyToggledRef.current = true;
-            setLocalReasoningOpen(!localReasoningOpen);
-            onToggleReasoning();
-          }}
-          className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-all duration-200 group"
+      <div className="mb-4 rounded-2xl border border-slate-250/60 dark:border-zinc-800/60 bg-slate-50/30 dark:bg-zinc-950/20 overflow-hidden shadow-xs">
+        {/* Accordion Trigger */}
+        <div
+          onClick={() => setIsThinkingExpanded(!isThinkingExpanded)}
+          className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-slate-100/50 dark:hover:bg-zinc-900/20 transition-all select-none group"
         >
-          <span>Razonamiento</span>
-          <ChevronRight
-            className={cn(
-              "h-3 w-3 transition-transform duration-200",
-              localReasoningOpen && "rotate-90"
-            )}
-          />
-          {message.secondsElapsed && (
-            <span className="text-[10px] opacity-50 font-normal">
-              ({message.secondsElapsed}s)
+          <div className="flex items-center gap-2.5 min-w-0">
+            {headerIcon}
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate group-hover:text-[#1890FF] dark:group-hover:text-blue-400 transition-colors">
+              {headerTitle}
             </span>
-          )}
-        </button>
-        <AnimatePresence>
-          {localReasoningOpen && (
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {displayDuration && (
+              <span className="text-[10px] text-muted-foreground/60 font-medium bg-slate-100 dark:bg-zinc-900 px-2 py-0.5 rounded-full border border-slate-200/20 dark:border-zinc-800">
+                {displayDuration}
+              </span>
+            )}
+            <ChevronDown className={cn(
+              "w-4 h-4 text-muted-foreground/50 transition-transform duration-200",
+              !isThinkingExpanded && "-rotate-90"
+            )} />
+          </div>
+        </div>
+
+        {/* Accordion Content */}
+        <AnimatePresence initial={false}>
+          {isThinkingExpanded && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
@@ -523,7 +665,201 @@ function MessageBubble({
               transition={{ duration: 0.2 }}
               className="overflow-hidden"
             >
-              <div className="mt-2 pl-3.5 border-l-2 border-black/15 dark:border-white/15 text-[12.5px] text-muted-foreground/80 font-sans whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto scrollbar-hide py-1">
+              <div className="px-4 pb-4 border-t border-slate-200/40 dark:border-zinc-800/40 pt-3 space-y-4">
+                
+                {/* 1. Agent Steps Timeline */}
+                {hasSteps && (
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest flex items-center gap-1.5 mb-1.5">
+                      <Cpu className="w-3.5 h-3.5 text-[#1890FF] dark:text-blue-400" /> Pasos de Investigación
+                    </p>
+                    <div className="ml-2 pl-3 border-l border-slate-200 dark:border-zinc-850 space-y-2.5">
+                      {thinkingSteps.map((step, idx) => {
+                        const isDone = step.status === 'done';
+                        const isFailed = step.status === 'failed';
+                        const isExpanded = localExpandedReportIdx === idx;
+                        const hasContent = !!step.content;
+
+                        return (
+                          <div key={idx} className="relative">
+                            {/* Timeline dot */}
+                            <div className={cn(
+                              "absolute -left-[17.5px] top-[4px] w-2 h-2 rounded-full border border-white dark:border-[#0a0a0a]",
+                              isFailed ? "bg-red-500 animate-pulse" : isDone ? "bg-slate-900 dark:bg-slate-100" : "bg-amber-500 animate-pulse"
+                            )} />
+
+                            {/* Timeline Header Button */}
+                            <button
+                              disabled={!hasContent}
+                              onClick={() => setLocalExpandedReportIdx(isExpanded ? null : idx)}
+                              className={cn(
+                                "flex items-center gap-1.5 w-full text-left font-sans text-[11.5px] leading-tight select-none",
+                                hasContent ? "cursor-pointer hover:opacity-85" : "cursor-default"
+                              )}
+                            >
+                              <Search className="w-3 h-3 text-muted-foreground/60 shrink-0" />
+                              <span className="font-bold text-foreground">
+                                {step.name}
+                              </span>
+                              <span className="text-muted-foreground/60 shrink-0">•</span>
+                              <span className="text-slate-600 dark:text-slate-400 font-medium truncate flex-1">
+                                {step.task}
+                              </span>
+                              {step.duration && (
+                                <span className="text-[9px] text-muted-foreground/50 font-mono">
+                                  ({step.duration})
+                                </span>
+                              )}
+                              
+                              {/* Status Indicators */}
+                              {isFailed ? (
+                                <XCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                              ) : isDone ? (
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                              ) : (
+                                <Loader2 className="w-3.5 h-3.5 text-amber-500 shrink-0 animate-spin" />
+                              )}
+                              {hasContent && (
+                                <ChevronRight className={cn(
+                                  "w-3 h-3 text-muted-foreground/40 transition-transform duration-200 shrink-0",
+                                  isExpanded && "rotate-90"
+                                )} />
+                              )}
+                            </button>
+
+                            {/* Expanded Agent report details */}
+                            <AnimatePresence>
+                              {isExpanded && hasContent && (
+                                <motion.div
+                                  initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                                  animate={{ opacity: 1, height: 'auto', marginTop: 6 }}
+                                  exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                                  transition={{ duration: 0.2 }}
+                                  className="overflow-hidden"
+                                >
+                                  <div className="bg-slate-100/60 dark:bg-zinc-900/50 border border-slate-200/50 dark:border-zinc-800/60 rounded-xl p-3 text-[11px] text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed max-h-40 overflow-y-auto scrollbar-hide">
+                                    {step.content}
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. Citations Sources Grid */}
+                {hasCitations && (
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest flex items-center gap-1.5 mb-1.5">
+                      <Globe className="w-3.5 h-3.5 text-[#1890FF] dark:text-blue-400" /> Fuentes de Información
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                      {/* Render sources up to limit */}
+                      {citationsList
+                        .slice(0, showAllSources ? citationsList.length : 2)
+                        .map((url, i) => {
+                          const { title, sourceName, hostname } = formatCitationSource(url);
+                          return (
+                            <div
+                              key={i}
+                              onClick={() => {
+                                setActivePreviewUrl(activePreviewUrl === url ? null : url);
+                                setIsCitationsOpen(true);
+                              }}
+                              className="flex items-center gap-2 p-2 rounded-xl bg-white hover:bg-slate-100/50 dark:bg-zinc-900/40 dark:hover:bg-zinc-900/90 border border-slate-200/50 dark:border-zinc-850 hover:border-[#1890FF]/30 dark:hover:border-blue-500/20 hover:-translate-y-0.5 transition-all duration-200 shadow-sm cursor-pointer group min-w-0"
+                            >
+                              <div className="w-[18px] h-[18px] rounded-full bg-slate-100 dark:bg-zinc-800 text-[9px] font-extrabold flex items-center justify-center text-slate-500 shrink-0 border border-slate-200/40 dark:border-zinc-700/40">
+                                {i + 1}
+                              </div>
+                              <div className="w-5 h-5 rounded-md bg-white border border-slate-150 flex items-center justify-center shrink-0 overflow-hidden shadow-xs">
+                                <img
+                                  src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=32`}
+                                  alt=""
+                                  className="w-3.5 h-3.5 object-cover bg-white"
+                                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                />
+                              </div>
+                              <div className="flex flex-col min-w-0 flex-1 text-left">
+                                <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 truncate leading-tight group-hover:text-[#1890FF] dark:group-hover:text-blue-400 transition-colors">
+                                  {title}
+                                </span>
+                                <span className="text-[9px] text-muted-foreground/75 truncate mt-0.5">
+                                  {sourceName}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                      {/* "+X más" Card or "Mostrar menos" Card */}
+                      {citationsList.length > 2 && (
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowAllSources(!showAllSources);
+                          }}
+                          className="flex items-center justify-center gap-1.5 p-2 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-zinc-900/20 dark:hover:bg-zinc-900/60 border border-dashed border-slate-200 dark:border-zinc-800 hover:border-[#1890FF]/30 dark:hover:border-blue-500/20 transition-all duration-200 shadow-sm cursor-pointer text-muted-foreground hover:text-[#1890FF] dark:hover:text-blue-400 group h-9"
+                        >
+                          <Plus className="w-3.5 h-3.5 shrink-0" />
+                          <span className="text-[11px] font-bold leading-none">
+                            {showAllSources ? "Mostrar menos" : `+${citationsList.length - 2} más`}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  }
+
+  // ─── Render Model Reasoning (DeepSeek-R1 style) ───
+  const renderModelReasoning = () => {
+    if (!message.reasoning && !message.thinkingSteps?.length) return null
+    const content = message.reasoning || message.thinkingSteps?.join('\n') || ''
+    if (!content || isOrchestrationLog(content)) return null
+
+    return (
+      <div className="mb-4">
+        <button
+          onClick={() => {
+            hasManuallyToggledRef.current = true;
+            setLocalReasoningOpen(!localReasoningOpen);
+          }}
+          className="flex items-center gap-2 text-xs font-semibold text-[#1890FF] dark:text-blue-400 hover:opacity-80 transition-all duration-200 group bg-blue-500/5 dark:bg-blue-500/10 px-3 py-1.5 rounded-full border border-blue-500/10 w-fit select-none"
+        >
+          <Brain className="h-3.5 w-3.5 text-[#1890FF] dark:text-blue-400 shrink-0" />
+          <span>Razonamiento</span>
+          {message.secondsElapsed && (
+            <span className="text-[10px] opacity-75 font-normal">
+              • Pensado por {message.secondsElapsed}s
+            </span>
+          )}
+          <ChevronRight
+            className={cn(
+              "h-3.5 w-3.5 transition-transform duration-200 ml-1 opacity-75",
+              localReasoningOpen && "rotate-90"
+            )}
+          />
+        </button>
+        <AnimatePresence>
+          {localReasoningOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0, marginTop: 0 }}
+              animate={{ opacity: 1, height: 'auto', marginTop: 8 }}
+              exit={{ opacity: 0, height: 0, marginTop: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <div className="pl-4 py-2 border-l-[3px] border-[#1890FF]/60 dark:border-blue-500/40 bg-slate-50/50 dark:bg-zinc-900/30 rounded-r-xl text-[13px] text-muted-foreground/90 dark:text-zinc-400 font-sans whitespace-pre-wrap leading-relaxed max-h-72 overflow-y-auto shadow-xs border border-y-slate-200/30 border-r-slate-200/30 dark:border-y-zinc-800/30 dark:border-r-zinc-800/30 pr-3 scrollbar-hide">
                 {content}
               </div>
             </motion.div>
@@ -749,7 +1085,6 @@ function MessageBubble({
                     </p>
                   </div>
                 </div>
-
                 {/* Modal Footer */}
                 <div className="p-4 bg-gray-50/50 dark:bg-zinc-950/80 border-t border-gray-200/60 dark:border-white/5 flex justify-end shrink-0">
                   <button
@@ -766,130 +1101,6 @@ function MessageBubble({
       </div>
     );
   };
-
-  const renderAgentReports = () => {
-    let reports = message.reasoningSteps;
-    if ((!reports || reports.length === 0) && isLast && isLoading && streamData) {
-      const reportsObj = streamData.find((d: any) => d?.type === 'agentReports');
-      reports = reportsObj?.reports || [];
-    }
-
-    if (!reports || reports.length === 0) return null;
-
-    const successCount = reports.filter((r: any) => r.success !== false && (r.content || r.success)).length;
-    const totalTime = reports.reduce((acc: number, r: any) => acc + (r.durationMs || 0), 0);
-
-    return (
-      <div className="mb-3">
-        {/* Toggle Header */}
-        <button
-          onClick={() => setIsAgentsExpanded(!isAgentsExpanded)}
-          className="flex items-center gap-2 w-full text-left group"
-        >
-          <span className="text-xs font-semibold text-muted-foreground group-hover:text-foreground transition-colors">
-            {reports.length} Agentes Especializados
-          </span>
-          <span className="text-[10px] text-muted-foreground/60 font-normal">
-            {successCount}/{reports.length} completados {totalTime > 0 && `· ${(totalTime / 1000).toFixed(1)}s`}
-          </span>
-          <ChevronDown className={cn(
-            "w-3 h-3 text-muted-foreground/50 transition-transform duration-200 ml-auto",
-            !isAgentsExpanded && "-rotate-90"
-          )} />
-        </button>
-
-        {/* Expanded Timeline */}
-        <AnimatePresence>
-          {isAgentsExpanded && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.25 }}
-              className="overflow-hidden"
-            >
-              <div className="mt-2.5 ml-2.5 border-l border-gray-200 dark:border-slate-800 pl-4 space-y-0">
-                {reports.map((report: any, idx: number) => {
-                  const isSuccess = report.success !== false;
-                  const isDone = report.content && report.success;
-                  const isFailed = report.success === false || (report.content && !report.success);
-                  const isExpanded = expandedReportIdx === idx;
-                  const duration = report.durationMs ? `${(report.durationMs / 1000).toFixed(1)}s` : null;
-
-                  return (
-                    <div key={idx} className="relative pb-3 last:pb-0">
-                      {/* Timeline dot */}
-                      <div className={cn(
-                        "absolute -left-[21px] top-[5px] w-2.5 h-2.5 rounded-full border-2 border-white dark:border-[#0a0a0a]",
-                        isFailed ? "bg-red-500" : isDone ? "bg-black dark:bg-white" : "bg-amber-500 animate-pulse"
-                      )} />
-
-                      {/* Agent header */}
-                      <button
-                        onClick={() => {
-                          if (isDone || isFailed) {
-                            setExpandedReportIdx(isExpanded ? null : idx);
-                          }
-                        }}
-                        className="flex items-center gap-2 w-full text-left group/agent"
-                      >
-                        <span className="text-[11px] font-bold text-foreground">
-                          {report.agentName}
-                        </span>
-                        <span className="text-[10px] text-[#1890FF] font-medium">
-                          {report.role}
-                        </span>
-                        {duration && (
-                          <span className="text-[9px] text-muted-foreground/60 font-mono">
-                            {duration}
-                          </span>
-                        )}
-                        {isFailed ? (
-                          <XCircle className="w-3 h-3 text-red-500 ml-auto shrink-0" />
-                        ) : isDone ? (
-                          <CheckCircle2 className="w-3 h-3 text-black dark:text-white ml-auto shrink-0" />
-                        ) : (
-                          <Loader2 className="w-3 h-3 text-amber-500 ml-auto shrink-0 animate-spin" />
-                        )}
-                        {(isDone || isFailed) && (
-                          <ChevronRight className={cn(
-                            "w-3 h-3 text-muted-foreground/40 transition-transform duration-200 shrink-0",
-                            isExpanded && "rotate-90"
-                          )} />
-                        )}
-                      </button>
-
-                      {/* Task description */}
-                      <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">
-                        {report.task}
-                      </p>
-
-                      {/* Expanded report content */}
-                      <AnimatePresence>
-                        {isExpanded && (isDone || isFailed) && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="overflow-hidden"
-                          >
-                            <div className="mt-2 bg-muted/40 border border-gray-100 dark:border-slate-800/60 rounded-xl p-3 text-[11px] text-foreground/80 whitespace-pre-wrap leading-relaxed max-h-40 overflow-y-auto scrollbar-hide">
-                              {report.content}
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  );
-                })}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    );
-  }
 
   if (isUser) {
     return (
@@ -908,106 +1119,53 @@ function MessageBubble({
 
   const isResponding = isLast && isLoading;
 
-  // ─── Swarm thinking / Agent Orchestration in progress ───
-  const isAgentOrchestrating = (message as any).isSwarmThinking || (isLast && isLoading && message.reasoning && !message.content);
-  
-  if (isAgentOrchestrating) {
-    const steps = parseOrchestrationSteps(message.reasoning || message.content || '');
-    const agentStatuses = getAgentStatuses(steps);
-    const hasAgentSteps = agentStatuses.length > 0;
-
-    return (
-      <div className={cn("flex", isWebBuilderMode ? "gap-2 pl-1.5" : "gap-3")}>
-        {!isWebBuilderMode && <AssistantAvatar isResponding={isResponding} isWebBuilderMode={isWebBuilderMode} />}
-        <div className="flex-1 min-w-0">
-          {/* Orchestrator header */}
-          <div className="flex items-center gap-2 mb-3">
-            {isWebBuilderMode ? (
-              <>
-                <span className="text-xs font-bold text-black dark:text-white">Delegando agentes</span>
-                <div className="flex items-center gap-1 ml-1 shrink-0">
-                  <div className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="w-5 h-5 rounded-md bg-[#1890FF]/10 flex items-center justify-center shrink-0">
-                  <Cpu className="w-3 h-3 text-[#1890FF] animate-pulse" />
-                </div>
-                <span className="text-xs font-semibold text-[#1890FF]">Orquestador analizando</span>
-                <div className="flex items-center gap-1 ml-1 shrink-0">
-                  <div className="w-1.5 h-1.5 bg-[#1890FF] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-1.5 h-1.5 bg-[#1890FF] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-1.5 h-1.5 bg-[#1890FF] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                </div>
-              </>
-            )}
-          </div>
-
-          {hasAgentSteps ? (
-            /* Timeline view for agent orchestration */
-            <div className={cn(
-              "ml-2.5 pl-4 border-l",
-              isWebBuilderMode ? "border-gray-200 dark:border-slate-800 space-y-3" : "border-[#1890FF]/20 space-y-2"
-            )}>
-              {agentStatuses.map((agent, idx) => {
-                const isDone = agent.status === 'done';
-                const isFailed = agent.status === 'failed';
-                const duration = agent.time;
-
-                return (
-                  <div key={idx} className="relative">
-                    {/* Timeline dot */}
-                    <div className={cn(
-                      "absolute -left-[21px] top-[5px] w-2.5 h-2.5 rounded-full border-2 border-white dark:border-[#0a0a0a]",
-                      isFailed ? "bg-red-500" : isDone ? "bg-black dark:bg-white" : "bg-amber-500 animate-pulse"
-                    )} />
-                    
-                    <div className="flex items-center gap-1.5">
-                      {isFailed ? (
-                        <XCircle className="w-3 h-3 text-red-500 shrink-0" />
-                      ) : isDone ? (
-                        <CheckCircle2 className="w-3 h-3 text-black dark:text-white shrink-0" />
-                      ) : (
-                        <Loader2 className="w-3 h-3 text-amber-500 shrink-0 animate-spin" />
-                      )}
-                      <span className="text-[11px] font-bold text-foreground">{agent.agentName}</span>
-                      <span className="text-[10px] text-[#1890FF]">{agent.role}</span>
-                      {duration && <span className="text-[9px] text-muted-foreground/60 font-mono">{duration}</span>}
-                    </div>
-                    {agent.task && <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">{agent.task}</p>}
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            /* Fallback: monospace log view */
-            <div className="bg-muted/40 border border-gray-100 dark:border-slate-800/40 rounded-xl p-3 text-[11px] font-mono text-muted-foreground whitespace-pre-wrap max-h-48 overflow-y-auto scrollbar-hide leading-relaxed">
-              {message.reasoning || message.content}
-            </div>
-          )}
-        </div>
-      </div>
-    )
-  }
-
-  // ─── Standard Assistant message ───
+  // ─── Unified Assistant message return ───
   return (
     <div className={cn("flex group", isWebBuilderMode ? "gap-2 pl-1.5" : "gap-3")}>
       {!isWebBuilderMode && <AssistantAvatar isResponding={isResponding} isWebBuilderMode={isWebBuilderMode} />}
       <div className="flex-1 min-w-0">
-        {/* 1. Reasoning (expandable) */}
-        {renderReasoning()}
+        {/* 1. Unified Thinking & Search Phase */}
+        {renderThinkingPhase()}
 
-        {/* 2. Plan card (modo Plan: pendiente de aprobación) */}
+        {/* Inline Web Preview Iframe Box (rendered under research block for perfect layout) */}
+        <AnimatePresence>
+          {activePreviewUrl && (
+            <motion.div
+              initial={{ opacity: 0, height: 0, marginTop: 0 }}
+              animate={{ opacity: 1, height: 'auto', marginTop: 8 }}
+              exit={{ opacity: 0, height: 0, marginTop: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <div className="mb-3 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800 max-h-[600px] bg-card">
+                <WebPreview defaultUrl={activePreviewUrl} onUrlChange={setActivePreviewUrl}>
+                  <WebPreviewNavigation className="flex items-center justify-between p-2 border-b bg-muted/30">
+                    <div className="flex items-center gap-2 flex-1 mr-2">
+                      <WebPreviewUrl className="bg-white dark:bg-[#0a0a0a]" />
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-gray-500 hover:text-black dark:hover:text-white"
+                      onClick={() => setActivePreviewUrl(null)}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </WebPreviewNavigation>
+                  <WebPreviewBody />
+                </WebPreview>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* 2. Model Reasoning (DeepSeek-R1 style, if any) */}
+        {renderModelReasoning()}
+
+        {/* 3. Plan card (modo Plan: pendiente de aprobación) */}
         {renderPlanCard()}
-
-        {/* 3. Agent reports timeline (if any) */}
-        {renderAgentReports()}
         
-        {/* 3. Main text content */}
+        {/* 4. Main text content */}
         <div className="prose dark:prose-invert max-w-none text-[15px] leading-relaxed">
           {message.content ? (
             <ReactMarkdown
@@ -1052,10 +1210,13 @@ function MessageBubble({
             </ReactMarkdown>
           ) : (
             isResponding ? (
-              <div className="flex items-center gap-2 py-1.5 text-muted-foreground text-xs font-semibold">
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#1890FF]" />
-                <span>Escribiendo respuesta...</span>
-              </div>
+              // Avoid showing double loaders if the thinking phase or reasoning is already animating
+              !(message.reasoning || citationsList.length > 0) ? (
+                <div className="flex items-center gap-2 py-1.5 text-muted-foreground text-xs font-semibold">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[#1890FF]" />
+                  <span>Escribiendo respuesta...</span>
+                </div>
+              ) : null
             ) : (
               !message.toolResults?.length && !message.toolInvocations?.length && !message.reasoning && (
                 <div className="flex items-center gap-1 py-1.5">
@@ -1072,132 +1233,7 @@ function MessageBubble({
         {!isWebBuilderMode && renderToolResults()}
         {!isWebBuilderMode && renderCharts()}
 
-        {/* Citations Widget */}
-        {hasCitations && (
-          <div className="flex flex-col gap-2 mt-3 pt-2">
-            <div className="flex items-center flex-wrap gap-1.5">
-              <button 
-                type="button"
-                onClick={() => {
-                  const newOpen = !isCitationsOpen;
-                  setIsCitationsOpen(newOpen);
-                  if (newOpen && citationsList.length > 0) {
-                    setActivePreviewUrl(citationsList[0]);
-                  } else {
-                    setActivePreviewUrl(null);
-                  }
-                }}
-                className="flex items-center gap-1.5 w-fit pl-1.5 pr-2.5 py-1 bg-white hover:bg-gray-50 dark:bg-[#1A1A1A] dark:hover:bg-[#222] border border-gray-200 dark:border-gray-800 rounded-full transition-all cursor-pointer group shadow-sm mr-1.5"
-              >
-                <div className="flex -space-x-2">
-                  {citationsList.slice(0, 3).map((url: string, i: number) => {
-                    let hostname = "globe";
-                    try { hostname = new URL(url).hostname; } catch {}
-                    return (
-                      <div
-                        key={i}
-                        className="w-[18px] h-[18px] rounded-full border-[1.5px] border-white dark:border-[#0a0a0a] bg-gray-100 dark:bg-gray-800 overflow-hidden shrink-0 flex items-center justify-center relative bg-white"
-                        style={{ zIndex: 3 - i }}
-                      >
-                        <img 
-                          src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=32`} 
-                          alt="" 
-                          className="w-full h-full object-cover bg-white" 
-                          onError={(e) => { e.currentTarget.style.display='none'; }}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-                <span className="text-[12px] font-medium text-gray-700 dark:text-gray-300 group-hover:text-black dark:group-hover:text-white transition-colors">
-                  {citationsList.length} Fuentes
-                </span>
-              </button>
-            </div>
 
-            {/* Expanded Citations Panel */}
-            <AnimatePresence initial={false}>
-              {isCitationsOpen && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                  animate={{ opacity: 1, height: 'auto', marginTop: 8 }}
-                  exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="overflow-hidden"
-                >
-                  <div className="bg-gray-50 dark:bg-slate-800/30 border border-gray-200/60 dark:border-gray-800/60 rounded-xl p-3 flex flex-wrap gap-2">
-                    <p className="w-full text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1 flex items-center gap-1.5">
-                      <Globe className="w-3 h-3" /> Fuentes Citadas
-                    </p>
-                    {citationsList.map((url: string, i: number) => {
-                      let hostname = url;
-                      try { hostname = new URL(url).hostname.replace("www.", ""); } catch {}
-                      const isSelected = activePreviewUrl === url;
-                      return (
-                        <div key={i} className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => setActivePreviewUrl(isSelected ? null : url)}
-                            className={cn(
-                              "flex items-center gap-1.5 text-[11px] py-1 px-2.5 rounded-lg border transition-all shadow-sm select-none",
-                              isSelected 
-                                ? "bg-blue-500/10 border-blue-500/40 text-blue-600 dark:text-blue-400 font-bold" 
-                                : "bg-white hover:bg-gray-50 dark:bg-[#0a0a0a] dark:hover:bg-[#111] border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400"
-                            )}
-                          >
-                            <Globe className={cn("w-3 h-3 shrink-0", isSelected ? "text-[#1890FF]" : "text-gray-400")} />
-                            <span className="truncate max-w-[130px]">{hostname}</span>
-                          </button>
-                          <a 
-                            href={url} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="flex items-center justify-center p-1 rounded-lg border border-gray-200 dark:border-gray-800 bg-white hover:bg-gray-50 dark:bg-[#0a0a0a] dark:hover:bg-[#111] text-gray-400 hover:text-[#1890FF] transition-colors shadow-sm"
-                            title="Abrir en pestaña nueva"
-                          >
-                            <ExternalLink className="w-3.5 h-3.5" />
-                          </a>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Inline Web Preview Iframe Box */}
-            <AnimatePresence>
-              {activePreviewUrl && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                  animate={{ opacity: 1, height: 'auto', marginTop: 8 }}
-                  exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="overflow-hidden"
-                >
-                  <div className="mb-3 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800 max-h-[600px] bg-card">
-                    <WebPreview defaultUrl={activePreviewUrl} onUrlChange={setActivePreviewUrl}>
-                      <WebPreviewNavigation className="flex items-center justify-between p-2 border-b bg-muted/30">
-                        <div className="flex items-center gap-2 flex-1 mr-2">
-                          <WebPreviewUrl className="bg-white dark:bg-[#0a0a0a]" />
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-gray-500 hover:text-black dark:hover:text-white"
-                          onClick={() => setActivePreviewUrl(null)}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </WebPreviewNavigation>
-                      <WebPreviewBody />
-                    </WebPreview>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        ) /* Citations closing tag */}
 
         {/* Actions bar */}
         <div className="flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">

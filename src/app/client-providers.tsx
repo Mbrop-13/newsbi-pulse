@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { Footer } from "@/components/footer";
 import { ThemeProvider } from "@/components/theme-provider";

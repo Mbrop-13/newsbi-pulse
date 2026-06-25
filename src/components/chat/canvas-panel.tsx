@@ -308,12 +308,6 @@ export function CanvasPanel() {
             <X className="w-4 h-4" />
           </button>
         </div>
-      </div>50 dark:hover:text-red-400 flex items-center justify-center transition-all cursor-pointer"
-            title="Cerrar panel"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
       </div>
 
       {/* ═══════════════════════════════════════════════════ */}

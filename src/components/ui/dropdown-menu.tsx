@@ -5,38 +5,6 @@ import { Menu as MenuPrimitive } from "@base-ui/react/menu"
 
 import { cn } from "@/lib/utils"
 import { ChevronRightIcon, CheckIcon } from "lucide-react"
-import { LiquidGlassLens } from "./liquid-glass"
-
-export function cleanGlassClass(className?: string | Function): any {
-  if (!className) return ""
-  if (typeof className === "function") {
-    return (state: any) => {
-      const resolved = className(state)
-      return cleanGlassClass(resolved)
-    }
-  }
-  return className
-    .split(/\s+/)
-    .filter((c) => {
-      const lower = c.toLowerCase()
-      return !(
-        lower.startsWith("bg-") ||
-        lower.startsWith("border-") ||
-        lower === "border" ||
-        lower.startsWith("shadow-") ||
-        lower.startsWith("backdrop-") ||
-        lower.startsWith("p-") ||
-        lower.startsWith("px-") ||
-        lower.startsWith("py-") ||
-        lower.startsWith("pt-") ||
-        lower.startsWith("pb-") ||
-        lower.startsWith("pl-") ||
-        lower.startsWith("pr-") ||
-        lower.startsWith("rounded-")
-      )
-    })
-    .join(" ")
-}
 
 function DropdownMenu({ ...props }: MenuPrimitive.Root.Props) {
   return <MenuPrimitive.Root data-slot="dropdown-menu" {...props} />
@@ -68,7 +36,6 @@ function DropdownMenuContent({
   side = "bottom",
   sideOffset = 4,
   className,
-  children,
   ...props
 }: MenuPrimitive.Popup.Props &
   Pick<
@@ -86,18 +53,9 @@ function DropdownMenuContent({
       >
         <MenuPrimitive.Popup
           data-slot="dropdown-menu-content"
-          className={cn(
-            "z-50 max-h-(--available-height) w-(--anchor-width) min-w-32 origin-(--transform-origin) overflow-visible duration-100 outline-none data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:overflow-hidden data-closed:fade-out-0 data-closed:zoom-out-95",
-            cleanGlassClass(className)
-          )}
+          className={cn("z-50 max-h-(--available-height) w-(--anchor-width) min-w-32 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-xl bg-white/75 dark:bg-black/60 backdrop-blur-xl border border-white/20 dark:border-white/10 p-1.5 text-popover-foreground shadow-2xl shadow-black/10 dark:shadow-black/50 duration-100 outline-none data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:overflow-hidden data-closed:fade-out-0 data-closed:zoom-out-95", className )}
           {...props}
-        >
-          <LiquidGlassLens className="w-full h-full" radius={12} intensity={20}>
-            <div className="max-h-(--available-height) overflow-x-hidden overflow-y-auto p-1.5 [scrollbar-width:thin] scrollbar-thin scrollbar-thumb-zinc-200/60 dark:scrollbar-thumb-white/[0.06]">
-              {children}
-            </div>
-          </LiquidGlassLens>
-        </MenuPrimitive.Popup>
+        />
       </MenuPrimitive.Positioner>
     </MenuPrimitive.Portal>
   )
@@ -210,7 +168,7 @@ function DropdownMenuSubContent({
   return (
     <DropdownMenuContent
       data-slot="dropdown-menu-sub-content"
-      className={cn("w-auto min-w-[96px]", className)}
+      className={cn("w-auto min-w-[96px] rounded-xl bg-white/75 dark:bg-black/60 backdrop-blur-xl border border-white/20 dark:border-white/10 p-1.5 text-popover-foreground shadow-2xl shadow-black/10 dark:shadow-black/50 duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95", className )}
       align={align}
       alignOffset={alignOffset}
       side={side}

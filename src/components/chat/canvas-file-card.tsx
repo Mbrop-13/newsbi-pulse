@@ -2,7 +2,6 @@
  
 import { useCanvasStore } from "@/lib/stores/canvas-store";
 import { cn } from "@/lib/utils";
-import { Code2, Sparkles } from "lucide-react";
  
 interface CanvasFileCardProps {
   title: string;
@@ -44,33 +43,37 @@ export function CanvasFileCard({
         });
       }}
       className={cn(
-        "text-left flex flex-col w-full max-w-[280px] rounded-[20px] border transition-all duration-200",
-        "bg-white hover:bg-zinc-50/50 dark:bg-zinc-950 dark:hover:bg-zinc-900/50",
-        "border-zinc-300 dark:border-zinc-800/80 shadow-none",
-        "p-4 select-none hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+        "group inline-flex flex-col min-w-[260px] w-fit rounded-[1.25rem] border border-black/15 bg-white dark:bg-[#16181A] dark:border-white/10 hover:border-black/30 dark:hover:border-white/30 px-4 py-3 gap-2.5 cursor-pointer transition-all duration-200 select-none active:scale-[0.98] shadow-sm hover:shadow text-left"
       )}
+      aria-label={`Generar archivo ${title}`}
     >
-      {/* Header: code icon with sparkles + language name */}
-      <div className="flex items-center gap-2.5 text-black dark:text-white font-bold text-[15px] select-none">
-        <div className="relative shrink-0 flex items-center justify-center w-5 h-5">
-          <Code2 className="w-4.5 h-4.5 stroke-[2.2] text-black dark:text-white" />
-          <Sparkles className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 text-black dark:text-white fill-current" />
+      {/* SECCIÓN SUPERIOR: Título e Icono */}
+      <div className="flex flex-1 w-full items-center gap-3">
+        {/* Icono HTML (Código con destellos) */}
+        <div className="flex shrink-0 items-center justify-center text-black dark:text-white">
+          <svg xmlns="http://www.w3.org/2000/svg" width="1.25em" height="1.25em" fill="none" viewBox="0 0 24 24" className="w-5 h-5" strokeWidth="1.333">
+            <path fill="currentColor" fillRule="evenodd" d="M13.113 2.266a.936.936 0 0 1 .797 1.057l-2.476 17.614a.936.936 0 0 1-1.854-.26l2.476-17.615a.936.936 0 0 1 1.057-.796M6.811 6.744a.936.936 0 0 1 0 1.324l-3.55 3.55 3.55 3.551a.936.936 0 1 1-1.324 1.324l-4.213-4.212a.936.936 0 0 1 0-1.325l4.213-4.212a.936.936 0 0 1 1.324 0m15.447 4.213c.357.356.365.93.025 1.297a6.05 6.05 0 0 0-2.377-1.001l-3.185-3.185a.936.936 0 1 1 1.324-1.324zm-3.47 10.491a.48.48 0 0 0 .48-.425c.225-1.341.423-2.03.849-2.457.425-.426 1.11-.624 2.445-.849a.485.485 0 0 0 .438-.48.48.48 0 0 0-.44-.48c-1.332-.227-2.018-.425-2.443-.851-.426-.427-.624-1.115-.849-2.455a.48.48 0 0 0-.48-.428.49.49 0 0 0-.481.426c-.226 1.341-.423 2.03-.85 2.457-.424.426-1.108.624-2.44.85a.48.48 0 0 0-.442.481c0 .26.199.448.439.48 1.335.225 2.02.418 2.444.842.426.425.623 1.114.849 2.466.04.24.23.423.482.423" clipRule="evenodd"></path>
+          </svg>
+        </div> 
+        {/* Texto del Título */}
+        <div className="flex flex-col shrink truncate">
+          <span className="font-bold text-[17px] text-black dark:text-white tracking-wide">{langUpper}</span>
         </div>
-        <span>{langUpper}</span>
-      </div>
- 
-      {/* Divider */}
-      <div className="w-full h-px bg-zinc-200 dark:bg-zinc-850/80 my-3" />
- 
-      {/* File info with neutral radio indicator (single line) */}
-      <div className="flex items-center gap-3 w-full min-w-0">
-        {/* Radio dot */}
-        <div className="shrink-0 flex items-center justify-center w-5 h-5 rounded-full border-2 border-zinc-300 dark:border-zinc-700 bg-transparent">
-          <div className="w-2.5 h-2.5 rounded-full bg-zinc-400 dark:bg-zinc-500" />
+      </div> 
+
+      {/* LÍNEA SEPARADORA */}
+      <div className="w-full h-[1px] bg-black/10 dark:bg-white/10" aria-hidden="true"></div>
+
+      {/* SECCIÓN INFERIOR: Subtítulo y Acción */}
+      <div className="flex items-center gap-2 pt-0.5 pb-1">
+        {/* Icono Circular */}
+        <div className="flex shrink-0 items-center justify-center text-black/40 dark:text-white/40 group-hover:text-black/60 dark:group-hover:text-white/60 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="none" viewBox="0 0 24 24" className="w-4 h-4" strokeWidth="1.5">
+            <path fill="currentColor" d="M12 1.25c5.937 0 10.75 4.813 10.75 10.75S17.937 22.75 12 22.75 1.25 17.937 1.25 12 6.063 1.25 12 1.25m0 2a8.75 8.75 0 1 0 0 17.5 8.75 8.75 0 0 0 0-17.5m0 3.25a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11"></path>
+          </svg>
         </div>
- 
-        {/* Single line text stack */}
-        <span className="text-[13.5px] font-medium text-zinc-500 dark:text-zinc-400 truncate flex-1">
+        {/* Texto Descriptivo */}
+        <span className="text-[15px] font-medium text-black/50 dark:text-white/50 group-hover:text-black/70 dark:group-hover:text-white/70 transition-colors">
           Generar {title}
         </span>
       </div>

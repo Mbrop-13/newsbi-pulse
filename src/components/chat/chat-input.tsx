@@ -545,8 +545,8 @@ export function ChatInput({
         )}
 
         <div className={cn(
-          "rounded-2xl p-2.5 bg-white dark:bg-[#0A0A0A]",
-          "shadow-none !shadow-none shadow-transparent border border-gray-200/60 dark:border-white/5 transition-all duration-500 relative group focus-within:border-black/10 dark:focus-within:border-white/10",
+          "rounded-xl p-2.5 bg-white dark:bg-[#1E1E20] border-[#DBDBDB] dark:border-[#2e2e2e] border",
+          "shadow-[inset_0_0_1px_0_rgba(0,0,0,1),0_1px_2px_0_rgba(0,0,0,0.04),0_2px_12px_0_rgba(0,0,0,0.03)] transition-all duration-300 relative group focus-within:border-zinc-400 dark:focus-within:border-zinc-600 focus-within:shadow-[inset_0_0_1px_0_rgba(0,0,0,1),0_1px_2px_0_rgba(0,0,0,0.04),0_4px_16px_0_rgba(0,0,0,0.06)]",
           isListening && "border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.15)]"
         )}>
           {/* File Previews inside the input box */}

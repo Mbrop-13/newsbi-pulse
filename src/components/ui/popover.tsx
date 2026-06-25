@@ -4,8 +4,6 @@ import * as React from "react"
 import * as PopoverPrimitive from "@radix-ui/react-popover"
 
 import { cn } from "@/lib/utils"
-import { LiquidGlassLens } from "./liquid-glass"
-import { cleanGlassClass } from "./dropdown-menu"
 
 function Popover({
   ...props
@@ -23,7 +21,6 @@ function PopoverContent({
   className,
   align = "center",
   sideOffset = 4,
-  children,
   ...props
 }: React.ComponentProps<typeof PopoverPrimitive.Content>) {
   return (
@@ -33,15 +30,11 @@ function PopoverContent({
         align={align}
         sideOffset={sideOffset}
         className={cn(
-          "text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 w-72 origin-(--radix-popover-content-transform-origin) rounded-xl overflow-visible outline-hidden",
-          cleanGlassClass(className)
+          "bg-white/75 dark:bg-black/60 backdrop-blur-xl border border-white/20 dark:border-white/10 text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 w-72 origin-(--radix-popover-content-transform-origin) rounded-xl p-4 shadow-2xl shadow-black/10 dark:shadow-black/50 outline-hidden",
+          className
         )}
         {...props}
-      >
-        <LiquidGlassLens className="w-full h-full p-4" radius={12} intensity={20}>
-          {children}
-        </LiquidGlassLens>
-      </PopoverPrimitive.Content>
+      />
     </PopoverPrimitive.Portal>
   )
 }

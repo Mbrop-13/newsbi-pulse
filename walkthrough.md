@@ -1,10 +1,45 @@
-# Walkthrough: Rediseño de Configuración de Agentes y Límites de Tokens
+# Walkthrough: Rediseño Premium de Visualización de Código, Tarjetas de Código, Resizer y Chat Input (Canvas)
 
-Se han completado y validado satisfactoriamente los cambios solicitados para mejorar el diseño de la configuración de la mesa redonda y establecer el nuevo sistema de límites basado en tokens.
+Se han completado y validado de manera exitosa los cambios visuales y de comportamiento del visor de código (Canvas), la barra divisora (Resizer), las tarjetas de código (CanvasFileCard) y la caja de texto (Chat Input), emulando con total fidelidad el diseño premium presentado en el mockup.
 
 ---
 
-## 1. Rediseño Premium de la Configuración de Agentes
+## 1. Rediseño de Visualización de Código y Estructura del Canvas
+
+*   **Bordes, Sombras y Márgenes:** Se actualizaron las clases del panel del Canvas a `border-[#DBDBDB] dark:border-[#2e2e2e] rounded-xl shadow-[inset_0_0_1px_0_rgba(0,0,0,1),0_1px_2px_0_rgba(0,0,0,0.04),0_4px_24px_0_rgba(0,0,0,0.08)] bg-white dark:bg-[#26282A] md:mt-8 md:mb-4 md:mr-4 border relative` para lograr el efecto flotante premium de tarjeta con sombras interiores y exteriores.
+*   **Selector de Pestañas en Cabecera:** Se eliminó la fila secundaria de pestañas y se integró un pill minimalista en el extremo superior izquierdo de la cabecera, conteniendo el selector de código `</>` y vista previa `👁`. En caso de que el archivo no admita vista previa, el botón correspondiente se muestra desactivado (`disabled`) con cursor de no permitido.
+*   **Acciones de la Cabecera:** Se rediseñó el grupo de botones del extremo superior derecho de acuerdo al mockup:
+    *   **Compartir:** Botón destacado con color oscuro en modo claro (`bg-stone-950`) y color claro en modo oscuro, que copia la URL de la página activa al portapapeles y despliega un toast de éxito.
+    *   **Editar:** Icono de lápiz deshabilitado con cursor no permitido para indicar el modo lectura del editor.
+    *   **Abrir en pestaña nueva:** Abre el contenido del archivo de código directamente en una pestaña independiente usando un objeto Blob dinámico en el navegador.
+    *   **Separador vertical fino:** Divide visualmente las opciones antes del botón de salida.
+    *   **Cerrar panel:** Botón de cruz "X" clásico equipado con marcos y sombras para integrarse de forma armoniosa.
+*   **Editor con Fondo Uniforme:** Se igualó el color del fondo de la caja de texto (`textarea`) y de los números de línea a `bg-white dark:bg-[#26282A]`, eliminando las disparidades previas de colores y logrando un fondo continuo y limpio.
+*   **Botón Flotante "Copiar":** Se incorporó un botón flotante con diseño circular premium y sombra intensa (`shadow-lg`) en la parte superior derecha de la caja del editor. Al hacer clic, cambia de estado a "Copiado" y muestra un check verde de confirmación. El editor dispone de un relleno de espacio derecho `pr-24` para impedir que las líneas de código queden ocultas detrás del botón flotante al hacer scroll.
+*   **Simplificación de Logs:** Se removieron el botón de ejecutar código de Python y el terminal de logs de la consola en la parte inferior para ofrecer una visualización de código más minimalista y enfocada.
+
+---
+
+## 2. Rediseño de Barra de Resizer de Arrastre
+
+*   **Vertical Margins:** Se aplicaron márgenes `mt-8 mb-4` a la barra divisora para alinearla verticalmente a la perfección con la altura del panel de Canvas.
+*   **Asa Central con Indicador Pulsante:** Se agregó un asa central circular estilizada `w-5 h-7 rounded-xl bg-white dark:bg-[#26282A] border border-[#DBDBDB] dark:border-[#2e2e2e] shadow-sm` que aloja un icono de tres puntos verticales (`MoreVertical`) con animación pulsante (`animate-pulse`) y una micro-animación acelerada en hover, logrando un feedback de interacción sumamente atractivo.
+
+---
+
+## 3. Rediseño y Ajuste de Fondo de Plataforma, Separador y Chat Input
+
+*   **Fondo de Plataforma Uniforme (Eliminación de la Línea Gris):** Se corrigió la línea divisoria gris residual en el medio del separador. Cambiamos el fondo del panel del chat izquierdo y del contenedor del canvas derecho en [canvas-workspace.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/chat/canvas-workspace.tsx) a `bg-[#F8F9FA] dark:bg-[#0A0A0A]` para igualarlos con el fondo de la plataforma global. Al ser el separador transparente, ahora se funde homogéneamente con ambos lados, eliminando cualquier contraste o franja gris no deseada.
+*   **Rediseño de Tarjetas de Código (CanvasFileCard):** Rediseñamos por completo el componente [canvas-file-card.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/chat/canvas-file-card.tsx) adaptándolo de manera exacta al HTML provisto por el usuario:
+    *   **Contenedor Premium:** Esquinas `rounded-[1.25rem]`, bordes sutiles `border-black/15 bg-white dark:bg-[#16181A] dark:border-white/10 hover:border-black/30 dark:hover:border-white/30`, rellenos y holgura de `px-4 py-3 gap-2.5`, sombras suaves `shadow-sm hover:shadow`, y efecto táctil `active:scale-[0.98]`.
+    *   **Sección Superior:** Icono SVG de código con destellos y el nombre del lenguaje en mayúsculas (`font-bold text-[17px] tracking-wide`).
+    *   **Divisor Central Fino:** Una línea divisoria horizontal `w-full h-[1px] bg-black/10 dark:bg-white/10`.
+    *   **Sección Inferior:** Icono circular de reproducción junto con el texto interactivo descriptivo `"Generar {title}"` (`text-[15px] font-medium text-black/50 dark:text-white/50 group-hover:text-black/70 dark:group-hover:text-white/70`).
+*   **Caja de Escritura Unificada (Chat Input):** Se aplicaron esquinas `rounded-xl`, bordes finos `border-[#DBDBDB] dark:border-[#2e2e2e]`, y una sombra personalizada `shadow-[inset_0_0_1px_0_rgba(0,0,0,1),0_1px_2px_0_rgba(0,0,0,0.04)]` en el componente del input del chat para mantener una coherencia visual absoluta con el resto de la interfaz de la mesa de trabajo.
+
+---
+
+## 4. Rediseño de Configuración de Agentes y Límites de Tokens (Anterior)
 
 *   **Glassmorphism Estético:** Se corrigieron todas las corrupciones de sintaxis anteriores. El menú desplegable ("Configurar Mesa") ahora tiene un diseño visual premium y moderno, con un fondo semi-transparente estilo cristal esmerilado (`backdrop-blur-md bg-white/95 dark:bg-[#0f1420]/95`), sombras profundas y transiciones suaves de Framer Motion.
 *   **Límites Dinámicos por Plan:** El control deslizante (slider) para seleccionar la cantidad de agentes se ajusta automáticamente al límite del plan del usuario:

@@ -114,10 +114,10 @@ export function CanvasWorkspace({ chatPanel }: CanvasWorkspaceProps) {
 
   // Desktop Split Layout
   return (
-    <div className="flex h-full w-full overflow-hidden bg-background dark:bg-[#0A0A0A]">
+    <div className="flex h-full w-full overflow-hidden bg-[#F8F9FA] dark:bg-[#0A0A0A]">
       {/* Chat Panel - Left side */}
       <div
-        className="h-full flex flex-col relative overflow-hidden bg-background dark:bg-[#0A0A0A] shrink-0"
+        className="h-full flex flex-col relative overflow-hidden bg-[#F8F9FA] dark:bg-[#0A0A0A] shrink-0"
         style={{ width: isOpen ? `${chatPercent}%` : "100%" }}
       >
         {chatPanel}
@@ -129,28 +129,37 @@ export function CanvasWorkspace({ chatPanel }: CanvasWorkspaceProps) {
           onMouseDown={handleMouseDown}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
-          className={cn(
-            "w-[5px] h-full cursor-col-resize z-50 shrink-0 relative transition-all duration-200 flex items-center justify-center",
-            (isDragging || isHovered) 
-              ? "bg-zinc-300/80 dark:bg-white/15" 
-              : "bg-zinc-200/60 dark:bg-white/[0.03]"
-          )}
+          className="w-2 mt-8 mb-4 bg-transparent shrink-0 relative flex items-center justify-center cursor-col-resize select-none z-50 group"
         >
-          {/* Grip indicator dots */}
+          {/* Central grip handle */}
           <div className={cn(
-            "flex flex-col gap-[3px] transition-all duration-300",
-            (isDragging || isHovered) ? "opacity-100 scale-110" : "opacity-60 scale-100"
+            "flex z-10 justify-center items-center w-5 h-7 rounded-xl bg-white dark:bg-[#26282A] border border-[#DBDBDB] dark:border-[#2e2e2e] shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] transition-all",
+            (isDragging || isHovered) ? "scale-105 border-zinc-400 dark:border-zinc-500 shadow-md" : ""
           )}>
-            <div className="w-[3px] h-[3px] rounded-full bg-zinc-500/60 dark:bg-white/40" />
-            <div className="w-[3px] h-[3px] rounded-full bg-zinc-500/60 dark:bg-white/40" />
-            <div className="w-[3px] h-[3px] rounded-full bg-zinc-500/60 dark:bg-white/40" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              className={cn(
+                "size-4 text-zinc-500 dark:text-zinc-400 transition-all",
+                isDragging ? "animate-none" : "animate-pulse hover:animate-[pulse_0.2s_ease-in-out_infinite]"
+              )}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z"
+              />
+            </svg>
           </div>
         </div>
       )}
 
-      {/* Canvas Panel - Right side: Floating card with padding */}
+      {/* Canvas Panel - Right side: Floating card layout handled by CanvasPanel margins */}
       {isOpen && (
-        <div className="h-full flex flex-col overflow-hidden flex-1 bg-background dark:bg-[#09090b] p-2.5">
+        <div className="h-full flex flex-col overflow-hidden flex-1 bg-[#F8F9FA] dark:bg-[#0A0A0A]">
           <CanvasPanel />
         </div>
       )}

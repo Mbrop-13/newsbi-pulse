@@ -479,12 +479,13 @@ function MessageBubble({
   useEffect(() => {
     if (isResponding) {
       setIsThinkingExpanded(true);
-      if (message.reasoning || message.thinkingSteps?.length) {
+      if (extractedReasoning || message.thinkingSteps?.length) {
         setLocalReasoningOpen(true);
       }
     } else if (prevLoadingRef.current && !isLoading) {
-      // Collapse thinking phase once finished loading
+      // Collapse thinking phase and reasoning once finished loading
       setIsThinkingExpanded(false);
+      setLocalReasoningOpen(false);
     }
     prevLoadingRef.current = isLoading;
   }, [isLoading, isResponding, message.reasoning, message.thinkingSteps]);
@@ -828,35 +829,32 @@ function MessageBubble({
     );
   }
 
+  let finalContent = message.content || '';
+  let extractedReasoning = message.reasoning || '';
+  
+  if (finalContent.includes('<think>')) {
+    const thinkMatch = finalContent.match(/<think>([\s\S]*?)<\/think>/);
+    if (thinkMatch) {
+      extractedReasoning = (extractedReasoning ? extractedReasoning + '\n' : '') + thinkMatch[1].trim();
+      finalContent = finalContent.replace(/<think>[\s\S]*?<\/think>/, '').trim();
+    } else {
+      // Handle streaming case where closing tag is not yet present
+      const partialMatch = finalContent.match(/<think>([\s\S]*)/);
+      if (partialMatch) {
+        extractedReasoning = (extractedReasoning ? extractedReasoning + '\n' : '') + partialMatch[1].trim();
+        finalContent = finalContent.replace(/<think>[\s\S]*/, '').trim();
+      }
+    }
+  }
+
   // ─── Render Model Reasoning (DeepSeek-R1 style) ───
   const renderModelReasoning = () => {
-    if (!message.reasoning && !message.thinkingSteps?.length) return null
-    const content = message.reasoning || message.thinkingSteps?.join('\n') || ''
+    if (!extractedReasoning && !message.thinkingSteps?.length) return null
+    const content = extractedReasoning || message.thinkingSteps?.join('\n') || ''
     if (!content || isOrchestrationLog(content)) return null
 
     return (
       <div className="mb-4">
-        <button
-          onClick={() => {
-            hasManuallyToggledRef.current = true;
-            setLocalReasoningOpen(!localReasoningOpen);
-          }}
-          className="flex items-center gap-2 text-xs font-semibold text-[#1890FF] dark:text-blue-400 hover:opacity-80 transition-all duration-200 group bg-blue-500/5 dark:bg-blue-500/10 px-3 py-1.5 rounded-full border border-blue-500/10 w-fit select-none"
-        >
-          <Brain className="h-3.5 w-3.5 text-[#1890FF] dark:text-blue-400 shrink-0" />
-          <span>Razonamiento</span>
-          {message.secondsElapsed && (
-            <span className="text-[10px] opacity-75 font-normal">
-              • Pensado por {message.secondsElapsed}s
-            </span>
-          )}
-          <ChevronRight
-            className={cn(
-              "h-3.5 w-3.5 transition-transform duration-200 ml-1 opacity-75",
-              localReasoningOpen && "rotate-90"
-            )}
-          />
-        </button>
         <AnimatePresence>
           {localReasoningOpen && (
             <motion.div
@@ -1171,7 +1169,7 @@ function MessageBubble({
         
         {/* 4. Main text content */}
         <div className="prose dark:prose-invert max-w-none text-[15px] leading-relaxed">
-          {message.content ? (
+          {finalContent ? (
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
@@ -1213,7 +1211,7 @@ function MessageBubble({
                 }
               }}
             >
-              {isWebBuilderMode ? stripArtifactXml(message.content) : message.content}
+              {isWebBuilderMode ? stripArtifactXml(finalContent) : finalContent}
             </ReactMarkdown>
           ) : (
             isResponding ? (
@@ -1244,6 +1242,19 @@ function MessageBubble({
 
         {/* Actions bar */}
         <div className="flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          {(extractedReasoning || message.thinkingSteps?.length > 0) && !isResponding && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn("h-7 w-fit px-2 rounded-full text-xs font-medium gap-1.5", localReasoningOpen ? "text-[#1890FF]" : "text-muted-foreground hover:text-foreground")}
+              onClick={() => setLocalReasoningOpen(!localReasoningOpen)}
+              title="Mostrar razonamiento"
+            >
+              <Brain className="h-3.5 w-3.5" />
+              Razonamiento
+              <ChevronRight className={cn("h-3 w-3 transition-transform", localReasoningOpen && "rotate-90")} />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"

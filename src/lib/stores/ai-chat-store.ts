@@ -252,13 +252,24 @@ export const useAIChatStore = create<AIChatStore>()(
           return m;
         });
 
+        const existingChat = isNewChat ? null : savedChats[existingIndex];
+        let originalTimestamp = existingChat ? existingChat.timestamp : new Date();
+
+        // Si no se han agregado nuevos mensajes (ej: solo estamos abriendo el chat o haciendo streaming del mismo mensaje)
+        // mantenemos el timestamp original para que no salte al principio de la lista.
+        if (existingChat && messages.length <= existingChat.messages.length) {
+          originalTimestamp = existingChat.timestamp;
+        } else if (existingChat && messages.length > existingChat.messages.length) {
+          originalTimestamp = new Date(); // Actualizar si hay mensajes nuevos
+        }
+
         const chatData: SavedChat = {
           id: chatId,
           title,
           messages: messagesWithMeta,
           attachedArticles,
           attachedFiles,
-          timestamp: new Date(),
+          timestamp: originalTimestamp,
           isWebBuilder: isWB,
         };
 

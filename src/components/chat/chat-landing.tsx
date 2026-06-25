@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { useTheme } from "next-themes"
 
 import { ChatInput } from "@/components/chat/chat-input"
@@ -174,7 +174,7 @@ export function ChatLanding() {
 
   const router = useRouter()
 
-  const chatFiles = React.useMemo(() => {
+  const chatFiles = useMemo(() => {
     const files: { id: string, title: string, lang: string, code: string }[] = [];
     storeMessages.forEach((msg, mIdx) => {
       if (msg.role === 'assistant' && msg.content) {

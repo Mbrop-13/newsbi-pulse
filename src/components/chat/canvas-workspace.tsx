@@ -114,7 +114,7 @@ export function CanvasWorkspace({ chatPanel }: CanvasWorkspaceProps) {
               {chatPanel}
             </div>
           ) : (
-            <div className="absolute inset-0 p-1.5 bg-zinc-50 dark:bg-black">
+            <div className="absolute inset-0 p-2 bg-[#f4f4f5] dark:bg-[#09090b]">
               <CanvasPanel />
             </div>
           )}
@@ -140,19 +140,28 @@ export function CanvasWorkspace({ chatPanel }: CanvasWorkspaceProps) {
           onMouseDown={handleMouseDown}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
-          className="w-1.5 h-full cursor-col-resize z-50 shrink-0 relative transition-colors duration-150 bg-gray-200 dark:bg-white/10 hover:bg-blue-500 flex items-center justify-center"
+          className={cn(
+            "w-[5px] h-full cursor-col-resize z-50 shrink-0 relative transition-all duration-200 flex items-center justify-center",
+            (isDragging || isHovered) 
+              ? "bg-blue-500/40" 
+              : "bg-gray-100 dark:bg-white/[0.03]"
+          )}
         >
-          {/* Inner line indicator */}
+          {/* Grip indicator dots */}
           <div className={cn(
-            "w-[2px] h-[30px] rounded-full transition-all duration-300",
-            (isDragging || isHovered) ? "bg-blue-500 scale-y-150" : "bg-transparent"
-          )} />
+            "flex flex-col gap-1 transition-all duration-300",
+            (isDragging || isHovered) ? "opacity-100" : "opacity-0"
+          )}>
+            <div className="w-[3px] h-[3px] rounded-full bg-blue-500" />
+            <div className="w-[3px] h-[3px] rounded-full bg-blue-500" />
+            <div className="w-[3px] h-[3px] rounded-full bg-blue-500" />
+          </div>
         </div>
       )}
 
-      {/* Canvas Panel - Right side */}
+      {/* Canvas Panel - Right side: Floating card with padding */}
       {isOpen && (
-        <div className="h-full flex flex-col overflow-hidden flex-1 bg-white dark:bg-[#0A0A0A]">
+        <div className="h-full flex flex-col overflow-hidden flex-1 bg-[#f4f4f5] dark:bg-[#09090b] p-2.5">
           <CanvasPanel />
         </div>
       )}

@@ -280,6 +280,28 @@ export function ChatLanding() {
     return () => unsub()
   }, [])
 
+  // Check for auto-start prompt in URL parameters
+  useEffect(() => {
+    if (!isStoreHydrated) return;
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const promptParam = params.get("prompt");
+      if (promptParam) {
+        // Clear search params to prevent loop on reload/navigation
+        const newUrl = window.location.pathname;
+        window.history.replaceState(null, '', newUrl);
+
+        // Start new chat with this prompt
+        handleNewChat();
+        
+        // Wait for state to clear, then submit the prompt
+        setTimeout(() => {
+          handleSend(promptParam, { webSearch: true, image: false, codeInterpreter: false, browser: false });
+        }, 150);
+      }
+    }
+  }, [isStoreHydrated]);
+
   // Track theme mounting for dark mode logo swapping
   const { resolvedTheme } = useTheme()
   const [themeMounted, setThemeMounted] = useState(false)

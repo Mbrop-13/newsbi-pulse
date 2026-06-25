@@ -125,10 +125,11 @@ export function ChatMessages({
 
           {/* Loading indicator */}
           {isLoading && messages[messages.length - 1]?.role === 'user' && (
-            <div className={cn("flex flex-col w-full", isWebBuilderMode ? "gap-2 pl-1.5" : "gap-3")}>
+            <div className={cn("flex flex-col w-full", (isWebBuilderMode || isSplitMode) ? "gap-2 pl-1.5" : "gap-3")}>
               {!isWebBuilderMode ? (
                 <div className="flex gap-3">
-                  <AssistantAvatar isResponding={true} isWebBuilderMode={isWebBuilderMode} />
+                  {/* Use compact avatar (no video) when canvas/browser is open */}
+                  {!isSplitMode && <AssistantAvatar isResponding={true} isWebBuilderMode={false} />}
                   <div className="flex items-center gap-2 py-2">
                     <div className="flex items-center gap-1">
                       <div className="w-2 h-2 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -460,6 +461,9 @@ function MessageBubble({
   const [isPlanExpanded, setIsPlanExpanded] = useState(true)
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false)
   const setSelectedTab = useWebBuilderStore((s) => s.setSelectedTab)
+  const isBubbleCanvasOpen = useCanvasStore((s) => s.isOpen)
+  const isBubbleBrowserOpen = useBrowserStore((s) => s.isOpen)
+  const isBubbleSplitMode = isWebBuilderMode || isBubbleCanvasOpen || isBubbleBrowserOpen
   
   // Custom states for redesigned thinking/reasoning blocks
   const [showAllSources, setShowAllSources] = useState(false)
@@ -1121,8 +1125,8 @@ function MessageBubble({
   }
   // ─── Unified Assistant message return ───
   return (
-    <div className={cn("flex group", isWebBuilderMode ? "gap-2 pl-1.5" : "gap-3")}>
-      {!isWebBuilderMode && <AssistantAvatar isResponding={isResponding} isWebBuilderMode={isWebBuilderMode} />}
+    <div className={cn("flex group", isBubbleSplitMode ? "gap-2 pl-1.5" : "gap-3")}>
+      {!isBubbleSplitMode && <AssistantAvatar isResponding={isResponding} isWebBuilderMode={isWebBuilderMode} />}
       <div className="flex-1 min-w-0">
         {/* 1. Unified Thinking & Search Phase */}
         {renderThinkingPhase()}

@@ -17,13 +17,33 @@ import {
   AlertCircle,
   Eye,
   Code,
-  Columns
+  Copy,
+  FileCode2,
+  Sparkles
 } from "lucide-react";
 import { toast } from "sonner";
 import { saveAs } from "file-saver";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+
+// Language badge colors
+const LANG_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  python: { bg: "bg-blue-500/10", text: "text-blue-600 dark:text-blue-400", border: "border-blue-500/20" },
+  javascript: { bg: "bg-yellow-500/10", text: "text-yellow-600 dark:text-yellow-400", border: "border-yellow-500/20" },
+  typescript: { bg: "bg-blue-600/10", text: "text-blue-700 dark:text-blue-400", border: "border-blue-600/20" },
+  tsx: { bg: "bg-cyan-500/10", text: "text-cyan-600 dark:text-cyan-400", border: "border-cyan-500/20" },
+  jsx: { bg: "bg-cyan-500/10", text: "text-cyan-600 dark:text-cyan-400", border: "border-cyan-500/20" },
+  html: { bg: "bg-orange-500/10", text: "text-orange-600 dark:text-orange-400", border: "border-orange-500/20" },
+  htm: { bg: "bg-orange-500/10", text: "text-orange-600 dark:text-orange-400", border: "border-orange-500/20" },
+  css: { bg: "bg-purple-500/10", text: "text-purple-600 dark:text-purple-400", border: "border-purple-500/20" },
+  json: { bg: "bg-emerald-500/10", text: "text-emerald-600 dark:text-emerald-400", border: "border-emerald-500/20" },
+  markdown: { bg: "bg-gray-500/10", text: "text-gray-600 dark:text-gray-400", border: "border-gray-500/20" },
+  md: { bg: "bg-gray-500/10", text: "text-gray-600 dark:text-gray-400", border: "border-gray-500/20" },
+  svg: { bg: "bg-pink-500/10", text: "text-pink-600 dark:text-pink-400", border: "border-pink-500/20" },
+};
+
+const DEFAULT_LANG_COLOR = { bg: "bg-zinc-500/10", text: "text-zinc-600 dark:text-zinc-400", border: "border-zinc-500/20" };
 
 export function CanvasPanel() {
   const { 
@@ -42,14 +62,14 @@ export function CanvasPanel() {
   const [isRunning, setIsRunning] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
-  const [viewMode, setViewMode] = useState<"split" | "editor" | "preview">("split");
+  const [activeTab, setActiveTab] = useState<"code" | "preview">("code");
+  const [consoleCollapsed, setConsoleCollapsed] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
   const historyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Click outside listener for history dropdown
     function handleClickOutside(event: MouseEvent) {
       if (historyRef.current && !historyRef.current.contains(event.target as Node)) {
         setShowHistory(false);
@@ -63,38 +83,56 @@ export function CanvasPanel() {
     };
   }, [showHistory]);
 
+  // Reset to code tab when a new file opens
+  useEffect(() => {
+    if (activeFile) {
+      setActiveTab("code");
+    }
+  }, [activeFile?.title]);
+
   if (!activeFile) {
     return (
-      <div className="h-full w-full bg-white dark:bg-[#0A0A0A] rounded-[28px] border border-gray-200 dark:border-white/5 flex flex-col items-center justify-center text-center p-6 space-y-4 shadow-2xl relative select-none">
-        <div className="w-16 h-16 rounded-3xl bg-amber-500/10 text-amber-600 dark:text-amber-500 flex items-center justify-center shadow-lg border border-amber-500/10">
-          <Terminal className="w-8 h-8 animate-pulse" />
+      <div className="h-full w-full flex items-center justify-center select-none">
+        <div className="flex flex-col items-center text-center space-y-5 p-8 max-w-sm">
+          {/* Elegant loading orb */}
+          <div className="relative">
+            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-amber-500/15 to-orange-500/15 dark:from-amber-500/10 dark:to-orange-500/10 backdrop-blur-sm border border-amber-500/10 flex items-center justify-center shadow-xl shadow-amber-500/5">
+              <FileCode2 className="w-9 h-9 text-amber-600 dark:text-amber-500" />
+            </div>
+            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center shadow-lg animate-pulse">
+              <Sparkles className="w-3.5 h-3.5 text-white" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <h4 className="text-base font-bold text-zinc-800 dark:text-white">Intérprete de Código</h4>
+            <p className="text-[13px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
+              El asistente generará código aquí. Podrás editar, ejecutar y previsualizar en tiempo real.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />
+            <span className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500">Esperando código...</span>
+          </div>
         </div>
-        <div className="space-y-1.5">
-          <h4 className="text-sm font-bold text-zinc-800 dark:text-white">Intérprete de Código (Canvas)</h4>
-          <p className="text-xs text-zinc-500 dark:text-gray-400 max-w-[280px]">
-            Escribe un mensaje para que el asistente genere código, analice datos o ejecute scripts en Python.
-          </p>
-        </div>
-        <Loader2 className="w-5 h-5 text-amber-500 animate-spin" />
       </div>
     );
   }
 
   const lineCount = activeFile.code.split("\n").length;
-  const isPython = activeFile.language.toLowerCase() === "python";
-  const isHtml = activeFile.language.toLowerCase() === "html" || activeFile.language.toLowerCase() === "htm";
-  const isSvg = activeFile.language.toLowerCase() === "svg";
-  const isMarkdown = activeFile.language.toLowerCase() === "markdown" || activeFile.language.toLowerCase() === "md";
+  const langKey = activeFile.language.toLowerCase();
+  const isPython = langKey === "python";
+  const isHtml = langKey === "html" || langKey === "htm";
+  const isSvg = langKey === "svg";
+  const isMarkdown = langKey === "markdown" || langKey === "md";
   const hasPreview = isHtml || isSvg || isMarkdown;
+  const langColor = LANG_COLORS[langKey] || DEFAULT_LANG_COLOR;
 
-  // Sync scroll between textarea and line numbers
   const handleScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
     if (lineNumbersRef.current) {
       lineNumbersRef.current.scrollTop = e.currentTarget.scrollTop;
     }
   };
 
-  // Run Python script
   const handleRunCode = async () => {
     if (!isPython) return;
     setIsRunning(true);
@@ -137,7 +175,6 @@ export function CanvasPanel() {
     }
   };
 
-  // Download code file
   const handleDownload = () => {
     const extensions: Record<string, string> = {
       python: "py",
@@ -149,15 +186,14 @@ export function CanvasPanel() {
       css: "css",
       json: "json",
     };
-    const ext = extensions[activeFile.language.toLowerCase()] || "txt";
+    const ext = extensions[langKey] || "txt";
     const blob = new Blob([activeFile.code], { type: "text/plain;charset=utf-8" });
     const safeTitle = activeFile.title.replace(/[^a-zA-Z0-9_\-\s]/g, "");
     saveAs(blob, `${safeTitle}.${ext}`);
     toast.success("Archivo descargado con éxito");
   };
 
-  // Copy code link / code contents
-  const handleShare = async () => {
+  const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(activeFile.code);
       setIsCopied(true);
@@ -168,94 +204,125 @@ export function CanvasPanel() {
     }
   };
 
+  const hasConsoleOutput = isPython || activeFile.stdout || activeFile.output || activeFile.error;
+
   return (
-    <div className="h-full w-full bg-white dark:bg-[#0A0A0A] flex flex-col overflow-hidden relative">
-      {/* Top Header Panel */}
-      <div className="px-6 py-4 border-b border-gray-200 dark:border-white/5 flex items-center justify-between shrink-0 bg-gray-50/50 dark:bg-[#0c0c0c] select-none">
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-semibold text-zinc-900 dark:text-white truncate max-w-[200px] sm:max-w-xs">
+    <div className="h-full w-full flex flex-col overflow-hidden rounded-2xl border border-gray-200/80 dark:border-white/[0.06] bg-white dark:bg-[#0C0C0E] shadow-2xl shadow-black/5 dark:shadow-black/40 relative">
+      
+      {/* ═══════════════════════════════════════════════════ */}
+      {/*  TOP HEADER BAR — macOS-inspired window chrome     */}
+      {/* ═══════════════════════════════════════════════════ */}
+      <div className="px-4 py-3 flex items-center justify-between shrink-0 border-b border-gray-200/80 dark:border-white/[0.06] bg-gray-50/70 dark:bg-[#111114] backdrop-blur-sm select-none">
+        
+        {/* Left: File Info */}
+        <div className="flex items-center gap-2.5 min-w-0">
+          {/* Colored dot indicator */}
+          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/30 shrink-0" />
+          
+          <span className="text-[13px] font-semibold text-zinc-800 dark:text-white truncate max-w-[180px]">
             {activeFile.title}
           </span>
-          <div className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-500 font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+
+          {/* Language badge */}
+          <div className={cn(
+            "flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md border",
+            langColor.bg, langColor.text, langColor.border
+          )}>
+            {activeFile.language}
+          </div>
+
+          {/* Sync status */}
+          <div className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-500 font-medium">
             <Cloud className="w-3 h-3" />
-            <span>Sincronizado</span>
+            <span className="hidden sm:inline">Sincronizado</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          {/* Undo/Redo controls */}
+        {/* Right: Actions */}
+        <div className="flex items-center gap-1">
+          {/* Undo */}
           <button
             onClick={undo}
             disabled={undoStack.length === 0}
-            className="w-8 h-8 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 text-zinc-500 hover:text-zinc-900 dark:text-gray-400 dark:hover:text-white flex items-center justify-center transition-colors disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+            className="w-7 h-7 rounded-lg hover:bg-gray-200/60 dark:hover:bg-white/5 text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-white flex items-center justify-center transition-all disabled:opacity-20 disabled:pointer-events-none cursor-pointer"
             title="Deshacer"
           >
-            <RotateCcw className="w-4 h-4" />
+            <RotateCcw className="w-3.5 h-3.5" />
           </button>
+          {/* Redo */}
           <button
             onClick={redo}
             disabled={redoStack.length === 0}
-            className="w-8 h-8 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 text-zinc-500 hover:text-zinc-900 dark:text-gray-400 dark:hover:text-white flex items-center justify-center transition-colors disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+            className="w-7 h-7 rounded-lg hover:bg-gray-200/60 dark:hover:bg-white/5 text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-white flex items-center justify-center transition-all disabled:opacity-20 disabled:pointer-events-none cursor-pointer"
             title="Rehacer"
           >
-            <RotateCw className="w-4 h-4" />
+            <RotateCw className="w-3.5 h-3.5" />
           </button>
 
-          <div className="h-4 w-px bg-gray-200 dark:bg-white/10 mx-0.5" />
+          <div className="h-4 w-px bg-gray-200 dark:bg-white/[0.06] mx-0.5" />
 
-          {/* Python execution button */}
+          {/* Python Run button */}
           {isPython && (
             <button
               onClick={handleRunCode}
               disabled={isRunning}
               className={cn(
-                "h-8 gap-1.5 rounded-lg px-3 flex items-center justify-center text-xs font-bold transition-all cursor-pointer shadow-md",
+                "h-7 gap-1.5 rounded-lg px-3 flex items-center justify-center text-[11px] font-bold transition-all cursor-pointer",
                 isRunning 
-                  ? "bg-amber-500/20 text-amber-600 dark:text-amber-500 border border-amber-500/20" 
-                  : "bg-amber-500 text-black hover:bg-amber-400 hover:scale-[1.02] active:scale-[0.98]"
+                  ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20" 
+                  : "bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-400 hover:to-orange-400 shadow-md shadow-amber-500/20 hover:shadow-lg hover:shadow-amber-500/30 hover:scale-[1.02] active:scale-[0.98]"
               )}
-              title="Ejecutar Script de Python"
+              title="Ejecutar"
             >
               {isRunning ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <Loader2 className="w-3 h-3 animate-spin" />
               ) : (
-                <Play className="w-3 h-3 fill-black text-black border-none" />
+                <Play className="w-3 h-3 fill-current" />
               )}
-              <span>{isRunning ? "Ejecutando" : "Ejecutar"}</span>
+              <span>{isRunning ? "Ejecutando..." : "Ejecutar"}</span>
             </button>
           )}
 
-          {/* Download file */}
+          {/* Download */}
           <button
             onClick={handleDownload}
-            className="w-8 h-8 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 text-zinc-500 hover:text-zinc-900 dark:text-gray-400 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer"
-            title="Descargar archivo"
+            className="w-7 h-7 rounded-lg hover:bg-gray-200/60 dark:hover:bg-white/5 text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-white flex items-center justify-center transition-all cursor-pointer"
+            title="Descargar"
           >
-            <Download className="w-4 h-4" />
+            <Download className="w-3.5 h-3.5" />
           </button>
 
-          {/* History selection */}
+          {/* Copy */}
+          <button
+            onClick={handleCopy}
+            className="w-7 h-7 rounded-lg hover:bg-gray-200/60 dark:hover:bg-white/5 text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-white flex items-center justify-center transition-all cursor-pointer"
+            title="Copiar código"
+          >
+            {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+          </button>
+
+          {/* History */}
           <div className="relative" ref={historyRef}>
             <button
               onClick={() => setShowHistory(!showHistory)}
               className={cn(
-                "w-8 h-8 rounded-lg text-zinc-500 hover:text-zinc-900 dark:text-gray-400 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer",
-                showHistory && "bg-gray-200/50 dark:bg-white/5 text-zinc-950 dark:text-white"
+                "w-7 h-7 rounded-lg text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-white flex items-center justify-center transition-all cursor-pointer",
+                showHistory && "bg-gray-200/60 dark:bg-white/5 text-zinc-700 dark:text-white"
               )}
-              title="Historial de archivos"
+              title="Historial"
             >
-              <History className="w-4 h-4" />
+              <History className="w-3.5 h-3.5" />
             </button>
             
             {showHistory && (
-              <div className="absolute right-0 top-9 w-64 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#0F1115] p-1.5 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                <div className="px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-zinc-450 dark:text-muted-foreground mb-1">
-                  Archivos recientes ({history.length})
+              <div className="absolute right-0 top-9 w-72 rounded-xl border border-gray-200/80 dark:border-white/[0.08] bg-white/95 dark:bg-[#151518]/95 backdrop-blur-xl p-1.5 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+                  Archivos recientes · {history.length}
                 </div>
                 {history.length === 0 ? (
-                  <div className="text-[11px] text-zinc-500 p-2 text-center font-semibold">Sin historial</div>
+                  <div className="text-[11px] text-zinc-400 p-3 text-center font-medium">Sin historial</div>
                 ) : (
-                  <div className="space-y-0.5 max-h-48 overflow-y-auto">
+                  <div className="space-y-0.5 max-h-52 overflow-y-auto scrollbar-thin">
                     {history.map((file, idx) => (
                       <button
                         key={idx}
@@ -264,13 +331,24 @@ export function CanvasPanel() {
                           setShowHistory(false);
                         }}
                         className={cn(
-                          "w-full text-left text-xs px-2.5 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 flex items-center gap-2 transition-colors cursor-pointer font-medium",
-                          activeFile.title === file.title ? "text-blue-650 dark:text-blue-400 bg-blue-50/50 dark:bg-white/[0.02]" : "text-zinc-700 dark:text-gray-300 hover:text-zinc-950 dark:hover:text-white"
+                          "w-full text-left text-[12px] px-3 py-2 rounded-lg flex items-center gap-2.5 transition-all cursor-pointer",
+                          activeFile.title === file.title 
+                            ? "bg-blue-50 dark:bg-blue-500/5 text-blue-600 dark:text-blue-400 font-semibold" 
+                            : "text-zinc-600 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-white/[0.04] font-medium"
                         )}
                       >
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                        <div className={cn(
+                          "w-1.5 h-1.5 rounded-full shrink-0",
+                          activeFile.title === file.title ? "bg-blue-500" : "bg-zinc-300 dark:bg-zinc-600"
+                        )} />
                         <span className="truncate flex-1">{file.title}</span>
-                        <span className="text-[9px] text-zinc-500 dark:text-gray-500 uppercase font-mono">{file.language}</span>
+                        <span className={cn(
+                          "text-[9px] uppercase font-mono px-1.5 py-0.5 rounded",
+                          LANG_COLORS[file.language.toLowerCase()]?.bg || "bg-zinc-100 dark:bg-white/5",
+                          LANG_COLORS[file.language.toLowerCase()]?.text || "text-zinc-500"
+                        )}>
+                          {file.language}
+                        </span>
                       </button>
                     ))}
                   </div>
@@ -279,211 +357,239 @@ export function CanvasPanel() {
             )}
           </div>
 
-          {/* Share / Copy */}
-          <button
-            onClick={handleShare}
-            className="w-8 h-8 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 text-zinc-500 hover:text-zinc-900 dark:text-gray-400 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer"
-            title="Copiar código"
-          >
-            {isCopied ? <Check className="w-4 h-4 text-emerald-500" /> : <Share2 className="w-4 h-4" />}
-          </button>
+          <div className="h-4 w-px bg-gray-200 dark:bg-white/[0.06] mx-0.5" />
 
-          {hasPreview && (
-            <div className="flex items-center bg-gray-100 dark:bg-white/5 rounded-lg p-0.5 border border-gray-200 dark:border-white/5 mr-1.5 shrink-0 select-none">
-              <button
-                onClick={() => setViewMode("editor")}
-                className={cn(
-                  "px-2 py-1 rounded-md text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer",
-                  viewMode === "editor" ? "bg-white dark:bg-white/10 text-zinc-900 dark:text-white shadow-xs" : "text-zinc-500 hover:text-zinc-950 dark:text-gray-400 dark:hover:text-white"
-                )}
-                title="Mostrar solo código"
-              >
-                <Code className="w-3.5 h-3.5" />
-                <span className="hidden md:inline">Código</span>
-              </button>
-              <button
-                onClick={() => setViewMode("split")}
-                className={cn(
-                  "px-2 py-1 rounded-md text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer",
-                  viewMode === "split" ? "bg-white dark:bg-white/10 text-zinc-900 dark:text-white shadow-xs" : "text-zinc-500 hover:text-zinc-950 dark:text-gray-400 dark:hover:text-white"
-                )}
-                title="Mostrar código y vista previa"
-              >
-                <Columns className="w-3.5 h-3.5" />
-                <span className="hidden md:inline">Dividido</span>
-              </button>
-              <button
-                onClick={() => setViewMode("preview")}
-                className={cn(
-                  "px-2 py-1 rounded-md text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer",
-                  viewMode === "preview" ? "bg-white dark:bg-white/10 text-zinc-900 dark:text-white shadow-xs" : "text-zinc-500 hover:text-zinc-950 dark:text-gray-400 dark:hover:text-white"
-                )}
-                title="Mostrar solo vista previa"
-              >
-                <Eye className="w-3.5 h-3.5" />
-                <span className="hidden md:inline">Vista Previa</span>
-              </button>
-            </div>
-          )}
-
-          <div className="h-4 w-px bg-gray-200 dark:bg-white/10 mx-0.5" />
-
-          {/* Close Panel */}
+          {/* Close */}
           <button
             onClick={closeCanvas}
-            className="w-8 h-8 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 text-zinc-500 hover:text-zinc-900 dark:text-gray-400 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+            className="w-7 h-7 rounded-lg hover:bg-red-100 dark:hover:bg-red-500/10 text-zinc-400 hover:text-red-600 dark:text-zinc-500 dark:hover:text-red-400 flex items-center justify-center transition-all cursor-pointer"
             title="Cerrar Canvas"
           >
-            <X className="w-4.5 h-4.5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      {/* Editor Body */}
-      <div className="flex-1 flex min-h-0 relative font-mono text-sm leading-relaxed overflow-hidden">
-        <div className="flex h-full w-full overflow-hidden p-2 gap-2 relative bg-gray-50 dark:bg-[#090909]">
-          
-          {/* 1. Code Editor (visible when viewMode is "editor" or "split") */}
-          {(viewMode === "editor" || viewMode === "split" || !hasPreview) && (
-            <div className="flex-1 h-full flex overflow-hidden bg-transparent">
-              {/* Scrollable Line Numbers column */}
-              <div
-                ref={lineNumbersRef}
-                className="w-11 py-3 text-right select-none text-zinc-400 dark:text-white/20 bg-transparent pr-3 border-r border-gray-250 dark:border-white/5 overflow-hidden shrink-0 font-mono text-xs font-bold"
-              >
-                {Array.from({ length: lineCount }).map((_, i) => (
-                  <div key={i} className="h-6 leading-6">
-                    {i + 1}
-                  </div>
-                ))}
-              </div>
-
-              {/* Main text area */}
-              <textarea
-                ref={textareaRef}
-                value={activeFile.code}
-                onChange={(e) => updateActiveFileCode(e.target.value)}
-                onScroll={handleScroll}
-                className={cn(
-                  "flex-1 h-full py-3 px-4 resize-none outline-none border-none bg-transparent overflow-auto",
-                  "text-zinc-800 dark:text-[#E4E4E7] placeholder-zinc-400 dark:placeholder-[#3F3F46] font-mono text-xs leading-6 selection:bg-blue-500/30 selection:text-white",
-                  "[scrollbar-width:thin] scrollbar-thin scrollbar-thumb-zinc-200 dark:scrollbar-thumb-white/10"
-                )}
-                placeholder="Escribe tu código aquí..."
-                spellCheck={false}
-              />
-            </div>
-          )}
-
-          {/* Vertical divider handle for split view */}
-          {hasPreview && viewMode === "split" && (
-            <div className="w-[1px] h-full bg-gray-200 dark:bg-white/5 shrink-0" />
-          )}
-
-          {/* 2. Previewer Pane (visible when hasPreview is true and viewMode is "preview" or "split") */}
-          {hasPreview && (viewMode === "preview" || viewMode === "split") && (
-            <div className="flex-1 h-full overflow-hidden flex flex-col bg-zinc-100 dark:bg-[#050505] rounded-2xl border border-gray-200 dark:border-white/5 p-2 animate-in fade-in duration-200">
-              {isHtml && (
-                <iframe
-                  srcDoc={activeFile.code}
-                  title="HTML Preview"
-                  sandbox="allow-scripts"
-                  className="w-full h-full bg-white rounded-xl border-0 shadow-xs"
-                />
-              )}
-              {isSvg && (
-                <div className="w-full h-full flex items-center justify-center bg-white dark:bg-zinc-950/40 p-4 overflow-auto rounded-xl shadow-xs">
-                  <div 
-                    dangerouslySetInnerHTML={{ __html: activeFile.code }}
-                    className="max-w-full max-h-full flex items-center justify-center"
-                  />
-                </div>
-              )}
-              {isMarkdown && (
-                <div className="w-full h-full overflow-auto bg-white dark:bg-[#070707] p-6 text-zinc-800 dark:text-gray-200 rounded-xl font-sans prose dark:prose-invert max-w-none text-xs [scrollbar-width:thin] scrollbar-thin scrollbar-thumb-zinc-200 dark:scrollbar-thumb-white/10 leading-relaxed shadow-xs">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {activeFile.code}
-                  </ReactMarkdown>
-                </div>
-              )}
-            </div>
-          )}
-
+      {/* ═══════════════════════════════════════════════════ */}
+      {/*  TAB BAR — Code / Preview toggle                   */}
+      {/* ═══════════════════════════════════════════════════ */}
+      {hasPreview && (
+        <div className="px-4 py-1.5 flex items-center gap-1 border-b border-gray-200/60 dark:border-white/[0.04] bg-gray-50/40 dark:bg-[#0e0e11] shrink-0 select-none">
+          <button
+            onClick={() => setActiveTab("code")}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer",
+              activeTab === "code"
+                ? "bg-white dark:bg-white/[0.07] text-zinc-900 dark:text-white shadow-sm border border-gray-200/80 dark:border-white/[0.08]"
+                : "text-zinc-500 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-gray-100/60 dark:hover:bg-white/[0.03]"
+            )}
+          >
+            <Code className="w-3.5 h-3.5" />
+            <span>Código</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("preview")}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer",
+              activeTab === "preview"
+                ? "bg-white dark:bg-white/[0.07] text-zinc-900 dark:text-white shadow-sm border border-gray-200/80 dark:border-white/[0.08]"
+                : "text-zinc-500 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-gray-100/60 dark:hover:bg-white/[0.03]"
+            )}
+          >
+            <Eye className="w-3.5 h-3.5" />
+            <span>Vista Previa</span>
+          </button>
         </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════ */}
+      {/*  MAIN CONTENT AREA                                 */}
+      {/* ═══════════════════════════════════════════════════ */}
+      <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden">
+        
+        {/* Code Editor View */}
+        {(activeTab === "code" || !hasPreview) && (
+          <div className="flex-1 flex min-h-0 overflow-hidden bg-white dark:bg-[#0C0C0E]">
+            {/* Line Numbers gutter */}
+            <div
+              ref={lineNumbersRef}
+              className="w-12 py-4 text-right select-none bg-gray-50/50 dark:bg-[#0a0a0c] pr-3 border-r border-gray-200/60 dark:border-white/[0.04] overflow-hidden shrink-0 font-mono text-[11px] leading-6 text-zinc-300 dark:text-zinc-700"
+            >
+              {Array.from({ length: lineCount }).map((_, i) => (
+                <div key={i} className="h-6 flex items-center justify-end tabular-nums">
+                  {i + 1}
+                </div>
+              ))}
+            </div>
+
+            {/* Main text editor */}
+            <textarea
+              ref={textareaRef}
+              value={activeFile.code}
+              onChange={(e) => updateActiveFileCode(e.target.value)}
+              onScroll={handleScroll}
+              className={cn(
+                "flex-1 h-full py-4 px-4 resize-none outline-none border-none bg-transparent overflow-auto",
+                "text-zinc-800 dark:text-zinc-200 placeholder-zinc-300 dark:placeholder-zinc-700",
+                "font-mono text-[12px] leading-6 selection:bg-blue-500/20 selection:text-blue-900 dark:selection:text-blue-200",
+                "[scrollbar-width:thin] scrollbar-thin scrollbar-thumb-zinc-200/60 dark:scrollbar-thumb-white/[0.06]"
+              )}
+              placeholder="Escribe tu código aquí..."
+              spellCheck={false}
+            />
+          </div>
+        )}
+
+        {/* Preview View */}
+        {hasPreview && activeTab === "preview" && (
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-gray-50/50 dark:bg-[#090909]">
+            {/* Preview header */}
+            <div className="px-4 py-2 flex items-center gap-2 border-b border-gray-200/50 dark:border-white/[0.04] bg-white/50 dark:bg-white/[0.02] shrink-0 select-none">
+              <Eye className="w-3.5 h-3.5 text-zinc-400" />
+              <span className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500">
+                {isHtml ? "HTML Preview" : isSvg ? "SVG Preview" : "Markdown Preview"}
+              </span>
+              <div className="flex-1" />
+              <div className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-500 font-medium">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>En vivo</span>
+              </div>
+            </div>
+
+            {/* Preview content */}
+            <div className="flex-1 overflow-auto p-3">
+              <div className="h-full rounded-xl overflow-hidden border border-gray-200/60 dark:border-white/[0.04] bg-white dark:bg-[#0C0C0E] shadow-inner">
+                {isHtml && (
+                  <iframe
+                    srcDoc={activeFile.code}
+                    title="HTML Preview"
+                    sandbox="allow-scripts"
+                    className="w-full h-full border-0"
+                  />
+                )}
+                {isSvg && (
+                  <div className="w-full h-full flex items-center justify-center p-6 overflow-auto">
+                    <div 
+                      dangerouslySetInnerHTML={{ __html: activeFile.code }}
+                      className="max-w-full max-h-full flex items-center justify-center"
+                    />
+                  </div>
+                )}
+                {isMarkdown && (
+                  <div className="w-full h-full overflow-auto p-6 text-zinc-800 dark:text-zinc-200 font-sans prose dark:prose-invert max-w-none text-sm leading-relaxed [scrollbar-width:thin]">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {activeFile.code}
+                    </ReactMarkdown>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Terminal / Output Console at the bottom */}
-      {(isPython || activeFile.stdout || activeFile.output || activeFile.error) && (
-        <div className="border-t border-gray-200 dark:border-white/5 bg-gray-50 dark:bg-[#080808] shrink-0 max-h-60 flex flex-col overflow-hidden">
-          {/* Console Header */}
-          <div className="px-5 py-2.5 bg-gray-100/50 dark:bg-[#0C0C0C] border-b border-gray-200 dark:border-white/5 flex items-center justify-between shrink-0 select-none">
-            <div className="flex items-center gap-2">
-              <Terminal className="w-4 h-4 text-amber-500" />
-              <span className="text-[11px] uppercase tracking-wider font-extrabold text-zinc-500 dark:text-gray-400">
-                Consola de Ejecución
-              </span>
-            </div>
-            {activeFile.durationMs !== undefined && (
-              <span className="text-[10px] text-zinc-400 dark:text-gray-500 font-mono">
-                {activeFile.durationMs}ms
-              </span>
-            )}
-          </div>
-
-          {/* Output Content */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 font-mono text-xs scrollbar-thin scrollbar-thumb-zinc-200 dark:scrollbar-thumb-white/10 text-zinc-800 dark:text-gray-300">
-            {isRunning ? (
-              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-500 py-1 animate-pulse">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Ejecutando script en el sandbox...</span>
+      {/* ═══════════════════════════════════════════════════ */}
+      {/*  TERMINAL / CONSOLE — macOS-inspired bottom panel  */}
+      {/* ═══════════════════════════════════════════════════ */}
+      {hasConsoleOutput && (
+        <div className={cn(
+          "border-t border-gray-200/80 dark:border-white/[0.06] bg-gray-50/80 dark:bg-[#09090b] shrink-0 flex flex-col overflow-hidden transition-all duration-200",
+          consoleCollapsed ? "max-h-[36px]" : "max-h-56"
+        )}>
+          {/* Console Header — macOS style */}
+          <button
+            onClick={() => setConsoleCollapsed(!consoleCollapsed)}
+            className="px-4 py-2 flex items-center justify-between shrink-0 select-none hover:bg-gray-100/50 dark:hover:bg-white/[0.02] transition-colors cursor-pointer"
+          >
+            <div className="flex items-center gap-2.5">
+              {/* Terminal traffic lights */}
+              <div className="flex items-center gap-1.5">
+                <div className="w-[9px] h-[9px] rounded-full bg-red-500/80" />
+                <div className="w-[9px] h-[9px] rounded-full bg-yellow-500/80" />
+                <div className="w-[9px] h-[9px] rounded-full bg-green-500/80" />
               </div>
-            ) : (
-              <>
-                {/* 1. Show Errors/Stderr */}
-                {activeFile.error && (
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-1.5 text-red-650 dark:text-red-500 font-bold">
-                      <AlertCircle className="w-3.5 h-3.5" />
-                      <span>Error (stderr)</span>
+              <div className="flex items-center gap-1.5">
+                <Terminal className="w-3.5 h-3.5 text-zinc-400" />
+                <span className="text-[10px] uppercase tracking-widest font-bold text-zinc-400 dark:text-zinc-500">
+                  Consola
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {activeFile.durationMs !== undefined && (
+                <span className="text-[10px] text-zinc-400 dark:text-zinc-600 font-mono tabular-nums">
+                  {activeFile.durationMs}ms
+                </span>
+              )}
+              {activeFile.success === true && (
+                <div className="w-4 h-4 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                  <Check className="w-2.5 h-2.5 text-emerald-500" />
+                </div>
+              )}
+              {activeFile.success === false && (
+                <div className="w-4 h-4 rounded-full bg-red-500/10 flex items-center justify-center">
+                  <AlertCircle className="w-2.5 h-2.5 text-red-500" />
+                </div>
+              )}
+            </div>
+          </button>
+
+          {/* Console Output */}
+          {!consoleCollapsed && (
+            <div className="flex-1 overflow-y-auto px-4 pb-3 space-y-2.5 font-mono text-[11px] scrollbar-thin scrollbar-thumb-zinc-200/50 dark:scrollbar-thumb-white/[0.04]">
+              {isRunning ? (
+                <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 py-2 animate-pulse">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span className="font-semibold">Ejecutando en sandbox...</span>
+                </div>
+              ) : (
+                <>
+                  {/* Errors */}
+                  {activeFile.error && (
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-1.5 text-red-600 dark:text-red-400 font-bold text-[10px] uppercase tracking-wide">
+                        <AlertCircle className="w-3 h-3" />
+                        <span>Error</span>
+                      </div>
+                      <pre className="text-red-700 dark:text-red-300 bg-red-50/80 dark:bg-red-950/15 border border-red-200/60 dark:border-red-500/10 p-3 rounded-lg overflow-x-auto whitespace-pre-wrap leading-relaxed">
+                        <code>{activeFile.error}</code>
+                      </pre>
                     </div>
-                    <pre className="text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-500/10 p-3 rounded-xl overflow-x-auto whitespace-pre-wrap">
-                      <code>{activeFile.error}</code>
-                    </pre>
-                  </div>
-                )}
+                  )}
 
-                {/* 2. Show Standard Output (stdout) */}
-                {activeFile.stdout && (
-                  <div className="space-y-1">
-                    <div className="text-emerald-700 dark:text-emerald-500 font-bold">Consola (stdout)</div>
-                    <pre className="text-emerald-800 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/10 border border-emerald-250 dark:border-emerald-500/10 p-3 rounded-xl overflow-x-auto whitespace-pre-wrap">
-                      <code>{activeFile.stdout}</code>
-                    </pre>
-                  </div>
-                )}
+                  {/* Stdout */}
+                  {activeFile.stdout && (
+                    <div className="space-y-1.5">
+                      <div className="text-emerald-700 dark:text-emerald-400 font-bold text-[10px] uppercase tracking-wide">stdout</div>
+                      <pre className="text-zinc-700 dark:text-zinc-300 bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-200/40 dark:border-emerald-500/10 p-3 rounded-lg overflow-x-auto whitespace-pre-wrap leading-relaxed">
+                        <code>{activeFile.stdout}</code>
+                      </pre>
+                    </div>
+                  )}
 
-                {/* 3. Show return value */}
-                {activeFile.output && (
-                  <div className="space-y-1">
-                    <div className="text-blue-750 dark:text-blue-500 font-bold">Retorno</div>
-                    <pre className="text-blue-800 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/10 border border-blue-250 dark:border-blue-500/10 p-3 rounded-xl overflow-x-auto whitespace-pre-wrap">
-                      <code>{activeFile.output}</code>
-                    </pre>
-                  </div>
-                )}
+                  {/* Return value */}
+                  {activeFile.output && (
+                    <div className="space-y-1.5">
+                      <div className="text-blue-700 dark:text-blue-400 font-bold text-[10px] uppercase tracking-wide">Retorno</div>
+                      <pre className="text-zinc-700 dark:text-zinc-300 bg-blue-50/50 dark:bg-blue-950/10 border border-blue-200/40 dark:border-blue-500/10 p-3 rounded-lg overflow-x-auto whitespace-pre-wrap leading-relaxed">
+                        <code>{activeFile.output}</code>
+                      </pre>
+                    </div>
+                  )}
 
-                {/* No execution results yet */}
-                {!activeFile.stdout && !activeFile.output && !activeFile.error && (
-                  <div className="text-zinc-450 dark:text-gray-500 italic py-2">
-                    Pulsa "Ejecutar" para correr este script en el sandbox de WebAssembly.
-                  </div>
-                )}
-              </>
-            )}
-          </div>
+                  {/* No output yet */}
+                  {!activeFile.stdout && !activeFile.output && !activeFile.error && (
+                    <div className="text-zinc-400 dark:text-zinc-600 py-2 flex items-center gap-2">
+                      <Play className="w-3 h-3" />
+                      <span>Pulsa "Ejecutar" para correr este script.</span>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 }
-

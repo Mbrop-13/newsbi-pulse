@@ -5,6 +5,7 @@ import { PanelLeftClose } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { useSidebar } from "@/components/ui/sidebar"
+import { cn } from "@/lib/utils"
 
 import { useTheme } from "next-themes"
 

@@ -14,11 +14,12 @@
  */
 
 const APPROVE_WORDS = [
-  "aprobado", "aprobar", "aprueba", "aprobarlo", "aprobarla", "aprobadlo",
+  "aprobado", "aprovado", "aprobar", "aprovar", "aprueba", "aprueva", "apruebo", "apruevo",
+  "aprobarlo", "aprovarlo", "aprobarla", "aprovarla", "aprobadlo", "aprovadlo",
   "sí", "si", "ok", "okay", "dale", "adelante", "adelántate",
   "continuar", "continúa", "continua", "procede", "proceder", "procedé",
   "ejecuta", "ejecutar", "construye", "construir", "hazlo", "confirmo",
-  "confirmar", "avanza", "avanza", "vamos", "empieza", "comienza",
+  "confirmar", "avanza", "vamos", "empieza", "comienza", "perfecto", "listo", "bien", "excelente"
 ];
 
 const REJECT_WORDS = [

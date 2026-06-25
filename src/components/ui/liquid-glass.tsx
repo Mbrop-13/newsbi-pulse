@@ -193,9 +193,25 @@ export function LiquidGlassLens({
       {mapUrl && (
         <svg className="pointer-events-none absolute hidden" width="0" height="0">
           <defs>
-            <filter id={filterId} x="0%" y="0%" width="100%" height="100%" colorInterpolationFilters="sRGB">
+            <filter 
+              id={filterId} 
+              filterUnits="userSpaceOnUse" 
+              x="0" 
+              y="0" 
+              width={dimensions.width} 
+              height={dimensions.height} 
+              colorInterpolationFilters="sRGB"
+            >
               {/* Load the computed displacement map */}
-              <feImage href={mapUrl} result="displacementMap" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" />
+              <feImage 
+                href={mapUrl} 
+                result="displacementMap" 
+                x="0" 
+                y="0" 
+                width={dimensions.width} 
+                height={dimensions.height} 
+                preserveAspectRatio="none" 
+              />
               
               {/* Displace the background visual layer based on the map R/G channels */}
               <feDisplacementMap

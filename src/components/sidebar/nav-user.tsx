@@ -195,7 +195,7 @@ export function NavUser() {
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton
                   size="lg"
-                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground group-data-[collapsible=icon]:!size-12 group-data-[collapsible=icon]:!p-2 group-data-[collapsible=icon]:!justify-center !overflow-visible"
                 >
                   <div className="relative shrink-0">
                     <Avatar className={cn(
@@ -215,7 +215,7 @@ export function NavUser() {
                       </div>
                     )}
                   </div>
-                  <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
+                  <div className="grid flex-1 text-left text-sm leading-tight min-w-0 group-data-[collapsible=icon]:hidden">
                     <div className="flex items-center gap-1.5 min-w-0">
                       <span className="truncate font-semibold">{mounted ? displayName : "Usuario"}</span>
                       {mounted && isAuthenticated && userTier === "free" && <PlanBadge tier={userTier} />}

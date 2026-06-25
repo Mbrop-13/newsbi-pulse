@@ -24,6 +24,8 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { useAIChatStore } from "@/lib/stores/ai-chat-store"
+import { useBrowserStore } from "@/lib/stores/browser-store"
+import { useCanvasStore } from "@/lib/stores/canvas-store"
 import { useLanguageStore } from "@/lib/stores/language-store"
 import { useTranslation } from "@/lib/translations"
 
@@ -47,7 +49,11 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
         title: t("new_chat"),
         url: `/${language}/ai`,
         icon: MessageSquarePlus,
-        onClick: clearMessages,
+        onClick: () => {
+          clearMessages();
+          useBrowserStore.getState().clearSession();
+          useCanvasStore.getState().closeCanvas();
+        },
       },
       {
         title: t("search"),

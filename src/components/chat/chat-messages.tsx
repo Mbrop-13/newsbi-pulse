@@ -1116,9 +1116,6 @@ function MessageBubble({
       </div>
     )
   }
-
-  const isResponding = isLast && isLoading;
-
   // ─── Unified Assistant message return ───
   return (
     <div className={cn("flex group", isWebBuilderMode ? "gap-2 pl-1.5" : "gap-3")}>

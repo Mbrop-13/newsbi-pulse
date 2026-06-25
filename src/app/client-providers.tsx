@@ -32,7 +32,7 @@ import { Menu, Plus } from "lucide-react";
 import { ModelSelector } from "@/components/chat/model-selector";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useLanguageStore } from "@/lib/stores/language-store";
-import { cn, getCleanPathname } from "@/lib/utils";
+import { getCleanPathname } from "@/lib/utils";
 
 import { useState, useEffect } from "react";
 

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useMemo } from "react"
 import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
-import { Bot, User, ThumbsUp, ThumbsDown, Share2, RefreshCw, ChevronRight, ChevronDown, Sparkles, Loader2, Globe, ExternalLink, X, ArrowDown, CheckCircle2, XCircle, Clock, Cpu, ClipboardList, FileCode2, Maximize2, Info, FolderOpen, Code2, Terminal, Search, Brain, Plus, Compass } from "lucide-react"
+import { Bot, User, ThumbsUp, ThumbsDown, Share2, RefreshCw, ChevronRight, ChevronDown, Sparkles, Loader2, Globe, ExternalLink, X, ArrowDown, CheckCircle2, XCircle, Clock, Cpu, ClipboardList, FileCode2, Maximize2, Info, FolderOpen, Code2, Search, Brain, Plus, Compass } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import ReactMarkdown from "react-markdown"
@@ -541,7 +541,7 @@ function MessageBubble({
         case 'create_price_alert':
           return <PriceAlertCard key={`inv-alert-${i}`} result={inv.result} />
         case 'run_python':
-          return <PythonResultCard key={`inv-python-${i}`} args={inv.args} result={inv.result} />
+          return null
         default:
           return null;
       }
@@ -1306,46 +1306,6 @@ const getGoogleFinanceSymbol = (symbol: string): string => {
   }
   return ticker;
 };
-
-function PythonResultCard({ args, result }: { args: any; result: any }) {
-  const openCanvas = useCanvasStore((s) => s.openCanvas);
-  
-  const handleOpen = () => {
-    openCanvas({
-      title: "Script de Python",
-      code: args?.script || "",
-      language: "python",
-      stdout: result?.stdout || "",
-      output: result?.output !== undefined && result?.output !== null ? String(result.output) : undefined,
-      error: result?.stderr || result?.error || undefined,
-      durationMs: result?.durationMs || 0,
-      success: result?.success !== false,
-    });
-  };
-
-  return (
-    <button
-      onClick={handleOpen}
-      className={cn(
-        "w-full max-w-md text-left flex items-start gap-4 p-4 rounded-[20px] transition-all duration-300",
-        "bg-amber-500/10 hover:bg-amber-500/15 dark:bg-amber-950/20 dark:hover:bg-amber-950/30",
-        "border border-amber-500/20 shadow-sm group relative hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
-      )}
-    >
-      <div className="p-3 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 shrink-0">
-        <Terminal className="w-5 h-5" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <h4 className="text-sm font-bold text-gray-900 dark:text-white truncate group-hover:text-amber-500 transition-colors">
-          Cálculo Python Ejecutado
-        </h4>
-        <p className="text-[11px] text-gray-400 dark:text-slate-400 mt-0.5">
-          {result?.success ? "Completado" : "Error en ejecución"} · {result?.durationMs || 0}ms
-        </p>
-      </div>
-    </button>
-  );
-}
 
 function AssistantAvatar({ isResponding, isWebBuilderMode }: { isResponding: boolean; isWebBuilderMode?: boolean }) {
   const { resolvedTheme } = useTheme();

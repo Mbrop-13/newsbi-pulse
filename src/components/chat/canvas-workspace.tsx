@@ -81,7 +81,7 @@ export function CanvasWorkspace({ chatPanel }: CanvasWorkspaceProps) {
       <div className="flex flex-col h-full w-full">
         {/* Mobile Tab Bar */}
         {isOpen && (
-          <div className="flex border-b border-gray-250 dark:border-white/5 bg-white dark:bg-[#0A0A0A] shrink-0 z-20">
+          <div className="flex border-b border-sidebar-border dark:border-white/5 bg-background dark:bg-[#0A0A0A] shrink-0 z-20">
             <button
               onClick={() => setMobileTab("chat")}
               className={cn(
@@ -110,11 +110,11 @@ export function CanvasWorkspace({ chatPanel }: CanvasWorkspaceProps) {
         {/* Mobile Content */}
         <div className="flex-1 min-h-0 relative">
           {!isOpen || mobileTab === "chat" ? (
-            <div className="absolute inset-0 bg-white dark:bg-[#0A0A0A]">
+            <div className="absolute inset-0 bg-background dark:bg-[#0A0A0A]">
               {chatPanel}
             </div>
           ) : (
-            <div className="absolute inset-0 p-2 bg-[#f4f4f5] dark:bg-[#09090b]">
+            <div className="absolute inset-0 p-2 bg-background dark:bg-[#09090b]">
               <CanvasPanel />
             </div>
           )}
@@ -125,10 +125,10 @@ export function CanvasWorkspace({ chatPanel }: CanvasWorkspaceProps) {
 
   // Desktop Split Layout
   return (
-    <div className="flex h-full w-full overflow-hidden bg-white dark:bg-[#0A0A0A]">
+    <div className="flex h-full w-full overflow-hidden bg-background dark:bg-[#0A0A0A]">
       {/* Chat Panel - Left side */}
       <div
-        className="h-full flex flex-col relative overflow-hidden bg-white dark:bg-[#0A0A0A] shrink-0"
+        className="h-full flex flex-col relative overflow-hidden bg-background dark:bg-[#0A0A0A] shrink-0"
         style={{ width: isOpen ? `${chatPercent}%` : "100%" }}
       >
         {chatPanel}
@@ -143,25 +143,21 @@ export function CanvasWorkspace({ chatPanel }: CanvasWorkspaceProps) {
           className={cn(
             "w-[5px] h-full cursor-col-resize z-50 shrink-0 relative transition-all duration-200 flex items-center justify-center",
             (isDragging || isHovered) 
-              ? "bg-blue-500/40" 
-              : "bg-gray-100 dark:bg-white/[0.03]"
+              ? "bg-zinc-300/80 dark:bg-white/15" 
+              : "bg-zinc-200/60 dark:bg-white/[0.03]"
           )}
         >
-          {/* Grip indicator dots */}
+          {/* Grip indicator line */}
           <div className={cn(
-            "flex flex-col gap-1 transition-all duration-300",
+            "w-px h-8 bg-zinc-400/60 dark:bg-white/30 rounded-full transition-all duration-300",
             (isDragging || isHovered) ? "opacity-100" : "opacity-0"
-          )}>
-            <div className="w-[3px] h-[3px] rounded-full bg-blue-500" />
-            <div className="w-[3px] h-[3px] rounded-full bg-blue-500" />
-            <div className="w-[3px] h-[3px] rounded-full bg-blue-500" />
-          </div>
+          )} />
         </div>
       )}
 
       {/* Canvas Panel - Right side: Floating card with padding */}
       {isOpen && (
-        <div className="h-full flex flex-col overflow-hidden flex-1 bg-[#f4f4f5] dark:bg-[#09090b] p-2.5">
+        <div className="h-full flex flex-col overflow-hidden flex-1 bg-background dark:bg-[#09090b] p-2.5">
           <CanvasPanel />
         </div>
       )}

@@ -6,11 +6,8 @@ import {
   X, 
   Play, 
   Download, 
-  Share2, 
   RotateCcw, 
   RotateCw, 
-  Cloud, 
-  History, 
   Loader2, 
   Check, 
   Terminal, 
@@ -19,6 +16,8 @@ import {
   Code,
   Copy,
   FileCode2,
+  ChevronDown,
+  ChevronUp,
   Sparkles
 } from "lucide-react";
 import { toast } from "sonner";
@@ -55,38 +54,21 @@ export function CanvasPanel() {
     redo, 
     undoStack, 
     redoStack,
-    history,
-    openCanvas
   } = useCanvasStore();
 
   const [isRunning, setIsRunning] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<"code" | "preview">("code");
-  const [consoleCollapsed, setConsoleCollapsed] = useState(false);
+  const [consoleOpen, setConsoleOpen] = useState(true);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
-  const historyRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (historyRef.current && !historyRef.current.contains(event.target as Node)) {
-        setShowHistory(false);
-      }
-    }
-    if (showHistory) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [showHistory]);
 
   // Reset to code tab when a new file opens
   useEffect(() => {
     if (activeFile) {
       setActiveTab("code");
+      setConsoleOpen(true);
     }
   }, [activeFile?.title]);
 
@@ -94,7 +76,6 @@ export function CanvasPanel() {
     return (
       <div className="h-full w-full flex items-center justify-center select-none">
         <div className="flex flex-col items-center text-center space-y-5 p-8 max-w-sm">
-          {/* Elegant loading orb */}
           <div className="relative">
             <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-amber-500/15 to-orange-500/15 dark:from-amber-500/10 dark:to-orange-500/10 backdrop-blur-sm border border-amber-500/10 flex items-center justify-center shadow-xl shadow-amber-500/5">
               <FileCode2 className="w-9 h-9 text-amber-600 dark:text-amber-500" />
@@ -140,12 +121,8 @@ export function CanvasPanel() {
     try {
       const response = await fetch("/api/run-python", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          script: activeFile.code,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ script: activeFile.code }),
       });
 
       const data = await response.json();
@@ -204,105 +181,80 @@ export function CanvasPanel() {
     }
   };
 
-  const hasConsoleOutput = isPython || activeFile.stdout || activeFile.output || activeFile.error;
+  const hasConsoleOutput = activeFile.stdout || activeFile.output || activeFile.error;
+  const consoleHasContent = !!(activeFile.stdout || activeFile.output || activeFile.error);
 
   return (
-    <div className="h-full w-full flex flex-col overflow-hidden rounded-xl border border-gray-200/80 dark:border-white/[0.06] bg-white dark:bg-[#0C0C0E] shadow-2xl shadow-black/5 dark:shadow-black/40 relative">
+    <div className="h-full w-full flex flex-col overflow-hidden rounded-2xl border border-zinc-200/80 dark:border-white/[0.06] bg-white dark:bg-[#0C0C0E] shadow-sm relative">
       
-      {/* ═══════════════════════════════════════════════════ */}
-      {/*  TOP HEADER BAR — macOS/Bolt.new-inspired chrome   */}
-      {/* ═══════════════════════════════════════════════════ */}
-      <div className="px-4 py-3 flex items-center justify-between shrink-0 border-b border-gray-250/70 dark:border-white/[0.06] bg-white dark:bg-[#0C0C0E] select-none">
-        
-        {/* Left: View Tabs (Code / Preview) */}
-        <div className="flex items-center gap-3.5 min-w-0">
-          {hasPreview ? (
-            <div className="flex items-center gap-0.5 bg-zinc-100/80 dark:bg-zinc-900/80 p-0.5 rounded-lg border border-zinc-200/50 dark:border-zinc-800/80">
-              <button
-                onClick={() => setActiveTab("code")}
-                className={cn(
-                  "w-7 h-7 flex items-center justify-center rounded-md transition-all cursor-pointer",
-                  activeTab === "code"
-                    ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-xs border border-zinc-200/30 dark:border-zinc-700/50"
-                    : "text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
-                )}
-                title="Mostrar código"
-              >
-                <Code className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={() => setActiveTab("preview")}
-                className={cn(
-                  "w-7 h-7 flex items-center justify-center rounded-md transition-all cursor-pointer",
-                  activeTab === "preview"
-                    ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-xs border border-zinc-200/30 dark:border-zinc-700/50"
-                    : "text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
-                )}
-                title="Mostrar vista previa"
-              >
-                <Eye className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          ) : (
-            <div className="w-7 h-7 rounded-md bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center text-zinc-400 border border-zinc-250/30 dark:border-zinc-800">
-              <Code className="w-3.5 h-3.5" />
-            </div>
-          )}
+      {/* Header */}
+      <div className="px-4 py-3 flex items-center justify-between shrink-0 border-b border-zinc-100 dark:border-white/[0.06] bg-white dark:bg-[#0C0C0E] select-none">
+        {/* Left: language badge + file name */}
+        <div className="flex items-center gap-3 min-w-0">
+          <div className={cn(
+            "flex items-center gap-1.5 px-2 py-1 rounded-md border text-[11px] font-bold uppercase tracking-wide shrink-0",
+            langColor.bg,
+            langColor.text,
+            langColor.border
+          )}>
+            <Code className="w-3 h-3" />
+            <span>{activeFile.language}</span>
+          </div>
+          <span className="text-[13px] font-semibold text-zinc-800 dark:text-zinc-200 truncate">
+            {activeFile.title}
+          </span>
         </div>
 
         {/* Right: Actions */}
-        <div className="flex items-center gap-2">
-          {/* Share button - Styled premium black like the image */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {isPython && (
+            <button
+              onClick={handleRunCode}
+              disabled={isRunning}
+              className="h-8 gap-1.5 rounded-lg px-3 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-zinc-950 text-xs font-bold transition-all flex items-center shadow-sm select-none cursor-pointer disabled:opacity-60"
+              title="Ejecutar código"
+            >
+              {isRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5 fill-current" />}
+              <span className="hidden sm:inline">{isRunning ? "Ejecutando" : "Ejecutar"}</span>
+            </button>
+          )}
+
           <button
-            onClick={handleCopy} // Using copy code link as primary sharing action
-            className="h-8 gap-1.5 rounded-lg px-3 bg-zinc-950 hover:bg-zinc-850 dark:bg-zinc-100 dark:hover:bg-zinc-200 text-white dark:text-zinc-950 text-xs font-bold transition-all flex items-center shadow-sm select-none cursor-pointer"
-            title="Compartir código"
+            onClick={undo}
+            disabled={undoStack.length === 0}
+            className="w-8 h-8 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 flex items-center justify-center transition-all cursor-pointer disabled:opacity-30"
+            title="Deshacer"
           >
-            <Share2 className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Compartir</span>
+            <RotateCcw className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={redo}
+            disabled={redoStack.length === 0}
+            className="w-8 h-8 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 flex items-center justify-center transition-all cursor-pointer disabled:opacity-30"
+            title="Rehacer"
+          >
+            <RotateCw className="w-3.5 h-3.5" />
           </button>
 
-          {/* Edit (Focus editor) button */}
-          <button
-            onClick={() => textareaRef.current?.focus()}
-            className="w-8 h-8 rounded-lg hover:bg-zinc-150/50 dark:hover:bg-zinc-900 border border-transparent text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 flex items-center justify-center transition-all cursor-pointer"
-            title="Editar código"
-          >
-            <Play className="w-3.5 h-3.5 rotate-90" /> {/* Generic indicator icon or pencil representation */}
-          </button>
-
-          {/* Copy button with text - light border style */}
           <button
             onClick={handleCopy}
-            className="h-8 gap-1.5 rounded-lg px-3 border border-zinc-250 dark:border-zinc-800 bg-white hover:bg-zinc-50 dark:bg-zinc-950 dark:hover:bg-zinc-900 text-zinc-750 dark:text-zinc-350 text-xs font-bold transition-all flex items-center shadow-xs select-none cursor-pointer"
-            title="Copiar código al portapapeles"
+            className="w-8 h-8 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 border border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 flex items-center justify-center transition-all cursor-pointer"
+            title="Copiar código"
           >
-            {isCopied ? (
-              <>
-                <Check className="w-3.5 h-3.5 text-emerald-500" />
-                <span>Copiado</span>
-              </>
-            ) : (
-              <>
-                <Copy className="w-3.5 h-3.5" />
-                <span>Copiar</span>
-              </>
-            )}
+            {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
           </button>
 
-          {/* Export / Download icon button */}
           <button
             onClick={handleDownload}
-            className="w-8 h-8 rounded-lg hover:bg-zinc-150/50 dark:hover:bg-zinc-900 border border-transparent text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 flex items-center justify-center transition-all cursor-pointer"
+            className="w-8 h-8 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 border border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 flex items-center justify-center transition-all cursor-pointer"
             title="Descargar archivo"
           >
             <Download className="w-3.5 h-3.5" />
           </button>
 
-          {/* Close button */}
           <button
             onClick={closeCanvas}
-            className="w-8 h-8 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 border border-transparent text-zinc-450 hover:text-red-650 dark:hover:text-red-400 flex items-center justify-center transition-all cursor-pointer"
+            className="w-8 h-8 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-500 hover:text-red-600 dark:hover:text-red-400 flex items-center justify-center transition-all cursor-pointer"
             title="Cerrar panel"
           >
             <X className="w-4 h-4" />
@@ -310,18 +262,45 @@ export function CanvasPanel() {
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════════════ */}
-      {/*  MAIN CONTENT AREA                                 */}
-      {/* ═══════════════════════════════════════════════════ */}
-      <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden">
+      {/* View tabs (only when preview is available) */}
+      {hasPreview && (
+        <div className="px-4 py-2 flex items-center gap-2 border-b border-zinc-100 dark:border-white/[0.06] bg-white dark:bg-[#0C0C0E] shrink-0 select-none">
+          <button
+            onClick={() => setActiveTab("code")}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer",
+              activeTab === "code"
+                ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+            )}
+          >
+            <Code className="w-3.5 h-3.5" />
+            Código
+          </button>
+          <button
+            onClick={() => setActiveTab("preview")}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer",
+              activeTab === "preview"
+                ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+            )}
+          >
+            <Eye className="w-3.5 h-3.5" />
+            Preview
+          </button>
+        </div>
+      )}
+
+      {/* Main content */}
+      <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden bg-white dark:bg-[#0C0C0E]">
         
-        {/* Code Editor View */}
+        {/* Code Editor */}
         {(activeTab === "code" || !hasPreview) && (
-          <div className="flex-1 flex min-h-0 overflow-hidden bg-white dark:bg-[#0C0C0E]">
-            {/* Line Numbers gutter - clean blended look without borders/backgrounds */}
+          <div className="flex-1 flex min-h-0 overflow-hidden">
             <div
               ref={lineNumbersRef}
-              className="w-12 py-4 text-right select-none bg-transparent pr-4 overflow-hidden shrink-0 font-mono text-[11px] leading-6 text-zinc-350 dark:text-zinc-650"
+              className="w-12 py-4 text-right select-none bg-zinc-50/50 dark:bg-transparent pr-3 overflow-hidden shrink-0 font-mono text-[11px] leading-6 text-zinc-400 dark:text-zinc-600"
             >
               {Array.from({ length: lineCount }).map((_, i) => (
                 <div key={i} className="h-6 flex items-center justify-end tabular-nums">
@@ -330,16 +309,15 @@ export function CanvasPanel() {
               ))}
             </div>
 
-            {/* Main text editor */}
             <textarea
               ref={textareaRef}
               value={activeFile.code}
               onChange={(e) => updateActiveFileCode(e.target.value)}
               onScroll={handleScroll}
               className={cn(
-                "flex-1 h-full py-4 px-2 resize-none outline-none border-none bg-transparent overflow-auto",
+                "flex-1 h-full py-4 px-3 resize-none outline-none border-none bg-white dark:bg-[#0C0C0E] overflow-auto",
                 "text-zinc-800 dark:text-zinc-200 placeholder-zinc-300 dark:placeholder-zinc-700",
-                "font-mono text-[12px] leading-6 selection:bg-blue-500/20 selection:text-blue-900 dark:selection:text-blue-200",
+                "font-mono text-[13px] leading-6 selection:bg-blue-500/20 selection:text-blue-900 dark:selection:text-blue-200",
                 "[scrollbar-width:thin] scrollbar-thin scrollbar-thumb-zinc-200/60 dark:scrollbar-thumb-white/[0.06]"
               )}
               placeholder="Escribe tu código aquí..."
@@ -348,25 +326,11 @@ export function CanvasPanel() {
           </div>
         )}
 
-        {/* Preview View */}
+        {/* Preview */}
         {hasPreview && activeTab === "preview" && (
-          <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-gray-50/50 dark:bg-[#090909]">
-            {/* Preview header */}
-            <div className="px-4 py-2 flex items-center gap-2 border-b border-gray-250/50 dark:border-white/[0.04] bg-white/50 dark:bg-white/[0.02] shrink-0 select-none">
-              <Eye className="w-3.5 h-3.5 text-zinc-400" />
-              <span className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500">
-                {isHtml ? "Vista Previa HTML" : isSvg ? "Vista Previa SVG" : "Vista Previa Markdown"}
-              </span>
-              <div className="flex-1" />
-              <div className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-500 font-medium">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span>En vivo</span>
-              </div>
-            </div>
-
-            {/* Preview content */}
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-zinc-50/50 dark:bg-[#090909]">
             <div className="flex-1 overflow-auto p-3">
-              <div className="h-full rounded-xl overflow-hidden border border-gray-250/60 dark:border-white/[0.04] bg-white dark:bg-[#0C0C0E] shadow-inner">
+              <div className="h-full rounded-xl overflow-hidden border border-zinc-200/60 dark:border-white/[0.04] bg-white dark:bg-[#0C0C0E]">
                 {isHtml && (
                   <iframe
                     srcDoc={activeFile.code}
@@ -395,6 +359,61 @@ export function CanvasPanel() {
           </div>
         )}
       </div>
+
+      {/* Console / Output */}
+      {consoleHasContent && (
+        <div className="shrink-0 border-t border-zinc-100 dark:border-white/[0.06] bg-zinc-50 dark:bg-[#0A0A0A]">
+          <button
+            onClick={() => setConsoleOpen(!consoleOpen)}
+            className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-zinc-100/50 dark:hover:bg-white/[0.02] transition-colors cursor-pointer select-none"
+          >
+            <div className="flex items-center gap-2">
+              <Terminal className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
+              <span className="text-[11px] font-bold text-zinc-700 dark:text-zinc-300">
+                Consola
+              </span>
+              {activeFile.durationMs ? (
+                <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono">
+                  {activeFile.durationMs}ms
+                </span>
+              ) : null}
+              {activeFile.success === false && (
+                <span className="flex items-center gap-1 text-[10px] font-bold text-red-600 dark:text-red-400">
+                  <AlertCircle className="w-3 h-3" />
+                  Error
+                </span>
+              )}
+            </div>
+            {consoleOpen ? (
+              <ChevronDown className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500" />
+            ) : (
+              <ChevronUp className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500" />
+            )}
+          </button>
+          
+          {consoleOpen && (
+            <div className="px-4 pb-3">
+              <div className="rounded-lg border border-zinc-200/60 dark:border-white/[0.04] bg-white dark:bg-[#0C0C0E] p-3 max-h-48 overflow-auto [scrollbar-width:thin]">
+                {activeFile.output && (
+                  <div className="font-mono text-[12px] leading-relaxed text-zinc-800 dark:text-zinc-200 whitespace-pre-wrap">
+                    {activeFile.output}
+                  </div>
+                )}
+                {activeFile.stdout && (
+                  <div className="font-mono text-[12px] leading-relaxed text-zinc-600 dark:text-zinc-400 whitespace-pre-wrap">
+                    {activeFile.stdout}
+                  </div>
+                )}
+                {activeFile.error && (
+                  <div className="font-mono text-[12px] leading-relaxed text-red-600 dark:text-red-400 whitespace-pre-wrap">
+                    {activeFile.error}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

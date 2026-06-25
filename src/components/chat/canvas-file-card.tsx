@@ -2,6 +2,7 @@
 
 import { useCanvasStore } from "@/lib/stores/canvas-store";
 import { cn } from "@/lib/utils";
+import { Code2 } from "lucide-react";
 
 interface CanvasFileCardProps {
   title: string;
@@ -43,25 +44,25 @@ export function CanvasFileCard({
         });
       }}
       className={cn(
-        "text-left flex flex-col w-full max-w-[280px] rounded-2xl border transition-all duration-300",
-        "bg-white hover:bg-zinc-50/50 dark:bg-zinc-950 dark:hover:bg-zinc-900/50",
-        "border-zinc-200 dark:border-zinc-800 shadow-sm hover:shadow-md",
+        "text-left flex flex-col w-full max-w-[260px] rounded-2xl border transition-all duration-200",
+        "bg-white hover:bg-zinc-50/80 dark:bg-zinc-950 dark:hover:bg-zinc-900/50",
+        "border-zinc-200 dark:border-zinc-800 shadow-sm hover:shadow-md hover:border-zinc-300 dark:hover:border-zinc-700",
         "p-4 select-none hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
       )}
     >
-      {/* Header: Monospace tag + language */}
+      {/* Header: code icon + language */}
       <div className="flex items-center gap-2 text-zinc-900 dark:text-white font-bold text-xs tracking-wide uppercase">
-        <span className="text-[#1890FF] dark:text-blue-400 font-mono font-extrabold text-sm">&lt;/&gt;</span>
+        <Code2 className="w-4 h-4 text-[#1890FF] dark:text-blue-400" />
         <span>{langUpper}</span>
       </div>
 
       {/* Divider */}
-      <div className="w-full h-px bg-zinc-100 dark:bg-zinc-800/80 my-2.5" />
+      <div className="w-full h-px bg-zinc-100 dark:bg-zinc-800 my-3" />
 
-      {/* File Action & Name with double circle radio */}
+      {/* File info with radio indicator */}
       <div className="flex items-start gap-3">
-        {/* Radio dot icon exactly like the image */}
-        <div className="mt-1 shrink-0 flex items-center justify-center w-4.5 h-4.5 rounded-full border-2 border-zinc-300 dark:border-zinc-700 bg-transparent">
+        {/* Radio dot */}
+        <div className="mt-0.5 shrink-0 flex items-center justify-center w-4 h-4 rounded-full border-2 border-zinc-300 dark:border-zinc-700 bg-transparent">
           <div className="w-1.5 h-1.5 rounded-full bg-zinc-400 dark:bg-zinc-500" />
         </div>
 

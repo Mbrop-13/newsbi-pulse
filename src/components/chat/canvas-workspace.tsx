@@ -61,17 +61,6 @@ export function CanvasWorkspace({ chatPanel }: CanvasWorkspaceProps) {
     }
   }, [isOpen]);
 
-  // Collapse sidebar when canvas workspace opens
-  useEffect(() => {
-    if (isOpen) {
-      if (isMobile) {
-        setOpenMobile(false);
-      } else {
-        setOpen(false);
-      }
-    }
-  }, [isOpen, isMobile, setOpen, setOpenMobile]);
-
   if (!isOpen) {
     return <>{chatPanel}</>;
   }
@@ -147,11 +136,15 @@ export function CanvasWorkspace({ chatPanel }: CanvasWorkspaceProps) {
               : "bg-zinc-200/60 dark:bg-white/[0.03]"
           )}
         >
-          {/* Grip indicator line */}
+          {/* Grip indicator dots */}
           <div className={cn(
-            "w-px h-8 bg-zinc-400/60 dark:bg-white/30 rounded-full transition-all duration-300",
-            (isDragging || isHovered) ? "opacity-100" : "opacity-0"
-          )} />
+            "flex flex-col gap-[3px] transition-all duration-300",
+            (isDragging || isHovered) ? "opacity-100 scale-110" : "opacity-60 scale-100"
+          )}>
+            <div className="w-[3px] h-[3px] rounded-full bg-zinc-500/60 dark:bg-white/40" />
+            <div className="w-[3px] h-[3px] rounded-full bg-zinc-500/60 dark:bg-white/40" />
+            <div className="w-[3px] h-[3px] rounded-full bg-zinc-500/60 dark:bg-white/40" />
+          </div>
         </div>
       )}
 

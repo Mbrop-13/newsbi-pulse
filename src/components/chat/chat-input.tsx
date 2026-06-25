@@ -545,7 +545,7 @@ export function ChatInput({
         )}
 
         <div className={cn(
-          "rounded-2xl p-2.5 bg-[#F4F4F0] dark:bg-[#0A0A0A]",
+          "rounded-2xl p-2.5 bg-white dark:bg-[#0A0A0A]",
           "shadow-none !shadow-none shadow-transparent border border-gray-200/60 dark:border-white/5 transition-all duration-500 relative group focus-within:border-black/10 dark:focus-within:border-white/10",
           isListening && "border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.15)]"
         )}>

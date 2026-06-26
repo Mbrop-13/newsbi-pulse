@@ -54,14 +54,19 @@ export function CanvasWorkspace({ chatPanel }: CanvasWorkspaceProps) {
     };
   }, [isDragging]);
 
-  // Sync mobile tab when canvas is opened/closed
+  // Sync mobile tab and collapse sidebar when canvas is opened/closed
   useEffect(() => {
     if (isOpen) {
       setMobileTab("canvas");
+      if (isMobile) {
+        setOpenMobile(false);
+      } else {
+        setOpen(false);
+      }
     } else {
       setMobileTab("chat");
     }
-  }, [isOpen]);
+  }, [isOpen, isMobile, setOpen, setOpenMobile]);
 
   if (!isOpen) {
     return <>{chatPanel}</>;

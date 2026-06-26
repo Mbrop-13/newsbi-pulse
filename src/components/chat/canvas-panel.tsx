@@ -191,35 +191,8 @@ export function CanvasPanel() {
     }
   }, [activeFile?.title]);
 
-  if (!activeFile) {
-    return (
-      <div className="h-full w-full flex items-center justify-center select-none">
-        <div className="flex flex-col items-center text-center space-y-5 p-8 max-w-sm">
-          <div className="relative">
-            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-amber-500/15 to-orange-500/15 dark:from-amber-500/10 dark:to-orange-500/10 backdrop-blur-sm border border-amber-500/10 flex items-center justify-center shadow-xl shadow-amber-500/5">
-              <FileCode2 className="w-9 h-9 text-amber-600 dark:text-amber-500" />
-            </div>
-            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center shadow-lg animate-pulse">
-              <Sparkles className="w-3.5 h-3.5 text-white" />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <h4 className="text-base font-bold text-zinc-800 dark:text-white">Intérprete de Código</h4>
-            <p className="text-[13px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              El asistente generará código aquí. Podrás editar, ejecutar y previsualizar en tiempo real.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />
-            <span className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500">Esperando código...</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const lineCount = activeFile.code.split("\n").length;
-  const langKey = activeFile.language.toLowerCase();
+  const lineCount = activeFile ? activeFile.code.split("\n").length : 0;
+  const langKey = activeFile ? activeFile.language.toLowerCase() : "";
   const isHtml = langKey === "html" || langKey === "htm";
   const isSvg = langKey === "svg";
   const isMarkdown = langKey === "markdown" || langKey === "md";
@@ -291,14 +264,21 @@ export function CanvasPanel() {
         <div className="flex items-center gap-1.5">
           {/* Botón Compartir */}
           <button
+            disabled={!activeFile}
             onClick={() => {
+              if (!activeFile) return;
               const shareUrl = currentChatId 
                 ? `${window.location.origin}/share/chat/${currentChatId}` 
                 : window.location.href;
               navigator.clipboard.writeText(shareUrl);
               toast.success("Enlace de compartir copiado al portapapeles");
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 rounded-md text-xs font-medium transition-colors cursor-pointer"
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+              activeFile
+                ? "bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 cursor-pointer"
+                : "bg-gray-100 dark:bg-zinc-800 text-gray-400 dark:text-zinc-650 cursor-not-allowed opacity-50"
+            )}
           >
             <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg" className="opacity-90">
               <path d="M11.6667 5.33333C12.5871 5.33333 13.3333 4.58713 13.3333 3.66667C13.3333 2.74619 12.5871 2 11.6667 2C10.7462 2 10 2.74619 10 3.66667C10 4.58713 10.7462 5.33333 11.6667 5.33333Z" stroke="currentColor" strokeWidth="1.33333" strokeLinejoin="round" fill="none"></path>
@@ -319,12 +299,19 @@ export function CanvasPanel() {
 
           {/* Botón Abrir Externo */}
           <button
+            disabled={!activeFile}
             onClick={() => {
+              if (!activeFile) return;
               const blob = new Blob([activeFile.code], { type: isHtml ? "text/html;charset=utf-8" : "text/plain;charset=utf-8" });
               const url = URL.createObjectURL(blob);
               window.open(url, "_blank");
             }}
-            className="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
+            className={cn(
+              "p-1.5 rounded-md transition-colors",
+              activeFile
+                ? "text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer"
+                : "text-gray-300 dark:text-zinc-700 cursor-not-allowed opacity-50"
+            )}
             title="Abrir en pestaña nueva"
           >
             <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" strokeWidth="1.5">
@@ -350,9 +337,32 @@ export function CanvasPanel() {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden bg-white dark:bg-[#1E1E1E]">
-        
-        {/* Code Editor */}
-        {(activeTab === "code" || !hasPreview) && (
+        {!activeFile ? (
+          <div className="h-full w-full flex items-center justify-center select-none bg-white dark:bg-[#1E1E1E]">
+            <div className="flex flex-col items-center text-center space-y-5 p-8 max-w-sm">
+              <div className="relative">
+                <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-amber-500/15 to-orange-500/15 dark:from-amber-500/10 dark:to-orange-500/10 backdrop-blur-sm border border-amber-500/10 flex items-center justify-center shadow-xl shadow-amber-500/5">
+                  <FileCode2 className="w-9 h-9 text-amber-600 dark:text-amber-500" />
+                </div>
+                <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center shadow-lg animate-pulse">
+                  <Sparkles className="w-3.5 h-3.5 text-white" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <h4 className="text-base font-bold text-zinc-800 dark:text-white">Comienza a crear</h4>
+                <p className="text-[13px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                  Pídeme escribir código, scripts o diseñar páginas. Los resultados de ejecución y previsualización aparecerán aquí.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />
+                <span className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500">Esperando código...</span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            {(activeTab === "code" || !hasPreview) && (
           <div className="flex-1 w-full flex bg-white dark:bg-[#1E1E1E] relative min-h-0 overflow-hidden">
             
             {/* Botón flotante "Copy" */}
@@ -424,6 +434,8 @@ export function CanvasPanel() {
               </div>
             </div>
           </div>
+        )}
+          </>
         )}
       </div>
     </div>

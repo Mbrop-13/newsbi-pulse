@@ -125,7 +125,7 @@ function SubscriptionPageContent() {
   const getPlanFeatures = (planId: PlanTier) => {
     if (planId === "pro") {
       return [
-        { text: "1.000.000 tokens IA al mes", included: true },
+        { text: "Mucha más capacidad de preguntas al mes", included: true },
         { text: "50 audios de noticias/mes", included: true },
         { text: "5 alertas de precio activas", included: true },
         { text: "25 activos en portafolio", included: true },
@@ -135,7 +135,7 @@ function SubscriptionPageContent() {
     }
     if (planId === "max") {
       return [
-        { text: "2.000.000 tokens IA (x2 Pro)", included: true },
+        { text: "Doble de límites de preguntas (x2 límites de Pro)", included: true },
         { text: "100 audios al mes (x2 Pro)", included: true },
         { text: "10 alertas de precio (x2 Pro)", included: true },
         { text: "50 activos en portafolio (x2 Pro)", included: true },
@@ -148,7 +148,7 @@ function SubscriptionPageContent() {
     if (isUltraX20Toggled) {
       return [
         { text: "Todas las funciones de Plan Ultra", included: true },
-        { text: "20.000.000 tokens IA (x20 Pro)", included: true },
+        { text: "Límites de preguntas x20 (x20 límites de Pro)", included: true },
         { text: "1.000 audios al mes (x20 Pro)", included: true },
         { text: "100 alertas de precio (x20 Pro)", included: true },
         { text: "500 activos en portafolio (x20 Pro)", included: true },
@@ -158,7 +158,7 @@ function SubscriptionPageContent() {
     }
     return [
       { text: "Todas las funciones de Plan Max", included: true },
-      { text: "5.000.000 tokens IA (x5 Pro)", included: true },
+      { text: "Límites de preguntas x5 (x5 límites de Pro)", included: true },
       { text: "250 audios al mes (x5 Pro)", included: true },
       { text: "25 alertas de precio (x5 Pro)", included: true },
       { text: "125 activos en portafolio (x5 Pro)", included: true },
@@ -186,7 +186,7 @@ function SubscriptionPageContent() {
     },
     {
       q: "¿Qué es la opción Ultra x20?",
-      a: "Es una ampliación exclusiva para el plan Ultra orientada a analistas intensivos y profesionales. Duplica el costo mensual pero multiplica por 20 todos los límites base del plan Pro, ofreciendo 20M de tokens, 1000 audios y 100 alertas activas.",
+      a: "Es una ampliación exclusiva para el plan Ultra orientada a analistas intensivos y profesionales. Duplica el costo mensual pero multiplica por 20 todos los límites base del plan Pro, ofreciendo x20 en los límites de preguntas, 1000 audios y 100 alertas activas.",
     },
   ];
 

@@ -40,7 +40,7 @@ export function PremiumConversionModal() {
       case "ai_chat":
         return {
           title: "Has alcanzado tu límite del Asistente IA",
-          subtitle: "Obtén hasta 200x más capacidad de tokens IA y descubre el contexto oculto de los mercados.",
+          subtitle: "Obtén mucha más capacidad de preguntas mensuales y descubre el contexto oculto de los mercados.",
           icon: <Sparkles className="w-8 h-8 text-blue-400" />,
           color: "from-blue-500/20 via-cyan-500/10 to-transparent",
           glow: "bg-blue-500/30"
@@ -68,7 +68,7 @@ export function PremiumConversionModal() {
 
   const benefits = [
     "Audios ilimitados (Texto a Voz realista)",
-    "Hasta 200x más tokens IA mensuales",
+    "Mucha más capacidad de preguntas mensuales",
     "Activos y alertas de precios ilimitadas",
     "Reportes exclusivos de fin de semana"
   ];

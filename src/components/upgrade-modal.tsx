@@ -19,7 +19,7 @@ interface UpgradeModalProps {
 const FEATURE_MESSAGES: Record<string, { title: string; message: string; icon: React.ReactNode }> = {
   ai_message: {
     title: "Límite de IA alcanzado",
-    message: "Has alcanzado el límite de tokens de tu plan para la IA. Actualiza tu suscripción para continuar.",
+    message: "Has alcanzado el límite de preguntas de tu plan para la IA. Actualiza tu suscripción para continuar.",
     icon: <Sparkles className="w-6 h-6" />,
   },
   tts_audio: {
@@ -42,25 +42,25 @@ const FEATURE_MESSAGES: Record<string, { title: string; message: string; icon: R
 const TIER_BENEFITS: Record<PlanTier, string[]> = {
   free: [],
   pro: [
-    "1.000.000 tokens IA al mes",
+    "Mucha más capacidad de preguntas al mes",
     "50 audios de noticias al mes",
     "5 alertas de precio",
     "Sin publicidad",
   ],
   max: [
-    "2.000.000 tokens IA (x2 Pro)",
+    "Doble de límites de preguntas (x2 límites de Pro)",
     "100 audios al mes (x2 Pro)",
     "10 alertas de precio (x2 Pro)",
     "Informe semanal IA",
   ],
   ultra: [
-    "5.000.000 tokens IA (x5 Pro)",
+    "Límites de preguntas x5 (x5 límites de Pro)",
     "250 audios al mes (x5 Pro)",
     "IA con búsqueda web activa",
     "Soporte dedicado 24/7",
   ],
   ultra_x20: [
-    "20.000.000 tokens IA (x20 Pro)",
+    "Límites de preguntas x20 (x20 límites de Pro)",
     "1.000 audios al mes (x20 Pro)",
     "100 alertas de precio (x20 Pro)",
     "Soporte dedicado 24/7",

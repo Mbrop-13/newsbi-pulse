@@ -415,7 +415,92 @@ Mejoramos la capacidad del asistente financiero principal para integrar habilida
 
 Corregimos un fallo de ejecución en la renderización de los burbujas de mensaje que impedía el correcto inicio de las conversaciones en el chat normal:
 
-*   **Cálculo de Razonamiento en Tiempo Real Localizado**:
-    *   **Archivo modificado**: [chat-messages.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/chat/chat-messages.tsx)
-    *   **Problema**: Se estaba intentando usar la variable `liveReasoning` dentro del componente secundario `MessageBubble` durante la renderización de la fase de pensamiento (`renderThinkingPhase`), pero dicha variable estaba declarada únicamente dentro del ámbito del componente principal `ChatMessages`, provocando un error en caliente de tipo `ReferenceError: liveReasoning is not defined` y rompiendo el flujo visual con un mensaje de "Algo salió mal".
-    *   **Solución**: Implementamos el cálculo en caliente de `liveReasoning` de forma local y autocontenida dentro del propio `renderThinkingPhase` utilizando el prop `streamData` que ya recibe el componente. Esto aísla la lógica, previene el error de ámbito y garantiza que los logs de razonamiento se parseen y muestren correctamente en tiempo real sin colapsos de interfaz.
+*   **Solución**: Implementamos el cálculo en caliente de `liveReasoning` de forma local y autocontenida dentro del propio `renderThinkingPhase` utilizando el prop `streamData` que ya recibe el componente. Esto aísla la lógica, previene el error de ámbito y garantiza que los logs de razonamiento se parseen y muestren correctamente en tiempo real sin colapsos de interfaz.
+
+---
+
+## 21. Modernización de Arquitectura en Compartido de Chats (Fase 11)
+
+Optimizamos la arquitectura de compartir chats para ofrecer una experiencia profesional y dinámica (SSR y SEO dinámico) junto con unificación de marca:
+
+*   **Página del Chat (/ai/chat/[id]) como Componente de Servidor**:
+    *   **Archivo modificado**: [page.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/app/ai/chat/[id]/page.tsx)
+    *   Eliminamos `"use client"` para transformar el endpoint en un Server Component nativo.
+    *   Implementamos la consulta directa a Supabase utilizando `createServiceClient()` en el servidor, agilizando la velocidad de carga inicial de la página.
+    *   Añadimos e implementamos la exportación de `generateMetadata(props)` para inyectar títulos y descripciones SEO dinámicas basadas en el título del chat real de forma automática en la cabecera HTML (ideal para previews en Slack, WhatsApp, Twitter, etc.).
+*   **Nuevo Componente Cliente de Chat (ChatClient)**:
+    *   **Archivo nuevo**: [chat-client.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/app/ai/chat/[id]/chat-client.tsx)
+    *   Encapsula las funciones interactivas del chat, incluyendo la comprobación de autenticación (`useAuthStore`), la inicialización de store Zustand (`useAIChatStore`) y el renderizado adaptativo.
+    *   Si el usuario activo es el propietario de la conversación, se monta la interfaz interactiva normal (`<ChatLanding />`). En caso contrario, se monta la vista de lectura premium adaptada para visitantes.
+*   **Unificación y Premium Aesthetics de Logos**:
+    *   **Archivo modificado**: [page.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/app/share/chat/[id]/page.tsx)
+    *   Reemplazamos la caja genérica con el icono de `Sparkles` por el isotipo corporativo oficial `/assets/maverlang-logo-small.png` y la tipografía en mayúscula unificada, logrando coherencia de diseño total en el portal público de lectura rápida.
+*   **Bloque de Llamada a la Acción Dinámico (CTA)**:
+    *   **Archivo modificado**: [chat-client.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/app/ai/chat/[id]/chat-client.tsx)
+    *   Hicimos que el bloque flotante (CTA) al final del chat compartido sea dinámico:
+        *   Si el visitante **no ha iniciado sesión**, se le muestra el mensaje de invitación estándar ("¿Quieres realizar tus propias consultas?") con el botón "Probar Maverlang AI Gratis" que abre el modal de registro.
+        *   Si el visitante **ya ha iniciado sesión** (pero no es dueño del chat), el bloque se adapta mostrando el mensaje "Comenzar una nueva conversación" junto con un botón para abrir un chat nuevo limpio (`/ai`) de forma rápida e intuitiva, en lugar de la barra de escribir del chat original.
+
+---
+
+## 22. Simplificación de Terminología en Planes de Suscripción (Eliminación de Tokens y Diamantes)
+
+De acuerdo a las nuevas especificaciones, depuramos la interfaz eliminando las referencias técnicas a "tokens de IA" y las menciones obsoletas a "multiplicadores de diamantes", reemplazándolas por descripciones más claras sobre "capacidad de preguntas" y multiplicadores de límites:
+
+*   **Página de Suscripción Principal**:
+    *   **Archivo modificado**: [page.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/app/suscripcion/page.tsx)
+    *   Reemplazamos en el plan Pro la frase `"1.000.000 tokens IA al mes"` por `"Mucha más capacidad de preguntas al mes"`.
+    *   Reemplazamos en el plan Max la frase `"2.000.000 tokens IA (x2 Pro)"` por `"Doble de límites de preguntas (x2 límites de Pro)"`.
+    *   Reemplazamos en el plan Ultra la frase `"5.000.000 tokens IA (x5 Pro)"` por `"Límites de preguntas x5 (x5 límites de Pro)"` y para la opción Ultra x20 a `"Límites de preguntas x20 (x20 límites de Pro)"`.
+    *   Ajustamos la FAQ correspondiente a Ultra x20 para mencionar la multiplicación de límites de preguntas en lugar de tokens.
+*   **Modales de Conversión y Mejora**:
+    *   **Archivos modificados**: [upgrade-modal.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/upgrade-modal.tsx) y [premium-conversion-modal.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/premium-conversion-modal.tsx)
+    *   Actualizamos la lista de beneficios del plan recomendado (`TIER_BENEFITS`) y la alerta de límite de IA (`ai_message`) para sincronizar la descripción de las capacidades mensuales a base de preguntas y límites multiplicadores en vez de tokens.
+*   **Sección de Precios del Landing**:
+    *   **Archivo modificado**: [landing-pricing.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/landing/landing-pricing.tsx)
+    *   Eliminamos por completo las líneas referidas a los "Multiplicadores de diamantes" en todos los tiers de precios.
+    *   Reemplazamos la mención de tokens de IA por `"Acceso a preguntas IA (límite básico)"` (Gratuito), `"Mucha más capacidad de preguntas al mes"` (Pro), `"Doble de límites de preguntas (x2 límites de Pro)"` (Max) y `"Límites de preguntas x5 (x5 límites de Pro)"` (Ultra).
+
+---
+
+## 23. Galería de Creaciones Premium y Opciones de Construcción (Fase 12)
+
+Diseñamos e integramos una sección interactiva premium debajo de la barra de escribir del chat principal en su estado vacío (Landing view), permitiendo a los usuarios descubrir y construir instantáneamente diferentes interfaces, herramientas y aplicaciones:
+
+*   **Píldoras de Categorías en Navegación Horizontal (Pills)**:
+    *   Diseñamos una barra horizontal redondeada e interactiva que agrupa 5 categorías principales: **Sitios Web & Landings**, **Simuladores & Calculadoras**, **Visualización de Datos**, **Algoritmos de Inversión** y **Mini-aplicaciones**.
+    *   La barra es de navegación rápida y fluida mediante deslizamiento horizontal (`scrollbar-none`), con estilos que destacan la categoría activa usando un fondo negro de alto contraste en modo claro y fondo blanco en modo oscuro.
+*   **15 Mockups Visuales Diseñados en CSS Puro**:
+    *   Creamos el componente interactivo `MockupPreview` que renderiza una previsualización visual abstracta y estilizada en CSS de alta fidelidad para cada una de las 15 creaciones, evitando placeholders grises o imágenes rotas:
+        *   **Stillwater Retreat**: Landing de bienestar en tonos beige/crema con fuentes serif, galería y botón de reservas.
+        *   **Severin Halbe**: Portafolio fotográfico brutalista en verde oscuro y detalles dorados.
+        *   **Iron & Steel Gym**: Landing deportiva de alto rendimiento en negro carbón con acentos naranja neón.
+        *   **Calculadora de Interés Compuesto**: Simulador con gráfico de barras exponenciales de crecimiento y desglose de ganancias.
+        *   **Proyector de Metas de Ahorro**: Gráfico circular de progreso (SVG) y estadísticas sobre la regla del 4%.
+        *   **Simulador de Hipoteca Premium**: Gráfico de barras apiladas que diferencia principal vs interés en la amortización.
+        *   **Crypto Allocation Dashboard**: Panel de balance de tokens (BTC/ETH) con barras de progreso de asignación y variación porcentual (PnL).
+        *   **Heatmap del Mercado Accionario**: Cuadrícula de sectores y celdas de acciones coloreadas según su rendimiento diario (verde/rojo).
+        *   **Asignación Global de Activos**: Gráfico de dona (SVG) representando carteras multi-activo de renta variable y fija.
+        *   **Estrategia DCA Backtester**: Gráfico de líneas (SVG) comparando las compras recurrentes frente al efectivo.
+        *   **Frontera Eficiente de Markowitz**: Curva de frontera con trazado de volatilidad y puntos de máximo Sharpe.
+        *   **Identificador de Velas Japonesas**: Gráfico técnico con velas de cotización e indicador de patrón martillo alcista.
+        *   **Board Kanban + Pomodoro**: Columnas To-Do / Doing / Done con etiquetas y cronómetro pomodoro en cuenta regresiva.
+        *   **Ledger de Control de Gastos**: Ledger contable con filas de transacciones categorizadas y balance total.
+        *   **Editor de Código Sandbox**: Simulación de pantalla dividida con panel de código HTML/CSS a la izquierda y preview de botón en vivo a la derecha.
+*   **Comportamiento Interactivo al Clic (Carga de Prompt y Modo WebBuilder)**:
+    *   Al hacer clic sobre cualquier tarjeta de creación, el sistema realiza automáticamente tres acciones integradas:
+        1. Copia y establece el prompt descriptivo de alta fidelidad optimizado en la caja de texto (`ChatInput`).
+        2. Activa el modo de construcción en tiempo real de la plataforma (`isWebBuilderMode: true`).
+        3. Enfoca automáticamente el cursor en el textarea del chat utilizando la referencia del elemento (`chat-input`), permitiendo al usuario simplemente presionar enviar para comenzar a construir su aplicación.
+        4. Muestra un toast de confirmación confirmando la inyección del prompt.
+
+---
+
+## 24. Actualización del Favicon de la Plataforma
+
+*   **Descarga e Integración de Asset**:
+    *   Descargamos la imagen de favicon solicitada por el usuario (`https://mail.programbi.com/uploads/magnific__background__76233.png`) y la guardamos directamente en la ruta del asset físico `public/assets/maverlang-favicon.png`, que es el archivo referenciado por la metadata de Next.js en el layout global `src/app/layout.tsx`.
+
+
+
+

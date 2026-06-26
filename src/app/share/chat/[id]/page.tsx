@@ -61,11 +61,13 @@ export default async function SharedChatPage({ params }: PageProps) {
       {/* Header / Logo */}
       <div className="mb-10 text-center relative z-10">
         <Link href="/home" className="inline-flex items-center gap-2 mb-4 hover:opacity-80 transition-opacity">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#1890FF] to-indigo-600 flex items-center justify-center shadow-md">
-            <Sparkles className="w-4 h-4 text-white" />
-          </div>
-          <span className="font-extrabold text-lg tracking-wide text-gray-900 dark:text-white">
-            Maverlang <span className="text-[#1890FF]">AI</span>
+          <img 
+            src="/assets/maverlang-logo-small.png" 
+            alt="Maverlang Logo" 
+            className="h-8 w-auto object-contain select-none pointer-events-none"
+          />
+          <span className="font-extrabold text-lg tracking-wide text-gray-900 dark:text-white uppercase">
+            MAVERLANG <span className="text-[#1890FF]">AI</span>
           </span>
         </Link>
         <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">

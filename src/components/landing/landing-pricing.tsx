@@ -11,11 +11,10 @@ const PLANS = [
     period: "siempre gratis",
     desc: "Para informarse y probar la tecnología de Maverlang.",
     features: [
-      "50.000 tokens de IA (de por vida)",
+      "Acceso a preguntas IA (límite básico)",
       "5 audios de noticias al día",
-      "Hasta 2 active alerts",
+      "Hasta 2 alertas de precio activas",
       "Hasta 5 activos en portafolio",
-      "Multiplicador de diamantes x0.5",
       "Soporte de la comunidad"
     ],
     popular: false,
@@ -28,11 +27,10 @@ const PLANS = [
     period: "al mes",
     desc: "Para inversores y profesionales activos de la información.",
     features: [
-      "20x más tokens IA que Plan Free",
+      "Mucha más capacidad de preguntas al mes",
       "50 audios de noticias al mes",
       "5 alertas de precio activas",
       "Hasta 25 activos en portafolio",
-      "Multiplicador de diamantes x1",
       "Lectura 100% sin publicidad",
       "Análisis básico de portafolio",
       "Soporte estándar por email"
@@ -47,11 +45,10 @@ const PLANS = [
     period: "al mes",
     desc: "Para inversores exigentes que quieren el máximo potencial.",
     features: [
-      "90x más tokens IA que Plan Free",
+      "Doble de límites de preguntas (x2 límites de Pro)",
       "150 audios de noticias al mes",
       "15 alertas de precio activas",
       "Hasta 100 activos en portafolio",
-      "Multiplicador de diamantes x2",
       "Análisis avanzado de portafolio",
       "Alertas automáticas por SMS",
       "Informes semanales de portafolio"
@@ -66,11 +63,10 @@ const PLANS = [
     period: "al mes",
     desc: "El máximo poder analítico con infraestructura dedicada.",
     features: [
-      "200x más tokens IA que Plan Free",
+      "Límites de preguntas x5 (x5 límites de Pro)",
       "300 audios de noticias al mes",
       "30 alertas de precio activas",
       "Activos de portafolio ilimitados",
-      "Multiplicador de diamantes x5",
       "Análisis premium de portafolio",
       "IA avanzada con búsqueda web",
       "Soporte dedicado 24/7"

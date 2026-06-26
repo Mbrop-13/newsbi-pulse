@@ -61,6 +61,562 @@ const MODEL_MAP: Record<string, string> = {
   agent: "agent",
 }
 
+interface CreativeCategory {
+  id: string;
+  label: string;
+  icon: React.ComponentType<any>;
+}
+
+const CREATIVE_CATEGORIES: CreativeCategory[] = [
+  { id: "sitios", label: "Sitios Web & Landings", icon: Globe },
+  { id: "simuladores", label: "Simuladores & Calculadoras", icon: Landmark },
+  { id: "visualizaciones", label: "Visualización de Datos", icon: LineChart },
+  { id: "algoritmos", label: "Algoritmos de Inversión", icon: Cpu },
+  { id: "mini-apps", label: "Mini-aplicaciones", icon: Code2 },
+];
+
+interface PreviewItem {
+  id: string;
+  category: string;
+  title: string;
+  desc: string;
+  mockType: string;
+  prompt: string;
+  badge?: string;
+}
+
+const PREVIEW_ITEMS: PreviewItem[] = [
+  // sitios
+  {
+    id: "stillwater",
+    category: "sitios",
+    title: "Stillwater Retreat",
+    desc: "Landing page de bienestar con tipografía serif, tonos crema y galería interactiva.",
+    mockType: "retreat",
+    prompt: "Construye una landing page premium para 'Stillwater Retreat', un resort de bienestar y meditación. Usa una paleta de colores beige, crema y piedra con acentos dorados. Incluye una sección de bienvenida, galería de cabañas, un formulario de reserva de retiros interactivo y testimonios con tipografía serif elegante."
+  },
+  {
+    id: "severin",
+    category: "sitios",
+    title: "Severin Halbe",
+    desc: "Portafolio brutalista de arquitectura con alto contraste, títulos serif grandes y minimalismo.",
+    mockType: "portfolio",
+    prompt: "Crea un sitio web portafolio minimalista y de estilo brutalista para el fotógrafo 'Severin Halbe'. Utiliza un diseño de alto contraste con fondo verde oscuro profundo, tipografía de serif clásica y detalles en oro. Debe incluir una cuadrícula asimétrica para exhibir fotos de proyectos de arquitectura, un menú minimalista y un formulario de contacto directo."
+  },
+  {
+    id: "iron-gym",
+    category: "sitios",
+    title: "Iron & Steel Gym",
+    desc: "Landing de alto rendimiento deportivo con acentos naranja neón y fuentes bold.",
+    mockType: "gym",
+    prompt: "Diseña una página de aterrizaje de alto rendimiento para el gimnasio 'Iron & Steel Gym'. Utiliza colores oscuros (carbón y negro) con acentos de color naranja neón brillante. Incluye titulares audaces en mayúsculas, una sección con planes de entrenamiento de fuerza y una calculadora para estimar la carga máxima de entrenamiento."
+  },
+  // simuladores
+  {
+    id: "compound",
+    category: "simuladores",
+    title: "Calculadora de Interés Compuesto",
+    desc: "Simulador interactivo con sliders de aportes mensuales, tasas de retorno y gráfico exponencial.",
+    mockType: "compound",
+    prompt: "Construye una calculadora interactiva de interés compuesto en React. El usuario debe poder ajustar el capital inicial, la contribución mensual, los años de plazo y la tasa de interés anual mediante controles deslizantes. Muestra el resultado final de forma visual con un gráfico de crecimiento y una tabla desglosada por años con las ganancias."
+  },
+  {
+    id: "goal",
+    category: "simuladores",
+    title: "Proyector de Metas de Ahorro",
+    desc: "Calcula los años requeridos para jubilarte según tu tasa de ahorro y rentabilidad esperada.",
+    mockType: "goal",
+    prompt: "Diseña un proyector interactivo de metas de jubilación y libertad financiera. Permite al usuario configurar sus ingresos actuales, gastos mensuales estimados y retorno de inversiones. Muestra un indicador circular de progreso y una proyección de los años necesarios para alcanzar la meta financiera basándose en la regla del 4%."
+  },
+  {
+    id: "mortgage",
+    category: "simuladores",
+    title: "Simulador de Hipoteca Premium",
+    desc: "Desglosa la amortización de principal vs intereses y calcula tu pago mensual neto.",
+    mockType: "mortgage",
+    prompt: "Crea un simulador interactivo de hipoteca y crédito para vivienda. Permite ingresar el valor de la propiedad, la cuota inicial (%), la tasa de interés anual y el plazo en años. Visualiza mediante un gráfico de barras apiladas la porción mensual dedicada a amortizar el capital frente a los intereses pagados."
+  },
+  // visualizaciones
+  {
+    id: "crypto-portfolio",
+    category: "visualizaciones",
+    title: "Crypto Allocation Dashboard",
+    desc: "Panel de control con gráficos de torta de balances y tablas de rendimiento en tiempo real.",
+    mockType: "crypto",
+    prompt: "Construye un panel de control interactivo para portafolios cripto. Debe incluir un gráfico circular que muestre la asignación de activos de Bitcoin, Ethereum y Solana. Incluye una tabla con el saldo disponible, variaciones porcentuales de precio en las últimas 24 horas y mini gráficos de tendencia (sparklines)."
+  },
+  {
+    id: "heatmap",
+    category: "visualizaciones",
+    title: "Heatmap del Mercado Accionario",
+    desc: "Grilla en colores de rendimiento de las 500 acciones más grandes por capitalización.",
+    mockType: "heatmap",
+    prompt: "Diseña un mapa de calor dinámico del mercado de valores en React. Divide la interfaz por sectores industriales principales (Tecnología, Finanzas, Salud). Cada sector debe contener celdas con tickers de empresas de diferente tamaño, coloreadas según su variación porcentual del día (verde brillante para alzas fuertes y rojo profundo para caídas)."
+  },
+  {
+    id: "donut-alloc",
+    category: "visualizaciones",
+    title: "Asignación Global de Activos",
+    desc: "Gráfico de anillo para carteras multi-activo de acciones, bonos, oro y cash.",
+    mockType: "donut",
+    prompt: "Crea un componente interactivo de asignación de activos financieros usando un gráfico de dona. Permite a los usuarios seleccionar entre portafolios predefinidos (Conservador, Moderado, Agresivo, Cartera Permanente) y ver cómo se actualiza dinámicamente la distribución de renta variable, bonos soberanos, materias primas y efectivo."
+  },
+  // algoritmos
+  {
+    id: "dca-backtest",
+    category: "algoritmos",
+    title: "Estrategia DCA Backtester",
+    desc: "Compara el rendimiento histórico de compras recurrentes frente a depósitos de efectivo.",
+    mockType: "dca",
+    prompt: "Desarrolla un simulador interactivo para evaluar la estrategia de Dollar Cost Averaging (DCA). Permite al usuario simular compras mensuales de $100 dólares de un índice como el S&P 500 o Bitcoin durante los últimos 5 años y contrastar el valor acumulado frente a haber guardado el efectivo en una cuenta bancaria."
+  },
+  {
+    id: "mpt-frontier",
+    category: "algoritmos",
+    title: "Frontera Eficiente de Markowitz",
+    desc: "Calcula carteras óptimas de mínima volatilidad y máximo ratio de Sharpe.",
+    mockType: "mpt",
+    prompt: "Crea una herramienta visual interactiva para la Teoría Moderna del Portafolio (Markowitz). Grafica la frontera eficiente mostrando el riesgo (volatilidad) en el eje X y el retorno esperado en el eje Y. Dibuja puntos correspondientes a la cartera de mínimo riesgo y la cartera de máximo Sharpe Ratio basados en un grupo de 4 activos."
+  },
+  {
+    id: "candlestick-patterns",
+    category: "algoritmos",
+    title: "Identificador de Velas Japonesas",
+    desc: "Gráfico técnico interactivo con marcas visuales al detectar patrones alcistas o bajistas.",
+    mockType: "candlestick",
+    prompt: "Diseña un simulador de gráfico de velas japonesas interactivo. Incluye controles para simular diferentes tendencias de precios (alcista, bajista, consolidación). Implementa un algoritmo que detecte patrones técnicos comunes de velas (como martillos, envolventes o estrellas de la mañana) y los resalte visualmente sobre el gráfico con etiquetas explicativas."
+  },
+  // mini-apps
+  {
+    id: "pomodoro-planner",
+    category: "mini-apps",
+    title: "Board Kanban + Pomodoro",
+    desc: "Gestor de tareas integrado con temporizador para sesiones enfocadas de desarrollo.",
+    mockType: "kanban",
+    prompt: "Crea una aplicación de productividad que fusione un tablero Kanban minimalista con un temporizador Pomodoro. Permite agregar, mover y archivar tareas entre columnas (Pendientes, En Proceso, Terminadas). El temporizador debe integrarse con las tareas para contar los ciclos de enfoque dedicados a cada una."
+  },
+  {
+    id: "expense-tracker",
+    category: "mini-apps",
+    title: "Ledger de Control de Gastos",
+    desc: "Registro contable sencillo con etiquetas de categorías y resúmenes de flujos.",
+    mockType: "ledger",
+    prompt: "Diseña una aplicación tipo Ledger para registrar ingresos y gastos mensuales. Incluye un formulario rápido de entrada, etiquetas personalizables (Comida, Alquiler, Ocio, Inversión), un listado ordenado cronológicamente de transacciones recientes y un bloque superior con el balance neto total y gráficos de barra mensuales."
+  },
+  {
+    id: "code-sandbox",
+    category: "mini-apps",
+    title: "Editor de Código Interactiva",
+    desc: "Entorno sandbox con ventanas de edición y renderizado en vivo de layouts HTML/CSS.",
+    mockType: "sandbox",
+    prompt: "Desarrolla un sandbox de código interactivo ligero para desarrollo frontend. Debe presentar una pantalla dividida: a la izquierda paneles para escribir código HTML y CSS (con pestañas para cambiar entre ellos), y a la derecha un iframe o contenedor que renderice en tiempo real los cambios visuales aplicados por el usuario."
+  }
+];
+
+function MockupPreview({ type }: { type: string }) {
+  switch (type) {
+    case "retreat":
+      return (
+        <div className="w-full h-full bg-[#fbfaf8] dark:bg-[#1a1917] p-3 flex flex-col justify-between font-serif text-[10px] text-stone-850 dark:text-stone-250 select-none overflow-hidden relative border-b border-border/20">
+          <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#000_1px,transparent_1px)] dark:bg-[radial-gradient(#fff_1px,transparent_1px)] bg-[size:10px_10px]" />
+          <div className="flex justify-between items-center border-b border-stone-200 dark:border-stone-800 pb-1.5 z-10">
+            <span className="font-semibold tracking-wider text-xs">STILLWATER</span>
+            <div className="flex gap-2 text-[7px] font-sans text-stone-500">
+              <span>RESORT</span>
+              <span>RETIROS</span>
+            </div>
+          </div>
+          <div className="my-auto text-center px-2 py-1 z-10">
+            <h4 className="text-[11px] font-medium leading-tight">Encuentra paz en la naturaleza</h4>
+            <div className="w-8 h-[1px] bg-amber-600/60 mx-auto my-1.5" />
+            <p className="text-[7px] font-sans text-stone-500 leading-normal max-w-[150px] mx-auto line-clamp-1">Un santuario de tranquilidad y renovación mental.</p>
+          </div>
+          <div className="flex justify-between items-center mt-auto z-10">
+            <div className="w-12 h-3 rounded bg-stone-200 dark:bg-stone-800" />
+            <div className="w-14 h-4 rounded bg-stone-800 dark:bg-stone-200 text-white dark:text-stone-900 text-[6px] font-sans flex items-center justify-center font-bold tracking-wide">
+              RESERVAR AHORA
+            </div>
+          </div>
+        </div>
+      );
+    case "portfolio":
+      return (
+        <div className="w-full h-full bg-[#0d1612] p-3 flex flex-col justify-between font-serif text-[9px] text-[#e3eade] select-none overflow-hidden relative border-b border-border/20">
+          <div className="flex justify-between items-center border-b border-white/10 pb-1 z-10">
+            <span className="font-bold tracking-widest text-[9px] text-amber-500">SEVERIN HALBE</span>
+            <span className="text-[7px] text-[#8e988b]">PORTFOLIO</span>
+          </div>
+          <div className="flex gap-2 my-auto items-center z-10">
+            <div className="w-1/2 aspect-video bg-white/5 border border-white/10 rounded flex items-center justify-center">
+              <span className="text-[7px] text-amber-500/60 italic font-sans">BRUTALIST ARCH</span>
+            </div>
+            <div className="w-1/2 flex flex-col gap-1.5">
+              <h4 className="text-[9px] font-bold leading-tight">Estética y Forma</h4>
+              <p className="text-[6px] text-[#8e988b] leading-tight line-clamp-2">Exploración visual del concreto expuesto.</p>
+            </div>
+          </div>
+          <div className="flex justify-between items-center text-[7px] text-[#8e988b] mt-auto border-t border-white/10 pt-1 z-10">
+            <span>BERLIN, GER</span>
+            <span className="text-amber-500 font-sans font-bold">VER PROYECTO ↗</span>
+          </div>
+        </div>
+      );
+    case "gym":
+      return (
+        <div className="w-full h-full bg-[#0a0a0c] p-3 flex flex-col justify-between text-[9px] text-zinc-100 select-none overflow-hidden relative border-b border-border/20">
+          <div className="absolute inset-0 bg-gradient-to-tr from-orange-500/5 via-transparent to-transparent pointer-events-none" />
+          <div className="flex justify-between items-center z-10">
+            <span className="font-black tracking-tighter text-xs text-orange-500">IRON & STEEL</span>
+            <div className="px-1.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-800 text-[6px] text-zinc-400">GYM</div>
+          </div>
+          <div className="my-auto z-10 space-y-1">
+            <h4 className="text-[10px] font-black tracking-tight leading-none uppercase italic">BUILT BY DISCIPLINE.<br/>FORGED IN IRON.</h4>
+            <div className="flex gap-2 items-center text-[7px] text-zinc-400">
+              <span className="flex items-center gap-0.5"><span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />+500 SOCIOS</span>
+              <span>100% COACHES</span>
+            </div>
+          </div>
+          <div className="flex gap-1.5 items-center mt-auto z-10">
+            <div className="flex-1 h-4 rounded bg-orange-500 text-black text-[7px] font-black flex items-center justify-center tracking-wider">UNIRSE AL CLUB</div>
+            <div className="w-8 h-4 rounded bg-zinc-900 border border-zinc-800 flex items-center justify-center text-[8px]">▶</div>
+          </div>
+        </div>
+      );
+    case "compound":
+      return (
+        <div className="w-full h-full bg-[#090d16] p-3 flex flex-col justify-between text-[9px] text-slate-100 select-none overflow-hidden relative border-b border-border/20">
+          <div className="flex justify-between items-center z-10">
+            <span className="font-bold text-slate-300">Compound Calculator</span>
+            <span className="text-[7px] text-[#1890FF] font-bold bg-[#1890FF]/10 px-1.5 py-0.5 rounded">SIMULATOR</span>
+          </div>
+          <div className="my-auto flex items-end gap-1.5 h-12 z-10">
+            <div className="w-full flex items-end justify-between h-full px-1">
+              <div className="w-2.5 h-[15%] bg-slate-800 rounded-t-sm" />
+              <div className="w-2.5 h-[22%] bg-slate-800 rounded-t-sm" />
+              <div className="w-2.5 h-[32%] bg-slate-700 rounded-t-sm" />
+              <div className="w-2.5 h-[48%] bg-[#1890FF]/60 rounded-t-sm" />
+              <div className="w-2.5 h-[70%] bg-[#1890FF] rounded-t-sm" />
+              <div className="w-2.5 h-[100%] bg-emerald-500 rounded-t-sm" />
+            </div>
+          </div>
+          <div className="flex justify-between items-center mt-auto z-10 border-t border-slate-800 pt-1 text-[7px] text-slate-400">
+            <span>Aporte: $250/mes</span>
+            <span className="text-emerald-400 font-bold font-mono">+182% Ganado</span>
+          </div>
+        </div>
+      );
+    case "goal":
+      return (
+        <div className="w-full h-full bg-[#05110c] p-3 flex flex-col justify-between text-[9px] text-emerald-100 select-none overflow-hidden relative border-b border-border/20">
+          <div className="flex justify-between items-center z-10">
+            <span className="font-bold text-emerald-300">Goal Projector</span>
+            <span className="text-[6px] text-emerald-400 font-bold bg-emerald-950 border border-emerald-800/40 px-1 py-0.5 rounded">RULE of 4%</span>
+          </div>
+          <div className="my-auto flex items-center justify-between gap-2 z-10">
+            <div className="w-10 h-10 flex items-center justify-center relative shrink-0">
+              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                <circle cx="18" cy="18" r="15.9155" fill="none" stroke="currentColor" strokeWidth="3" className="text-emerald-950" />
+                <circle cx="18" cy="18" r="15.9155" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray="72, 100" strokeLinecap="round" className="text-emerald-500" />
+              </svg>
+              <span className="absolute text-[8px] font-bold text-emerald-400">72%</span>
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[6px] text-emerald-500 uppercase tracking-wide">Meta Libertad Financiera</span>
+              <span className="text-[10px] font-bold text-white">$650K Ahorrado</span>
+              <span className="text-[6px] text-emerald-400 font-mono">Restan 4.5 años</span>
+            </div>
+          </div>
+          <div className="mt-auto border-t border-emerald-900/50 pt-1 text-[7px] text-emerald-500 z-10">
+            Tasa de ahorro mensual: 45%
+          </div>
+        </div>
+      );
+    case "mortgage":
+      return (
+        <div className="w-full h-full bg-[#110e16] p-3 flex flex-col justify-between text-[9px] text-purple-100 select-none overflow-hidden relative border-b border-border/20">
+          <div className="flex justify-between items-center z-10">
+            <span className="font-bold text-purple-300">Mortgage Planner</span>
+            <span className="text-[6px] text-purple-400 font-bold bg-purple-950 border border-purple-800/40 px-1 py-0.5 rounded">AMORTIZACIÓN</span>
+          </div>
+          <div className="my-auto flex gap-3 items-center z-10">
+            <div className="flex flex-col gap-1 w-1/2">
+              <div className="w-full h-3 rounded bg-zinc-900 border border-zinc-800 p-0.5 flex items-center"><span className="text-[6px] text-zinc-500">Tasa: 4.8%</span></div>
+              <div className="w-full h-3 rounded bg-zinc-900 border border-zinc-800 p-0.5 flex items-center"><span className="text-[6px] text-zinc-500">Monto: $300k</span></div>
+            </div>
+            <div className="flex-1 flex flex-col justify-center space-y-1">
+              <div className="flex justify-between text-[6px]">
+                <span className="text-blue-400">Principal</span>
+                <span className="text-purple-400">Interés</span>
+              </div>
+              <div className="w-full h-3.5 rounded-sm bg-zinc-900 flex overflow-hidden border border-zinc-800">
+                <div className="w-[40%] bg-blue-500" />
+                <div className="w-[60%] bg-purple-500" />
+              </div>
+              <span className="text-[8px] font-bold text-white text-center">$1,574/mes</span>
+            </div>
+          </div>
+          <div className="mt-auto border-t border-purple-900/50 pt-1 text-[7px] text-purple-500 flex justify-between z-10">
+            <span>Plazo: 30 Años</span>
+            <span className="text-blue-400">Ahorro fiscal: $4k/año</span>
+          </div>
+        </div>
+      );
+    case "crypto":
+      return (
+        <div className="w-full h-full bg-[#0a0c10] p-3 flex flex-col justify-between text-[9px] text-zinc-200 select-none overflow-hidden relative border-b border-border/20">
+          <div className="flex justify-between items-center z-10">
+            <span className="font-bold text-zinc-400">Portfolio Allocation</span>
+            <span className="text-[6px] text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-900 px-1 py-0.5 rounded">ONLINE</span>
+          </div>
+          <div className="my-auto space-y-1.5 z-10">
+            <div className="flex items-center justify-between text-[7px]">
+              <span className="flex items-center gap-1 font-bold text-white">💰 BTC <span className="text-[6px] text-zinc-500">Bitcoin</span></span>
+              <span className="font-mono text-zinc-300">62% ($45,210)</span>
+            </div>
+            <div className="w-full h-1.5 rounded-full bg-zinc-850 overflow-hidden"><div className="w-[62%] h-full bg-amber-500 rounded-full" /></div>
+            <div className="flex items-center justify-between text-[7px]">
+              <span className="flex items-center gap-1 font-bold text-white">🔷 ETH <span className="text-[6px] text-zinc-500">Ethereum</span></span>
+              <span className="font-mono text-zinc-300">28% ($20,400)</span>
+            </div>
+            <div className="w-full h-1.5 rounded-full bg-zinc-850 overflow-hidden"><div className="w-[28%] h-full bg-blue-500 rounded-full" /></div>
+          </div>
+          <div className="mt-auto border-t border-zinc-850 pt-1 flex justify-between text-[7px] text-zinc-500 z-10">
+            <span>Total: $72,610 USD</span>
+            <span className="text-emerald-400 font-bold font-mono">PnL: +5.2% (24h)</span>
+          </div>
+        </div>
+      );
+    case "heatmap":
+      return (
+        <div className="w-full h-full bg-[#08080a] p-3 flex flex-col justify-between text-[9px] text-zinc-200 select-none overflow-hidden relative border-b border-border/20">
+          <div className="flex justify-between items-center z-10">
+            <span className="font-bold text-zinc-400">Market Map</span>
+            <span className="text-[6px] text-red-400 font-bold bg-red-950/60 border border-red-900 px-1 py-0.5 rounded">S&P 500</span>
+          </div>
+          <div className="my-auto grid grid-cols-3 gap-1 z-10 w-full">
+            <div className="bg-emerald-950 border border-emerald-700/40 rounded p-1 flex flex-col justify-between h-7 text-center">
+              <span className="text-[7px] font-black text-emerald-400">AAPL</span>
+              <span className="text-[6px] text-emerald-500 font-mono font-bold">+2.4%</span>
+            </div>
+            <div className="bg-emerald-900 border border-emerald-600/40 rounded p-1 flex flex-col justify-between h-7 text-center">
+              <span className="text-[7px] font-black text-emerald-300">MSFT</span>
+              <span className="text-[6px] text-emerald-400 font-mono font-bold">+1.2%</span>
+            </div>
+            <div className="bg-red-950 border border-red-700/40 rounded p-1 flex flex-col justify-between h-7 text-center">
+              <span className="text-[7px] font-black text-red-400">NVDA</span>
+              <span className="text-[6px] text-red-500 font-mono font-bold">-3.8%</span>
+            </div>
+            <div className="bg-[#121214] border border-zinc-800 rounded p-1 flex flex-col justify-between h-7 text-center">
+              <span className="text-[7px] font-black text-zinc-400">AMZN</span>
+              <span className="text-[6px] text-zinc-500 font-mono font-bold">0.0%</span>
+            </div>
+            <div className="bg-emerald-950 border border-emerald-700/40 rounded p-1 flex flex-col justify-between h-7 text-center">
+              <span className="text-[7px] font-black text-emerald-400">TSLA</span>
+              <span className="text-[6px] text-emerald-500 font-mono font-bold">+4.1%</span>
+            </div>
+            <div className="bg-red-900 border border-red-650/45 rounded p-1 flex flex-col justify-between h-7 text-center">
+              <span className="text-[7px] font-black text-red-300">GOOG</span>
+              <span className="text-[6px] text-red-400 font-mono font-bold">-1.8%</span>
+            </div>
+          </div>
+          <div className="mt-auto border-t border-zinc-850 pt-1 text-[7px] text-zinc-600 text-center z-10">
+            Sectores: Tech / Consumo / Comunicaciones
+          </div>
+        </div>
+      );
+    case "donut":
+      return (
+        <div className="w-full h-full bg-[#0a0a0f] p-3 flex flex-col justify-between text-[9px] text-slate-200 select-none overflow-hidden relative border-b border-border/20">
+          <div className="flex justify-between items-center z-10">
+            <span className="font-bold text-slate-400">Asset Donut</span>
+            <span className="text-[6px] text-blue-400 font-bold bg-blue-950/60 border border-blue-900 px-1 py-0.5 rounded">PORTFOLIOS</span>
+          </div>
+          <div className="my-auto flex items-center justify-between gap-3 z-10">
+            <div className="w-12 h-12 flex items-center justify-center relative shrink-0">
+              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                <circle cx="18" cy="18" r="15.9155" fill="none" stroke="#2563EB" strokeWidth="4.2" strokeDasharray="60, 100" />
+                <circle cx="18" cy="18" r="15.9155" fill="none" stroke="#0D9488" strokeWidth="4.2" strokeDasharray="30, 100" strokeDashoffset="-60" />
+                <circle cx="18" cy="18" r="15.9155" fill="none" stroke="#EA580C" strokeWidth="4.2" strokeDasharray="10, 100" strokeDashoffset="-90" />
+              </svg>
+              <div className="absolute w-7 h-7 rounded-full bg-[#0a0a0f]" />
+            </div>
+            <div className="flex flex-col gap-0.5 text-[6px]">
+              <span className="flex items-center gap-1 font-bold text-white"><span className="w-1.5 h-1.5 rounded-full bg-blue-500" /> Acciones (60%)</span>
+              <span className="flex items-center gap-1 font-bold text-white"><span className="w-1.5 h-1.5 rounded-full bg-teal-650" /> Bonos (30%)</span>
+              <span className="flex items-center gap-1 font-bold text-white"><span className="w-1.5 h-1.5 rounded-full bg-orange-600" /> Metales (10%)</span>
+            </div>
+          </div>
+          <div className="mt-auto border-t border-slate-900 pt-1 text-[7px] text-slate-500 z-10">
+            Perfil: Crecimiento Moderado
+          </div>
+        </div>
+      );
+    case "dca":
+      return (
+        <div className="w-full h-full bg-[#0b0c10] p-3 flex flex-col justify-between text-[9px] text-slate-200 select-none overflow-hidden relative border-b border-border/20">
+          <div className="flex justify-between items-center z-10">
+            <span className="font-bold text-slate-400">DCA Backtester</span>
+            <span className="text-[6px] text-indigo-400 font-bold bg-indigo-950/60 border border-indigo-900 px-1 py-0.5 rounded">HISTÓRICO</span>
+          </div>
+          <div className="my-auto h-12 relative flex items-end justify-center z-10">
+            <svg className="w-full h-10 overflow-visible" viewBox="0 0 100 40">
+              <path d="M0,38 Q25,30 50,22 T100,5" fill="none" stroke="#4f46e5" strokeWidth="2.2" />
+              <path d="M0,38 L100,28" fill="none" stroke="#64748b" strokeWidth="1.2" strokeDasharray="2,2" />
+            </svg>
+            <span className="absolute right-1 top-1 bg-indigo-950 text-indigo-400 font-mono font-bold text-[7px] border border-indigo-850 px-1 rounded">SPY ETF</span>
+          </div>
+          <div className="mt-auto border-t border-slate-850 pt-1 flex justify-between text-[7px] text-slate-500 z-10">
+            <span>DCA: +77% Retorno</span>
+            <span className="text-emerald-400 font-bold font-mono">Valor: $21,950</span>
+          </div>
+        </div>
+      );
+    case "mpt":
+      return (
+        <div className="w-full h-full bg-[#0d0d11] p-3 flex flex-col justify-between text-[9px] text-indigo-100 select-none overflow-hidden relative border-b border-border/20">
+          <div className="flex justify-between items-center z-10">
+            <span className="font-bold text-zinc-400">Markowitz Frontier</span>
+            <span className="text-[6px] text-violet-400 font-bold bg-violet-950/60 border border-violet-900 px-1 py-0.5 rounded">OPTIMIZADOR</span>
+          </div>
+          <div className="my-auto h-12 relative flex items-center justify-center z-10">
+            <svg className="w-full h-10" viewBox="0 0 100 40">
+              <path d="M10,35 C15,18 45,10 90,8" fill="none" stroke="#8b5cf6" strokeWidth="2" />
+              <circle cx="48" cy="12" r="3" fill="#10b981" />
+              <circle cx="28" cy="22" r="2" fill="#ef4444" />
+            </svg>
+            <span className="absolute top-0 right-8 text-[6px] text-emerald-400 font-bold flex items-center gap-0.5"><span className="w-1 h-1 rounded-full bg-emerald-500" />Máx Sharpe</span>
+          </div>
+          <div className="mt-auto border-t border-zinc-850 pt-1 text-[7px] text-zinc-550 flex justify-between z-10">
+            <span>Eje X: Volatilidad</span>
+            <span>Eje Y: Retorno</span>
+          </div>
+        </div>
+      );
+    case "candlestick":
+      return (
+        <div className="w-full h-full bg-[#07090e] p-3 flex flex-col justify-between text-[9px] text-zinc-200 select-none overflow-hidden relative border-b border-border/20">
+          <div className="flex justify-between items-center z-10">
+            <span className="font-bold text-zinc-400">Candlestick Patterns</span>
+            <span className="text-[6px] text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-900 px-1 py-0.5 rounded">AUTO-DETECT</span>
+          </div>
+          <div className="my-auto h-12 flex items-end justify-between px-2 z-10">
+            <div className="flex items-center gap-3">
+              <div className="flex flex-col items-center">
+                <div className="w-0.5 h-3 bg-red-500" />
+                <div className="w-2.5 h-5 bg-red-500 rounded-sm" />
+                <div className="w-0.5 h-2.5 bg-red-500" />
+              </div>
+              <div className="flex flex-col items-center">
+                <div className="w-0.5 h-1 bg-red-500" />
+                <div className="w-2.5 h-3 bg-red-500 rounded-sm" />
+                <div className="w-0.5 h-4 bg-red-500" />
+              </div>
+              <div className="flex flex-col items-center relative">
+                <div className="w-0.5 h-4 bg-emerald-500" />
+                <div className="w-2.5 h-6 bg-emerald-500 rounded-sm" />
+                <div className="w-0.5 h-1.5 bg-emerald-500" />
+                <span className="absolute -top-6 bg-emerald-950 text-emerald-400 font-bold text-[5px] border border-emerald-900 px-1 py-0.5 rounded whitespace-nowrap">MARTILLO ALCISTA</span>
+              </div>
+              <div className="flex flex-col items-center">
+                <div className="w-0.5 h-1 bg-emerald-500" />
+                <div className="w-2.5 h-4 bg-emerald-500 rounded-sm" />
+                <div className="w-0.5 h-3 bg-emerald-500" />
+              </div>
+            </div>
+          </div>
+          <div className="mt-auto border-t border-zinc-850 pt-1 text-[7px] text-zinc-600 text-right z-10">
+            EMA 20/50 cruzada alcista
+          </div>
+        </div>
+      );
+    case "kanban":
+      return (
+        <div className="w-full h-full bg-[#0d0f14] p-3 flex flex-col justify-between text-[9px] text-zinc-200 select-none overflow-hidden relative border-b border-border/20">
+          <div className="flex justify-between items-center z-10">
+            <span className="font-bold text-zinc-400">Productivity Kanban</span>
+            <span className="text-[6px] text-red-400 font-bold bg-red-950/60 border border-red-900 px-1 py-0.5 rounded flex items-center gap-0.5">🍅 POMODORO</span>
+          </div>
+          <div className="my-auto grid grid-cols-3 gap-1 z-10 w-full">
+            <div className="bg-zinc-900/60 rounded p-1 space-y-1 h-12">
+              <span className="text-[6px] text-zinc-500 uppercase font-black">TO DO</span>
+              <div className="bg-zinc-800 rounded px-1 py-0.5 text-[5px] text-zinc-300 border border-zinc-700/30 truncate">UI Layout</div>
+            </div>
+            <div className="bg-zinc-900/60 rounded p-1 space-y-1 h-12 border border-blue-500/20">
+              <span className="text-[6px] text-blue-400 uppercase font-black">DOING</span>
+              <div className="bg-zinc-800 rounded px-1 py-0.5 text-[5px] text-white border border-blue-500/40 truncate font-semibold">Database API</div>
+            </div>
+            <div className="bg-zinc-900/60 rounded p-1 space-y-1 h-12">
+              <span className="text-[6px] text-zinc-500 uppercase font-black">DONE</span>
+              <div className="bg-zinc-800 rounded px-1 py-0.5 text-[5px] text-zinc-500 line-through truncate opacity-50">Auth setup</div>
+            </div>
+          </div>
+          <div className="mt-auto border-t border-zinc-850 pt-1 text-[7px] text-zinc-550 z-10 flex justify-between items-center">
+            <span>3 Tareas activas</span>
+            <span className="text-red-400 font-bold">Sesión: 24:12</span>
+          </div>
+        </div>
+      );
+    case "ledger":
+      return (
+        <div className="w-full h-full bg-[#0a0a0d] p-3 flex flex-col justify-between text-[9px] text-zinc-200 select-none overflow-hidden relative border-b border-border/20">
+          <div className="flex justify-between items-center z-10">
+            <span className="font-bold text-zinc-400">Expense Ledger</span>
+            <span className="text-[6px] text-zinc-500 font-bold bg-zinc-900 border border-zinc-800 px-1 py-0.5 rounded">CASHFLOW</span>
+          </div>
+          <div className="my-auto space-y-1 z-10 w-full">
+            <div className="flex justify-between items-center p-1 rounded bg-zinc-900/50 border border-zinc-800 text-[6px]">
+              <span className="text-zinc-300">Amazon Web Services</span>
+              <span className="text-red-400 font-bold font-mono">-$45.20</span>
+            </div>
+            <div className="flex justify-between items-center p-1 rounded bg-zinc-900/50 border border-zinc-800 text-[6px]">
+              <span className="text-zinc-300">Nómina Recibida</span>
+              <span className="text-emerald-400 font-bold font-mono">+$2,450.00</span>
+            </div>
+            <div className="flex justify-between items-center p-1 rounded bg-zinc-900/50 border border-zinc-800 text-[6px]">
+              <span className="text-zinc-300">Netflix Premium</span>
+              <span className="text-red-400 font-bold font-mono">-$15.99</span>
+            </div>
+          </div>
+          <div className="mt-auto border-t border-zinc-850 pt-1 flex justify-between text-[7px] text-zinc-550 z-10">
+            <span>Balance del mes</span>
+            <span className="text-emerald-400 font-black">+$2,388.81</span>
+          </div>
+        </div>
+      );
+    case "sandbox":
+      return (
+        <div className="w-full h-full bg-[#151922] p-3 flex flex-col justify-between text-[9px] text-slate-300 select-none overflow-hidden relative border-b border-border/20">
+          <div className="flex justify-between items-center z-10">
+            <span className="font-bold text-slate-400 font-mono">Editor Sandbox</span>
+            <span className="text-[6px] text-amber-500 font-bold bg-amber-950/60 border border-amber-900 px-1 py-0.5 rounded">HTML/CSS</span>
+          </div>
+          <div className="my-auto flex gap-2 items-center z-10 w-full h-12">
+            <div className="w-1/2 bg-[#0d1117] rounded border border-slate-800 p-1 flex flex-col font-mono text-[5px] text-slate-450 h-full justify-between overflow-hidden">
+              <div>
+                <span className="text-purple-400">&lt;div</span> <span className="text-amber-500">class</span>=<span className="text-emerald-400">&quot;btn&quot;</span>&gt;
+                <div className="pl-2 text-slate-300">Click me</div>
+                <span className="text-purple-400">&lt;/div&gt;</span>
+              </div>
+            </div>
+            <div className="w-1/2 bg-[#090d16] rounded border border-slate-800 flex items-center justify-center h-full">
+              <div className="px-2 py-0.5 rounded bg-blue-500 text-white text-[5px] font-bold shadow animate-pulse">Click me</div>
+            </div>
+          </div>
+          <div className="mt-auto border-t border-slate-800 pt-1 text-[7px] text-slate-500 z-10">
+            Live Preview activa (120ms latencia)
+          </div>
+        </div>
+      );
+    default:
+      return (
+        <div className="w-full h-full bg-slate-900 flex items-center justify-center text-white text-xs select-none">
+          Layout Mockup
+        </div>
+      );
+  }
+}
+
+
 function groupConsecutiveMessages(messages: ChatMessage[]): ChatMessage[] {
   const grouped: ChatMessage[] = [];
   
@@ -165,6 +721,7 @@ function ChatLandingContent() {
   const language = useLanguageStore((s) => s.language)
 
   const [activeMenu, setActiveMenu] = useState<'noticias' | 'mercados' | 'portafolio' | 'mundo' | null>(null);
+  const [activeCategory, setActiveCategory] = useState<string>("sitios");
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   // Legacy data fetching and activeMenu state have been removed as part of Phase 5 cleanup.
 
@@ -1217,25 +1774,31 @@ function ChatLandingContent() {
       <div className="flex flex-col h-full relative">
         {/* Main content area */}
         {!hasMessages ? (
-          /* Landing view - logo + input centrados verticalmente (estilo Grok/Perplexity).
+          /* Landing view - logo + input y galería de creaciones.
              Al enviar el primer mensaje, hasMessages pasa a true y el input baja a su
-             posición fija en el fondo (rama del chat activo más abajo). */
-          <div className="flex-1 flex flex-col items-center justify-center px-4 relative h-full">
+             posición fija en el fondo. */
+          <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 relative h-full overflow-y-auto scrollbar-hide">
             {/* Spacer superior para empujar el bloque hacia el centro visual */}
-            <div className="flex-grow" aria-hidden />
+            <div className="flex-grow min-h-[20px]" aria-hidden />
 
-            <div className="w-full max-w-3xl mx-auto flex flex-col items-center justify-center">
-              <div className="text-center mb-8">
+            <div className="w-full max-w-4xl mx-auto flex flex-col items-center justify-center">
+              <div className="text-center mb-6">
                 <div className="flex items-center justify-center">
                   <img 
                     src={chatLogoSrc} 
                     alt="Maverlang Logo" 
-                    className="h-16 w-auto object-contain select-none pointer-events-none"
+                    className="h-14 w-auto object-contain select-none pointer-events-none"
                   />
                 </div>
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground mt-4 font-outfit">
+                  ¿Qué deseas construir hoy?
+                </h1>
+                <p className="text-[11px] sm:text-xs text-muted-foreground mt-1 max-w-md mx-auto leading-relaxed">
+                  Interactúa con el copiloto y construye sitios web interactivos, simuladores y algoritmos financieros en segundos.
+                </p>
               </div>
 
-              <div className="w-full pb-4 md:pb-8">
+              <div className="w-full max-w-3xl pb-4">
                 <ChatInput
                   placeholder="Pregúntame lo que quieras..."
                   onSubmit={handleSend}
@@ -1246,10 +1809,96 @@ function ChatLandingContent() {
                   onChange={setInput}
                 />
               </div>
+
+              {/* Categorías y Tarjetas de Previsualización */}
+              <div className="w-full mt-2 flex flex-col items-center">
+                {/* Categorías (Pills) */}
+                <div className="flex items-center gap-1.5 overflow-x-auto w-full max-w-4xl py-2 px-4 scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden justify-start md:justify-center">
+                  {CREATIVE_CATEGORIES.map((cat) => {
+                    const CatIcon = cat.icon;
+                    const isActive = activeCategory === cat.id;
+                    return (
+                      <button
+                        key={cat.id}
+                        onClick={() => setActiveCategory(cat.id)}
+                        className={cn(
+                          "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 whitespace-nowrap active:scale-95 cursor-pointer",
+                          isActive
+                            ? "bg-zinc-950 dark:bg-white text-white dark:text-zinc-900 border-transparent shadow-xs"
+                            : "bg-transparent border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-250 hover:bg-zinc-50 dark:hover:bg-zinc-900/50"
+                        )}
+                      >
+                        <CatIcon className="w-3.5 h-3.5" />
+                        {cat.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Grid de Previsualización */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4 w-full max-w-4xl px-2">
+                  {PREVIEW_ITEMS.filter((item) => item.category === activeCategory).map((item) => (
+                    <div
+                      key={item.id}
+                      onClick={() => {
+                        setInput(item.prompt);
+                        useWebBuilderStore.getState().setWebBuilderMode(true);
+                        setTimeout(() => {
+                          const textarea = document.getElementById("chat-input") as HTMLTextAreaElement | null;
+                          if (textarea) {
+                            textarea.focus();
+                            const len = item.prompt.length;
+                            textarea.setSelectionRange(len, len);
+                          }
+                        }, 50);
+                        toast.success("Prompt cargado en el chat", {
+                          description: "Modo WebBuilder activado. Presiona enviar.",
+                          duration: 4000,
+                        });
+                      }}
+                      className="group relative flex flex-col overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-900/40 hover:border-[#1890FF]/40 hover:dark:border-[#1890FF]/40 hover:shadow-md transition-all duration-300 cursor-pointer h-[230px] select-none"
+                    >
+                      {/* Top mockup section */}
+                      <div className="h-[125px] w-full overflow-hidden relative shrink-0">
+                        <div className="w-full h-full transition-transform duration-500 group-hover:scale-103">
+                          <MockupPreview type={item.mockType} />
+                        </div>
+                        {/* Hover Overlay */}
+                        <div className="absolute inset-0 bg-black/10 dark:bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                          <span className="bg-[#1890FF] text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 tracking-wide">
+                            CONSTRUIR CREACIÓN
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Bottom details section */}
+                      <div className="flex-grow p-3 flex flex-col justify-between bg-zinc-50/50 dark:bg-zinc-900/10">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-xs font-bold text-foreground truncate max-w-[85%] group-hover:text-[#1890FF] transition-colors duration-200">
+                              {item.title}
+                            </h3>
+                            <span className="text-[7px] font-extrabold text-[#1890FF] bg-[#1890FF]/10 px-1 py-0.5 rounded tracking-wide uppercase shrink-0">
+                              BUILD
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground leading-normal line-clamp-2">
+                            {item.desc}
+                          </p>
+                        </div>
+                        <div className="text-[8px] text-[#1890FF] font-semibold flex items-center gap-0.5 mt-1 self-start opacity-70 group-hover:opacity-100 transition-opacity duration-200">
+                          <span>Haz clic para cargar prompt</span>
+                          <span>→</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {/* Spacer inferior para equilibrar el centrado visual */}
-            <div className="flex-grow" aria-hidden />
+            <div className="flex-grow min-h-[40px]" aria-hidden />
           </div>
         ) : (
           /* Chat view - messages + input at bottom */

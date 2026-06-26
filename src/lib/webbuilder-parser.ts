@@ -91,6 +91,10 @@ export function parseArtifact(text: string): ParsedArtifact | null {
     const filePath = normalizeFilePath(rawFilePath);
     let content = match[3];
 
+    // Strip CDATA wrappers if present (handles cases where the LLM wraps code in CDATA for XML compliance)
+    content = content.replace(/^\s*<!\[CDATA\[/gi, "");
+    content = content.replace(/\]\]>\s*$/gi, "");
+
     // Trim leading/trailing whitespace from content
     content = content.replace(/^\n/, "").replace(/\n$/, "");
 

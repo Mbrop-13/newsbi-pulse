@@ -454,6 +454,8 @@ function MessageBubble({
   isWebBuilderMode?: boolean
 }) {
   const isUser = message.role === "user"
+  const [isUserMessageExpanded, setIsUserMessageExpanded] = useState(false)
+  const isLongUserMessage = isUser && (message.content.length > 450 || message.content.split('\n').length > 5)
   const [isCitationsOpen, setIsCitationsOpen] = useState(false)
   const [activePreviewUrl, setActivePreviewUrl] = useState<string | null>(null)
   const [isAgentsExpanded, setIsAgentsExpanded] = useState(false)
@@ -1128,10 +1130,29 @@ function MessageBubble({
       <div className="flex justify-end">
         <div className={cn(isWebBuilderMode ? "max-w-[95%]" : "max-w-[85%] md:max-w-[75%]")}>
           <div className={cn(
-            "bg-secondary dark:bg-secondary text-[15px]",
-            isWebBuilderMode ? "rounded-2xl px-3 py-2" : "rounded-3xl px-4 py-3"
+            "bg-secondary dark:bg-secondary text-[15px] relative overflow-hidden",
+            isWebBuilderMode ? "rounded-2xl px-3.5 py-2.5" : "rounded-3xl px-5 py-3.5"
           )}>
-            <p className="whitespace-pre-wrap">{message.content}</p>
+            <div className={cn(
+              "transition-all duration-300 relative",
+              isLongUserMessage && !isUserMessageExpanded ? "max-h-[140px] overflow-hidden" : ""
+            )}>
+              <p className="whitespace-pre-wrap">{message.content}</p>
+              {isLongUserMessage && !isUserMessageExpanded && (
+                <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-secondary via-secondary/80 to-transparent pointer-events-none" />
+              )}
+            </div>
+            
+            {isLongUserMessage && (
+              <div className="flex justify-center mt-2.5 pt-2.5 border-t border-zinc-200/20 dark:border-white/5">
+                <button
+                  onClick={() => setIsUserMessageExpanded(!isUserMessageExpanded)}
+                  className="text-[11px] font-bold text-[#1890FF] hover:text-[#1890FF]/80 transition-all flex items-center gap-1.5 py-1 px-3.5 bg-white/75 hover:bg-white dark:bg-black/40 dark:hover:bg-black/60 rounded-full border border-zinc-200/50 dark:border-white/5 cursor-pointer shadow-xs active:scale-95 select-none"
+                >
+                  {isUserMessageExpanded ? "Ver menos" : "Ver más"}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

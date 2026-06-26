@@ -126,6 +126,7 @@ export function ClientLayoutProviders({
   const isFullscreenPage = isSidebarPage;
   const isAiPage = pathname === "/ai" || pathname.startsWith("/ai/") || pathname === "/" || pathname === "";
   const isAdminPage = pathname.startsWith("/admin");
+  const isSharePage = pathname.startsWith("/share");
   const audioMode = useAudioPlayerStore((s) => s.mode);
   const pinnedWidth = useAudioPlayerStore((s) => s.pinnedWidth);
 
@@ -175,8 +176,8 @@ export function ClientLayoutProviders({
               children
             )}
           </main>
-          {(!isFullscreenPage || showMobileNavOnSidebar) && !isAdminPage && !isLandingPage && <Footer />}
-          {(!isFullscreenPage || showMobileNavOnSidebar) && !isAdminPage && !isLandingPage && <MobileBottomNav />}
+          {(!isFullscreenPage || showMobileNavOnSidebar) && !isAdminPage && !isLandingPage && !isSharePage && <Footer />}
+          {(!isFullscreenPage || showMobileNavOnSidebar) && !isAdminPage && !isLandingPage && !isSharePage && <MobileBottomNav />}
           <ServiceWorkerRegistration />
           <CapacitorInit />
           {!isAdminPage && <PersonalizationApplier />}

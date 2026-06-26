@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useCanvasStore } from "@/lib/stores/canvas-store";
 import { CanvasPanel } from "./canvas-panel";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,7 @@ export function CanvasWorkspace({ chatPanel }: CanvasWorkspaceProps) {
   const [chatPercent, setChatPercent] = useState(38); // Standard width (38%) by default
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -28,10 +29,11 @@ export function CanvasWorkspace({ chatPanel }: CanvasWorkspaceProps) {
     if (!isDragging) return;
 
     const handleMouseMove = (e: MouseEvent) => {
-      const containerWidth = window.innerWidth;
-      if (containerWidth === 0) return;
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      if (rect.width === 0) return;
       
-      let newPercent = (e.clientX / containerWidth) * 100;
+      let newPercent = ((e.clientX - rect.left) / rect.width) * 100;
       // Constrain chat sidebar between 20% and 55%
       if (newPercent < 20) newPercent = 20;
       if (newPercent > 55) newPercent = 55;
@@ -114,7 +116,7 @@ export function CanvasWorkspace({ chatPanel }: CanvasWorkspaceProps) {
 
   // Desktop Split Layout
   return (
-    <div className="flex h-full w-full overflow-hidden bg-[#F8F9FA] dark:bg-[#0A0A0A]">
+    <div ref={containerRef} className="flex h-full w-full overflow-hidden bg-[#F8F9FA] dark:bg-[#0A0A0A]">
       {/* Chat Panel - Left side */}
       <div
         className="h-full flex flex-col relative overflow-hidden bg-[#F8F9FA] dark:bg-[#0A0A0A] shrink-0"
@@ -129,28 +131,25 @@ export function CanvasWorkspace({ chatPanel }: CanvasWorkspaceProps) {
           onMouseDown={handleMouseDown}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
-          className="w-2 mt-8 mb-4 bg-transparent shrink-0 relative flex items-center justify-center cursor-col-resize select-none z-50 group"
+          className="w-3 mt-8 mb-4 bg-transparent shrink-0 relative flex items-center justify-center cursor-col-resize select-none z-50"
         >
-          {/* Central grip handle */}
+          {/* Central grip handle - only shows 3 dots and only on hover/drag */}
           <div className={cn(
-            "flex z-10 justify-center items-center w-5 h-7 rounded-xl bg-white dark:bg-[#26282A] border border-[#DBDBDB] dark:border-[#2e2e2e] shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] transition-all",
-            (isDragging || isHovered) ? "scale-105 border-zinc-400 dark:border-zinc-500 shadow-md" : ""
+            "flex z-10 justify-center items-center w-6 h-8 transition-all duration-200",
+            (isDragging || isHovered) ? "opacity-100 scale-110" : "opacity-0"
           )}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
-              strokeWidth="1.5"
-              className={cn(
-                "size-4 text-zinc-500 dark:text-zinc-400 transition-all",
-                isDragging ? "animate-none" : "animate-pulse hover:animate-[pulse_0.2s_ease-in-out_infinite]"
-              )}
+              strokeWidth="2"
+              className="w-4 h-4 text-zinc-500 dark:text-zinc-400"
             >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z"
+                d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z"
               />
             </svg>
           </div>

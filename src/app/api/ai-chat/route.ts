@@ -120,13 +120,13 @@ export async function POST(req: NextRequest) {
     const isPremium = tier !== "free";
 
     // Enforce model restrictions
-    let finalModelStr = "xiaomi/mimo-v2.5";
+    let finalModelStr = process.env.LLM_MODEL_FAST || "xiaomi/mimo-v2.5";
     if (modelId === "pro") {
       if (isPremium) {
-        finalModelStr = "xiaomi/mimo-v2.5-pro";
+        finalModelStr = process.env.LLM_MODEL_PRO || "xiaomi/mimo-v2.5-pro";
       } else {
         // Fallback to fast model if user is free and somehow requested pro
-        finalModelStr = "xiaomi/mimo-v2.5";
+        finalModelStr = process.env.LLM_MODEL_FAST || "xiaomi/mimo-v2.5";
       }
     }
 

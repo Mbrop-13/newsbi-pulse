@@ -49,8 +49,8 @@ export async function POST(req: NextRequest) {
     const { error, files } = parseResult.data;
 
     const mimo = createOpenAI({
-      baseURL: 'https://api.xiaomimimo.com/v1',
-      apiKey: process.env.MIMO_API_KEY,
+      baseURL: process.env.LLM_BASE_URL || 'https://api.xiaomimimo.com/v1',
+      apiKey: process.env.LLM_API_KEY || process.env.MIMO_API_KEY,
     });
 
     const debugPrompt = `Eres un debugger experto de React, CSS y JavaScript. Tu tarea es analizar un error de compilación/ejecución ocurrido en un entorno de Sandpack (Vite + React) y los archivos actuales del proyecto, y generar las correcciones necesarias.
@@ -86,7 +86,7 @@ import { Activity } from "lucide-react";
 `;
 
     const { text, usage } = await generateText({
-      model: mimo("xiaomi/mimo-v2.5-pro"),
+      model: mimo(process.env.LLM_MODEL_PRO || "xiaomi/mimo-v2.5-pro"),
       system: "Eres un servicio automatizado de depuración de código. Devuelves únicamente XML.",
       messages: [{ role: 'user', content: debugPrompt }],
       temperature: 0.1,

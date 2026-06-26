@@ -64,9 +64,10 @@ interface MimoOptions {
 
 // ── Custom client helper to communicate with the native Xiaomi Mimo API ──
 async function callMimo(options: MimoOptions): Promise<{ content: string; citations?: string[]; usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number } }> {
-  const apiKey = process.env.MIMO_API_KEY;
+  const baseURL = process.env.LLM_BASE_URL || 'https://api.xiaomimimo.com/v1';
+  const apiKey = process.env.LLM_API_KEY || process.env.MIMO_API_KEY;
   if (!apiKey) {
-    throw new Error('MIMO_API_KEY is not defined in environment variables.');
+    throw new Error('API key is not defined in environment variables (LLM_API_KEY or MIMO_API_KEY).');
   }
 
   const payload: any = {
@@ -89,7 +90,8 @@ async function callMimo(options: MimoOptions): Promise<{ content: string; citati
     ];
   }
 
-  const response = await fetch('https://api.xiaomimimo.com/v1/chat/completions', {
+  const fetchUrl = `${baseURL.replace(/\/+$/, '')}/chat/completions`;
+  const response = await fetch(fetchUrl, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
@@ -374,7 +376,7 @@ Devuelve estrictamente un objeto JSON con este formato exacto:
 
     try {
       const analysisResult = await callMimo({
-        model: "xiaomi/mimo-v2.5", // Mimo v2.5 Flash
+        model: process.env.LLM_MODEL_FAST || "xiaomi/mimo-v2.5", // Mimo v2.5 Flash
         messages: [
           { role: "system", content: "Eres un asistente de ingeniería de prompts financieros de élite. Devuelve solo JSON sin markdown." },
           { role: "user", content: preProcessorPrompt }
@@ -446,7 +448,7 @@ Devuelve estrictamente un objeto JSON con este formato exacto:
     const subAgentPromises = subTasks.map(async (task: any) => {
       try {
         const result = await callMimo({
-          model: "xiaomi/mimo-v2.5",
+          model: process.env.LLM_MODEL_FAST || "xiaomi/mimo-v2.5",
           messages: [
             {
               role: "system",
@@ -525,7 +527,9 @@ Devuelve estrictamente un objeto JSON con este formato exacto:
       .map((r: any) => `[${r.agentName} - ${r.role}]: ${r.answer}`)
       .join("\n\n");
 
-    const activeModel = modelId === "pro" ? "xiaomi/mimo-v2.5-pro" : "xiaomi/mimo-v2.5";
+    const activeModel = modelId === "pro"
+      ? (process.env.LLM_MODEL_PRO || "xiaomi/mimo-v2.5-pro")
+      : (process.env.LLM_MODEL_FAST || "xiaomi/mimo-v2.5");
 
     const synthResult = await callMimo({
       model: activeModel,

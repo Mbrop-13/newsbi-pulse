@@ -42,7 +42,7 @@ import {
 import { cn, formatDate as fmtDate, getFallbackImage, slugify, getCleanPathname } from "@/lib/utils"
 import { useLanguageStore } from "@/lib/stores/language-store"
 import { motion, AnimatePresence } from "framer-motion"
-import { Newspaper, Sparkles, Headphones, LineChart, Coins, Landmark, Briefcase, Shield, Lightbulb, Globe, Flame, Calendar, Cpu, ArrowUpRight, ArrowDownRight, MoreHorizontal, Link2, SquarePen, Trash2, FolderOpen, Code2, FileCode2, ChevronRight } from "lucide-react"
+import { Newspaper, Sparkles, Headphones, LineChart, Coins, Landmark, Briefcase, Shield, Lightbulb, Globe, Flame, Calendar, Cpu, ArrowUpRight, ArrowDownRight, MoreHorizontal, Link2, SquarePen, Trash2, FolderOpen, Code2, FileCode2, ChevronRight, Copy, Eye } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useSidebar } from "@/components/ui/sidebar"
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store"
@@ -1790,12 +1790,6 @@ function ChatLandingContent() {
                     className="h-14 w-auto object-contain select-none pointer-events-none"
                   />
                 </div>
-                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground mt-4 font-outfit">
-                  ¿Qué deseas construir hoy?
-                </h1>
-                <p className="text-[11px] sm:text-xs text-muted-foreground mt-1 max-w-md mx-auto leading-relaxed">
-                  Interactúa con el copiloto y construye sitios web interactivos, simuladores y algoritmos financieros en segundos.
-                </p>
               </div>
 
               <div className="w-full max-w-3xl pb-4">
@@ -1812,8 +1806,8 @@ function ChatLandingContent() {
 
               {/* Categorías y Tarjetas de Previsualización */}
               <div className="w-full mt-2 flex flex-col items-center">
-                {/* Categorías (Pills) */}
-                <div className="flex items-center gap-1.5 overflow-x-auto w-full max-w-4xl py-2 px-4 scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden justify-start md:justify-center">
+                {/* Categorías (Pills) - Fixed and Wrapped to prevent clipping */}
+                <div className="flex flex-wrap items-center justify-center gap-2 w-full max-w-2xl py-2 px-4 mt-1">
                   {CREATIVE_CATEGORIES.map((cat) => {
                     const CatIcon = cat.icon;
                     const isActive = activeCategory === cat.id;
@@ -1835,60 +1829,73 @@ function ChatLandingContent() {
                   })}
                 </div>
 
-                {/* Grid de Previsualización */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4 w-full max-w-4xl px-2">
+                {/* Grid de Previsualización - Custom Visual Mockup Only Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 mt-5 w-full max-w-4xl px-2">
                   {PREVIEW_ITEMS.filter((item) => item.category === activeCategory).map((item) => (
                     <div
                       key={item.id}
-                      onClick={() => {
-                        setInput(item.prompt);
-                        useWebBuilderStore.getState().setWebBuilderMode(true);
-                        setTimeout(() => {
-                          const textarea = document.getElementById("chat-input") as HTMLTextAreaElement | null;
-                          if (textarea) {
-                            textarea.focus();
-                            const len = item.prompt.length;
-                            textarea.setSelectionRange(len, len);
-                          }
-                        }, 50);
-                        toast.success("Prompt cargado en el chat", {
-                          description: "Modo WebBuilder activado. Presiona enviar.",
-                          duration: 4000,
-                        });
-                      }}
-                      className="group relative flex flex-col overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-900/40 hover:border-[#1890FF]/40 hover:dark:border-[#1890FF]/40 hover:shadow-md transition-all duration-300 cursor-pointer h-[230px] select-none"
+                      className="group relative rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800/85 bg-white dark:bg-zinc-900/40 hover:border-[#1890FF]/40 hover:dark:border-[#1890FF]/40 shadow-sm hover:shadow-md transition-all duration-350 cursor-pointer h-[155px] select-none"
                     >
-                      {/* Top mockup section */}
-                      <div className="h-[125px] w-full overflow-hidden relative shrink-0">
-                        <div className="w-full h-full transition-transform duration-500 group-hover:scale-103">
-                          <MockupPreview type={item.mockType} />
-                        </div>
-                        {/* Hover Overlay */}
-                        <div className="absolute inset-0 bg-black/10 dark:bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                          <span className="bg-[#1890FF] text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 tracking-wide">
-                            CONSTRUIR CREACIÓN
-                          </span>
-                        </div>
+                      {/* Full-width Mockup View */}
+                      <div className="w-full h-full relative overflow-hidden">
+                        <MockupPreview type={item.mockType} />
                       </div>
 
-                      {/* Bottom details section */}
-                      <div className="flex-grow p-3 flex flex-col justify-between bg-zinc-50/50 dark:bg-zinc-900/10">
-                        <div className="space-y-0.5">
+                      {/* Interactive Hover Overlay with Title, Desc and Action Buttons (Glassmorphic look) */}
+                      <div className="absolute inset-0 bg-white/80 dark:bg-black/65 backdrop-blur-xl border border-zinc-200/40 dark:border-white/10 opacity-0 group-hover:opacity-100 transition-all duration-300 p-4 flex flex-col justify-between transform translate-y-2 group-hover:translate-y-0 pointer-events-none group-hover:pointer-events-auto shadow-md">
+                        <div className="space-y-1">
                           <div className="flex items-center justify-between">
-                            <h3 className="text-xs font-bold text-foreground truncate max-w-[85%] group-hover:text-[#1890FF] transition-colors duration-200">
+                            <h3 className="text-xs font-bold text-zinc-900 dark:text-white tracking-tight">
                               {item.title}
                             </h3>
-                            <span className="text-[7px] font-extrabold text-[#1890FF] bg-[#1890FF]/10 px-1 py-0.5 rounded tracking-wide uppercase shrink-0">
+                            <span className="text-[7px] font-extrabold text-[#1890FF] bg-[#1890FF]/15 border border-[#1890FF]/30 px-1 py-0.5 rounded tracking-wide uppercase shrink-0">
                               BUILD
                             </span>
                           </div>
-                          <p className="text-[10px] text-muted-foreground leading-normal line-clamp-2">
+                          <p className="text-[10px] text-zinc-650 dark:text-zinc-200 leading-normal line-clamp-3">
                             {item.desc}
                           </p>
                         </div>
-                        <div className="text-[8px] text-[#1890FF] font-semibold flex items-center gap-0.5 mt-1 self-start opacity-70 group-hover:opacity-100 transition-opacity duration-200">
-                          <span>Haz clic para cargar prompt</span>
-                          <span>→</span>
+
+                        {/* Buttons inside overlay */}
+                        <div className="flex gap-2 mt-auto">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setInput(item.prompt);
+                              setTimeout(() => {
+                                const textarea = document.getElementById("chat-input") as HTMLTextAreaElement | null;
+                                if (textarea) {
+                                  textarea.focus();
+                                  const len = item.prompt.length;
+                                  textarea.setSelectionRange(len, len);
+                                }
+                              }, 50);
+                              toast.success("Prompt copiado al chat", {
+                                description: "Puedes editar o enviar el mensaje directamente.",
+                                duration: 3000,
+                              });
+                            }}
+                            className="flex-1 py-1.5 rounded-lg border border-zinc-300 dark:border-white/20 hover:bg-zinc-150/50 hover:dark:bg-white/10 text-zinc-800 dark:text-white text-[10px] font-bold transition-all duration-200 flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
+                          >
+                            <Copy className="w-3 h-3" />
+                            Copiar
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              useWebBuilderStore.getState().setWebBuilderMode(true);
+                              handleSend(item.prompt, { webSearch: false, image: false, codeInterpreter: false, browser: false });
+                              toast.success("Iniciando construcción...", {
+                                description: `Construyendo ${item.title}`,
+                                duration: 3000,
+                              });
+                            }}
+                            className="flex-1 py-1.5 rounded-lg bg-[#1890FF] hover:bg-[#1890FF]/85 text-white text-[10px] font-bold transition-all duration-200 flex items-center justify-center gap-1 active:scale-95 cursor-pointer shadow-xs"
+                          >
+                            <Eye className="w-3 h-3" />
+                            Ver
+                          </button>
                         </div>
                       </div>
                     </div>

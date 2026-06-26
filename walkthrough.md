@@ -501,6 +501,27 @@ Diseñamos e integramos una sección interactiva premium debajo de la barra de e
 *   **Descarga e Integración de Asset**:
     *   Descargamos la imagen de favicon solicitada por el usuario (`https://mail.programbi.com/uploads/magnific__background__76233.png`) y la guardamos directamente en la ruta del asset físico `public/assets/maverlang-favicon.png`, que es el archivo referenciado por la metadata de Next.js en el layout global `src/app/layout.tsx`.
 
+---
+
+## 25. Refinamiento de Diseño y Maquetación en Landing del Chat
+
+Perfeccionamos los elementos visuales de la landing page del chat para adaptarlos de forma exacta a los requerimientos de maquetación y evitar elementos recortados:
+
+*   **Actualización de Textos de Bienvenida (Estilo Mockup)**:
+    *   Cambiamos los encabezados de la landing page para reflejar el diseño exacto en inglés:
+        *   Título: `"What can I build for you?"` (usando tipografía serif elegante).
+        *   Subtítulo: `"Interact with Maverlang AI and explore the boundless creative world"`.
+*   **Píldoras de Categorías en Disposición Fija (Sin Recortes)**:
+    *   Eliminamos el contenedor con scroll horizontal (`overflow-x-auto`) que causaba recortes en los extremos izquierdo y derecho de las píldoras en pantallas medianas y móviles.
+    *   Configuramos una disposición flexible envuelta (`flex-wrap`) y centrada. Ahora todos los botones se muestran de forma clara y adaptada, sin recortes y completamente visibles.
+*   **Rediseño de Tarjetas: Solo Visualización y Overlay Interactivo**:
+    *   Rediseñamos las tarjetas de previsualización para mostrar únicamente el mockup visual (`MockupPreview`) con esquinas redondeadas y un alto optimizado de `155px`.
+    *   Añadimos un contenedor overlay oscuro semi-transparente (`bg-black/75 dark:bg-black/85 backdrop-blur-[2px]`) que aparece suavemente con una animación de deslizamiento vertical (`translate-y-2 group-hover:translate-y-0`) solo al pasar el cursor (hover).
+    *   El overlay presenta el título del proyecto, descripción detallada, y dos botones de acción:
+        1. **Copiar**: Copia el prompt descriptivo optimizado en la barra de texto (`ChatInput`), enfoca el cursor y muestra un toast de éxito.
+        2. **Ver**: Activa el modo WebBuilder en caliente y envía inmediatamente el prompt para iniciar el proceso de desarrollo de manera automática.
+
+
 
 
 

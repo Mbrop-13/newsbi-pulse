@@ -18,8 +18,8 @@ export function decodeJsonString(escapedStr: string): string {
 // ── MiMo client factory with web_search injection ──
 export function createMimoWithWebSearch(userId: string, streamData?: StreamData, webSearchEnabled: boolean = true) {
   return createOpenAI({
-    baseURL: 'https://api.xiaomimimo.com/v1',
-    apiKey: process.env.MIMO_API_KEY,
+    baseURL: process.env.LLM_BASE_URL || 'https://api.xiaomimimo.com/v1',
+    apiKey: process.env.LLM_API_KEY || process.env.MIMO_API_KEY,
     fetch: async (url, options) => {
       // Intercept the request to inject the native web_search tool and user context
       if (options?.body && typeof options.body === 'string') {
@@ -67,7 +67,8 @@ export function createMimoWithWebSearch(userId: string, streamData?: StreamData,
             console.warn("[MIMO-CLIENT] Insufficient balance or error from MiMo. Falling back to OpenRouter...");
             
             const urlString = typeof url === 'string' ? url : 'href' in url ? url.href : String(url);
-            const openRouterUrl = urlString.replace('https://api.xiaomimimo.com/v1', 'https://openrouter.ai/api/v1');
+            const currentBaseUrl = process.env.LLM_BASE_URL || 'https://api.xiaomimimo.com/v1';
+            const openRouterUrl = urlString.replace(currentBaseUrl.replace(/\/+$/, ''), 'https://openrouter.ai/api/v1');
             const openRouterHeaders = new Headers(options?.headers);
             openRouterHeaders.set('Authorization', `Bearer ${process.env.OPENROUTER_API_KEY}`);
             openRouterHeaders.set('HTTP-Referer', 'https://maverlang.cl');

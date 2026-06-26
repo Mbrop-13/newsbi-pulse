@@ -191,7 +191,7 @@ export function ClientLayoutProviders({
             onClose={closeModal}
             defaultView={authModalView}
           />
-          <Toaster richColors position="top-right" />
+          <Toaster richColors position="top-right" closeButton />
         </div>
       </TooltipProvider>
     </ThemeProvider>

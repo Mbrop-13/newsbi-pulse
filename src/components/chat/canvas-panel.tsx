@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useCanvasStore } from "@/lib/stores/canvas-store";
+import { useAIChatStore } from "@/lib/stores/ai-chat-store";
 import { 
   Check, 
   FileCode2, 
@@ -178,6 +179,7 @@ export function CanvasPanel() {
     activeFile, 
     closeCanvas, 
   } = useCanvasStore();
+  const currentChatId = useAIChatStore((s) => s.currentChatId);
 
   const [isCopied, setIsCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<"code" | "preview">("code");
@@ -290,7 +292,10 @@ export function CanvasPanel() {
           {/* Botón Compartir */}
           <button
             onClick={() => {
-              navigator.clipboard.writeText(window.location.href);
+              const shareUrl = currentChatId 
+                ? `${window.location.origin}/share/chat/${currentChatId}` 
+                : window.location.href;
+              navigator.clipboard.writeText(shareUrl);
               toast.success("Enlace de compartir copiado al portapapeles");
             }}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 rounded-md text-xs font-medium transition-colors cursor-pointer"

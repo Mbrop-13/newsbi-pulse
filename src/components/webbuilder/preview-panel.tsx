@@ -719,6 +719,7 @@ export function PreviewPanel() {
     lastAutoFixError
   } = useWebBuilderStore();
   const chatLoading = useAIChatStore((s) => s.isLoading);
+  const currentChatId = useAIChatStore((s) => s.currentChatId);
   const { resolvedTheme } = useTheme();
   const currentTheme = resolvedTheme === "dark" ? "dark" : "light";
   const [viewport, setViewport] = useState<"desktop" | "tablet" | "mobile">("desktop");
@@ -1030,6 +1031,10 @@ export function PreviewPanel() {
             <TooltipTrigger asChild>
               <button 
                 onClick={() => {
+                  const shareUrl = currentChatId 
+                    ? `${window.location.origin}/share/chat/${currentChatId}` 
+                    : window.location.href;
+                  navigator.clipboard.writeText(shareUrl);
                   toast.success("Enlace de compartición copiado al portapapeles!");
                 }}
                 className="flex items-center gap-1.5 px-4 h-8 bg-secondary hover:bg-secondary/85 text-secondary-foreground rounded-full text-xs font-bold active:scale-95 transition-all duration-200"

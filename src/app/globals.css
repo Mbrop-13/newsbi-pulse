@@ -430,3 +430,10 @@
 .sp-layout {
   max-height: none !important;
 }
+
+/* Make toast close button permanently visible for faster closing */
+[data-sonner-toast] [data-close-button] {
+  opacity: 1 !important;
+  transform: none !important;
+  display: flex !important;
+}

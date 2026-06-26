@@ -6,7 +6,6 @@ import { Loader2, MessageSquare, ArrowRight, TrendingUp, X, Search, Flame, Eye, 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { NewsCard } from "@/components/news-card";
-import { PromoBanner } from "@/components/promo-banner";
 import { NewsCardSkeleton } from "@/components/news-card-skeleton";
 import { TagSkeleton } from "@/components/tag-skeleton";
 import { createClient } from "@/lib/supabase/client";

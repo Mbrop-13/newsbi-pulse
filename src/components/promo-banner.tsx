@@ -6,7 +6,7 @@ import { X, Sparkles, Gift, ArrowRight, Crown } from "lucide-react";
 import Link from "next/link";
 import { useSubscriptionStore } from "@/lib/stores/subscription-store";
 
-type BannerVariant = "upgrade" | "referral" | "trial";
+type BannerVariant = "upgrade" | "trial";
 
 interface PromoBannerProps {
   variant?: BannerVariant;
@@ -30,15 +30,6 @@ const VARIANTS: Record<BannerVariant, {
     cta: "Comenzar trial gratis",
     href: "/suscripcion",
     border: "border-[#1890FF]/20",
-  },
-  referral: {
-    icon: Gift,
-    gradient: "from-emerald-500/10 via-teal-500/5 to-cyan-500/10",
-    title: "Invita amigos, gana Pro gratis",
-    subtitle: "Refiere 1 amigo y obtén 10 días de Pro. Refiere 3 y obtén 1 mes completo.",
-    cta: "Ver recompensas",
-    href: "/referidos",
-    border: "border-emerald-500/20",
   },
   trial: {
     icon: Sparkles,

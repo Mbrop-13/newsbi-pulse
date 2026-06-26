@@ -3,9 +3,8 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useAuthStore } from "@/lib/stores/auth-store";
-import { useDiamondStore } from "@/lib/stores/diamond-store";
 import { createClient } from "@/lib/supabase/client";
-import { Loader2, Trophy, TrendingUp, Gem, BarChart3, CheckCircle, XCircle } from "lucide-react";
+import { Loader2, Trophy, TrendingUp, BarChart3, CheckCircle, XCircle } from "lucide-react";
 import Link from "next/link";
 import { AuthGuard } from "@/components/auth-guard";
 
@@ -42,18 +41,30 @@ function MisPrediccionesContent() {
   const [bets, setBets] = useState<Bet[]>([]);
   const [loading, setLoading] = useState(true);
   const user = useAuthStore((s) => s.user);
-  const balance = useDiamondStore((s) => s.balance);
+  const [balance, setBalance] = useState(0);
 
   useEffect(() => {
     if (!user) return;
+    const userId = user.id;
     async function load() {
       const supabase = createClient();
+
+      // Get user diamonds
+      const { data: diamonds } = await supabase
+        .from("user_diamonds")
+        .select("balance")
+        .eq("user_id", userId)
+        .single();
+      
+      if (diamonds) {
+        setBalance(diamonds.balance || 0);
+      }
 
       // Get user bets
       const { data: userBets, error } = await supabase
         .from("user_bets")
         .select("*")
-        .eq("user_id", user!.id)
+        .eq("user_id", userId)
         .order("created_at", { ascending: false });
 
       if (error || !userBets) { setLoading(false); return; }
@@ -149,8 +160,6 @@ function MisPrediccionesContent() {
                   const probMy = bet.side === "a"
                     ? p.pool_a / (p.pool_a + p.pool_b)
                     : p.pool_b / (p.pool_a + p.pool_b);
-                  const potentialPayout = (bet.shares * (p.pool_a + p.pool_b)) / 
-                    (bet.side === "a" ? p.pool_b : p.pool_a) * probMy;
 
                   return (
                     <motion.div

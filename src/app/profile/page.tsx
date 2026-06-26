@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import {
   User,
+  Users,
   Bookmark,
   Settings,
   Clock,
@@ -39,7 +40,6 @@ import { createClient } from "@/lib/supabase/client";
 import { useTheme } from "next-themes";
 
 type UserStats = {
-  diamondBalance: number;
   totalBets: number;
   totalWins: number;
   totalShares: number;
@@ -76,7 +76,7 @@ function ProfileContent() {
   } = usePersonalizationStore();
   const supabase = createClient();
 
-  const [stats, setStats] = useState<UserStats>({ diamondBalance: 0, totalBets: 0, totalWins: 0, totalShares: 0 });
+  const [stats, setStats] = useState<UserStats>({ totalBets: 0, totalWins: 0, totalShares: 0 });
   const [recentActivity, setRecentActivity] = useState<BetActivity[]>([]);
   const [loadingStats, setLoadingStats] = useState(true);
 
@@ -89,13 +89,6 @@ function ProfileContent() {
     async function fetchStats() {
       if (!user) return;
       setLoadingStats(true);
-
-      // Diamond balance
-      const { data: diamonds } = await supabase
-        .from("user_diamonds")
-        .select("balance")
-        .eq("user_id", user.id)
-        .single();
 
       // All bets (including sells as negative)
       const { data: bets } = await supabase
@@ -129,7 +122,6 @@ function ProfileContent() {
       }));
 
       setStats({
-        diamondBalance: Number(diamonds?.balance || 0),
         totalBets: positiveBets.length,
         totalWins: 0,
         totalShares: Math.max(0, Number(totalShares.toFixed(2))),
@@ -240,12 +232,10 @@ function ProfileContent() {
         </motion.div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
           {[
             { label: "Mis Predicciones", href: "/mis-predicciones", icon: TrendingUp, color: "text-blue-500", bg: "bg-blue-500/10" },
-            { label: "Mis Diamantes", href: "/mis-diamantes", icon: Gem, color: "text-amber-500", bg: "bg-amber-500/10" },
-            { label: "Recompensas", href: "/recompensas", icon: Crown, color: "text-purple-500", bg: "bg-purple-500/10" },
-            { label: "Suscripción", href: "/suscripcion", icon: Newspaper, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+            { label: "Suscripción", href: "/suscripcion", icon: Newspaper, color: "text-purple-500", bg: "bg-purple-500/10" },
           ].map((action) => (
             <Link key={action.label} href={action.href}>
               <div className="bg-card border border-border rounded-xl p-4 hover:border-accent/30 hover:shadow-sm transition-all group cursor-pointer">
@@ -262,9 +252,8 @@ function ProfileContent() {
         </div>
 
         {/* Stats Bar */}
-        <div className="grid grid-cols-4 gap-3 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
           {[
-            { label: "Diamantes", value: loadingStats ? "..." : stats.diamondBalance.toLocaleString(), icon: Gem, color: "text-amber-500" },
             { label: "Apuestas", value: loadingStats ? "..." : stats.totalBets, icon: TrendingUp, color: "text-blue-500" },
             { label: "Shares activas", value: loadingStats ? "..." : stats.totalShares, icon: BarChart3, color: "text-emerald-500" },
             { label: "Guardados", value: bookmarks.length, icon: Bookmark, color: "text-purple-500" },

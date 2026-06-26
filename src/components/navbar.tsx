@@ -5,7 +5,6 @@ import { useTheme } from "next-themes";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, Search, Sun, Moon, LogIn, ChevronDown, User, Users, Headphones, Filter, ArrowLeft, Bot, Sparkles, Layers, Settings, X, Check, Settings2, TrendingUp, Landmark, LineChart, Globe, PieChart, Cpu, BookOpen, Briefcase, Scale, Zap, BarChart3, Crown } from "lucide-react";
-import { DiamondsButton } from "@/components/diamonds-button";
 import { NotificationBell } from "@/components/notification-bell";
 import { AuthModals } from "./auth-modals";
 import { SearchDialog } from "./search-dialog";
@@ -313,9 +312,6 @@ export function Navbar() {
               <span className="absolute top-1 right-1 w-2 h-2 bg-[#1890FF] rounded-full shadow-[0_0_8px_rgba(24,144,255,0.8)] animate-pulse" />
             </button>
 
-            {/* Diamonds Reward System Toggle */}
-            {mounted && isAuthenticated && <DiamondsButton />}
-
             {/* Auth / Avatar */}
             {mounted && isAuthenticated && user ? (
               <DropdownMenu>
@@ -348,12 +344,7 @@ export function Navbar() {
                       Mi Portafolio
                     </DropdownMenuItem>
                   </Link>
-                  <Link href="/referidos">
-                    <DropdownMenuItem className="text-sm py-2 px-3 cursor-pointer rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-                      <Users className="w-4 h-4 mr-2 text-emerald-500" />
-                      Invitar Amigos
-                    </DropdownMenuItem>
-                  </Link>
+
                   <Link href="/configuracion">
                     <DropdownMenuItem className="text-sm py-2 px-3 cursor-pointer rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                       <Settings className="w-4 h-4 mr-2 text-gray-500" />

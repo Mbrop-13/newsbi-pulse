@@ -14,6 +14,7 @@ import {
   Layers, 
   Bell, 
   Award, 
+  Users,
   ArrowLeft, 
   Info, 
   BookMarked,
@@ -104,16 +105,6 @@ export default function DocumentacionPage() {
                   </h4>
                   <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
                     Monitorea tus activos en tiempo real y recibe notificaciones vía email, SMS o push en cuanto ocurra una fluctuación de precio crítica o se publique una noticia relevante.
-                  </p>
-                </div>
-
-                <div className="p-5 rounded-2xl border border-gray-200/60 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/20">
-                  <h4 className="font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-2">
-                    <Award className="w-4 h-4 text-yellow-500" />
-                    Diamantes y Recompensas
-                  </h4>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                    Un programa de lealtad integrado en la plataforma. Consigue diamantes diarios, invita a tus referidos y multiplica tus recompensas según tu plan de suscripción.
                   </p>
                 </div>
               </div>
@@ -372,48 +363,7 @@ export default function DocumentacionPage() {
         }
       ]
     },
-    {
-      id: "recompensas",
-      name: "Recompensas",
-      articles: [
-        {
-          id: "diamantes",
-          title: "Diamantes y Sistema de Recompensas",
-          description: "Obtén diamantes, invita a referidos y reclama beneficios exclusivos.",
-          icon: Award,
-          content: (
-            <div className="space-y-6">
-              <p className="text-sm md:text-base text-zinc-600 dark:text-zinc-350 leading-relaxed font-medium">
-                Maverlang recompensa tu fidelidad diaria mediante un sistema gamificado. Acumula diamantes y utilízalos para extender tus capacidades de consulta.
-              </p>
 
-              <h3 className="text-lg md:text-xl font-black text-gray-900 dark:text-white mt-8 mb-3">Programa de Recompensas Diarias</h3>
-              <p className="text-xs md:text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                Cada 24 horas puedes reclamar tus diamantes de recompensa en el panel del perfil de usuario. El número base de diamantes que recibes diariamente se multiplica directamente según tu tier de suscripción activo:
-              </p>
-
-              <ul className="space-y-2.5 pl-4 list-disc text-xs md:text-sm text-zinc-600 dark:text-zinc-350 font-medium">
-                <li><span className="font-bold">Plan Free:</span> Multiplicador base (x1)</li>
-                <li><span className="font-bold">Plan Pro:</span> Multiplicador Pro (x1)</li>
-                <li><span className="font-bold text-gray-900 dark:text-white">Plan Max:</span> Multiplicador Max (x2)</li>
-                <li><span className="font-bold text-gray-900 dark:text-white">Plan Ultra (x5):</span> Multiplicador Ultra (x5)</li>
-                <li><span className="font-bold text-gray-900 dark:text-white">Plan Ultra x20:</span> Multiplicador Máximo (x20)</li>
-              </ul>
-
-              <h3 className="text-lg md:text-xl font-black text-gray-900 dark:text-white mt-8 mb-3">Sistema de Referidos</h3>
-              <p className="text-xs md:text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                Comparte tu enlace único de referidos con amigos. Cuando un usuario nuevo se registra mediante tu enlace, ambos reciben recompensas:
-              </p>
-              
-              <ul className="space-y-2.5 pl-4 list-disc text-xs md:text-sm text-zinc-600 dark:text-zinc-350 font-medium">
-                <li>El invitado recibe un <span className="font-bold text-emerald-500">20% de descuento permanente</span> en cualquiera de nuestros planes de pago.</li>
-                <li>Tú recibes un bono de diamantes inmediato en cuanto el invitado valide su cuenta.</li>
-              </ul>
-            </div>
-          )
-        }
-      ]
-    }
   ], []);
 
   // Buscar coincidencia en títulos o descripciones

@@ -35,19 +35,7 @@ function SubscriptionPageContent() {
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
   const [isUltraX20Toggled, setIsUltraX20Toggled] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [isReferred, setIsReferred] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-
-  useEffect(() => {
-    async function checkReferred() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data } = await supabase.from("referrals").select("id").eq("referred_id", user.id).maybeSingle();
-      if (data) setIsReferred(true);
-    }
-    checkReferred();
-  }, []);
 
   useEffect(() => {
     if (statusParam === "success") {
@@ -102,11 +90,8 @@ function SubscriptionPageContent() {
     if (config.price === 0) return "0";
     
     let basePrice = config.price;
-    if (isReferred) basePrice = Math.round(basePrice * 0.8);
-    
     if (billingCycle === "annual") {
-      const annualPrice = getAnnualMonthlyPrice(planId);
-      return (isReferred ? Math.round(annualPrice * 0.8) : annualPrice).toLocaleString("es-CL");
+      return getAnnualMonthlyPrice(planId).toLocaleString("es-CL");
     }
     return basePrice.toLocaleString("es-CL");
   };
@@ -116,11 +101,9 @@ function SubscriptionPageContent() {
     const actualPlanId = isUltra && isUltraX20Toggled ? "ultra_x20" : planId;
     const config = PLAN_CONFIGS[actualPlanId];
     
-    const baseMonthlyPrice = config.price;
-    const discountPrice = isReferred ? Math.round(baseMonthlyPrice * 0.8) : baseMonthlyPrice;
     const finalMonthlyPrice = billingCycle === "annual" 
-      ? (isReferred ? Math.round(getAnnualMonthlyPrice(actualPlanId) * 0.8) : getAnnualMonthlyPrice(actualPlanId))
-      : discountPrice;
+      ? getAnnualMonthlyPrice(actualPlanId)
+      : config.price;
 
     // Only Pro has 7 days free trial, and only if user is currently Free and billing is monthly
     if (planId === "pro" && currentTier === "free" && billingCycle === "monthly") {
@@ -134,7 +117,6 @@ function SubscriptionPageContent() {
     const actualPlanId = planId === "ultra" && isUltraX20Toggled ? "ultra_x20" : planId;
     const config = PLAN_CONFIGS[actualPlanId];
     let basePrice = config.price;
-    if (isReferred) basePrice = Math.round(basePrice * 0.8);
     // Annual total is 10 times the monthly price (because of 2 months free!)
     return Math.round(basePrice * 10).toLocaleString("es-CL");
   };
@@ -147,7 +129,6 @@ function SubscriptionPageContent() {
         { text: "50 audios de noticias/mes", included: true },
         { text: "5 alertas de precio activas", included: true },
         { text: "25 activos en portafolio", included: true },
-        { text: "Diamantes x1 multiplicador", included: true },
         { text: "Sin publicidad", included: true },
         { text: "Soporte por email", included: true },
       ];
@@ -158,7 +139,6 @@ function SubscriptionPageContent() {
         { text: "100 audios al mes (x2 Pro)", included: true },
         { text: "10 alertas de precio (x2 Pro)", included: true },
         { text: "50 activos en portafolio (x2 Pro)", included: true },
-        { text: "Diamantes x2 multiplicador", included: true },
         { text: "Informe semanal y Recomendaciones IA", included: true },
         { text: "Soporte prioritario", included: true },
       ];
@@ -172,7 +152,6 @@ function SubscriptionPageContent() {
         { text: "1.000 audios al mes (x20 Pro)", included: true },
         { text: "100 alertas de precio (x20 Pro)", included: true },
         { text: "500 activos en portafolio (x20 Pro)", included: true },
-        { text: "Diamantes x20 multiplicador", included: true },
         { text: "IA con búsqueda web activa", included: true },
         { text: "Soporte dedicado 24/7", included: true },
       ];
@@ -183,7 +162,6 @@ function SubscriptionPageContent() {
       { text: "250 audios al mes (x5 Pro)", included: true },
       { text: "25 alertas de precio (x5 Pro)", included: true },
       { text: "125 activos en portafolio (x5 Pro)", included: true },
-      { text: "Diamantes x5 multiplicador", included: true },
       { text: "IA con búsqueda web activa", included: true },
       { text: "Soporte dedicado 24/7", included: true },
     ];
@@ -193,10 +171,6 @@ function SubscriptionPageContent() {
     {
       q: "¿Puedo cancelar en cualquier momento?",
       a: "Sí, puedes cancelar tu suscripción en cualquier momento desde tu perfil. Mantendrás el acceso a todos tus beneficios premium hasta el final del período de facturación actual.",
-    },
-    {
-      q: "¿Qué son los diamantes 💎?",
-      a: "Los diamantes son la moneda virtual de la plataforma. Con ellos puedes canjear recompensas y beneficios exclusivos. Los ganas diariamente y tu multiplicador depende de tu plan: Pro x1, Max x2, Ultra x5, Ultra x20 x20.",
     },
     {
       q: "¿Hay descuento por pago anual?",
@@ -261,12 +235,6 @@ function SubscriptionPageContent() {
             </>
           )}
 
-          {currentTier === "free" && isReferred && (
-            <div className="inline-flex items-center gap-2 mt-4 mb-2 px-4 py-1.5 rounded-full bg-neutral-200/50 dark:bg-zinc-800 border border-neutral-350 dark:border-zinc-700 text-neutral-800 dark:text-neutral-200 text-xs font-black shadow-sm">
-              <Gift className="w-4 h-4" />
-              ¡Descuento de referido aplicado! 20% OFF en todos los planes.
-            </div>
-          )}
 
           {currentTier === "free" && isPromoX2Active() && (
             <div className="inline-flex items-center gap-2 mt-4 mb-2 px-4 py-1.5 rounded-full bg-neutral-200/50 dark:bg-zinc-800 border border-neutral-350 dark:border-zinc-700 text-neutral-800 dark:text-neutral-200 text-xs font-black shadow-sm">

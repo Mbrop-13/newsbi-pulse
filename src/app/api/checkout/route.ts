@@ -28,18 +28,8 @@ export async function POST(request: NextRequest) {
     const trialEnd = new Date();
     trialEnd.setDate(trialEnd.getDate() + 7);
 
-    // Check if the user was referred by someone (20% discount)
-    const { data: referralData } = await supabase
-      .from("referrals")
-      .select("id")
-      .eq("referred_id", user.id)
-      .maybeSingle();
-
-    const isReferred = !!referralData;
-    const finalPrice = isReferred ? Math.round(planConfig.price * 0.8) : planConfig.price;
-    const planReason = isReferred 
-      ? `Suscripción Maverlang ${plan.toUpperCase()} — 7 días gratis + 20% Dscto Referido`
-      : `Suscripción Maverlang ${plan.toUpperCase()} — 7 días gratis`;
+    const finalPrice = planConfig.price;
+    const planReason = `Suscripción Maverlang ${plan.toUpperCase()} — 7 días gratis`;
 
     // Create a preapproval (subscription) with 7-day free trial
     const body = {
@@ -71,7 +61,7 @@ export async function POST(request: NextRequest) {
       return `${local[0]}***@${domain}`;
     };
 
-    console.log("[Checkout] Creating preapproval for:", maskEmail(user.email), "plan:", plan, "amount:", finalPrice, "isReferred:", isReferred);
+    console.log("[Checkout] Creating preapproval for:", maskEmail(user.email), "plan:", plan, "amount:", finalPrice);
 
     const res = await fetch("https://api.mercadopago.com/preapproval", {
       method: "POST",

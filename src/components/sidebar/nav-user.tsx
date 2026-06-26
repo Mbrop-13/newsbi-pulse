@@ -54,7 +54,6 @@ import { useTranslation, type TranslationKey } from "@/lib/translations"
 import { getCleanPathname } from "@/lib/utils"
 import Link from "next/link"
 import { ViewSettingsDialog } from "@/components/view-settings-dialog"
-import { useDiamondStore } from "@/lib/stores/diamond-store"
 import { NotificationBell } from "@/components/notification-bell"
 
 function getInitials(name: string, email: string): string {
@@ -142,14 +141,6 @@ export function NavUser() {
     
     router.push(newPath)
   }
-
-  const { balance, loadDiamonds } = useDiamondStore()
-
-  useEffect(() => {
-    if (mounted && isAuthenticated && user) {
-      loadDiamonds(user.id)
-    }
-  }, [mounted, isAuthenticated, user, loadDiamonds])
 
   const handleSignOut = () => {
     if (isMobile) setOpenMobile(false)

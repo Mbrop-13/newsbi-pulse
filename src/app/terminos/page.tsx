@@ -39,12 +39,11 @@ const sections = [
   },
   {
     icon: AlertTriangle,
-    title: "4. Diamantes y Predicciones",
+    title: "4. Mercados de Predicciones",
     content: [
-      "Los **diamantes** son una moneda virtual dentro de Maverlang que **no tiene valor monetario real** y **no puede ser canjeada, transferida ni retirada** como dinero real.",
-      "Los diamantes se obtienen mediante recompensas diarias, referidos y otras actividades dentro de la plataforma.",
-      "Los diamantes se utilizan exclusivamente para participar en los **mercados de predicciones** dentro de Maverlang, los cuales son de carácter recreativo y educativo.",
-      "Maverlang se reserva el derecho de ajustar los saldos de diamantes, modificar el sistema de recompensas o descontinuar el sistema de diamantes en cualquier momento.",
+      "Los mercados de predicciones dentro de Maverlang son de carácter exclusivamente recreativo y educativo.",
+      "La participación se realiza mediante una moneda virtual de simulación dentro de la plataforma que **no tiene valor monetario real** y **no puede ser canjeada, transferida ni retirada** por dinero real.",
+      "Maverlang se reserva el derecho de ajustar los saldos virtuales o descontinuar el sistema de predicciones en cualquier momento.",
     ],
   },
   {

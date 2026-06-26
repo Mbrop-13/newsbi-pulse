@@ -174,19 +174,7 @@ export function UpgradeModal({ isOpen, onClose, feature, customTitle, customMess
                 </Button>
               </Link>
 
-              {/* Referral alternative */}
-              <div className="mt-4 relative">
-                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
-                <div className="relative flex justify-center"><span className="bg-background px-3 text-xs text-muted-foreground font-medium">o gratis</span></div>
-              </div>
 
-              <Link href="/referidos" onClick={onClose}>
-                <button className="w-full mt-3 py-3 px-4 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-xl text-sm font-bold text-emerald-600 dark:text-emerald-400 transition-all flex items-center justify-center gap-2 group">
-                  <Gift className="w-4 h-4" />
-                  Refiere 1 amigo y obtén 10 días Pro gratis
-                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                </button>
-              </Link>
               
               <button
                 onClick={onClose}

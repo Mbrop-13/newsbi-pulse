@@ -19,27 +19,6 @@ export async function GET(request: Request) {
     const { data: authData, error } = await supabase.auth.exchangeCodeForSession(code)
     
     if (!error && authData?.user) {
-      // Process Referral Code
-      const cookieStore = request.headers.get('cookie') || '';
-      const match = cookieStore.match(/maverlang_ref_code=([^;]+)/);
-      if (match) {
-        const refCode = match[1];
-        
-        // Find referrer
-        const { data: codeData } = await supabase
-          .from('referral_codes')
-          .select('user_id')
-          .eq('code', refCode)
-          .single();
-          
-        if (codeData && codeData.user_id !== authData.user.id) {
-          // Attempt to insert referral (ignores if already referred due to unique constraint)
-          await supabase.from('referrals').insert({
-            referrer_id: codeData.user_id,
-            referred_id: authData.user.id
-          });
-        }
-      }
       const forwardedHost = request.headers.get('x-forwarded-host') 
       const isLocalEnv = process.env.NODE_ENV === 'development'
       
@@ -60,11 +39,7 @@ export async function GET(request: Request) {
           ? `https://${forwardedHost}${next}`
           : `${siteUrl}${next}`
           
-      const response = NextResponse.redirect(redirectUrl)
-          
-      // Delete the referral cookie
-      response.cookies.delete('maverlang_ref_code');
-      return response;
+      return NextResponse.redirect(redirectUrl)
     }
   }
 

@@ -6,17 +6,7 @@ export async function updateSession(request: NextRequest) {
     request,
   })
 
-  // Capture referral code if present
-  const refCode = request.nextUrl.searchParams.get('ref');
-  if (refCode) {
-    supabaseResponse.cookies.set('maverlang_ref_code', refCode, { 
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-      path: '/',
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax'
-    });
-  }
+
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co",

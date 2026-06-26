@@ -47,8 +47,6 @@ export interface PlanConfig {
   analysisRecommendations: boolean; // Recomendaciones de análisis
   adFree: boolean;
   
-  // ── Diamantes ──
-  diamondMultiplier: number; // Multiplicador diario
   
   // ── Soporte ──
   supportLevel: "community" | "email" | "priority" | "dedicated";
@@ -90,7 +88,6 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     analysisRecommendations: false,
     adFree: false,
     
-    diamondMultiplier: 0.5,
     
     supportLevel: "community",
   },
@@ -130,7 +127,6 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     analysisRecommendations: false,
     adFree: true,
     
-    diamondMultiplier: 1,
     
     supportLevel: "email",
   },
@@ -170,7 +166,6 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     analysisRecommendations: true,
     adFree: true,
     
-    diamondMultiplier: 2,
     
     supportLevel: "priority",
   },
@@ -210,7 +205,6 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     analysisRecommendations: true,
     adFree: true,
     
-    diamondMultiplier: 5,
     
     supportLevel: "dedicated",
   },
@@ -250,7 +244,6 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     analysisRecommendations: true,
     adFree: true,
     
-    diamondMultiplier: 20,
     
     supportLevel: "dedicated",
   },

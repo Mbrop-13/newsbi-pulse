@@ -1356,7 +1356,7 @@ function AssistantAvatar({ isResponding, isWebBuilderMode }: { isResponding: boo
   if (isResponding) {
     const videoSrc = isDark
       ? "https://mail.programbi.com/uploads/Letras_se_mueven_planeta_c%C3%ADrculo%E2%80%A6_202606230457.mp4"
-      : "/assets/saturn-logo.mp4";
+      : "https://mail.programbi.com/uploads/Flow_1080p_202606260417.mp4";
 
     return (
       <div className={cn(

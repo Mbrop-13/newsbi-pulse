@@ -864,9 +864,11 @@ function ChatLandingContent() {
   }, [aiMessages])
 
   const lastAutoOpenedRef = useRef<string>("");
+  const lastCanvasUpdateRef = useRef<number>(0);
 
   useEffect(() => {
     lastAutoOpenedRef.current = "";
+    lastCanvasUpdateRef.current = 0;
   }, [currentChatId]);
 
   useEffect(() => {
@@ -887,6 +889,7 @@ function ChatLandingContent() {
       const scriptCode = runPythonInvocation.args?.script || "";
       if (scriptCode && scriptCode !== lastAutoOpenedRef.current) {
         lastAutoOpenedRef.current = scriptCode;
+        lastCanvasUpdateRef.current = Date.now();
         
         const result = (runPythonInvocation as any).result;
         useCanvasStore.getState().openCanvas({
@@ -911,8 +914,12 @@ function ChatLandingContent() {
         const lang = codeBlockMatch[1];
         const codeValue = codeBlockMatch[2].trim();
 
-        if (codeValue && codeValue !== lastAutoOpenedRef.current) {
+        const now = Date.now();
+        const shouldUpdate = !aiLoading || (now - lastCanvasUpdateRef.current > 250);
+
+        if (codeValue && codeValue !== lastAutoOpenedRef.current && shouldUpdate) {
           lastAutoOpenedRef.current = codeValue;
+          lastCanvasUpdateRef.current = now;
 
           // Extract title from comment in the first line
           let title = lang === 'python' ? 'Script de Python' : `Código ${lang.toUpperCase()}`;
@@ -931,7 +938,7 @@ function ChatLandingContent() {
         }
       }
     }
-  }, [aiMessages]);
+  }, [aiMessages, aiLoading]);
 
   // Accumulate citations & reasoning from streamData to prevent them from vanishing during tool execution steps
   useEffect(() => {

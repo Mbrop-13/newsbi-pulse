@@ -386,16 +386,16 @@ export function CanvasPanel() {
               
               {/* Columna de Números de Línea */}
               <div 
-                className="flex flex-col text-right px-4 text-gray-400/70 select-none sticky left-0 bg-white dark:bg-[#1E1E1E] shrink-0"
+                className="flex flex-col text-right px-4 text-gray-400/70 select-none sticky left-0 bg-white dark:bg-[#1E1E1E] shrink-0 font-mono text-[13px] leading-6 py-0"
               >
                 {Array.from({ length: lineCount }).map((_, i) => (
-                  <span key={i}>{i + 1}</span>
+                  <span key={i} className="h-6 flex items-center justify-end">{i + 1}</span>
                 ))}
               </div>
 
               {/* Código Preformateado */}
               <pre 
-                className="flex-1 px-4 pr-24 text-gray-800 dark:text-gray-300 overflow-x-auto whitespace-pre outline-none m-0" 
+                className="flex-1 px-4 pr-24 text-gray-800 dark:text-gray-300 overflow-x-auto whitespace-pre outline-none m-0 font-mono text-[13px] leading-6 py-0" 
                 spellCheck="false"
                 dangerouslySetInnerHTML={{ __html: applySyntaxHighlighting(activeFile.code, activeFile.language) }}
               />

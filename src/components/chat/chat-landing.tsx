@@ -1566,7 +1566,8 @@ function ChatLandingContent() {
              Al enviar el primer mensaje, hasMessages pasa a true y el input baja a su
              posición fija en el fondo. */
           <div className="flex-1 flex flex-col items-center px-4 py-4 relative h-full overflow-y-auto scrollbar-hide">
-            <div className="w-full max-w-4xl mx-auto flex flex-col items-center justify-center mt-auto mb-auto">
+            <div className="h-[22vh] sm:h-[26vh] shrink-0" aria-hidden />
+            <div className="w-full max-w-4xl mx-auto flex flex-col items-center justify-center">
               <div className="text-center mb-6">
                 <div className="flex items-center justify-center">
                   <img 
@@ -1590,7 +1591,7 @@ function ChatLandingContent() {
               </div>
 
               {/* Categorías y Tarjetas de Previsualización */}
-              <div className="w-full mt-6 sm:mt-8 flex flex-col items-center">
+              <div className="w-full mt-2 sm:mt-3 flex flex-col items-center">
                 {/* Categorías (Pills) - Fixed and Wrapped to prevent clipping */}
                 <div className="flex flex-wrap items-center justify-center gap-2 w-full max-w-2xl py-2 px-4 mt-1">
                   {CREATIVE_CATEGORIES.map((cat) => {
@@ -1615,7 +1616,7 @@ function ChatLandingContent() {
                 </div>
 
                 {/* Grid de Previsualización - Custom Visual Mockup Only Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 mt-5 w-full max-w-4xl px-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 mt-3 w-full max-w-4xl px-2">
                   {PREVIEW_ITEMS.filter((item) => item.category === activeCategory).map((item) => (
                     <div
                       key={item.id}
@@ -1689,6 +1690,7 @@ function ChatLandingContent() {
               </div>
             </div>
 
+            <div className="h-6 shrink-0" aria-hidden />
           </div>
         ) : (
           /* Chat view - messages + input at bottom */

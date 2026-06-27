@@ -416,7 +416,7 @@ export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettings
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15 }}
-          className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs"
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs"
           onClick={handleClose}
         >
           <motion.div

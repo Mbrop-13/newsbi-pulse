@@ -234,7 +234,9 @@ export function NavUser() {
                   onClick={() => {
                     if (isMobile) setOpenMobile(false);
                     setSettingsTab("cuenta");
-                    setSettingsOpen(true);
+                    // Pequeño delay para que el sheet móvil cierre primero y
+                    // no tapone el overlay del ViewSettingsDialog (ambos z-50/z-[150]).
+                    setTimeout(() => setSettingsOpen(true), isMobile ? 250 : 0);
                   }}
                   className="text-[13px] font-medium py-2 px-3 rounded-xl cursor-pointer flex items-center justify-between focus:bg-muted focus:text-foreground"
                 >
@@ -375,7 +377,7 @@ export function NavUser() {
                         onClick={() => {
                           if (isMobile) setOpenMobile(false);
                           setSettingsTab("soporte");
-                          setSettingsOpen(true);
+                          setTimeout(() => setSettingsOpen(true), isMobile ? 250 : 0);
                         }}
                         className="text-xs py-1.5 px-2.5 rounded-lg cursor-pointer focus:bg-muted focus:text-foreground"
                       >

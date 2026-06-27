@@ -430,6 +430,81 @@ interface UnifiedThinkingStep {
   content?: string;
 }
 
+/**
+ * Extrae code blocks del contenido del mensaje para renderizarlos como CanvasFileCard.
+ * Detecta tanto bloques cerrados (```...```) como bloques abiertos en streaming
+ * (```...  sin la etiqueta de cierre). Esto permite que la tarjeta del canvas
+ * aparezca INMEDIATAMENTE apenas la IA empieza a escribir código, sin esperar
+ * a que se cierre el bloque (que es cuando ReactMarkdown lo parsea).
+ *
+ * @param text    Contenido completo (acumulado) del mensaje.
+ * @param streaming Si true, también considera bloques abiertos como válidos.
+ */
+interface ExtractedCodeBlock {
+  lang: string;
+  code: string;
+  title: string;
+  streaming: boolean;
+}
+
+function extractCodeBlocks(text: string, streaming: boolean = false): ExtractedCodeBlock[] {
+  if (!text) return [];
+  const blocks: ExtractedCodeBlock[] = [];
+
+  // 1. Bloques cerrados: ```lang\n...\n```
+  const closedRegex = /```(\w*)\n([\s\S]*?)\n```/g;
+  let m: RegExpExecArray | null;
+  while ((m = closedRegex.exec(text)) !== null) {
+    const lang = m[1] || "code";
+    const code = m[2];
+    if (code.trim().length === 0) continue;
+    blocks.push({ lang, code, title: buildCodeTitle(lang, code), streaming: false });
+  }
+
+  // 2. Bloque abierto (streaming): solo cuando estamos cargando y NO hay ya
+  //    un bloque cerrado igual al final. Busca un ```lang sin cierre.
+  if (streaming) {
+    // Quitamos del texto los bloques ya cerrados para no confundir la detección.
+    const withoutClosed = text.replace(/```(\w*)\n([\s\S]*?)\n```/g, "");
+    const openRegex = /```(\w*)\n([\s\S]*)$/;
+    const om = openRegex.exec(withoutClosed);
+    if (om) {
+      const lang = om[1] || "code";
+      const code = om[2];
+      if (code.trim().length > 0) {
+        blocks.push({ lang, code, title: buildCodeTitle(lang, code), streaming: true });
+      }
+    }
+  }
+
+  return blocks;
+}
+
+/** Construye un título legible para la tarjeta de código (mismo criterio que ReactMarkdown). */
+function buildCodeTitle(lang: string, code: string): string {
+  let title = lang === 'python' ? 'Script de Python' : `Código ${lang.toUpperCase()}`;
+  const firstLine = code.split('\n')[0].trim();
+  const filenameMatch = firstLine.match(/(?:filename|archivo|title)\s*:\s*([^\s][^\n\r]*)/i) ||
+                        firstLine.match(/(?:\/\/\/|\/\/|#|\/\*)\s*([a-zA-Z0-9_\-\.\s]+\.[a-zA-Z0-9]+)/i);
+  if (filenameMatch) {
+    title = filenameMatch[1].replace(/\*\/$/, '').trim();
+  }
+  return title;
+}
+
+/**
+ * Quita del texto los code blocks para que ReactMarkdown no los renderice
+ * de nuevo (evita duplicados con los CanvasFileCard manuales).
+ */
+function stripCodeBlocks(text: string, streaming: boolean = false): string {
+  if (!text) return "";
+  let clean = text.replace(/```(\w*)\n([\s\S]*?)\n```/g, "");
+  if (streaming) {
+    clean = clean.replace(/```(\w*)\n([\s\S]*)$/, "");
+  }
+  return clean.trim();
+}
+
 function MessageBubble({
   message,
   feedback,
@@ -1208,10 +1283,44 @@ function MessageBubble({
 
         {/* 3. Plan card (modo Plan: pendiente de aprobación) */}
         {renderPlanCard()}
-        
-        {/* 4. Main text content */}
+
+        {/* 3.5 Canvas File Card - se detecta durante el streaming para que aparezca
+            inmediatamente apenas la IA empieza a escribir código (no espera al cierre
+            del bloque de backticks, que ReactMarkdown solo parsea cuando está cerrado). */}
+        {(() => {
+          const canvasCards = extractCodeBlocks(finalContent, isResponding);
+          if (canvasCards.length === 0) return null;
+          return (
+            <div className="space-y-2 mb-2">
+              {canvasCards.map((cb, idx) => (
+                <div key={`canvas-${idx}`} className="my-1.5 relative">
+                  <CanvasFileCard
+                    title={cb.title}
+                    code={cb.code}
+                    language={cb.lang}
+                  />
+                  {/* Indicador de "generando…" cuando el bloque aún está abierto */}
+                  {cb.streaming && (
+                    <div className="absolute -top-2 -right-2 flex items-center gap-1 bg-[#1890FF] text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-md z-10">
+                      <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                      <span>Generando</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          );
+        })()}
+
+        {/* 4. Main text content (sin code blocks, que ya se renderizaron arriba) */}
         <div className="prose dark:prose-invert max-w-none text-[15px] leading-relaxed">
-          {finalContent ? (
+          {(() => {
+            const proseContent = isWebBuilderMode
+              ? stripArtifactXml(finalContent)
+              : stripCodeBlocks(finalContent, isResponding);
+            const hasCanvasCards = extractCodeBlocks(finalContent, isResponding).length > 0;
+            if (proseContent) {
+              return (
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
@@ -1253,27 +1362,35 @@ function MessageBubble({
                 }
               }}
             >
-              {isWebBuilderMode ? stripArtifactXml(finalContent) : finalContent}
+              {proseContent}
             </ReactMarkdown>
-          ) : (
-            isResponding ? (
-              // Avoid showing double loaders if the thinking phase or reasoning is already animating
-              !(message.reasoning || citationsList.length > 0) ? (
-                <div className="flex items-center gap-2 py-1.5 text-muted-foreground text-xs font-semibold">
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[#1890FF]" />
-                  <span>Escribiendo respuesta...</span>
-                </div>
-              ) : null
-            ) : (
-              !message.toolResults?.length && !message.toolInvocations?.length && !message.reasoning && (
+            );
+            }
+
+            if (isResponding && !hasCanvasCards) {
+              if (!(message.reasoning || citationsList.length > 0)) {
+                return (
+                  <div className="flex items-center gap-2 py-1.5 text-muted-foreground text-xs font-semibold">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-[#1890FF]" />
+                    <span>Escribiendo respuesta...</span>
+                  </div>
+                );
+              }
+              return null;
+            }
+
+            if (!message.toolResults?.length && !message.toolInvocations?.length && !message.reasoning) {
+              return (
                 <div className="flex items-center gap-1 py-1.5">
                   <div className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                   <div className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                   <div className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
-              )
-            )
-          )}
+              );
+            }
+
+            return null;
+          })()}
         </div>
 
         {/* 4. Tool results & charts (AFTER text) */}

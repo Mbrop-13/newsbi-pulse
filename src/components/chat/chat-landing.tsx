@@ -1686,7 +1686,7 @@ function ChatLandingContent() {
                     (overlay absoluto) para no desplazar el contenido superior */}
                 {activeCategory && (
                   <div className="absolute bottom-full left-0 right-0 mb-2 w-full overflow-x-auto scrollbar-hide px-4 pb-2 snap-x snap-mandatory z-20">
-                    <div className="flex gap-3 w-max">
+                    <div className="flex gap-3 w-max pl-6 pr-6">
                       {PREVIEW_ITEMS.filter((item) => item.category === activeCategory).map((item) => (
                         <PreviewCard key={item.id} item={item} isMobile />
                       ))}
@@ -1695,8 +1695,8 @@ function ChatLandingContent() {
                 )}
 
                 {/* Categories draggable row */}
-                <div className="overflow-x-auto scrollbar-hide -mx-4 pl-6 pr-4 snap-x snap-mandatory">
-                  <div className="flex gap-2 w-max pb-1">
+                <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 snap-x snap-mandatory">
+                  <div className="flex gap-2 w-max pb-1 pl-6 pr-6">
                     {CREATIVE_CATEGORIES.map((cat) => (
                       <CategoryPill key={cat.id} cat={cat} isActive={activeCategory === cat.id} isMobile />
                     ))}

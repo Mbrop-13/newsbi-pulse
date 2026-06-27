@@ -497,8 +497,9 @@ ${reportsSummary}`,
           ? getWebBuilderSystemPrompt(finalSystemPromptFiles)
           : getSystemPrompt(assistantName, assistantTone, assistantRole, assistantTopics);
 
-        // Always include Canvas / Code Interpreter instructions so the LLM is smart enough to generate Canvas artifacts in any chat
-        systemPrompt += `\n\n[MODO CANVAS / INTÉRPRETE DE CÓDIGO (CRÍTICO)]:
+        // Only include Canvas / Code Interpreter instructions when NOT in WebBuilder (build) mode
+        if (!webBuilder) {
+          systemPrompt += `\n\n[MODO CANVAS / INTÉRPRETE DE CÓDIGO (CRÍTICO)]:
 Tienes acceso de ejecución total a la herramienta 'run_python' para ejecutar scripts de Python en un entorno de sandbox seguro (WebAssembly/Pyodide).
 REGLAS OBLIGATORIAS PARA EL MODO CANVAS:
 1. Para tareas de análisis de datos, simulaciones matemáticas, cálculos financieros, graficación, procesamiento de texto o lógica algorítmica, DEBES escribir y ejecutar código Python llamando a la herramienta 'run_python'.
@@ -509,6 +510,7 @@ o
 # optimizacion.py
 4. Las respuestas finales con código o scripts deben ir en un bloque de código markdown regular (por ejemplo: \`\`\`python ... \`\`\`), el cual automáticamente renderizará un botón de "Abrir en Canvas" para el usuario.
 5. Imprime siempre tus resultados y variables usando 'print()' dentro del script de Python para poder verlos en la salida. Explícale al usuario los resultados de la ejecución del script y los insights financieros obtenidos.`;
+        }
 
         if (browser) {
           systemPrompt += `\n\n[MODO NAVEGADOR VIRTUAL ACTIVADO (CRÍTICO)]:

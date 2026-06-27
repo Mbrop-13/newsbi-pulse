@@ -237,7 +237,12 @@ export function CanvasPanel() {
   useEffect(() => {
     if (!isEditing || activeTab !== "preview" || !isHtml || !htmlIframeRef.current) return;
     const iframe = htmlIframeRef.current;
-    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    let doc: Document | null | undefined = null;
+    try {
+      doc = iframe.contentDocument || iframe.contentWindow?.document;
+    } catch {
+      doc = null;
+    }
     if (!doc || !doc.body) return;
 
     doc.body.contentEditable = "true";
@@ -255,6 +260,7 @@ export function CanvasPanel() {
 
     doc.body.addEventListener("input", handleInput);
     return () => {
+      if (!doc || !doc.body) return;
       doc.body.contentEditable = "false";
       doc.body.style.cursor = "";
       doc.body.style.outline = "";
@@ -469,20 +475,14 @@ export function CanvasPanel() {
           {/* Botón Editar */}
           <button
             disabled={!activeFile || isLoading}
-            onClick={() => {
-              if (isEditing) {
-                handleCancelEdit();
-              } else {
-                handleStartEditing();
-              }
-            }}
+            onClick={() => isEditing ? handleCancelEdit() : handleStartEditing()}
             className={cn(
               "p-1.5 rounded-md transition-colors",
-              activeFile && !isLoading
-                ? isEditing
+              !activeFile || isLoading
+                ? "text-gray-300 dark:text-zinc-700 cursor-not-allowed opacity-50"
+                : isEditing
                   ? "text-blue-500 bg-blue-500/10 hover:bg-blue-500/20 cursor-pointer"
                   : "text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer"
-                : "text-gray-300 dark:text-zinc-700 cursor-not-allowed opacity-50"
             )}
             title={isEditing ? "Cancelar edición" : "Editar"}
           >

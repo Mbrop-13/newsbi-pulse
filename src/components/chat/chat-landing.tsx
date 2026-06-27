@@ -43,7 +43,7 @@ import {
 import { cn, formatDate as fmtDate, getFallbackImage, slugify, getCleanPathname } from "@/lib/utils"
 import { useLanguageStore } from "@/lib/stores/language-store"
 import { motion, AnimatePresence } from "framer-motion"
-import { Newspaper, Sparkles, Headphones, LineChart, Coins, Landmark, Briefcase, Shield, Lightbulb, Globe, Flame, Calendar, Cpu, ArrowUpRight, ArrowDownRight, MoreHorizontal, Link2, SquarePen, Trash2, FolderOpen, Code2, FileCode2, ChevronRight, Copy, Eye } from "lucide-react"
+import { Newspaper, Sparkles, Headphones, LineChart, Coins, Landmark, Briefcase, Shield, Lightbulb, Globe, Flame, Calendar, Cpu, ArrowUpRight, ArrowDownRight, MoreHorizontal, Link2, SquarePen, Trash2, FolderOpen, Code2, FileCode2, ChevronRight, Copy, Eye, Settings } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useSidebar } from "@/components/ui/sidebar"
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store"
@@ -1648,9 +1648,9 @@ function ChatLandingContent() {
             {/* New Chat */}
             <Tooltip>
               <TooltipTrigger asChild>
-                <button 
-                  type="button" 
-                  onClick={handleNewChat} 
+                <button
+                  type="button"
+                  onClick={handleNewChat}
                   className="w-9 h-9 rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-850 dark:hover:bg-zinc-850/80 flex items-center justify-center text-gray-700 dark:text-gray-200 transition-all cursor-pointer shadow-xs border border-transparent dark:border-white/5 active:scale-95"
                 >
                   <SquarePen className="w-4.5 h-4.5" />
@@ -1658,6 +1658,22 @@ function ChatLandingContent() {
               </TooltipTrigger>
               <TooltipContent side="bottom" className="text-xs font-semibold">
                 Nueva conversación
+              </TooltipContent>
+            </Tooltip>
+
+            {/* Settings */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => setShowSettings(true)}
+                  className="w-9 h-9 rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-850 dark:hover:bg-zinc-850/80 flex items-center justify-center text-gray-700 dark:text-gray-200 transition-all cursor-pointer shadow-xs border border-transparent dark:border-white/5 active:scale-95"
+                >
+                  <Settings className="w-4.5 h-4.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs font-semibold">
+                Ajustes
               </TooltipContent>
             </Tooltip>
           </div>

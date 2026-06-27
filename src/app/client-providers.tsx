@@ -122,7 +122,7 @@ export function ClientLayoutProviders({
   // completa y al intentar navegar a una página protegida aparece el popup de
   // registro (gate en nav-main.tsx + AuthGuard en cada página). El resto de
   // rutas con sidebar sí requieren auth (sus páginas tienen AuthGuard).
-  const isSidebarPage = isSidebarRoute && mounted && (pathname === "/" || pathname === "/ai" || !authLoaded || isAuthenticated);
+  const isSidebarPage = (isSidebarRoute || pathname === "/" || pathname === "/ai" || pathname.startsWith("/ai/")) && mounted && (pathname === "/" || pathname === "/ai" || pathname.startsWith("/ai/") || !authLoaded || isAuthenticated);
   const isFullscreenPage = isSidebarPage;
   const isAiPage = pathname === "/ai" || pathname.startsWith("/ai/") || pathname === "/" || pathname === "";
   const isAdminPage = pathname.startsWith("/admin");

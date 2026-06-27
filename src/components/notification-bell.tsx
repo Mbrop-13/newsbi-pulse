@@ -348,7 +348,7 @@ export function NotificationBell({ asMenuItem }: { asMenuItem?: boolean }) {
                 "z-50 overflow-hidden bg-white dark:bg-zinc-950 border border-gray-200/80 dark:border-white/5 rounded-3xl shadow-2xl flex flex-col",
                 asMenuItem 
                   ? "fixed inset-x-4 top-20 max-w-sm mx-auto"
-                  : "absolute bottom-full mb-2.5 left-0 w-[320px]"
+                  : "absolute bottom-full mb-2.5 right-0 md:left-0 w-[290px] sm:w-[320px] max-w-[calc(100vw-2rem)]"
               )}
               onClick={(e) => e.stopPropagation()}
             >

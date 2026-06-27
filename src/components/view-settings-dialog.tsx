@@ -424,7 +424,7 @@ export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettings
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 8 }}
             transition={{ type: "spring", damping: 25, stiffness: 350 }}
-            className="relative w-full max-w-[820px] h-[550px] md:h-[500px] flex flex-col md:flex-row overflow-hidden rounded-3xl border border-gray-200/80 dark:border-white/5 bg-white dark:bg-zinc-950 shadow-2xl"
+            className="relative w-full max-w-[820px] h-[80vh] md:h-[500px] flex flex-col md:flex-row overflow-hidden rounded-3xl border border-gray-200/80 dark:border-white/5 bg-white dark:bg-zinc-950 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Left Sidebar navigation */}

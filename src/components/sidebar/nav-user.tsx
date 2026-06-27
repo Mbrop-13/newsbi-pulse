@@ -232,6 +232,7 @@ export function NavUser() {
                 {/* Settings action */}
                 <DropdownMenuItem
                   onClick={() => {
+                    if (isMobile) setOpenMobile(false);
                     setSettingsTab("cuenta");
                     setSettingsOpen(true);
                   }}

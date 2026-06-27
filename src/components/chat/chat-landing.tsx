@@ -668,6 +668,7 @@ function ChatLandingContent() {
   }, [])
   const isDark = themeMounted && resolvedTheme === "dark"
   const chatLogoSrc = isDark ? "/assets/maverlang-logo-white.png" : "/assets/maverlang-logo.png"
+  const mobileLogoSrc = isDark ? "/assets/Logo 2-Blanco.png" : "/assets/Maverlang Logo-2.png"
 
   // AI SDK useChat for streaming
   const {
@@ -1659,7 +1660,7 @@ function ChatLandingContent() {
           </div>
         </TooltipProvider>
       )}
-      <div className="flex flex-col h-full relative">
+<div className="flex flex-col h-full relative">
         {/* Main content area */}
         {!hasMessages ? (
           /* Landing view - logo + input y galería de creaciones.
@@ -1667,12 +1668,12 @@ function ChatLandingContent() {
              posición fija en el fondo. */
           isMobile ? (
             /* Mobile landing: logo + categories + preview cards carousel + input at bottom */
-            <div className="flex flex-col h-full relative px-4 pt-6 pb-5 overflow-y-auto scrollbar-hide">
+            <div className="flex flex-col h-full relative px-4 pt-6 pb-5 overflow-hidden">
               {/* Top area: logo */}
               <div className="flex-1 flex flex-col items-center justify-center min-h-0 w-full max-w-md mx-auto">
                 <div className="text-center mb-5 shrink-0">
                   <img
-                    src={chatLogoSrc}
+                    src={mobileLogoSrc}
                     alt="Maverlang Logo"
                     className="h-14 w-auto object-contain select-none pointer-events-none"
                   />

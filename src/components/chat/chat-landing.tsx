@@ -1835,7 +1835,7 @@ function ChatLandingContent() {
                />
              )}
 
-            <div className="sticky bottom-0 z-10 w-full bg-transparent pt-1 pb-0.5 md:pb-5 px-4">
+            <div className="sticky bottom-0 z-10 w-full bg-transparent pt-0 pb-0 md:pb-5 px-2">
               <div className={cn("w-full transition-all", (isBrowserOpen || isCanvasOpen || isWebBuilderMode) ? "max-w-full" : "max-w-3xl mx-auto")}>
                 <ChatInput
                   placeholder="Envía un mensaje..."

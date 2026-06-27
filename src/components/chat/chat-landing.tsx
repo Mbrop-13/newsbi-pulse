@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useAIChatStore, type ChatMessage } from "@/lib/stores/ai-chat-store"
 import { useAssistantStore } from "@/lib/stores/assistant-store"
+import { ViewSettingsDialog } from "@/components/view-settings-dialog"
 import { useAuthStore, useAuthModalStore } from "@/lib/stores/auth-store"
 import { useConversionStore } from "@/lib/stores/conversion-store"
 import { getPlanConfig, type PlanTier, getNextTier } from "@/lib/plan-limits"
@@ -508,6 +509,8 @@ function ChatLandingContent() {
   const [openReasoning, setOpenReasoning] = useState<Record<string, boolean>>({})
   const [shareDialog, setShareDialog] = useState({ isOpen: false, question: "", answer: "" })
   const lastLoadedChatIdRef = useRef<string | null>(null)
+  const showSettings = useAssistantStore((s) => s.showSettings)
+  const setShowSettings = useAssistantStore((s) => s.setShowSettings)
 
   const router = useRouter()
 
@@ -1858,6 +1861,13 @@ function ChatLandingContent() {
         onClose={() => setShareDialog({ ...shareDialog, isOpen: false })}
         question={shareDialog.question}
         answer={shareDialog.answer}
+      />
+
+      {/* Settings dialog - controlado por el store de asistente
+          (lo abre el botón de ajustes del navbar/header en cualquier vista) */}
+      <ViewSettingsDialog
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
       />
     </div>
   )

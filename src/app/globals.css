@@ -149,9 +149,19 @@
     font-feature-settings: 'cv11', 'ss01';
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overscroll-behavior: none;
+    overscroll-behavior-y: none;
+    overflow: hidden;
+    height: 100%;
+    width: 100%;
   }
   html {
     @apply font-sans scroll-smooth;
+    overscroll-behavior: none;
+    overscroll-behavior-y: none;
+    overflow: hidden;
+    height: 100%;
+    width: 100%;
   }
 }
 

@@ -1565,9 +1565,9 @@ function ChatLandingContent() {
           /* Landing view - logo + input y galería de creaciones.
              Al enviar el primer mensaje, hasMessages pasa a true y el input baja a su
              posición fija en el fondo. */
-          <div className="flex-1 flex flex-col items-center px-4 py-8 relative h-full overflow-y-auto scrollbar-hide">
+          <div className="flex-1 flex flex-col items-center px-4 py-4 relative h-full overflow-y-auto scrollbar-hide">
             {/* Spacer superior para empujar el bloque hacia el centro visual */}
-            <div className="h-[28vh] sm:h-[32vh] shrink-0" aria-hidden />
+            <div className="h-[10vh] sm:h-[12vh] shrink-0" aria-hidden />
 
             <div className="w-full max-w-4xl mx-auto flex flex-col items-center justify-center">
               <div className="text-center mb-6">
@@ -1580,7 +1580,7 @@ function ChatLandingContent() {
                 </div>
               </div>
 
-              <div className="w-full max-w-3xl pb-4">
+              <div className="w-full max-w-3xl pb-2">
                 <ChatInput
                   placeholder="Pregúntame lo que quieras..."
                   onSubmit={handleSend}
@@ -1593,7 +1593,7 @@ function ChatLandingContent() {
               </div>
 
               {/* Categorías y Tarjetas de Previsualización */}
-              <div className="w-full mt-20 sm:mt-28 flex flex-col items-center">
+              <div className="w-full mt-6 sm:mt-8 flex flex-col items-center">
                 {/* Categorías (Pills) - Fixed and Wrapped to prevent clipping */}
                 <div className="flex flex-wrap items-center justify-center gap-2 w-full max-w-2xl py-2 px-4 mt-1">
                   {CREATIVE_CATEGORIES.map((cat) => {
@@ -1693,7 +1693,7 @@ function ChatLandingContent() {
             </div>
 
             {/* Spacer inferior para equilibrar el centrado visual */}
-            <div className="h-12 shrink-0" aria-hidden />
+            <div className="h-4 shrink-0" aria-hidden />
           </div>
         ) : (
           /* Chat view - messages + input at bottom */

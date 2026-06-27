@@ -285,6 +285,7 @@ export function CanvasPanel() {
 
     svgEl.addEventListener("input", handleInput);
     return () => {
+      if (!svgEl) return;
       svgEl.removeAttribute("contenteditable");
       svgHtmlEl.style.cursor = "";
       svgHtmlEl.style.outline = "";
@@ -612,7 +613,7 @@ export function CanvasPanel() {
                   <textarea
                     value={editCode}
                     onChange={(e) => setEditCode(e.target.value)}
-                    className="flex-grow px-4 pr-24 py-0 m-0 bg-white dark:bg-[#1E1E1E] text-gray-800 dark:text-gray-300 font-mono text-[13px] leading-6 whitespace-pre resize-none border-none focus:outline-none focus:ring-0 min-w-max overflow-hidden"
+                    className="flex-grow px-4 pr-24 py-0 m-0 bg-white dark:bg-[#1E1E1E] text-gray-800 dark:text-gray-300 font-mono text-[13px] leading-6 resize-none border-none focus:outline-none focus:ring-0 min-w-max overflow-hidden"
                     style={{ minHeight: `${lines.length * 1.5}rem` }}
                     spellCheck={false}
                   />
@@ -641,7 +642,7 @@ export function CanvasPanel() {
                     ref={htmlIframeRef}
                     srcDoc={activeFile.code}
                     title="HTML Preview"
-                    sandbox="allow-scripts"
+                    sandbox="allow-scripts allow-same-origin"
                     className="w-full h-full border-0 bg-white"
                   />
                 )}

@@ -5,6 +5,7 @@ import { useCanvasStore } from "@/lib/stores/canvas-store";
 import { CanvasPanel } from "./canvas-panel";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/ui/sidebar";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 
 interface CanvasWorkspaceProps {
   chatPanel: React.ReactNode;
@@ -68,55 +69,35 @@ export function CanvasWorkspace({ chatPanel }: CanvasWorkspaceProps) {
     }
   }, [isOpen, isMobile, setOpen, setOpenMobile]);
 
-  if (!isOpen) {
-    return <>{chatPanel}</>;
-  }
-
   if (isMobile) {
     return (
-      <div className="flex flex-col h-full w-full">
-        {/* Mobile Tab Bar */}
-        {isOpen && (
-          <div className="flex border-b border-sidebar-border dark:border-white/5 bg-background dark:bg-[#0A0A0A] shrink-0 z-20">
-            <button
-              onClick={() => setMobileTab("chat")}
-              className={cn(
-                "flex-1 py-3 text-xs font-bold text-center transition-all cursor-pointer",
-                mobileTab === "chat"
-                  ? "text-zinc-900 dark:text-white border-b-2 border-blue-500"
-                  : "text-zinc-500 dark:text-zinc-400"
-              )}
-            >
-              💬 Chat
-            </button>
-            <button
-              onClick={() => setMobileTab("canvas")}
-              className={cn(
-                "flex-1 py-3 text-xs font-bold text-center transition-all cursor-pointer",
-                mobileTab === "canvas"
-                  ? "text-zinc-900 dark:text-white border-b-2 border-blue-500"
-                  : "text-zinc-500 dark:text-zinc-400"
-              )}
-            >
-              📝 Canvas
-            </button>
-          </div>
-        )}
+      <div className="flex flex-col h-full w-full relative overflow-hidden">
+        {/* Chat Panel - always active and visible */}
+        <div className="flex-1 min-h-0 relative h-full">
+          {chatPanel}
+        </div>
 
-        {/* Mobile Content */}
-        <div className="flex-1 min-h-0 relative">
-          {!isOpen || mobileTab === "chat" ? (
-            <div className="absolute inset-0 bg-background dark:bg-[#0A0A0A]">
-              {chatPanel}
-            </div>
-          ) : (
-            <div className="absolute inset-0 p-2 bg-background dark:bg-[#09090b]">
+        {/* Bottom Sheet for Canvas */}
+        <Sheet open={isOpen} onOpenChange={(open) => { if (!open) useCanvasStore.getState().closeCanvas(); }}>
+          <SheetContent 
+            side="bottom" 
+            className="h-[90dvh] w-full p-0 flex flex-col rounded-t-[1.5rem] overflow-hidden border-t border-border bg-background shadow-2xl z-50 focus:outline-none"
+          >
+            {/* Grab handle for bottom sheet */}
+            <div className="mx-auto w-12 h-1.5 rounded-full bg-zinc-300 dark:bg-zinc-850 mt-3 mb-2 shrink-0 cursor-pointer" />
+            
+            {/* Canvas Panel content */}
+            <div className="flex-grow flex flex-col min-h-0 relative p-1">
               <CanvasPanel />
             </div>
-          )}
-        </div>
+          </SheetContent>
+        </Sheet>
       </div>
     );
+  }
+
+  if (!isOpen) {
+    return <>{chatPanel}</>;
   }
 
   // Desktop Split Layout

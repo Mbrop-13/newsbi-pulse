@@ -50,6 +50,7 @@ export function ChatMessages({
   const isBrowserOpen = useBrowserStore((s) => s.isOpen)
   const isCanvasOpen = useCanvasStore((s) => s.isOpen)
   const isSplitMode = isWebBuilderMode || isBrowserOpen || isCanvasOpen
+  const { isMobile } = useSidebar()
 
   // Extract live streaming data for WebBuilder loading indicator
   const liveReasoning = useMemo(() => {
@@ -130,7 +131,7 @@ export function ChatMessages({
               {!isWebBuilderMode ? (
                 <div className="flex gap-3">
                   {/* Use compact avatar (no video) when canvas/browser is open */}
-                  {!isSplitMode && <AssistantAvatar isResponding={true} isWebBuilderMode={false} />}
+                  {!isSplitMode && !isMobile && <AssistantAvatar isResponding={true} isWebBuilderMode={false} />}
                   <div className="flex items-center gap-2 py-2">
                     <div className="flex items-center gap-1">
                       <div className="w-2 h-2 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -467,6 +468,7 @@ function MessageBubble({
   const isBubbleCanvasOpen = useCanvasStore((s) => s.isOpen)
   const isBubbleBrowserOpen = useBrowserStore((s) => s.isOpen)
   const isBubbleSplitMode = isWebBuilderMode || isBubbleCanvasOpen || isBubbleBrowserOpen
+  const { isMobile } = useSidebar()
   
   // Custom states for redesigned thinking/reasoning blocks
   const [showAllSources, setShowAllSources] = useState(false)
@@ -1162,7 +1164,7 @@ function MessageBubble({
   // ─── Unified Assistant message return ───
   return (
     <div className={cn("flex group", isBubbleSplitMode ? "gap-2 pl-1.5" : "gap-3")}>
-      {!isBubbleSplitMode && <AssistantAvatar isResponding={isResponding} isWebBuilderMode={isWebBuilderMode} />}
+      {!isBubbleSplitMode && !isMobile && <AssistantAvatar isResponding={isResponding} isWebBuilderMode={isWebBuilderMode} />}
       <div className="flex-1 min-w-0">
         {/* 1. Unified Thinking & Search Phase */}
         {renderThinkingPhase()}

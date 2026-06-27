@@ -423,14 +423,25 @@ export default function SettingsClient() {
                           };
 
                           const formatTimeReset = (dateString?: string | null) => {
-                            if (!dateString) return "";
-                            try {
-                              const d = new Date(dateString);
-                              return format(d, "MMM d, HH:mm", { locale: es });
-                            } catch {
-                              return "";
-                            }
-                          };
+                             if (!dateString) return "";
+                             try {
+                               const d = new Date(dateString);
+                               const diffMs = d.getTime() - Date.now();
+                               if (diffMs <= 0) return "Listo";
+                               
+                               const diffMins = Math.floor(diffMs / (60 * 1000));
+                               const hours = Math.floor(diffMins / 60);
+                               const mins = diffMins % 60;
+                               
+                               if (hours > 0) {
+                                 return `en ${hours}h ${mins}m`;
+                               } else {
+                                 return `en ${mins}m`;
+                               }
+                             } catch {
+                               return "";
+                             }
+                           };
 
                           return (
                             <>

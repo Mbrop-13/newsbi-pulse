@@ -869,6 +869,7 @@ function ChatLandingContent() {
   useEffect(() => {
     lastAutoOpenedRef.current = "";
     lastCanvasUpdateRef.current = 0;
+    useCanvasStore.getState().clearCanvas();
   }, [currentChatId]);
 
   useEffect(() => {
@@ -915,7 +916,7 @@ function ChatLandingContent() {
         const codeValue = codeBlockMatch[2].trim();
 
         const now = Date.now();
-        const shouldUpdate = !aiLoading || (now - lastCanvasUpdateRef.current > 250);
+        const shouldUpdate = !aiLoading || (now - lastCanvasUpdateRef.current > 800);
 
         if (codeValue && codeValue !== lastAutoOpenedRef.current && shouldUpdate) {
           lastAutoOpenedRef.current = codeValue;
@@ -1564,9 +1565,9 @@ function ChatLandingContent() {
           /* Landing view - logo + input y galería de creaciones.
              Al enviar el primer mensaje, hasMessages pasa a true y el input baja a su
              posición fija en el fondo. */
-          <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 relative h-full overflow-y-auto scrollbar-hide">
+          <div className="flex-1 flex flex-col items-center px-4 py-8 relative h-full overflow-y-auto scrollbar-hide">
             {/* Spacer superior para empujar el bloque hacia el centro visual */}
-            <div className="flex-grow-[1.5] min-h-[80px]" aria-hidden />
+            <div className="h-[28vh] sm:h-[32vh] shrink-0" aria-hidden />
 
             <div className="w-full max-w-4xl mx-auto flex flex-col items-center justify-center">
               <div className="text-center mb-6">
@@ -1592,7 +1593,7 @@ function ChatLandingContent() {
               </div>
 
               {/* Categorías y Tarjetas de Previsualización */}
-              <div className="w-full mt-14 flex flex-col items-center">
+              <div className="w-full mt-20 sm:mt-28 flex flex-col items-center">
                 {/* Categorías (Pills) - Fixed and Wrapped to prevent clipping */}
                 <div className="flex flex-wrap items-center justify-center gap-2 w-full max-w-2xl py-2 px-4 mt-1">
                   {CREATIVE_CATEGORIES.map((cat) => {
@@ -1692,7 +1693,7 @@ function ChatLandingContent() {
             </div>
 
             {/* Spacer inferior para equilibrar el centrado visual */}
-            <div className="flex-grow min-h-[20px]" aria-hidden />
+            <div className="h-12 shrink-0" aria-hidden />
           </div>
         ) : (
           /* Chat view - messages + input at bottom */

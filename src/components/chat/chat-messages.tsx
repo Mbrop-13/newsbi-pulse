@@ -1139,18 +1139,18 @@ function MessageBubble({
             )}>
               <p className="whitespace-pre-wrap">{message.content}</p>
               {isLongUserMessage && !isUserMessageExpanded && (
-                <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-secondary via-secondary/80 to-transparent pointer-events-none" />
+                <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#EBEBED] via-[#EBEBED]/90 to-transparent dark:from-[#0A0A0A] dark:via-[#0A0A0A]/90 dark:to-transparent pointer-events-none" />
               )}
             </div>
             
             {isLongUserMessage && (
-              <div className="flex justify-center mt-2.5 pt-2.5 border-t border-zinc-200/20 dark:border-white/5">
-                <button
+              <div className="flex justify-end mt-2 pr-1">
+                <span
                   onClick={() => setIsUserMessageExpanded(!isUserMessageExpanded)}
-                  className="text-[11px] font-bold text-[#1890FF] hover:text-[#1890FF]/80 transition-all flex items-center gap-1.5 py-1 px-3.5 bg-white/75 hover:bg-white dark:bg-black/40 dark:hover:bg-black/60 rounded-full border border-zinc-200/50 dark:border-white/5 cursor-pointer shadow-xs active:scale-95 select-none"
+                  className="text-xs font-semibold text-black dark:text-white hover:opacity-70 transition-all flex items-center gap-1 cursor-pointer select-none"
                 >
-                  {isUserMessageExpanded ? "Ver menos" : "Ver más"}
-                </button>
+                  {isUserMessageExpanded ? "Ver menos ↑" : "Ver más →"}
+                </span>
               </div>
             )}
           </div>

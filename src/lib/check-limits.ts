@@ -440,11 +440,33 @@ export async function checkTokenLimit(userId: string): Promise<{ allowed: boolea
     monthlyUsed = genUsed;
 
     if (logs) {
-      logs.forEach((log) => {
+      const sortedLogs = [...logs].sort(
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+      
+      let blockStart: number | null = null;
+
+      sortedLogs.forEach((log) => {
         const t = log.tokens || 0;
+        const logTime = new Date(log.created_at).getTime();
+        const now = Date.now();
+
         weeklyUsed += t;
-        if (new Date(log.created_at) >= new Date(fiveHoursAgo)) {
-          fiveHourUsed += t;
+
+        if (blockStart === null) {
+          if (now - logTime < 5 * 60 * 60 * 1000) {
+            blockStart = logTime;
+            fiveHourUsed = t;
+          }
+        } else {
+          if (logTime - blockStart < 5 * 60 * 60 * 1000) {
+            fiveHourUsed += t;
+          } else {
+            if (now - logTime < 5 * 60 * 60 * 1000) {
+              blockStart = logTime;
+              fiveHourUsed = t;
+            }
+          }
         }
       });
     }

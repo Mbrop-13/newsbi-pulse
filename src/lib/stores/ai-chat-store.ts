@@ -3,6 +3,8 @@ import { persist } from "zustand/middleware";
 import { useAuthStore } from "./auth-store";
 import { createClient } from "@/lib/supabase/client";
 import { useWebBuilderStore } from "./webbuilder-store";
+import { useCanvasStore } from "./canvas-store";
+import { useBrowserStore } from "./browser-store";
 
 export interface ChatMessagePlanAgent {
   agentName: string;
@@ -314,6 +316,8 @@ export const useAIChatStore = create<AIChatStore>()(
       
       clearMessages: () => {
         set({ messages: [], attachedArticles: [], attachedFiles: [], activeTools: [], currentChatId: null });
+        useCanvasStore.getState().clearCanvas();
+        useBrowserStore.getState().clearSession();
       },
       attachArticle: (article) => {
         const { attachedArticles } = get();
@@ -337,6 +341,10 @@ export const useAIChatStore = create<AIChatStore>()(
             attachedFiles: chat.attachedFiles || [],
             currentChatId: id
           });
+
+          // Reset canvas and browser workspace state to prevent cross-chat leaks
+          useCanvasStore.getState().clearCanvas();
+          useBrowserStore.getState().clearSession();
 
           // Auto-restore WebBuilder mode based on saved flag or message content fallback
           const hasArtifact = chat.messages.some(m => m.content && (m.content.includes("<maverlangArtifact") || m.content.includes("</maverlangArtifact>")));

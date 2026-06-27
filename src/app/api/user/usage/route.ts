@@ -54,32 +54,46 @@ export async function GET() {
 
     let fiveHourUsed = 0;
     let weeklyUsed = 0;
-    let oldest5hLog: any = null;
     let oldestWeeklyLog: any = null;
+    let blockStart: number | null = null;
 
     if (logs) {
-      logs.forEach((log) => {
+      const sortedLogs = [...logs].sort(
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+
+      sortedLogs.forEach((log) => {
         const t = log.tokens || 0;
         const logTime = new Date(log.created_at).getTime();
-        
+        const now = Date.now();
+
         // Weekly calculations
         weeklyUsed += t;
         if (!oldestWeeklyLog || logTime < new Date(oldestWeeklyLog.created_at).getTime()) {
           oldestWeeklyLog = log;
         }
 
-        // 5-hour calculations
-        if (logTime >= new Date(fiveHoursAgo).getTime()) {
-          fiveHourUsed += t;
-          if (!oldest5hLog || logTime < new Date(oldest5hLog.created_at).getTime()) {
-            oldest5hLog = log;
+        // 5-hour calculations (fixed block window)
+        if (blockStart === null) {
+          if (now - logTime < 5 * 60 * 60 * 1000) {
+            blockStart = logTime;
+            fiveHourUsed = t;
+          }
+        } else {
+          if (logTime - blockStart < 5 * 60 * 60 * 1000) {
+            fiveHourUsed += t;
+          } else {
+            if (now - logTime < 5 * 60 * 60 * 1000) {
+              blockStart = logTime;
+              fiveHourUsed = t;
+            }
           }
         }
       });
     }
 
-    const fiveHourReset = oldest5hLog 
-      ? new Date(new Date(oldest5hLog.created_at).getTime() + 5 * 60 * 60 * 1000).toISOString()
+    const fiveHourReset = blockStart 
+      ? new Date(blockStart + 5 * 60 * 60 * 1000).toISOString()
       : null;
 
     const weeklyReset = oldestWeeklyLog

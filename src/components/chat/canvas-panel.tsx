@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useCanvasStore } from "@/lib/stores/canvas-store";
 import { useAIChatStore } from "@/lib/stores/ai-chat-store";
 import { 
   Check, 
+  Download,
   FileCode2, 
   Sparkles
 } from "lucide-react";
@@ -33,49 +34,49 @@ function applySyntaxHighlighting(code: string, language: string): string {
   if (lang === "html" || lang === "xml" || lang === "svg") {
     // 1. Comentarios <!-- ... -->
     escaped = escaped.replace(/(&lt;!--[\s\S]*?--&gt;)/g, (_, match) => 
-      pushToken(match, "text-gray-400/80 dark:text-zinc-500 italic")
+      pushToken(match, "hk-comment")
     );
     
     // 2. DOCTYPE
     escaped = escaped.replace(/(&lt;!DOCTYPE.*?&gt;)/gi, (_, match) => 
-      pushToken(match, "text-gray-400/80 dark:text-zinc-500 italic")
+      pushToken(match, "hk-comment")
     );
     
     // 3. Valores de atributos en comillas
     escaped = escaped.replace(/("(?:[^"\\]|\\.)*")/g, (_, match) => 
-      pushToken(match, "text-amber-600 dark:text-[#CE9178]")
+      pushToken(match, "hk-string")
     );
     escaped = escaped.replace(/('(?:[^'\\]|\\.)*')/g, (_, match) => 
-      pushToken(match, "text-amber-600 dark:text-[#CE9178]")
+      pushToken(match, "hk-string")
     );
     
     // 4. Etiquetas HTML
     escaped = escaped.replace(/(&lt;\/?)([a-zA-Z0-9:-]+)/g, (_, p1, p2) => {
-      return p1 + `<span class="text-blue-600 dark:text-[#569CD6]">${p2}</span>`;
+      return p1 + `<span class="hk-tag">${p2}</span>`;
     });
     
     // 5. Atributos
     escaped = escaped.replace(/([a-zA-Z0-9:-]+)=/g, (_, p1) => {
-      return `<span class="text-sky-600 dark:text-[#9CDCFE]">${p1}</span>=`;
+      return `<span class="hk-attr">${p1}</span>=`;
     });
   } else if (lang === "css") {
     // Comentarios
     escaped = escaped.replace(/(\/\*[\s\S]*?\*\/)/g, (_, match) => 
-      pushToken(match, "text-gray-400/80 dark:text-zinc-500 italic")
+      pushToken(match, "hk-comment")
     );
     // Cadenas
     escaped = escaped.replace(/("(?:[^"\\]|\\.)*")/g, (_, match) => 
-      pushToken(match, "text-amber-600 dark:text-[#CE9178]")
+      pushToken(match, "hk-string")
     );
     escaped = escaped.replace(/('(?:[^'\\]|\\.)*')/g, (_, match) => 
-      pushToken(match, "text-amber-600 dark:text-[#CE9178]")
+      pushToken(match, "hk-string")
     );
     // Propiedades
     escaped = escaped.replace(/([a-zA-Z0-9-]+)\s*:/g, (_, p1) => {
-      return `<span class="text-sky-600 dark:text-[#9CDCFE]">${p1}</span>:`;
+      return `<span class="hk-attr">${p1}</span>:`;
     });
     // Reglas @
-    escaped = escaped.replace(/(@[a-zA-Z0-9-]+)/g, '<span class="text-purple-600 dark:text-[#C586C0]">$1</span>');
+    escaped = escaped.replace(/(@[a-zA-Z0-9-]+)/g, '<span class="hk-keyword">$1</span>');
   } else if (
     lang === "js" || 
     lang === "javascript" || 
@@ -87,21 +88,21 @@ function applySyntaxHighlighting(code: string, language: string): string {
   ) {
     // Comentarios multilinea
     escaped = escaped.replace(/(\/\*[\s\S]*?\*\/)/g, (_, match) => 
-      pushToken(match, "text-gray-400/80 dark:text-zinc-500 italic")
+      pushToken(match, "hk-comment")
     );
     // Comentarios de una linea
     escaped = escaped.replace(/(\/\/.*)/g, (_, match) => 
-      pushToken(match, "text-gray-400/80 dark:text-zinc-500 italic")
+      pushToken(match, "hk-comment")
     );
     // Cadenas
     escaped = escaped.replace(/("(?:[^"\\]|\\.)*")/g, (_, match) => 
-      pushToken(match, "text-amber-600 dark:text-[#CE9178]")
+      pushToken(match, "hk-string")
     );
     escaped = escaped.replace(/('(?:[^'\\]|\\.)*')/g, (_, match) => 
-      pushToken(match, "text-amber-600 dark:text-[#CE9178]")
+      pushToken(match, "hk-string")
     );
     escaped = escaped.replace(/(\`(?:[^\`\\]|\\.)*\`)/g, (_, match) => 
-      pushToken(match, "text-amber-600 dark:text-[#CE9178]")
+      pushToken(match, "hk-string")
     );
 
     // Palabras clave
@@ -115,34 +116,34 @@ function applySyntaxHighlighting(code: string, language: string): string {
       "boolean", "void", "never", "unknown"
     ];
     const keywordRegex = new RegExp(`\\b(${keywords.join("|")})\\b`, "g");
-    escaped = escaped.replace(keywordRegex, '<span class="text-blue-600 dark:text-[#569CD6]">$1</span>');
+    escaped = escaped.replace(keywordRegex, '<span class="hk-keyword">$1</span>');
 
     // Nombres de funciones
-    escaped = escaped.replace(/\b([a-zA-Z0-9_]+)(?=\s*\()/g, '<span class="text-yellow-600 dark:text-[#DCDCAA]">$1</span>');
+    escaped = escaped.replace(/\b([a-zA-Z0-9_]+)(?=\s*\()/g, '<span class="hk-function">$1</span>');
 
     // Números
-    escaped = escaped.replace(/\b(\d+)\b/g, '<span class="text-green-600 dark:text-[#B5CEA8]">$1</span>');
+    escaped = escaped.replace(/\b(\d+)\b/g, '<span class="hk-number">$1</span>');
 
     // Booleanos, null, undefined
-    escaped = escaped.replace(/\b(true|false|null|undefined)\b/g, '<span class="text-blue-500 dark:text-[#569CD6]">$1</span>');
+    escaped = escaped.replace(/\b(true|false|null|undefined)\b/g, '<span class="hk-boolean">$1</span>');
   } else if (lang === "python" || lang === "py") {
     // Comentarios #
     escaped = escaped.replace(/(#.*)/g, (_, match) => 
-      pushToken(match, "text-gray-400/80 dark:text-zinc-500 italic")
+      pushToken(match, "hk-comment")
     );
     // Cadenas triples
     escaped = escaped.replace(/(""\"[\s\S]*?""\")/g, (_, match) => 
-      pushToken(match, "text-amber-600 dark:text-[#CE9178]")
+      pushToken(match, "hk-string")
     );
     escaped = escaped.replace(/(''\'[\s\S]*?''\')/g, (_, match) => 
-      pushToken(match, "text-amber-600 dark:text-[#CE9178]")
+      pushToken(match, "hk-string")
     );
     // Cadenas simples
     escaped = escaped.replace(/("(?:[^"\\]|\\.)*")/g, (_, match) => 
-      pushToken(match, "text-amber-600 dark:text-[#CE9178]")
+      pushToken(match, "hk-string")
     );
     escaped = escaped.replace(/('(?:[^'\\]|\\.)*')/g, (_, match) => 
-      pushToken(match, "text-amber-600 dark:text-[#CE9178]")
+      pushToken(match, "hk-string")
     );
 
     // Palabras clave
@@ -153,17 +154,17 @@ function applySyntaxHighlighting(code: string, language: string): string {
       "nonlocal", "with", "yield", "del"
     ];
     const keywordRegex = new RegExp(`\\b(${keywords.join("|")})\\b`, "g");
-    escaped = escaped.replace(keywordRegex, '<span class="text-blue-600 dark:text-[#569CD6]">$1</span>');
+    escaped = escaped.replace(keywordRegex, '<span class="hk-keyword">$1</span>');
 
     // Funciones
-    escaped = escaped.replace(/\b(print|len|range|str|int|float|list|dict|set|tuple|type|isinstance)(?=\s*\()/g, '<span class="text-teal-600 dark:text-[#4EC9B0]">$1</span>');
-    escaped = escaped.replace(/\b([a-zA-Z0-9_]+)(?=\s*\()/g, '<span class="text-yellow-600 dark:text-[#DCDCAA]">$1</span>');
+    escaped = escaped.replace(/\b(print|len|range|str|int|float|list|dict|set|tuple|type|isinstance)(?=\s*\()/g, '<span class="hk-keyword">$1</span>');
+    escaped = escaped.replace(/\b([a-zA-Z0-9_]+)(?=\s*\()/g, '<span class="hk-function">$1</span>');
 
     // Números
-    escaped = escaped.replace(/\b(\d+)\b/g, '<span class="text-green-600 dark:text-[#B5CEA8]">$1</span>');
+    escaped = escaped.replace(/\b(\d+)\b/g, '<span class="hk-number">$1</span>');
 
     // Booleanos y None
-    escaped = escaped.replace(/\b(True|False|None)\b/g, '<span class="text-blue-500 dark:text-[#569CD6]">$1</span>');
+    escaped = escaped.replace(/\b(True|False|None)\b/g, '<span class="hk-boolean">$1</span>');
   }
 
   // Restaurar tokens
@@ -174,33 +175,121 @@ function applySyntaxHighlighting(code: string, language: string): string {
   return escaped;
 }
 
+function getFileExtension(language: string): string {
+  const map: Record<string, string> = {
+    html: "html",
+    htm: "html",
+    svg: "svg",
+    xml: "xml",
+    css: "css",
+    js: "js",
+    javascript: "js",
+    ts: "ts",
+    typescript: "ts",
+    jsx: "jsx",
+    tsx: "tsx",
+    json: "json",
+    py: "py",
+    python: "py",
+    md: "md",
+    markdown: "md",
+  };
+  return map[language.toLowerCase()] || "txt";
+}
+
 export function CanvasPanel() {
   const { 
     activeFile, 
-    closeCanvas, 
+    closeCanvas,
+    updateActiveFileCode,
   } = useCanvasStore();
   const currentChatId = useAIChatStore((s) => s.currentChatId);
+  const isLoading = useAIChatStore((s) => s.isLoading);
 
   const [isCopied, setIsCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<"code" | "preview">("code");
+  const [isEditing, setIsEditing] = useState(false);
+  const [editCode, setEditCode] = useState("");
+  const htmlIframeRef = useRef<HTMLIFrameElement>(null);
+  const svgContainerRef = useRef<HTMLDivElement>(null);
 
-  // Reset to code tab when a new file opens
+  // Reset editing state and tab when a new file opens
   useEffect(() => {
+    setIsEditing(false);
+    setEditCode("");
     if (activeFile) {
       setActiveTab("code");
     }
   }, [activeFile?.title]);
 
-  const lineCount = activeFile ? activeFile.code.split("\n").length : 0;
+  const codeForLines = isEditing ? editCode : (activeFile?.code || "");
+  const lines = codeForLines.split("\n");
+  const lineNumberWidth = activeFile
+    ? `${Math.max(2.5, String(lines.length).length * 0.6 + 1.5)}rem`
+    : "2.5rem";
   const langKey = activeFile ? activeFile.language.toLowerCase() : "";
   const isHtml = langKey === "html" || langKey === "htm";
   const isSvg = langKey === "svg";
   const isMarkdown = langKey === "markdown" || langKey === "md";
   const hasPreview = isHtml || isSvg || isMarkdown;
 
+  // Make HTML preview editable when editing mode is active
+  useEffect(() => {
+    if (!isEditing || activeTab !== "preview" || !isHtml || !htmlIframeRef.current) return;
+    const iframe = htmlIframeRef.current;
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc || !doc.body) return;
+
+    doc.body.contentEditable = "true";
+    doc.body.style.cursor = "text";
+    doc.body.style.outline = "none";
+
+    const handleInput = () => {
+      const original = activeFile?.code || "";
+      const trimmed = original.trim().toLowerCase();
+      const updated = trimmed.startsWith("<!doctype") || trimmed.startsWith("<html")
+        ? doc.documentElement.outerHTML
+        : doc.body.innerHTML;
+      setEditCode(updated);
+    };
+
+    doc.body.addEventListener("input", handleInput);
+    return () => {
+      doc.body.contentEditable = "false";
+      doc.body.style.cursor = "";
+      doc.body.style.outline = "";
+      doc.body.removeEventListener("input", handleInput);
+    };
+  }, [isEditing, activeTab, isHtml, activeFile?.code]);
+
+  // Make SVG preview editable when editing mode is active
+  useEffect(() => {
+    if (!isEditing || activeTab !== "preview" || !isSvg || !svgContainerRef.current) return;
+    const svgEl = svgContainerRef.current.querySelector("svg");
+    if (!svgEl) return;
+    const svgHtmlEl = svgEl as unknown as HTMLElement;
+
+    svgEl.setAttribute("contenteditable", "true");
+    svgHtmlEl.style.cursor = "text";
+    svgHtmlEl.style.outline = "none";
+
+    const handleInput = () => {
+      setEditCode(svgContainerRef.current?.innerHTML || "");
+    };
+
+    svgEl.addEventListener("input", handleInput);
+    return () => {
+      svgEl.removeAttribute("contenteditable");
+      svgHtmlEl.style.cursor = "";
+      svgHtmlEl.style.outline = "";
+      svgEl.removeEventListener("input", handleInput);
+    };
+  }, [isEditing, activeTab, isSvg]);
+
   const handleCopy = async () => {
+    if (!activeFile) return;
     try {
-      await navigator.clipboard.writeText(activeFile.code);
+      await navigator.clipboard.writeText(isEditing ? editCode : activeFile.code);
       setIsCopied(true);
       toast.success("Código copiado al portapapeles");
       setTimeout(() => setIsCopied(false), 2000);
@@ -209,8 +298,80 @@ export function CanvasPanel() {
     }
   };
 
+  const handleDownload = () => {
+    if (!activeFile) return;
+    const ext = getFileExtension(activeFile.language);
+    let filename = activeFile.title;
+    if (!filename.includes(".")) {
+      filename = `${filename}.${ext}`;
+    }
+    const blob = new Blob([isEditing ? editCode : activeFile.code], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success(`Archivo descargado: ${filename}`);
+  };
+
+  const handleStartEditing = () => {
+    if (!activeFile) return;
+    setEditCode(activeFile.code);
+    setIsEditing(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (!activeFile) return;
+    let finalCode = editCode;
+
+    // Clean up editing attributes that may have been added during visual editing
+    if (activeTab === "preview" && (isHtml || isSvg)) {
+      finalCode = editCode
+        .replace(/\s*contenteditable="true"/gi, "")
+        .replace(/\s*style="([^"]*)cursor:\s*text;?([^"]*)"/gi, (match, before, after) => {
+          const cleaned = `${before}${after}`.replace(/;\s*$/, "").trim();
+          return cleaned ? ` style="${cleaned}"` : "";
+        })
+        .replace(/\s*style="([^"]*)outline:\s*none;?([^"]*)"/gi, (match, before, after) => {
+          const cleaned = `${before}${after}`.replace(/;\s*$/, "").trim();
+          return cleaned ? ` style="${cleaned}"` : "";
+        });
+    }
+
+    updateActiveFileCode(finalCode);
+    setIsEditing(false);
+    setEditCode("");
+    toast.success("Cambios guardados");
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditCode("");
+  };
+
   return (
     <div className="flex-1 w-full flex flex-col border border-[#DBDBDB] dark:border-[#2e2e2e] rounded-xl bg-white dark:bg-[#1E1E1E] shadow-[inset_0_0_1px_0_rgba(0,0,0,0.1),0_1px_2px_0_rgba(0,0,0,0.04),0_4px_24px_0_rgba(0,0,0,0.08)] overflow-hidden transition-colors duration-300 md:mt-8 md:mb-4 md:mr-4 mt-2 mb-2 mx-2 md:mx-0 border relative">
+      <style dangerouslySetInnerHTML={{ __html: `
+        .hk-comment { color: #9ca3af; font-style: italic; }
+        .dark .hk-comment { color: #71717a; }
+        .hk-string { color: #ea580c; }
+        .dark .hk-string { color: #ce9178; }
+        .hk-keyword { color: #2563eb; }
+        .dark .hk-keyword { color: #569cd6; }
+        .hk-function { color: #d97706; }
+        .dark .hk-function { color: #dcdcaa; }
+        .hk-number { color: #16a34a; }
+        .dark .hk-number { color: #b5cea8; }
+        .hk-boolean { color: #2563eb; }
+        .dark .hk-boolean { color: #569cd6; }
+        .hk-tag { color: #2563eb; }
+        .dark .hk-tag { color: #569cd6; }
+        .hk-attr { color: #0284c7; }
+        .dark .hk-attr { color: #9cdcfe; }
+      ` }} />
       
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-black/10 dark:border-white/10 bg-white dark:bg-[#26282A] shrink-0 select-none">
@@ -289,20 +450,71 @@ export function CanvasPanel() {
             </svg>
             Compartir
           </button>
+
+          {/* Botón Descargar */}
+          <button
+            disabled={!activeFile}
+            onClick={handleDownload}
+            className={cn(
+              "p-1.5 rounded-md transition-colors",
+              activeFile
+                ? "text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer"
+                : "text-gray-300 dark:text-zinc-700 cursor-not-allowed opacity-50"
+            )}
+            title="Descargar archivo"
+          >
+            <Download className="w-4 h-4" />
+          </button>
           
-          {/* Botón Editar (Deshabilitado) */}
-          <button className="p-1.5 rounded-md text-gray-400 cursor-not-allowed opacity-70" disabled>
+          {/* Botón Editar */}
+          <button
+            disabled={!activeFile || isLoading}
+            onClick={() => {
+              if (isEditing) {
+                handleCancelEdit();
+              } else {
+                handleStartEditing();
+              }
+            }}
+            className={cn(
+              "p-1.5 rounded-md transition-colors",
+              activeFile && !isLoading
+                ? isEditing
+                  ? "text-blue-500 bg-blue-500/10 hover:bg-blue-500/20 cursor-pointer"
+                  : "text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer"
+                : "text-gray-300 dark:text-zinc-700 cursor-not-allowed opacity-50"
+            )}
+            title={isEditing ? "Cancelar edición" : "Editar"}
+          >
             <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" strokeWidth="1.33">
               <path d="M7.99998 13.3334H14M2 13.3334H3.11636C3.44248 13.3334 3.60554 13.3334 3.75899 13.2966C3.89504 13.2639 4.0251 13.21 4.1444 13.1369C4.27895 13.0545 4.39425 12.9392 4.62486 12.7086L13 4.3334C13.5523 3.78112 13.5523 2.88569 13 2.3334C12.4477 1.78112 11.5523 1.78112 11 2.3334L2.62484 10.7086C2.39424 10.9392 2.27894 11.0545 2.19648 11.189C2.12338 11.3083 2.0695 11.4384 2.03684 11.5744C2 11.7279 2 11.8909 2 12.2171V13.3334Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"></path>
             </svg>
           </button>
+
+          {/* Botones Guardar/Cancelar (solo en modo edición) */}
+          {isEditing && (
+            <>
+              <button
+                onClick={handleSaveEdit}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium bg-emerald-500 hover:bg-emerald-600 text-white transition-colors cursor-pointer"
+              >
+                Guardar
+              </button>
+              <button
+                onClick={handleCancelEdit}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/20 text-gray-700 dark:text-gray-300 transition-colors cursor-pointer"
+              >
+                Cancelar
+              </button>
+            </>
+          )}
 
           {/* Botón Abrir Externo */}
           <button
             disabled={!activeFile}
             onClick={() => {
               if (!activeFile) return;
-              const blob = new Blob([activeFile.code], { type: isHtml ? "text/html;charset=utf-8" : "text/plain;charset=utf-8" });
+              const blob = new Blob([isEditing ? editCode : activeFile.code], { type: isHtml ? "text/html;charset=utf-8" : "text/plain;charset=utf-8" });
               const url = URL.createObjectURL(blob);
               window.open(url, "_blank");
             }}
@@ -382,23 +594,39 @@ export function CanvasPanel() {
             </button>
 
             {/* Contenedor del Scroll */}
-            <div className="flex-1 flex w-full h-full overflow-y-auto scrollbar-hide text-[13px] leading-6 font-mono pb-8 pt-4">
-              
-              {/* Columna de Números de Línea */}
-              <div 
-                className="flex flex-col text-right px-4 text-gray-400/70 select-none sticky left-0 bg-white dark:bg-[#1E1E1E] shrink-0 font-mono text-[13px] leading-6 py-0"
-              >
-                {Array.from({ length: lineCount }).map((_, i) => (
-                  <span key={i} className="h-6 flex items-center justify-end">{i + 1}</span>
-                ))}
+            <div className="flex-1 w-full h-full overflow-auto scrollbar-hide text-[13px] font-mono pb-8 pt-4">
+              <div className="flex min-w-full">
+                {/* Line numbers */}
+                {!isEditing && (
+                  <div
+                    className="sticky left-0 z-10 flex flex-col text-right px-3 text-gray-400/70 select-none bg-white dark:bg-[#1E1E1E] shrink-0 font-mono text-[13px] leading-6"
+                    style={{ width: lineNumberWidth, minWidth: lineNumberWidth, top: 'auto' }}
+                  >
+                    {lines.map((_, i) => (
+                      <div key={i}>{i + 1}</div>
+                    ))}
+                  </div>
+                )}
+                {/* Code */}
+                {isEditing ? (
+                  <textarea
+                    value={editCode}
+                    onChange={(e) => setEditCode(e.target.value)}
+                    className="flex-grow px-4 pr-24 py-0 m-0 bg-white dark:bg-[#1E1E1E] text-gray-800 dark:text-gray-300 font-mono text-[13px] leading-6 whitespace-pre resize-none border-none focus:outline-none focus:ring-0 min-w-max overflow-hidden"
+                    style={{ minHeight: `${lines.length * 1.5}rem` }}
+                    spellCheck={false}
+                  />
+                ) : isLoading ? (
+                  <pre className="flex-grow px-4 pr-24 m-0 text-gray-600 dark:text-gray-400 font-mono text-[13px] leading-6 whitespace-pre min-w-max">
+                    {activeFile.code}
+                  </pre>
+                ) : (
+                  <pre
+                    className="flex-grow px-4 pr-24 m-0 text-gray-800 dark:text-gray-300 font-mono text-[13px] leading-6 whitespace-pre min-w-max"
+                    dangerouslySetInnerHTML={{ __html: applySyntaxHighlighting(activeFile.code, activeFile.language) }}
+                  />
+                )}
               </div>
-
-              {/* Código Preformateado */}
-              <pre 
-                className="flex-1 px-4 pr-24 text-gray-800 dark:text-gray-300 overflow-x-auto whitespace-pre outline-none m-0 font-mono text-[13px] leading-6 py-0" 
-                spellCheck="false"
-                dangerouslySetInnerHTML={{ __html: applySyntaxHighlighting(activeFile.code, activeFile.language) }}
-              />
             </div>
           </div>
         )}
@@ -410,6 +638,7 @@ export function CanvasPanel() {
               <div className="h-full rounded-xl overflow-hidden border border-zinc-200/60 dark:border-white/[0.04] bg-white dark:bg-[#1E1E1E]">
                 {isHtml && (
                   <iframe
+                    ref={htmlIframeRef}
                     srcDoc={activeFile.code}
                     title="HTML Preview"
                     sandbox="allow-scripts"
@@ -418,7 +647,8 @@ export function CanvasPanel() {
                 )}
                 {isSvg && (
                   <div className="w-full h-full flex items-center justify-center p-6 overflow-auto bg-white dark:bg-[#1E1E1E]">
-                    <div 
+                    <div
+                      ref={svgContainerRef}
                       dangerouslySetInnerHTML={{ __html: activeFile.code }}
                       className="max-w-full max-h-full flex items-center justify-center"
                     />

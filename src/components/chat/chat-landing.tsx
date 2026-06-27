@@ -1668,7 +1668,7 @@ function ChatLandingContent() {
              posición fija en el fondo. */
           isMobile ? (
             /* Mobile landing: logo + categories + preview cards carousel + input at bottom */
-            <div className="flex flex-col h-full relative px-4 pt-6 pb-5 overflow-hidden">
+            <div className="flex flex-col h-full relative px-4 pt-4 pb-4 overflow-hidden">
               {/* Top area: logo */}
               <div className="flex-1 flex flex-col items-center justify-center min-h-0 w-full max-w-md mx-auto">
                 <div className="text-center mb-5 shrink-0">
@@ -1681,10 +1681,11 @@ function ChatLandingContent() {
               </div>
 
               {/* Bottom area: horizontal scroll categories + preview cards + input */}
-              <div className="w-full max-w-md mx-auto shrink-0 space-y-3 mt-5">
-                {/* Preview cards horizontal carousel - appears above categories */}
+              <div className="relative w-full max-w-md mx-auto shrink-0 space-y-3 mt-5">
+                {/* Preview cards horizontal carousel - se superpone sobre el logo
+                    (overlay absoluto) para no desplazar el contenido superior */}
                 {activeCategory && (
-                  <div className="w-full overflow-x-auto scrollbar-hide -mx-4 px-4 pb-2 snap-x snap-mandatory">
+                  <div className="absolute bottom-full left-0 right-0 mb-2 w-full overflow-x-auto scrollbar-hide px-4 pb-2 snap-x snap-mandatory z-20">
                     <div className="flex gap-3 w-max">
                       {PREVIEW_ITEMS.filter((item) => item.category === activeCategory).map((item) => (
                         <PreviewCard key={item.id} item={item} isMobile />
@@ -1694,7 +1695,7 @@ function ChatLandingContent() {
                 )}
 
                 {/* Categories draggable row */}
-                <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 snap-x snap-mandatory">
+                <div className="overflow-x-auto scrollbar-hide -mx-4 pl-6 pr-4 snap-x snap-mandatory">
                   <div className="flex gap-2 w-max pb-1">
                     {CREATIVE_CATEGORIES.map((cat) => (
                       <CategoryPill key={cat.id} cat={cat} isActive={activeCategory === cat.id} isMobile />
@@ -1715,8 +1716,8 @@ function ChatLandingContent() {
             </div>
           ) : (
             /* Desktop landing: centered logo + input + categories grid */
-            <div className="flex-1 flex flex-col items-center px-4 py-4 relative h-full overflow-y-auto scrollbar-hide">
-              <div className="h-[22vh] sm:h-[26vh] shrink-0" aria-hidden />
+            <div className="flex-1 flex flex-col items-center justify-center px-4 py-4 relative h-full overflow-hidden">
+              <div className="h-[6vh] shrink-0" aria-hidden />
               <div className="w-full max-w-4xl mx-auto flex flex-col items-center justify-center">
                 <div className="text-center mb-6">
                   <div className="flex items-center justify-center">
@@ -1758,7 +1759,6 @@ function ChatLandingContent() {
                 </div>
               </div>
 
-              <div className="h-6 shrink-0" aria-hidden />
             </div>
           )
         ) : (

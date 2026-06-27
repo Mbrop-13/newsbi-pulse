@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useMemo } from "react"
 import { useTheme } from "next-themes"
+import { useSidebar } from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
 import { Bot, User, ThumbsUp, ThumbsDown, Share2, RefreshCw, ChevronRight, ChevronDown, Sparkles, Loader2, Globe, ExternalLink, X, ArrowDown, CheckCircle2, XCircle, Clock, Cpu, ClipboardList, FileCode2, Maximize2, Info, FolderOpen, Code2, Search, Brain, Plus, Compass } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -1345,6 +1346,7 @@ const getGoogleFinanceSymbol = (symbol: string): string => {
 
 function AssistantAvatar({ isResponding, isWebBuilderMode }: { isResponding: boolean; isWebBuilderMode?: boolean }) {
   const { resolvedTheme } = useTheme();
+  const { isMobile } = useSidebar();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -1353,7 +1355,10 @@ function AssistantAvatar({ isResponding, isWebBuilderMode }: { isResponding: boo
 
   const isDark = mounted && resolvedTheme === "dark";
 
-  if (isResponding) {
+  // Desactivar el video en móvil
+  const showVideo = isResponding && !isMobile;
+
+  if (showVideo) {
     const videoSrc = isDark
       ? "https://mail.programbi.com/uploads/Letras_se_mueven_planeta_c%C3%ADrculo%E2%80%A6_202606230457.mp4"
       : "https://mail.programbi.com/uploads/Flow_1080p_202606260417.mp4";

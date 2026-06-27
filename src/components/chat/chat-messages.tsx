@@ -108,7 +108,7 @@ export function ChatMessages({
           isSplitMode ? "pl-5 pr-3" : "px-4 md:px-6"
         )}
       >
-        <div className={cn("pt-6 md:pt-16 pb-4 md:pb-6 space-y-6", isSplitMode ? "w-full max-w-full" : "max-w-3xl mx-auto")}>
+        <div className={cn("pt-20 md:pt-16 pb-4 md:pb-6 space-y-6", isSplitMode ? "w-full max-w-full" : "max-w-3xl mx-auto")}>
           {messages.map((msg, idx) => (
             <MessageBubble
               key={msg.id}

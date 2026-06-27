@@ -1566,10 +1566,7 @@ function ChatLandingContent() {
              Al enviar el primer mensaje, hasMessages pasa a true y el input baja a su
              posición fija en el fondo. */
           <div className="flex-1 flex flex-col items-center px-4 py-4 relative h-full overflow-y-auto scrollbar-hide">
-            {/* Spacer superior para empujar el bloque hacia el centro visual */}
-            <div className="h-[10vh] sm:h-[12vh] shrink-0" aria-hidden />
-
-            <div className="w-full max-w-4xl mx-auto flex flex-col items-center justify-center">
+            <div className="w-full max-w-4xl mx-auto flex flex-col items-center justify-center mt-auto mb-auto">
               <div className="text-center mb-6">
                 <div className="flex items-center justify-center">
                   <img 
@@ -1692,8 +1689,6 @@ function ChatLandingContent() {
               </div>
             </div>
 
-            {/* Spacer inferior para equilibrar el centrado visual */}
-            <div className="h-4 shrink-0" aria-hidden />
           </div>
         ) : (
           /* Chat view - messages + input at bottom */

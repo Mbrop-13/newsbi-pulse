@@ -85,13 +85,15 @@ export function ChatMessages({
     if (isAtBottomRef.current) {
       // Use requestAnimationFrame to avoid sudden jumps while layout shifts
       requestAnimationFrame(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+        const el = containerRef.current
+        if (el) el.scrollTop = el.scrollHeight
       });
     }
   }, [messagesCount, lastMessageContent, isLoading])
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    const el = containerRef.current
+    if (el) el.scrollTop = el.scrollHeight
     isAtBottomRef.current = true
     setShowScrollButton(false)
   }

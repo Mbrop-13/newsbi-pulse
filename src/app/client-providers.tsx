@@ -160,11 +160,11 @@ export function ClientLayoutProviders({
             {isSidebarPage ? (
               <SidebarProvider>
                 {!showBuilderWorkspace && pathname !== "/suscripcion" && <AppSidebar />}
-                <SidebarInset className={cn(isFixedLayout && "h-screen overflow-hidden bg-background")}>
+                <SidebarInset className={cn((isFixedLayout || isAiPage) && "h-[100dvh] overflow-hidden bg-background")}>
                   {isMobile && !isFixedLayout && pathname !== "/suscripcion" && <MobileMenuButton />}
                   <div className={cn(
-                    isFixedLayout
-                      ? "flex flex-col h-screen w-full min-w-0 overflow-hidden relative"
+                    (isFixedLayout || isAiPage)
+                      ? "flex flex-col h-[100dvh] w-full min-w-0 overflow-hidden relative"
                       : "flex flex-col h-full min-h-screen w-full min-w-0 overflow-y-auto overflow-x-hidden",
                     showMobileNavOnSidebar && "pb-24"
                   )}>

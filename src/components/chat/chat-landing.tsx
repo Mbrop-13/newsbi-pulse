@@ -501,7 +501,7 @@ function ChatLandingContent() {
   const language = useLanguageStore((s) => s.language)
 
   const [activeMenu, setActiveMenu] = useState<'noticias' | 'mercados' | 'portafolio' | 'mundo' | null>(null);
-  const [activeCategory, setActiveCategory] = useState<string>("sitios");
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   // Legacy data fetching and activeMenu state have been removed as part of Phase 5 cleanup.
 
@@ -1426,7 +1426,7 @@ function ChatLandingContent() {
     const CatIcon = cat.icon;
     return (
       <button
-        onClick={() => setActiveCategory(cat.id)}
+        onClick={() => setActiveCategory(prev => prev === cat.id ? null : cat.id)}
         className={cn(
           "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 whitespace-nowrap active:scale-95 cursor-pointer snap-start",
           mobile && "shrink-0",
@@ -1666,9 +1666,9 @@ function ChatLandingContent() {
              Al enviar el primer mensaje, hasMessages pasa a true y el input baja a su
              posición fija en el fondo. */
           isMobile ? (
-            /* Mobile landing: logo + cards carousel above + horizontal scroll categories + input at bottom */
+            /* Mobile landing: logo + categories + preview cards carousel + input at bottom */
             <div className="flex flex-col h-full relative px-4 pt-6 pb-5 overflow-y-auto scrollbar-hide">
-              {/* Top area: logo + preview cards carousel */}
+              {/* Top area: logo */}
               <div className="flex-1 flex flex-col items-center justify-center min-h-0 w-full max-w-md mx-auto">
                 <div className="text-center mb-5 shrink-0">
                   <img
@@ -1677,19 +1677,21 @@ function ChatLandingContent() {
                     className="h-14 w-auto object-contain select-none pointer-events-none"
                   />
                 </div>
-
-                {/* Preview cards horizontal carousel - appears above categories */}
-                <div className="w-full overflow-x-auto scrollbar-hide -mx-4 px-4 pb-2 snap-x snap-mandatory">
-                  <div className="flex gap-3 w-max">
-                    {PREVIEW_ITEMS.filter((item) => item.category === activeCategory).map((item) => (
-                      <PreviewCard key={item.id} item={item} isMobile />
-                    ))}
-                  </div>
-                </div>
               </div>
 
-              {/* Bottom area: horizontal scroll categories + input */}
+              {/* Bottom area: horizontal scroll categories + preview cards + input */}
               <div className="w-full max-w-md mx-auto shrink-0 space-y-3 mt-5">
+                {/* Preview cards horizontal carousel - appears above categories */}
+                {activeCategory && (
+                  <div className="w-full overflow-x-auto scrollbar-hide -mx-4 px-4 pb-2 snap-x snap-mandatory">
+                    <div className="flex gap-3 w-max">
+                      {PREVIEW_ITEMS.filter((item) => item.category === activeCategory).map((item) => (
+                        <PreviewCard key={item.id} item={item} isMobile />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Categories draggable row */}
                 <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 snap-x snap-mandatory">
                   <div className="flex gap-2 w-max pb-1">

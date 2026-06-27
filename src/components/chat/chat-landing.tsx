@@ -1421,6 +1421,106 @@ function ChatLandingContent() {
     };
   }, [aiMessages, aiLoading, selectedModel, data]);
 
+  // Reusable category pill for desktop and mobile layouts
+  const CategoryPill = ({ cat, isActive, isMobile: mobile }: { cat: CreativeCategory; isActive: boolean; isMobile?: boolean }) => {
+    const CatIcon = cat.icon;
+    return (
+      <button
+        onClick={() => setActiveCategory(cat.id)}
+        className={cn(
+          "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 whitespace-nowrap active:scale-95 cursor-pointer snap-start",
+          mobile && "shrink-0",
+          isActive
+            ? "bg-zinc-950 dark:bg-white text-white dark:text-zinc-900 border-transparent shadow-xs"
+            : "bg-transparent border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-250 hover:bg-zinc-50 dark:hover:bg-zinc-900/50"
+        )}
+      >
+        <CatIcon className="w-3.5 h-3.5" />
+        {cat.label}
+      </button>
+    );
+  };
+
+  // Reusable preview card with mobile-optimized overlay visibility
+  const PreviewCard = ({ item, isMobile: mobile }: { item: PreviewItem; isMobile?: boolean }) => (
+    <div
+      className={cn(
+        "group relative rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800/85 bg-white dark:bg-zinc-900/40 hover:border-[#1890FF]/40 hover:dark:border-[#1890FF]/40 shadow-sm hover:shadow-md transition-all duration-350 cursor-pointer select-none",
+        mobile ? "w-[280px] shrink-0 h-[160px] snap-start" : "h-[155px]"
+      )}
+    >
+      {/* Full-width Mockup View */}
+      <div className="w-full h-full relative overflow-hidden">
+        <MockupPreview type={item.mockType} />
+      </div>
+
+      {/* Interactive Hover/Active Overlay with Title, Desc and Action Buttons */}
+      <div
+        className={cn(
+          "absolute inset-0 bg-white/80 dark:bg-black/65 backdrop-blur-xl border border-zinc-200/40 dark:border-white/10 transition-all duration-300 p-4 flex flex-col justify-between shadow-md",
+          mobile
+            ? "opacity-100 translate-y-0 pointer-events-auto"
+            : "opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto"
+        )}
+      >
+        <div className="space-y-1">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold text-zinc-900 dark:text-white tracking-tight">
+              {item.title}
+            </h3>
+            <span className="text-[7px] font-extrabold text-[#1890FF] bg-[#1890FF]/15 border border-[#1890FF]/30 px-1 py-0.5 rounded tracking-wide uppercase shrink-0">
+              BUILD
+            </span>
+          </div>
+          <p className="text-[10px] text-zinc-650 dark:text-zinc-200 leading-normal line-clamp-3">
+            {item.desc}
+          </p>
+        </div>
+
+        {/* Buttons inside overlay */}
+        <div className="flex gap-2 mt-auto">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setInput(item.prompt);
+              setTimeout(() => {
+                const textarea = document.getElementById("chat-input") as HTMLTextAreaElement | null;
+                if (textarea) {
+                  textarea.focus();
+                  const len = item.prompt.length;
+                  textarea.setSelectionRange(len, len);
+                }
+              }, 50);
+              toast.success("Prompt copiado al chat", {
+                description: "Puedes editar o enviar el mensaje directamente.",
+                duration: 3000,
+              });
+            }}
+            className="flex-1 py-1.5 rounded-lg border border-zinc-300 dark:border-white/20 hover:bg-zinc-150/50 hover:dark:bg-white/10 text-zinc-800 dark:text-white text-[10px] font-bold transition-all duration-200 flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
+          >
+            <Copy className="w-3 h-3" />
+            Copiar
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              useWebBuilderStore.getState().setWebBuilderMode(true);
+              handleSend(item.prompt, { webSearch: false, image: false, codeInterpreter: false, browser: false });
+              toast.success("Iniciando construcción...", {
+                description: `Construyendo ${item.title}`,
+                duration: 3000,
+              });
+            }}
+            className="flex-1 py-1.5 rounded-lg bg-[#1890FF] hover:bg-[#1890FF]/85 text-white text-[10px] font-bold transition-all duration-200 flex items-center justify-center gap-1 active:scale-95 cursor-pointer shadow-xs"
+          >
+            <Eye className="w-3 h-3" />
+            Ver
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   // ── Render ──
   const chatContent = (
     <div className="flex flex-col h-full relative flex-1">
@@ -1565,20 +1665,40 @@ function ChatLandingContent() {
           /* Landing view - logo + input y galería de creaciones.
              Al enviar el primer mensaje, hasMessages pasa a true y el input baja a su
              posición fija en el fondo. */
-          <div className="flex-1 flex flex-col items-center px-4 py-4 relative h-full overflow-y-auto scrollbar-hide">
-            <div className="h-[22vh] sm:h-[26vh] shrink-0" aria-hidden />
-            <div className="w-full max-w-4xl mx-auto flex flex-col items-center justify-center">
-              <div className="text-center mb-6">
-                <div className="flex items-center justify-center">
-                  <img 
-                    src={chatLogoSrc} 
-                    alt="Maverlang Logo" 
+          isMobile ? (
+            /* Mobile landing: logo + cards carousel above + horizontal scroll categories + input at bottom */
+            <div className="flex flex-col h-full relative px-4 pt-6 pb-5 overflow-y-auto scrollbar-hide">
+              {/* Top area: logo + preview cards carousel */}
+              <div className="flex-1 flex flex-col items-center justify-center min-h-0 w-full max-w-md mx-auto">
+                <div className="text-center mb-5 shrink-0">
+                  <img
+                    src={chatLogoSrc}
+                    alt="Maverlang Logo"
                     className="h-14 w-auto object-contain select-none pointer-events-none"
                   />
                 </div>
+
+                {/* Preview cards horizontal carousel - appears above categories */}
+                <div className="w-full overflow-x-auto scrollbar-hide -mx-4 px-4 pb-2 snap-x snap-mandatory">
+                  <div className="flex gap-3 w-max">
+                    {PREVIEW_ITEMS.filter((item) => item.category === activeCategory).map((item) => (
+                      <PreviewCard key={item.id} item={item} isMobile />
+                    ))}
+                  </div>
+                </div>
               </div>
 
-              <div className="w-full max-w-3xl pb-2">
+              {/* Bottom area: horizontal scroll categories + input */}
+              <div className="w-full max-w-md mx-auto shrink-0 space-y-3 mt-5">
+                {/* Categories draggable row */}
+                <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 snap-x snap-mandatory">
+                  <div className="flex gap-2 w-max pb-1">
+                    {CREATIVE_CATEGORIES.map((cat) => (
+                      <CategoryPill key={cat.id} cat={cat} isActive={activeCategory === cat.id} isMobile />
+                    ))}
+                  </div>
+                </div>
+
                 <ChatInput
                   placeholder="Pregúntame lo que quieras..."
                   onSubmit={handleSend}
@@ -1589,109 +1709,55 @@ function ChatLandingContent() {
                   onChange={setInput}
                 />
               </div>
-
-              {/* Categorías y Tarjetas de Previsualización */}
-              <div className="w-full mt-2 sm:mt-3 flex flex-col items-center">
-                {/* Categorías (Pills) - Fixed and Wrapped to prevent clipping */}
-                <div className="flex flex-wrap items-center justify-center gap-2 w-full max-w-2xl py-2 px-4 mt-1">
-                  {CREATIVE_CATEGORIES.map((cat) => {
-                    const CatIcon = cat.icon;
-                    const isActive = activeCategory === cat.id;
-                    return (
-                      <button
-                        key={cat.id}
-                        onClick={() => setActiveCategory(cat.id)}
-                        className={cn(
-                          "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 whitespace-nowrap active:scale-95 cursor-pointer",
-                          isActive
-                            ? "bg-zinc-950 dark:bg-white text-white dark:text-zinc-900 border-transparent shadow-xs"
-                            : "bg-transparent border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-250 hover:bg-zinc-50 dark:hover:bg-zinc-900/50"
-                        )}
-                      >
-                        <CatIcon className="w-3.5 h-3.5" />
-                        {cat.label}
-                      </button>
-                    );
-                  })}
+            </div>
+          ) : (
+            /* Desktop landing: centered logo + input + categories grid */
+            <div className="flex-1 flex flex-col items-center px-4 py-4 relative h-full overflow-y-auto scrollbar-hide">
+              <div className="h-[22vh] sm:h-[26vh] shrink-0" aria-hidden />
+              <div className="w-full max-w-4xl mx-auto flex flex-col items-center justify-center">
+                <div className="text-center mb-6">
+                  <div className="flex items-center justify-center">
+                    <img
+                      src={chatLogoSrc}
+                      alt="Maverlang Logo"
+                      className="h-14 w-auto object-contain select-none pointer-events-none"
+                    />
+                  </div>
                 </div>
 
-                {/* Grid de Previsualización - Custom Visual Mockup Only Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 mt-3 w-full max-w-4xl px-2">
-                  {PREVIEW_ITEMS.filter((item) => item.category === activeCategory).map((item) => (
-                    <div
-                      key={item.id}
-                      className="group relative rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800/85 bg-white dark:bg-zinc-900/40 hover:border-[#1890FF]/40 hover:dark:border-[#1890FF]/40 shadow-sm hover:shadow-md transition-all duration-350 cursor-pointer h-[155px] select-none"
-                    >
-                      {/* Full-width Mockup View */}
-                      <div className="w-full h-full relative overflow-hidden">
-                        <MockupPreview type={item.mockType} />
-                      </div>
+                <div className="w-full max-w-3xl pb-2">
+                  <ChatInput
+                    placeholder="Pregúntame lo que quieras..."
+                    onSubmit={handleSend}
+                    disabled={false}
+                    isStreaming={aiLoading}
+                    onStop={stop}
+                    value={input}
+                    onChange={setInput}
+                  />
+                </div>
 
-                      {/* Interactive Hover Overlay with Title, Desc and Action Buttons (Glassmorphic look) */}
-                      <div className="absolute inset-0 bg-white/80 dark:bg-black/65 backdrop-blur-xl border border-zinc-200/40 dark:border-white/10 opacity-0 group-hover:opacity-100 transition-all duration-300 p-4 flex flex-col justify-between transform translate-y-2 group-hover:translate-y-0 pointer-events-none group-hover:pointer-events-auto shadow-md">
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between">
-                            <h3 className="text-xs font-bold text-zinc-900 dark:text-white tracking-tight">
-                              {item.title}
-                            </h3>
-                            <span className="text-[7px] font-extrabold text-[#1890FF] bg-[#1890FF]/15 border border-[#1890FF]/30 px-1 py-0.5 rounded tracking-wide uppercase shrink-0">
-                              BUILD
-                            </span>
-                          </div>
-                          <p className="text-[10px] text-zinc-650 dark:text-zinc-200 leading-normal line-clamp-3">
-                            {item.desc}
-                          </p>
-                        </div>
+                {/* Categorías y Tarjetas de Previsualización */}
+                <div className="w-full mt-2 sm:mt-3 flex flex-col items-center">
+                  {/* Categorías (Pills) - Fixed and Wrapped to prevent clipping */}
+                  <div className="flex flex-wrap items-center justify-center gap-2 w-full max-w-2xl py-2 px-4 mt-1">
+                    {CREATIVE_CATEGORIES.map((cat) => (
+                      <CategoryPill key={cat.id} cat={cat} isActive={activeCategory === cat.id} />
+                    ))}
+                  </div>
 
-                        {/* Buttons inside overlay */}
-                        <div className="flex gap-2 mt-auto">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setInput(item.prompt);
-                              setTimeout(() => {
-                                const textarea = document.getElementById("chat-input") as HTMLTextAreaElement | null;
-                                if (textarea) {
-                                  textarea.focus();
-                                  const len = item.prompt.length;
-                                  textarea.setSelectionRange(len, len);
-                                }
-                              }, 50);
-                              toast.success("Prompt copiado al chat", {
-                                description: "Puedes editar o enviar el mensaje directamente.",
-                                duration: 3000,
-                              });
-                            }}
-                            className="flex-1 py-1.5 rounded-lg border border-zinc-300 dark:border-white/20 hover:bg-zinc-150/50 hover:dark:bg-white/10 text-zinc-800 dark:text-white text-[10px] font-bold transition-all duration-200 flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
-                          >
-                            <Copy className="w-3 h-3" />
-                            Copiar
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              useWebBuilderStore.getState().setWebBuilderMode(true);
-                              handleSend(item.prompt, { webSearch: false, image: false, codeInterpreter: false, browser: false });
-                              toast.success("Iniciando construcción...", {
-                                description: `Construyendo ${item.title}`,
-                                duration: 3000,
-                              });
-                            }}
-                            className="flex-1 py-1.5 rounded-lg bg-[#1890FF] hover:bg-[#1890FF]/85 text-white text-[10px] font-bold transition-all duration-200 flex items-center justify-center gap-1 active:scale-95 cursor-pointer shadow-xs"
-                          >
-                            <Eye className="w-3 h-3" />
-                            Ver
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                  {/* Grid de Previsualización - Custom Visual Mockup Only Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 mt-3 w-full max-w-4xl px-2">
+                    {PREVIEW_ITEMS.filter((item) => item.category === activeCategory).map((item) => (
+                      <PreviewCard key={item.id} item={item} />
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="h-6 shrink-0" aria-hidden />
-          </div>
+              <div className="h-6 shrink-0" aria-hidden />
+            </div>
+          )
         ) : (
           /* Chat view - messages + input at bottom */
           <>

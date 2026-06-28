@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { createPortal } from "react-dom";
 import { useViewStore } from "@/lib/stores/use-view-store";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useAssistantStore } from "@/lib/stores/assistant-store";
@@ -94,11 +93,6 @@ function getInitials(name: string, email: string): string {
 }
 
 export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettingsDialogProps) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   const { theme, setTheme } = useTheme();
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -410,7 +404,7 @@ export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettings
 
   return (
     <AnimatePresence>
-      {isOpen && mounted && createPortal(
+      {isOpen && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -1219,8 +1213,7 @@ export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettings
 
             </div>
           </motion.div>
-        </motion.div>,
-        document.body
+        </motion.div>
       )}
     </AnimatePresence>
   );

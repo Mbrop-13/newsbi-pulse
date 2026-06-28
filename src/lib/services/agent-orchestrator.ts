@@ -914,7 +914,8 @@ export async function runWebBuilderOrchestration(
   model: LanguageModel,
   userMessage: string,
   existingFiles?: Record<string, string>,
-  onProgress?: (text: string) => void
+  onProgress?: (text: string) => void,
+  onFileReady?: (agent: WebBuilderAgentInfo, content: string, success: boolean) => void
 ): Promise<WebBuilderOrchestrationResult> {
   const planStartTime = Date.now();
   const plan = await planWebBuilder(model, userMessage, existingFiles, onProgress);
@@ -936,7 +937,8 @@ export async function runWebBuilderOrchestration(
     plan.agents,
     userMessage,
     existingFiles,
-    onProgress
+    onProgress,
+    onFileReady
   );
   totalTokensUsed += exec.totalTokensUsed;
 

@@ -248,6 +248,45 @@ export async function POST(req: NextRequest) {
           try { fakeStreamData.append({ type: 'reasoning', text }); } catch { /* Ignore */ }
         };
 
+        // Estado acumulado de archivos del proyecto. Se declara ANTES de la
+        // orquestación para que el closure onFileReady (streaming apply live)
+        // pueda capturarlo y emitir incremental.
+        const filesToApply: Record<string, { code: string }> = Object.fromEntries(
+          Object.entries(webBuilderFiles || {}).map(([path, f]: any) => {
+            const code = typeof f === 'object' && f !== null && 'code' in f ? String(f.code) : String(f);
+            return [path, { code }];
+          })
+        );
+
+        // Streaming apply live (la "magia" de Lovable): cada agente al terminar
+        // emite su archivo al stream INMEDIATAMENTE, en vez de esperar al final.
+        // El callback es síncrono y single-threaded → parse+assign+append atómico,
+        // sin races sobre filesToApply. El cliente ya hace merge incremental.
+        const onFileReady = (agent: any, content: string, success: boolean) => {
+          if (!success || !content || !containsArtifact(content)) return;
+          const parsed = parseArtifact(content);
+          if (!parsed || parsed.actions.length === 0) return;
+          const { files: fileChanges, failedUpdates } = actionsToFiles(parsed.actions, filesToApply);
+          Object.assign(filesToApply, fileChanges);
+          try {
+            fakeStreamData.append({ type: 'webbuilder_files', files: filesToApply });
+          } catch (e) {
+            console.error("Failed to append incremental webbuilder_files:", e);
+          }
+          // Surfacing estilo Aider: si un bloque SEARCH no coincidió, avisarlo.
+          if (failedUpdates.length > 0) {
+            const summary = failedUpdates.map(f => `• ${f.filePath}: ${f.reason}`).join('\n');
+            try {
+              fakeStreamData.append({
+                type: 'reasoning',
+                text: `\n⚠️ ${failedUpdates.length} edición(es) no aplicada(s) — el bloque SEARCH no coincide con el código actual:\n${summary}\nVuelve a pedirla indicando el código exacto.\n`,
+              });
+            } catch (e) {
+              console.error("Failed to append failedUpdates reasoning:", e);
+            }
+          }
+        };
+
         if (webBuilder) {
           // ── Modo PLAN: el usuario tiene un plan pendiente y respondió ──
           if (buildMode === "plan" && cancelPlan) {
@@ -261,7 +300,8 @@ export async function POST(req: NextRequest) {
               approvedPlan.agents,
               originalUserMessage || lastUserMessage,
               webBuilderFiles || {},
-              onOrchProgress
+              onOrchProgress,
+              onFileReady
             );
             orchestrationResult = {
               isComplex: true,
@@ -317,7 +357,8 @@ export async function POST(req: NextRequest) {
               orchestratorModel,
               lastUserMessage,
               webBuilderFiles || {},
-              onOrchProgress
+              onOrchProgress,
+              onFileReady
             );
           }
         } else {
@@ -385,48 +426,11 @@ export async function POST(req: NextRequest) {
           }
 
           if (webBuilder) {
-            // Parse and send the files directly to client
-            const filesToApply: Record<string, { code: string }> = Object.fromEntries(
-              Object.entries(webBuilderFiles || {}).map(([path, f]: any) => {
-                const code = typeof f === 'object' && f !== null && 'code' in f ? String(f.code) : String(f);
-                return [path, { code }];
-              })
-            );
-            
-            for (const report of orchestrationResult.agentReports) {
-              if (report.success && containsArtifact(report.content)) {
-                const parsed = parseArtifact(report.content);
-                if (parsed && parsed.actions.length > 0) {
-                  const { files: fileChanges, failedUpdates } = actionsToFiles(parsed.actions, filesToApply);
-                  Object.assign(filesToApply, fileChanges);
-                  // Surfacing estilo Aider: si un bloque SEARCH no coincidió, lo
-                  // hacemos visible en el panel de agentes para que el usuario sepa
-                  // que esa edición no aterrizó (antes era un no-op silencioso).
-                  if (failedUpdates.length > 0) {
-                    const summary = failedUpdates
-                      .map(f => `• ${f.filePath}: ${f.reason}`)
-                      .join('\n');
-                    try {
-                      fakeStreamData.append({
-                        type: 'reasoning',
-                        text: `\n⚠️ ${failedUpdates.length} edición(es) no aplicada(s) — el bloque SEARCH no coincide con el código actual:\n${summary}\nVuelve a pedirla indicando el código exacto del archivo.\n`,
-                      });
-                    } catch (e) {
-                      console.error("Failed to append failedUpdates reasoning:", e);
-                    }
-                  }
-                }
-              }
-            }
-
-            try {
-              fakeStreamData.append({
-                type: 'webbuilder_files',
-                files: filesToApply
-              });
-            } catch (e) {
-              console.error("Failed to append webbuilder_files to streamData:", e);
-            }
+            // Los archivos ya fueron emitidos incrementalmente vía onFileReady
+            // (streaming apply live) a medida que cada agente terminó. Aquí no
+            // re-procesamos ni re-enviamos filesToApply: solo construimos el
+            // system message final para el LLM conversacional usando el estado
+            // acumulado (que ya refleja todos los archivos generados).
 
             // The LLM final only needs to write the conversational message (without coding)
             const contextMessage = {

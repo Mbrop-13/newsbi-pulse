@@ -1328,32 +1328,20 @@ function MessageBubble({
                   return <>{children}</>;
                 },
                 code({ node, className, children, ...props }) {
+                  // Los code blocks con lenguaje ahora se renderizan como CanvasFileCard
+                  // manualmente arriba (extractCodeBlocks) para detectar streaming.
+                  // Aquí solo renderizamos código inline para evitar duplicados.
                   const match = /language-(\w+)/.exec(className || '');
-                  const lang = match ? match[1] : '';
-                  const codeValue = String(children).replace(/\n$/, '');
-                  
-                  if (match && lang) {
-                    // Extract title from comment
-                    let title = lang === 'python' ? 'Script de Python' : `Código ${lang.toUpperCase()}`;
-                    const firstLine = codeValue.split('\n')[0].trim();
-                    const filenameMatch = firstLine.match(/(?:filename|archivo|title)\s*:\s*([^\s][^\n\r]*)/i) || 
-                                          firstLine.match(/(?:\/\/\/|\/\/|#|\/\*)\s*([a-zA-Z0-9_\-\.\s]+\.[a-zA-Z0-9]+)/i);
-                    if (filenameMatch) {
-                      title = filenameMatch[1].replace(/\*\/$/, '').trim();
-                    }
- 
-                    // Render as a beautiful canvas file card
+                  if (match) {
+                    // Bloque de código residual: renderizar como texto plano
+                    // (extractCodeBlocks ya lo mostró como tarjeta arriba).
                     return (
-                      <div className="my-1.5">
-                        <CanvasFileCard
-                          title={title}
-                          code={codeValue}
-                          language={lang}
-                        />
-                      </div>
+                      <code className="bg-muted px-1.5 py-0.5 rounded-md font-mono text-[13.5px] hidden" {...props}>
+                        {children}
+                      </code>
                     );
                   }
-                  
+
                   return (
                     <code className={cn("bg-muted px-1.5 py-0.5 rounded-md font-mono text-[13.5px]", className)} {...props}>
                       {children}

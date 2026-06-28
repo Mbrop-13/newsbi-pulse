@@ -53,7 +53,7 @@ import { useLanguageStore } from "@/lib/stores/language-store"
 import { useTranslation, type TranslationKey } from "@/lib/translations"
 import { getCleanPathname } from "@/lib/utils"
 import Link from "next/link"
-import { ViewSettingsDialog } from "@/components/view-settings-dialog"
+import { useAssistantStore } from "@/lib/stores/assistant-store"
 import { NotificationBell } from "@/components/notification-bell"
 
 function getInitials(name: string, email: string): string {
@@ -104,8 +104,6 @@ export function NavUser() {
   const activeLanguage = useLanguageStore((s) => s.language)
   const { t } = useTranslation(activeLanguage)
 
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const [settingsTab, setSettingsTab] = useState<"cuenta" | "apariencia" | "comportamiento" | "customize" | "datos" | "soporte">("cuenta")
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -233,10 +231,8 @@ export function NavUser() {
                 <DropdownMenuItem
                   onClick={() => {
                     if (isMobile) setOpenMobile(false);
-                    setSettingsTab("cuenta");
-                    // Pequeño delay para que el sheet móvil cierre primero y
-                    // no tapone el overlay del ViewSettingsDialog (ambos z-50/z-[150]).
-                    setTimeout(() => setSettingsOpen(true), isMobile ? 250 : 0);
+                    useAssistantStore.getState().setSettingsTab("cuenta");
+                    setTimeout(() => useAssistantStore.getState().setShowSettings(true), isMobile ? 250 : 0);
                   }}
                   className="text-[13px] font-medium py-2 px-3 rounded-xl cursor-pointer flex items-center justify-between focus:bg-muted focus:text-foreground"
                 >
@@ -376,8 +372,8 @@ export function NavUser() {
                       <DropdownMenuItem
                         onClick={() => {
                           if (isMobile) setOpenMobile(false);
-                          setSettingsTab("soporte");
-                          setTimeout(() => setSettingsOpen(true), isMobile ? 250 : 0);
+                          useAssistantStore.getState().setSettingsTab("soporte");
+                          setTimeout(() => useAssistantStore.getState().setShowSettings(true), isMobile ? 250 : 0);
                         }}
                         className="text-xs py-1.5 px-2.5 rounded-lg cursor-pointer focus:bg-muted focus:text-foreground"
                       >
@@ -425,8 +421,6 @@ export function NavUser() {
           </div>
         )}
       </div>
-
-      <ViewSettingsDialog isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} defaultTab={settingsTab} />
     </>
   )
 }

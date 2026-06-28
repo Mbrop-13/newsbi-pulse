@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useAIChatStore, type ChatMessage } from "@/lib/stores/ai-chat-store"
 import { useAssistantStore } from "@/lib/stores/assistant-store"
-import { ViewSettingsDialog } from "@/components/view-settings-dialog"
+
 import { useAuthStore, useAuthModalStore } from "@/lib/stores/auth-store"
 import { useConversionStore } from "@/lib/stores/conversion-store"
 import { getPlanConfig, type PlanTier, getNextTier } from "@/lib/plan-limits"
@@ -1879,12 +1879,7 @@ function ChatLandingContent() {
         answer={shareDialog.answer}
       />
 
-      {/* Settings dialog - controlado por el store de asistente
-          (lo abre el botón de ajustes del navbar/header en cualquier vista) */}
-      <ViewSettingsDialog
-        isOpen={showSettings}
-        onClose={() => setShowSettings(false)}
-      />
+
     </div>
   )
 

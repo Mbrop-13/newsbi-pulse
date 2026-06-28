@@ -22,6 +22,7 @@ interface AssistantState {
   hasCompletedSetup: boolean;
   showPreferences: boolean;
   showSettings: boolean;
+  settingsTab: string;
   assistantTone: string;
   assistantRole: string;
   interests: Record<string, string[]>;
@@ -38,6 +39,7 @@ interface AssistantState {
   cancelSetup: () => void;
   setShowPreferences: (v: boolean) => void;
   setShowSettings: (v: boolean) => void;
+  setSettingsTab: (tab: string) => void;
   setAssistantTone: (tone: string) => void;
   setAssistantRole: (role: string) => void;
   toggleInterest: (topic: string, interest: string) => void;
@@ -71,6 +73,7 @@ export const useAssistantStore = create<AssistantState>()(
     hasCompletedSetup: false,
     showPreferences: false,
     showSettings: false,
+    settingsTab: 'cuenta',
     assistantTone: 'Analítico',
     assistantRole: 'Mentor Financiero',
     messages: [],
@@ -97,6 +100,7 @@ export const useAssistantStore = create<AssistantState>()(
     cancelSetup: () => set({ hasCompletedSetup: true }),
     setShowPreferences: (v) => set({ showPreferences: v }),
     setShowSettings: (v) => set({ showSettings: v }),
+    setSettingsTab: (tab) => set({ settingsTab: tab }),
     setAssistantTone: (tone) => set({ assistantTone: tone }),
     setAssistantRole: (role) => set({ assistantRole: role }),
     toggleInterest: (topic, interest) => set((state) => {

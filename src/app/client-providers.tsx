@@ -22,6 +22,8 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { ActiveArticleDrawer } from "@/components/active-article-drawer";
+import { ViewSettingsDialog } from "@/components/view-settings-dialog";
+import { useAssistantStore } from "@/lib/stores/assistant-store";
 
 import { useAIChatStore } from "@/lib/stores/ai-chat-store";
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
@@ -58,6 +60,9 @@ export function ClientLayoutProviders({
   children: React.ReactNode;
 }) {
   const { isOpen: authModalOpen, view: authModalView, closeModal } = useAuthModalStore();
+  const showSettings = useAssistantStore((s) => s.showSettings);
+  const setShowSettings = useAssistantStore((s) => s.setShowSettings);
+  const settingsTab = useAssistantStore((s) => s.settingsTab);
   const [isMobile, setIsMobile] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -186,6 +191,11 @@ export function ClientLayoutProviders({
           {!isAdminPage && <ReadingListWidget />}
           {!isAdminPage && <ResolvedBetsPopup />}
           <PremiumConversionModal />
+          <ViewSettingsDialog 
+            isOpen={showSettings} 
+            onClose={() => setShowSettings(false)} 
+            defaultTab={settingsTab as any} 
+          />
           <AuthModals 
             isOpen={authModalOpen}
             onClose={closeModal}

@@ -1286,8 +1286,9 @@ function MessageBubble({
 
         {/* 3.5 Canvas File Card - se detecta durante el streaming para que aparezca
             inmediatamente apenas la IA empieza a escribir código (no espera al cierre
-            del bloque de backticks, que ReactMarkdown solo parsea cuando está cerrado). */}
-        {(() => {
+            del bloque de backticks, que ReactMarkdown solo parsea cuando está cerrado).
+            En modo WebBuilder NO se renderiza aquí (el workspace propio maneja el canvas). */}
+        {!isWebBuilderMode && (() => {
           const canvasCards = extractCodeBlocks(finalContent, isResponding);
           if (canvasCards.length === 0) return null;
           return (
@@ -1318,28 +1319,28 @@ function MessageBubble({
             const proseContent = isWebBuilderMode
               ? stripArtifactXml(finalContent)
               : stripCodeBlocks(finalContent, isResponding);
-            const hasCanvasCards = extractCodeBlocks(finalContent, isResponding).length > 0;
+            const hasCanvasCards = !isWebBuilderMode && extractCodeBlocks(finalContent, isResponding).length > 0;
             if (proseContent) {
               return (
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
                 pre({ node, children, ...props }) {
-                  return <>{children}</>;
+                  // Si el pre contiene un code block con lenguaje, ya se renderizó
+                  // como CanvasFileCard arriba (extractCodeBlocks). No renderizar el pre.
+                  const child: any = Array.isArray(children) ? children[0] : children;
+                  const childProps = child?.props || {};
+                  if (childProps.className && /language-(\w+)/.exec(childProps.className)) {
+                    return null;
+                  }
+                  return <pre {...props}>{children}</pre>;
                 },
                 code({ node, className, children, ...props }) {
                   // Los code blocks con lenguaje ahora se renderizan como CanvasFileCard
                   // manualmente arriba (extractCodeBlocks) para detectar streaming.
-                  // Aquí solo renderizamos código inline para evitar duplicados.
                   const match = /language-(\w+)/.exec(className || '');
                   if (match) {
-                    // Bloque de código residual: renderizar como texto plano
-                    // (extractCodeBlocks ya lo mostró como tarjeta arriba).
-                    return (
-                      <code className="bg-muted px-1.5 py-0.5 rounded-md font-mono text-[13.5px] hidden" {...props}>
-                        {children}
-                      </code>
-                    );
+                    return null;
                   }
 
                   return (

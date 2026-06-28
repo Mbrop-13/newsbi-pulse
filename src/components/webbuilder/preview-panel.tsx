@@ -1135,7 +1135,71 @@ export function PreviewPanel() {
   const chatLoading = useAIChatStore((s) => s.isLoading);
   const currentChatId = useAIChatStore((s) => s.currentChatId);
   const { resolvedTheme } = useTheme();
-  const currentTheme = resolvedTheme === "dark" ? "dark" : "light";
+  // ── Sandpack theme custom: el theme nativo "light"/"dark" pinta el editor de
+  // blanco/gris neutro que rompe con la paleta de la plataforma. Definimos dos
+  // themes custom que usan los exactos de globals.css para que el editor se
+  // integre como una extensión natural, no como un widget externo.
+  const currentTheme = resolvedTheme === "dark"
+    ? {
+        colors: {
+          surface1: "#0a0a0a",          // fondo del editor (muted dark)
+          surface2: "#111114",          // gutters / barra lateral
+          surface3: "#161619",          // hover / selección suave
+          clickable: "#8B949E",         // muted-foreground
+          base: "hsl(var(--foreground))",
+          disabled: "#3a3a3f",
+          hover: "#161619",
+          accent: "#1890FF",            // primary (neon blue)
+          error: "#ef4444",
+          errorSurface: "#3a1d1d",
+        },
+        syntax: {
+          plain: "#E6E6E6",
+          comment: { color: "#6B7280", fontStyle: "italic" as const },
+          keyword: "#1890FF",
+          definition: "#A78BFA",
+          punctuation: "#8B949E",
+          property: "#A78BFA",
+          static: "#E6E6E6",
+          string: "#34D399",
+        },
+        font: {
+          body: '-apple-system, "Segoe UI", "Inter", system-ui, sans-serif',
+          mono: 'ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace',
+          size: "12px",
+          lineHeight: "20px",
+        },
+      }
+    : {
+        colors: {
+          surface1: "#FFFFFF",         // card
+          surface2: "#F5F5F7",          // background / gutters
+          surface3: "#EBEBED",          // muted / hover
+          clickable: "#64748B",        // muted-foreground
+          base: "#1E293B",              // foreground
+          disabled: "#CBD5E1",
+          hover: "#EBEBED",
+          accent: "#1E293B",            // primary (slate)
+          error: "#ef4444",
+          errorSurface: "#FEF2F2",
+        },
+        syntax: {
+          plain: "#1E293B",
+          comment: { color: "#94A3B8", fontStyle: "italic" as const },
+          keyword: "#2563EB",
+          definition: "#7C3AED",
+          punctuation: "#64748B",
+          property: "#7C3AED",
+          static: "#1E293B",
+          string: "#059669",
+        },
+        font: {
+          body: '-apple-system, "Segoe UI", "Inter", system-ui, sans-serif',
+          mono: 'ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace',
+          size: "12px",
+          lineHeight: "20px",
+        },
+      };
   const [viewport, setViewport] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const [isInspectorActive, setIsInspectorActive] = useState(false);
   const [iframeKey, setIframeKey] = useState(0);

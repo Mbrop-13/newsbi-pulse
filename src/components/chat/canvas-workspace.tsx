@@ -81,7 +81,8 @@ export function CanvasWorkspace({ chatPanel }: CanvasWorkspaceProps) {
         <Sheet open={isOpen} onOpenChange={(open) => { if (!open) useCanvasStore.getState().closeCanvas(); }}>
           <SheetContent
             side="bottom"
-            className="!h-[92dvh] w-full p-0 flex flex-col rounded-t-[1.5rem] overflow-hidden border-t border-border bg-background shadow-2xl z-50 focus:outline-none"
+            showCloseButton={false}
+            className="!h-[92dvh] w-full p-0 flex flex-col rounded-t-[1.5rem] overflow-hidden border-t border-border bg-white dark:bg-zinc-950 shadow-2xl z-[60] focus:outline-none"
             style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
           >
             {/* Grab handle + botón cerrar */}

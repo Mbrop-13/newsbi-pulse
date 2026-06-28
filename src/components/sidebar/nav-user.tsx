@@ -55,7 +55,6 @@ import { getCleanPathname } from "@/lib/utils"
 import Link from "next/link"
 import { useAssistantStore } from "@/lib/stores/assistant-store"
 import { NotificationBell } from "@/components/notification-bell"
-import { ViewSettingsDialog } from "@/components/view-settings-dialog"
 
 function getInitials(name: string, email: string): string {
   if (name && name.trim().length > 0) {
@@ -106,8 +105,8 @@ export function NavUser() {
   const { t } = useTranslation(activeLanguage)
 
   const [mounted, setMounted] = useState(false)
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const [settingsTab, setSettingsTab] = useState<"cuenta" | "apariencia" | "comportamiento" | "customize" | "datos" | "soporte">("cuenta")
+  const setShowSettings = useAssistantStore((s) => s.setShowSettings)
+  const setSettingsTab = useAssistantStore((s) => s.setSettingsTab)
 
   useEffect(() => {
     setMounted(true)
@@ -232,10 +231,15 @@ export function NavUser() {
 
                 {/* Settings action */}
                 <DropdownMenuItem
-                  onClick={() => {
-                    if (isMobile) setOpenMobile(false);
+                  onClick={(e) => {
+                    e.preventDefault();
                     setSettingsTab("cuenta");
-                    setTimeout(() => setSettingsOpen(true), isMobile ? 250 : 0);
+                    if (isMobile) {
+                      setOpenMobile(false);
+                      setTimeout(() => setShowSettings(true), 280);
+                    } else {
+                      setShowSettings(true);
+                    }
                   }}
                   className="text-[13px] font-medium py-2 px-3 rounded-xl cursor-pointer flex items-center justify-between focus:bg-muted focus:text-foreground"
                 >
@@ -373,10 +377,15 @@ export function NavUser() {
                         <span>Documentación</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => {
-                          if (isMobile) setOpenMobile(false);
+                        onClick={(e) => {
+                          e.preventDefault();
                           setSettingsTab("soporte");
-                          setTimeout(() => setSettingsOpen(true), isMobile ? 250 : 0);
+                          if (isMobile) {
+                            setOpenMobile(false);
+                            setTimeout(() => setShowSettings(true), 280);
+                          } else {
+                            setShowSettings(true);
+                          }
                         }}
                         className="text-xs py-1.5 px-2.5 rounded-lg cursor-pointer focus:bg-muted focus:text-foreground"
                       >
@@ -424,8 +433,6 @@ export function NavUser() {
           </div>
         )}
       </div>
-
-      <ViewSettingsDialog isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} defaultTab={settingsTab} />
     </>
   )
 }

@@ -191,18 +191,21 @@ export function ClientLayoutProviders({
           {!isAdminPage && <ReadingListWidget />}
           {!isAdminPage && <ResolvedBetsPopup />}
           <PremiumConversionModal />
-          <ViewSettingsDialog 
-            isOpen={showSettings} 
-            onClose={() => setShowSettings(false)} 
-            defaultTab={settingsTab as any} 
-          />
-          <AuthModals 
+          <AuthModals
             isOpen={authModalOpen}
             onClose={closeModal}
             defaultView={authModalView}
           />
           <Toaster richColors position="top-right" closeButton />
         </div>
+
+        {/* Dialog global de ajustes - fuera del flujo del layout para que el portal
+            a document.body nunca quede atrapado por overflow-hidden ni z-index del sidebar. */}
+        <ViewSettingsDialog
+          isOpen={showSettings}
+          onClose={() => setShowSettings(false)}
+          defaultTab={settingsTab as any}
+        />
       </TooltipProvider>
     </ThemeProvider>
   );

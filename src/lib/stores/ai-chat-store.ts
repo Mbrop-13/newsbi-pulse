@@ -213,7 +213,8 @@ export const useAIChatStore = create<AIChatStore>()(
             const msgs = (row.messages || []) as ChatMessage[];
             const hasArtifact = msgs.some((m: any) => m.content && (m.content.includes("<maverlangArtifact") || m.content.includes("</maverlangArtifact>")));
             const firstMsgHasWB = msgs[0]?.isWebBuilder;
-            const isWB = !!(firstMsgHasWB || hasArtifact);
+            // Preferir el flag persistido en la columna; fallback a metadato/artefacto.
+            const isWB = !!(row.is_web_builder || firstMsgHasWB || hasArtifact);
 
             return {
               id: row.chat_id,
@@ -295,7 +296,11 @@ export const useAIChatStore = create<AIChatStore>()(
               title,
               messages: messagesWithMeta,
               attached_articles: attachedArticles,
-              attached_files: attachedFiles
+              attached_files: attachedFiles,
+              // Persistir el flag de modo build en la fila para restaurarlo
+              // de forma fiable al recargar/abrir el chat (no solo vía fallback
+              // de artefactos en mensajes).
+              is_web_builder: isWB
             });
             if (error) console.error(error);
           } else {
@@ -303,7 +308,8 @@ export const useAIChatStore = create<AIChatStore>()(
               title,
               messages: messagesWithMeta,
               attached_articles: attachedArticles,
-              attached_files: attachedFiles
+              attached_files: attachedFiles,
+              is_web_builder: isWB
             }).eq("chat_id", chatId).eq("user_id", user.id);
             if (error) console.error(error);
           }

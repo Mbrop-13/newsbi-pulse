@@ -14,7 +14,6 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
-import { DiffViewerDialog } from "./diff-viewer";
 import {
   Monitor,
   Code2,
@@ -29,7 +28,6 @@ import {
   FolderOpen,
   Folder,
   Copy,
-  GitCompare,
   Check,
   Cloud,
   Loader2,
@@ -126,17 +124,77 @@ function injectInspectorScript(html: string): string {
         let innerText = el.innerText || '';
         if (innerText.length > 50) innerText = innerText.substring(0, 50) + '...';
         if (innerText) clone.innerText = innerText;
+
+        // #7 EDICIÓN INLINE: además del HTML, enviamos los estilos computados
+        // relevantes para que el popover de edición los muestre como campos
+        // editables (texto, color, fondo, tamaño, radius) y el usuario pueda
+        // previsualizar y generar un prompt concreto para la IA.
+        const cs = window.getComputedStyle(el);
+        const rect = el.getBoundingClientRect();
+        const computedStyle = {
+          color: cs.color,
+          backgroundColor: cs.backgroundColor,
+          fontSize: cs.fontSize,
+          fontWeight: cs.fontWeight,
+          borderRadius: cs.borderRadius,
+          padding: cs.padding,
+          margin: cs.margin,
+        };
+        const editableText = (el.innerText || '').trim();
+        const anchor = {
+          // Posición relativa al viewport del iframe (lo posiciona el padre).
+          top: rect.top,
+          left: rect.left,
+          width: rect.width,
+          height: rect.height,
+        };
         
         window.parent.postMessage({
           type: 'MAVERLANG_ELEMENT_CLICKED',
           elementHtml: clone.outerHTML,
           tagName: el.tagName,
-          className: el.className || ''
+          className: el.className || '',
+          editableText,
+          computedStyle,
+          anchor,
         }, '*');
         
         isInspectorActive = false;
         window.parent.postMessage({ type: 'MAVERLANG_INSPECTOR_DISABLED' }, '*');
       }, true);
+
+      // #7 Aplicar estilo en vivo al elemento seleccionado (mientras el usuario
+      // edita en el popover, sin recargar). Identificamos el elemento por un
+      // atributo data temporal marcado tras el click.
+      window.addEventListener('message', (e) => {
+        const d = e.data;
+        if (!d) return;
+        if (d.type === 'MAVERLANG_MARK_ELEMENT') {
+          // Marca el último elemento clickeado para poder referenciarlo.
+          // Re-marca quitando marcas previas.
+          document.querySelectorAll('[data-maverlang-target]').forEach(n => n.removeAttribute('data-maverlang-target'));
+          // No podemos re-obtener el elemento por referencia tras el click (ya
+          // se desactivó), así que usamos el anchor para encontrarlo.
+          const candidates = document.querySelectorAll('*');
+          for (const node of candidates) {
+            const r = (node as HTMLElement).getBoundingClientRect();
+            if (Math.abs(r.top - d.anchor.top) < 3 && Math.abs(r.left - d.anchor.left) < 3 && Math.abs(r.width - d.anchor.width) < 3) {
+              node.setAttribute('data-maverlang-target', '1');
+              break;
+            }
+          }
+        } else if (d.type === 'MAVERLANG_APPLY_LIVE_STYLE') {
+          const target = document.querySelector('[data-maverlang-target]') as HTMLElement | null;
+          if (target) {
+            const s = d.style || {};
+            if (s.color) target.style.color = s.color;
+            if (s.backgroundColor) target.style.backgroundColor = s.backgroundColor;
+            if (s.fontSize) target.style.fontSize = s.fontSize;
+            if (s.borderRadius) target.style.borderRadius = s.borderRadius;
+            if (s.text !== undefined) target.innerText = s.text;
+          }
+        }
+      });
 
       // Notify parent that the preview is loaded and ready
       window.parent.postMessage({ type: 'MAVERLANG_PREVIEW_LOADED' }, '*');
@@ -160,6 +218,14 @@ function injectInspectorScript(html: string): string {
 }
 
 // ─── Preview Iframe Selector Helper ───────────────
+// #7 Convierte rgb(r, g, b) / rgba(...) a #hex para los inputs color del popover.
+function rgbToHex(rgb?: string): string {
+  if (!rgb) return "";
+  const m = rgb.match(/\d+/g);
+  if (!m || m.length < 3) return "";
+  const [r, g, b] = m.map(Number);
+  return "#" + [r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("");
+}
 function getPreviewIframe(): HTMLIFrameElement | null {
   if (typeof document === "undefined") return null;
   // Selectores específicos de Sandpack. Antes el último fallback era
@@ -1055,7 +1121,6 @@ export function PreviewPanel() {
     files,
     cloudSyncEnabled,
     isSaving,
-    lastSavedAt,
     isCompiling,
     activeFilePath,
     undo,
@@ -1066,7 +1131,6 @@ export function PreviewPanel() {
     activeAgentReports,
     pendingPlan,
     lastAutoFixError,
-    lastBuildDiff,
   } = useWebBuilderStore();
   const chatLoading = useAIChatStore((s) => s.isLoading);
   const currentChatId = useAIChatStore((s) => s.currentChatId);
@@ -1075,7 +1139,6 @@ export function PreviewPanel() {
   const [viewport, setViewport] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const [isInspectorActive, setIsInspectorActive] = useState(false);
   const [iframeKey, setIframeKey] = useState(0);
-  const [isDiffOpen, setIsDiffOpen] = useState(false);
 
   // Cache de HTML con inspector ya inyectado, key = hash del HTML original.
   // Evita reconstruir el script del inspector (string building costoso) cuando
@@ -1083,30 +1146,56 @@ export function PreviewPanel() {
   // abajo (depende de buildVersion, que se declara después).
   const inspectorCacheRef = useRef<Map<string, string>>(new Map());
 
-  // Tick cada 15s para refrescar el texto relativo del indicador de guardado
-  // ("Guardado hace 12s"). Sin esto, el texto se quedaría estático hasta el
-  // siguiente render por otras causas.
-  const [, setSaveTick] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setSaveTick((t) => t + 1), 15000);
-    return () => clearInterval(id);
-  }, []);
-
-  // stableFiles: snapshot de archivos que solo cambia cuando la IA NO está
-  // respondiendo, para evitar recompilaciones en cada token del stream.
+  // stableFiles: snapshot de archivos que alimenta el SandpackProvider.
+  //
+  // LIVE PREVIEW INCREMENTAL (la "magia" de Lovable): durante el streaming de la
+  // IA, en vez de congelar la preview hasta el final, actualizamos stableFiles
+  // periódicamente (debounced) conforme onFileReady va emitiendo archivos nuevos.
+  // Así el usuario VE los cambios aparecer en vivo en el iframe, no solo en el
+  // editor. Cuando la IA termina, sincronizamos de forma fiable el estado final.
+  //
+  // El debounce (450ms) evita recompilar en cada token del razonamiento: solo
+  // recompila cuando llega un archivo completo (onFileReady) o cada ~0.5s.
   const [stableFiles, setStableFiles] = useState(files);
+  const livePreviewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Sync files to preview only when the AI is NOT responding (to avoid constant reloading)
   useEffect(() => {
     if (!isAiResponding) {
+      // IA inactiva: snapshot inmediato y definitivo.
+      if (livePreviewTimerRef.current) {
+        clearTimeout(livePreviewTimerRef.current);
+        livePreviewTimerRef.current = null;
+      }
       setStableFiles(files);
+      return;
     }
+    // IA respondiendo: debounce para recompilar el preview en vivo sin agotar
+    // el bundler con un refresh por cada token.
+    if (livePreviewTimerRef.current) clearTimeout(livePreviewTimerRef.current);
+    livePreviewTimerRef.current = setTimeout(() => {
+      setStableFiles(files);
+    }, 450);
+    return () => {
+      if (livePreviewTimerRef.current) clearTimeout(livePreviewTimerRef.current);
+    };
   }, [files, isAiResponding]);
 
-  // handleRefresh: con Sandpack, forzar una recompilación del bundler.
-  // El iframe del preview se recarga limpio para resetear el estado en memoria.
+  // handleRefresh: recarga de verdad la vista previa.
+  //
+  // ANTES solo subía `iframeKey`, que remonta <SandpackPreviewWrapper> pero NO
+  // el <SandpackProvider> (su key es buildVersion). Como el provider reutiliza
+  // el bundler ya inicializado, el iframe apenas se tocaba y parecía no hacer
+  // nada: la preview no se actualizaba aunque el código del store hubiera
+  // cambiado.
+  //
+  // AHORA subimos `buildVersion`, lo que remonta el <SandpackProvider> entero y
+  // recompila desde cero con el estado actual del store (stableFiles). Esto
+  // garantiza que la preview refleje el último código generado por la IA, sin
+  // depender del sync incremental (SandpackStoreSync) que a veces se queda
+  // corto si un empuje falló silenciosamente.
   const handleRefresh = async () => {
     setIframeKey((prev) => prev + 1);
+    setBuildVersion((v) => v + 1);
     toast.success("Vista previa recargada");
   };
 
@@ -1119,15 +1208,12 @@ export function PreviewPanel() {
       setIframeKey((prev) => prev + 1);
       toast.success("Vista previa recargada");
     };
-    const diffHandler = () => setIsDiffOpen(true);
 
     window.addEventListener("maverlang-retry-build", retryHandler);
     window.addEventListener("maverlang-refresh-preview", refreshHandler);
-    window.addEventListener("maverlang-open-diff", diffHandler);
     return () => {
       window.removeEventListener("maverlang-retry-build", retryHandler);
       window.removeEventListener("maverlang-refresh-preview", refreshHandler);
-      window.removeEventListener("maverlang-open-diff", diffHandler);
     };
   }, []);
 
@@ -1243,6 +1329,22 @@ export function PreviewPanel() {
     setIsInspectorActive(false);
   }, [buildVersion, iframeKey]);
 
+  // #7 EDICIÓN INLINE DEL PREVIEW: estado del popover de edición rápida.
+  // Cuando el usuario clica un elemento con el inspector activo, guardamos sus
+  // datos (tag, texto, estilos computados, posición) y mostramos un popover
+  // flotante sobre el iframe con campos para editar texto/colores/tamaño/radius
+  // en vivo. Al "Aplicar" generamos un prompt concreto para la IA.
+  const [inlineEditTarget, setInlineEditTarget] = useState<{
+    tagName: string;
+    className: string;
+    editableText: string;
+    style: { color: string; backgroundColor: string; fontSize: string; fontWeight: string; borderRadius: string; };
+    anchor: { top: number; left: number; width: number; height: number };
+  } | null>(null);
+  const [inlineDraft, setInlineDraft] = useState<{ text: string; color: string; bg: string; fontSize: number; radius: number }>({
+    text: "", color: "", bg: "", fontSize: 16, radius: 0,
+  });
+
   // Sync inspector state with the preview iframe
   useEffect(() => {
     const iframe = getPreviewIframe();
@@ -1258,7 +1360,7 @@ export function PreviewPanel() {
         setIsInspectorActive(false);
       } else if (e.data?.type === 'MAVERLANG_ELEMENT_CLICKED') {
         setIsInspectorActive(false);
-        // Dispatch custom event for ChatInput to intercept the click
+        // Dispatch custom event for ChatInput to intercept the click (legacy path)
         const event = new CustomEvent("MAVERLANG_ELEMENT_INSPECTED", {
           detail: {
             elementHtml: e.data.elementHtml,
@@ -1267,6 +1369,34 @@ export function PreviewPanel() {
           }
         });
         window.dispatchEvent(event);
+
+        // #7 Abrir popover de edición inline si llegaron estilos computados.
+        if (e.data.computedStyle && e.data.anchor) {
+          const cs = e.data.computedStyle;
+          // Marcar el elemento en el iframe para poder aplicarle estilo en vivo.
+          const iframe = getPreviewIframe();
+          iframe?.contentWindow?.postMessage({ type: 'MAVERLANG_MARK_ELEMENT', anchor: e.data.anchor }, '*');
+          setInlineEditTarget({
+            tagName: e.data.tagName,
+            className: e.data.className || '',
+            editableText: e.data.editableText || '',
+            style: {
+              color: rgbToHex(cs.color) || '#000000',
+              backgroundColor: rgbToHex(cs.backgroundColor) || '#ffffff',
+              fontSize: cs.fontSize || '16px',
+              fontWeight: cs.fontWeight || '400',
+              borderRadius: cs.borderRadius || '0px',
+            },
+            anchor: e.data.anchor,
+          });
+          setInlineDraft({
+            text: e.data.editableText || '',
+            color: rgbToHex(cs.color) || '#000000',
+            bg: rgbToHex(cs.backgroundColor) || '#ffffff',
+            fontSize: parseInt(cs.fontSize) || 16,
+            radius: parseInt(cs.borderRadius) || 0,
+          });
+        }
       } else if (e.data?.type === 'MAVERLANG_PREVIEW_LOADED') {
         // Sync active state when the iframe loads or reloads
         const iframe = getPreviewIframe();
@@ -1279,6 +1409,51 @@ export function PreviewPanel() {
     return () => window.removeEventListener('message', handleMessage);
   }, [isInspectorActive]);
 
+  // Aplica el draft actual en vivo al elemento del iframe.
+  const applyInlineDraftLive = (draft: typeof inlineDraft) => {
+    const iframe = getPreviewIframe();
+    iframe?.contentWindow?.postMessage({
+      type: 'MAVERLANG_APPLY_LIVE_STYLE',
+      style: {
+        color: draft.color,
+        backgroundColor: draft.bg,
+        fontSize: `${draft.fontSize}px`,
+        borderRadius: `${draft.radius}px`,
+        text: draft.text,
+      },
+    }, '*');
+  };
+
+  // Genera un prompt concreto y lo envía al input del chat (vía evento global).
+  const commitInlineEdit = () => {
+    if (!inlineEditTarget) return;
+    const t = inlineEditTarget;
+    const changes: string[] = [];
+    if (inlineDraft.text && inlineDraft.text !== t.editableText) {
+      changes.push(`cambia el texto a "${inlineDraft.text}"`);
+    }
+    if (inlineDraft.color && inlineDraft.color !== t.style.color) {
+      changes.push(`cambia el color del texto a ${inlineDraft.color}`);
+    }
+    if (inlineDraft.bg && inlineDraft.bg !== t.style.backgroundColor) {
+      changes.push(`cambia el color de fondo a ${inlineDraft.bg}`);
+    }
+    if (parseInt(String(inlineDraft.fontSize)) !== parseInt(t.style.fontSize)) {
+      changes.push(`cambia el tamaño de fuente a ${inlineDraft.fontSize}px`);
+    }
+    if (parseInt(String(inlineDraft.radius)) !== parseInt(t.style.borderRadius)) {
+      changes.push(`cambia el border-radius a ${inlineDraft.radius}px`);
+    }
+    const instr = changes.length > 0
+      ? `Edita este elemento <${t.tagName.toLowerCase()}>${t.className ? ` con clase "${t.className}"` : ''}: ${changes.join(', ')}.`
+      : `Edita este elemento <${t.tagName.toLowerCase()}>: ${t.editableText || '(sin texto)'}.`;
+    // Enviar al input del chat mediante el evento que ya escucha chat-input.
+    window.dispatchEvent(new CustomEvent("MAVERLANG_ELEMENT_INSPECTED", {
+      detail: { elementHtml: '', tagName: t.tagName, className: t.className, instruction: instr },
+    }));
+    setInlineEditTarget(null);
+  };
+
   const tabs = [
     { id: "preview" as const, label: "Preview", description: "Vista previa interactiva", icon: Monitor },
     { id: "files" as const, label: "Files", description: "Explorador de archivos", icon: FolderOpen },
@@ -1287,17 +1462,6 @@ export function PreviewPanel() {
   ];
 
   const hasFiles = Object.keys(files).length > 0;
-
-  // Texto relativo de guardado para el indicador de la toolbar.
-  // lastSavedAt guarda "HH:MM:SS" (string de toLocaleTimeString); lo mostramos
-  // tal cual porque calcular "hace X" desde un string de hora es frágil al
-  // cruzar medianoche. En su lugar mostramos el estado claro: guardando /
-  // guardado / error.
-  const saveStatusLabel = isSaving
-    ? "Guardando…"
-    : lastSavedAt
-      ? `Guardado a las ${lastSavedAt}`
-      : null;
 
   return (
     <TooltipProvider>
@@ -1368,26 +1532,6 @@ export function PreviewPanel() {
                 </TooltipContent>
               </Tooltip>
             </div>
-
-            {/* Diff Viewer — ver qué cambió en la última generación de la IA */}
-            {lastBuildDiff.length > 0 && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => setIsDiffOpen(true)}
-                    className="flex items-center gap-1.5 px-2.5 h-7 bg-muted/30 hover:bg-muted rounded-lg border border-border/30 text-muted-foreground hover:text-foreground transition-all active:scale-95 relative"
-                  >
-                    <GitCompare className="w-3.5 h-3.5" />
-                    <span className="text-[10px] font-bold">{lastBuildDiff.length}</span>
-                    {/* Punto pulsante para llamar la atención sobre cambios nuevos */}
-                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full animate-pulse" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent hideArrow side="bottom" sideOffset={6} className="text-xs bg-popover text-popover-foreground border border-border px-2.5 py-1.5 rounded-xl shadow-lg font-semibold">
-                  Ver cambios ({lastBuildDiff.length} archivo{lastBuildDiff.length > 1 ? "s" : ""})
-                </TooltipContent>
-              </Tooltip>
-            )}
 
             {/* Viewport (Only in Preview) */}
             {selectedTab === "preview" && (
@@ -1498,34 +1642,6 @@ export function PreviewPanel() {
             </TooltipTrigger>
             <TooltipContent hideArrow side="bottom" sideOffset={6} className="text-xs bg-popover text-popover-foreground border border-border px-2.5 py-1.5 rounded-xl shadow-lg font-semibold">
               Copiar enlace para compartir
-            </TooltipContent>
-          </Tooltip>
-
-          {/* Save status indicator — muestra el estado real del guardado en nube.
-              Antes lastSavedAt existía en el store pero no se mostraba en la UI. */}
-          {cloudSyncEnabled && saveStatusLabel && (
-            <div className="flex items-center gap-1.5 px-2 h-8 text-[10px] font-bold text-muted-foreground select-none">
-              {isSaving ? (
-                <Loader2 className="w-3 h-3 animate-spin text-primary" />
-              ) : (
-                <CheckCircle2 className="w-3 h-3 text-green-500/70" />
-              )}
-              <span className="hidden sm:inline">{saveStatusLabel}</span>
-            </div>
-          )}
-
-          {/* Publish button — oculto en móvil (no funcional y ocupa espacio valioso) */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                disabled
-                className="hidden sm:flex items-center gap-1.5 px-4 h-8 bg-muted text-muted-foreground rounded-full text-xs font-bold cursor-not-allowed opacity-50"
-              >
-                Publicar
-              </button>
-            </TooltipTrigger>
-            <TooltipContent hideArrow side="bottom" sideOffset={6} className="text-xs bg-popover text-popover-foreground border border-border px-2.5 py-1.5 rounded-xl shadow-lg font-semibold">
-              Próximamente: Publicar a la web en producción
             </TooltipContent>
           </Tooltip>
 
@@ -1695,6 +1811,124 @@ export function PreviewPanel() {
                     ) : (
                       <SandpackPreviewWrapper key={iframeKey} />
                     )}
+
+                    {/* #7 POPOVER DE EDICIÓN INLINE: flotante sobre el iframe.
+                        Permite editar texto/colores/tamaño/radius en vivo y, al
+                        aplicar, genera un prompt concreto para la IA. */}
+                    {inlineEditTarget && (
+                      <div className="absolute z-40 top-3 right-3 w-[230px] max-h-[calc(100%-24px)] overflow-y-auto hidden-scrollbar rounded-2xl border border-border bg-popover/95 backdrop-blur-md text-popover-foreground shadow-2xl">
+                        <div className="flex items-center justify-between px-3 py-2 border-b border-border/60">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <MousePointer2 className="w-3.5 h-3.5 text-primary shrink-0" />
+                            <span className="text-[10px] font-bold truncate">
+                              &lt;{inlineEditTarget.tagName.toLowerCase()}&gt;
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => setInlineEditTarget(null)}
+                            className="w-5 h-5 rounded-md hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                            title="Cerrar"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+
+                        <div className="p-3 space-y-2.5">
+                          {inlineEditTarget.editableText !== undefined && (
+                            <label className="block">
+                              <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Texto</span>
+                              <input
+                                type="text"
+                                value={inlineDraft.text}
+                                onChange={(e) => {
+                                  const d = { ...inlineDraft, text: e.target.value };
+                                  setInlineDraft(d);
+                                  applyInlineDraftLive(d);
+                                }}
+                                className="mt-1 w-full text-[11px] px-2 py-1.5 rounded-lg bg-background border border-border focus:border-primary outline-none"
+                                placeholder="(sin texto editable)"
+                              />
+                            </label>
+                          )}
+
+                          <div className="grid grid-cols-2 gap-2">
+                            <label className="block">
+                              <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Color texto</span>
+                              <input
+                                type="color"
+                                value={inlineDraft.color}
+                                onChange={(e) => {
+                                  const d = { ...inlineDraft, color: e.target.value };
+                                  setInlineDraft(d);
+                                  applyInlineDraftLive(d);
+                                }}
+                                className="mt-1 w-full h-7 rounded-lg bg-background border border-border cursor-pointer"
+                              />
+                            </label>
+                            <label className="block">
+                              <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Fondo</span>
+                              <input
+                                type="color"
+                                value={inlineDraft.bg}
+                                onChange={(e) => {
+                                  const d = { ...inlineDraft, bg: e.target.value };
+                                  setInlineDraft(d);
+                                  applyInlineDraftLive(d);
+                                }}
+                                className="mt-1 w-full h-7 rounded-lg bg-background border border-border cursor-pointer"
+                              />
+                            </label>
+                          </div>
+
+                          <label className="block">
+                            <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Tamaño fuente: {inlineDraft.fontSize}px</span>
+                            <input
+                              type="range"
+                              min={8}
+                              max={48}
+                              value={inlineDraft.fontSize}
+                              onChange={(e) => {
+                                const d = { ...inlineDraft, fontSize: parseInt(e.target.value) };
+                                setInlineDraft(d);
+                                applyInlineDraftLive(d);
+                              }}
+                              className="mt-1 w-full accent-primary cursor-pointer"
+                            />
+                          </label>
+
+                          <label className="block">
+                            <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Border radius: {inlineDraft.radius}px</span>
+                            <input
+                              type="range"
+                              min={0}
+                              max={40}
+                              value={inlineDraft.radius}
+                              onChange={(e) => {
+                                const d = { ...inlineDraft, radius: parseInt(e.target.value) };
+                                setInlineDraft(d);
+                                applyInlineDraftLive(d);
+                              }}
+                              className="mt-1 w-full accent-primary cursor-pointer"
+                            />
+                          </label>
+                        </div>
+
+                        <div className="p-3 pt-1 border-t border-border/60 flex gap-2">
+                          <button
+                            onClick={() => setInlineEditTarget(null)}
+                            className="flex-1 text-[10px] font-bold py-1.5 rounded-lg bg-muted hover:bg-muted/80 text-muted-foreground transition-colors"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            onClick={commitInlineEdit}
+                            className="flex-1 text-[10px] font-bold py-1.5 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground transition-colors active:scale-95"
+                          >
+                            Aplicar a la IA
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1737,9 +1971,6 @@ export function PreviewPanel() {
         )}
       </div>
       </div>
-
-      {/* Diff Viewer Modal */}
-      <DiffViewerDialog open={isDiffOpen} onOpenChange={setIsDiffOpen} />
     </TooltipProvider>
   );
 }

@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { ModelSelector } from "@/components/chat/model-selector";
 import { BuildModeSelector } from "@/components/chat/build-mode-selector";
+import { BuildChangesCard } from "@/components/webbuilder/build-changes-card";
 import { useSidebar } from "@/components/ui/sidebar";
 import {
   Dialog,
@@ -264,7 +265,23 @@ export function ChatInput({
   useEffect(() => {
     const handleElementInspected = (e: Event) => {
       const customEvent = e as CustomEvent;
-      const { elementHtml, tagName } = customEvent.detail || {};
+      const { elementHtml, tagName, instruction } = customEvent.detail || {};
+
+      // #7 Si viene una instrucción concreta del popover de edición inline,
+      // la usamos directamente como prompt (más preciso que el prefijo genérico).
+      if (instruction) {
+        const cleanValue = valueRef.current.replace(/^\[Editar\s+[^\]]+\]:\s*/i, "");
+        setValue(instruction + " " + cleanValue);
+        setTimeout(() => {
+          if (textareaRef.current) {
+            textareaRef.current.focus();
+            const len = (instruction + " " + cleanValue).length;
+            textareaRef.current.setSelectionRange(len, len);
+          }
+        }, 50);
+        return;
+      }
+
       if (!tagName) return;
 
       let preview = elementHtml || "";
@@ -506,6 +523,11 @@ export function ChatInput({
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Tarjeta de cambios de la última generación de la IA (modo build).
+            Lista archivos creados/modificados con +/− líneas; al tocar un
+            archivo abre el editor. Botón "Aceptar" la cierra. */}
+        {isWebBuilderMode && !isStreaming && <BuildChangesCard />}
 
         {/* Active Tool Pills & Attachments */}
         {(activeTools.length > 0 || attachedArticles.length > 0) && (

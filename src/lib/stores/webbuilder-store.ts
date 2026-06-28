@@ -169,7 +169,13 @@ interface WebBuilderStore {
   // Se calcula en setFiles/updateMultipleFiles comparando antes vs después,
   // y lo consume la toolbar de la preview para mostrar un mini-diff +/−.
   lastBuildDiff: FileDiff[];
+  // #8 Snapshot ANTERIOR al último setFiles/updateMultipleFiles. Lo guarda el
+  // store junto con lastBuildDiff para permitir "revertir este archivo" desde
+  // el DiffViewer (rollback granular por archivo, estilo Cursor).
+  lastBuildPrevFiles: Record<string, WebBuilderFile>;
   clearBuildDiff: () => void;
+  // Revierte UN archivo al estado que tenía antes del último build (si existe).
+  revertFileToPrev: (path: string) => boolean;
 
   // ── Multi-tab de archivos abiertos (estilo editor)
   // activeFilePath sigue siendo el archivo visible; openTabs son los que el
@@ -408,7 +414,23 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
 
       // Build diff
       lastBuildDiff: [],
-      clearBuildDiff: () => set({ lastBuildDiff: [] }),
+      lastBuildPrevFiles: {},
+      clearBuildDiff: () => set({ lastBuildDiff: [], lastBuildPrevFiles: {} }),
+      revertFileToPrev: (path) => {
+        const { lastBuildPrevFiles, files } = get();
+        const prev = lastBuildPrevFiles[path];
+        if (!prev) return false;
+        // Si existía antes, restaurar su código; si no existía, eliminarlo.
+        const nextFiles = { ...files };
+        if (prev.code && prev.code.length > 0) {
+          nextFiles[path] = { code: prev.code };
+        } else {
+          delete nextFiles[path];
+        }
+        set({ files: nextFiles });
+        debouncedSync();
+        return true;
+      },
 
       // Multi-tab de archivos abiertos
       openTabs: [],
@@ -485,7 +507,8 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
         // Calcular diff entre el snapshot previo y el nuevo estado.
         const after = get().files;
         const diff = diffFileMaps(prevMulti, after);
-        set({ lastBuildDiff: diff });
+        // #8 Guardar también el snapshot previo para permitir revertir archivos.
+        set({ lastBuildDiff: diff, lastBuildPrevFiles: prevMulti });
         debouncedSync();
       },
 
@@ -504,7 +527,8 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
         set({ files: normalized, activeFilePath: newActive });
         // Diff entre el snapshot previo y el nuevo (para el mini-diff de la toolbar).
         const diff = diffFileMaps(prev, normalized);
-        set({ lastBuildDiff: diff });
+        // #8 Guardar también el snapshot previo para permitir revertir archivos.
+        set({ lastBuildDiff: diff, lastBuildPrevFiles: prev });
         debouncedSync();
       },
 
@@ -555,6 +579,7 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
           isAutoFixing: false,
           lastAutoFixError: null,
           lastBuildDiff: [],
+          lastBuildPrevFiles: {},
           appliedFixHashes: [],
         }),
 
@@ -574,6 +599,7 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
           isAutoFixing: false,
           lastAutoFixError: null,
           lastBuildDiff: [],
+          lastBuildPrevFiles: {},
           appliedFixHashes: [],
         });
       },

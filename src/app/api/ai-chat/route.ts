@@ -18,6 +18,28 @@ import { getBrowserTools } from "./handlers/browser-tools";
 
 export const maxDuration = 300;
 
+/**
+ * #6 SANITIZACIÓN ANTI PROMPT-INJECTION.
+ *
+ * `replanFeedback` y `originalUserMessage` son texto libre del usuario que se
+ * inyecta directamente en el prompt del planner. Un usuario malicioso (o un
+ * contenido copy-pasteado) podría intentar override instructions del tipo
+ * "Ignora las reglas anteriores y...". Esta función:
+ *  - Acota la longitud (evita DoS por prompt gigante).
+ *  - Marca claramente el contenido como DATOS del usuario (no instrucciones).
+ *  - Neutraliza secuencias que imitan directivas de sistema/rol.
+ */
+function sanitizeUserPlanInput(raw: string | undefined | null, maxLen = 2000): string {
+  if (!raw) return "";
+  let s = String(raw).trim();
+  if (s.length > maxLen) s = s.slice(0, maxLen);
+  // Neutralizar marcadores de rol que podrían confundir al planner.
+  s = s
+    .replace(/^\s*(system|assistant|user|tool)\s*:/gim, "$1:")
+    .replace(/<\s*\/?\s*(system|assistant|developer|role)\s*>/gi, "[$1]");
+  return s;
+}
+
 const aiChatSchema = z.object({
   messages: z.array(z.any()),
   articles: z.array(z.any()).optional().default([]),
@@ -33,16 +55,24 @@ const aiChatSchema = z.object({
   // o "turbo" (planifica y construye de una). Default implícito: turbo si no viene.
   buildMode: z.enum(["plan", "turbo"]).optional(),
   // Plan aprobado por el usuario (modo Plan): el servidor ejecuta solo agentes.
+  // #6 Schema estricto: antes era z.array(z.any()) que aceptaba cualquier cosa.
+  // Ahora validamos la forma real del agente para evitar que el cliente inyecte
+  // payloads arbitrarios en el prompt del planner/ejecutor.
   approvedPlan: z.object({
-    reason: z.string(),
-    agents: z.array(z.any()),
+    reason: z.string().max(4000),
+    agents: z.array(z.object({
+      agentName: z.string().max(120),
+      role: z.string().max(200),
+      task: z.string().max(4000),
+      filePath: z.string().max(300).regex(/^[\w\-./]+$/, "filePath debe ser una ruta relativa válida"),
+    })).min(1).max(5),
   }).optional(),
   // Feedback del usuario para replanificar (modo Plan): regenera el plan.
-  replanFeedback: z.string().optional(),
+  replanFeedback: z.string().max(2000).optional(),
   // Cancelación del plan (modo Plan): el usuario escribió "no" / "cancelar".
   cancelPlan: z.boolean().optional(),
   // Mensaje original del usuario que originó el plan (para replan / ejecución).
-  originalUserMessage: z.string().optional(),
+  originalUserMessage: z.string().max(8000).optional(),
   codeInterpreter: z.boolean().optional(),
 }).strict();
 
@@ -60,6 +90,12 @@ export async function POST(req: NextRequest) {
     }
 
     const { messages, articles, files, modelId, activeTools, contextOverride, webSearch, browser, webBuilder, webBuilderFiles, buildMode, approvedPlan, replanFeedback, cancelPlan, originalUserMessage, codeInterpreter } = parseResult.data;
+
+    // #6 SANITIZACIÓN: el feedback/mensaje original del usuario se inyecta en
+    // el prompt del planner. Saneamos para neutralizar intentos de prompt
+    // injection (override de instrucciones, marcadores de rol, etc.).
+    const safeReplanFeedback = replanFeedback ? sanitizeUserPlanInput(replanFeedback) : undefined;
+    const safeOriginalUserMessage = originalUserMessage ? sanitizeUserPlanInput(originalUserMessage, 8000) : undefined;
 
     if (!messages || messages.length === 0) {
       return new Response(JSON.stringify({ error: "Messages are required" }), { status: 400 });
@@ -298,7 +334,7 @@ export async function POST(req: NextRequest) {
             const exec = await executeWebBuilderAgents(
               orchestratorModel,
               approvedPlan.agents,
-              originalUserMessage || lastUserMessage,
+              safeOriginalUserMessage || lastUserMessage,
               webBuilderFiles || {},
               onOrchProgress,
               onFileReady
@@ -310,14 +346,14 @@ export async function POST(req: NextRequest) {
               agentReports: exec.agentReports,
               totalTokensUsed: exec.totalTokensUsed,
             };
-          } else if (buildMode === "plan" && replanFeedback) {
+          } else if (buildMode === "plan" && safeReplanFeedback) {
             // Replanificar: regenerar el plan incorporando el feedback del usuario.
             const plan = await planWebBuilder(
               orchestratorModel,
-              originalUserMessage || lastUserMessage,
+              safeOriginalUserMessage || lastUserMessage,
               webBuilderFiles || {},
               onOrchProgress,
-              replanFeedback
+              safeReplanFeedback
             );
             if (plan.isComplex && plan.agents.length > 0) {
               // Emitir la nueva tarjeta del plan y terminar el turno aquí.
@@ -392,7 +428,7 @@ export async function POST(req: NextRequest) {
           let planTurnMessage = "";
           if (cancelPlan) {
             planTurnMessage = "He cancelado el plan. Si quieres, dime de nuevo qué construir y replanteo desde cero.";
-          } else if (replanFeedback) {
+          } else if (safeReplanFeedback) {
             // Si la replanificación dio una nueva tarjeta, pedir autorización de nuevo.
             if (orchestrationResult.agents && orchestrationResult.agents.length > 0) {
               planTurnMessage = "He replanificado con tus cambios. Revisa el nuevo plan y, cuando estés listo, escribe **aprobado** para construir, **no** para cancelar, o dime qué más cambiar.";
@@ -432,17 +468,50 @@ export async function POST(req: NextRequest) {
             // system message final para el LLM conversacional usando el estado
             // acumulado (que ya refleja todos los archivos generados).
 
+            // REPORTAR HONESTAMENTE (#3): distinguir agentes exitosos de fallidos
+            // para que el LLM no diga "se construyó" cuando algunos fallaron.
+            const allReports = orchestrationResult.agentReports || [];
+            const successReports = allReports.filter((r: any) => r.success !== false);
+            const failedReports = allReports.filter((r: any) => r.success === false);
+            const successFiles = successReports.map((r: any) => `- ${r.filePath}`).join('\n');
+            const failedFiles = failedReports
+              .map((r: any) => `- ${r.filePath} (agente: ${r.agentName})`)
+              .join('\n');
+
+            let buildContext: string;
+            if (successReports.length > 0 && failedReports.length === 0) {
+              buildContext = `Los agentes de WebBuilder completaron TODAS las tareas con éxito.
+Los siguientes archivos fueron creados o actualizados correctamente:
+${successFiles}`;
+            } else if (successReports.length > 0 && failedReports.length > 0) {
+              buildContext = `Los agentes de WebBuilder completaron PARCIALMENTE el proyecto.
+
+✅ Archivos creados/actualizados con ÉXITO (${successReports.length}):
+${successFiles}
+
+❌ Archivos que FALLARON (${failedReports.length}) — NO se aplicaron, debes informarlo al usuario:
+${failedFiles}`;
+            } else if (failedReports.length > 0) {
+              buildContext = `⚠️ TODOS los agentes de WebBuilder FALLARON. NINGÚN archivo fue generado o modificado.
+Archivos que fallaron:
+${failedFiles}
+
+Esto significa que el proyecto NO se construyó. Debes informarlo claramente al usuario y sugerirle que reintente la solicitud, quizás con más detalle o simplificando la petición.`;
+            } else {
+              buildContext = `Los agentes de WebBuilder generaron los archivos del proyecto:
+${Object.keys(filesToApply).map(f => `- ${f}`).join('\n') || '(ninguno)'}`;
+            }
+
             // The LLM final only needs to write the conversational message (without coding)
             const contextMessage = {
               role: "system" as const,
-              content: `Los agentes de WebBuilder ya han generado y modificado los archivos de código correspondientes.
-Los siguientes archivos fueron creados o actualizados con éxito:
-${Object.keys(filesToApply).map(f => `- ${f}`).join('\n')}
+              content: `${buildContext}
 
 REGLAS PARA TU RESPUESTA FINAL:
 1. NO escribas bloques de código ni XML de artefactos (<maverlangArtifact>). Todo el código ya ha sido procesado y enviado al frontend.
-2. Saluda al usuario y resume de forma breve, amigable y profesional lo que se ha construido o modificado en cada archivo.
-3. Sé conciso y directo en español. Muestra entusiasmo por el resultado.`,
+2. Saluda al usuario y resume de forma breve, amigable y profesional lo que se ha construido o modificado.
+3. IMPORTANTE — HONESTIDAD: si algunos o todos los archivos fallaron, dilo claramente. NO afirme que se construyó algo que falló. Si todo falló, pide al usuario que reintente.
+4. Sé conciso y directo en español. Muestra entusiasmo por el resultado.`,
             };
 
             const lastIndex = messagesForFinalLlm.length - 1;

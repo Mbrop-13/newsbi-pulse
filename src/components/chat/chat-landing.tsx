@@ -11,7 +11,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useAIChatStore, type ChatMessage } from "@/lib/stores/ai-chat-store"
-import { useAssistantStore } from "@/lib/stores/assistant-store"
 
 import { useAuthStore, useAuthModalStore } from "@/lib/stores/auth-store"
 import { useConversionStore } from "@/lib/stores/conversion-store"
@@ -43,7 +42,7 @@ import {
 import { cn, formatDate as fmtDate, getFallbackImage, slugify, getCleanPathname } from "@/lib/utils"
 import { useLanguageStore } from "@/lib/stores/language-store"
 import { motion, AnimatePresence } from "framer-motion"
-import { Newspaper, Sparkles, Headphones, LineChart, Coins, Landmark, Briefcase, Shield, Lightbulb, Globe, Flame, Calendar, Cpu, ArrowUpRight, ArrowDownRight, MoreHorizontal, Link2, SquarePen, Trash2, FolderOpen, Code2, FileCode2, ChevronRight, Copy, Eye, Settings } from "lucide-react"
+import { Newspaper, Sparkles, Headphones, LineChart, Coins, Landmark, Briefcase, Shield, Lightbulb, Globe, Flame, Calendar, Cpu, ArrowUpRight, ArrowDownRight, MoreHorizontal, Link2, SquarePen, Trash2, FolderOpen, Code2, FileCode2, ChevronRight, Copy, Eye } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useSidebar } from "@/components/ui/sidebar"
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store"
@@ -509,8 +508,6 @@ function ChatLandingContent() {
   const [openReasoning, setOpenReasoning] = useState<Record<string, boolean>>({})
   const [shareDialog, setShareDialog] = useState({ isOpen: false, question: "", answer: "" })
   const lastLoadedChatIdRef = useRef<string | null>(null)
-  const showSettings = useAssistantStore((s) => s.showSettings)
-  const setShowSettings = useAssistantStore((s) => s.setShowSettings)
 
   const router = useRouter()
 
@@ -1370,47 +1367,26 @@ function ChatLandingContent() {
     localSaveTimeoutRef.current = setTimeout(() => {
       const latestMessages = aiMessagesRef.current;
       if (latestMessages.length === 0) return;
-      
-      let citationsList: string[] = accumulatedCitationsRef.current || [];
-      let reasoningText = accumulatedReasoningRef.current || "";
-      let agentReportsData: any[] = [];
-      
-      if (data && data.length > 0) {
-        const citationObj = (data as any[]).find((d: any) => d?.type === 'citations');
-        if (citationObj?.urls && citationsList.length === 0) {
-          citationsList = citationObj.urls;
-        }
-        const reasoningChunks = (data as any[]).filter((d: any) => d?.type === 'reasoning');
-        const streamReasoning = reasoningChunks.map(c => c.text).join('');
-        if (streamReasoning && !reasoningText) reasoningText = streamReasoning;
-        
-        const reportsObj = (data as any[]).find((d: any) => d?.type === 'agentReports');
-        if (reportsObj?.reports) {
-          agentReportsData = reportsObj.reports;
-        }
-      }
 
+      // ⚠️ Anti-bucle (React #185 "Maximum update depth exceeded"):
+      // ANTES este effect dependía también de `data` y escribía en el store un
+      // snapshot "enriquecido" (citations/reasoning/agentReports) por cada tick
+      // del stream. Con la fase 3 (streaming apply live) `data` muta en ráfaga
+      // (una emisión webbuilder_files por agente + chunks de reasoning), y como
+      // el effect que sincroniza storeMessages→aiMessages (más abajo) reacciona
+      // a los cambios del store, se cerraba un bucle:
+      //   data cambia → guardado escribe messages → sync escribe aiMessages →
+      //   guardado re-escribe messages → ... → React aborta con #185.
+      //
+      // Ahora NO enriquecemos aquí ni dependemos de `data`: el enriquecimiento
+      // (citations/reasoning/agentReports) lo hace `onFinish` una única vez al
+      // terminar la respuesta, que es su sitio correcto. Aquí solo persistimos
+      // el estado actual de los mensajes (debounced), sin retroalimentar el
+      // flujo de render.
       const currentStoreMessages = useAIChatStore.getState().messages;
-      const lastAssistantIdx = [...latestMessages].reverse().findIndex(m => m.role === 'assistant' || m.role === 'tool');
-      const targetIdx = lastAssistantIdx !== -1 ? (latestMessages.length - 1 - lastAssistantIdx) : -1;
 
-      const formatted: ChatMessage[] = latestMessages.map((m: any, idx: number) => {
+      const formatted: ChatMessage[] = latestMessages.map((m: any) => {
         const storeMsg = currentStoreMessages.find((sm) => sm.id === m.id);
-        const isTarget = idx === targetIdx;
-        if (isTarget) {
-          return {
-            id: m.id,
-            role: "assistant",
-            content: m.content || "",
-            timestamp: m.timestamp || new Date(),
-            model: selectedModel === "fast" ? "deepseek" : "grok",
-            toolInvocations: m.toolInvocations,
-            citations: citationsList,
-            reasoning: reasoningText || m.reasoning || undefined,
-            reasoningSteps: agentReportsData.length > 0 ? agentReportsData : m.reasoningSteps || storeMsg?.reasoningSteps || undefined,
-            secondsElapsed: m.secondsElapsed,
-          };
-        }
         return {
           id: m.id,
           role: (m.role === 'tool' ? 'assistant' : m.role) as 'user' | 'assistant',
@@ -1425,6 +1401,14 @@ function ChatLandingContent() {
         };
       });
 
+      // Solo escribir si el contenido realmente cambió, para no alimentar el
+      // effect de sync storeMessages→aiMessages con referencias nuevas idénticas.
+      const prevIds = currentStoreMessages.map((m) => m.id).join("|");
+      const nextIds = formatted.map((m) => m.id).join("|");
+      const lastPrevContent = currentStoreMessages[currentStoreMessages.length - 1]?.content ?? "";
+      const lastNextContent = formatted[formatted.length - 1]?.content ?? "";
+      if (prevIds === nextIds && lastPrevContent === lastNextContent) return;
+
       useAIChatStore.setState({ messages: formatted });
       useAIChatStore.getState().updateCurrentChat(true); // localOnly = true
     }, 1000); // Debounce by 1 second
@@ -1432,7 +1416,7 @@ function ChatLandingContent() {
     return () => {
       if (localSaveTimeoutRef.current) clearTimeout(localSaveTimeoutRef.current);
     };
-  }, [aiMessages, aiLoading, selectedModel, data]);
+  }, [aiMessages, aiLoading, selectedModel]);
 
   // Reusable category pill for desktop and mobile layouts
   const CategoryPill = ({ cat, isActive, isMobile: mobile }: { cat: CreativeCategory; isActive: boolean; isMobile?: boolean }) => {
@@ -1559,7 +1543,9 @@ function ChatLandingContent() {
       {isAuthenticated && hasMessages && !isBrowserOpen && !isCanvasOpen && (
         <TooltipProvider delayDuration={300}>
           <div className="fixed top-3 right-3 sm:top-4 sm:right-4 z-50 flex items-center gap-1.5 select-none">
-            {/* Sheet Menu (Más / Archivos) */}
+            {/* Sheet Menu (Más / Archivos) — oculto en modo build: el explorador
+                de archivos y opciones vive en el panel de preview dedicado. */}
+            {!isWebBuilderMode && (
             <Sheet>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -1637,8 +1623,10 @@ function ChatLandingContent() {
                 </div>
               </SheetContent>
             </Sheet>
+            )}
 
-            {/* Copy link */}
+            {/* Copy link — oculto en modo build */}
+            {!isWebBuilderMode && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <button 
@@ -1653,6 +1641,7 @@ function ChatLandingContent() {
                 Copiar enlace
               </TooltipContent>
             </Tooltip>
+            )}
 
             {/* New Chat */}
             <Tooltip>
@@ -1667,22 +1656,6 @@ function ChatLandingContent() {
               </TooltipTrigger>
               <TooltipContent side="bottom" className="text-xs font-semibold">
                 Nueva conversación
-              </TooltipContent>
-            </Tooltip>
-
-            {/* Settings */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={() => setShowSettings(true)}
-                  className="w-9 h-9 rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-850 dark:hover:bg-zinc-850/80 flex items-center justify-center text-gray-700 dark:text-gray-200 transition-all cursor-pointer shadow-xs border border-transparent dark:border-white/5 active:scale-95"
-                >
-                  <Settings className="w-4.5 h-4.5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs font-semibold">
-                Ajustes
               </TooltipContent>
             </Tooltip>
           </div>

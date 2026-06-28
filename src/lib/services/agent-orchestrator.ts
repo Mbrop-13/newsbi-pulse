@@ -1,5 +1,6 @@
 import { generateText, LanguageModel } from 'ai';
 import { containsArtifact, parseArtifact, ParsedAction, validateDiffsAgainstFile } from '@/lib/webbuilder-parser';
+import { BUILDER_DESIGN_GUIDELINES } from '@/app/api/ai-chat/prompts/builder-guidelines';
 
 export interface AgentInfo {
   agentName: string;
@@ -481,16 +482,24 @@ function checkBrackets(code: string): { isValid: boolean; reason?: string } {
 
 /**
  * Basic syntax validator for parsed action content.
+ *
+ * #5 VALIDACIÓN EXTENDIDA: además de balance de llaves y export default,
+ * detecta:
+ *  - JSX malformado (tags sin cerrar, self-closing faltante)
+ *  - imports obviamente rotos (rutas vacías, sin from, comillas sin cerrar)
+ *  - return fuera de función (síntoma de código truncado)
  */
 function validateBasicSyntax(action: ParsedAction): { isValid: boolean; reason?: string } {
   if (action.type === 'file') {
     const code = action.content;
+
+    // 1. Balance de llaves/paréntesis/corchetes (respeta strings/comentarios/template literals).
     const bracketCheck = checkBrackets(code);
     if (!bracketCheck.isValid) {
       return bracketCheck;
     }
-    
-    // Default export check for main file: App.tsx or App.jsx
+
+    // 2. Default export check para el archivo principal (App.tsx/jsx).
     const isApp = action.filePath.toLowerCase().endsWith('app.tsx') || action.filePath.toLowerCase().endsWith('app.jsx');
     if (isApp) {
       const hasExportDefault = code.includes('export default');
@@ -498,12 +507,115 @@ function validateBasicSyntax(action: ParsedAction): { isValid: boolean; reason?:
         return { isValid: false, reason: `El archivo ${action.filePath} debe incluir una exportación por defecto ('export default')` };
       }
     }
+
+    // 3. Detección de código truncado: si el archivo termina abruptamente
+    //    (sin punto y coma, sin cerrar JSX, o con un return colgando), el
+    //    maxTokens probablemente cortó la generación.
+    const trimmedEnd = code.trimEnd();
+    const lastNonWhitespace = trimmedEnd.slice(-1);
+    if (lastNonWhitespace && !/[;}\>)\]]/.test(lastNonWhitespace)) {
+      // Permito `default` (export default function) y comentarios, pero si
+      // claramente cortó a mitad de línea lo marcamos.
+      if (!/export\s+default|^\s*\/\//m.test(trimmedEnd.slice(-200))) {
+        return {
+          isValid: false,
+          reason: `El archivo parece estar truncado (termina en '${lastNonWhitespace}'). Es probable que el límite de tokens cortó la generación. Genera el archivo completo.`,
+        };
+      }
+    }
+
+    // 4. Validación básica de imports: cada `import ... from "..."` debe tener
+    //    una ruta entre comillas y no estar vacía.
+    const importRegex = /import\s+[\s\S]*?from\s+["']([^"']*)["']/g;
+    let importMatch: RegExpExecArray | null;
+    while ((importMatch = importRegex.exec(code)) !== null) {
+      const importPath = importMatch[1];
+      if (!importPath.trim()) {
+        return { isValid: false, reason: 'Hay un import con ruta vacía: `from ""`. Revisa los imports.' };
+      }
+    }
+    // Import con comillas abiertas pero no cerradas (regex no matchea) → sintaxis rota.
+    if (/import\s+[\s\S]*?from\s+["'][^\n]*$/.test(code) && !/from\s+["'][^"']*["']/.test(code)) {
+      return { isValid: false, reason: 'Hay un import con comillas sin cerrar en la cláusula from.' };
+    }
+
+    // 5. Detección de JSX malformado básico: tags JSX abiertos que nunca se
+    //    cierran (sintaxis tipo <div> ... sin </div> ni self-closing />).
+    //    Es una heurística ligera (no un parser completo) para captar lo común.
+    const jsxOpenRegex = /<([A-Za-z][A-Za-z0-9]*)\b[^/>]*?(?<!\/)>/g;
+    const jsxCloseRegex = /<\/([A-Za-z][A-Za-z0-9]*)>/g;
+    const openTags: string[] = [];
+    let m: RegExpExecArray | null;
+    while ((m = jsxOpenRegex.exec(code)) !== null) {
+      // Filtrar componentes auto-cerrados ya cubiertos por la regex (no debería por el lookbehind)
+      openTags.push(m[1]);
+    }
+    const closeTags: string[] = [];
+    while ((m = jsxCloseRegex.exec(code)) !== null) {
+      closeTags.push(m[1]);
+    }
+    // Tags void/HTML que no necesitan cierre explícito.
+    const voidTags = new Set(['img', 'br', 'hr', 'input', 'meta', 'link', 'area', 'base', 'col', 'embed', 'source', 'track', 'wbr']);
+    let unclosed = 0;
+    const closeCount: Record<string, number> = {};
+    for (const t of closeTags) closeCount[t] = (closeCount[t] || 0) + 1;
+    for (const t of openTags) {
+      if (voidTags.has(t.toLowerCase())) continue;
+      if ((closeCount[t] || 0) > 0) {
+        closeCount[t]--;
+      } else {
+        unclosed++;
+      }
+    }
+    // Permitimos cierta tolerancia (1) por fragmentos de JSX en interpolaciones,
+    // pero muchos tags sin cerrar = truncado/malformado.
+    if (unclosed > 2) {
+      return {
+        isValid: false,
+        reason: `Se detectaron ${unclosed} tags JSX posiblemente sin cerrar. Revisa que cada tag tenga su cierre (</Tag>) o sea self-closing (/>). El archivo puede estar truncado.`,
+      };
+    }
   } else if (action.type === 'update') {
     if (!action.diffs || action.diffs.length === 0) {
       return { isValid: false, reason: 'Actualización parcial no contiene bloques SEARCH/REPLACE estructurados válidos.' };
     }
   }
   return { isValid: true };
+}
+
+/**
+ * #4 maxTokens dinámico: estima el presupuesto de salida según el tamaño del
+ * archivo existente y la complejidad de la tarea. Evita que archivos grandes
+ * (dashboards completos) se trunquen por el límite fijo de 8192 tokens.
+ *
+ * Heurística:
+ *  - Si el archivo existe y es grande (>4000 chars), el LLM probablemente
+ *    necesita reescribir una porción grande → más tokens.
+ *  - Si es un archivo nuevo (no existe) y la tarea menciona "completo",
+ *    "dashboard", "landing", "página" → más tokens.
+ *  - Mínimo 4096, máximo 16000 (límite razonable de contexto de salida).
+ */
+function estimateMaxTokens(agent: WebBuilderAgentInfo, existingFiles?: Record<string, string>): number {
+  const existing = existingFiles?.[agent.filePath];
+  const existingLen = existing ? existing.length : 0;
+
+  // 1 char ≈ 0.27 tokens aprox; salida necesita ~1.5x del contenido.
+  let estimate = 4096;
+  if (existingLen > 0) {
+    // Para type="update" el output es pequeño (solo diffs), pero para
+    // type="file" puede ser el archivo completo. Damos margen.
+    estimate = Math.max(estimate, Math.ceil(existingLen * 0.35) + 2048);
+  }
+
+  // Tareas complejas (palabras clave) piden archivos grandes nuevos.
+  const taskLower = (agent.task || '').toLowerCase();
+  const bigTaskKeywords = ['dashboard', 'landing', 'completo', 'completa', 'página', 'pagina', 'app', 'aplicación', 'rediseño', 'redisenio'];
+  if (bigTaskKeywords.some(k => taskLower.includes(k)) && existingLen === 0) {
+    estimate = Math.max(estimate, 8192);
+  }
+
+  // Techo: 16000 tokens de salida (suficiente para un App.tsx grande completo).
+  return Math.min(Math.max(estimate, 4096), 16000);
 }
 
 /**
@@ -539,7 +651,8 @@ async function generateWebBuilderCodeWithVerification(
       system: currentSystemPrompt,
       messages: [{ role: 'user', content: userMessage }],
       temperature: attempt === 1 ? 0.2 : 0.1,
-      maxTokens: 8192,
+      // #4 maxTokens dinámico: evita truncados en archivos grandes.
+      maxTokens: estimateMaxTokens(agent, existingFiles),
     });
 
     if (usage?.totalTokens) {
@@ -781,18 +894,33 @@ export async function executeWebBuilderAgents(
   const startTime = Date.now();
   let totalTokensUsed = 0;
 
-  onProgress?.(`🤖 Creando ${agents.length} agentes constructores en paralelo...\n\n`);
+  // #5 DEDUP DE filePath: si el plan asigna el mismo filePath a varios agentes,
+  // dos escrituras concurrentes a filesToApply (vía onFileReady) generarían un
+  // race y la última en resolver ganaría de forma no determinista. Conservamos
+  // solo el PRIMER agente por filePath normalizado y descartamos duplicados.
+  const seenPaths = new Set<string>();
+  const dedupedAgents = agents.filter(a => {
+    const norm = a.filePath.replace(/^\/src\//, '/').replace(/^src\//, '/');
+    if (seenPaths.has(norm)) return false;
+    seenPaths.add(norm);
+    return true;
+  });
+  if (dedupedAgents.length < agents.length) {
+    onProgress?.(`⚠️ [Orquestador WebBuilder] Se detectaron ${agents.length - dedupedAgents.length} agente(s) duplicado(s) sobre el mismo archivo. Se mantiene solo el primero para evitar conflictos.\n`);
+  }
 
-  const agentPromises = agents.map(async (agent): Promise<WebBuilderAgentReport> => {
+  onProgress?.(`🤖 Creando ${dedupedAgents.length} agentes constructores en paralelo...\n\n`);
+
+  const agentPromises = dedupedAgents.map(async (agent): Promise<WebBuilderAgentReport> => {
     const agentStartTime = Date.now();
     onProgress?.(`⏳ [Agente] ${agent.agentName} (${agent.role}) generando/actualizando \`${agent.filePath}\`...\n`);
 
-    const agentSystemPrompt = `Actúas como el agente constructor experto "${agent.agentName}" con el rol de "${agent.role}".
+    const agentSystemPrompt = `Actúas como el agente constructor experto "${agent.agentName}" con el rol de "${agent.role}". Eres un ingeniero de software senior de élite; la calidad de tu código debe ser excepcional, al nivel de los mejores equipos de producto (Linear, Vercel, Stripe, Apple).
 Tu tarea específica es implementar o modificar el archivo "${agent.filePath}" de acuerdo a la instrucción: "${agent.task}".
 
 Debes generar el contenido de tu archivo utilizando el formato XML de Maverlang Artifacts.
 REGLAS CRÍTICAS DE RESPUESTA:
-1. Responde ÚNICAMENTE con el bloque XML <maverlangArtifact> que contiene la acción para tu archivo. No incluyes explicaciones en lenguaje natural antes ni después del bloque XML.
+1. Responde ÚNICAMENTE con el bloque XML <maverlangArtifact> que contiene la acción para tu archivo. No incluyas explicaciones en lenguaje natural antes ni después del bloque XML.
 2. El bloque debe tener la estructura correspondiente.
 Si vas a CREAR o REEMPLAZAR un archivo por completo, usa type="file":
 <maverlangArtifact id="project" title="Creación de archivo">
@@ -812,9 +940,11 @@ Si vas a MODIFICAR un archivo existente, usa type="update" con bloques search/re
   </maverlangAction>
 </maverlangArtifact>
 
-3. Todo código React debe usar importaciones estándar que estén disponibles en un entorno Vite + React normal.
+3. Todo código React debe usar importaciones estándar que estén disponibles en un entorno Vite + React normal. Exportación por defecto del componente en cada archivo React.
 4. Recuerda: Tu response debe contener SOLAMENTE el XML. No agregues comentarios introductorios ni de cierre en markdown fuera del XML.
 5. EVITA EL TRUNCADO: Si vas a modificar un archivo existente en el proyecto, DEBES usar preferiblemente type="update" con bloques search/replace para realizar modificaciones locales, en lugar de type="file" que reescribe todo. Usa type="file" para archivos existentes SOLO si necesitas cambiar más del 60% del código y tienes la capacidad de escribir el archivo completo al 100% de manera íntegra, sin placeholders ni truncados.
+6. COHERENCIA MULTI-AGENTE: Eres uno de varios agentes construyendo el proyecto en paralelo. Tu archivo debe integrarse limpiamente con los demás. Asume que los componentes de otros agentes se importan por su ruta exacta (ej: import FinanceChart from './components/FinanceChart'). Respeta los nombres de componentes y props que el plan define.
+${BUILDER_DESIGN_GUIDELINES}
 `;
 
     // Filter existing files context per-agent to optimize tokens

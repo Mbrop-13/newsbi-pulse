@@ -163,7 +163,7 @@ export function ChatMessages({
 
                     if (hasAgentSteps) {
                       return (
-                        <div className="ml-2.5 border-l border-gray-200 dark:border-slate-800 pl-4 space-y-3">
+                        <div className="ml-2.5 border-l-2 border-black dark:border-white pl-4 space-y-3">
                           {agentStatuses.map((agent, idx) => {
                             const isDone = agent.status === 'done';
                             const isFailed = agent.status === 'failed';
@@ -173,8 +173,8 @@ export function ChatMessages({
                               <div key={idx} className="relative pb-1 last:pb-0">
                                 {/* Timeline dot */}
                                 <div className={cn(
-                                  "absolute -left-[21px] top-[5px] w-2.5 h-2.5 rounded-full border-2 border-white dark:border-[#0a0a0a]",
-                                  isFailed ? "bg-red-500" : isDone ? "bg-black dark:bg-white" : "bg-amber-500 animate-pulse"
+                                  "absolute -left-[22px] top-[5px] w-2.5 h-2.5 rounded-full border-2 border-black dark:border-white",
+                                  isFailed ? "bg-red-500" : isDone ? "bg-black dark:bg-white" : "bg-white dark:bg-black animate-pulse"
                                 )} />
 
                                 {/* Agent header */}
@@ -195,7 +195,7 @@ export function ChatMessages({
                                   ) : isDone ? (
                                     <CheckCircle2 className="w-3 h-3 text-black dark:text-white ml-auto shrink-0" />
                                   ) : (
-                                    <Loader2 className="w-3 h-3 text-amber-500 ml-auto shrink-0 animate-spin" />
+                                    <Loader2 className="w-3 h-3 text-black dark:text-white ml-auto shrink-0 animate-spin" />
                                   )}
                                 </div>
 
@@ -209,10 +209,12 @@ export function ChatMessages({
                         </div>
                       );
                     } else if (liveReasoning) {
+                      const cleaned = cleanOrchestrationText(liveReasoning);
+                      if (!cleaned) return null;
                       return (
                         <div className="mb-2">
                           <div className="pl-3.5 border-l-2 border-[#1890FF]/30 text-[12.5px] text-muted-foreground/80 font-sans whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto scrollbar-hide py-1">
-                            {liveReasoning}
+                            {cleaned}
                           </div>
                         </div>
                       );
@@ -293,10 +295,30 @@ function formatCitationSource(url: string) {
 // ─── Check if text is orchestration log ───
 function isOrchestrationLog(text: string): boolean {
   if (!text) return false;
-  return text.includes('[Orquestador]') || 
-         text.includes('[Agente]') || 
+  return text.includes('[Orquestador]') ||
+         text.includes('[Orquestador WebBuilder]') ||
+         text.includes('[Agente]') ||
          text.includes('agentes expertos') ||
-         text.includes('agentes especializados');
+         text.includes('agentes especializados') ||
+         text.includes('agentes constructores');
+}
+
+// ─── Limpia el ruido del orquestador del texto en crudo ───
+// Quita los marcadores `🧠 [Orquestador WebBuilder]`, `[Agente]`, emojis
+// iniciales y líneas vacías, para que el panel de razonamiento muestre solo
+// el mensaje humano (no los prefijos de log internos).
+function cleanOrchestrationText(text: string): string {
+  if (!text) return "";
+  return text
+    // Quitar etiquetas de rol del orquestador/agentes
+    .replace(/\[Orquestador\s*WebBuilder\]|\[Orquestador\]|\[Agente\]/g, "")
+    // Quitar emojis de log comunes al inicio de línea
+    .replace(/^[🧠🔍📊✅🤖⏳❌⚠️]\s*/gm, "")
+    // Colapsar espacios sobrantes tras quitar los marcadores
+    .replace(/[ \t]{2,}/g, " ")
+    // Quitar líneas vacías al inicio/final y normalizar saltos dobles
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 // ─── Parse orchestration log lines from reasoning text ───
@@ -939,8 +961,8 @@ function MessageBubble({
   // ─── Render Model Reasoning (DeepSeek-R1 style) ───
   const renderModelReasoning = () => {
     if (!extractedReasoning && !message.thinkingSteps?.length) return null
-    const content = extractedReasoning || message.thinkingSteps?.join('\n') || ''
-    if (!content || isOrchestrationLog(content)) return null
+    const content = cleanOrchestrationText(extractedReasoning || message.thinkingSteps?.join('\n') || '')
+    if (!content) return null
     const isThinking = isResponding && !finalContent
 
     return (

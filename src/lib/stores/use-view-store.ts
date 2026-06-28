@@ -4,6 +4,7 @@ import { persist } from 'zustand/middleware';
 export type ViewLayout = 'grid';
 export type ViewDensity = 'compact' | 'comfortable' | 'spacious';
 export type ViewFontSize = 'sm' | 'base' | 'lg';
+export type ViewColorScheme = 'none' | 'sepia';
 export type ArticleWidth = 'normal' | 'wide' | 'full';
 export type TimePeriod = 'recent' | '24h' | '7d' | '30d' | 'all';
 
@@ -12,6 +13,7 @@ interface ViewSettingsState {
   layout: ViewLayout;
   density: ViewDensity;
   fontSize: ViewFontSize;
+  colorScheme: ViewColorScheme;
   showImages: boolean;
   showPredictions: boolean;
   articleWidth: ArticleWidth;
@@ -21,6 +23,7 @@ interface ViewSettingsState {
   setLayout: (layout: ViewLayout) => void;
   setDensity: (density: ViewDensity) => void;
   setFontSize: (fontSize: ViewFontSize) => void;
+  setColorScheme: (scheme: ViewColorScheme) => void;
   setShowImages: (show: boolean) => void;
   setShowPredictions: (show: boolean) => void;
   setArticleWidth: (width: ArticleWidth) => void;
@@ -32,6 +35,7 @@ const defaultState = {
   layout: 'grid' as ViewLayout,
   density: 'comfortable' as ViewDensity,
   fontSize: 'base' as ViewFontSize,
+  colorScheme: 'none' as ViewColorScheme,
   showImages: true,
   showPredictions: true,
   articleWidth: 'wide' as ArticleWidth,
@@ -45,6 +49,7 @@ export const useViewStore = create<ViewSettingsState>()(
       setLayout: (layout) => set({ layout }),
       setDensity: (density) => set({ density }),
       setFontSize: (fontSize) => set({ fontSize }),
+      setColorScheme: (colorScheme) => set({ colorScheme }),
       setShowImages: (showImages) => set({ showImages }),
       setShowPredictions: (showPredictions) => set({ showPredictions }),
       setArticleWidth: (articleWidth) => set({ articleWidth }),
@@ -52,7 +57,7 @@ export const useViewStore = create<ViewSettingsState>()(
       resetToDefaults: () => set(defaultState),
     }),
     {
-      name: 'maverlang-view-settings', 
+      name: 'maverlang-view-settings',
     }
   )
 );

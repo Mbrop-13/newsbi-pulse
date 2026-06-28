@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
-import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useWebBuilderStore, djb2Hash } from "@/lib/stores/webbuilder-store";
 import { useAIChatStore } from "@/lib/stores/ai-chat-store";
 import { SandpackConsole, SandpackProvider, SandpackCodeEditor, useSandpack } from "@codesandbox/sandpack-react";
 import { useTheme } from "next-themes";
@@ -9,10 +9,12 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { SandpackPreviewWrapper } from "./sandpack-preview-wrapper";
 import { parseArtifact } from "@/lib/webbuilder-parser";
+import { detectDependencies } from "@/lib/webbuilder-deps";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+import { DiffViewerDialog } from "./diff-viewer";
 import {
   Monitor,
   Code2,
@@ -27,6 +29,7 @@ import {
   FolderOpen,
   Folder,
   Copy,
+  GitCompare,
   Check,
   Cloud,
   Loader2,
@@ -40,6 +43,7 @@ import {
   Cpu,
   CheckCircle2,
   XCircle,
+  X,
   Lock,
   ClipboardList,
   Sparkles,
@@ -158,10 +162,17 @@ function injectInspectorScript(html: string): string {
 // ─── Preview Iframe Selector Helper ───────────────
 function getPreviewIframe(): HTMLIFrameElement | null {
   if (typeof document === "undefined") return null;
-  return document.querySelector("iframe.sp-preview-iframe") || 
-         document.querySelector(".sp-preview iframe") ||
-         document.querySelector("iframe[src*=\"codesandbox\"]") ||
-         document.querySelector("iframe");
+  // Selectores específicos de Sandpack. Antes el último fallback era
+  // document.querySelector("iframe"), que podía capturar CUALQUIER iframe de la
+  // página (ads, embeds, auth) e inyectar el inspector en el frame equivocado.
+  // Ahora devolvemos null si no hay match claro.
+  return (
+    document.querySelector("iframe.sp-preview-iframe") ||
+    document.querySelector(".sp-preview iframe") ||
+    document.querySelector("iframe[src*='codesandbox']") ||
+    document.querySelector("iframe[title='Sandpack Preview']") ||
+    null
+  );
 }
 
 // ─── File Icon Resolver ────────────────────────────
@@ -276,9 +287,12 @@ function FileTree() {
 
 // ─── Code Viewer ─────────────────────────────────────
 function CodeViewer() {
-  const { files, activeFilePath } = useWebBuilderStore();
+  const { files, activeFilePath, setActiveFile, openTabs, closeTab } = useWebBuilderStore();
   const [copied, setCopied] = useState(false);
   const file = files[activeFilePath];
+  // Ref al contenedor del editor para localizar el CodeMirror interno y poder
+  // hacer scroll programático a una línea concreta (goto-line desde errores).
+  const editorContainerRef = useRef<HTMLDivElement>(null);
 
   const handleCopy = () => {
     if (!file) return;
@@ -286,6 +300,67 @@ function CodeViewer() {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  // Lleva el editor a una línea concreta. SandpackCodeEditor no expone API
+  // pública para esto, pero internamente usa CodeMirror 6, que monta la vista
+  // en un elemento .cm-editor y la deja accesible vía el.cmView.view.
+  // Hacemos dispatch de una selección en esa posición con scrollIntoView: true
+  // (CodeMirror 6 soporta este campo en el TransactionSpec), que centra la línea.
+  const scrollToLine = useCallback((line: number) => {
+    const container = editorContainerRef.current;
+    if (!container || line <= 0) return;
+
+    const cmEl = container.querySelector(".cm-editor") as (HTMLElement & {
+      cmView?: { view?: any };
+}) | null;
+    const view = cmEl?.cmView?.view;
+    if (!view) return;
+
+    const doc = view.state.doc;
+    const targetLine = Math.min(Math.max(line, 1), doc.lines);
+    const pos = doc.line(targetLine).from;
+    view.dispatch({
+      selection: { anchor: pos },
+      scrollIntoView: true,
+      userEvent: "select.goto",
+    });
+    // Foco visual sutil para que el usuario note el salto.
+    view.focus();
+  }, []);
+
+  // Escuchar eventos "saltar a línea" lanzados por BuildErrorView/jumpToError.
+  // El editor puede no estar listo justo al cambiar de tab/archivo, así que
+  // reintentamos unas cuantas veces con un pequeño delay hasta encontrar .cm-editor.
+  useEffect(() => {
+    let cancelled = false;
+    let attempt = 0;
+
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { line: number };
+      if (!detail?.line) return;
+
+      const tryScroll = () => {
+        if (cancelled) return;
+        const container = editorContainerRef.current;
+        const cmEl = container?.querySelector(".cm-editor");
+        if (cmEl && (cmEl as any).cmView?.view) {
+          scrollToLine(detail.line);
+        } else if (attempt < 12) {
+          attempt++;
+          setTimeout(tryScroll, 60);
+        }
+      };
+      attempt = 0;
+      // Empezar en el siguiente frame para que el cambio de tab/archivo renderice.
+      requestAnimationFrame(tryScroll);
+    };
+
+    window.addEventListener("maverlang-goto-line", handler);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("maverlang-goto-line", handler);
+    };
+  }, [scrollToLine]);
 
   if (!file) {
     return (
@@ -295,19 +370,48 @@ function CodeViewer() {
     );
   }
 
+  // Tabs visibles = openTabs filtrado a los que existen en files (por si se
+  // borró un archivo que estaba abierto). Si no hay ninguna abierta, mostramos
+  // la activa como tab única.
+  const visibleTabs = openTabs.filter((p) => files[p]);
+  const tabsToShow = visibleTabs.length > 0 ? visibleTabs : [activeFilePath];
+
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-background">
-      {/* File Tab */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/40 shrink-0">
-        <div className="flex items-center gap-2">
-          {getFileIcon(activeFilePath)}
-          <span className="text-[11px] font-bold text-foreground">
-            {activeFilePath}
-          </span>
-        </div>
+      {/* Open Tabs Bar (estilo editor: una tab por archivo abierto, con X) */}
+      <div className="flex items-center gap-0.5 px-2 pt-1.5 border-b border-border bg-muted/30 shrink-0 overflow-x-auto hidden-scrollbar">
+        {tabsToShow.map((path) => {
+          const isActive = path === activeFilePath;
+          return (
+            <div
+              key={path}
+              className={cn(
+                "group flex items-center gap-1.5 pl-2.5 pr-1.5 py-1.5 rounded-t-lg text-[10px] font-bold cursor-pointer border-t border-x border-transparent transition-all whitespace-nowrap",
+                isActive
+                  ? "bg-background text-foreground border-border"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+              )}
+              onClick={() => setActiveFile(path)}
+            >
+              {getFileIcon(path)}
+              <span>{path.split("/").pop()}</span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  closeTab(path);
+                }}
+                className="ml-1 p-0.5 rounded hover:bg-muted text-muted-foreground/60 hover:text-foreground opacity-0 group-hover:opacity-100 transition-all"
+                title="Cerrar pestaña"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          );
+        })}
+        {/* Botón copiar al final de la barra de tabs */}
         <button
           onClick={handleCopy}
-          className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+          className="ml-auto p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0"
           title="Copiar código"
         >
           {copied ? (
@@ -319,7 +423,7 @@ function CodeViewer() {
       </div>
 
       {/* Code Content */}
-      <div className="flex-1 relative h-full min-h-0 bg-background text-foreground">
+      <div ref={editorContainerRef} className="flex-1 relative h-full min-h-0 bg-background text-foreground">
         <SandpackCodeEditor
           showLineNumbers={true}
           showTabs={false}
@@ -451,20 +555,183 @@ function SandpackSyncListener() {
   const { sandpack } = useSandpack();
   const { updateFile, files } = useWebBuilderStore();
 
+  // Ventana de supresión: cuando SandpackStoreSync empuja código al bundler,
+  // emite "maverlang-suppress-sync" con un timestamp hasta el cual debemos
+  // IGNORAR las diferencias sandpack.files vs store (son el código que acabamos
+  // de inyectar nosotros, no una edición del usuario). Sin esto, el listener
+  // re-empujaría ese código al store, disparando otro ciclo store→Sandpack.
+  const suppressUntilRef = useRef(0);
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { until: number };
+      if (detail?.until) suppressUntilRef.current = detail.until;
+    };
+    window.addEventListener("maverlang-suppress-sync", handler);
+    return () => window.removeEventListener("maverlang-suppress-sync", handler);
+  }, []);
+
   useEffect(() => {
     const activeFile = sandpack.activeFile;
     if (!activeFile) return;
+
+    // Anti-ping-pong: si estamos dentro de la ventana de supresión tras un
+    // empuje del store→Sandpack, no reescribimos el store.
+    if (Date.now() < suppressUntilRef.current) return;
 
     const currentCode = sandpack.files[activeFile]?.code;
     const storeCode = files[activeFile]?.code;
 
     if (currentCode !== undefined && storeCode !== currentCode) {
       const timeout = setTimeout(() => {
+        // Doble check dentro del timeout: la supresión pudo activarse tras
+        // programar el timeout.
+        if (Date.now() < suppressUntilRef.current) return;
         updateFile(activeFile, currentCode);
       }, 800);
       return () => clearTimeout(timeout);
     }
   }, [sandpack.files, sandpack.activeFile, files, updateFile]);
+
+  return null;
+}
+
+/**
+ * Refleja el estado real del bundler de Sandpack en el store (isCompiling).
+ *
+ * Antes isCompiling vivía siempre en false porque NADA lo actualizaba, así que
+ * el skeleton "Compilando interfaz..." casi nunca aparecía cuando debería.
+ * Sandpack expone `sandpack.status`: 'initial' | 'idle' | 'running' | 'done'.
+ * Mapeamos 'running'/'initial' -> isCompiling true, el resto -> false.
+ */
+function SandpackStatusListener() {
+  const { sandpack } = useSandpack();
+  const setCompiling = useWebBuilderStore((s) => s.setCompiling);
+  const status = sandpack.status;
+
+  useEffect(() => {
+    const compiling = status === "running" || status === "initial";
+    // Solo actualizamos si cambia, para evitar renders innecesarios.
+    if (useWebBuilderStore.getState().isCompiling !== compiling) {
+      setCompiling(compiling);
+    }
+  }, [status, setCompiling]);
+
+  return null;
+}
+
+/**
+ * Sincronización STORE -> Sandpack INCREMENTAL (reemplaza el remontaje del
+ * provider en cada fin de respuesta de la IA).
+ *
+ * Antes, cada vez que la IA terminaba (isAiResponding: true->false) se
+ * incrementaba `buildVersion` y se REMONTABA todo el <SandpackProvider>. Eso:
+ *   - pierde el estado de runtime de la preview (estado de React, scroll, etc.)
+ *   - re-descarga el bundler de Sandpack
+ *   - causa un flash visible
+ *
+ * Ahora este componente empuja solo los archivos que cambiaron vía
+ * `sandpack.updateFile()` + un único `sandpack.refresh()` al final.
+ *
+ * GUARD ANTI-BUCLE (React #185): el bug original ocurría porque el effect
+ * dependía de `sandpack.files` (objeto que cambia de referencia tras cada
+ * updateFile) y comparaba storeCode !== sandpackCode, que nunca convergía por
+ * la asincronía de updateFile -> "Maximum update depth exceeded".
+ *
+ * Aquí NO dependemos de `sandpack.files`. El effect depende SOLO de
+ * `stableFiles` (strings estables) y de un ref local `appliedRef` que registra
+ * path->code ya empujado. Solo empujamos cuando stableFiles[path] difiere del
+ * ref local. Tras empujar, actualizamos el ref -> el effect converge en 1 paso.
+ *
+ * Edición del usuario en Sandpack: SandpackSyncListener la empuja al store,
+ * stableFiles se actualiza, y este componente re-empuja el mismo código a
+ * Sandpack. updateFile con código idéntico es un no-op para el bundler (no
+ * recompila), así que converge sin flash ni bucle.
+ */
+function SandpackStoreSync({ stableFiles }: { stableFiles: Record<string, { code: string }> }) {
+  const { sandpack } = useSandpack();
+  // Ref local: path -> code que ya empujamos a Sandpack. NO se incluye en el
+  // array de deps del effect (es un ref). Es la clave del anti-bucle.
+  const appliedRef = useRef<Map<string, string>>(new Map());
+
+  // Guard anti-ping-pong: cuando el usuario edita en Sandpack, SandpackSyncListener
+  // empuja ese código al store, lo que dispara este effect y re-empujaría el mismo
+  // código de vuelta a Sandpack. Como el código es idéntico, appliedRef ya lo
+  // tendría registrado y el bloque de "empujar" no haría nada... PERO el
+  // SandpackSyncListener usa updateFile del STORE, que cambia la ref de files y
+  // re-deriva stableFiles, y si el usuario editó caracteres, el código sí difiere.
+  // En ese caso re-empujar es CORRECTO (es la edición del usuario, ya en el store).
+  // El riesgo de ping-pong real es: store→Sandpack → SandpackSyncListener ve
+  // sandpack.files[path] !== store[path] y lo empuja al store → effect re-empuja.
+  // Para cortarlo, marcamos `suppressUntilRef` justo tras empujar: durante esa
+  // ventana, SandpackSyncListener NO debe escribir al store. Lo coordinamos vía
+  // un evento global "maverlang-suppress-sync" que ese listener escucha.
+  const suppressUntilRef = useRef<number>(0);
+
+  useEffect(() => {
+    const applied = appliedRef.current;
+    let hasChanges = false;
+    const pushedPaths: string[] = [];
+
+    // 1. Empujar archivos nuevos/modificados.
+    for (const [path, file] of Object.entries(stableFiles)) {
+      const code = file?.code ?? "";
+      if (applied.get(path) !== code) {
+        // updateFile puede lanzar si el path no es válido; lo protegemos.
+        try {
+          sandpack.updateFile(path, code);
+        } catch (e) {
+          // eslint-disable-next-line no-console
+          console.warn("[SandpackStoreSync] updateFile failed for", path, e);
+        }
+        applied.set(path, code);
+        hasChanges = true;
+        pushedPaths.push(path);
+      }
+    }
+
+    // 2. Eliminar archivos que ya no están en el store.
+    for (const path of Array.from(applied.keys())) {
+      if (!(path in stableFiles)) {
+        try {
+          // Sandpack no expone deleteFile público estable; marcar como vacío
+          // es más seguro que intentar eliminar (puede romper el bundler).
+          sandpack.updateFile(path, "");
+        } catch (e) {
+          /* noop */
+        }
+        applied.delete(path);
+        hasChanges = true;
+        pushedPaths.push(path);
+      }
+    }
+
+    // 3. Un único refresh al final si hubo cambios (no por archivo).
+    //    Sandpack no expone `refresh()` directamente; se dispara vía dispatch.
+    if (hasChanges) {
+      // Suprimir el SandpackSyncListener durante ~400ms tras empujar, para que
+      // no re-empuje de Sandpack→store el mismo código que acabamos de inyectar
+      // (ping-pong). 400ms cubre la propagación async de updateFile/refresh.
+      suppressUntilRef.current = Date.now() + 400;
+      window.dispatchEvent(
+        new CustomEvent("maverlang-suppress-sync", {
+          detail: { until: suppressUntilRef.current, paths: pushedPaths },
+        })
+      );
+      try {
+        // API moderna: dispatch con tipo "refresh" fuerza recompilación.
+        const sp = sandpack as any;
+        if (typeof sp.refresh === "function") {
+          sp.refresh();
+        } else if (typeof sp.dispatch === "function") {
+          sp.dispatch({ type: "refresh" });
+        }
+      } catch (e) {
+        /* noop */
+      }
+    }
+    // Intencionalmente NO incluimos sandpack en deps (su ref es inestable).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stableFiles]);
 
   return null;
 }
@@ -643,6 +910,67 @@ function PlanView({ plan }: { plan: NonNullable<ReturnType<typeof useWebBuilderS
 
 function BuildErrorView({ error }: { error: string }) {
   const resetAutoFixAttempts = useWebBuilderStore((s) => s.resetAutoFixAttempts);
+  const setSelectedTab = useWebBuilderStore((s) => s.setSelectedTab);
+  const setActiveFile = useWebBuilderStore((s) => s.setActiveFile);
+
+  // Extrae {path, line} del log de error. Cubre formatos comunes de bundlers:
+  //   "/App.tsx:5:10"        -> { path: "/App.tsx", line: 5 }
+  //   "App.tsx line 5"       -> { path: "/App.tsx", line: 5 }
+  //   "./src/App.tsx(5,10)"  -> { path: "/App.tsx", line: 5 }
+  //   "/App.tsx:5"           -> { path: "/App.tsx", line: 5 }
+  function extractErrorLocation(log: string): { path: string; line: number } | null {
+    const match = log.match(/\(?\.?\/?([\w\-./]*\.(?:tsx|ts|jsx|js|css|json))(?::(\d+)(?::\d+)?|[(,](\d+)|\s+line\s+(\d+))/i);
+    if (!match) {
+      // Sin número de línea: al menos intentamos devolver el archivo.
+      const fm = log.match(/\(?\/?([\w\-./]*\.(?:tsx|ts|jsx|js|css|json))\b/);
+      if (!fm) return null;
+      let p = fm[1];
+      if (!p.startsWith("/")) p = "/" + p;
+      p = p.replace(/^\/src\//, "/");
+      return { path: p, line: 0 };
+    }
+    let p = match[1];
+    if (!p.startsWith("/")) p = "/" + p;
+    p = p.replace(/^\/src\//, "/");
+    const line = parseInt(match[2] ?? match[3] ?? match[4] ?? "0", 10) || 0;
+    return { path: p, line };
+  }
+
+  // Abre el editor en el archivo/línea del error (si lo detecta).
+  const jumpToError = () => {
+    const loc = extractErrorLocation(error);
+    const { files } = useWebBuilderStore.getState();
+    const target =
+      (loc && files[loc.path] && loc.path) ||
+      Object.keys(files).find((k) => k.endsWith("/App.tsx")) ||
+      Object.keys(files)[0];
+    if (target) {
+      setActiveFile(target);
+      // Emitir evento para que CodeViewer/Sandpack intente posicionar la línea.
+      if (loc && loc.line > 0) {
+        window.dispatchEvent(
+          new CustomEvent("maverlang-goto-line", { detail: { line: loc.line } })
+        );
+      }
+    }
+    setSelectedTab("code");
+    resetAutoFixAttempts();
+  };
+
+  // Reintentar de verdad: limpia el flag Y fuerza un remontaje del SandpackProvider
+  // (buildVersion++) para que recompile desde cero. resetAutoFixAttempts() solo
+  // borraba el flag y dejaba el preview congelado en la pantalla de error.
+  const handleRetry = () => {
+    resetAutoFixAttempts();
+    // Forzar recompilación completa subiendo buildVersion (remount del provider).
+    // Usamos CustomEvent (API moderna) en vez de document.createEvent, que está
+    // deprecado. PreviewPanel escucha este evento y sube buildVersion.
+    window.dispatchEvent(new CustomEvent("maverlang-retry-build"));
+  };
+
+  const handleOpenInEditor = () => {
+    jumpToError();
+  };
 
   return (
     <div className="flex-grow flex flex-col items-center justify-center min-h-0 w-full h-full relative overflow-auto p-6 bg-slate-955 text-white select-none">
@@ -674,15 +1002,36 @@ function BuildErrorView({ error }: { error: string }) {
           <pre className="whitespace-pre-wrap text-gray-300 break-words max-h-40 overflow-y-auto hidden-scrollbar">{error}</pre>
         </div>
 
+        {/* Atajo: saltar al archivo/línea del error si lo detectamos */}
+        {(() => {
+          const loc = extractErrorLocation(error);
+          if (!loc) return null;
+          return (
+            <button
+              onClick={jumpToError}
+              className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-xs font-bold text-blue-300 transition-all active:scale-98"
+            >
+              <Code2 className="w-3.5 h-3.5" />
+              Abrir <span className="font-mono">{loc.path}</span>
+              {loc.line > 0 && <span className="opacity-70">:{loc.line}</span>} en el editor
+            </button>
+          );
+        })()}
+
         {/* Action buttons */}
         <div className="flex flex-col sm:flex-row gap-3 pt-2">
           <button
-            onClick={() => {
-              resetAutoFixAttempts();
-            }}
+            onClick={handleRetry}
             className="flex-grow py-2.5 px-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-bold text-white transition-all cursor-pointer text-center active:scale-98"
           >
             Reintentar Compilación
+          </button>
+
+          <button
+            onClick={handleOpenInEditor}
+            className="flex-grow py-2.5 px-4 rounded-xl border border-blue-500/20 bg-blue-500/10 hover:bg-blue-500/20 text-xs font-bold text-blue-300 transition-all cursor-pointer text-center active:scale-98"
+          >
+            Abrir en Editor
           </button>
           
           <button
@@ -716,7 +1065,8 @@ export function PreviewPanel() {
     isAiResponding,
     activeAgentReports,
     pendingPlan,
-    lastAutoFixError
+    lastAutoFixError,
+    lastBuildDiff,
   } = useWebBuilderStore();
   const chatLoading = useAIChatStore((s) => s.isLoading);
   const currentChatId = useAIChatStore((s) => s.currentChatId);
@@ -725,6 +1075,22 @@ export function PreviewPanel() {
   const [viewport, setViewport] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const [isInspectorActive, setIsInspectorActive] = useState(false);
   const [iframeKey, setIframeKey] = useState(0);
+  const [isDiffOpen, setIsDiffOpen] = useState(false);
+
+  // Cache de HTML con inspector ya inyectado, key = hash del HTML original.
+  // Evita reconstruir el script del inspector (string building costoso) cuando
+  // el HTML no cambió entre renders. El reset del cache va en un effect más
+  // abajo (depende de buildVersion, que se declara después).
+  const inspectorCacheRef = useRef<Map<string, string>>(new Map());
+
+  // Tick cada 15s para refrescar el texto relativo del indicador de guardado
+  // ("Guardado hace 12s"). Sin esto, el texto se quedaría estático hasta el
+  // siguiente render por otras causas.
+  const [, setSaveTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setSaveTick((t) => t + 1), 15000);
+    return () => clearInterval(id);
+  }, []);
 
   // stableFiles: snapshot de archivos que solo cambia cuando la IA NO está
   // respondiendo, para evitar recompilaciones en cada token del stream.
@@ -737,28 +1103,33 @@ export function PreviewPanel() {
     }
   }, [files, isAiResponding]);
 
-  // buildVersion: incrementa SOLO cuando la IA termina de responder
-  // (isAiResponding: true -> false). Se usa como `key` del <SandpackProvider>
-  // para forzar su remontaje y que relea la prop `files` fresca (ver comentario
-  // de la sección de sincronización STORE -> Sandpack más arriba). Sin esto,
-  // Sandpack ignora los archivos nuevos y el preview se queda en la pantalla
-  // predefinida; con el sync manual anterior provocaba un loop infinito (React #185).
-  const [buildVersion, setBuildVersion] = useState(0);
-  const prevIsAiRespondingRef = useRef(false);
-  useEffect(() => {
-    const wasResponding = prevIsAiRespondingRef.current;
-    prevIsAiRespondingRef.current = isAiResponding;
-    if (wasResponding && !isAiResponding) {
-      setBuildVersion((v) => v + 1);
-    }
-  }, [isAiResponding]);
-
   // handleRefresh: con Sandpack, forzar una recompilación del bundler.
   // El iframe del preview se recarga limpio para resetear el estado en memoria.
   const handleRefresh = async () => {
     setIframeKey((prev) => prev + 1);
     toast.success("Vista previa recargada");
   };
+
+  // Escuchar peticiones de "reintentar compilación" lanzadas desde BuildErrorView.
+  // Subir buildVersion fuerza el remontaje del SandpackProvider y recompila desde
+  // cero; resetAutoFixAttempts() solo limpiaba el flag y dejaba el preview muerto.
+  useEffect(() => {
+    const retryHandler = () => setBuildVersion((v) => v + 1);
+    const refreshHandler = async () => {
+      setIframeKey((prev) => prev + 1);
+      toast.success("Vista previa recargada");
+    };
+    const diffHandler = () => setIsDiffOpen(true);
+
+    window.addEventListener("maverlang-retry-build", retryHandler);
+    window.addEventListener("maverlang-refresh-preview", refreshHandler);
+    window.addEventListener("maverlang-open-diff", diffHandler);
+    return () => {
+      window.removeEventListener("maverlang-retry-build", retryHandler);
+      window.removeEventListener("maverlang-refresh-preview", refreshHandler);
+      window.removeEventListener("maverlang-open-diff", diffHandler);
+    };
+  }, []);
 
   // Determine if this is a React/TS project or plain HTML
   const hasReact = useMemo(() => {
@@ -812,15 +1183,65 @@ export function PreviewPanel() {
 </html>`;
     }
 
-    // Inject Inspector Script for all HTML files
+    // Inject Inspector Script for all HTML files — cacheado por hash para no
+    // regenerar el script (string building costoso) cuando el HTML no cambió.
     for (const path of Object.keys(result)) {
       if (path.endsWith(".html")) {
-        result[path] = injectInspectorScript(result[path]);
+        const original = result[path];
+        const key = djb2Hash(original);
+        const cached = inspectorCacheRef.current.get(key);
+        result[path] = cached ?? injectInspectorScript(original);
+        if (!cached) inspectorCacheRef.current.set(key, result[path]);
       }
     }
 
     return result;
   }, [stableFiles, hasReact]);
+
+  // Detección automática de dependencias: escanea los imports del proyecto y
+  // construye el mapa de paquetes para Sandpack. Antes estaban hardcodeadas,
+  // así que cualquier lib nueva (axios, zustand, date-fns...) rompía la
+  // compilación con "Module not found" y disparaba auto-fixes inútiles.
+  const detectedDependencies = useMemo(
+    () => detectDependencies(stableFiles),
+    [sandpackFiles]
+  );
+
+  // buildVersion: incrementa SOLO cuando cambian las DEPENDENCIAS detectadas.
+  //
+  // ANTES subía en cada fin de respuesta de la IA (isAiResponding: true->false)
+  // y se usaba como `key` del <SandpackProvider> para forzar remontaje. Eso
+  // perdía estado de runtime, re-descargaba el bundler y causaba flash.
+  //
+  // AHORA el sync de código es incremental vía <SandpackStoreSync>
+  // (updateFile + refresh), así que NO hace falta remontar por cambios de
+  // código. El remontaje SOLO es necesario cuando cambia el `customSetup`
+  // (dependencias), porque Sandpack no permite actualizar deps en caliente.
+  // Por eso comparamos las claves de detectedDependencies y solo subimos
+  // buildVersion cuando el SET de paquetes cambia.
+  const [buildVersion, setBuildVersion] = useState(0);
+  const prevDepsKeyRef = useRef("");
+  useEffect(() => {
+    const depsKey = Object.keys(detectedDependencies).sort().join(",");
+    if (prevDepsKeyRef.current && prevDepsKeyRef.current !== depsKey) {
+      setBuildVersion((v) => v + 1);
+    }
+    prevDepsKeyRef.current = depsKey;
+  }, [detectedDependencies]);
+
+  // Reset del cache de inyección del inspector cuando el provider se remonta
+  // (buildVersion cambia), porque el HTML se regenera desde cero.
+  useEffect(() => {
+    inspectorCacheRef.current = new Map();
+  }, [buildVersion]);
+
+  // Cuando el provider o el iframe se recrean (buildVersion/iframeKey cambian),
+  // el script del inspector dentro del iframe se reinicia desactivado. Para que
+  // la UI no quede desincronizada (botón activo pero inspector apagado),
+  // forzamos isInspectorActive=false. Si el usuario lo quiere, lo reactiva.
+  useEffect(() => {
+    setIsInspectorActive(false);
+  }, [buildVersion, iframeKey]);
 
   // Sync inspector state with the preview iframe
   useEffect(() => {
@@ -862,15 +1283,27 @@ export function PreviewPanel() {
     { id: "preview" as const, label: "Preview", description: "Vista previa interactiva", icon: Monitor },
     { id: "files" as const, label: "Files", description: "Explorador de archivos", icon: FolderOpen },
     { id: "code" as const, label: "Code", description: "Editor de código fuente", icon: Code2 },
+    { id: "console" as const, label: "Console", description: "Consola de runtime (logs y errores)", icon: Terminal },
   ];
 
   const hasFiles = Object.keys(files).length > 0;
+
+  // Texto relativo de guardado para el indicador de la toolbar.
+  // lastSavedAt guarda "HH:MM:SS" (string de toLocaleTimeString); lo mostramos
+  // tal cual porque calcular "hace X" desde un string de hora es frágil al
+  // cruzar medianoche. En su lugar mostramos el estado claro: guardando /
+  // guardado / error.
+  const saveStatusLabel = isSaving
+    ? "Guardando…"
+    : lastSavedAt
+      ? `Guardado a las ${lastSavedAt}`
+      : null;
 
   return (
     <TooltipProvider>
       <div className="flex flex-col h-full bg-background text-foreground">
         {/* Tab Bar */}
-        <div className="flex items-center justify-between px-4 py-2.5 bg-background shrink-0">
+        <div className="flex items-center justify-between gap-2 px-2 sm:px-4 py-2.5 bg-background shrink-0 overflow-x-auto hidden-scrollbar">
           
           {/* Left: Tab selection */}
           <div className="flex items-center gap-1.5">
@@ -902,7 +1335,7 @@ export function PreviewPanel() {
 
         {/* Center: Viewport & History Controls (Only show if Preview or Code is active) */}
         {(selectedTab === "preview" || selectedTab === "code") && (
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             {/* History */}
             <div className="flex items-center gap-1 bg-muted/30 rounded-lg p-1 border border-border/30">
               <Tooltip>
@@ -935,6 +1368,26 @@ export function PreviewPanel() {
                 </TooltipContent>
               </Tooltip>
             </div>
+
+            {/* Diff Viewer — ver qué cambió en la última generación de la IA */}
+            {lastBuildDiff.length > 0 && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setIsDiffOpen(true)}
+                    className="flex items-center gap-1.5 px-2.5 h-7 bg-muted/30 hover:bg-muted rounded-lg border border-border/30 text-muted-foreground hover:text-foreground transition-all active:scale-95 relative"
+                  >
+                    <GitCompare className="w-3.5 h-3.5" />
+                    <span className="text-[10px] font-bold">{lastBuildDiff.length}</span>
+                    {/* Punto pulsante para llamar la atención sobre cambios nuevos */}
+                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full animate-pulse" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent hideArrow side="bottom" sideOffset={6} className="text-xs bg-popover text-popover-foreground border border-border px-2.5 py-1.5 rounded-xl shadow-lg font-semibold">
+                  Ver cambios ({lastBuildDiff.length} archivo{lastBuildDiff.length > 1 ? "s" : ""})
+                </TooltipContent>
+              </Tooltip>
+            )}
 
             {/* Viewport (Only in Preview) */}
             {selectedTab === "preview" && (
@@ -983,9 +1436,9 @@ export function PreviewPanel() {
               </div>
             )}
 
-            {/* Inspector Toggle (Only in Preview) */}
+            {/* Inspector Toggle (Only in Preview) — oculto en móvil, es avanzado y poco usable en touch */}
             {selectedTab === "preview" && (
-              <div className="flex items-center bg-muted/30 rounded-lg p-1 border border-border/30">
+              <div className="hidden sm:flex items-center bg-muted/30 rounded-lg p-1 border border-border/30">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
@@ -1010,7 +1463,7 @@ export function PreviewPanel() {
         )}
 
         {/* Right: Actions */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
           {/* Refresh button */}
           <Tooltip>
             <TooltipTrigger asChild>
@@ -1037,10 +1490,10 @@ export function PreviewPanel() {
                   navigator.clipboard.writeText(shareUrl);
                   toast.success("Enlace de compartición copiado al portapapeles!");
                 }}
-                className="flex items-center gap-1.5 px-4 h-8 bg-secondary hover:bg-secondary/85 text-secondary-foreground rounded-full text-xs font-bold active:scale-95 transition-all duration-200"
+                className="flex items-center gap-1.5 px-2.5 sm:px-4 h-8 bg-secondary hover:bg-secondary/85 text-secondary-foreground rounded-full text-xs font-bold active:scale-95 transition-all duration-200"
               >
                 <Share2 className="w-3.5 h-3.5" />
-                Compartir
+                <span className="hidden sm:inline">Compartir</span>
               </button>
             </TooltipTrigger>
             <TooltipContent hideArrow side="bottom" sideOffset={6} className="text-xs bg-popover text-popover-foreground border border-border px-2.5 py-1.5 rounded-xl shadow-lg font-semibold">
@@ -1048,12 +1501,25 @@ export function PreviewPanel() {
             </TooltipContent>
           </Tooltip>
 
-          {/* Publish button */}
+          {/* Save status indicator — muestra el estado real del guardado en nube.
+              Antes lastSavedAt existía en el store pero no se mostraba en la UI. */}
+          {cloudSyncEnabled && saveStatusLabel && (
+            <div className="flex items-center gap-1.5 px-2 h-8 text-[10px] font-bold text-muted-foreground select-none">
+              {isSaving ? (
+                <Loader2 className="w-3 h-3 animate-spin text-primary" />
+              ) : (
+                <CheckCircle2 className="w-3 h-3 text-green-500/70" />
+              )}
+              <span className="hidden sm:inline">{saveStatusLabel}</span>
+            </div>
+          )}
+
+          {/* Publish button — oculto en móvil (no funcional y ocupa espacio valioso) */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <button 
+              <button
                 disabled
-                className="flex items-center gap-1.5 px-4 h-8 bg-muted text-muted-foreground rounded-full text-xs font-bold cursor-not-allowed opacity-50"
+                className="hidden sm:flex items-center gap-1.5 px-4 h-8 bg-muted text-muted-foreground rounded-full text-xs font-bold cursor-not-allowed opacity-50"
               >
                 Publicar
               </button>
@@ -1090,14 +1556,15 @@ export function PreviewPanel() {
                   }
                 }}
                 disabled={isSaving}
-                className="flex items-center justify-center gap-1.5 px-4 h-8 bg-foreground text-background hover:opacity-90 rounded-full text-xs font-bold active:scale-95 transition-all disabled:opacity-50 min-w-[185px]"
+                className="flex items-center justify-center gap-1.5 px-3 sm:px-4 h-8 bg-foreground text-background hover:opacity-90 rounded-full text-xs font-bold active:scale-95 transition-all disabled:opacity-50 sm:min-w-[185px]"
               >
                 {isSaving ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 ) : (
                   <Download className="w-3.5 h-3.5" />
                 )}
-                <span>{isSaving ? "Guardando..." : "Guardar y Descargar"}</span>
+                <span className="sm:hidden">{isSaving ? "Guardando" : "Guardar"}</span>
+                <span className="hidden sm:inline">{isSaving ? "Guardando..." : "Guardar y Descargar"}</span>
               </button>
             </TooltipTrigger>
             <TooltipContent hideArrow side="bottom" sideOffset={6} className="text-xs bg-popover text-popover-foreground border border-border px-2.5 py-1.5 rounded-xl shadow-lg font-semibold">
@@ -1123,17 +1590,7 @@ export function PreviewPanel() {
               borderRadius: 0,
             }}
             customSetup={{
-              dependencies: {
-                "lucide-react": "latest",
-                "recharts": "latest",
-                "framer-motion": "latest",
-                "react-icons": "latest",
-                "react-router-dom": "latest",
-                "clsx": "latest",
-                "tailwind-merge": "latest",
-                "canvas-confetti": "latest",
-                "@types/canvas-confetti": "latest",
-              },
+              dependencies: detectedDependencies,
             }}
             options={{
               activeFile: activeFilePath,
@@ -1145,11 +1602,15 @@ export function PreviewPanel() {
             }}
           >
             <SandpackSyncListener />
+            <SandpackStatusListener />
+            <SandpackStoreSync stableFiles={stableFiles} />
             {/* Code Editor Tab */}
             {selectedTab === "code" && (
               <div className="flex-grow flex min-h-0 w-full">
-                {/* File Explorer Sidebar */}
-                <div className="w-48 bg-muted/5 overflow-y-auto hidden-scrollbar shrink-0 border-r border-border">
+                {/* File Explorer Sidebar — oculto en pantallas muy estrechas para
+                    dar todo el ancho al editor; el usuario navega archivos desde
+                    la pestaña Files o Cmd+P. */}
+                <div className="hidden sm:block w-48 bg-muted/5 overflow-y-auto hidden-scrollbar shrink-0 border-r border-border">
                   <div className="px-3 py-2 border-b border-border">
                     <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
                       Archivos
@@ -1164,13 +1625,33 @@ export function PreviewPanel() {
             {/* Files Explorer Tab */}
             {selectedTab === "files" && <FilesPanel />}
 
+            {/* Console Tab — runtime logs del bundler de Sandpack.
+                SandpackConsole debe estar dentro de <SandpackProvider>. */}
+            {selectedTab === "console" && (
+              <div className="flex-grow flex flex-col min-h-0 w-full bg-[#0B1329]">
+                <SandpackConsole
+                  showHeader={false}
+                  showSyntaxError={false}
+                  style={{
+                    height: "100%",
+                    width: "100%",
+                    background: "#0B1329",
+                    border: "none",
+                    fontFamily:
+                      "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                    fontSize: "12px",
+                  }}
+                />
+              </div>
+            )}
+
             {/* Preview Tab */}
             {selectedTab === "preview" && (
               <div className={cn(
                 "flex-grow flex items-center justify-center min-h-0 w-full h-full relative overflow-hidden preview-container-no-scrollbar",
                 viewport === "desktop"
                   ? "bg-transparent p-0"
-                  : "bg-slate-50 dark:bg-black p-4 md:p-6"
+                  : "bg-slate-50 dark:bg-black p-3 sm:p-4 md:p-6"
               )}>
                 <style dangerouslySetInnerHTML={{ __html: `
                   .preview-container-no-scrollbar ::-webkit-scrollbar {
@@ -1194,8 +1675,17 @@ export function PreviewPanel() {
                   "flex flex-col bg-white dark:bg-black transition-all duration-300 ease-in-out relative",
                   viewport === "desktop" && "w-full h-full rounded-none max-w-full border-none shadow-none",
                   viewport === "tablet" && "w-full max-w-[768px] aspect-[768/1024] max-h-full shrink-0 rounded-2xl border border-border/40 shadow-xl overflow-hidden [&_*::-webkit-scrollbar]:hidden [&_*]:[scrollbar-width:none] [&_*]:[-ms-overflow-style:none] [&_iframe]:[scrollbar-width:none] [&_iframe::-webkit-scrollbar]:hidden",
-                  viewport === "mobile" && "w-full max-w-[390px] aspect-[390/800] max-h-full shrink-0 rounded-3xl border border-border/40 shadow-xl overflow-hidden [&_*::-webkit-scrollbar]:hidden [&_*]:[scrollbar-width:none] [&_*]:[-ms-overflow-style:none] [&_iframe]:[scrollbar-width:none] [&_iframe::-webkit-scrollbar]:hidden"
+                  // Frame "mobile": en móvil real el dispositivo ya es estrecho,
+                  // así que usamos max-w más generoso y un notch sutil para realismo.
+                  // En desktop mantiene el marco de teléfono claro.
+                  viewport === "mobile" && "w-full max-w-[390px] aspect-[390/800] max-h-full shrink-0 rounded-[2rem] sm:rounded-3xl border border-border/40 shadow-2xl overflow-hidden ring-1 ring-black/5 dark:ring-white/10 [&_*::-webkit-scrollbar]:hidden [&_*]:[scrollbar-width:none] [&_*]:[-ms-overflow-style:none] [&_iframe]:[scrollbar-width:none] [&_iframe::-webkit-scrollbar]:hidden"
                 )}>
+                  {/* Notch sutil (solo en viewport mobile) para realismo de teléfono */}
+                  {viewport === "mobile" && (
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 z-30 w-24 h-5 bg-black rounded-b-2xl pointer-events-none flex items-center justify-center">
+                      <div className="w-10 h-1 bg-white/20 rounded-full" />
+                    </div>
+                  )}
                   {/* Body de la preview */}
                   <div className="flex-grow min-h-0 relative w-full h-full bg-white dark:bg-background">
                     {(isAiResponding || isCompiling || chatLoading) ? (
@@ -1247,6 +1737,9 @@ export function PreviewPanel() {
         )}
       </div>
       </div>
+
+      {/* Diff Viewer Modal */}
+      <DiffViewerDialog open={isDiffOpen} onOpenChange={setIsDiffOpen} />
     </TooltipProvider>
   );
 }

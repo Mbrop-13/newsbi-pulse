@@ -99,10 +99,10 @@ export function BrowserPanel() {
   return (
     <div className="w-full h-full bg-white dark:bg-[#16181A] overflow-hidden flex flex-col relative z-10 font-sans">
       {/* --- CABECERA DEL NAVEGADOR --- */}
-      <div className="bg-gray-50/90 dark:bg-[#0A0A0A]/90 backdrop-blur-sm px-5 py-3 flex items-center gap-5 border-b border-gray-200/60 dark:border-white/10 shrink-0">
-        
-        {/* Controles de Ventana */}
-        <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+      <div className="bg-gray-50/90 dark:bg-[#0A0A0A]/90 backdrop-blur-sm px-3 md:px-5 py-2 md:py-3 flex items-center gap-2 md:gap-5 border-b border-gray-200/60 dark:border-white/10 shrink-0">
+
+        {/* Controles de Ventana (solo desktop) */}
+        <div className="hidden md:flex items-center gap-1 text-gray-500 dark:text-gray-400">
           <button className="p-2 hover:bg-gray-200/70 dark:hover:bg-white/10 rounded-lg transition-all duration-200 active:scale-95 hover:text-gray-700 dark:hover:text-gray-200">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/></svg>
           </button>
@@ -114,45 +114,46 @@ export function BrowserPanel() {
           </button>
         </div>
 
-        {/* Controles de Navegación */}
-        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 pl-2 border-l border-gray-200/60 dark:border-white/10">
-          <button className="p-2 hover:bg-gray-200/70 dark:hover:bg-white/10 rounded-lg transition-all duration-200 active:scale-95">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
+        {/* Controles de Navegación (compactos en móvil) */}
+        <div className="flex items-center gap-0.5 md:gap-2 text-gray-600 dark:text-gray-400 md:pl-2 md:border-l border-gray-200/60 dark:border-white/10 shrink-0">
+          <button className="p-1.5 md:p-2 hover:bg-gray-200/70 dark:hover:bg-white/10 rounded-lg transition-all duration-200 active:scale-95">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-4 h-4 md:w-5 md:h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
           </button>
-          <button className="p-2 hover:bg-gray-200/70 dark:hover:bg-white/10 rounded-lg transition-all duration-200 active:scale-95 text-gray-400 dark:text-gray-600 cursor-not-allowed">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-5 h-5 rotate-180"><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
+          <button className="p-1.5 md:p-2 hover:bg-gray-200/70 dark:hover:bg-white/10 rounded-lg transition-all duration-200 active:scale-95 text-gray-400 dark:text-gray-600 cursor-not-allowed">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-4 h-4 md:w-5 md:h-5 rotate-180"><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
           </button>
-          <button className="p-2 hover:bg-gray-200/70 dark:hover:bg-white/10 rounded-lg transition-all duration-200 active:scale-95">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-4.5 h-4.5"><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+          <button className="p-1.5 md:p-2 hover:bg-gray-200/70 dark:hover:bg-white/10 rounded-lg transition-all duration-200 active:scale-95">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-4 h-4 md:w-4.5 md:h-4.5"><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
           </button>
         </div>
 
         {/* Barra de Direcciones */}
-        <div className="flex-1 max-w-2xl bg-white/80 dark:bg-black/50 rounded-lg flex items-center px-4 py-2 border border-gray-200/80 dark:border-white/10 shadow-sm focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500/50 transition-all duration-200 group">
+        <div className="flex-1 min-w-0 max-w-2xl bg-white/80 dark:bg-black/50 rounded-lg flex items-center px-2.5 md:px-4 py-1.5 md:py-2 border border-gray-200/80 dark:border-white/10 shadow-sm focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500/50 transition-all duration-200 group">
           {/* Icono de Seguridad */}
           {isLoading ? (
-            <Loader2 className="w-4 h-4 text-blue-500 animate-spin mr-3 shrink-0" />
+            <Loader2 className="w-3.5 h-3.5 md:w-4 md:h-4 text-blue-500 animate-spin mr-2 md:mr-3 shrink-0" />
           ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-gray-500 dark:text-gray-400 mr-3 group-focus-within:text-blue-500 transition-colors shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-500 dark:text-gray-400 mr-2 md:mr-3 group-focus-within:text-blue-500 transition-colors shrink-0">
               <path fillRule="evenodd" d="M10 2a4 4 0 00-4 4v1H5a2 2 0 00-2 2v8a2 2 0 002 2h10a2 2 0 002-2v-8a2 2 0 00-2-2h-1V6a4 4 0 00-4-4zm-2 5V6a2 2 0 114 0v1H8zm2 6a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
             </svg>
           )}
-          
-          <input 
-            type="text" 
-            className="bg-transparent border-none text-sm text-gray-700 dark:text-gray-300 flex-1 font-medium focus:outline-none placeholder-gray-400" 
-            value={currentUrl || "Cargando página..."} 
-            readOnly 
+
+          <input
+            type="text"
+            className="bg-transparent border-none text-xs md:text-sm text-gray-700 dark:text-gray-300 flex-1 font-medium focus:outline-none placeholder-gray-400 min-w-0"
+            value={currentUrl || "Cargando página..."}
+            readOnly
           />
-          
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-gray-400 ml-2 cursor-pointer hover:text-gray-600 dark:hover:text-gray-300 transition-colors opacity-0 group-hover:opacity-100 shrink-0">
-            <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
-          </svg>
         </div>
 
-        {/* Iconos de Menú/Extensiones */}
-        <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
-          <button className="p-2 hover:bg-gray-200/70 dark:hover:bg-white/10 rounded-lg transition-all duration-200 active:scale-95">
+        {/* Botón de cerrar en móvil + Iconos de Menú en desktop */}
+        <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400 shrink-0">
+          {/* Cerrar (móvil) */}
+          <button onClick={clearSession} title="Cerrar Navegador" className="md:hidden p-1.5 hover:bg-[#FF5F57]/10 rounded-lg transition-all duration-200 active:scale-95 text-gray-500 dark:text-gray-400 hover:text-[#FF5F57]">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+          {/* Menú (desktop) */}
+          <button className="hidden md:flex p-2 hover:bg-gray-200/70 dark:hover:bg-white/10 rounded-lg transition-all duration-200 active:scale-95">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" /></svg>
           </button>
         </div>
@@ -205,22 +206,22 @@ export function BrowserPanel() {
 
       {/* --- TIMELINE DE PASOS --- */}
       {steps.length > 0 && (
-        <div className="border-t border-gray-200/60 dark:border-white/5 bg-white dark:bg-[#0A0A0A] shrink-0 p-4 flex flex-col select-none max-h-24">
+        <div className="border-t border-gray-200/60 dark:border-white/5 bg-white dark:bg-[#0A0A0A] shrink-0 px-3 md:px-4 py-2.5 md:py-4 flex flex-col select-none max-h-20 md:max-h-24">
           <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-1.5 shrink-0">
-            <Terminal className="w-3.5 h-3.5 text-blue-500" />
-            <span className="text-[10px] uppercase font-bold tracking-wider">Actividad del Navegador</span>
+            <Terminal className="w-3 h-3 md:w-3.5 md:h-3.5 text-blue-500" />
+            <span className="text-[9px] md:text-[10px] uppercase font-bold tracking-wider">Actividad</span>
           </div>
-          
+
           <div className="flex-1 overflow-y-auto pr-1">
-            <div className="flex items-center gap-2 text-xs font-semibold text-gray-700 dark:text-gray-200">
-              <ArrowRight className="w-3.5 h-3.5 text-blue-500 shrink-0 animate-pulse" />
-              <span className="truncate">{currentStep?.description}</span>
+            <div className="flex items-center gap-1.5 md:gap-2 text-[11px] md:text-xs font-semibold text-gray-700 dark:text-gray-200">
+              <ArrowRight className="w-3 h-3 md:w-3.5 md:h-3.5 text-blue-500 shrink-0 animate-pulse" />
+              <span className="truncate flex-1 min-w-0">{currentStep?.description}</span>
               {currentStep?.status === "running" ? (
-                <span className="text-[9px] uppercase font-black text-amber-600 dark:text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded-full">Ejecutando</span>
+                <span className="text-[8px] md:text-[9px] uppercase font-black text-amber-600 dark:text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded-full shrink-0">Ejecutando</span>
               ) : currentStep?.status === "done" ? (
-                <span className="text-[9px] uppercase font-black text-emerald-600 dark:text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded-full">Completado</span>
+                <span className="text-[8px] md:text-[9px] uppercase font-black text-emerald-600 dark:text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded-full shrink-0">Completado</span>
               ) : (
-                <span className="text-[9px] uppercase font-black text-red-600 dark:text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded-full">Error</span>
+                <span className="text-[8px] md:text-[9px] uppercase font-black text-red-600 dark:text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded-full shrink-0">Error</span>
               )}
             </div>
           </div>

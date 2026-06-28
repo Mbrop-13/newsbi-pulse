@@ -72,8 +72,8 @@ export function CanvasWorkspace({ chatPanel }: CanvasWorkspaceProps) {
   if (isMobile) {
     return (
       <div className="flex flex-col h-full w-full relative overflow-hidden">
-        {/* Chat Panel - always active and visible */}
-        <div className="flex-1 min-h-0 relative h-full">
+        {/* Chat Panel - oculto cuando el canvas está abierto para que no se vea detrás */}
+        <div className={cn("flex-1 min-h-0 relative h-full transition-opacity duration-200", isOpen ? "opacity-0 pointer-events-none" : "opacity-100")}>
           {chatPanel}
         </div>
 
@@ -82,24 +82,12 @@ export function CanvasWorkspace({ chatPanel }: CanvasWorkspaceProps) {
           <SheetContent
             side="bottom"
             showCloseButton={false}
-            className="!h-[92dvh] w-full p-0 flex flex-col rounded-t-[1.5rem] overflow-hidden border-t border-border bg-white dark:bg-zinc-950 shadow-2xl z-[60] focus:outline-none"
+            className="!h-[94dvh] w-full p-0 flex flex-col rounded-t-[1.5rem] overflow-hidden border-t border-border bg-white dark:bg-zinc-950 shadow-2xl z-[60] focus:outline-none"
             style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
           >
-            {/* Grab handle + botón cerrar */}
-            <div className="flex items-center gap-3 px-4 pt-3 pb-2 shrink-0 relative">
-              <div className="w-12 h-1.5 rounded-full bg-zinc-300 dark:bg-zinc-850 cursor-pointer shrink-0" />
-              <span className="text-xs font-bold text-muted-foreground/70 truncate flex-1">Canvas</span>
-              <button
-                type="button"
-                onClick={() => useCanvasStore.getState().closeCanvas()}
-                aria-label="Cerrar canvas"
-                className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-850 hover:bg-zinc-200 dark:hover:bg-zinc-800 flex items-center justify-center text-gray-600 dark:text-gray-300 transition-colors cursor-pointer active:scale-95 shrink-0"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
+            {/* Grab handle minimalista (sin header duplicado - el CanvasPanel ya tiene su propio header con botón de cerrar) */}
+            <div className="flex items-center justify-center pt-2.5 pb-1 shrink-0">
+              <div className="w-10 h-1.5 rounded-full bg-zinc-300 dark:bg-zinc-850 cursor-pointer" />
             </div>
 
             {/* Canvas Panel content */}

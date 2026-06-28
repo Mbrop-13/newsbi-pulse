@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
 import { useAIChatStore } from "@/lib/stores/ai-chat-store";
 import { PreviewPanel } from "./preview-panel";
+import { CommandPalette } from "./command-palette";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/ui/sidebar";
 import { Home } from "lucide-react";
@@ -44,36 +45,67 @@ export function WebBuilderWorkspace({ chatPanel }: WebBuilderWorkspaceProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
+  // Ref al contenedor raíz del split view. Antes el resizer calculaba el %
+  // sobre window.innerWidth, lo que es incorrecto cuando el workspace no ocupa
+  // el 100% del viewport (sidebar abierta, padding, móvil). Medir contra el
+  // rect real del contenedor hace que el handle no "salte".
+  const splitContainerRef = useRef<HTMLDivElement>(null);
+
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
+    setIsDragging(true);
+  };
+
+  // Soporte táctil: tablet/2-en-1 no disparan mousemove. Antes el divisor no
+  // se podía arrastrar en esos dispositivos.
+  const handleTouchStart = (e: React.TouchEvent) => {
     setIsDragging(true);
   };
 
   useEffect(() => {
     if (!isDragging) return;
 
-    const handleMouseMove = (e: MouseEvent) => {
-      const containerWidth = window.innerWidth;
-      if (containerWidth === 0) return;
-      
-      let newPercent = (e.clientX / containerWidth) * 100;
-      // Constrain sidebar to between 20% and 50%
-      if (newPercent < 20) newPercent = 20;
-      if (newPercent > 50) newPercent = 50;
-      
-      setChatPercent(newPercent);
+    // Calcula el % del chat relativo al ANCHO REAL del contenedor del split,
+    // no al viewport entero. Devuelve null si no hay contenedor medible.
+    const computePercent = (clientX: number): number | null => {
+      const container = splitContainerRef.current;
+      if (!container) return null;
+      const rect = container.getBoundingClientRect();
+      if (rect.width === 0) return null;
+      let p = ((clientX - rect.left) / rect.width) * 100;
+      if (p < 20) p = 20;
+      if (p > 50) p = 50;
+      return p;
     };
 
-    const handleMouseUp = () => {
+    const handleMouseMove = (e: MouseEvent) => {
+      const p = computePercent(e.clientX);
+      if (p != null) setChatPercent(p);
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 0) return;
+      const p = computePercent(e.touches[0].clientX);
+      if (p != null) {
+        e.preventDefault();
+        setChatPercent(p);
+      }
+    };
+
+    const handleEnd = () => {
       setIsDragging(false);
     };
 
     window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
+    window.addEventListener("mouseup", handleEnd);
+    window.addEventListener("touchmove", handleTouchMove, { passive: false });
+    window.addEventListener("touchend", handleEnd);
 
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener("mouseup", handleEnd);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleEnd);
     };
   }, [isDragging]);
 
@@ -145,7 +177,7 @@ export function WebBuilderWorkspace({ chatPanel }: WebBuilderWorkspaceProps) {
 
   // Desktop: Split view
   return (
-    <div className="flex h-full w-full overflow-hidden bg-background p-2 gap-1">
+    <div ref={splitContainerRef} className="flex h-full w-full overflow-hidden bg-background p-2 gap-1">
       {/* Chat Panel - Left side */}
       <div
         className="h-full flex flex-col relative overflow-hidden bg-transparent shrink-0 rounded-2xl"
@@ -167,10 +199,11 @@ export function WebBuilderWorkspace({ chatPanel }: WebBuilderWorkspaceProps) {
       {isSplitView && (
         <div
           onMouseDown={handleMouseDown}
+          onTouchStart={handleTouchStart}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           className={cn(
-            "w-2 h-full cursor-col-resize z-50 shrink-0 relative transition-colors duration-150 bg-transparent flex items-center justify-center group"
+            "w-2 h-full cursor-col-resize z-50 shrink-0 relative transition-colors duration-150 bg-transparent flex items-center justify-center group touch-none select-none"
           )}
         >
           {/* Inner line indicator (only visible on hover/drag) */}
@@ -189,6 +222,9 @@ export function WebBuilderWorkspace({ chatPanel }: WebBuilderWorkspaceProps) {
           <PreviewPanel />
         </div>
       )}
+
+      {/* Command palette global (Cmd+K acciones / Cmd+P archivos) */}
+      <CommandPalette />
     </div>
   );
 }

@@ -2,6 +2,8 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import type { FileDiff } from "@/lib/webbuilder-diff";
+import { diffFileMaps } from "@/lib/webbuilder-diff";
 
 export interface WebBuilderFile {
   code: string;
@@ -24,7 +26,9 @@ export interface PendingPlan {
 }
 
 /**
- * Normaliza un mapa de archivos a ALWAYS { code: string }.
+ * Normaliza un mapa de archivos a SIEMPRE { code: string }, con saneamiento
+ * extra: rutas con barra inicial, deduplicación (App.tsx vs /App.tsx), descarte
+ * de claves vacías y advertencia si un code queda vacío.
  *
  * Causa raíz de `n.code.split is not a function`: el store recibía archivos
  * desde varias fuentes (stream webbuilder_files, loadFromCloud, updateFile,
@@ -38,7 +42,16 @@ export function normalizeFiles(
   files: Record<string, unknown>
 ): Record<string, WebBuilderFile> {
   const result: Record<string, WebBuilderFile> = {};
-  for (const [path, raw] of Object.entries(files)) {
+  for (const [rawPath, raw] of Object.entries(files)) {
+    // 1. Clave: descartar paths vacíos o solo-whitespace.
+    const trimmedPath = (rawPath ?? "").trim();
+    if (!trimmedPath) continue;
+
+    // 2. Garantizar barra inicial (convención del WebBuilder).
+    let path = trimmedPath.startsWith("/") ? trimmedPath : "/" + trimmedPath;
+    path = path.replace(/^\/src\//, "/");
+
+    // 3. Code: aceptar string | { code } | null | objeto erróneo.
     let code: string;
     if (typeof raw === "string") {
       code = raw;
@@ -50,6 +63,20 @@ export function normalizeFiles(
       // Fallback último: stringify para no perder datos y no crashear.
       code = String(raw);
     }
+
+    // 4. Deduplicación: si ya existe una entrada para este path normalizado,
+    //    preferir la que tenga código no vacío (evita que un /App.tsx vacío
+    //    pise uno con contenido real que vino como "App.tsx").
+    const existing = result[path];
+    if (existing && existing.code && !code) {
+      continue; // mantener el no-vacío
+    }
+
+    // 5. Advertir si el code resulta vacío (síntoma de datos corruptos).
+    if (!code) {
+      console.warn(`[normalizeFiles] Archivo "${path}" quedó con code vacío.`);
+    }
+
     result[path] = { code };
   }
   return result;
@@ -121,6 +148,14 @@ interface WebBuilderStore {
   resetAutoFixAttempts: () => void;
   setAiResponding: (val: boolean) => void;
 
+  // Guardia anti-bucle de auto-fix: hashes de (error + snapshot de archivos)
+  // tras cada fix aplicado. Si tras aplicar un fix el (error + archivos) vuelve
+  // a un estado ya visto, el fix no sirvió y abortamos para no entrar en bucle.
+  appliedFixHashes: string[];
+  recordAppliedFix: (errorHash: string, filesHash: string) => void;
+  isRepeatingFix: (errorHash: string, filesHash: string) => boolean;
+  clearAppliedFixHashes: () => void;
+
   // Active Agent Reports
   activeAgentReports: any[] | null;
   setActiveAgentReports: (reports: any[] | null) => void;
@@ -129,6 +164,20 @@ interface WebBuilderStore {
   pendingPlan: PendingPlan | null;
   setPendingPlan: (plan: PendingPlan | null) => void;
   clearPendingPlan: () => void;
+
+  // ── Build diff (qué cambió en la última generación/actualización de la IA)
+  // Se calcula en setFiles/updateMultipleFiles comparando antes vs después,
+  // y lo consume la toolbar de la preview para mostrar un mini-diff +/−.
+  lastBuildDiff: FileDiff[];
+  clearBuildDiff: () => void;
+
+  // ── Multi-tab de archivos abiertos (estilo editor)
+  // activeFilePath sigue siendo el archivo visible; openTabs son los que el
+  // usuario (o la IA) ha "abierto" en pestañas. Al hacer setActiveFile se añade
+  // automáticamente a openTabs si no estaba.
+  openTabs: string[];
+  openTab: (path: string) => void;
+  closeTab: (path: string) => void;
 
   // Cloud Sync state and actions
   hasPendingSave: boolean;
@@ -199,7 +248,103 @@ function debouncedSync() {
   }, 2000); // 2 second debounce
 }
 
+// ── Cloud sync: helper de upsert + reintentos con backoff exponencial ──
+//
+// syncToCloud puede fallar por errores de red transitorios (Supabase caído,
+// perdida de conexión, 502/503). Antes se logueaba y se abandonaba, perdiendo
+// el guardado. Ahora reintentamos hasta MAX_SYNC_RETRIES veces con backoff
+// exponencial (1s, 2s, 4s). Si aun así falla, dejamos hasPendingSave=true
+// para que el siguiente cambio vuelva a disparar el guardado.
+
+const MAX_SYNC_RETRIES = 3;
+const SYNC_BACKOFF_BASE_MS = 1000;
+
+/** Espera ms milisegundos. Usado para el backoff entre reintentos. */
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Realiza el upsert (UPDATE o INSERT) en Supabase. Lanza si hay un error
+ * grave (de red o de BBDD) para que el caller pueda reintentar.
+ * Devuelve void en éxito.
+ */
+async function performCloudUpsert(
+  projectFiles: Record<string, string>,
+  chatId: string,
+  userId: string
+): Promise<void> {
+  const supabase = createClient();
+
+  // 1. Intentar UPDATE (caso común: el proyecto ya existe).
+  const { error: updateError } = await supabase
+    .from("ai_webbuilder_projects")
+    .update({
+      project_files: projectFiles,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("chat_id", chatId)
+    .eq("user_id", userId);
+
+  if (updateError) {
+    // Re-lanzar como error de red para que el caller reintente.
+    throw new Error(`UPDATE failed: ${updateError.message}`);
+  }
+
+  // 2. Comprobar si el UPDATE afectó alguna fila. Si no, hacer INSERT.
+  const { data: existingList, error: selectError } = await supabase
+    .from("ai_webbuilder_projects")
+    .select("id")
+    .eq("chat_id", chatId)
+    .eq("user_id", userId)
+    .limit(1);
+
+  if (selectError) {
+    throw new Error(`SELECT failed: ${selectError.message}`);
+  }
+
+  const existing = existingList && existingList.length > 0 ? existingList[0] : null;
+
+  if (!existing) {
+    const { error: insertError } = await supabase
+      .from("ai_webbuilder_projects")
+      .insert({
+        chat_id: chatId,
+        user_id: userId,
+        project_files: projectFiles,
+      });
+    if (insertError) {
+      throw new Error(`INSERT failed: ${insertError.message}`);
+    }
+  }
+}
+
 const MAX_HISTORY = 20;
+
+/**
+ * Hash djb2 (no criptográfico) para la guardia anti-bucle de auto-fix.
+ * Suficiente para detectar que (error + archivos) volvió a un estado ya visto.
+ */
+export function djb2Hash(input: string): string {
+  let hash = 5381;
+  for (let i = 0; i < input.length; i++) {
+    hash = ((hash << 5) + hash + input.charCodeAt(i)) | 0;
+  }
+  // unsigned + base36
+  return (hash >>> 0).toString(36);
+}
+
+/** Hashea el contenido de todos los archivos para detectar snapshots repetidos. */
+export function hashFiles(files: Record<string, WebBuilderFile>): string {
+  // Ordenar claves para que el hash sea estable independientemente del orden.
+  const keys = Object.keys(files).sort();
+  let acc = "";
+  for (const k of keys) {
+    acc += k + "\u0000" + (files[k]?.code ?? "") + "\u0001";
+  }
+  return djb2Hash(acc);
+}
+
 function _pushHistory(files: Record<string, WebBuilderFile>) {
   const store = useWebBuilderStore.getState();
   // Truncate any "redo" entries after current index
@@ -239,6 +384,16 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
       lastAutoFixError: null,
       isAiResponding: false,
 
+      // Guardia anti-bucle de auto-fix
+      appliedFixHashes: [],
+      recordAppliedFix: (errorHash, filesHash) =>
+        set((s) => ({
+          appliedFixHashes: [...s.appliedFixHashes, `${errorHash}:${filesHash}`],
+        })),
+      isRepeatingFix: (errorHash, filesHash) =>
+        get().appliedFixHashes.includes(`${errorHash}:${filesHash}`),
+      clearAppliedFixHashes: () => set({ appliedFixHashes: [] }),
+
       // Active Agent Reports
       activeAgentReports: null,
       setActiveAgentReports: (reports) => set({ activeAgentReports: reports }),
@@ -250,6 +405,30 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
       pendingPlan: null,
       setPendingPlan: (plan) => set({ pendingPlan: plan }),
       clearPendingPlan: () => set({ pendingPlan: null }),
+
+      // Build diff
+      lastBuildDiff: [],
+      clearBuildDiff: () => set({ lastBuildDiff: [] }),
+
+      // Multi-tab de archivos abiertos
+      openTabs: [],
+      openTab: (path) =>
+        set((s) =>
+          s.openTabs.includes(path)
+            ? s
+            : { openTabs: [...s.openTabs, path] }
+        ),
+      closeTab: (path) =>
+        set((s) => {
+          const idx = s.openTabs.indexOf(path);
+          const next = s.openTabs.filter((p) => p !== path);
+          // Si cerramos el activo, saltar al vecino (siguiente o anterior).
+          if (s.activeFilePath === path) {
+            const fallback = next[idx] ?? next[idx - 1] ?? next[next.length - 1] ?? "";
+            return { openTabs: next, activeFilePath: fallback };
+          }
+          return { openTabs: next };
+        }),
 
       setWebBuilderMode: (active) => {
         set({ isWebBuilderMode: active });
@@ -284,6 +463,14 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
       },
 
       updateMultipleFiles: (updates) => {
+        // Guardar snapshot ANTES de aplicar, para que Undo/Redo funcione también
+        // cuando la IA genera/actualiza varios archivos a la vez. Antes no se
+        // llamaba _pushHistory aquí, así que el botón Deshacer no revertía nada
+        // tras una generación de la IA.
+        const prevMulti = get().files;
+        if (Object.keys(prevMulti).length > 0) {
+          _pushHistory(prevMulti);
+        }
         set((s) => {
           const newFiles = { ...s.files };
           for (const [path, content] of Object.entries(updates)) {
@@ -295,6 +482,10 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
             : currentActive;
           return { files: newFiles, activeFilePath: newActive };
         });
+        // Calcular diff entre el snapshot previo y el nuevo estado.
+        const after = get().files;
+        const diff = diffFileMaps(prevMulti, after);
+        set({ lastBuildDiff: diff });
         debouncedSync();
       },
 
@@ -311,6 +502,9 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
           ? Object.keys(normalized).find(k => k.endsWith("/App.tsx") || k.endsWith("/App.js")) || Object.keys(normalized)[0] || ""
           : currentActive;
         set({ files: normalized, activeFilePath: newActive });
+        // Diff entre el snapshot previo y el nuevo (para el mini-diff de la toolbar).
+        const diff = diffFileMaps(prev, normalized);
+        set({ lastBuildDiff: diff });
         debouncedSync();
       },
 
@@ -327,7 +521,14 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
         debouncedSync();
       },
 
-      setActiveFile: (path) => set({ activeFilePath: path }),
+      setActiveFile: (path) => {
+        set({ activeFilePath: path });
+        // Abrir automáticamente como tab si no lo está (multi-tab estilo editor).
+        const { openTabs } = get();
+        if (path && !openTabs.includes(path)) {
+          set({ openTabs: [...openTabs, path] });
+        }
+      },
 
       setSelectedTab: (tab) => set({ selectedTab: tab }),
 
@@ -345,6 +546,7 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
           activeProjectId: null,
           files: DEFAULT_FILES,
           activeFilePath: "/App.tsx",
+          openTabs: [],
           selectedTab: "preview",
           isCompiling: false,
           compileLogs: [],
@@ -352,6 +554,8 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
           autoFixAttempts: 0,
           isAutoFixing: false,
           lastAutoFixError: null,
+          lastBuildDiff: [],
+          appliedFixHashes: [],
         }),
 
       initProject: (chatId) => {
@@ -361,6 +565,7 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
           activeProjectId: chatId,
           files: DEFAULT_FILES,
           activeFilePath: "/App.tsx",
+          openTabs: [],
           selectedTab: "preview",
           isCompiling: false,
           compileLogs: [],
@@ -368,6 +573,8 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
           autoFixAttempts: 0,
           isAutoFixing: false,
           lastAutoFixError: null,
+          lastBuildDiff: [],
+          appliedFixHashes: [],
         });
       },
 
@@ -404,7 +611,7 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
       startAutoFix: () => set((s) => ({ isAutoFixing: true, autoFixAttempts: s.autoFixAttempts + 1 })),
       completeAutoFix: () => set({ isAutoFixing: false, lastAutoFixError: null }),
       failAutoFix: (error) => set({ isAutoFixing: false, lastAutoFixError: error }),
-      resetAutoFixAttempts: () => set({ autoFixAttempts: 0, isAutoFixing: false, lastAutoFixError: null }),
+      resetAutoFixAttempts: () => set({ autoFixAttempts: 0, isAutoFixing: false, lastAutoFixError: null, appliedFixHashes: [] }),
       setAiResponding: (val) => set({ isAiResponding: val }),
 
       // ── Cloud Sync Actions ──
@@ -412,7 +619,7 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
       syncToCloud: async () => {
         const { files, activeProjectId, cloudSyncEnabled, isSaving } = get();
         if (!cloudSyncEnabled || !activeProjectId) return;
-        
+
         // Guard contra llamadas concurrentes: si ya hay un sync en curso,
         // marcar que hay cambios pendientes para que se guarden al terminar
         // y salir.
@@ -426,68 +633,55 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
 
         set({ isSaving: true, hasPendingSave: false });
 
-        try {
-          const supabase = createClient();
+        // Snapshot de los archivos a guardar. Se captura una vez; si llegan
+        // cambios nuevos durante el guardado, hasPendingSave se activa y se
+        // dispara otro sync al final con la última versión.
+        const projectFiles = Object.fromEntries(
+          Object.entries(files).map(([path, file]) => [path, file.code])
+        );
 
-          // Convert files to plain JSON for storage
-          const projectFiles = Object.fromEntries(
-            Object.entries(files).map(([path, file]) => [path, file.code])
-          );
+        let lastError: unknown = null;
+        let succeeded = false;
 
-          // Upsert: intentar UPDATE primero (caso común: el proyecto ya existe).
-          // Si no actualiza ninguna fila (row no existe), hacer INSERT.
-          const { error: updateError } = await supabase
-            .from("ai_webbuilder_projects")
-            .update({
-              project_files: projectFiles,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("chat_id", activeProjectId)
-            .eq("user_id", user.id);
-
-          if (updateError) {
-            console.error("WebBuilder cloud sync UPDATE error:", updateError);
-          }
-
-          // Comprobar si el UPDATE afectó alguna fila. Si no, hacer INSERT.
-          // (No podemos usar .single() porque la fila puede no existir.)
-          const { data: existingList, error: selectError } = await supabase
-            .from("ai_webbuilder_projects")
-            .select("id")
-            .eq("chat_id", activeProjectId)
-            .eq("user_id", user.id)
-            .limit(1);
-
-          if (selectError) {
-            console.error("WebBuilder cloud sync SELECT error:", selectError);
-          }
-
-          const existing = existingList && existingList.length > 0 ? existingList[0] : null;
-
-          if (!existing) {
-            // El row no existía: hacer INSERT.
-            const { error: insertError } = await supabase
-              .from("ai_webbuilder_projects")
-              .insert({
-                chat_id: activeProjectId,
-                user_id: user.id,
-                project_files: projectFiles,
-              });
-            if (insertError) {
-              console.error("WebBuilder cloud sync INSERT error:", insertError);
+        for (let attempt = 1; attempt <= MAX_SYNC_RETRIES; attempt++) {
+          try {
+            await performCloudUpsert(projectFiles, activeProjectId, user.id);
+            succeeded = true;
+            break;
+          } catch (error) {
+            lastError = error;
+            console.error(
+              `WebBuilder cloud sync intento ${attempt}/${MAX_SYNC_RETRIES} falló:`,
+              error
+            );
+            // Backoff exponencial: 1s, 2s, 4s... (excepto en el último intento).
+            if (attempt < MAX_SYNC_RETRIES) {
+              const backoff = SYNC_BACKOFF_BASE_MS * Math.pow(2, attempt - 1);
+              await delay(backoff);
             }
           }
+        }
 
-          const now = new Date().toLocaleTimeString();
-          set({ lastSavedAt: now });
-        } catch (error) {
-          console.error("WebBuilder cloud sync error:", error);
-        } finally {
-          set({ isSaving: false });
-          // Si hubo cambios adicionales mientras guardábamos, ejecutar otro guardado con la última versión.
-          if (get().hasPendingSave) {
-            get().syncToCloud();
-          }
+        if (succeeded) {
+          set({ lastSavedAt: new Date().toLocaleTimeString() });
+        } else {
+          // Todos los reintentos fallaron: dejar hasPendingSave=true para que
+          // el siguiente cambio dispare otro intento. No perdemos los datos
+          // porque `files` ya está persistido en localStorage por zustand/persist.
+          console.error(
+            `WebBuilder cloud sync falló tras ${MAX_SYNC_RETRIES} intentos:`,
+            lastError
+          );
+          set({ hasPendingSave: true });
+        }
+
+        set({ isSaving: false });
+        // Si hubo cambios adicionales mientras guardábamos (o si falló y
+        // quedó pendiente), ejecutar otro guardado con la última versión.
+        if (get().hasPendingSave) {
+          // Pequeño delay para no agotar reintentos en ráfaga si el servidor
+          // sigue caído; el siguiente intento también hará backoff.
+          setTimeout(() => get().syncToCloud(), 1000);
         }
       },
 
@@ -565,6 +759,14 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
         activeFilePath: state.activeFilePath,
         cloudSyncEnabled: state.cloudSyncEnabled,
         pendingPlan: state.pendingPlan,
+        // Persistir historial para que Undo/Redo sobreviva a recargas.
+        // Antes se guardaba `files` pero no el historial, así que tras recargar
+        // tenías archivos pero canUndo() siempre devolvía false.
+        history: state.history,
+        historyIndex: state.historyIndex,
+        // Persistir pestañas abiertas para que el editor mantenga el estado de
+        // tabs al recargar (consistencia con history/activeFilePath).
+        openTabs: state.openTabs,
       }),
     }
   )

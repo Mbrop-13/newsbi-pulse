@@ -139,6 +139,35 @@
   --sidebar-ring: #1890FF;
 }
 
+/* ── Sepia Tint (aplicado como clase sobre light/dark) ──── */
+.sepia {
+  --background: #F4ECD8;
+  --foreground: #5B4636;
+  --card: #F8F1DF;
+  --card-foreground: #5B4636;
+  --popover: #F8F1DF;
+  --popover-foreground: #5B4636;
+  --secondary: #E8DCC0;
+  --secondary-foreground: #5B4636;
+  --muted: #E8DCC0;
+  --muted-foreground: #8A7355;
+  --surface: #F8F1DF;
+  --surface-hover: #EFE4C9;
+  --editorial-rule: #DFD0AE;
+  --border: #DFD0AE;
+  --input: #DFD0AE;
+  --sidebar: #F4ECD8;
+  --sidebar-foreground: #5B4636;
+  --sidebar-accent: #E8DCC0;
+  --sidebar-accent-foreground: #5B4636;
+  --sidebar-border: #DFD0AE;
+}
+
+/* ── Tamaño de fuente global (control de accesibilidad) ──── */
+.font-size-sm { font-size: 14px; }
+.font-size-base { font-size: 16px; }
+.font-size-lg { font-size: 18px; }
+
 /* ── Base Styles ──────────────────────────────── */
 @layer base {
   * {

@@ -332,6 +332,8 @@ export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettings
   const {
     density, setDensity,
     showImages, setShowImages,
+    fontSize, setFontSize,
+    colorScheme, setColorScheme,
   } = useViewStore();
 
   // Assistant preferences
@@ -789,6 +791,37 @@ export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettings
                           ]}
                           selected={density}
                           onChange={(val) => setDensity(val)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-gray-800 dark:text-gray-200">Tamaño de letra</label>
+                      <p className="text-[10px] text-muted-foreground">Cambia el tamaño del texto en toda la plataforma</p>
+                      <div className="w-full mt-2">
+                        <SegmentControl
+                          options={[
+                            { id: "sm", label: "Pequeña" },
+                            { id: "base", label: "Normal" },
+                            { id: "lg", label: "Grande" },
+                          ]}
+                          selected={fontSize}
+                          onChange={(val) => setFontSize(val)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-gray-800 dark:text-gray-200">Tinte de pantalla</label>
+                      <p className="text-[10px] text-muted-foreground">Aplica un tono cálido tipo sepia (ideal para leer)</p>
+                      <div className="w-full mt-2">
+                        <SegmentControl
+                          options={[
+                            { id: "none", label: "Normal" },
+                            { id: "sepia", label: "Sepia" },
+                          ]}
+                          selected={colorScheme}
+                          onChange={(val) => setColorScheme(val)}
                         />
                       </div>
                     </div>

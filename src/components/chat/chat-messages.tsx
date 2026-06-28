@@ -699,16 +699,16 @@ function MessageBubble({
 
     // Determine titles & icons
     let headerTitle = "Búsqueda y análisis";
-    let headerIcon = <Compass className="w-4 h-4 text-[#1890FF] dark:text-blue-400 shrink-0 animate-pulse" />;
+    let headerIcon = <Compass className="w-4 h-4 shrink-0" />;
 
     if (isLoading) {
       headerTitle = hasSteps ? "Ejecutando agentes de investigación..." : "Buscando en la web...";
-      headerIcon = <Loader2 className="w-4 h-4 text-[#1890FF] dark:text-blue-400 shrink-0 animate-spin" />;
+      headerIcon = <Loader2 className="w-4 h-4 shrink-0 animate-spin" />;
     } else {
-      headerTitle = hasSteps 
-        ? `Investigación completada • ${thinkingSteps.length} agentes` 
+      headerTitle = hasSteps
+        ? `Investigación completada • ${thinkingSteps.length} agentes`
         : `Fuentes consultadas • ${citationsList.length} sitios`;
-      headerIcon = <CheckCircle2 className="w-4 h-4 text-emerald-505 dark:text-emerald-400 shrink-0" />;
+      headerIcon = <CheckCircle2 className="w-4 h-4 shrink-0" />;
     }
 
     // Dynamic timer
@@ -720,21 +720,28 @@ function MessageBubble({
         : null;
 
     return (
-      <div className="mb-4 rounded-2xl border border-slate-250/60 dark:border-zinc-800/60 bg-slate-50/30 dark:bg-zinc-950/20 overflow-hidden shadow-xs">
+      <div className="relative mb-4 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/60 bg-white/60 dark:bg-zinc-950/40 overflow-hidden shadow-sm hover:shadow-md hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-300">
         {/* Accordion Trigger */}
         <div
           onClick={() => setIsThinkingExpanded(!isThinkingExpanded)}
-          className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-slate-100/50 dark:hover:bg-zinc-900/20 transition-all select-none group"
+          className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-zinc-50/80 dark:hover:bg-zinc-900/30 transition-all select-none group"
         >
           <div className="flex items-center gap-2.5 min-w-0">
-            {headerIcon}
-            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate group-hover:text-[#1890FF] dark:group-hover:text-blue-400 transition-colors">
+            <span className={cn(
+              "w-7 h-7 rounded-xl flex items-center justify-center shrink-0 border transition-colors",
+              isLoading
+                ? "bg-zinc-100 dark:bg-zinc-900 text-foreground dark:text-white border-zinc-200/60 dark:border-zinc-800"
+                : "bg-zinc-100 dark:bg-zinc-900 text-muted-foreground dark:text-zinc-300 border-zinc-200/60 dark:border-zinc-800"
+            )}>
+              {headerIcon}
+            </span>
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate group-hover:text-foreground dark:group-hover:text-white transition-colors">
               {headerTitle}
             </span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {displayDuration && (
-              <span className="text-[10px] text-muted-foreground/60 font-medium bg-slate-100 dark:bg-zinc-900 px-2 py-0.5 rounded-full border border-slate-200/20 dark:border-zinc-800">
+              <span className="text-[10px] text-muted-foreground/70 dark:text-zinc-400 font-mono font-bold bg-zinc-100 dark:bg-zinc-900 px-2 py-0.5 rounded-full border border-zinc-200/40 dark:border-zinc-800">
                 {displayDuration}
               </span>
             )}
@@ -934,6 +941,7 @@ function MessageBubble({
     if (!extractedReasoning && !message.thinkingSteps?.length) return null
     const content = extractedReasoning || message.thinkingSteps?.join('\n') || ''
     if (!content || isOrchestrationLog(content)) return null
+    const isThinking = isResponding && !finalContent
 
     return (
       <div className="mb-4">
@@ -942,15 +950,22 @@ function MessageBubble({
           variant="ghost"
           size="sm"
           className={cn(
-            "h-7 w-fit px-3 rounded-full text-xs font-semibold gap-1.5 border border-slate-250/60 dark:border-zinc-800/60 hover:bg-slate-100 dark:hover:bg-zinc-900 cursor-pointer transition-colors mb-2",
-            localReasoningOpen ? "text-[#1890FF] border-[#1890FF]/30 bg-blue-500/5" : "text-muted-foreground hover:text-foreground"
+            "h-8 w-fit px-3.5 rounded-full text-xs font-bold gap-2 border transition-all cursor-pointer mb-2 group",
+            localReasoningOpen
+              ? "bg-zinc-100 dark:bg-zinc-900 text-foreground border-zinc-200 dark:border-zinc-800"
+              : "bg-white dark:bg-zinc-900/60 text-muted-foreground hover:text-foreground border-zinc-200/60 dark:border-zinc-800/60 hover:border-zinc-300 dark:hover:border-zinc-700"
           )}
           onClick={() => setLocalReasoningOpen(!localReasoningOpen)}
           title="Toggles deep reasoning visibility"
         >
-          <Brain className="h-3.5 w-3.5" />
-          <span>Razonamiento</span>
-          <ChevronRight className={cn("h-3 w-3 transition-transform", localReasoningOpen && "rotate-90")} />
+          <span className={cn(
+            "relative flex h-4 w-4 items-center justify-center",
+            isThinking && "animate-pulse"
+          )}>
+            <Brain className={cn("h-3.5 w-3.5 transition-colors", localReasoningOpen ? "text-foreground" : "text-muted-foreground group-hover:text-foreground")} />
+          </span>
+          <span>{isThinking ? "Pensando…" : "Razonamiento"}</span>
+          <ChevronRight className={cn("h-3 w-3 transition-transform duration-200", localReasoningOpen && "rotate-90")} />
         </Button>
 
         <AnimatePresence>
@@ -962,8 +977,13 @@ function MessageBubble({
               transition={{ duration: 0.2 }}
               className="overflow-hidden"
             >
-              <div className="pl-4 py-2 border-l-[3px] border-[#1890FF]/60 dark:border-blue-500/40 bg-slate-50/50 dark:bg-zinc-900/30 rounded-r-xl text-[13px] text-muted-foreground/90 dark:text-zinc-400 font-sans whitespace-pre-wrap leading-relaxed max-h-72 overflow-y-auto shadow-xs border border-y-slate-200/30 border-r-slate-200/30 dark:border-y-zinc-800/30 dark:border-r-zinc-800/30 pr-3 scrollbar-hide">
-                {content}
+              <div className="relative rounded-xl bg-zinc-50/80 dark:bg-zinc-900/40 border border-zinc-200/60 dark:border-zinc-800/60">
+                <div className="px-4 py-3 text-[13px] text-muted-foreground dark:text-zinc-400 font-sans whitespace-pre-wrap leading-relaxed max-h-72 overflow-y-auto scrollbar-hide">
+                  {content}
+                  {isThinking && (
+                    <span className="inline-block w-1.5 h-4 ml-0.5 bg-foreground/70 dark:bg-zinc-300 animate-pulse align-middle rounded-sm" />
+                  )}
+                </div>
               </div>
             </motion.div>
           )}
@@ -1007,17 +1027,22 @@ function MessageBubble({
         {/* Contenedor de la tarjeta del plan (clickeable → expande/colapsa en chat) */}
         <div
           onClick={() => setIsPlanExpanded(!isPlanExpanded)}
-          className="rounded-2xl border border-gray-200/60 dark:border-white/5 bg-white dark:bg-zinc-950 p-4 cursor-pointer hover:border-gray-300 dark:hover:border-white/10 transition-all duration-300 select-none flex flex-col gap-3 group"
+          className="relative overflow-hidden rounded-2xl border border-zinc-200/60 dark:border-zinc-800/60 bg-white dark:bg-zinc-950 p-4 cursor-pointer hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-md transition-all duration-300 select-none flex flex-col gap-3 group"
         >
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-xl bg-[#1890FF]/10 text-[#1890FF] flex items-center justify-center shrink-0 border border-[#1890FF]/10">
+              <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-900 text-foreground dark:text-white flex items-center justify-center shrink-0 border border-zinc-200/60 dark:border-zinc-800">
                 <ClipboardList className="w-4 h-4" />
               </div>
-              <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-[#1890FF] transition-colors">
-                Plan de construcción
-              </span>
+              <div className="flex flex-col">
+                <span className="text-xs font-black text-gray-900 dark:text-white group-hover:text-foreground transition-colors leading-tight">
+                  Plan de construcción
+                </span>
+                <span className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-wider">
+                  Requiere aprobación
+                </span>
+              </div>
             </div>
             <div className="flex items-center gap-1">
               <button
@@ -1026,7 +1051,7 @@ function MessageBubble({
                   setIsPlanModalOpen(true);
                 }}
                 title="Expandir vista completa"
-                className="w-7 h-7 rounded-lg hover:bg-gray-150/50 dark:hover:bg-white/5 flex items-center justify-center text-muted-foreground/70 hover:text-foreground border border-transparent hover:border-gray-200/50 dark:hover:border-white/5 transition-all cursor-pointer"
+                className="w-7 h-7 rounded-lg hover:bg-zinc-100 dark:hover:bg-white/5 flex items-center justify-center text-muted-foreground/70 hover:text-foreground border border-transparent hover:border-zinc-200/60 dark:hover:border-zinc-700/60 transition-all cursor-pointer"
               >
                 <Maximize2 className="w-3.5 h-3.5" />
               </button>
@@ -1045,10 +1070,14 @@ function MessageBubble({
           )}
 
           {/* Recuento de archivos y estado de expansión */}
-          <div className="flex items-center justify-between text-[9px] text-muted-foreground/60 border-t border-gray-200/30 dark:border-white/5 pt-2 mt-0.5 font-bold uppercase tracking-wider">
-            <span>{plan.agents.length} {plan.agents.length === 1 ? "archivo" : "archivos"} planificados</span>
-            <span className="text-[#1890FF] tracking-wide font-extrabold">
+          <div className="flex items-center justify-between text-[9px] border-t border-zinc-200/40 dark:border-zinc-800/60 pt-2 mt-0.5 font-bold uppercase tracking-wider">
+            <span className="flex items-center gap-1.5 text-muted-foreground/70 dark:text-zinc-400">
+              <FileCode2 className="w-3 h-3" />
+              {plan.agents.length} {plan.agents.length === 1 ? "archivo" : "archivos"} planificados
+            </span>
+            <span className="flex items-center gap-1 text-foreground dark:text-white tracking-wide font-extrabold group-hover:gap-1.5 transition-all">
               {isPlanExpanded ? "Ocultar" : "Ver detalles"}
+              <ChevronRight className={cn("w-3 h-3 transition-transform", isPlanExpanded && "rotate-90")} />
             </span>
           </div>
 
@@ -1068,16 +1097,21 @@ function MessageBubble({
                     {plan.agents.map((agent: any, idx: number) => (
                       <div
                         key={idx}
-                        className="flex items-start gap-2.5 rounded-xl bg-gray-50/50 dark:bg-white/[0.02] border border-gray-200/50 dark:border-white/5 px-3 py-2.5 hover:bg-gray-100/50 dark:hover:bg-white/[0.04] transition-colors duration-200"
+                        className="flex items-start gap-2.5 rounded-xl bg-zinc-50/70 dark:bg-white/[0.02] border border-zinc-200/40 dark:border-zinc-800/60 px-3 py-2.5 hover:bg-zinc-100/60 dark:hover:bg-white/[0.04] hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-200"
                       >
-                        <FileCode2 className="w-4 h-4 text-[#1890FF] mt-0.5 shrink-0" />
+                        <div className="flex flex-col items-center gap-1 shrink-0">
+                          <span className="w-5 h-5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-foreground dark:text-white flex items-center justify-center text-[9px] font-black border border-zinc-200/60 dark:border-zinc-700">
+                            {idx + 1}
+                          </span>
+                        </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-[10px] font-mono font-bold text-gray-900 dark:text-white truncate">
+                            <span className="text-[10px] font-mono font-bold text-gray-900 dark:text-white truncate flex items-center gap-1">
+                              <FileCode2 className="w-3 h-3 text-muted-foreground dark:text-zinc-400 shrink-0" />
                               {agent.filePath}
                             </span>
                           </div>
-                          <p className="text-[9.5px] font-medium text-muted-foreground mt-0.5 leading-snug">
+                          <p className="text-[9.5px] font-semibold text-muted-foreground dark:text-zinc-300 mt-1 leading-snug">
                             {agent.agentName} · {agent.role}
                           </p>
                           <p className="text-[9.5px] text-muted-foreground/75 mt-0.5 leading-relaxed">
@@ -1089,9 +1123,10 @@ function MessageBubble({
                   </div>
 
                   {/* Pista de acción para el usuario */}
-                  <div className="rounded-xl bg-amber-500/10 border border-amber-500/25 px-3 py-2.5 mt-1">
-                    <p className="text-[9.5px] text-amber-800 dark:text-amber-300 leading-relaxed font-semibold">
-                      Escribe <span className="font-extrabold">aprobado</span> para construir, <span className="font-extrabold">no</span> para cancelar, o describe los cambios.
+                  <div className="rounded-xl bg-zinc-100/70 dark:bg-white/[0.03] border border-zinc-200/60 dark:border-zinc-800/60 px-3 py-2.5 mt-1">
+                    <p className="text-[9.5px] text-foreground dark:text-zinc-300 leading-relaxed font-semibold flex items-start gap-1.5">
+                      <Sparkles className="w-3 h-3 shrink-0 mt-0.5 text-muted-foreground dark:text-zinc-400" />
+                      <span>Escribe <span className="font-extrabold px-1 py-0.5 rounded bg-zinc-200/70 dark:bg-white/10">aprobado</span> para construir, <span className="font-extrabold px-1 py-0.5 rounded bg-zinc-200/70 dark:bg-white/10">no</span> para cancelar, o describe los cambios.</span>
                     </p>
                   </div>
                 </div>
@@ -1119,12 +1154,15 @@ function MessageBubble({
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Modal Header */}
-                <div className="flex items-center justify-between px-6 py-4.5 border-b border-gray-200/60 dark:border-white/5 bg-white dark:bg-zinc-950 shrink-0 select-none">
+                <div className="flex items-center justify-between px-6 py-4.5 border-b border-zinc-200/60 dark:border-zinc-800/60 bg-white dark:bg-zinc-950 shrink-0 select-none">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center shadow-sm border border-teal-500/10">
+                    <div className="w-9 h-9 rounded-xl bg-zinc-100 dark:bg-zinc-900 text-foreground dark:text-white flex items-center justify-center border border-zinc-200/60 dark:border-zinc-800">
                       <ClipboardList className="w-4.5 h-4.5" />
                     </div>
-                    <h3 className="text-sm font-bold text-gray-900 dark:text-white">Plan de Construcción</h3>
+                    <div className="flex flex-col">
+                      <h3 className="text-sm font-black text-gray-900 dark:text-white leading-tight">Plan de Construcción</h3>
+                      <span className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-wider">Requiere aprobación</span>
+                    </div>
                   </div>
                   <button
                     onClick={() => setIsPlanModalOpen(false)}

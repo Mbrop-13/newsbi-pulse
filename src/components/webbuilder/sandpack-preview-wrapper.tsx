@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { SandpackPreview, useSandpack } from "@codesandbox/sandpack-react";
-import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
+import { useWebBuilderStore, djb2Hash, hashFiles } from "@/lib/stores/webbuilder-store";
 import { attemptAutoFix } from "@/lib/services/auto-fix-service";
 import { Loader2 } from "lucide-react";
 
@@ -81,14 +81,28 @@ function SandpackErrorListener() {
       }
 
       debounceTimerRef.current = setTimeout(() => {
-        if (useWebBuilderStore.getState().isAiResponding) return;
+        const currentStore = useWebBuilderStore.getState();
+        if (currentStore.isAiResponding) return;
+
+        // Guardia anti-bucle: si ya aplicamos un fix para este (error + snapshot)
+        // de archivos, el fix anterior no funcionó y el error reapareció. Abortar
+        // en lugar de entrar en un bucle error → fix → mismo error → mismo fix.
+        const errHash = djb2Hash(errorMessage);
+        const filesHash = hashFiles(currentStore.files);
+        if (currentStore.isRepeatingFix(errHash, filesHash)) {
+          console.warn("[Auto-Fix] Bucle detectado: el mismo error reapareció tras un fix previo idéntico. Abortando.");
+          currentStore.failAutoFix(
+            `${errorMessage}\n\n⚠️ Se detectó un bucle de auto-reparación: el error reaparece tras aplicar el mismo fix. Edita el código manualmente con "Abrir en Editor".`
+          );
+          return;
+        }
 
         lastProcessedErrorRef.current = errorMessage;
-        console.log(`[Auto-Fix] Error interceptado: "${errorMessage}". Intento #${store.autoFixAttempts + 1}`);
+        console.log(`[Auto-Fix] Error interceptado: "${errorMessage}". Intento #${currentStore.autoFixAttempts + 1}`);
 
-        store.startAutoFix();
+        currentStore.startAutoFix();
 
-        attemptAutoFix(errorMessage, store.files)
+        attemptAutoFix(errorMessage, currentStore.files)
           .then((fixedFiles) => {
             if (fixedFiles) {
               console.log("[Auto-Fix] Fix recibido. Aplicando...");
@@ -96,17 +110,21 @@ function SandpackErrorListener() {
               for (const [path, code] of Object.entries(fixedFiles)) {
                 formatted[path] = { code };
               }
-              const merged = { ...store.files, ...formatted };
-              store.setFiles(merged);
-              store.completeAutoFix();
+              const merged = { ...currentStore.files, ...formatted };
+              // Registrar el fix aplicado ANTES de setFiles, para que el hash
+              // corresponda al estado previo al fix (que es el que reproduciría
+              // el bucle si el fix no sirve).
+              useWebBuilderStore.getState().recordAppliedFix(errHash, filesHash);
+              useWebBuilderStore.getState().setFiles(merged);
+              useWebBuilderStore.getState().completeAutoFix();
             } else {
               console.warn("[Auto-Fix] No se pudo generar un fix.");
-              store.failAutoFix(errorMessage);
+              useWebBuilderStore.getState().failAutoFix(errorMessage);
             }
           })
           .catch((err) => {
             console.error("[Auto-Fix] Error ejecutando el fix:", err);
-            store.failAutoFix(errorMessage);
+            useWebBuilderStore.getState().failAutoFix(errorMessage);
           });
       }, 2000);
     });

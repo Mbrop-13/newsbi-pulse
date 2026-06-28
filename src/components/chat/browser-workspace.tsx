@@ -5,6 +5,7 @@ import { useBrowserStore } from "@/lib/stores/browser-store";
 import { BrowserPanel } from "./browser-panel";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/ui/sidebar";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 
 interface BrowserWorkspaceProps {
   chatPanel: React.ReactNode;
@@ -13,7 +14,6 @@ interface BrowserWorkspaceProps {
 export function BrowserWorkspace({ chatPanel }: BrowserWorkspaceProps) {
   const { isMobile, setOpen, setOpenMobile } = useSidebar();
   const { isOpen } = useBrowserStore();
-  const [mobileTab, setMobileTab] = useState<"chat" | "browser">("chat");
 
   const [chatPercent, setChatPercent] = useState(38); // Standard width (38%) by default
   const [isDragging, setIsDragging] = useState(false);
@@ -52,15 +52,6 @@ export function BrowserWorkspace({ chatPanel }: BrowserWorkspaceProps) {
     };
   }, [isDragging]);
 
-  // Sync mobile tab when browser session opens/closes
-  useEffect(() => {
-    if (isOpen) {
-      setMobileTab("browser");
-    } else {
-      setMobileTab("chat");
-    }
-  }, [isOpen]);
-
   // Collapse sidebar when browser workspace opens
   useEffect(() => {
     if (isOpen) {
@@ -78,47 +69,31 @@ export function BrowserWorkspace({ chatPanel }: BrowserWorkspaceProps) {
 
   if (isMobile) {
     return (
-      <div className="flex flex-col h-full w-full">
-        {/* Mobile Tab Bar */}
-        {isOpen && (
-          <div className="flex border-b border-gray-250 dark:border-white/5 bg-white dark:bg-[#0A0A0A] shrink-0 z-20">
-            <button
-              onClick={() => setMobileTab("chat")}
-              className={cn(
-                "flex-1 py-3 text-xs font-bold text-center transition-all cursor-pointer",
-                mobileTab === "chat"
-                  ? "text-zinc-900 dark:text-white border-b-2 border-blue-500"
-                  : "text-zinc-500 dark:text-zinc-400"
-              )}
-            >
-              💬 Chat
-            </button>
-            <button
-              onClick={() => setMobileTab("browser")}
-              className={cn(
-                "flex-1 py-3 text-xs font-bold text-center transition-all cursor-pointer",
-                mobileTab === "browser"
-                  ? "text-zinc-900 dark:text-white border-b-2 border-blue-500"
-                  : "text-zinc-500 dark:text-zinc-400"
-              )}
-            >
-              🌐 Navegador
-            </button>
-          </div>
-        )}
+      <div className="flex flex-col h-full w-full relative overflow-hidden">
+        {/* Chat Panel - oculto cuando el navegador está abierto para que no se vea detrás */}
+        <div className={cn("flex-1 min-h-0 relative h-full transition-opacity duration-200", isOpen ? "opacity-0 pointer-events-none" : "opacity-100")}>
+          {chatPanel}
+        </div>
 
-        {/* Mobile Content */}
-        <div className="flex-1 min-h-0 relative">
-          {!isOpen || mobileTab === "chat" ? (
-            <div className="absolute inset-0 bg-white dark:bg-[#0A0A0A]">
-              {chatPanel}
+        {/* Bottom Sheet para el Navegador/Build - se abre de abajo hacia arriba (mismo patrón que el Canvas) */}
+        <Sheet open={isOpen} onOpenChange={(open) => { if (!open) useBrowserStore.getState().setOpen(false); }}>
+          <SheetContent
+            side="bottom"
+            showCloseButton={false}
+            className="!h-[94dvh] w-full p-0 flex flex-col rounded-t-[1.5rem] overflow-hidden border-t border-border bg-white dark:bg-zinc-950 shadow-2xl z-[60] focus:outline-none"
+            style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+          >
+            {/* Grab handle minimalista (sin header duplicado - el BrowserPanel ya tiene su propia cabecera con botón de cerrar) */}
+            <div className="flex items-center justify-center pt-2.5 pb-1 shrink-0">
+              <div className="w-10 h-1.5 rounded-full bg-zinc-300 dark:bg-zinc-850 cursor-pointer" />
             </div>
-          ) : (
-            <div className="absolute inset-0 p-1.5 bg-zinc-50 dark:bg-black">
+
+            {/* Browser Panel content */}
+            <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden">
               <BrowserPanel />
             </div>
-          )}
-        </div>
+          </SheetContent>
+        </Sheet>
       </div>
     );
   }

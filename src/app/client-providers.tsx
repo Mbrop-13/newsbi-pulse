@@ -29,6 +29,7 @@ import { useAIChatStore } from "@/lib/stores/ai-chat-store";
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
 import { useBrowserStore } from "@/lib/stores/browser-store";
 import { useCanvasStore } from "@/lib/stores/canvas-store";
+import { useViewStore } from "@/lib/stores/use-view-store";
 import { Button } from "@/components/ui/button";
 import { Menu, Plus } from "lucide-react";
 import { ModelSelector } from "@/components/chat/model-selector";
@@ -146,6 +147,23 @@ export function ClientLayoutProviders({
 
   // Show bottom nav on mobile for sidebar pages, EXCEPT when on AI page
   const showMobileNavOnSidebar = isMobile && isSidebarPage && !isAiPage;
+
+  // Aplicar tamaño de fuente + esquema sepia globalmente (accesibilidad visual)
+  const fontSize = useViewStore((s) => s.fontSize);
+  const colorScheme = useViewStore((s) => s.colorScheme);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const root = document.documentElement;
+    // Tamaño de fuente
+    root.classList.remove("font-size-sm", "font-size-base", "font-size-lg");
+    root.classList.add(`font-size-${fontSize}`);
+    // Sepia
+    if (colorScheme === "sepia") {
+      root.classList.add("sepia");
+    } else {
+      root.classList.remove("sepia");
+    }
+  }, [fontSize, colorScheme]);
 
   return (
     <ThemeProvider>

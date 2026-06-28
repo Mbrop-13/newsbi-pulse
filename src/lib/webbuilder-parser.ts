@@ -125,16 +125,25 @@ export function parseArtifact(text: string): ParsedArtifact | null {
 
 /**
  * Parse diff blocks from the update action content.
- * Format:
- * <<<SEARCH
- * old code
- * ===
- * new code
- * >>>
+ *
+ * Formato canónico del sistema:
+ *   <<<SEARCH
+ *   old code
+ *   ===
+ *   new code
+ *   >>>
+ *
+ * El LLM a veces varía el número de marcadores (estilo Aider usa <<<<<<<,
+ * =======, >>>>>>>REPLACE). La regex es tolerante a 2+ repeticiones de cada
+ * marcador para absorber esas varianzas sin romper el formato canónico.
+ * Acepta también un sufijo opcional "REPLACE" tras el cierre.
  */
 function parseDiffBlocks(content: string): { search: string; replace: string }[] {
   const diffs: { search: string; replace: string }[] = [];
-  const diffRegex = /<<<SEARCH\n([\s\S]*?)\n===\n([\s\S]*?)\n>>>/g;
+  // SEARCH: >=2 '<' seguidos de "SEARCH" (con espacios opcionales).
+  // Separador: >=2 '='.
+  // Cierre: >=2 '>' con sufijo opcional "REPLACE" (estilo Aider).
+  const diffRegex = /<{2,}\s*SEARCH\s*\n([\s\S]*?)\n={2,}\s*\n([\s\S]*?)\n>{2,}\s*(?:REPLACE)?/g;
 
   let match;
   while ((match = diffRegex.exec(content)) !== null) {
@@ -149,65 +158,157 @@ function parseDiffBlocks(content: string): { search: string; replace: string }[]
 }
 
 /**
+ * Resultado de aplicar diffs con reporte de fallos (estilo Aider).
+ * - `code`: el código con todos los bloques que SÍ coincidieron aplicados.
+ * - `failed`: los bloques que NO se encontraron (ni exacto ni fuzzy), con la
+ *   razón. Permite al llamador avisar al usuario / re-pedir al LLM en vez de
+ *   hacer un no-op silencioso (que es el bug que impedía que el LLM editara).
+ */
+export interface FailedDiff {
+  search: string;
+  replace: string;
+  reason: string;
+}
+
+export interface ApplyDiffsResult {
+  code: string;
+  failed: FailedDiff[];
+}
+
+/**
+ * Apply diff updates to an existing file's code, reporting which blocks failed.
+ * Aplica bloque por bloque sobre el resultado mutado: los bloques exitosos se
+ * aplican igual que antes; los que no coinciden se acumulan en `failed` con su
+ * razón ("no encontrado" | "ambiguo") en vez de descartarse silenciosamente.
+ */
+export function applyDiffsWithReport(
+  originalCode: string,
+  diffs: { search: string; replace: string }[]
+): ApplyDiffsResult {
+  let result = originalCode;
+  const failed: FailedDiff[] = [];
+
+  for (const diff of diffs) {
+    // Try exact match first
+    if (result.includes(diff.search)) {
+      result = result.replace(diff.search, () => diff.replace);
+      continue;
+    }
+
+    // Fuzzy: línea por línea con trim. Cuenta coincidencias para detectar
+    // ambigüedad (mismo bloque aparece varias veces → no sabemos cuál cambiar).
+    const searchTrimmed = diff.search.trim();
+    const lines = result.split("\n");
+    const searchLines = searchTrimmed.split("\n").map(l => l.trim());
+
+    let matchStart = -1;
+    let matchCount = 0;
+
+    for (let i = 0; i <= lines.length - searchLines.length; i++) {
+      let found = true;
+      for (let j = 0; j < searchLines.length; j++) {
+        if (lines[i + j].trim() !== searchLines[j]) {
+          found = false;
+          break;
+        }
+      }
+      if (found) {
+        matchCount++;
+        if (matchStart === -1) matchStart = i;
+        // Seguimos contando para detectar ambigüedad, pero solo guardamos el 1º.
+      }
+    }
+
+    if (matchStart !== -1 && matchCount === 1) {
+      const matchEnd = matchStart + searchLines.length;
+      // Preserve the indentation of the first matched line
+      const indent = lines[matchStart].match(/^(\s*)/)?.[1] || "";
+      const replaceLines = diff.replace.split("\n").map((line, idx) => {
+        if (idx === 0) return indent + line.trimStart();
+        return line;
+      });
+      lines.splice(matchStart, matchEnd - matchStart, ...replaceLines);
+      result = lines.join("\n");
+    } else if (matchCount > 1) {
+      failed.push({
+        search: diff.search,
+        replace: diff.replace,
+        reason: `ambiguo: el bloque coincide ${matchCount} veces en el archivo`,
+      });
+    } else {
+      failed.push({
+        search: diff.search,
+        replace: diff.replace,
+        reason: "no encontrado: el bloque SEARCH no existe en el archivo actual",
+      });
+    }
+  }
+  return { code: result, failed };
+}
+
+/**
  * Apply diff updates to an existing file's code.
- * Returns the updated code, or the original if no matches found.
+ * Wrapper fino sobre `applyDiffsWithReport` que devuelve solo el código
+ * (mantiene la firma export original para callers que no necesitan el reporte).
  */
 export function applyDiffs(
   originalCode: string,
   diffs: { search: string; replace: string }[]
 ): string {
-  let result = originalCode;
-  for (const diff of diffs) {
-    // Try exact match first
-    if (result.includes(diff.search)) {
-      result = result.replace(diff.search, () => diff.replace);
-    } else {
-      // Try with trimmed whitespace matching (fuzzy)
-      const searchTrimmed = diff.search.trim();
-      const lines = result.split("\n");
-      let matchStart = -1;
-      let matchEnd = -1;
-      const searchLines = searchTrimmed.split("\n").map(l => l.trim());
+  return applyDiffsWithReport(originalCode, diffs).code;
+}
 
-      for (let i = 0; i <= lines.length - searchLines.length; i++) {
-        let found = true;
-        for (let j = 0; j < searchLines.length; j++) {
-          if (lines[i + j].trim() !== searchLines[j]) {
-            found = false;
-            break;
-          }
-        }
-        if (found) {
-          matchStart = i;
-          matchEnd = i + searchLines.length;
-          break;
-        }
-      }
+/**
+ * Pre-valida diffs contra el código actual SIN aplicarlos (no muta).
+ * Devuelve `{ allMatch, failed }` para que el bucle verificar→reparar decida
+ * si re-pedir al LLM (estilo Aider/Bolt) antes de aceptar la generación.
+ *
+ * Es un wrapper sobre `applyDiffsWithReport` que descarta el `code` resultante
+ * — solo interesa saber qué bloques NO coincidirían si se aplicaran.
+ */
+export function validateDiffsAgainstFile(
+  code: string,
+  diffs: { search: string; replace: string }[]
+): { allMatch: boolean; failed: FailedDiff[] } {
+  const { failed } = applyDiffsWithReport(code, diffs);
+  return { allMatch: failed.length === 0, failed };
+}
 
-      if (matchStart !== -1) {
-        // Preserve the indentation of the first matched line
-        const indent = lines[matchStart].match(/^(\s*)/)?.[1] || "";
-        const replaceLines = diff.replace.split("\n").map((line, idx) => {
-          if (idx === 0) return indent + line.trimStart();
-          return line;
-        });
-        lines.splice(matchStart, matchEnd - matchStart, ...replaceLines);
-        result = lines.join("\n");
-      }
-    }
-  }
-  return result;
+/**
+ * Bloque de edición parcial que no pudo aplicarse al archivo destino.
+ * `reason` explica por qué (no encontrado / ambiguo / archivo inexistente).
+ */
+export interface FailedUpdate {
+  filePath: string;
+  search: string;
+  reason: string;
+}
+
+/**
+ * Resultado de convertir acciones del artefacto en archivos.
+ * - `files`: mapa de archivos creados/actualizados (solo los que cambiaron).
+ * - `failedUpdates`: ediciones parciales cuyo bloque SEARCH no coincidió, para
+ *   que el llamador pueda avisar al usuario / re-pedir al LLM.
+ */
+export interface ActionsToFilesResult {
+  files: Record<string, { code: string }>;
+  failedUpdates: FailedUpdate[];
 }
 
 /**
  * Convert parsed artifact actions into a files map for the WebBuilder store.
  * For "update" actions, requires existing files to apply diffs.
+ *
+ * Devuelve además `failedUpdates`: las ediciones parciales cuyo bloque SEARCH
+ * no se encontró en el archivo actual (estilo Aider). Antes esto era un no-op
+ * silencioso, que era el bug que impedía que las ediciones del LLM aterrizen.
  */
 export function actionsToFiles(
   actions: ParsedAction[],
   existingFiles?: Record<string, { code: string }>
-): Record<string, { code: string }> {
+): ActionsToFilesResult {
   const files: Record<string, { code: string }> = {};
+  const failedUpdates: FailedUpdate[] = [];
 
   for (const action of actions) {
     const filePath = normalizeFilePath(action.filePath);
@@ -218,14 +319,25 @@ export function actionsToFiles(
       // Partial update — apply diffs to existing file
       const existing = existingFiles?.[filePath];
       if (existing) {
-        const updatedCode = applyDiffs(existing.code, action.diffs);
+        const { code: updatedCode, failed } = applyDiffsWithReport(existing.code, action.diffs);
         files[filePath] = { code: updatedCode };
+        for (const f of failed) {
+          failedUpdates.push({ filePath, search: f.search, reason: f.reason });
+        }
+      } else {
+        // El archivo no existe: no se puede aplicar el diff a nada.
+        for (const d of action.diffs) {
+          failedUpdates.push({
+            filePath,
+            search: d.search,
+            reason: "archivo inexistente: no se puede aplicar SEARCH/REPLACE a un archivo que no existe",
+          });
+        }
       }
-      // If file doesn't exist, skip the update (can't apply diff to nothing)
     }
   }
 
-  return files;
+  return { files, failedUpdates };
 }
 
 /**

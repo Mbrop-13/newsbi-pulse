@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useBrowserStore } from "@/lib/stores/browser-store";
 import { BrowserPanel } from "./browser-panel";
 import { cn } from "@/lib/utils";
@@ -52,9 +52,17 @@ export function BrowserWorkspace({ chatPanel }: BrowserWorkspaceProps) {
     };
   }, [isDragging]);
 
-  // Collapse sidebar when browser workspace opens
+  // Collapse sidebar when browser workspace opens.
+  // Solo colapsamos en la transición cerrado→abierto, no en cada ejecución
+  // del efecto. Sin esto, setOpen cambia de referencia (useCallback depende
+  // de `open` en sidebar.tsx) al intentar expandir el sidebar manualmente,
+  // re-ejecutando el efecto y colapsándolo de nuevo.
+  const prevIsOpenRef = useRef<boolean>(isOpen);
   useEffect(() => {
-    if (isOpen) {
+    const justOpened = isOpen && !prevIsOpenRef.current;
+    prevIsOpenRef.current = isOpen;
+
+    if (isOpen && justOpened) {
       if (isMobile) {
         setOpenMobile(false);
       } else {

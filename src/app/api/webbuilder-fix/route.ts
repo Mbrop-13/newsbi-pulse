@@ -107,6 +107,7 @@ import { Activity } from "lucide-react";
     }
 
     let correctedFiles: Record<string, { code: string }> | null = null;
+    let warnings: { filePath: string; reason: string }[] = [];
     if (containsArtifact(text)) {
       const parsed = parseArtifact(text);
       if (parsed && parsed.actions.length > 0) {
@@ -116,7 +117,9 @@ import { Activity } from "lucide-react";
             return [path, { code }];
           })
         );
-        correctedFiles = actionsToFiles(parsed.actions, typedFiles);
+        const { files: applied, failedUpdates } = actionsToFiles(parsed.actions, typedFiles);
+        correctedFiles = applied;
+        warnings = failedUpdates.map(f => ({ filePath: f.filePath, reason: f.reason }));
       }
     }
 
@@ -124,7 +127,7 @@ import { Activity } from "lucide-react";
       return NextResponse.json({ success: false, error: "No se pudo generar un fix válido", rawResponse: text });
     }
 
-    return NextResponse.json({ success: true, files: correctedFiles });
+    return NextResponse.json({ success: true, files: correctedFiles, warnings });
 
   } catch (err: any) {
     console.error("[WebBuilder Fix API] Error:", err);

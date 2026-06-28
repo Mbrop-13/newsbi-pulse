@@ -1,5 +1,5 @@
 import { generateText, LanguageModel } from 'ai';
-import { containsArtifact, parseArtifact, ParsedAction } from '@/lib/webbuilder-parser';
+import { containsArtifact, parseArtifact, ParsedAction, validateDiffsAgainstFile } from '@/lib/webbuilder-parser';
 
 export interface AgentInfo {
   agentName: string;
@@ -509,13 +509,21 @@ function validateBasicSyntax(action: ParsedAction): { isValid: boolean; reason?:
 /**
  * Calls generateText with XML artifact structural and syntax validation.
  * Retries once if errors are found, inserting feedback into the system prompt.
+ *
+ * Bucle verificar→reparar (estilo Aider/Bolt/Cursor): además de validar XML y
+ * sintaxis, el paso 4 pre-valida que cada bloque SEARCH de las acciones
+ * `type="update"` exista en el código actual del archivo. Si no coincide, se
+ * re-pide al LLM (intento 2) con el bloque fallido + el código real del archivo
+ * como contexto, para que regenere un SEARCH exacto. Esto es lo que hace que
+ * las ediciones "simplemente funcionen" en vez de descartarse silenciosamente.
  */
 async function generateWebBuilderCodeWithVerification(
   model: LanguageModel,
   agent: WebBuilderAgentInfo,
   systemPrompt: string,
   userMessage: string,
-  onProgress?: (text: string) => void
+  onProgress?: (text: string) => void,
+  existingFiles?: Record<string, string>
 ): Promise<{ text: string; usage?: { totalTokens?: number } }> {
   let attempt = 1;
   let currentSystemPrompt = systemPrompt;
@@ -523,7 +531,7 @@ async function generateWebBuilderCodeWithVerification(
 
   while (attempt <= 2) {
     if (attempt > 1) {
-      onProgress?.(`⚠️ [Agente] ${agent.agentName} falló la verificación de sintaxis o estructura. Iniciando re-intento con feedback...\n`);
+      onProgress?.(`⚠️ [Agente] ${agent.agentName} re-intentando con feedback (verificación de sintaxis o bloque SEARCH)...\n`);
     }
 
     const { text, usage } = await generateText({
@@ -564,7 +572,7 @@ async function generateWebBuilderCodeWithVerification(
     // 3. Check for syntax and exports
     let syntaxValid = true;
     let syntaxErrorMsg = '';
-    
+
     for (const action of parsed.actions) {
       const validation = validateBasicSyntax(action);
       if (!validation.isValid) {
@@ -581,6 +589,51 @@ async function generateWebBuilderCodeWithVerification(
         continue;
       } else {
         return { text, usage: { totalTokens: totalUsageTokens } };
+      }
+    }
+
+    // 4. Pre-validación SEARCH (bucle Aider): para acciones `type="update"`,
+    //    verificar que cada bloque SEARCH exista en el código actual del archivo
+    //    ANTES de aceptar la generación. Si no coincide, re-pedir al LLM con el
+    //    bloque fallido + el código real como contexto. Los `type="file"` no
+    //    tienen SEARCH (reemplazan el archivo completo) → se omiten.
+    if (existingFiles && attempt === 1) {
+      const failedSearchBlocks: string[] = [];
+      for (const action of parsed.actions) {
+        if (action.type === 'update') {
+          const existingCode = existingFiles[action.filePath] ?? '';
+          if (!existingCode) {
+            // El archivo no existe en el contexto: el update no podría aplicar.
+            failedSearchBlocks.push(
+              `• ${action.filePath}: el archivo no existe en el proyecto. Usa type="file" para crearlo, o verifica la ruta.`
+            );
+            continue;
+          }
+          const { failed } = validateDiffsAgainstFile(existingCode, action.diffs);
+          for (const f of failed) {
+            failedSearchBlocks.push(
+              `• ${action.filePath}: ${f.reason}\n  Bloque SEARCH que no coincide (primeras líneas):\n  ${(f.search.split('\n').slice(0, 6).join('\n  '))}\n  ← Revisa el código actual abajo y usa el texto EXACTO.`
+            );
+          }
+        }
+      }
+
+      if (failedSearchBlocks.length > 0) {
+        // Contexto real: las primeras ~15 líneas del archivo(s) afectado(s)
+        // para que el LLM regenere un SEARCH exacto en el intento 2.
+        const fileContext = parsed.actions
+          .filter((a): a is Extract<ParsedAction, { type: 'update' }> => a.type === 'update')
+          .map(a => {
+            const code = existingFiles[a.filePath] ?? '';
+            const head = code.split('\n').slice(0, 15).join('\n');
+            return `--- Código actual de ${a.filePath} (primeras 15 líneas) ---\n${head}\n---`;
+          })
+          .join('\n\n');
+
+        currentSystemPrompt = `${systemPrompt}\n\n[ERROR ANTERIOR] Tus bloques SEARCH no coinciden con el código actual del archivo. El diff NO se aplicará. Corrígelo usando el texto EXACTO del archivo real:\n${failedSearchBlocks.join('\n')}\n\n${fileContext}\n\nIMPORTANTE: copia el código del archivo literalmente en el bloque SEARCH, respetando indentación y saltos de línea. Si el bloque es ambiguo (aparece varias veces), incluye más líneas alrededor para hacerlo único.`;
+        onProgress?.(`⚠️ [Agente] ${agent.agentName}: ${failedSearchBlocks.length} bloque(s) SEARCH no coinciden con el código actual. Re-pidiendo al LLM con el contexto real...\n`);
+        attempt++;
+        continue;
       }
     }
 
@@ -722,7 +775,8 @@ export async function executeWebBuilderAgents(
   agents: WebBuilderAgentInfo[],
   userMessage: string,
   existingFiles?: Record<string, string>,
-  onProgress?: (text: string) => void
+  onProgress?: (text: string) => void,
+  onFileReady?: (agent: WebBuilderAgentInfo, content: string, success: boolean) => void
 ): Promise<{ agentReports: WebBuilderAgentReport[]; totalOrchestrationTimeMs: number; totalTokensUsed: number }> {
   const startTime = Date.now();
   let totalTokensUsed = 0;
@@ -750,11 +804,11 @@ Si vas a CREAR o REEMPLAZAR un archivo por completo, usa type="file":
 Si vas a MODIFICAR un archivo existente, usa type="update" con bloques search/replace:
 <maverlangArtifact id="project" title="Modificación de archivo">
   <maverlangAction type="update" filePath="${agent.filePath}">
-<<<<SEARCH
+<<<SEARCH
 // Código exacto actual a buscar
-====
+===
 // Código modificado de reemplazo
->>>>
+>>>
   </maverlangAction>
 </maverlangArtifact>
 
@@ -784,7 +838,8 @@ Recuerda devolver ÚNICAMENTE el XML con tu código.`;
         agent,
         agentSystemPrompt,
         agentUserMessage,
-        onProgress
+        onProgress,
+        relevantFiles
       );
 
       const agentResponse = await withTimeout(
@@ -798,6 +853,16 @@ Recuerda devolver ÚNICAMENTE el XML con tu código.`;
       const content = agentResponse.text;
       onProgress?.(`✅ [Agente] ${agent.agentName} completó la edición de \`${agent.filePath}\` en ${duration}ms.\n`);
 
+      // Streaming apply live (la "magia" de Lovable): emitir el archivo al
+      // stream INMEDIATAMENTE cuando el agente termina, sin esperar al
+      // Promise.all. El callback es síncrono (parse+assign+append atómico en
+      // el event loop), así que no hay races sobre filesToApply.
+      if (onFileReady) {
+        try { onFileReady(agent, content, true); } catch (e) {
+          console.error("onFileReady callback failed:", e);
+        }
+      }
+
       return {
         ...agent,
         content,
@@ -809,6 +874,15 @@ Recuerda devolver ÚNICAMENTE el XML con tu código.`;
       const duration = Date.now() - agentStartTime;
       console.error(`Error in WebBuilder Agent ${agent.agentName}:`, err);
       onProgress?.(`❌ [Agente] ${agent.agentName} falló para \`${agent.filePath}\` después de ${duration}ms: ${err.message || String(err)}\n`);
+
+      // Avisar al callback que este archivo no estará disponible (no hay
+      // artefacto que emitir). El cliente simplemente no verá ese archivo
+      // hasta que el usuario lo regenere.
+      if (onFileReady) {
+        try { onFileReady(agent, '', false); } catch (e) {
+          console.error("onFileReady callback failed:", e);
+        }
+      }
 
       return {
         ...agent,

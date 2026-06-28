@@ -397,8 +397,24 @@ export async function POST(req: NextRequest) {
               if (report.success && containsArtifact(report.content)) {
                 const parsed = parseArtifact(report.content);
                 if (parsed && parsed.actions.length > 0) {
-                  const fileChanges = actionsToFiles(parsed.actions, filesToApply);
+                  const { files: fileChanges, failedUpdates } = actionsToFiles(parsed.actions, filesToApply);
                   Object.assign(filesToApply, fileChanges);
+                  // Surfacing estilo Aider: si un bloque SEARCH no coincidió, lo
+                  // hacemos visible en el panel de agentes para que el usuario sepa
+                  // que esa edición no aterrizó (antes era un no-op silencioso).
+                  if (failedUpdates.length > 0) {
+                    const summary = failedUpdates
+                      .map(f => `• ${f.filePath}: ${f.reason}`)
+                      .join('\n');
+                    try {
+                      fakeStreamData.append({
+                        type: 'reasoning',
+                        text: `\n⚠️ ${failedUpdates.length} edición(es) no aplicada(s) — el bloque SEARCH no coincide con el código actual:\n${summary}\nVuelve a pedirla indicando el código exacto del archivo.\n`,
+                      });
+                    } catch (e) {
+                      console.error("Failed to append failedUpdates reasoning:", e);
+                    }
+                  }
                 }
               }
             }

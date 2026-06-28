@@ -1,14 +1,24 @@
 /**
  * Auto-Fix Service for WebBuilder Preview Errors
- * 
+ *
  * Intercepts compilation and runtime errors in Sandpack and requests an LLM-powered fix
  * from the dedicated backend endpoint.
  */
 
+export interface AutoFixWarning {
+  filePath: string;
+  reason: string;
+}
+
+export interface AutoFixResult {
+  files: Record<string, string>;
+  warnings: AutoFixWarning[];
+}
+
 export async function attemptAutoFix(
   error: string,
   files: Record<string, { code: string } | string>
-): Promise<Record<string, string> | null> {
+): Promise<AutoFixResult | null> {
   try {
     // Flatten files to Record<string, string> if they are of type WebBuilderFile
     const flatFiles = Object.fromEntries(
@@ -36,7 +46,10 @@ export async function attemptAutoFix(
 
     const data = await response.json();
     if (data.success && data.files) {
-      return data.files as Record<string, string>;
+      return {
+        files: data.files as Record<string, string>,
+        warnings: Array.isArray(data.warnings) ? (data.warnings as AutoFixWarning[]) : [],
+      };
     } else {
       console.warn("[Auto-Fix Service] Server did not succeed in generating a fix:", data.error || "Unknown error");
       return null;

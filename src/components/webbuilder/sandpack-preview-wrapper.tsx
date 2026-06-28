@@ -103,11 +103,11 @@ function SandpackErrorListener() {
         currentStore.startAutoFix();
 
         attemptAutoFix(errorMessage, currentStore.files)
-          .then((fixedFiles) => {
-            if (fixedFiles) {
+          .then((fixResult) => {
+            if (fixResult) {
               console.log("[Auto-Fix] Fix recibido. Aplicando...");
               const formatted: Record<string, { code: string }> = {};
-              for (const [path, code] of Object.entries(fixedFiles)) {
+              for (const [path, code] of Object.entries(fixResult.files)) {
                 formatted[path] = { code };
               }
               const merged = { ...currentStore.files, ...formatted };
@@ -116,7 +116,20 @@ function SandpackErrorListener() {
               // el bucle si el fix no sirve).
               useWebBuilderStore.getState().recordAppliedFix(errHash, filesHash);
               useWebBuilderStore.getState().setFiles(merged);
-              useWebBuilderStore.getState().completeAutoFix();
+              // Surfacing estilo Aider: si parte del fix no aterrizó (bloque
+              // SEARCH no encontrado), lo hacemos visible al usuario en vez de
+              // un no-op silencioso. Marca el auto-fix como fallido parcial para
+              // que el BuildErrorView lo muestre y el usuario pueda reintentar.
+              if (fixResult.warnings.length > 0) {
+                const detail = fixResult.warnings
+                  .map(w => `${w.filePath}: ${w.reason}`)
+                  .join("; ");
+                useWebBuilderStore.getState().failAutoFix(
+                  `La reparación se aplicó parcialmente, pero ${fixResult.warnings.length} bloque(s) no coincidieron con el código actual (${detail}). Revisa el archivo y vuelve a pedirlo indicando el código exacto.`
+                );
+              } else {
+                useWebBuilderStore.getState().completeAutoFix();
+              }
             } else {
               console.warn("[Auto-Fix] No se pudo generar un fix.");
               useWebBuilderStore.getState().failAutoFix(errorMessage);

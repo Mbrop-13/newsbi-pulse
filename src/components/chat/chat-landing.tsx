@@ -1333,10 +1333,19 @@ function ChatLandingContent() {
           const artifact = parseArtifact(text);
           if (artifact && artifact.actions.length > 0) {
             const store = useWebBuilderStore.getState();
-            const newFiles = actionsToFiles(artifact.actions, store.files);
+            const { files: newFiles, failedUpdates } = actionsToFiles(artifact.actions, store.files);
             const merged = { ...store.files, ...newFiles };
             if (!filesEqual(merged, store.files)) {
               store.setFiles(merged);
+            }
+            // Surfacing estilo Aider: log en dev de las ediciones cuyo bloque
+            // SEARCH no coincidió. En el path inline no emitimos al stream para
+            // no ensuciar el chat simple, pero dejamos rastro para diagnóstico.
+            if (failedUpdates.length > 0) {
+              console.warn(
+                "[WebBuilder] Ediciones no aplicadas (bloque SEARCH no encontrado):",
+                failedUpdates.map(f => ({ filePath: f.filePath, reason: f.reason }))
+              );
             }
           }
         }
@@ -1734,8 +1743,11 @@ function ChatLandingContent() {
               </div>
             </div>
           ) : (
-            /* Desktop landing: centered logo + input + categories grid */
-            <div className="flex-1 flex flex-col items-center justify-center px-4 py-4 relative h-full overflow-hidden">
+            /* Desktop landing: centered logo + input + categories grid.
+               overflow-y-auto permite que el overlay de tarjetas (absoluto) se
+               despliegue hacia abajo sin mover el logo; el contenido en flujo
+               sigue centrado gracias a justify-center. */
+            <div className="flex-1 flex flex-col items-center justify-center px-4 py-4 relative h-full overflow-x-hidden overflow-y-auto scrollbar-hide">
               <div className="h-[6vh] shrink-0" aria-hidden />
               <div className="w-full max-w-4xl mx-auto flex flex-col items-center justify-center">
                 <div className="text-center mb-6">
@@ -1761,7 +1773,7 @@ function ChatLandingContent() {
                 </div>
 
                 {/* Categorías y Tarjetas de Previsualización */}
-                <div className="w-full mt-2 sm:mt-3 flex flex-col items-center">
+                <div className="w-full mt-2 sm:mt-3 flex flex-col items-center relative">
                   {/* Categorías (Pills) - Fixed and Wrapped to prevent clipping */}
                   <div className="flex flex-wrap items-center justify-center gap-2 w-full max-w-2xl py-2 px-4 mt-1">
                     {CREATIVE_CATEGORIES.map((cat) => (
@@ -1769,12 +1781,18 @@ function ChatLandingContent() {
                     ))}
                   </div>
 
-                  {/* Grid de Previsualización - Custom Visual Mockup Only Cards */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 mt-3 w-full max-w-4xl px-2">
-                    {PREVIEW_ITEMS.filter((item) => item.category === activeCategory).map((item) => (
-                      <PreviewCard key={item.id} item={item} />
-                    ))}
-                  </div>
+                  {/* Grid de Previsualización - overlay absoluto que se superpone
+                      hacia abajo sin entrar al flujo, así no desplaza el logo
+                      (mismo principio que el overlay móvil con bottom-full). */}
+                  {activeCategory && (
+                    <div className="absolute top-full left-0 mt-3 w-full max-w-4xl px-2 pb-6 z-20">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+                        {PREVIEW_ITEMS.filter((item) => item.category === activeCategory).map((item) => (
+                          <PreviewCard key={item.id} item={item} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

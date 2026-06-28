@@ -55,14 +55,25 @@ export function CanvasWorkspace({ chatPanel }: CanvasWorkspaceProps) {
     };
   }, [isDragging]);
 
-  // Sync mobile tab and collapse sidebar when canvas is opened/closed
+  // Sync mobile tab and collapse sidebar when canvas is opened/closed.
+  // Nota: solo colapsamos el sidebar en la transición cerrado→abierto (no en
+  // cada ejecución del efecto). Sin esto, al intentar expandir el sidebar
+  // manualmente, setOpen cambia de referencia (useCallback depende de `open`
+  // en sidebar.tsx), el efecto se re-ejecuta y lo vuelve a colapsar, haciendo
+  // imposible expandirlo mientras el canvas está activo.
+  const prevIsOpenRef = useRef<boolean>(isOpen);
   useEffect(() => {
+    const justOpened = isOpen && !prevIsOpenRef.current;
+    prevIsOpenRef.current = isOpen;
+
     if (isOpen) {
       setMobileTab("canvas");
-      if (isMobile) {
-        setOpenMobile(false);
-      } else {
-        setOpen(false);
+      if (justOpened) {
+        if (isMobile) {
+          setOpenMobile(false);
+        } else {
+          setOpen(false);
+        }
       }
     } else {
       setMobileTab("chat");

@@ -1442,6 +1442,23 @@ function MessageBubble({
         {/* Actions bar */}
         <div className="flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
 
+          {/* Razonamiento: botón rápido en la barra de hover (igual que like/dislike).
+              Solo aparece cuando el mensaje tiene razonamiento; toggolea el panel. */}
+          {(extractedReasoning || message.thinkingSteps?.length) && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "h-7 w-7 rounded-full",
+                localReasoningOpen && "bg-muted"
+              )}
+              onClick={() => setLocalReasoningOpen(!localReasoningOpen)}
+              aria-label="Ver razonamiento"
+              title="Razonamiento"
+            >
+              <Brain className={cn("h-3.5 w-3.5 transition-colors", localReasoningOpen ? "text-foreground" : "text-muted-foreground")} />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"

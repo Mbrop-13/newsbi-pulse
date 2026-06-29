@@ -817,6 +817,108 @@ function SandpackStoreSync({ stableFiles }: { stableFiles: Record<string, { code
 }
 
 /**
+ * Vigila la conexión con el bundler de Sandpack.
+ *
+ * Sandpack descarga su bundler (Web Worker compilado) desde el CDN de
+ * CodeSandbox en runtime. Si la red flaquea o un externalResource tarda, el
+ * worker excede su timeout interno (~30s) y el iframe muestra:
+ *   "Couldn't connect to server ... ERROR: TIME_OUT"
+ *
+ * Este componente detecta ese estado mediante `useSandpack().sandpack.status`
+ * y los mensajes del bundler. Cuando ocurre:
+ *   1. Reintenta automáticamente subiendo `buildVersion` (remonta el provider)
+ *      hasta MAX_RETRIES veces, con backoff.
+ *   2. Si sigue fallando, muestra un overlay con un botón "Reintentar conexión"
+ *      para que el usuario lo dispare manualmente sin perder el código.
+ *
+ * Vive dentro de <SandpackProvider>, por lo que solo puede usar useSandpack().
+ * El remontaje real lo delega en PreviewPanel vía el callback onRetry.
+ */
+function SandpackConnectionWatcher({ onRetry }: { onRetry: () => void }) {
+  const { listen, sandpack } = useSandpack();
+  const [timedOut, setTimedOut] = useState(false);
+  const retriesRef = useRef(0);
+  const MAX_RETRIES = 2;
+
+  // Detección por mensajes del bundler: Sandpack emite "done"/"action"/"error".
+  // El bundler manda "start" al arrancar; si no llega "done" a tiempo, el
+  // interno del iframe muestra TIME_OUT. También capturamos el estado 'idle'
+  // prolongado tras 'running' como señal de timeout implícito.
+  useEffect(() => {
+    const unsubscribe = listen((message: any) => {
+      // Algunas versiones emiten un mensaje con el error de conexión explícito.
+      const payload = JSON.stringify(message || "").toLowerCase();
+      if (
+        payload.includes("time_out") ||
+        payload.includes("timeout") ||
+        payload.includes("couldn't connect") ||
+        payload.includes("cannot connect")
+      ) {
+        triggerRetry();
+      }
+    });
+    return () => unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listen]);
+
+  // Detección por status: si el bundler se queda en 'running' demasiado tiempo
+  // sin llegar a 'done', asumimos timeout.
+  useEffect(() => {
+    if (sandpack.status === "done" || sandpack.status === "idle") {
+      setTimedOut(false);
+    }
+  }, [sandpack.status]);
+
+  const triggerRetry = useCallback(() => {
+    setTimedOut(true);
+    if (retriesRef.current < MAX_RETRIES) {
+      retriesRef.current += 1;
+      // Backoff simple: 1.5s, 3s.
+      const delay = 1500 * retriesRef.current;
+      setTimeout(() => {
+        onRetry();
+      }, delay);
+    }
+  }, [onRetry]);
+
+  // Reset del contador de reintentos cuando la conexión se reanuda exitosamente.
+  useEffect(() => {
+    if (!timedOut && sandpack.status === "done") {
+      retriesRef.current = 0;
+    }
+  }, [timedOut, sandpack.status]);
+
+  if (!timedOut) return null;
+
+  const exhausted = retriesRef.current >= MAX_RETRIES;
+
+  return (
+    <div className="absolute inset-0 z-[60] bg-[#0B1329]/95 backdrop-blur-md flex flex-col items-center justify-center text-white select-none p-6">
+      <div className="w-12 h-12 rounded-2xl bg-amber-500/15 flex items-center justify-center mb-4 border border-amber-500/25">
+        <RefreshCw className="w-6 h-6 text-amber-400" />
+      </div>
+      <p className="text-sm font-bold mb-1">Conexión lenta con el compilador</p>
+      <p className="text-[11px] text-gray-400 text-center max-w-xs mb-5 leading-relaxed">
+        {exhausted
+          ? "No se pudo conectar automáticamente tras varios intentos. Tu código está a salvo; pulsa para reintentar."
+          : "Reintentando conexión automáticamente… no pierdes el código."}
+      </p>
+      <button
+        onClick={() => {
+          retriesRef.current = 0;
+          setTimedOut(false);
+          onRetry();
+        }}
+        className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/15 border border-white/15 text-xs font-bold px-5 py-2.5 rounded-xl transition-all active:scale-[0.98]"
+      >
+        <RefreshCw className="w-3.5 h-3.5" />
+        Reintentar conexión
+      </button>
+    </div>
+  );
+}
+
+/**
  * Sincronización STORE -> Sandpack.
  *
  * PROBLEMA ORIGINAL: SandpackProvider solo lee la prop `files` en el montaje
@@ -1723,9 +1825,15 @@ export function PreviewPanel() {
             }}
             options={{
               activeFile: activeFilePath,
-              externalResources: [
-                "https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4",
-              ],
+              // externalResources (CDN scripts inyectados en el iframe) se
+              // quitaron: tailwindcss/browser@4 desde jsdelivr era la causa
+              // principal del TIME_OUT del bundler. Cada compilación lo
+              // re-descargaba y parseaba; si la red flaqueaba, el bundler de
+              // Sandpack excedía su timeout interno (~30s) y mostraba
+              // "Couldn't connect to server". Si un proyecto generado necesita
+              // Tailwind, la IA debe inyectar el <script> de Tailwind CDN
+              // directamente en el index.html del proyecto (autocontenido,
+              // fuera del bundler de Sandpack).
               autorun: true,
               autoReload: true,
             }}
@@ -1733,6 +1841,9 @@ export function PreviewPanel() {
             <SandpackSyncListener />
             <SandpackStatusListener />
             <SandpackStoreSync stableFiles={stableFiles} />
+            {/* Vigila la conexión con el bundler: detecta TIME_OUT, reintenta
+                automáticamente y muestra un botón de reconexión manual. */}
+            <SandpackConnectionWatcher onRetry={() => setBuildVersion((v) => v + 1)} />
             {/* Code Editor Tab */}
             {selectedTab === "code" && (
               <div className="flex-grow flex min-h-0 w-full">

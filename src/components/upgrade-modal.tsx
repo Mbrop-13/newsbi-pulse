@@ -174,8 +174,14 @@ export function UpgradeModal({ isOpen, onClose, feature, customTitle, customMess
                 </Button>
               </Link>
 
+              <Link
+                href="/empresas"
+                onClick={onClose}
+                className="w-full mt-2 text-center text-xs text-[#1890FF] hover:underline font-medium"
+              >
+                ¿Eres empresa? Ver planes para equipos →
+              </Link>
 
-              
               <button
                 onClick={onClose}
                 className="w-full mt-2 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors font-medium"

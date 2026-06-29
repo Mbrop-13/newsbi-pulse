@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 // Motor de Resaltado de Sintaxis
 function applySyntaxHighlighting(code: string, language: string): string {
@@ -624,7 +625,7 @@ export function CanvasPanel() {
                 ) : (
                   <pre
                     className="flex-grow px-4 pr-24 m-0 text-gray-800 dark:text-gray-300 font-mono text-[13px] leading-6 whitespace-pre min-w-max"
-                    dangerouslySetInnerHTML={{ __html: applySyntaxHighlighting(activeFile.code, activeFile.language) }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(applySyntaxHighlighting(activeFile.code, activeFile.language)) }}
                   />
                 )}
               </div>
@@ -650,7 +651,7 @@ export function CanvasPanel() {
                   <div className="w-full h-full flex items-center justify-center p-6 overflow-auto bg-white dark:bg-[#1E1E1E]">
                     <div
                       ref={svgContainerRef}
-                      dangerouslySetInnerHTML={{ __html: activeFile.code }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(activeFile.code) }}
                       className="max-w-full max-h-full flex items-center justify-center"
                     />
                   </div>

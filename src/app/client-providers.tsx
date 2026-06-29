@@ -11,7 +11,6 @@ import { PersonalizationApplier } from "@/components/personalization-applier";
 import { useAudioPlayerStore } from "@/lib/stores/audio-player-store";
 import { AuthToast } from "@/components/auth-toast";
 import { ReadingListWidget } from "@/components/reading-list-widget";
-import { ResolvedBetsPopup } from "@/components/resolved-bet-popup";
 import { CapacitorInit } from "@/components/capacitor-init";
 import { AuthSync } from "@/components/auth-sync";
 import { PremiumConversionModal } from "@/components/premium-conversion-modal";
@@ -93,7 +92,10 @@ export function ClientLayoutProviders({
   }, [rawPathname]);
   // La landing de marketing ahora vive en /home (ahí sí van footer + bottom nav).
   // "/" es el chat, que al igual que /ai no muestra footer ni bottom nav.
-  const isLandingPage = pathname === "/home";
+  const isLandingPage = pathname === "/home" ||
+    pathname === "/empresas" ||
+    pathname.startsWith("/empresas/") ||
+    pathname.startsWith("/invitar/");
   // Pages that use the sidebar layout (no navbar/footer)
   const sidebarPages = [
     "/",
@@ -110,7 +112,6 @@ export function ClientLayoutProviders({
     "/impacto-global",
     "/suscripcion",
     "/profile",
-    "/mis-predicciones",
     "/guardados",
     "/lista-lectura",
     "/para-ti",
@@ -169,12 +170,12 @@ export function ClientLayoutProviders({
     <ThemeProvider>
       <TooltipProvider>
         <AuthSync />
-        <div className="flex flex-col min-h-screen">
+        <div className="flex flex-col h-[100dvh] overflow-hidden relative">
           {/* Top Navbar removed as requested to unify layout */}
           <main
             className={`flex-1 transition-all duration-300 ease-in-out ${
-              isFullscreenPage ? "overflow-hidden" : isAdminPage ? "" : "pb-16 md:pb-0"
-            }`}
+              isFullscreenPage ? "overflow-hidden h-full" : "overflow-y-auto h-full"
+            } ${isAdminPage ? "" : "pb-16 md:pb-0"}`}
             style={{
               ...((!isAdminPage && audioMode === "pinned") ? { marginRight: pinnedWidth } : {}),
               transition: 'margin-right 0.3s ease-in-out',
@@ -207,7 +208,6 @@ export function ClientLayoutProviders({
           <AuthToast />
           {!isAdminPage && <ActiveArticleDrawer />}
           {!isAdminPage && <ReadingListWidget />}
-          {!isAdminPage && <ResolvedBetsPopup />}
           <PremiumConversionModal />
           <AuthModals
             isOpen={authModalOpen}

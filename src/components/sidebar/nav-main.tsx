@@ -14,7 +14,7 @@ import { useAuthStore, useAuthModalStore } from "@/lib/stores/auth-store"
 
 // Rutas accesibles sin autenticación. Todo lo demás del sidebar es protegido:
 // al clicar sin sesión se abre el popup de registro en vez de navegar.
-const PUBLIC_ROUTES = ["/", "#", "/ai", "/home", "/suscripcion"]
+const PUBLIC_ROUTES = ["/", "#", "/ai", "/home", "/suscripcion", "/empresas", "/empresas/dashboard", "/invitar"]
 
 export function NavMain({
   items,

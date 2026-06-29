@@ -128,7 +128,8 @@ export function LandingCTA() {
                 <li><Link href="/para-ti" className="text-sm text-slate-500 hover:text-black transition-colors">Para Ti</Link></li>
                 <li><Link href="/breaking" className="text-sm text-slate-500 hover:text-black transition-colors">Breaking</Link></li>
                 <li><Link href="/mercados" className="text-sm text-slate-500 hover:text-black transition-colors">Mercados</Link></li>
-                <li><Link href="/predicciones" className="text-sm text-slate-500 hover:text-black transition-colors">Predicciones</Link></li>
+                <li><Link href="/empresas" className="text-sm text-slate-500 hover:text-black transition-colors">Para Empresas</Link></li>
+                <li><Link href="/portafolio" className="text-sm text-slate-500 hover:text-black transition-colors">Portafolio</Link></li>
                 <li><Link href="/ai" className="text-sm text-slate-500 hover:text-black transition-colors">Copiloto IA</Link></li>
               </ul>
             </div>

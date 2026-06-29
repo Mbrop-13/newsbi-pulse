@@ -92,20 +92,25 @@ CREATE POLICY "Service role full access lifetime_usage" ON lifetime_usage
   FOR ALL USING (auth.role() = 'service_role');
 
 -- Trigger to auto-create subscription row on user signup
+-- SECURITY: SET search_path hardening (ASVS 4.3.3)
 CREATE OR REPLACE FUNCTION handle_new_user_subscription()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 BEGIN
   INSERT INTO public.subscriptions (user_id, tier, status)
   VALUES (NEW.id, 'free', 'active')
   ON CONFLICT (user_id) DO NOTHING;
-  
+
   INSERT INTO public.lifetime_usage (user_id)
   VALUES (NEW.id)
   ON CONFLICT (user_id) DO NOTHING;
-  
+
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- Drop existing trigger if any
 DROP TRIGGER IF EXISTS on_auth_user_created_subscription ON auth.users;

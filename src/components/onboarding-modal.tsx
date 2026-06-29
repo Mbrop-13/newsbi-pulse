@@ -61,11 +61,11 @@ const STEPS = [
     badge: "Secciones",
     title: "Todo lo que necesitas, organizado",
     description:
-      "Explora 9 secciones especializadas: desde finanzas e inversiones hasta tech global y predicciones de mercado.",
+      "Explora 9 secciones especializadas: desde finanzas e inversiones hasta tech global y mercados en tiempo real.",
     features: [
       { icon: <LineChart className="w-5 h-5" />, label: "Finanzas · Inversiones · Economía", color: "text-emerald-500", bg: "bg-emerald-500/10" },
       { icon: <Globe className="w-5 h-5" />, label: "Impacto Global · Tech · Mundo", color: "text-indigo-500", bg: "bg-indigo-500/10" },
-      { icon: <Sparkles className="w-5 h-5" />, label: "Predicciones · Asistente IA", color: "text-amber-500", bg: "bg-amber-500/10" },
+      { icon: <Sparkles className="w-5 h-5" />, label: "Mercados · Asistente IA", color: "text-amber-500", bg: "bg-amber-500/10" },
     ],
     visual: "sections",
   },
@@ -74,7 +74,7 @@ const STEPS = [
     badge: "Personalización",
     title: "Hazlo tuyo al 100%",
     description:
-      "Filtra por fuente, ajusta el tamaño de texto, la densidad del layout, y activa o desactiva las predicciones. Todo se guarda al instante.",
+      "Filtra por fuente, ajusta el tamaño de texto, la densidad del layout y personaliza tu experiencia. Todo se guarda al instante.",
     features: [
       { icon: <Filter className="w-5 h-5" />, label: "Filtra por fuentes de noticias", color: "text-blue-500", bg: "bg-blue-500/10" },
       { icon: <Settings2 className="w-5 h-5" />, label: "Ajusta densidad, tamaño y layout", color: "text-purple-500", bg: "bg-purple-500/10" },

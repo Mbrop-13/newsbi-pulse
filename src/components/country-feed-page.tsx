@@ -92,12 +92,24 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
   // Fetch articles on mount
   useEffect(() => {
     const fetchNews = async () => {
-      const { data, error } = await supabase
+      // Intento 1: con filtro is_hidden (si la columna existe)
+      let { data, error } = await supabase
         .from('news_articles')
         .select('*')
         .neq('is_hidden', true)
         .order('published_at', { ascending: false })
         .limit(200);
+
+      // Reintento sin is_hidden si la columna no existe (PostgREST 400/42704)
+      if (error && /is_hidden|column|42704|PGRST/i.test(error.message || '')) {
+        const fallback = await supabase
+          .from('news_articles')
+          .select('*')
+          .order('published_at', { ascending: false })
+          .limit(200);
+        data = fallback.data;
+        error = fallback.error;
+      }
 
       if (data && !error) {
         setDbArticles(data);

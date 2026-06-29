@@ -49,5 +49,32 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
+  // Defense-in-depth: deny-by-default on /api/* except an explicit public
+  // allowlist. Routes not in this list MUST self-authenticate via getUser().
+  // Any route relying on an anonymous caller must be added here on purpose.
+  if (request.nextUrl.pathname.startsWith('/api/')) {
+    const PUBLIC_API_ALLOWLIST = [
+      '/api/auth/',            // supabase auth callback / oauth
+      '/api/webhooks/',        // 3rd-party webhooks (verify signature in-route)
+      '/api/cron/',            // scheduled jobs (verify CRON_SECRET in-route)
+      '/api/news/fetch',       // public news feed (read-only)
+      '/api/news/live',        // public live ticker (read-only)
+      '/api/news/enrich',      // public enrichment (no PII)
+      '/api/news/deduplicate', // dedup helper
+      '/api/og/',              // OpenGraph image generator (public)
+      '/api/tags',             // public tag list
+      '/api/newsletter',       // newsletter signup (has its own rate-limit)
+      '/api/market-overview',  // public market data
+      '/api/auth/google-drive',// OAuth login initiator
+      '/api/auth/callback',    // OAuth callback
+    ];
+    const isPublic = PUBLIC_API_ALLOWLIST.some((p) =>
+      request.nextUrl.pathname.startsWith(p)
+    );
+    if (!isPublic && !user) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
+  }
+
   return supabaseResponse
 }

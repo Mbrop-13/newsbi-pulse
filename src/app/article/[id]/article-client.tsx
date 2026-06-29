@@ -242,7 +242,7 @@ export default function ArticlePage() {
           </div>
         </div>
 
-        {/* Two-column layout: Image+Article on Left, Predictions on Right */}
+        {/* Two-column layout: Image+Article on Left, Sidebar on Right */}
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Left: Full article body */}
           <div className="flex-1 min-w-0">

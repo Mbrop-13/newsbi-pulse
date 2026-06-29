@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { BarChart3, ChevronDown, TrendingUp, TrendingDown, ExternalLink, Activity, DollarSign, Shield, Layers, Plus, Check, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { MiniChart } from '@/components/tradingview/mini-chart';
+import { ResponsiveContainer, BarChart, Bar, Cell, XAxis, YAxis, Tooltip } from 'recharts';
 
 function getLogoUrl(symbol: string): string {
   return `https://assets.parqet.com/logos/symbol/${symbol}`;
@@ -131,6 +133,10 @@ export function StockAnalysisCard({ toolName, result }: StockAnalysisCardProps) 
           {isOpen && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
               <div className="bg-white dark:bg-[#141821] border border-t-0 border-gray-200/80 dark:border-white/10 rounded-b-2xl shadow-sm overflow-hidden">
+                {/* Live chart (TradingView) */}
+                <div className="px-4 pt-4 pb-2 border-b border-gray-100 dark:border-white/5">
+                  <MiniChart symbol={`${symbol.includes('.') ? symbol : symbol}`} height={200} dateRange="3M" />
+                </div>
                 {/* Valuation */}
                 <div className="px-4 py-3 border-b border-gray-100 dark:border-white/5">
                   <div className="flex items-center gap-2 mb-2"><DollarSign className="w-3.5 h-3.5 text-[#1890FF]" /><span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Valoración</span></div>
@@ -201,6 +207,16 @@ export function StockAnalysisCard({ toolName, result }: StockAnalysisCardProps) 
     const stocks = result.comparison.filter((s: any) => !s.error);
     if (stocks.length === 0) return null;
 
+    // Datos para el bar chart comparativo de rendimiento
+    const periodLabel = stocks[0]?.periodoEvalado === '1d' ? 'hoy'
+      : stocks[0]?.periodoEvalado === 'ytd' ? 'este año'
+      : stocks[0]?.periodoEvalado ? `últimos ${stocks[0].periodoEvalado.replace('mo', ' meses').replace('y', ' año')}` : 'hoy';
+    const chartData = stocks.map((s: any) => ({
+      label: s.symbol,
+      value: Number((s.changePercent || 0).toFixed(2)),
+    }));
+    const maxAbs = Math.max(...chartData.map((d: any) => Math.abs(d.value)), 1);
+
     return (
       <div className="w-full max-w-lg my-3">
         <button onClick={() => setIsOpen(!isOpen)} className={`flex items-center gap-3 w-full px-4 py-3.5 bg-white dark:bg-[#141821] border border-gray-200/80 dark:border-white/10 rounded-2xl shadow-sm hover:shadow-md hover:border-[#1890FF]/30 transition-all ${isOpen ? 'rounded-b-none border-b-0 shadow-none' : ''}`}>
@@ -227,7 +243,37 @@ export function StockAnalysisCard({ toolName, result }: StockAnalysisCardProps) 
           {isOpen && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
               <div className="bg-white dark:bg-[#141821] border border-t-0 border-gray-200/80 dark:border-white/10 rounded-b-2xl shadow-sm overflow-x-auto">
-                <div className="max-h-[400px] overflow-y-auto hidden-scrollbar divide-y divide-gray-100 dark:divide-white/5">
+                {/* Comparative performance bar chart */}
+                <div className="px-4 pt-4 pb-2 border-b border-gray-100 dark:border-white/5">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Rendimiento comparativo · {periodLabel}</p>
+                  <ResponsiveContainer width="100%" height={140}>
+                    <BarChart data={chartData} layout="vertical" margin={{ top: 4, right: 16, left: 0, bottom: 4 }}>
+                      <XAxis type="number" orientation="top" tick={{ fontSize: 9, fill: '#9ca3af' }} axisLine={false} tickLine={false} domain={[-maxAbs, maxAbs]} unit="%" />
+                      <YAxis type="category" dataKey="label" tick={{ fontSize: 10, fontWeight: 700, fill: '#6b7280' }} axisLine={false} tickLine={false} width={48} />
+                      <Tooltip
+                        cursor={{ fill: 'rgba(24,144,255,0.05)' }}
+                        content={({ active, payload }: any) => {
+                          if (!active || !payload?.length) return null;
+                          const d = payload[0].payload;
+                          return (
+                            <div className="bg-white dark:bg-[#1a1f2e] px-2.5 py-1.5 rounded-lg shadow-xl border border-gray-200 dark:border-white/10 text-[11px]">
+                              <span className="font-bold text-gray-900 dark:text-white">{d.label}: </span>
+                              <span className={`font-semibold ${d.value >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>{d.value >= 0 ? '+' : ''}{d.value}%</span>
+                            </div>
+                          );
+                        }}
+                      />
+                      <Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={18}>
+                        {chartData.map((d: any, i: number) => (
+                          <Cell key={i} fill={d.value >= 0 ? '#10b981' : '#ef4444'} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Stock rows */}
+                <div className="max-h-[360px] overflow-y-auto hidden-scrollbar divide-y divide-gray-100 dark:divide-white/5">
                   {stocks.map((stock: any) => {
                     const pos = (stock.changePercent || 0) >= 0;
                     return (
@@ -332,28 +378,54 @@ export function StockAnalysisCard({ toolName, result }: StockAnalysisCardProps) 
 
   // ── get_sector_performance ──
   if (toolName === 'get_sector_performance' && result.sectors) {
+    const sectors = [...result.sectors].sort((a: any, b: any) => (b.changePercent || 0) - (a.changePercent || 0));
+    const maxAbs = Math.max(...sectors.map((s: any) => Math.abs(s.changePercent || 0)), 1);
+    const avg = sectors.reduce((sum: number, s: any) => sum + (s.changePercent || 0), 0) / (sectors.length || 1);
+    const positiveCount = sectors.filter((s: any) => (s.changePercent || 0) >= 0).length;
+
     return (
       <div className="w-full max-w-md my-3">
         <button onClick={() => setIsOpen(!isOpen)} className={`flex items-center gap-3 w-full px-4 py-3.5 bg-white dark:bg-[#141821] border border-gray-200/80 dark:border-white/10 rounded-2xl shadow-sm hover:shadow-md hover:border-[#1890FF]/30 transition-all ${isOpen ? 'rounded-b-none border-b-0 shadow-none' : ''}`}>
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-600 flex items-center justify-center shadow-md shrink-0">
             <Layers className="w-4.5 h-4.5 text-white" />
           </div>
-          <div className="flex-1 text-left"><p className="text-sm font-bold text-gray-900 dark:text-white">Rendimiento por Sector</p><span className="text-[11px] text-gray-400">{result.sectors.length} sectores</span></div>
+          <div className="flex-1 text-left">
+            <p className="text-sm font-bold text-gray-900 dark:text-white">Rendimiento por Sector</p>
+            <span className={`text-[11px] font-semibold ${avg >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+              {positiveCount}/{sectors.length} al alza · Promedio {avg >= 0 ? '+' : ''}{avg.toFixed(2)}%
+            </span>
+          </div>
           <ChevronDown className={`w-5 h-5 text-gray-400 shrink-0 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`} />
         </button>
         <AnimatePresence>
           {isOpen && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
-              <div className="bg-white dark:bg-[#141821] border border-t-0 border-gray-200/80 dark:border-white/10 rounded-b-2xl shadow-sm divide-y divide-gray-100 dark:divide-white/5">
-                {result.sectors.map((s: any) => {
-                  const pos = (s.changePercent || 0) >= 0;
+              <div className="bg-white dark:bg-[#141821] border border-t-0 border-gray-200/80 dark:border-white/10 rounded-b-2xl shadow-sm p-3 space-y-2">
+                {sectors.map((s: any) => {
+                  const pct = s.changePercent || 0;
+                  const pos = pct >= 0;
+                  const widthPct = Math.min(100, (Math.abs(pct) / maxAbs) * 100);
                   return (
-                    <div key={s.etf} className="flex items-center justify-between px-4 py-3 hover:bg-[#1890FF]/5 transition-colors">
-                      <div><p className="text-xs font-semibold text-gray-900 dark:text-white">{s.sector}</p><p className="text-[10px] text-gray-400">{s.etf}</p></div>
-                      <div className={`flex items-center gap-1 ${pos ? 'text-emerald-500' : 'text-red-500'}`}>
-                        {pos ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                        <span className="text-xs font-bold tabular-nums">{pos ? '+' : ''}{(s.changePercent || 0).toFixed(2)}%</span>
+                    <div key={s.etf} className="group">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[11px] font-semibold text-gray-900 dark:text-white truncate">{s.sector}</span>
+                        <span className={`text-[11px] font-bold tabular-nums shrink-0 ml-2 ${pos ? 'text-emerald-500' : 'text-red-500'}`}>
+                          {pos ? '+' : ''}{pct.toFixed(2)}%
+                        </span>
                       </div>
+                      <div className="h-2 rounded-full bg-gray-100 dark:bg-white/5 overflow-hidden relative">
+                        {/* Línea central (0%) */}
+                        <div className="absolute top-0 bottom-0 left-1/2 w-px bg-gray-300 dark:bg-white/20" />
+                        {/* Barra */}
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${widthPct / 2}%` }}
+                          transition={{ duration: 0.4 }}
+                          className={`h-full rounded-full ${pos ? 'bg-emerald-500' : 'bg-red-500'}`}
+                          style={pos ? { marginLeft: '50%' } : { marginRight: '50%', float: 'right' }}
+                        />
+                      </div>
+                      <p className="text-[9px] text-gray-400 mt-0.5">{s.etf}</p>
                     </div>
                   );
                 })}

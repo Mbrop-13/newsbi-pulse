@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { sendEmail } from "@/lib/email/azure-client";
 import { paymentSuccessEmail } from "@/lib/email/email-templates";
+import { verifyMercadoPagoSignature } from "@/lib/mercadopago/verify-signature";
 import type { PlanTier } from "@/lib/plan-limits";
 
 const supabase = createClient(
@@ -10,6 +11,7 @@ const supabase = createClient(
 );
 
 const ACCESS_TOKEN = process.env.MERCADOPAGO_ACCESS_TOKEN!;
+const WEBHOOK_SECRET = process.env.MERCADOPAGO_WEBHOOK_SECRET!;
 
 // Reverse lookup: plan ID → tier
 const PLAN_ID_TO_TIER: Record<string, PlanTier> = {
@@ -20,19 +22,45 @@ const PLAN_ID_TO_TIER: Record<string, PlanTier> = {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    // ── Verify HMAC signature (ASVS 8.3.5 — event integrity) ──
+    // MP signs with the application's webhook secret. Reject unsigned/forged events.
+    const rawBody = await request.text();
+
+    const signatureOk = verifyMercadoPagoSignature({
+      signatureHeader: request.headers.get("x-signature"),
+      requestId: request.headers.get("x-request-id"),
+      dataId: request.headers.get("x-data-id"),
+      secret: WEBHOOK_SECRET,
+    });
+    if (!signatureOk) {
+      console.warn("[Webhook] Invalid or missing signature — rejecting");
+      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+    }
+
+    let body: { type?: string; action?: string; data?: { id?: string } };
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    }
     const { type, data, action } = body;
 
-    console.log(`[Webhook] Received: type=${type} action=${action} id=${data?.id}`);
+    console.log(`[Webhook] Verified: type=${type} action=${action} id=${data?.id}`);
 
     // ─── Handle subscription preapproval events ───
     if (type === "subscription_preapproval") {
-      return handleSubscriptionEvent(data?.id);
+      if (!data?.id) {
+        return NextResponse.json({ error: "Missing subscription preapproval ID" }, { status: 400 });
+      }
+      return handleSubscriptionEvent(data.id);
     }
 
     // ─── Handle payment events (recurring charges) ───
     if (type === "payment") {
-      return handlePaymentEvent(data?.id);
+      if (!data?.id) {
+        return NextResponse.json({ error: "Missing payment data ID" }, { status: 400 });
+      }
+      return handlePaymentEvent(data.id);
     }
 
     // Other event types — acknowledge
@@ -62,15 +90,21 @@ async function handleSubscriptionEvent(preapprovalId: string) {
   }
 
   const sub = await res.json();
-  
-  // Try to get user_id and plan tier from external_reference
-  let userId: string | null = null;
-  let tier: PlanTier | null = null;
+
+  // Parse external_reference una sola vez y detecta tipo
+  let ref: { type?: string; user_id?: string; plan?: PlanTier; org_id?: string; seats?: number; billing_cycle?: string } = {};
   try {
-    const ref = JSON.parse(sub.external_reference || "{}");
-    userId = ref.user_id || null;
-    tier = ref.plan || null;
+    ref = JSON.parse(sub.external_reference || "{}");
   } catch {}
+
+  // ── Ruta enterprise (organización) ──
+  if (ref.type === "enterprise" && ref.org_id) {
+    return handleEnterpriseSubscriptionEvent(preapprovalId, sub, ref);
+  }
+
+  // ── Ruta individual (usuario) ──
+  let userId: string | null = ref.user_id || null;
+  let tier: PlanTier | null = (ref.plan as PlanTier) || null;
 
   // Fallback to PLAN_ID_TO_TIER if not in external_reference
   if (!tier) {
@@ -176,12 +210,35 @@ async function handlePaymentEvent(paymentId: string) {
   }
 
   // Parse external reference
-  let externalRef: { user_id: string; plan: PlanTier };
+  let externalRef: { type?: string; user_id?: string; plan?: PlanTier; org_id?: string; seats?: number; billing_cycle?: string };
   try {
     externalRef = JSON.parse(payment.external_reference || "{}");
   } catch {
     console.log("[Webhook] Payment without external_reference — likely recurring charge");
     return NextResponse.json({ received: true, note: "recurring_payment_logged" });
+  }
+
+  // ── Enterprise payment ──
+  if (externalRef.type === "enterprise" && externalRef.org_id) {
+    const periodEnd = new Date();
+    periodEnd.setMonth(periodEnd.getMonth() + 1);
+
+    await supabase
+      .from("organization_subscriptions")
+      .update({
+        status: "active",
+        current_period_start: new Date().toISOString(),
+        current_period_end: periodEnd.toISOString(),
+      })
+      .eq("organization_id", externalRef.org_id);
+
+    await supabase
+      .from("organizations")
+      .update({ status: "active", current_period_end: periodEnd.toISOString() })
+      .eq("id", externalRef.org_id);
+
+    console.log(`[Webhook] ✅ Enterprise payment ${paymentId} → org ${externalRef.org_id}`);
+    return NextResponse.json({ success: true, org_id: externalRef.org_id });
   }
 
   const { user_id, plan } = externalRef;
@@ -214,4 +271,60 @@ async function handlePaymentEvent(paymentId: string) {
 
   console.log(`[Webhook] ✅ Payment ${paymentId} approved → User ${user_id} → ${plan}`);
   return NextResponse.json({ success: true, plan, user_id });
+}
+
+/**
+ * Handle enterprise (organization) subscription lifecycle events.
+ */
+async function handleEnterpriseSubscriptionEvent(
+  preapprovalId: string,
+  sub: any,
+  ref: { org_id?: string; plan?: string; seats?: number; billing_cycle?: string }
+) {
+  const statusMap: Record<string, string> = {
+    authorized: "active",
+    paused: "canceled",
+    cancelled: "canceled",
+    pending: "trial",
+  };
+  const ourStatus = statusMap[sub.status] || "active";
+
+  const periodEnd = sub.next_payment_date
+    ? new Date(sub.next_payment_date)
+    : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+  // Actualizar organization_subscriptions
+  const { error: subErr } = await supabase
+    .from("organization_subscriptions")
+    .update({
+      status: ourStatus,
+      external_subscription_id: preapprovalId,
+      external_payer_id: sub.payer_id?.toString() || null,
+      current_period_start: new Date().toISOString(),
+      current_period_end: periodEnd.toISOString(),
+      ...(ref.plan ? { plan: ref.plan } : {}),
+      ...(ref.seats ? { seats: ref.seats } : {}),
+      ...(ref.billing_cycle ? { billing_cycle: ref.billing_cycle } : {}),
+    })
+    .eq("organization_id", ref.org_id!);
+
+  if (subErr) {
+    console.error("[Webhook] Enterprise sub DB error:", subErr);
+    return NextResponse.json({ error: "DB update failed" }, { status: 500 });
+  }
+
+  // Sincronizar la org principal
+  await supabase
+    .from("organizations")
+    .update({
+      status: ourStatus,
+      current_period_end: periodEnd.toISOString(),
+      ...(ref.plan ? { plan: ref.plan } : {}),
+      ...(ref.seats ? { seat_count: ref.seats } : {}),
+      ...(ref.billing_cycle ? { billing_cycle: ref.billing_cycle } : {}),
+    })
+    .eq("id", ref.org_id!);
+
+  console.log(`[Webhook] ✅ Enterprise sub ${sub.status} → org ${ref.org_id} (${ref.plan})`);
+  return NextResponse.json({ success: true, status: sub.status, org_id: ref.org_id });
 }

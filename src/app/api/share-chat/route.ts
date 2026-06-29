@@ -1,16 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { z } from "zod";
+
+const shareChatSchema = z.object({
+  question: z.string().min(1).max(2000),
+  answer: z.string().min(1).max(20000),
+});
 
 export async function POST(request: NextRequest) {
   try {
-    const { question, answer } = await request.json();
-
-    if (!question || !answer) {
+    const body = await request.json().catch(() => null);
+    const parsed = shareChatSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "Se requiere pregunta y respuesta" },
+        { error: "Formato inválido", details: parsed.error.format() },
         { status: 400 }
       );
     }
+    const { question, answer } = parsed.data;
 
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -50,3 +57,4 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+

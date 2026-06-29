@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Check, Sparkles } from "lucide-react";
+import { Check, Sparkles, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 const PLANS = [
@@ -141,6 +141,23 @@ export function LandingPricing() {
               </Link>
             </div>
           ))}
+        </div>
+
+        {/* Banner Planes para Empresas */}
+        <div className="mt-10 max-w-5xl mx-auto rounded-2xl bg-slate-950 text-white p-6 md:p-7 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] font-extrabold uppercase bg-[#1890FF] text-white px-2.5 py-1 rounded-full">Empresas</span>
+            <p className="text-sm md:text-base font-medium">
+              ¿Eres empresa? Planes por asiento, panel de administración y facturación centralizada.
+            </p>
+          </div>
+          <Link
+            href="/empresas"
+            className="inline-flex items-center gap-1.5 bg-white text-slate-950 text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-slate-100 transition shrink-0"
+          >
+            Ver planes para empresas
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
       </div>
     </section>

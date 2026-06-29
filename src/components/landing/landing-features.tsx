@@ -77,22 +77,22 @@ const SECTIONS = [
     reverse: true
   },
   {
-    id: "predictions",
-    title: "Mercados de Predicciones por IA",
-    desc: "Pronostica eventos económicos y globales basados en la agregación de opiniones inteligentes y cuotas proyectadas. Visualiza gráficos e históricos de probabilidades para tomar mejores decisiones.",
-    cta: "Explorar Predicciones",
+    id: "markets",
+    title: "Mercados y Portafolio en Tiempo Real",
+    desc: "Sigue tus inversiones con cotizaciones en vivo, análisis fundamental con IA, alertas de precio inteligentes y gráficos avanzados. Tu copiloto financiero personal, integrado en la misma plataforma.",
+    cta: "Explorar Mercados",
     link: "/mercados",
     visual: (
       <div className="relative w-full h-full min-h-[300px] md:min-h-[380px] bg-gradient-to-br from-purple-600 to-indigo-800 flex items-center justify-center p-8 overflow-hidden">
         <div className="absolute inset-0 opacity-15 bg-[linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:20px_20px]" />
-        
-        {/* Prediction odds graphic mockup */}
+
+        {/* Portfolio performance mockup */}
         <div className="relative z-10 w-full max-w-sm rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 p-5 text-white shadow-xl">
-          <div className="text-xs font-bold text-purple-200 mb-1">PROBABILIDAD DEL EVENTO</div>
-          <div className="text-2xl font-black mb-3">78.4% <span className="text-xs text-emerald-400 font-bold">▲ +2.3%</span></div>
+          <div className="text-xs font-bold text-purple-200 mb-1">RENDIMIENTO DEL PORTAFOLIO</div>
+          <div className="text-2xl font-black mb-3">+12.4% <span className="text-xs text-emerald-400 font-bold">▲ +$2,340</span></div>
           <div className="flex gap-2">
-            <span className="text-[10px] bg-white/20 px-2 py-1 rounded">Fed Baja Tasas en Junio</span>
-            <span className="text-[10px] bg-white/10 px-2 py-1 rounded">Consenso: Alta</span>
+            <span className="text-[10px] bg-white/20 px-2 py-1 rounded">AAPL · NVDA · MSFT</span>
+            <span className="text-[10px] bg-white/10 px-2 py-1 rounded">vs S&amp;P 500</span>
           </div>
         </div>
 

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import YahooFinance from "yahoo-finance2";
 import { createClient } from "@/lib/supabase/server";
 import { checkLimit } from "@/lib/check-limits";
+import { buildIlike, escapeOrFilter } from "@/lib/db-escape";
 
 const yf = new YahooFinance();
 
@@ -102,7 +103,7 @@ export function getFinanceTools({ user, userId }: FinanceToolsParams) {
           if (cleanTerms.length === 0) {
             return { news: [], portfolio_symbols: portfolios.map((p: any) => p.symbol), note: "El portafolio no contiene nombres de activos o símbolos procesables." };
           }
-          const orFilters = cleanTerms.map(t => `title.ilike.%${t}%`).join(',');
+          const orFilters = cleanTerms.map(t => `title.ilike.%${escapeOrFilter(t)}%`).join(',');
           let news: any[] = [];
           try {
             const { data } = await sc.from('news_articles').select('id, title, summary, published_at, relevance_score, slug, image_url').or(orFilters).gte('published_at', cutoff).order('published_at', { ascending: false }).limit(limit);
@@ -130,7 +131,7 @@ export function getFinanceTools({ user, userId }: FinanceToolsParams) {
       execute: async ({ query }) => {
         try {
           const sc = await createClient();
-          const { data, error } = await sc.from('news_articles').select('id, title, summary, published_at, relevance_score, slug, image_url').ilike('title', `%${query}%`).order('published_at', { ascending: false }).limit(5);
+            const { data, error } = await sc.from('news_articles').select('id, title, summary, published_at, relevance_score, slug, image_url').ilike('title', buildIlike(query)).order('published_at', { ascending: false }).limit(5);
           if (error) throw error;
           return { news: data || [] };
         } catch (err: any) {

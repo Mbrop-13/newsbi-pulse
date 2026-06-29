@@ -18,6 +18,7 @@ import {
   HelpCircle,
   Check,
   Monitor,
+  Building2,
 } from "lucide-react"
 import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
@@ -260,6 +261,18 @@ export function NavUser() {
                 >
                   <ArrowUpCircle className="h-4 w-4 shrink-0 text-muted-foreground" />
                   <span>{t("update_plan")}</span>
+                </DropdownMenuItem>
+
+                {/* My organization */}
+                <DropdownMenuItem
+                  onClick={() => {
+                    if (isMobile) setOpenMobile(false);
+                    router.push("/empresas/dashboard");
+                  }}
+                  className="text-[13px] font-medium py-2 px-3 rounded-xl cursor-pointer flex items-center gap-3 focus:bg-muted focus:text-foreground"
+                >
+                  <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <span>Mi Organización</span>
                 </DropdownMenuItem>
 
                 {/* Install apps */}

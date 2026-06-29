@@ -57,7 +57,7 @@ export function Footer() {
               <li><Link href="/para-ti" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Para Ti</Link></li>
               <li><Link href="/breaking" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Breaking</Link></li>
               <li><Link href="/mercados" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Mercados</Link></li>
-              <li><Link href="/predicciones" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Predicciones</Link></li>
+              <li><Link href="/portafolio" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Portafolio</Link></li>
               <li><Link href="/mundo" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Mundo</Link></li>
               <li><Link href="/ai" className="text-sm text-muted-foreground hover:text-foreground transition-colors">AI</Link></li>
             </ul>
@@ -71,6 +71,7 @@ export function Footer() {
               <li><Link href="/guardados" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Guardados</Link></li>
               <li><Link href="/lista-lectura" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Lista de Lectura</Link></li>
               <li><Link href="/suscripcion" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Suscripción Premium</Link></li>
+              <li><Link href="/empresas" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Planes para Empresas</Link></li>
               <li>
                 <a
                   href="https://maverlang.cl"

@@ -1,8 +1,16 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, ChevronDown, Check, AlertTriangle, ArrowUpRight, ArrowDownRight, Mail } from 'lucide-react';
+import { Bell, ChevronDown, Check, AlertTriangle, ArrowUpRight, ArrowDownRight, Mail, Trash2, RefreshCw } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+
+function getLogoUrl(symbol: string): string {
+  return `https://assets.parqet.com/logos/symbol/${symbol}`;
+}
+function getFallbackLogo(symbol: string): string {
+  return `https://ui-avatars.com/api/?name=${symbol}&background=1890FF&color=fff&bold=true&size=96`;
+}
 
 interface PriceAlertCardProps {
   result: any;
@@ -10,10 +18,57 @@ interface PriceAlertCardProps {
 
 export function PriceAlertCard({ result }: PriceAlertCardProps) {
   const [isOpen, setIsOpen] = useState(true);
+  const [existingAlerts, setExistingAlerts] = useState<any[]>([]);
+  const [loadingAlerts, setLoadingAlerts] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const symbol = result?.alert?.symbol;
+  const success = result?.success;
+
+  // Cargar alertas activas del usuario (especialmente las del símbolo recién alertado)
+  useEffect(() => {
+    const fetchAlerts = async () => {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        setLoadingAlerts(true);
+        const query = supabase
+          .from('price_alerts')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .order('created_at', { ascending: false });
+        // Si creamos una alerta para un símbolo concreto, mostramos las de ese símbolo primero
+        const { data } = symbol
+          ? await query.eq('symbol', symbol).limit(10)
+          : await query.limit(5);
+        if (data) setExistingAlerts(data);
+      } catch {
+        // tabla puede no existir; fallar silenciosamente
+      } finally {
+        setLoadingAlerts(false);
+      }
+    };
+    fetchAlerts();
+  }, [symbol, success]);
+
+  const handleDelete = async (id: string) => {
+    setDeletingId(id);
+    setExistingAlerts(prev => prev.filter(a => a.id !== id));
+    try {
+      const supabase = createClient();
+      await supabase.from('price_alerts').delete().eq('id', id);
+    } catch {
+      /* ignore */
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   if (!result) return null;
 
-  const { success, alert, message, error } = result;
+  const { alert, message, error } = result;
 
   return (
     <div className="w-full max-w-sm my-3 transition-all duration-300">
@@ -26,13 +81,13 @@ export function PriceAlertCard({ result }: PriceAlertCardProps) {
             <AlertTriangle className="w-4.5 h-4.5" />
           )}
         </div>
-        
+
         <div className="flex-1 text-left min-w-0">
           <p className="text-sm font-bold text-gray-900 dark:text-white leading-tight">
             {success ? 'Alerta de Precio' : 'Error en Alerta'}
           </p>
           <span className="text-[11px] text-gray-400">
-            {success ? `${alert?.symbol || ''} · Creada` : 'No se pudo crear'}
+            {success ? `${alert?.symbol || ''} · Creada${existingAlerts.length > 1 ? ` · ${existingAlerts.length} activas` : ''}` : 'No se pudo crear'}
           </span>
         </div>
 
@@ -44,41 +99,36 @@ export function PriceAlertCard({ result }: PriceAlertCardProps) {
       {/* Content Body */}
       <AnimatePresence>
         {isOpen && (
-          <motion.div 
-            initial={{ opacity: 0, height: 0 }} 
-            animate={{ opacity: 1, height: 'auto' }} 
-            exit={{ opacity: 0, height: 0 }} 
-            transition={{ duration: 0.25 }} 
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.25 }}
             className="overflow-hidden"
           >
-            <div className="bg-white dark:bg-[#141821] border border-t-0 border-gray-200/80 dark:border-white/10 rounded-b-2xl shadow-sm p-4 text-left space-y-3">
+            <div className="bg-white dark:bg-[#141821] border border-t-0 border-gray-200/80 dark:border-white/10 rounded-b-2xl shadow-sm text-left">
               {success ? (
-                <>
-                  <div className="flex items-center justify-between p-3 bg-gray-55/40 dark:bg-white/[0.02] border border-gray-100 dark:border-white/[0.05] rounded-xl">
+                <div className="p-4 space-y-3">
+                  {/* Alerta recién creada */}
+                  <div className="flex items-center justify-between p-3 bg-[#1890FF]/5 dark:bg-white/[0.02] border border-[#1890FF]/10 dark:border-white/[0.05] rounded-xl">
                     <div className="flex items-center gap-2.5">
-                      <div className="text-sm font-black text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-800 px-2.5 py-1.5 rounded-lg">
-                        {alert.symbol}
+                      <div className="w-9 h-9 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 shrink-0">
+                        <img src={getLogoUrl(alert.symbol)} alt={alert.symbol} className="w-full h-full object-contain" onError={(e) => { e.currentTarget.src = getFallbackLogo(alert.symbol); }} />
                       </div>
                       <div className="flex flex-col">
                         <span className="text-xs font-bold text-gray-800 dark:text-gray-200">
-                          Precio objetivo
+                          {alert.symbol} · Precio objetivo
                         </span>
                         <span className="text-[10px] text-gray-400 flex items-center gap-1 mt-0.5">
                           {alert.condition === 'above' ? (
-                            <>
-                              <ArrowUpRight className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                              Si sube de
-                            </>
+                            <><ArrowUpRight className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> Si sube de</>
                           ) : (
-                            <>
-                              <ArrowDownRight className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-                              Si baja de
-                            </>
+                            <><ArrowDownRight className="w-3.5 h-3.5 text-rose-500 shrink-0" /> Si baja de</>
                           )}
                         </span>
                       </div>
                     </div>
-                    
+
                     <div className="text-right">
                       <div className="text-base font-black text-[#1890FF] tabular-nums">
                         ${Number(alert.target_price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -89,13 +139,56 @@ export function PriceAlertCard({ result }: PriceAlertCardProps) {
                     </div>
                   </div>
 
+                  {/* Lista de alertas activas existentes */}
+                  {existingAlerts.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                        <Bell className="w-3 h-3" /> Alertas activas
+                      </p>
+                      <div className="space-y-1.5">
+                        {existingAlerts.map((a) => {
+                          const isCreated = a.id === alert?.id;
+                          return (
+                            <div key={a.id} className={`flex items-center gap-2 p-2 rounded-lg transition-colors ${isCreated ? 'bg-[#1890FF]/5' : 'bg-gray-50 dark:bg-white/[0.02] hover:bg-gray-100 dark:hover:bg-white/[0.04]'}`}>
+                              <div className="w-6 h-6 rounded overflow-hidden bg-gray-100 dark:bg-gray-800 shrink-0">
+                                <img src={getLogoUrl(a.symbol)} alt="" className="w-full h-full object-contain" onError={(e) => { e.currentTarget.src = getFallbackLogo(a.symbol); }} />
+                              </div>
+                              <span className="text-[11px] font-bold text-gray-900 dark:text-white">{a.symbol}</span>
+                              {a.condition === 'above'
+                                ? <ArrowUpRight className="w-3 h-3 text-emerald-500" />
+                                : <ArrowDownRight className="w-3 h-3 text-rose-500" />}
+                              <span className="text-[11px] font-semibold text-gray-600 dark:text-gray-300 tabular-nums flex-1">
+                                ${Number(a.target_price).toFixed(2)}
+                              </span>
+                              {isCreated && <Check className="w-3 h-3 text-emerald-500" />}
+                              <button
+                                onClick={() => handleDelete(a.id)}
+                                disabled={deletingId === a.id}
+                                className="text-gray-300 hover:text-red-500 transition-colors p-0.5 disabled:opacity-50"
+                                title="Eliminar alerta"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {loadingAlerts && (
+                    <div className="flex items-center justify-center py-2">
+                      <RefreshCw className="w-3.5 h-3.5 text-gray-400 animate-spin" />
+                    </div>
+                  )}
+
                   <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-normal flex items-start gap-1.5 pl-0.5">
                     <Mail className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 shrink-0 mt-0.5" />
-                    <span>Te enviaremos un correo electrónico inmediatamente cuando el precio alcance este valor.</span>
+                    <span>Te avisaremos cuando el precio alcance el valor objetivo.</span>
                   </p>
-                </>
+                </div>
               ) : (
-                <div className="space-y-2.5">
+                <div className="p-4 space-y-2.5">
                   <div className="p-3 bg-rose-500/5 dark:bg-rose-500/10 border border-rose-500/10 dark:border-rose-500/20 rounded-xl flex items-start gap-2.5">
                     <AlertTriangle className="w-4.5 h-4.5 text-rose-500 shrink-0 mt-0.5" />
                     <div className="flex-1 min-w-0">
@@ -103,7 +196,7 @@ export function PriceAlertCard({ result }: PriceAlertCardProps) {
                         {error || 'No se pudo crear la alerta'}
                       </p>
                       <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-normal mt-1">
-                        {message || 'Por favor verifica que no hayas excedido el límite de alertas activas de tu plan.'}
+                        {message || 'Verifica que no hayas excedido el límite de alertas de tu plan.'}
                       </p>
                     </div>
                   </div>

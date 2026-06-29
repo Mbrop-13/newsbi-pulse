@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
-import { PlanTier, getPlanConfig } from "@/lib/plan-limits";
+import { PlanTier, getPlanConfig, enterpriseToTier, type EnterprisePlan } from "@/lib/plan-limits";
+import type { UserOrgMembership } from "@/lib/types";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -17,7 +18,87 @@ interface LimitCheckResult {
 }
 
 /**
- * Get the user's current subscription tier
+ * Obtiene la membresía organizacional activa del usuario (si existe).
+ * Devuelve la org con mejor plan si pertenece a varias.
+ */
+export async function getUserOrg(userId: string): Promise<UserOrgMembership | null> {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!userId || !uuidRegex.test(userId)) return null;
+
+  try {
+    // 1. Buscar membresías activas
+    const { data: memberships, error: mErr } = await supabase
+      .from("organization_members")
+      .select("id, organization_id, role, status, joined_at")
+      .eq("user_id", userId)
+      .eq("status", "active");
+
+    if (mErr || !memberships || memberships.length === 0) return null;
+
+    const orgIds = memberships.map((m) => m.organization_id);
+
+    // 2. Fetch organizaciones + suscripciones en paralelo
+    const [{ data: orgs }, { data: subs }, { count: activeCount }] = await Promise.all([
+      supabase.from("organizations").select("*").in("id", orgIds),
+      supabase.from("organization_subscriptions").select("*").in("organization_id", orgIds),
+      supabase.from("organization_members")
+        .select("*", { count: "exact", head: true })
+        .in("organization_id", orgIds)
+        .eq("status", "active"),
+    ]);
+
+    if (!orgs || orgs.length === 0) return null;
+
+    // 3. Elegir la org con mejor plan vigente
+    const planRank: Record<EnterprisePlan, number> = { team: 1, business: 2, enterprise: 3 };
+
+    const candidates = orgs
+      .map((org) => {
+        const membership = memberships.find((m) => m.organization_id === org.id)!;
+        const sub = subs?.find((s) => s.organization_id === org.id) ?? null;
+        const isOrgActive = org.status === "active" || org.status === "trial";
+        const subActive = sub && (sub.status === "active" || sub.status === "trial");
+
+        // Verificar vigencia de periodo (con 3 días de gracia)
+        let periodOk = true;
+        const periodEnd = sub?.current_period_end ?? org.current_period_end;
+        if (periodEnd) {
+          const end = new Date(periodEnd);
+          end.setDate(end.getDate() + 3);
+          periodOk = new Date() <= end;
+        }
+
+        return {
+          org,
+          role: membership.role as UserOrgMembership["role"],
+          member: membership as UserOrgMembership["member"],
+          subscription: sub as UserOrgMembership["subscription"],
+          activeMemberCount: activeCount ?? 0,
+          viable: (isOrgActive || subActive) && periodOk,
+          rank: planRank[(sub?.plan ?? org.plan) as EnterprisePlan] ?? 0,
+        };
+      })
+      .filter((c) => c.viable)
+      .sort((a, b) => b.rank - a.rank);
+
+    if (candidates.length === 0) return null;
+
+    const best = candidates[0];
+    return {
+      org: best.org as UserOrgMembership["org"],
+      role: best.role,
+      member: best.member,
+      subscription: best.subscription,
+      activeMemberCount: best.activeMemberCount,
+    };
+  } catch (err) {
+    console.warn("[getUserOrg] Error:", err);
+    return null;
+  }
+}
+
+/**
+ * Get the user's current subscription tier (incluye herencia organizacional)
  */
 export async function getUserTier(userId: string): Promise<PlanTier> {
   // If not a valid UUID format, immediately fallback to "free" (e.g. for guest users)
@@ -37,6 +118,18 @@ export async function getUserTier(userId: string): Promise<PlanTier> {
     return "ultra";
   }
 
+  // ── Herencia organizacional ──
+  const orgMembership = await getUserOrg(userId);
+  if (orgMembership?.subscription) {
+    const plan = (orgMembership.subscription.plan ?? orgMembership.org.plan) as EnterprisePlan;
+    return enterpriseToTier(plan);
+  } else if (orgMembership?.org) {
+    // Org activa sin sub explícita: usar plan de la org
+    const plan = orgMembership.org.plan as EnterprisePlan;
+    return enterpriseToTier(plan);
+  }
+
+  // ── Suscripción individual ──
   const { data } = await supabase
     .from("subscriptions")
     .select("tier, status, current_period_end")

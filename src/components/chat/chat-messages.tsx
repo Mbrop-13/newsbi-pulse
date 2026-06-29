@@ -20,6 +20,7 @@ import { StockAnalysisCard } from "@/components/assistant/stock-analysis-card"
 import { AnalyzedNewsCard } from "@/components/assistant/analyzed-news-card"
 import { AIChartCard } from "@/components/assistant/ai-chart-card"
 import { PriceAlertCard } from "@/components/assistant/price-alert-card"
+import { EarningsCalendarCard } from "@/components/assistant/earnings-calendar-card"
 import { motion, AnimatePresence } from "framer-motion"
 import { WebPreview, WebPreviewNavigation, WebPreviewUrl, WebPreviewBody } from "@/components/ai/web-preview"
 
@@ -645,9 +646,13 @@ function MessageBubble({
           return <AIChartCard key={`inv-chart-${i}`} result={inv.result} />
         case 'create_price_alert':
           return <PriceAlertCard key={`inv-alert-${i}`} result={inv.result} />
+        case 'get_earnings_calendar':
+          return <EarningsCalendarCard key={`inv-earn-${i}`} result={inv.result} />
         case 'run_python':
           return null
         default:
+          // ToolNames con prefijo chart_ (esquema alternativo del LLM) → AIChartCard
+          if (inv.toolName?.startsWith('chart_')) return <AIChartCard key={`inv-chart-${i}`} result={inv.result} />
           return null;
       }
     }) || []
@@ -659,20 +664,7 @@ function MessageBubble({
     return <div className="space-y-3 mt-3">{allCards}</div>
   }
 
-  // Render chart cards from tool invocations
-  const renderCharts = () => {
-    if (!message.toolInvocations?.length) return null
-    return (
-      <div className="space-y-3 mt-2">
-        {message.toolInvocations.map((inv: any, i: number) => {
-          if (inv.toolName?.startsWith('chart_') && inv.state === 'result') {
-            return <AIChartCard key={i} result={inv.result} />
-          }
-          return null
-        })}
-      </div>
-    )
-  }
+  // (chart_* y render_chart ahora se renderizan unificados en renderToolResults)
 
   // ─── Render Thinking Phase (Search, Agents, Citations) ───
   const renderThinkingPhase = () => {
@@ -1444,7 +1436,6 @@ function MessageBubble({
 
         {/* 4. Tool results & charts (AFTER text) */}
         {!isWebBuilderMode && renderToolResults()}
-        {!isWebBuilderMode && renderCharts()}
 
 
 

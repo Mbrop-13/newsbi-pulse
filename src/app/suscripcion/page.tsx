@@ -11,31 +11,59 @@ import {
   ChevronDown,
   Gift,
   Zap,
+  Plus,
+  Minus,
+  Building2,
+  Users,
+  Briefcase,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSubscriptionStore } from "@/lib/stores/subscription-store";
 import { createClient } from "@/lib/supabase/client";
-import { PLAN_CONFIGS, getAnnualMonthlyPrice, isPromoX2Active, type PlanTier } from "@/lib/plan-limits";
+import {
+  PLAN_CONFIGS,
+  getAnnualMonthlyPrice,
+  isPromoX2Active,
+  type PlanTier,
+  ENTERPRISE_PLANS,
+  ENTERPRISE_PLAN_ORDER,
+  calculateSeatTotal,
+  calculateAnnualTotal,
+  type EnterprisePlan,
+} from "@/lib/plan-limits";
+import { useAuthStore, useAuthModalStore } from "@/lib/stores/auth-store";
 
 function SubscriptionPageContent() {
-  const searchParams = useSearchParams();
+    const searchParams = useSearchParams();
   const statusParam = searchParams.get("status");
 
   const { resolvedTheme } = useTheme();
   const [themeMounted, setThemeMounted] = useState(false);
+
   useEffect(() => {
     setThemeMounted(true);
   }, []);
 
   const logoSrc = themeMounted && resolvedTheme === "dark" 
-    ? "/assets/maverlang-logo-white.png" 
+    ? "/assets/maverlang-logo-dark.png" 
     : "/assets/maverlang-logo.png";
 
   const { tier: currentTier } = useSubscriptionStore();
-  const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "annual" | "enterprise">("monthly");
   const [isUltraX20Toggled, setIsUltraX20Toggled] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  // States for enterprise/B2B plans
+  const [teamSeats, setTeamSeats] = useState(5);
+  const [businessSeats, setBusinessSeats] = useState(15);
+  const [showOrgModal, setShowOrgModal] = useState(false);
+  const [orgPlan, setOrgPlan] = useState<"team" | "business" | null>(null);
+  const [orgName, setOrgName] = useState("");
+  const [orgRut, setOrgRut] = useState("");
+  const [orgSeats, setOrgSeats] = useState(5);
+  const [submittingOrg, setSubmittingOrg] = useState(false);
+  const [orgError, setOrgError] = useState("");
 
   useEffect(() => {
     if (statusParam === "success") {
@@ -46,8 +74,60 @@ function SubscriptionPageContent() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState("");
 
+  const handleCreateOrg = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!orgPlan) return;
+    if (!orgName.trim()) {
+      setOrgError("El nombre de la empresa es obligatorio.");
+      return;
+    }
+
+    const isAuthenticated = useAuthStore.getState().isAuthenticated;
+    if (!isAuthenticated) {
+      useAuthModalStore.getState().openModal("login");
+      return;
+    }
+
+    setSubmittingOrg(true);
+    setOrgError("");
+
+    try {
+      const res = await fetch("/api/empresas/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: orgName,
+          rut: orgRut || undefined,
+          plan: orgPlan,
+          seats: orgSeats,
+          billing_cycle: "monthly"
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.url) {
+        window.location.href = data.url;
+      } else {
+        console.error("Enterprise checkout error:", data);
+        setOrgError(data.error || "Error al crear la organización. Intenta de nuevo.");
+      }
+    } catch (err) {
+      console.error("Enterprise checkout error:", err);
+      setOrgError("Error de conexión. Intenta de nuevo.");
+    } finally {
+      setSubmittingOrg(false);
+    }
+  };
+
   const handleSelectPlan = async (planId: PlanTier) => {
     if (planId === "free" || planId === currentTier) return;
+
+    const isAuthenticated = useAuthStore.getState().isAuthenticated;
+    if (!isAuthenticated) {
+      useAuthModalStore.getState().openModal("login");
+      return;
+    }
     
     // If selecting Ultra, check if x20 is toggled
     const targetPlanId = planId === "ultra" && isUltraX20Toggled ? "ultra_x20" : planId;
@@ -78,46 +158,36 @@ function SubscriptionPageContent() {
     }
   };
 
-  const isInferiorPlan = (planId: PlanTier) => {
-    const order: PlanTier[] = ["free", "pro", "max", "ultra", "ultra_x20"];
-    const currentIdx = order.indexOf(currentTier);
-    const planIdx = order.indexOf(planId);
-    return planIdx < currentIdx;
+  const isInferiorPlan = (planId: PlanTier): boolean => {
+    if (currentTier === "free") return false;
+    if (currentTier === "pro") return planId === "free" || planId === "pro";
+    if (currentTier === "max") return planId === "free" || planId === "pro" || planId === "max";
+    if (currentTier === "ultra") return planId !== "ultra_x20";
+    if (currentTier === "ultra_x20") return true;
+    return false;
   };
 
   const getDisplayPrice = (planId: PlanTier): string => {
     const config = PLAN_CONFIGS[planId];
-    if (config.price === 0) return "0";
-    
-    let basePrice = config.price;
-    if (billingCycle === "annual") {
-      return getAnnualMonthlyPrice(planId).toLocaleString("es-CL");
-    }
-    return basePrice.toLocaleString("es-CL");
+    return config.price.toLocaleString("es-CL");
   };
 
   const getPlanDescription = (planId: PlanTier): string => {
-    const isUltra = planId === "ultra";
-    const actualPlanId = isUltra && isUltraX20Toggled ? "ultra_x20" : planId;
-    const config = PLAN_CONFIGS[actualPlanId];
-    
-    const finalMonthlyPrice = billingCycle === "annual" 
-      ? getAnnualMonthlyPrice(actualPlanId)
-      : config.price;
+    if (planId === "free") return "Acceso básico para lectores ocasionales.";
+    if (planId === "pro") return "Herramientas de IA y análisis para inversores individuales.";
+    if (planId === "max") return "Capacidad expandida para análisis intensivos.";
+    return "Máximo rendimiento y soporte ilimitado.";
+  };
 
-    // Only Pro has 7 days free trial, and only if user is currently Free and billing is monthly
-    if (planId === "pro" && currentTier === "free" && billingCycle === "monthly") {
-      return `Prueba 7 días por $0, luego $${finalMonthlyPrice.toLocaleString("es-CL")} mensual`;
-    }
-    
-    return `$${finalMonthlyPrice.toLocaleString("es-CL")} mensual`;
+  const getAnnualMonthlyPriceStr = (planId: PlanTier): string => {
+    const actualPlanId = planId === "ultra" && isUltraX20Toggled ? "ultra_x20" : planId;
+    return getAnnualMonthlyPrice(actualPlanId).toLocaleString("es-CL");
   };
 
   const getAnnualTotal = (planId: PlanTier): string => {
     const actualPlanId = planId === "ultra" && isUltraX20Toggled ? "ultra_x20" : planId;
     const config = PLAN_CONFIGS[actualPlanId];
     let basePrice = config.price;
-    // Annual total is 10 times the monthly price (because of 2 months free!)
     return Math.round(basePrice * 10).toLocaleString("es-CL");
   };
 
@@ -167,6 +237,7 @@ function SubscriptionPageContent() {
     ];
   };
 
+
   const faqItems = [
     {
       q: "¿Puedo cancelar en cualquier momento?",
@@ -191,7 +262,7 @@ function SubscriptionPageContent() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#f8f8fb] dark:bg-zinc-950 text-neutral-900 dark:text-neutral-100 transition-colors duration-300 relative overflow-hidden pb-24 animate-fade-in">
+    <div className="min-h-screen bg-[#f8f8fb] dark:bg-zinc-950 text-neutral-900 dark:text-neutral-100 transition-colors duration-300 relative pb-24 animate-fade-in">
       {/* Floating Close Button in top right corner (redirects to "/") */}
       <Link
         href="/"
@@ -244,12 +315,12 @@ function SubscriptionPageContent() {
           )}
         </div>
 
-        {/* Mensual vs Anual Toggle Switch at the top */}
+        {/* Mensual vs Anual vs Empresas Toggle Switch at the top */}
         <div className="flex justify-center mt-6">
           <div className="inline-flex p-1 bg-neutral-200/60 dark:bg-zinc-800 rounded-full border border-neutral-300/40 dark:border-zinc-700/40 shadow-inner">
             <button
               onClick={() => setBillingCycle("monthly")}
-              className={`px-6 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 ${
+              className={`px-4 md:px-6 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 ${
                 billingCycle === "monthly"
                   ? "bg-white dark:bg-zinc-700 text-neutral-900 dark:text-white shadow-sm"
                   : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
@@ -259,13 +330,23 @@ function SubscriptionPageContent() {
             </button>
             <button
               onClick={() => setBillingCycle("annual")}
-              className={`px-6 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 ${
+              className={`px-4 md:px-6 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 ${
                 billingCycle === "annual"
                   ? "bg-white dark:bg-zinc-700 text-neutral-900 dark:text-white shadow-sm"
                   : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
               }`}
             >
               Anual
+            </button>
+            <button
+              onClick={() => setBillingCycle("enterprise")}
+              className={`px-4 md:px-6 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 ${
+                billingCycle === "enterprise"
+                  ? "bg-white dark:bg-zinc-700 text-neutral-900 dark:text-white shadow-sm"
+                  : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
+              }`}
+            >
+              Empresas
             </button>
           </div>
         </div>
@@ -641,6 +722,106 @@ function SubscriptionPageContent() {
               >
                 Comenzar
               </Button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Organization Creation Modal for Enterprise Checkout */}
+      <AnimatePresence>
+        {showOrgModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md text-left text-neutral-900 dark:text-neutral-100"
+            onClick={() => setShowOrgModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 15 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 15 }}
+              className="bg-white dark:bg-zinc-900 border border-neutral-200 dark:border-zinc-800 rounded-[32px] p-8 max-w-md w-full relative shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button 
+                onClick={() => setShowOrgModal(false)} 
+                className="absolute top-6 right-6 p-1.5 hover:bg-neutral-100 dark:hover:bg-zinc-800 rounded-lg text-neutral-400 hover:text-neutral-700 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              
+              <h3 className="text-xl font-black text-neutral-900 dark:text-white mb-2">
+                Configurar Plan de Empresa
+              </h3>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-6">
+                Ingresa los datos para registrar a tu organización. Tendrás 14 días de prueba gratuita.
+              </p>
+              
+              {orgError && (
+                <div className="mb-4 p-3 bg-red-50/80 dark:bg-red-500/10 text-red-650 dark:text-red-400 text-xs font-semibold rounded-xl border border-red-200 dark:border-red-500/20">
+                  {orgError}
+                </div>
+              )}
+              
+              <form onSubmit={handleCreateOrg} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">
+                    Nombre de la Empresa / Organización
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={orgName}
+                    onChange={(e) => setOrgName(e.target.value)}
+                    placeholder="Ej. Maverlang SpA"
+                    className="w-full h-11 px-4 rounded-xl border border-neutral-300 dark:border-zinc-700 bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-neutral-955 dark:focus:ring-white transition-all text-neutral-900 dark:text-white"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">
+                    RUT de la Empresa (Opcional)
+                  </label>
+                  <input
+                    type="text"
+                    value={orgRut}
+                    onChange={(e) => setOrgRut(e.target.value)}
+                    placeholder="Ej. 76.123.456-k"
+                    className="w-full h-11 px-4 rounded-xl border border-neutral-300 dark:border-zinc-700 bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-neutral-955 dark:focus:ring-white transition-all text-neutral-900 dark:text-white"
+                  />
+                </div>
+                
+                <div className="p-4 bg-neutral-50 dark:bg-zinc-800/40 rounded-2xl border border-neutral-200/50 dark:border-zinc-800">
+                  <div className="flex justify-between text-xs font-bold text-neutral-700 dark:text-neutral-300">
+                    <span>Plan Elegido:</span>
+                    <span className="uppercase text-neutral-900 dark:text-white font-extrabold">
+                      {orgPlan === "team" ? "Team" : "Business"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs font-bold text-neutral-700 dark:text-neutral-300 mt-2">
+                    <span>Asientos (usuarios):</span>
+                    <span className="text-neutral-900 dark:text-white font-extrabold">{orgSeats}</span>
+                  </div>
+                  <div className="flex justify-between text-sm font-black text-neutral-900 dark:text-white mt-3 pt-3 border-t border-neutral-200 dark:border-zinc-750">
+                    <span>Total Mensual:</span>
+                    <span>
+                      ${orgPlan ? (orgPlan === 'team' ? 14990 : 29990) * orgSeats : 0} CLP/mes
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-emerald-500 font-black mt-2 text-center">
+                    ✓ Incluye 14 días de prueba gratis ($0 hoy)
+                  </div>
+                </div>
+                
+                <Button
+                  type="submit"
+                  disabled={submittingOrg}
+                  className="w-full h-11 bg-neutral-950 dark:bg-white text-white dark:text-black font-extrabold rounded-full hover:bg-neutral-800 dark:hover:bg-neutral-100 shadow-md transition-all active:scale-[0.98]"
+                >
+                  {submittingOrg ? "Procesando..." : "Comenzar Prueba Gratis"}
+                </Button>
+              </form>
             </motion.div>
           </motion.div>
         )}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase";
+import { buildIlike } from "@/lib/db-escape";
 
 // Helper: verify admin
 async function verifyAdmin(): Promise<{ user: any; sc: any } | string> {
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
       .order("published_at", { ascending: false });
 
     if (search) {
-      query = query.ilike("title", `%${search}%`);
+      query = query.ilike("title", buildIlike(search));
     }
     if (category) {
       query = query.eq("category", category);

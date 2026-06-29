@@ -1,6 +1,7 @@
 import { tool, StreamData } from 'ai';
 import { z } from 'zod';
 import * as BrowserManager from "@/lib/services/browser-manager";
+import { assertSafeFetchUrl } from "@/lib/url-guard";
 
 interface BrowserToolsParams {
   streamData: StreamData;
@@ -15,6 +16,13 @@ export function getBrowserTools({ streamData }: BrowserToolsParams) {
       }),
       execute: async ({ url }) => {
         try {
+          // ── SSRF protection (ASVS 5.5.3) ──
+          const guard = await assertSafeFetchUrl(url);
+          if (!guard.ok) {
+            return { error: `URL rechazada: ${guard.reason}` };
+          }
+          const safeUrl = guard.url.toString();
+
           // Create session if not exists (stored in streamData)
           let sessionId = (streamData as any)?._browserSessionId;
           if (!sessionId) {
@@ -22,7 +30,7 @@ export function getBrowserTools({ streamData }: BrowserToolsParams) {
             (streamData as any)._browserSessionId = sessionId;
             streamData.append({ type: 'browser_session', sessionId });
           }
-          const result = await BrowserManager.navigateTo(sessionId, url);
+          const result = await BrowserManager.navigateTo(sessionId, safeUrl);
           return { sessionId, url: result.url, title: result.title, textContent: result.textContent.slice(0, 4000) };
         } catch (err: any) {
           return { error: err.message || String(err) };

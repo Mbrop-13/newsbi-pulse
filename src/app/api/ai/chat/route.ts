@@ -1,4 +1,6 @@
-import { createClient } from '@supabase/supabase-js';
+import { createServiceClient } from '@/lib/supabase';
+import { requireUser, getClientIp } from '@/lib/auth-helpers';
+import { buildIlike } from '@/lib/db-escape';
 import { createOpenAI } from '@ai-sdk/openai';
 import { streamText, tool } from 'ai';
 import { z } from 'zod';
@@ -6,10 +8,10 @@ import { rateLimit, rateLimitResponse, AI_CHAT_LIMIT } from '@/lib/rate-limit';
 
 export const maxDuration = 60;
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Lazy-init: only created for an authenticated request, never module-level
+function getSupabase() {
+  return createServiceClient();
+}
 
 const openrouter = createOpenAI({
   baseURL: 'https://openrouter.ai/api/v1',
@@ -31,6 +33,18 @@ const chatLegacySchema = z.object({
 
 export async function POST(req: Request) {
   try {
+    // ── Auth: require authenticated user (ASVS 4.1.1) ──
+    const auth = await requireUser();
+    if (!auth.ok) return auth.response;
+    const userId = auth.data.user.id;
+
+    // IP + user rate limit (burst + per-user)
+    const ip = getClientIp(req);
+    const rlIp = await rateLimit(`ai-legacy-ip:${ip}`, AI_CHAT_LIMIT);
+    if (!rlIp.allowed) return rateLimitResponse(rlIp.retryAfterSeconds);
+    const rlUser = await rateLimit(`ai-legacy:${userId}`, AI_CHAT_LIMIT);
+    if (!rlUser.allowed) return rateLimitResponse(rlUser.retryAfterSeconds);
+
     const rawBody = await req.json();
     const parseResult = chatLegacySchema.safeParse(rawBody);
     if (!parseResult.success) {
@@ -41,10 +55,7 @@ export async function POST(req: Request) {
     }
     const { messages, profile } = parseResult.data;
 
-    // IP-based burst protection for this endpoint
-    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-    const rl = await rateLimit(`ai-legacy:${ip}`, AI_CHAT_LIMIT);
-    if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
+    const supabase = getSupabase();
 
     const { name = 'AI', topics = [], tickers = [] } = profile || {};
 
@@ -131,7 +142,7 @@ INSTRUCCIONES:
               .from('news_articles')
               .select('id, title, summary, published_at, relevance_score, slug')
               .gte('published_at', dateLimit.toISOString())
-              .ilike('title', `%${query}%`)
+              .ilike('title', buildIlike(query))
               .order('relevance_score', { ascending: false })
               .limit(5);
               

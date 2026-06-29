@@ -7,6 +7,11 @@
 
 export type PlanTier = "free" | "pro" | "max" | "ultra" | "ultra_x20";
 
+// ── Planes de Empresa (B2B, modelo por asiento) ──
+export type EnterprisePlan = "team" | "business" | "enterprise";
+export type BillingCycle = "monthly" | "annual";
+export type OrgRole = "owner" | "admin" | "member";
+
 export interface PlanConfig {
   id: PlanTier;
   name: string;
@@ -301,3 +306,217 @@ export function getAnnualMonthlyPrice(tier: PlanTier): number {
   const config = PLAN_CONFIGS[tier];
   return Math.round(config.price * (1 - config.annualDiscount));
 }
+
+// ============================================================================
+// PLANES DE EMPRESA (B2B — modelo por asiento)
+// ============================================================================
+
+export interface EnterprisePlanConfig {
+  id: EnterprisePlan;
+  name: string;
+  tagline: string;
+  pricePerSeat: number;        // CLP mensual por asiento
+  pricePerSeatUSD: number;     // USD referencia
+  minSeats: number;
+  maxSeats: number;            // -1 = ilimitado (enterprise)
+  recommendedSeats: number;    // valor por defecto sugerido
+  highlighted: boolean;        // plan recomendado (Popular)
+  cta: "trial" | "contact";    // trial = checkout MP, contact = hablar con ventas
+  annualDiscount: number;      // 2/12 = 2 meses gratis al pagar anual
+
+  // Features incluidas por asiento
+  aiMessagesPerSeatPerMonth: number;
+  aiTokensPerSeatPerMonth: number;
+  maxAlertsPerSeat: number;
+  maxPortfolioAssetsPerSeat: number;
+  aiModel: string;
+  aiWebSearch: boolean;
+  aiAdvancedAnalysis: boolean;
+  adFree: boolean;
+
+  // Features organizacionales
+  sharedWorkspaces: boolean;
+  sharedAgents: boolean;
+  sharedAlerts: boolean;
+  centralBilling: boolean;
+  auditLog: boolean;
+  adminDashboard: boolean;
+
+  // Seguridad / SSO
+  ssoType: "email" | "saml";
+  allowedDomains: boolean;     // auto-join por dominio
+  apiAccess: boolean;
+  dataResidency: boolean;      // elección de región
+
+  // Soporte
+  supportLevel: "priority" | "dedicated";
+  dedicatedCSM: boolean;       // Customer Success Manager
+  onboardingSession: boolean;
+  sla: string;                 // texto del SLA
+}
+
+export const ENTERPRISE_PLANS: Record<EnterprisePlan, EnterprisePlanConfig> = {
+  team: {
+    id: "team",
+    name: "Team",
+    tagline: "Para equipos pequeños que colaboran en finanzas.",
+    pricePerSeat: 14990,
+    pricePerSeatUSD: 15.99,
+    minSeats: 3,
+    maxSeats: 20,
+    recommendedSeats: 5,
+    highlighted: false,
+    cta: "trial",
+    annualDiscount: 2 / 12,
+    aiMessagesPerSeatPerMonth: 200,
+    aiTokensPerSeatPerMonth: 2000000,
+    maxAlertsPerSeat: 15,
+    maxPortfolioAssetsPerSeat: 75,
+    aiModel: "x-ai/grok-4.1-fast:online",
+    aiWebSearch: false,
+    aiAdvancedAnalysis: true,
+    adFree: true,
+    sharedWorkspaces: true,
+    sharedAgents: false,
+    sharedAlerts: true,
+    centralBilling: true,
+    auditLog: true,
+    adminDashboard: true,
+    ssoType: "email",
+    allowedDomains: false,
+    apiAccess: false,
+    dataResidency: false,
+    supportLevel: "priority",
+    dedicatedCSM: false,
+    onboardingSession: false,
+    sla: "Respuesta en 24h hábiles",
+  },
+
+  business: {
+    id: "business",
+    name: "Business",
+    tagline: "Para empresas en crecimiento con necesidades avanzadas.",
+    pricePerSeat: 29990,
+    pricePerSeatUSD: 32.99,
+    minSeats: 5,
+    maxSeats: 100,
+    recommendedSeats: 15,
+    highlighted: true, // Popular
+    cta: "trial",
+    annualDiscount: 2 / 12,
+    aiMessagesPerSeatPerMonth: 500,
+    aiTokensPerSeatPerMonth: 5000000,
+    maxAlertsPerSeat: 30,
+    maxPortfolioAssetsPerSeat: 150,
+    aiModel: "x-ai/grok-4.1-fast:online",
+    aiWebSearch: true,
+    aiAdvancedAnalysis: true,
+    adFree: true,
+    sharedWorkspaces: true,
+    sharedAgents: true,
+    sharedAlerts: true,
+    centralBilling: true,
+    auditLog: true,
+    adminDashboard: true,
+    ssoType: "email",
+    allowedDomains: true,
+    apiAccess: true,
+    dataResidency: false,
+    supportLevel: "priority",
+    dedicatedCSM: true,
+    onboardingSession: true,
+    sla: "Respuesta en 4h hábiles + 99.9% uptime",
+  },
+
+  enterprise: {
+    id: "enterprise",
+    name: "Enterprise",
+    tagline: "Para grandes organizaciones con requisitos a medida.",
+    pricePerSeat: 0, // "Hablemos"
+    pricePerSeatUSD: 0,
+    minSeats: 100,
+    maxSeats: -1,
+    recommendedSeats: 100,
+    highlighted: false,
+    cta: "contact",
+    annualDiscount: 2 / 12,
+    aiMessagesPerSeatPerMonth: 2000,
+    aiTokensPerSeatPerMonth: 20000000,
+    maxAlertsPerSeat: 100,
+    maxPortfolioAssetsPerSeat: 500,
+    aiModel: "x-ai/grok-4.1-fast:online",
+    aiWebSearch: true,
+    aiAdvancedAnalysis: true,
+    adFree: true,
+    sharedWorkspaces: true,
+    sharedAgents: true,
+    sharedAlerts: true,
+    centralBilling: true,
+    auditLog: true,
+    adminDashboard: true,
+    ssoType: "saml",
+    allowedDomains: true,
+    apiAccess: true,
+    dataResidency: true,
+    supportLevel: "dedicated",
+    dedicatedCSM: true,
+    onboardingSession: true,
+    sla: "SLA dedicado 99.99% + CSM asignado",
+  },
+};
+
+/**
+ * Mapeo de plan de empresa → tier individual equivalente (para getUserTier)
+ */
+export function enterpriseToTier(plan: EnterprisePlan): PlanTier {
+  switch (plan) {
+    case "team": return "max";
+    case "business": return "ultra";
+    case "enterprise": return "ultra_x20";
+  }
+}
+
+/**
+ * Calcula el total mensual para un plan de empresa dado un nº de asientos
+ */
+export function calculateSeatTotal(plan: EnterprisePlan, seats: number): number {
+  const config = ENTERPRISE_PLANS[plan];
+  if (config.pricePerSeat === 0) return 0;
+  const clamped = Math.max(config.minSeats, Math.min(seats, config.maxSeats === -1 ? seats : config.maxSeats));
+  return config.pricePerSeat * clamped;
+}
+
+/**
+ * Calcula el total anual (con descuento de 2 meses gratis) para un plan de empresa
+ */
+export function calculateAnnualTotal(plan: EnterprisePlan, seats: number): number {
+  const monthly = calculateSeatTotal(plan, seats);
+  const config = ENTERPRISE_PLANS[plan];
+  return Math.round(monthly * 12 * (1 - config.annualDiscount));
+}
+
+/**
+ * Equivalente mensual al pagar anual
+ */
+export function getAnnualEquivalentMonthly(plan: EnterprisePlan, seats: number): number {
+  return Math.round(calculateAnnualTotal(plan, seats) / 12);
+}
+
+/**
+ * Ahorro anual al elegir ciclo anual (vs 12x mensual)
+ */
+export function getAnnualSavings(plan: EnterprisePlan, seats: number): number {
+  return calculateSeatTotal(plan, seats) * 12 - calculateAnnualTotal(plan, seats);
+}
+
+/**
+ * Obtiene la configuración de un plan de empresa
+ */
+export function getEnterprisePlanConfig(plan: EnterprisePlan): EnterprisePlanConfig {
+  return ENTERPRISE_PLANS[plan] || ENTERPRISE_PLANS.team;
+}
+
+/**
+ * Lista ordenada de planes de empresa
+ */
+export const ENTERPRISE_PLAN_ORDER: EnterprisePlan[] = ["team", "business", "enterprise"];

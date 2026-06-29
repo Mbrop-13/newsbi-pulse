@@ -1,5 +1,7 @@
 import { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { createServiceClient } from "@/lib/supabase";
+import { createClient as createServerClient } from "@/lib/supabase/server";
 import { extractIdFromSlug } from "@/lib/utils";
 import ChatClient from "./chat-client";
 
@@ -21,6 +23,15 @@ async function getChatData(id: string) {
   if (error || !data) {
     return null;
   }
+
+  // ── Ownership check (ASVS 4.1.3 — anti-IDOR on server page) ──
+  const auth = await createServerClient();
+  const { data: { user } } = await auth.auth.getUser();
+  if (!user || user.id !== data.user_id) {
+    // Distinguish "not found" from "forbidden" is itself a leak — return null (404).
+    return null;
+  }
+
   return {
     chat_id: data.chat_id,
     user_id: data.user_id,

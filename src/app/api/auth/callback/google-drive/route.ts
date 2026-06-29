@@ -2,10 +2,17 @@ import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { google } from "googleapis";
+import { rateLimit, rateLimitResponse, AUTH_LIMIT } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/auth-helpers";
 
 export async function GET(req: NextRequest) {
+  // ── Rate-limit OAuth callback (A-14: AUTH_LIMIT, ASVS 11.3.1) ──
+  const ip = getClientIp(req);
+  const rl = await rateLimit(`oauth-callback:${ip}`, AUTH_LIMIT);
+  if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
+
   const code = req.nextUrl.searchParams.get("code");
-  
+
   if (!code) {
     return new Response("No authorization code provided", { status: 400 });
   }
@@ -83,7 +90,9 @@ export async function GET(req: NextRequest) {
       headers: { "Content-Type": "text/html; charset=utf-8" },
     });
   } catch (err: any) {
+    // M-9: do NOT reflect err.message into the HTML body (reflected XSS)
     console.error("[Drive OAuth Callback] Error:", err);
-    return new Response(`Error de autenticación con Google Drive: ${err.message || String(err)}`, { status: 500 });
+    return new Response("Error de autenticación con Google Drive. Intenta de nuevo.", { status: 500 });
   }
 }
+

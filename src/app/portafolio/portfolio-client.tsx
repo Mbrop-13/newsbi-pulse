@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, TrendingUp, TrendingDown, Plus, Trash2, Calendar, BellRing, Briefcase, RefreshCw, X, AlertTriangle, ExternalLink, Bell, ChevronRight, BarChart3, ArrowUp, ArrowDown, Check, Sparkles } from "lucide-react";
+import { Search, TrendingUp, TrendingDown, Plus, Trash2, BellRing, Briefcase, RefreshCw, X, AlertTriangle, ExternalLink, Bell, ChevronRight, BarChart3, ArrowUp, ArrowDown, Check } from "lucide-react";
 import { useAuthStore, useAuthModalStore } from "@/lib/stores/auth-store";
 import { useSubscriptionStore } from "@/lib/stores/subscription-store";
 import { useConversionStore } from "@/lib/stores/conversion-store";
@@ -41,8 +41,6 @@ function getFallbackLogo(symbol: string): string {
 
 export default function PortfolioClient() {
   const [assets, setAssets] = useState<PortfolioAsset[]>([]);
-  const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
-  const [calendarLoading, setCalendarLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -92,51 +90,8 @@ export default function PortfolioClient() {
           checkAlerts(liveData);
         } else { setAssets(dbAssets.map(a => ({ ...a, logo: getLogoUrl(a.symbol) }))); }
       } catch { setAssets(dbAssets.map(a => ({ ...a, logo: getLogoUrl(a.symbol) }))); }
-      
-      // Fetch AI calendar events
-      setCalendarLoading(true);
-      try {
-        const calRes = await fetch('/api/finance/calendaMaverlang AI');
-        if (calRes.ok) {
-          const calData = await calRes.json();
-          setCalendarEvents(calData.events || []);
-          if (calData.last_updated) {
-            localStorage.setItem(`ai_cal_last_updated_${user.id}`, calData.last_updated);
-          }
-        }
-      } catch (e) {
-        console.error("Error fetching AI calendar:", e);
-      } finally {
-        setCalendarLoading(false);
-      }
-
-    } else { setAssets([]); setCalendarEvents([]); }
+    } else { setAssets([]); }
     setLoading(false);
-  };
-
-  const generateAICalendar = async () => {
-    if (!user || assets.length === 0) return;
-    setCalendarLoading(true);
-    try {
-      const symbols = assets.map(a => a.symbol);
-      const res = await fetch('/api/finance/calendaMaverlang AI', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symbols })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setCalendarEvents(data.events || []);
-        localStorage.setItem(`ai_cal_last_updated_${user.id}`, new Date().toISOString());
-      } else {
-        const err = await res.json();
-        setAddError(err.error || "Error al generar calendario IA");
-      }
-    } catch (e) {
-      setAddError("Error de conexión al generar calendario IA");
-    } finally {
-      setCalendarLoading(false);
-    }
   };
 
   const handleSearch = useCallback((term: string) => {
@@ -284,7 +239,7 @@ export default function PortfolioClient() {
       <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] pt-24 pb-16 px-4 flex flex-col items-center justify-center text-center">
         <Briefcase className="w-16 h-16 text-[#1890FF] mb-6 opacity-20" />
         <h1 className="text-3xl font-black text-gray-900 dark:text-white mb-4">Tu Portafolio de Inversión</h1>
-        <p className="text-gray-500 max-w-md mx-auto mb-8">Únete a Maverlang para crear tu portafolio personalizado, recibir alertas de precio y obtener un calendario de eventos impulsado por IA.</p>
+        <p className="text-gray-500 max-w-md mx-auto mb-8">Únete a Maverlang para crear tu portafolio personalizado, recibir alertas de precio y rastrear tus inversiones en tiempo real.</p>
         <button onClick={() => openAuthModal("register")} className="px-8 py-3 rounded-full bg-[#1890FF] text-white font-bold hover:opacity-90 transition-opacity shadow-lg shadow-[#1890FF]/25">Crear cuenta gratis</button>
       </div>
     );
@@ -545,67 +500,6 @@ export default function PortfolioClient() {
 
           {/* Right Column */}
           <div className="space-y-6">
-            <div className="bg-gradient-to-br from-[#1890FF]/10 to-indigo-500/10 rounded-2xl border border-[#1890FF]/20 p-6 relative overflow-hidden flex flex-col h-[400px]">
-              <div className="absolute -right-4 -top-4 w-24 h-24 bg-[#1890FF]/20 blur-3xl rounded-full" />
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 relative z-10">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#1890FF] flex items-center justify-center shadow-lg shadow-[#1890FF]/30 shrink-0"><Calendar className="w-5 h-5 text-white" /></div>
-                  <div><h3 className="font-bold text-gray-900 dark:text-white">Calendario IA</h3><p className="text-[11px] text-[#1890FF] font-semibold">Eventos de tus activos</p></div>
-                </div>
-                
-                {/* Generate AI Calendar Button */}
-                {(() => {
-                  const lastUpdated = user ? localStorage.getItem(`ai_cal_last_updated_${user.id}`) : null;
-                  const daysSinceUpdate = lastUpdated ? (Date.now() - new Date(lastUpdated).getTime()) / (1000 * 60 * 60 * 24) : 999;
-                  const canUpdate = daysSinceUpdate >= 30; // 30 days monthly cooldown
-                  const daysLeft = Math.ceil(30 - daysSinceUpdate);
-                  
-                  return (
-                    <button 
-                      onClick={generateAICalendar} 
-                      disabled={!canUpdate || calendarLoading || assets.length === 0}
-                      className="group relative flex items-center justify-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-900 border border-[#1890FF]/30 rounded-lg text-xs font-bold text-[#1890FF] hover:bg-[#1890FF] hover:text-white transition-all disabled:opacity-50 disabled:hover:bg-white dark:disabled:hover:bg-slate-900 disabled:hover:text-[#1890FF]"
-                    >
-                      {calendarLoading ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                      {calendarLoading ? "Generando..." : "Hacer Calendario"}
-                      
-                      {/* Tooltip for Cooldown */}
-                      {!canUpdate && !calendarLoading && (
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-48 px-2 py-1 bg-gray-900 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 text-center">
-                          Disponible en {daysLeft} {daysLeft === 1 ? 'día' : 'días'}. Se actualiza mensualmente para ahorrar recursos.
-                        </div>
-                      )}
-                    </button>
-                  );
-                })()}
-              </div>
-
-              <div className="space-y-3 flex-1 overflow-y-auto hidden-scrollbar pb-2">
-                {calendarLoading ? (
-                  <div className="flex justify-center p-4"><RefreshCw className="w-5 h-5 text-[#1890FF] animate-spin" /></div>
-                ) : calendarEvents.length > 0 ? (
-                  calendarEvents.map((event, i) => {
-                    const eventDate = new Date(event.date);
-                    const isToday = eventDate.toDateString() === new Date().toDateString();
-                    return (
-                      <div key={i} className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-md rounded-xl p-3 border border-white/20 dark:border-white/5 flex items-start gap-3">
-                        <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${isToday ? 'bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]' : 'bg-blue-500'}`} />
-                        <div>
-                          <h4 className="text-sm font-bold text-gray-900 dark:text-white leading-tight">{event.type} • {event.symbol}</h4>
-                          <p className="text-[11px] text-gray-500 mt-0.5">{eventDate.toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' })} {event.description ? `— ${event.description}` : ''}</p>
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-md rounded-xl p-4 border border-white/20 dark:border-white/5 text-center flex flex-col items-center justify-center h-full">
-                    <Sparkles className="w-8 h-8 text-[#1890FF]/40 mb-2" />
-                    <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">No hay eventos en tu calendario.</p>
-                    <p className="text-[10px] text-gray-500 mt-1">Presiona "Hacer Calendario" para que la IA busque los próximos eventos de tus activos.</p>
-                  </div>
-                )}
-              </div>
-            </div>
             <div className="bg-card rounded-2xl border border-border p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center"><BellRing className="w-5 h-5 text-orange-500" /></div>

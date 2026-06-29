@@ -15,7 +15,6 @@ interface ViewSettingsState {
   fontSize: ViewFontSize;
   colorScheme: ViewColorScheme;
   showImages: boolean;
-  showPredictions: boolean;
   articleWidth: ArticleWidth;
   timePeriod: TimePeriod;
 
@@ -25,7 +24,6 @@ interface ViewSettingsState {
   setFontSize: (fontSize: ViewFontSize) => void;
   setColorScheme: (scheme: ViewColorScheme) => void;
   setShowImages: (show: boolean) => void;
-  setShowPredictions: (show: boolean) => void;
   setArticleWidth: (width: ArticleWidth) => void;
   setTimePeriod: (period: TimePeriod) => void;
   resetToDefaults: () => void;
@@ -37,7 +35,6 @@ const defaultState = {
   fontSize: 'base' as ViewFontSize,
   colorScheme: 'none' as ViewColorScheme,
   showImages: true,
-  showPredictions: true,
   articleWidth: 'wide' as ArticleWidth,
   timePeriod: '24h' as TimePeriod,
 };
@@ -51,7 +48,6 @@ export const useViewStore = create<ViewSettingsState>()(
       setFontSize: (fontSize) => set({ fontSize }),
       setColorScheme: (colorScheme) => set({ colorScheme }),
       setShowImages: (showImages) => set({ showImages }),
-      setShowPredictions: (showPredictions) => set({ showPredictions }),
       setArticleWidth: (articleWidth) => set({ articleWidth }),
       setTimePeriod: (timePeriod) => set({ timePeriod }),
       resetToDefaults: () => set(defaultState),

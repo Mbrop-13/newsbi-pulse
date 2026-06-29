@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Activity, Flame, Eye, ArrowUpRight, TrendingUp, Newspaper, ExternalLink, MoreVertical, Plus, Bell, Loader2, X } from "lucide-react";
-import { TickerTape } from "@/components/tradingview/ticker-tape";
+import { MarketSearchBar } from "@/components/market-search-bar";
 import { SymbolOverview, CHILE_SYMBOLS, GLOBAL_SYMBOLS, TENDENCIA_SYMBOLS } from "@/components/tradingview/market-overview";
 import { MiniChart } from "@/components/tradingview/mini-chart";
 import { createClient } from "@/lib/supabase/client";
@@ -209,8 +209,8 @@ export default function MercadosPage() {
     <SidebarLayout>
     <AuthGuard>
     <div className="min-h-screen bg-background pt-4">
-      {/* ΓöÇΓöÇ TICKER TAPE ΓöÇΓöÇ */}
-      <TickerTape />
+      {/* ── SEARCH BAR (reemplaza la cinta giratoria) ── */}
+      <MarketSearchBar />
 
       <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 pt-4 pb-16">
 

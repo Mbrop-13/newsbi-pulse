@@ -1,12 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { PLAN_CONFIGS, type PlanTier } from "@/lib/plan-limits";
+import { z } from "zod";
 
 const ACCESS_TOKEN = process.env.MERCADOPAGO_ACCESS_TOKEN!;
 
+const checkoutSchema = z.object({
+  plan: z.enum(["pro", "max", "ultra", "ultra_x20"] as const),
+});
+
 export async function POST(request: NextRequest) {
   try {
-    const { plan } = await request.json() as { plan: PlanTier };
+    const body = await request.json().catch(() => null);
+    const parsed = checkoutSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Plan inválido", details: parsed.error.format() },
+        { status: 400 }
+      );
+    }
+    const plan = parsed.data.plan as PlanTier;
 
     // Validate plan
     const planConfig = PLAN_CONFIGS[plan];
@@ -32,7 +45,7 @@ export async function POST(request: NextRequest) {
     const planReason = `Suscripción Maverlang ${plan.toUpperCase()} — 7 días gratis`;
 
     // Create a preapproval (subscription) with 7-day free trial
-    const body = {
+    const preapprovalBody = {
       reason: planReason,
       auto_recurring: {
         frequency: 1,
@@ -69,7 +82,7 @@ export async function POST(request: NextRequest) {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${ACCESS_TOKEN}`,
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(preapprovalBody),
     });
 
     const data = await res.json();
@@ -89,7 +102,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error("[Checkout] Error:", error);
     return NextResponse.json(
-      { error: "Error al crear checkout", details: error.message },
+      { error: "Error al crear checkout" },
       { status: 500 }
     );
   }

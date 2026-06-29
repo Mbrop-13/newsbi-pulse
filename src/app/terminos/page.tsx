@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { FileText, Scale, CreditCard, Shield, AlertTriangle, Users, Gavel, Mail } from "lucide-react";
+import { FileText, Scale, CreditCard, Shield, Users, Gavel, Mail } from "lucide-react";
 
 const sections = [
   {
@@ -22,7 +22,7 @@ const sections = [
       "• Enriquecimiento de contenido mediante modelos de IA para análisis contextual.",
       "• Asistente de IA (**Maverlang AI**) para consultas financieras, análisis de portafolio y recomendaciones personalizadas.",
       "• Seguimiento de mercados financieros en tiempo real mediante integración con proveedores de datos.",
-      "• Sistema de predicciones y apuestas virtuales con diamantes (moneda virtual sin valor monetario real).",
+      "• Gestión de portafolio personal con alertas de precio y análisis fundamental.",
       "• Audio de artículos mediante síntesis de voz (Text-to-Speech).",
     ],
   },
@@ -38,17 +38,8 @@ const sections = [
     ],
   },
   {
-    icon: AlertTriangle,
-    title: "4. Mercados de Predicciones",
-    content: [
-      "Los mercados de predicciones dentro de Maverlang son de carácter exclusivamente recreativo y educativo.",
-      "La participación se realiza mediante una moneda virtual de simulación dentro de la plataforma que **no tiene valor monetario real** y **no puede ser canjeada, transferida ni retirada** por dinero real.",
-      "Maverlang se reserva el derecho de ajustar los saldos virtuales o descontinuar el sistema de predicciones en cualquier momento.",
-    ],
-  },
-  {
     icon: Shield,
-    title: "5. Uso Aceptable",
+    title: "4. Uso Aceptable",
     content: [
       "Al utilizar Maverlang, te comprometes a:",
       "• No utilizar la plataforma para actividades ilegales o fraudulentas.",
@@ -61,7 +52,7 @@ const sections = [
   },
   {
     icon: Scale,
-    title: "6. Limitación de Responsabilidad",
+    title: "5. Limitación de Responsabilidad",
     content: [
       "**El contenido de Maverlang es informativo y no constituye asesoría financiera, de inversión, legal ni de ningún otro tipo.** Las decisiones de inversión son responsabilidad exclusiva del usuario.",
       "La información y los análisis generados por la IA pueden contener inexactitudes. No garantizamos la precisión, completitud ni actualidad de la información presentada.",
@@ -71,7 +62,7 @@ const sections = [
   },
   {
     icon: Gavel,
-    title: "7. Propiedad Intelectual",
+    title: "6. Propiedad Intelectual",
     content: [
       "Todo el contenido original de Maverlang, incluyendo pero no limitado a: diseño, código, logotipos, textos editoriales y funcionalidades de IA, es propiedad de Maverlang y está protegido por las leyes de propiedad intelectual aplicables.",
       "Las noticias agregadas de fuentes externas mantienen los derechos de sus respectivos autores y publicaciones originales. Maverlang actúa como agregador y enriquecedor de contenido.",
@@ -80,7 +71,7 @@ const sections = [
   },
   {
     icon: Mail,
-    title: "8. Disposiciones Generales",
+    title: "7. Disposiciones Generales",
     content: [
       "Estos términos se rigen por las leyes de la República de Chile. Cualquier disputa será sometida a la jurisdicción de los tribunales ordinarios de justicia de Santiago de Chile.",
       "Si alguna disposición de estos términos resulta inválida o inaplicable, las demás disposiciones permanecerán en pleno vigor y efecto.",

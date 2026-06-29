@@ -153,6 +153,8 @@ function SandpackErrorListener() {
   return null;
 }
 
+import { PremiumSkeletonLoader } from "./preview-panel";
+
 /**
  * Wrapper de la preview de Sandpack con auto-fix integrado.
  *
@@ -164,6 +166,8 @@ function SandpackErrorListener() {
  * Nota: debe renderizarse DENTRO de un <SandpackProvider>.
  */
 export function SandpackPreviewWrapper() {
+  const isCompiling = useWebBuilderStore((s) => s.isCompiling);
+
   // SandpackPreview maneja su propio estado de carga interno (loader del bundler).
   // No necesitamos un loader personalizado aquí: el PremiumSkeletonLoader del
   // preview-panel ya cubre el caso "IA generando".
@@ -172,6 +176,7 @@ export function SandpackPreviewWrapper() {
       <div style={{ position: "absolute", inset: 0 }}>
         <SandpackErrorListener />
         <AutoFixOverlay />
+        {isCompiling && <PremiumSkeletonLoader isAiResponding={false} />}
         <SandpackPreview
           showOpenInCodeSandbox={false}
           showRefreshButton={false}

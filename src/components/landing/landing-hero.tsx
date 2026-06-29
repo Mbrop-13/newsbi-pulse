@@ -75,7 +75,7 @@ export function LandingHero({ onScrollToFeatures }: LandingHeroProps) {
           <Link href="/suscripcion" className="hover:text-black transition-colors">
             Suscripciones
           </Link>
-          <Link href="/empresas" className="hover:text-black transition-colors">
+          <Link href="/suscripcion" className="hover:text-black transition-colors">
             Empresas
           </Link>
           <Link href="/?settings=soporte" className="hover:text-black transition-colors">

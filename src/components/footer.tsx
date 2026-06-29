@@ -71,7 +71,7 @@ export function Footer() {
               <li><Link href="/guardados" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Guardados</Link></li>
               <li><Link href="/lista-lectura" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Lista de Lectura</Link></li>
               <li><Link href="/suscripcion" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Suscripción Premium</Link></li>
-              <li><Link href="/empresas" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Planes para Empresas</Link></li>
+              <li><Link href="/suscripcion" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Planes para Empresas</Link></li>
               <li>
                 <a
                   href="https://maverlang.cl"

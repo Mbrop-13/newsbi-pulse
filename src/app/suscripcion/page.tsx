@@ -371,6 +371,24 @@ function SubscriptionPageContent() {
       </AnimatePresence>
 
       <main className="max-w-6xl mx-auto px-4 relative z-10">
+        {billingCycle === "enterprise" ? (
+          <EnterprisePlansGrid
+            teamSeats={teamSeats}
+            businessSeats={businessSeats}
+            onTeamSeats={setTeamSeats}
+            onBusinessSeats={setBusinessSeats}
+            onSelectEnterprise={(plan, seats) => {
+              if (plan === "enterprise") {
+                // Enterprise = contacto de ventas (email)
+                window.location.href = "mailto:ventas@maverlang.cl?subject=Plan%20Enterprise";
+              } else {
+                setOrgPlan(plan);
+                setOrgSeats(seats);
+                setShowOrgModal(true);
+              }
+            }}
+          />
+        ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 items-stretch">
           {/* Plan 1: Pro */}
           <div
@@ -646,6 +664,7 @@ function SubscriptionPageContent() {
             </div>
           </div>
         </div>
+        )}
 
         {/* FAQ Section */}
         <section className="mt-16 max-w-3xl mx-auto border-t border-neutral-200 dark:border-zinc-800 pt-16">
@@ -826,6 +845,258 @@ function SubscriptionPageContent() {
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+function EnterprisePlansGrid({
+  teamSeats,
+  businessSeats,
+  onTeamSeats,
+  onBusinessSeats,
+  onSelectEnterprise,
+}: {
+  teamSeats: number;
+  businessSeats: number;
+  onTeamSeats: (n: number) => void;
+  onBusinessSeats: (n: number) => void;
+  onSelectEnterprise: (plan: "team" | "business" | "enterprise", seats: number) => void;
+}) {
+  const fmtCLP = (n: number) => `$${n.toLocaleString("es-CL")}`;
+
+  return (
+    <div>
+      <div className="text-center mb-8">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-100 dark:bg-zinc-800 border border-neutral-200 dark:border-zinc-700 text-[11px] font-bold text-neutral-700 dark:text-neutral-300 mb-3">
+          <Building2 className="w-3.5 h-3.5" />
+          Planes para Equipos y Empresas
+        </div>
+        <h2 className="text-2xl md:text-3xl font-black text-neutral-900 dark:text-white">
+          Precios por asiento, escala con tu equipo
+        </h2>
+        <p className="text-neutral-500 dark:text-neutral-400 text-xs md:text-sm mt-2 max-w-xl mx-auto">
+          Paga solo por los usuarios que activas. 14 días de prueba gratis, sin tarjeta.
+          Facturación centralizada, panel de administración y soporte dedicado.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 items-stretch">
+        {/* TEAM */}
+        <div className="bg-white dark:bg-zinc-900 border border-neutral-200/80 dark:border-zinc-800/80 rounded-[32px] p-8 shadow-sm flex flex-col justify-between hover:shadow-md transition-all">
+          <div>
+            <div className="flex justify-between items-center mb-5">
+              <h3 className="text-xl font-black text-neutral-900 dark:text-white">Team</h3>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-zinc-800 text-neutral-500 uppercase">3–20 asientos</span>
+            </div>
+            <div className="mb-5">
+              <div className="flex items-baseline gap-1">
+                <span className="text-3xl md:text-4xl font-black tracking-tight text-neutral-900 dark:text-white">
+                  {fmtCLP(ENTERPRISE_PLANS.team.pricePerSeat)}
+                </span>
+                <span className="text-xs font-bold text-neutral-500 dark:text-neutral-400">/asiento/mes</span>
+              </div>
+              <p className="text-[11px] md:text-xs text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
+                Para equipos pequeños que colaboran en finanzas.
+              </p>
+            </div>
+
+            <SeatStepper
+              value={teamSeats}
+              min={ENTERPRISE_PLANS.team.minSeats}
+              max={ENTERPRISE_PLANS.team.maxSeats}
+              onChange={onTeamSeats}
+            />
+            <div className="mb-6 mt-3 p-3 bg-neutral-50 dark:bg-zinc-800/40 rounded-2xl border border-neutral-200/50 dark:border-zinc-800 flex justify-between items-center">
+              <span className="text-[11px] font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">Total</span>
+              <span className="text-lg font-black text-neutral-900 dark:text-white">
+                {fmtCLP(calculateSeatTotal("team", teamSeats))}
+                <span className="text-[11px] font-normal text-neutral-500">/mes</span>
+              </span>
+            </div>
+
+            <Button
+              onClick={() => onSelectEnterprise("team", teamSeats)}
+              className="w-full h-11 rounded-full font-bold text-sm bg-neutral-200 hover:bg-neutral-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-neutral-900 dark:text-white mb-6"
+            >
+              Probar Team 14 días
+            </Button>
+
+            <ul className="space-y-2.5">
+              {[
+                "200 mensajes IA / asiento / mes",
+                "Análisis avanzado de IA",
+                "Workspaces y alertas compartidas",
+                "Panel de administración",
+                "Facturación centralizada",
+                "Soporte prioritario",
+              ].map((f) => (
+                <li key={f} className="flex items-start gap-2.5 text-xs md:text-sm">
+                  <div className="w-5 h-5 rounded-full bg-neutral-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 border border-neutral-200/50 dark:border-zinc-700/50 mt-0.5">
+                    <Check className="w-3 h-3 text-neutral-900 dark:text-white" />
+                  </div>
+                  <span className="text-neutral-600 dark:text-neutral-300 leading-snug">{f}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        {/* BUSINESS */}
+        <div className="bg-white dark:bg-zinc-900 border-2 border-neutral-900 dark:border-white rounded-[32px] p-8 shadow-md flex flex-col justify-between relative">
+          <div className="absolute -top-3.5 right-6 bg-neutral-950 text-white dark:bg-white dark:text-black text-[10px] md:text-[11px] font-extrabold px-3 py-1 rounded-full border border-neutral-800 dark:border-neutral-200 uppercase tracking-wider">
+            Popular
+          </div>
+          <div>
+            <div className="flex justify-between items-center mb-5">
+              <h3 className="text-xl font-black text-neutral-900 dark:text-white">Business</h3>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-zinc-800 text-neutral-500 uppercase">5–100 asientos</span>
+            </div>
+            <div className="mb-5">
+              <div className="flex items-baseline gap-1">
+                <span className="text-3xl md:text-4xl font-black tracking-tight text-neutral-900 dark:text-white">
+                  {fmtCLP(ENTERPRISE_PLANS.business.pricePerSeat)}
+                </span>
+                <span className="text-xs font-bold text-neutral-500 dark:text-neutral-400">/asiento/mes</span>
+              </div>
+              <p className="text-[11px] md:text-xs text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
+                Para empresas en crecimiento con necesidades avanzadas.
+              </p>
+            </div>
+
+            <SeatStepper
+              value={businessSeats}
+              min={ENTERPRISE_PLANS.business.minSeats}
+              max={ENTERPRISE_PLANS.business.maxSeats}
+              onChange={onBusinessSeats}
+            />
+            <div className="mb-6 mt-3 p-3 bg-neutral-50 dark:bg-zinc-800/40 rounded-2xl border border-neutral-200/50 dark:border-zinc-800 flex justify-between items-center">
+              <span className="text-[11px] font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">Total</span>
+              <span className="text-lg font-black text-neutral-900 dark:text-white">
+                {fmtCLP(calculateSeatTotal("business", businessSeats))}
+                <span className="text-[11px] font-normal text-neutral-500">/mes</span>
+              </span>
+            </div>
+
+            <Button
+              onClick={() => onSelectEnterprise("business", businessSeats)}
+              className="w-full h-11 rounded-full font-bold text-sm bg-neutral-950 dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-100 mb-6"
+            >
+              Probar Business 14 días
+            </Button>
+
+            <ul className="space-y-2.5">
+              {[
+                "500 mensajes IA / asiento / mes",
+                "IA con búsqueda web activa",
+                "Agentes de IA compartidos",
+                "Auto-join por dominio",
+                "CSM dedicado + onboarding",
+                "Acceso a API (básico)",
+                "SLA 4h + 99.9% uptime",
+              ].map((f) => (
+                <li key={f} className="flex items-start gap-2.5 text-xs md:text-sm">
+                  <div className="w-5 h-5 rounded-full bg-neutral-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 border border-neutral-200/50 dark:border-zinc-700/50 mt-0.5">
+                    <Check className="w-3 h-3 text-neutral-900 dark:text-white" />
+                  </div>
+                  <span className="text-neutral-600 dark:text-neutral-300 leading-snug font-medium">{f}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        {/* ENTERPRISE */}
+        <div className="bg-neutral-950 dark:bg-zinc-900 border border-neutral-800 dark:border-zinc-700 rounded-[32px] p-8 shadow-sm flex flex-col justify-between text-white hover:shadow-md transition-all">
+          <div>
+            <div className="flex justify-between items-center mb-5">
+              <h3 className="text-xl font-black text-white">Enterprise</h3>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-white/70 uppercase">100+ asientos</span>
+            </div>
+            <div className="mb-5">
+              <div className="flex items-baseline gap-1">
+                <span className="text-3xl md:text-4xl font-black tracking-tight text-white">Hablemos</span>
+              </div>
+              <p className="text-[11px] md:text-xs text-white/50 mt-2 leading-relaxed">
+                Para grandes organizaciones con requisitos a medida.
+              </p>
+            </div>
+
+            <div className="mb-6 p-3 bg-white/5 rounded-2xl border border-white/10">
+              <p className="text-xs text-white/60 leading-relaxed">
+                Plan a medida con SLA dedicado, CSM asignado, SSO SAML/SCIM, data residency y API completa.
+              </p>
+            </div>
+
+            <Button
+              onClick={() => onSelectEnterprise("enterprise", 100)}
+              className="w-full h-11 rounded-full font-bold text-sm bg-white text-neutral-950 hover:bg-neutral-100 mb-6"
+            >
+              Contactar a ventas
+            </Button>
+
+            <ul className="space-y-2.5">
+              {[
+                "2.000 mensajes IA / asiento / mes",
+                "SSO SAML / SCIM",
+                "Data residency (región)",
+                "API completa + integraciones",
+                "SLA 99.99% dedicado",
+                "CSM + onboarding guiado",
+                "Facturación anual / orden de compra",
+              ].map((f) => (
+                <li key={f} className="flex items-start gap-2.5 text-xs md:text-sm">
+                  <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center shrink-0 border border-white/20 mt-0.5">
+                    <Check className="w-3 h-3 text-white" />
+                  </div>
+                  <span className="text-white/70 leading-snug">{f}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <p className="text-center text-xs text-neutral-400 dark:text-neutral-500 mt-8">
+        ¿Ya tienes organización?{" "}
+        <Link href="/empresas/dashboard" className="text-neutral-900 dark:text-white font-bold hover:underline">
+          Ir al panel de administración →
+        </Link>
+      </p>
+    </div>
+  );
+}
+
+function SeatStepper({
+  value,
+  min,
+  max,
+  onChange,
+}: {
+  value: number;
+  min: number;
+  max: number;
+  onChange: (n: number) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-[11px] font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">Asientos</span>
+      <div className="flex items-center gap-2.5">
+        <button
+          onClick={() => onChange(Math.max(min, value - 1))}
+          disabled={value <= min}
+          className="w-8 h-8 rounded-lg border border-neutral-200 dark:border-zinc-700 flex items-center justify-center disabled:opacity-30 hover:bg-neutral-100 dark:hover:bg-zinc-800 transition"
+        >
+          <Minus className="w-3.5 h-3.5" />
+        </button>
+        <span className="w-8 text-center text-lg font-black text-neutral-900 dark:text-white">{value}</span>
+        <button
+          onClick={() => onChange(Math.min(max, value + 1))}
+          disabled={value >= max}
+          className="w-8 h-8 rounded-lg border border-neutral-200 dark:border-zinc-700 flex items-center justify-center disabled:opacity-30 hover:bg-neutral-100 dark:hover:bg-zinc-800 transition"
+        >
+          <Plus className="w-3.5 h-3.5" />
+        </button>
+      </div>
     </div>
   );
 }

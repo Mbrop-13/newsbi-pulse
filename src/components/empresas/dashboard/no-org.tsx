@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { Building2, Plus, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
@@ -9,35 +10,40 @@ interface NoOrgProps {
 
 export function NoOrg({ onCreate }: NoOrgProps) {
   return (
-    <div className="min-h-[70vh] flex items-center justify-center px-6 py-16">
-      <div className="max-w-lg text-center">
-        <div className="w-16 h-16 rounded-2xl bg-[#1890FF]/10 flex items-center justify-center mx-auto mb-6">
-          <Building2 className="w-8 h-8 text-[#1890FF]" />
+    <div className="min-h-screen bg-[#f8f8fb] dark:bg-zinc-950 text-neutral-900 dark:text-neutral-100 flex items-center justify-center px-6 py-16 animate-fade-in">
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="max-w-lg text-center"
+      >
+        <div className="w-16 h-16 rounded-full bg-neutral-100 dark:bg-zinc-800 flex items-center justify-center mx-auto mb-7 shadow-sm">
+          <Building2 className="w-7 h-7 text-neutral-900 dark:text-white" />
         </div>
-        <h1 className="text-2xl md:text-3xl font-black tracking-tight text-gray-900 dark:text-white mb-3">
+        <h1 className="text-3xl md:text-4xl font-black tracking-tight mb-4">
           Aún no perteneces a una organización
         </h1>
-        <p className="text-muted-foreground text-sm md:text-base mb-8 leading-relaxed">
+        <p className="text-neutral-500 dark:text-zinc-400 text-sm md:text-base mb-9 leading-relaxed max-w-md mx-auto">
           Crea una organización para tu equipo, invita miembros y gestiona todo desde un único panel.
           O explora nuestros planes para empresas.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <button
             onClick={onCreate}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#1890FF] hover:bg-[#0f7be0] text-white font-bold px-6 py-3 rounded-xl transition shadow-lg shadow-[#1890FF]/20"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-neutral-950 dark:bg-white text-white dark:text-black font-bold px-6 py-3.5 rounded-full transition-all hover:gap-3 shadow-md"
           >
             <Plus className="w-4 h-4" />
             Crear organización
           </button>
           <Link
-            href="/empresas"
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-card border border-border hover:bg-accent text-gray-900 dark:text-white font-bold px-6 py-3 rounded-xl transition"
+            href="/suscripcion"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white dark:bg-zinc-900 border border-neutral-200 dark:border-zinc-800 hover:bg-neutral-50 dark:hover:bg-zinc-800/60 text-neutral-900 dark:text-white font-bold px-6 py-3.5 rounded-full transition-all hover:gap-3"
           >
             Ver planes para empresas
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

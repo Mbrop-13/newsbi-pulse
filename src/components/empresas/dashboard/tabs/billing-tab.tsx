@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "framer-motion";
 import type { UserOrgMembership } from "@/lib/types";
 import {
   ENTERPRISE_PLANS,
@@ -11,7 +12,7 @@ import {
   type EnterprisePlan,
   type BillingCycle,
 } from "@/lib/plan-limits";
-import { CreditCard, Calendar, Loader2, Minus, Plus, ArrowRight } from "lucide-react";
+import { CreditCard, Calendar, Loader2, Minus, Plus, ArrowRight, Wallet } from "lucide-react";
 
 interface BillingTabProps {
   orgId: string;
@@ -67,60 +68,63 @@ export function BillingTab({ orgId, membership, subscription, seatCount, onSeats
 
   return (
     <div className="space-y-5">
-      <h2 className="text-xl font-black">Facturación</h2>
+      <h2 className="text-2xl font-black tracking-tight">Facturación</h2>
 
       {/* Current plan */}
-      <div className="bg-card rounded-2xl border border-border p-6">
+      <div className="bg-white dark:bg-zinc-900 border border-neutral-200/80 dark:border-zinc-800/80 rounded-[32px] p-7 shadow-sm">
         <div className="flex items-start justify-between flex-wrap gap-4">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-1">Plan actual</p>
-            <h3 className="text-2xl font-black">{planConfig.name}</h3>
-            <p className="text-sm text-muted-foreground">
+          <div className="min-w-0">
+            <p className="text-[10px] font-black uppercase tracking-wide text-neutral-500 dark:text-zinc-400 mb-2">Plan actual</p>
+            <h3 className="text-3xl font-black tracking-tight">{planConfig.name}</h3>
+            <p className="text-sm text-neutral-500 dark:text-zinc-400 mt-1">
               {planConfig.pricePerSeat === 0
                 ? "Plan a medida — contacta a ventas"
                 : `${formatCLP(planConfig.pricePerSeat)} / asiento / mes`}
             </p>
-            <div className="flex items-center gap-2 mt-3">
-              <span className={`text-xs font-bold px-2.5 py-1 rounded-full inline-flex items-center gap-1 ${
+            <div className="flex items-center gap-2 mt-4 flex-wrap">
+              <span className={`text-[11px] font-black px-2.5 py-1 rounded-full inline-flex items-center gap-1 ${
                 isActive ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400" :
                 isTrial ? "bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400" :
-                "bg-red-100 text-red-700"
+                "bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400"
               }`}>
                 <Calendar className="w-3 h-3" />
                 {isTrial ? "En prueba" : isActive ? "Activa" : status}
               </span>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-[11px] text-neutral-500 dark:text-zinc-400">
                 {periodEnd ? `Renueva ${new Date(periodEnd).toLocaleDateString("es-CL")}` : ""}
               </span>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-accent">
+              <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-neutral-100 dark:bg-zinc-800 text-neutral-600 dark:text-zinc-300 border border-neutral-200 dark:border-zinc-700">
                 {cycle === "annual" ? "Anual" : "Mensual"}
               </span>
             </div>
           </div>
           <div className="text-right">
-            <p className="text-xs text-muted-foreground">Costo actual</p>
-            <p className="text-3xl font-black">
+            <p className="text-[11px] text-neutral-500 dark:text-zinc-400 mb-1">Costo actual</p>
+            <p className="text-3xl font-black tracking-tight">
               {planConfig.pricePerSeat === 0
                 ? "—"
                 : formatCLP(cycle === "annual" ? currentAnnualMonthly : currentMonthly)}
             </p>
-            <p className="text-xs text-muted-foreground">
-              {cycle === "annual" ? `/ mes (facturado anual ${formatCLP(currentAnnual)})` : "/ mes"}
+            <p className="text-[11px] text-neutral-500 dark:text-zinc-400">
+              {cycle === "annual" ? `/ mes (anual ${formatCLP(currentAnnual)})` : "/ mes"}
             </p>
           </div>
         </div>
       </div>
 
       {/* Seats management */}
-      <div className="bg-card rounded-2xl border border-border p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-bold flex items-center gap-2">
-            <CreditCard className="w-4 h-4 text-muted-foreground" /> Asientos contratados
+      <div className="bg-white dark:bg-zinc-900 border border-neutral-200/80 dark:border-zinc-800/80 rounded-[32px] p-7 shadow-sm">
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-sm font-black flex items-center gap-2">
+            <div className="w-7 h-7 rounded-full bg-neutral-100 dark:bg-zinc-800 flex items-center justify-center">
+              <CreditCard className="w-3.5 h-3.5 text-neutral-400 dark:text-zinc-500" />
+            </div>
+            Asientos contratados
           </h3>
           {canAdmin && !editingSeats && (
             <button
               onClick={() => { setNewSeats(seatCount); setEditingSeats(true); }}
-              className="text-sm text-[#1890FF] font-semibold hover:underline"
+              className="text-xs font-bold px-3 py-1.5 rounded-full bg-neutral-100 dark:bg-zinc-800 text-neutral-900 dark:text-white hover:bg-neutral-200 dark:hover:bg-zinc-700 transition-colors"
             >
               Cambiar
             </button>
@@ -128,14 +132,14 @@ export function BillingTab({ orgId, membership, subscription, seatCount, onSeats
         </div>
 
         {!editingSeats ? (
-          <p className="text-2xl font-black">{seatCount} <span className="text-sm font-normal text-muted-foreground">asientos</span></p>
+          <p className="text-3xl font-black tracking-tight">{seatCount} <span className="text-sm font-normal text-neutral-500 dark:text-zinc-400">asientos</span></p>
         ) : (
-          <div className="space-y-4">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setNewSeats(Math.max(planConfig.minSeats, newSeats - 1))}
                 disabled={busy || newSeats <= planConfig.minSeats}
-                className="w-10 h-10 rounded-xl border border-border flex items-center justify-center disabled:opacity-30 hover:bg-accent"
+                className="w-11 h-11 rounded-full border border-neutral-200 dark:border-zinc-700 flex items-center justify-center disabled:opacity-30 hover:bg-neutral-100 dark:hover:bg-zinc-800 transition-colors"
               >
                 <Minus className="w-4 h-4" />
               </button>
@@ -149,23 +153,23 @@ export function BillingTab({ orgId, membership, subscription, seatCount, onSeats
                   const clamped = Math.max(planConfig.minSeats, planConfig.maxSeats === -1 ? v : Math.min(v, planConfig.maxSeats));
                   setNewSeats(clamped);
                 }}
-                className="w-20 text-center text-2xl font-black border border-border rounded-xl py-1.5 outline-none focus:border-[#1890FF]"
+                className="w-24 text-center text-3xl font-black tracking-tight border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800/60 rounded-2xl py-2 outline-none focus:border-neutral-900 dark:focus:border-white"
               />
               <button
                 onClick={() => setNewSeats(newSeats + 1)}
                 disabled={busy || (planConfig.maxSeats !== -1 && newSeats >= planConfig.maxSeats)}
-                className="w-10 h-10 rounded-xl border border-border flex items-center justify-center disabled:opacity-30 hover:bg-accent"
+                className="w-11 h-11 rounded-full border border-neutral-200 dark:border-zinc-700 flex items-center justify-center disabled:opacity-30 hover:bg-neutral-100 dark:hover:bg-zinc-800 transition-colors"
               >
                 <Plus className="w-4 h-4" />
               </button>
             </div>
-            <div className="bg-accent rounded-xl p-3 text-sm">
-              <p className="text-muted-foreground text-xs">Nuevo total:</p>
-              <p className="text-lg font-black">
+            <div className="bg-neutral-50 dark:bg-zinc-800/40 border border-neutral-200/50 dark:border-zinc-700/50 rounded-2xl p-4">
+              <p className="text-neutral-500 dark:text-zinc-400 text-[11px] font-bold uppercase tracking-wide">Nuevo total</p>
+              <p className="text-xl font-black mt-0.5">
                 {planConfig.pricePerSeat === 0
                   ? "—"
                   : formatCLP(cycle === "annual" ? getAnnualEquivalentMonthly(org.plan as EnterprisePlan, newSeats) : calculateSeatTotal(org.plan as EnterprisePlan, newSeats))}
-                <span className="text-xs font-normal text-muted-foreground">/ mes</span>
+                <span className="text-xs font-normal text-neutral-500 dark:text-zinc-400">/ mes</span>
               </p>
             </div>
             {result?.warning && <p className="text-[#f7525f] text-xs">{result.warning}</p>}
@@ -173,7 +177,7 @@ export function BillingTab({ orgId, membership, subscription, seatCount, onSeats
               <button
                 onClick={handleUpdateSeats}
                 disabled={busy || newSeats === seatCount}
-                className="flex-1 bg-[#1890FF] hover:bg-[#0f7be0] disabled:opacity-50 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2"
+                className="flex-1 bg-neutral-950 dark:bg-white text-white dark:text-black font-bold py-3 rounded-full flex items-center justify-center gap-2 hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-all active:scale-[0.98] disabled:opacity-50"
               >
                 {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
                 {busy ? "Procesando…" : "Actualizar asientos"}
@@ -181,30 +185,30 @@ export function BillingTab({ orgId, membership, subscription, seatCount, onSeats
               <button
                 onClick={() => setEditingSeats(false)}
                 disabled={busy}
-                className="px-4 py-2.5 rounded-xl border border-border text-sm font-semibold hover:bg-accent disabled:opacity-50"
+                className="px-5 py-3 rounded-full border border-neutral-200 dark:border-zinc-700 text-sm font-bold hover:bg-neutral-100 dark:hover:bg-zinc-800 disabled:opacity-50 transition-colors"
               >
                 Cancelar
               </button>
             </div>
-          </div>
+          </motion.div>
         )}
       </div>
 
       {/* Payment method */}
-      <div className="bg-card rounded-2xl border border-border p-6">
-        <h3 className="text-sm font-bold mb-3">Método de pago</h3>
+      <div className="bg-white dark:bg-zinc-900 border border-neutral-200/80 dark:border-zinc-800/80 rounded-[32px] p-7 shadow-sm">
+        <h3 className="text-sm font-black mb-4">Método de pago</h3>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
-            <CreditCard className="w-4 h-4 text-muted-foreground" />
+          <div className="w-11 h-11 rounded-full bg-neutral-100 dark:bg-zinc-800 flex items-center justify-center">
+            <Wallet className="w-5 h-5 text-neutral-400 dark:text-zinc-500" />
           </div>
           <div className="text-sm">
-            <p className="font-semibold">MercadoPago</p>
-            <p className="text-xs text-muted-foreground">
+            <p className="font-bold">MercadoPago</p>
+            <p className="text-xs text-neutral-500 dark:text-zinc-400">
               {subscription?.external_subscription_id ? "Suscripción activa" : "Sin suscripción configurada"}
             </p>
           </div>
           {subscription?.external_subscription_id && (
-            <span className="text-xs text-muted-foreground ml-auto truncate max-w-[160px]">
+            <span className="text-[11px] text-neutral-400 dark:text-zinc-500 ml-auto truncate max-w-[160px] font-mono">
               #{subscription.external_subscription_id.slice(0, 12)}…
             </span>
           )}
@@ -212,10 +216,10 @@ export function BillingTab({ orgId, membership, subscription, seatCount, onSeats
       </div>
 
       {/* Tax info */}
-      <div className="text-xs text-muted-foreground bg-accent/40 rounded-xl p-4">
+      <div className="text-xs text-neutral-500 dark:text-zinc-400 bg-neutral-50 dark:bg-zinc-800/40 border border-neutral-200/50 dark:border-zinc-700/50 rounded-2xl p-4 leading-relaxed">
         <p>
           Para facturación con RUT, orden de compra o facturación anual en Enterprise,
-          escríbenos a <a href="mailto:ventas@maverlang.cl" className="text-[#1890FF] font-semibold">ventas@maverlang.cl</a>.
+          escríbenos a <a href="mailto:ventas@maverlang.cl" className="text-neutral-900 dark:text-white font-bold underline underline-offset-2">ventas@maverlang.cl</a>.
         </p>
       </div>
     </div>

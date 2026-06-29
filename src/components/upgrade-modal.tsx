@@ -175,7 +175,7 @@ export function UpgradeModal({ isOpen, onClose, feature, customTitle, customMess
               </Link>
 
               <Link
-                href="/empresas"
+                href="/suscripcion"
                 onClick={onClose}
                 className="w-full mt-2 text-center text-xs text-[#1890FF] hover:underline font-medium"
               >

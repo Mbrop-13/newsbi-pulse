@@ -838,7 +838,7 @@ function SandpackStoreSync({ stableFiles }: { stableFiles: Record<string, { code
  * store) la sigue cubriendo SandpackSyncListener, que es auto-limitante.
  */
 
-function PremiumSkeletonLoader({ isAiResponding }: { isAiResponding: boolean }) {
+export function PremiumSkeletonLoader({ isAiResponding }: { isAiResponding: boolean }) {
   return (
     <div className="absolute inset-0 bg-background flex flex-col items-center justify-center p-8 overflow-hidden select-none">
       {/* Grid pattern with light gradients */}
@@ -1881,7 +1881,7 @@ export function PreviewPanel() {
                   )}
                   {/* Body de la preview */}
                   <div className="flex-grow min-h-0 relative w-full h-full bg-white dark:bg-background">
-                    {(isAiResponding || isCompiling || chatLoading) ? (
+                    {(isAiResponding || chatLoading) ? (
                       <PremiumSkeletonLoader isAiResponding={isAiResponding || chatLoading} />
                     ) : lastAutoFixError ? (
                       <BuildErrorView error={lastAutoFixError} />

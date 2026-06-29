@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import type { UserOrgMembership } from "@/lib/types";
 import type { EnterprisePlan, OrgRole } from "@/lib/plan-limits";
 import { ENTERPRISE_PLANS } from "@/lib/plan-limits";
@@ -53,7 +54,6 @@ export function DashboardShell({ membership, onRefresh, onLeaveOrg }: DashboardS
       const data = await res.json();
       if (data.subscription) setSubscription(data.subscription);
       if (typeof data.activeMemberCount === "number") {
-        // refrescar membresía global
         onRefresh();
       }
     } catch (err) {
@@ -81,24 +81,24 @@ export function DashboardShell({ membership, onRefresh, onLeaveOrg }: DashboardS
   const planConfig = ENTERPRISE_PLANS[(membership.org.plan as EnterprisePlan) ?? "team"];
 
   return (
-    <div className="min-h-screen bg-[#f7f7f9] dark:bg-[#0a0a0f]">
+    <div className="min-h-screen bg-[#f8f8fb] dark:bg-zinc-950 text-neutral-900 dark:text-neutral-100 transition-colors duration-300 animate-fade-in">
       {/* Top bar */}
-      <header className="sticky top-0 z-40 bg-card/80 backdrop-blur border-b border-border">
+      <header className="sticky top-0 z-40 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-xl border-b border-neutral-200/60 dark:border-zinc-800/60">
         <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#1890FF] flex items-center justify-center text-white font-black">
+            <div className="w-9 h-9 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-black flex items-center justify-center font-black text-sm shadow-sm">
               {membership.org.name.charAt(0).toUpperCase()}
             </div>
-            <div>
-              <h1 className="text-sm font-black tracking-tight leading-none">{membership.org.name}</h1>
-              <p className="text-[11px] text-muted-foreground">
+            <div className="min-w-0">
+              <h1 className="text-sm font-black tracking-tight leading-none truncate max-w-[200px]">{membership.org.name}</h1>
+              <p className="text-[11px] text-neutral-500 dark:text-zinc-400 mt-0.5">
                 Plan {planConfig.name} · Rol {roleLabel(role)}
               </p>
             </div>
           </div>
           <button
             onClick={onLeaveOrg}
-            className="text-xs font-semibold text-muted-foreground hover:text-[#f7525f] flex items-center gap-1.5"
+            className="text-xs font-semibold text-neutral-500 dark:text-zinc-400 hover:text-[#f7525f] dark:hover:text-[#f7525f] flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-zinc-800/60 transition-colors"
             title={canAdmin ? "Transferir propiedad antes de salir" : "Salir de la organización"}
           >
             <LogOut className="w-3.5 h-3.5" />
@@ -108,9 +108,9 @@ export function DashboardShell({ membership, onRefresh, onLeaveOrg }: DashboardS
       </header>
 
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[230px_1fr] gap-6">
           {/* Sidebar tabs */}
-          <nav className="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible">
+          <nav className="flex lg:flex-col gap-1.5 overflow-x-auto lg:overflow-visible lg:sticky lg:top-24 lg:self-start">
             {tabs.map((t) => {
               const Icon = t.icon;
               const active = t.id === tab;
@@ -120,12 +120,12 @@ export function DashboardShell({ membership, onRefresh, onLeaveOrg }: DashboardS
                   key={t.id}
                   onClick={() => !disabled && setTab(t.id)}
                   disabled={disabled}
-                  className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition ${
+                  className={`flex items-center gap-2.5 px-4 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all duration-300 ${
                     active
-                      ? "bg-[#1890FF] text-white shadow-sm shadow-[#1890FF]/30"
+                      ? "bg-neutral-950 dark:bg-white text-white dark:text-black shadow-sm"
                       : disabled
-                      ? "text-muted-foreground/40 cursor-not-allowed"
-                      : "text-muted-foreground hover:bg-accent"
+                      ? "text-neutral-300 dark:text-zinc-700 cursor-not-allowed"
+                      : "text-neutral-600 dark:text-zinc-400 hover:bg-neutral-100 dark:hover:bg-zinc-800/60 hover:text-neutral-900 dark:hover:text-white"
                   }`}
                 >
                   <Icon className="w-4 h-4" />
@@ -137,46 +137,56 @@ export function DashboardShell({ membership, onRefresh, onLeaveOrg }: DashboardS
 
           {/* Content */}
           <div className="min-w-0">
-            {tab === "overview" && (
-              <OverviewTab
-                membership={membership}
-                members={members}
-                subscription={subscription}
-                seatActiveCount={seatActiveCount}
-                pendingCount={pendingCount}
-                onGoToMembers={() => setTab("members")}
-              />
-            )}
-            {tab === "members" && (
-              <MembersTab
-                orgId={orgId}
-                role={role}
-                members={members}
-                invitations={invitations}
-                loading={loadingMembers}
-                seatActiveCount={seatActiveCount}
-                seatCount={seatCount}
-                onChange={() => { fetchMembers(); }}
-              />
-            )}
-            {tab === "billing" && canManage && (
-              <BillingTab
-                orgId={orgId}
-                membership={membership}
-                subscription={subscription}
-                seatCount={seatCount}
-                onSeatsUpdated={(n) => setSeatCount(n)}
-                canAdmin={canAdmin}
-              />
-            )}
-            {tab === "settings" && canManage && (
-              <SettingsTab
-                orgId={orgId}
-                membership={membership}
-                onUpdated={onRefresh}
-                canAdmin={canAdmin}
-              />
-            )}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={tab}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.25, ease: "easeOut" }}
+              >
+                {tab === "overview" && (
+                  <OverviewTab
+                    membership={membership}
+                    members={members}
+                    subscription={subscription}
+                    seatActiveCount={seatActiveCount}
+                    pendingCount={pendingCount}
+                    onGoToMembers={() => setTab("members")}
+                  />
+                )}
+                {tab === "members" && (
+                  <MembersTab
+                    orgId={orgId}
+                    role={role}
+                    members={members}
+                    invitations={invitations}
+                    loading={loadingMembers}
+                    seatActiveCount={seatActiveCount}
+                    seatCount={seatCount}
+                    onChange={() => { fetchMembers(); }}
+                  />
+                )}
+                {tab === "billing" && canManage && (
+                  <BillingTab
+                    orgId={orgId}
+                    membership={membership}
+                    subscription={subscription}
+                    seatCount={seatCount}
+                    onSeatsUpdated={(n) => setSeatCount(n)}
+                    canAdmin={canAdmin}
+                  />
+                )}
+                {tab === "settings" && canManage && (
+                  <SettingsTab
+                    orgId={orgId}
+                    membership={membership}
+                    onUpdated={onRefresh}
+                    canAdmin={canAdmin}
+                  />
+                )}
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import {
   ENTERPRISE_PLANS,
   ENTERPRISE_PLAN_ORDER,
@@ -73,40 +74,45 @@ export function CreateOrgModal({
   const annualTotal = calculateAnnualTotal(plan, seats);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-card rounded-3xl border border-border max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 md:p-8">
-        <div className="flex items-center justify-between mb-6">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.25, ease: "easeOut" }}
+        className="bg-white dark:bg-zinc-900 border border-neutral-200 dark:border-zinc-800 rounded-[32px] max-w-lg w-full max-h-[90vh] overflow-y-auto p-8 shadow-2xl text-neutral-900 dark:text-neutral-100"
+      >
+        <div className="flex items-center justify-between mb-7">
           <h2 className="text-xl font-black">Crear organización</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground">
+          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-zinc-800 text-neutral-400 hover:text-neutral-700 dark:hover:text-white transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="space-y-5">
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Nombre de la organización *</label>
+            <label className="block text-[11px] font-black text-neutral-500 dark:text-zinc-400 uppercase tracking-wide mb-2">Nombre de la organización *</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Acme SpA"
-              className="w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-[#1890FF]"
+              className="w-full rounded-2xl border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800/60 px-4 py-3 text-sm outline-none focus:border-neutral-900 dark:focus:border-white transition-colors"
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1.5">RUT (opcional)</label>
+            <label className="block text-[11px] font-black text-neutral-500 dark:text-zinc-400 uppercase tracking-wide mb-2">RUT (opcional)</label>
             <input
               type="text"
               value={rut}
               onChange={(e) => setRut(e.target.value)}
               placeholder="12.345.678-9"
-              className="w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-[#1890FF]"
+              className="w-full rounded-2xl border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800/60 px-4 py-3 text-sm outline-none focus:border-neutral-900 dark:focus:border-white transition-colors"
             />
           </div>
 
           {/* Plan selector */}
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-2">Plan</label>
+            <label className="block text-[11px] font-black text-neutral-500 dark:text-zinc-400 uppercase tracking-wide mb-2">Plan</label>
             <div className="grid grid-cols-3 gap-2">
               {ENTERPRISE_PLAN_ORDER.map((p) => {
                 const pc = ENTERPRISE_PLANS[p];
@@ -119,12 +125,14 @@ export function CreateOrgModal({
                       const clamped = Math.max(pc.minSeats, Math.min(seats, pc.maxSeats === -1 ? seats : pc.maxSeats));
                       setSeats(clamped);
                     }}
-                    className={`rounded-xl border-2 p-3 text-left transition ${
-                      active ? "border-[#1890FF] bg-[#1890FF]/5" : "border-border hover:border-muted-foreground/30"
+                    className={`rounded-2xl border-2 p-3 text-left transition-all ${
+                      active
+                        ? "border-neutral-900 dark:border-white bg-neutral-50 dark:bg-zinc-800/60"
+                        : "border-neutral-200 dark:border-zinc-700 hover:border-neutral-400 dark:hover:border-zinc-500"
                     }`}
                   >
                     <span className="block text-sm font-bold">{pc.name}</span>
-                    <span className="block text-[11px] text-muted-foreground">
+                    <span className="block text-[11px] text-neutral-500 dark:text-zinc-400">
                       {pc.pricePerSeat === 0 ? "Hablemos" : `${formatCLP(pc.pricePerSeat)}/asiento`}
                     </span>
                   </button>
@@ -138,14 +146,14 @@ export function CreateOrgModal({
               {/* Seats */}
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-semibold text-muted-foreground mb-0.5">Asientos</p>
-                  <p className="text-[11px] text-muted-foreground">Mín. {config.minSeats}{config.maxSeats !== -1 ? ` · Máx. ${config.maxSeats}` : ""}</p>
+                  <p className="text-[11px] font-black text-neutral-500 dark:text-zinc-400 uppercase tracking-wide mb-0.5">Asientos</p>
+                  <p className="text-[11px] text-neutral-400 dark:text-zinc-500">Mín. {config.minSeats}{config.maxSeats !== -1 ? ` · Máx. ${config.maxSeats}` : ""}</p>
                 </div>
                 <div className="flex items-center gap-2.5">
                   <button
                     onClick={() => setSeats(Math.max(config.minSeats, seats - 1))}
                     disabled={seats <= config.minSeats}
-                    className="w-9 h-9 rounded-lg border border-border flex items-center justify-center disabled:opacity-30 hover:bg-accent"
+                    className="w-9 h-9 rounded-full border border-neutral-200 dark:border-zinc-700 flex items-center justify-center disabled:opacity-30 hover:bg-neutral-100 dark:hover:bg-zinc-800 transition-colors"
                   >
                     <Minus className="w-3.5 h-3.5" />
                   </button>
@@ -153,45 +161,45 @@ export function CreateOrgModal({
                   <button
                     onClick={() => setSeats(seats + 1)}
                     disabled={config.maxSeats !== -1 && seats >= config.maxSeats}
-                    className="w-9 h-9 rounded-lg border border-border flex items-center justify-center disabled:opacity-30 hover:bg-accent"
+                    className="w-9 h-9 rounded-full border border-neutral-200 dark:border-zinc-700 flex items-center justify-center disabled:opacity-30 hover:bg-neutral-100 dark:hover:bg-zinc-800 transition-colors"
                   >
                     <Plus className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
 
-              {/* Cycle */}
-              <div className="flex bg-accent rounded-xl p-1">
+              {/* Cycle toggle */}
+              <div className="flex bg-neutral-100 dark:bg-zinc-800 rounded-full p-1 border border-neutral-200/50 dark:border-zinc-700/50">
                 <button
                   onClick={() => setCycle("monthly")}
-                  className={`flex-1 py-2 text-sm font-bold rounded-lg transition ${cycle === "monthly" ? "bg-card shadow-sm" : "text-muted-foreground"}`}
+                  className={`flex-1 py-2 text-sm font-bold rounded-full transition ${cycle === "monthly" ? "bg-white dark:bg-zinc-700 text-neutral-900 dark:text-white shadow-sm" : "text-neutral-500 dark:text-zinc-400"}`}
                 >
                   Mensual
                 </button>
                 <button
                   onClick={() => setCycle("annual")}
-                  className={`flex-1 py-2 text-sm font-bold rounded-lg transition flex items-center justify-center gap-1.5 ${cycle === "annual" ? "bg-card shadow-sm" : "text-muted-foreground"}`}
+                  className={`flex-1 py-2 text-sm font-bold rounded-full transition flex items-center justify-center gap-1.5 ${cycle === "annual" ? "bg-white dark:bg-zinc-700 text-neutral-900 dark:text-white shadow-sm" : "text-neutral-500 dark:text-zinc-400"}`}
                 >
                   Anual
-                  <span className="text-[10px] text-[#22ab94] font-bold">-17%</span>
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-black">-17%</span>
                 </button>
               </div>
 
               {/* Total */}
-              <div className="bg-accent rounded-2xl p-4 flex items-center justify-between">
+              <div className="bg-neutral-50 dark:bg-zinc-800/40 border border-neutral-200/50 dark:border-zinc-700/50 rounded-2xl p-4 flex items-center justify-between">
                 <div>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-[11px] text-neutral-500 dark:text-zinc-400 font-bold uppercase tracking-wide">
                     {cycle === "annual" ? "Equiv. mensual (anual)" : "Total mensual"}
                   </p>
-                  <p className="text-2xl font-black">
+                  <p className="text-2xl font-black mt-0.5">
                     {formatCLP(cycle === "annual" ? annualMonthly : monthly)}
-                    <span className="text-xs font-normal text-muted-foreground">/mes</span>
+                    <span className="text-xs font-normal text-neutral-500 dark:text-zinc-400">/mes</span>
                   </p>
                   {cycle === "annual" && (
-                    <p className="text-[11px] text-muted-foreground">Facturado: {formatCLP(annualTotal)}/año</p>
+                    <p className="text-[11px] text-neutral-500 dark:text-zinc-400">Facturado: {formatCLP(annualTotal)}/año</p>
                   )}
                 </div>
-                <p className="text-[11px] text-muted-foreground text-right">
+                <p className="text-[11px] text-neutral-500 dark:text-zinc-400 text-right">
                   Incluye prueba<br />de 14 días
                 </p>
               </div>
@@ -199,8 +207,8 @@ export function CreateOrgModal({
           )}
 
           {config.cta === "contact" && (
-            <p className="text-sm text-muted-foreground bg-accent rounded-xl p-4">
-              Para Enterprise contáctanos en <a href="/empresas#contacto" className="text-[#1890FF] font-semibold">/empresas</a>.
+            <p className="text-sm text-neutral-500 dark:text-zinc-400 bg-neutral-50 dark:bg-zinc-800/40 border border-neutral-200/50 dark:border-zinc-700/50 rounded-2xl p-4">
+              Para Enterprise contáctanos en <a href="mailto:ventas@maverlang.cl" className="text-neutral-900 dark:text-white font-bold underline underline-offset-2">ventas@maverlang.cl</a>.
             </p>
           )}
 
@@ -209,7 +217,7 @@ export function CreateOrgModal({
           <button
             onClick={handleSubmit}
             disabled={!canCreate || submitting}
-            className="w-full bg-[#1890FF] hover:bg-[#0f7be0] disabled:opacity-50 text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2"
+            className="w-full bg-neutral-950 dark:bg-white text-white dark:text-black font-bold py-3.5 rounded-full transition-all hover:bg-neutral-800 dark:hover:bg-neutral-100 disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98]"
           >
             {submitting ? (
               <><Loader2 className="w-4 h-4 animate-spin" /> Creando…</>
@@ -218,7 +226,7 @@ export function CreateOrgModal({
             )}
           </button>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

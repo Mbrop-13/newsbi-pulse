@@ -406,7 +406,7 @@ IMPORTANTE: Responde ÚNICAMENTE con JSON puro. Sin explicaciones, sin markdown,
 
 f = 2 dígitos: país(1=CL,2=US) + tema(1=General,2=Tech,3=Impacto,4=Finanzas,5=Inversiones,6=Economía)`;
 
-  const model = process.env.OPENROUTER_FILTER_MODEL || 'minimax/minimax-m2.5:free';
+  const model = process.env.OPENROUTER_FILTER_MODEL || 'minimax/minimax-m2.5';
   console.log(`[PIPELINE] Step filter: ${articles.length} articles → ${model}`);
   
   const { content, usage } = await callOpenRouter({
@@ -694,7 +694,7 @@ export async function runNewsPipeline(): Promise<{
     // ─── Country/Topic decode ───
     const COUNTRY_DECODE: Record<number, string> = { 1: 'cl', 2: 'us' };
     const TOPIC_DECODE: Record<number, string> = { 1: 'chile', 2: 'tech_global', 3: 'impacto_global', 4: 'finanzas', 5: 'inversiones', 6: 'economia' };
-    const stepModel = process.env.OPENROUTER_FILTER_MODEL || 'minimax/minimax-m2.5:free';
+    const stepModel = process.env.OPENROUTER_FILTER_MODEL || 'minimax/minimax-m2.5';
 
     // ─── Helper: Save a single article to Supabase ───
     async function saveArticle(a: FinalNewsArticle): Promise<boolean> {

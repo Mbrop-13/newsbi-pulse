@@ -1647,7 +1647,8 @@ function ChatLandingContent() {
             </Tooltip>
             )}
 
-            {/* New Chat */}
+            {/* New Chat — oculto en modo build */}
+            {!isWebBuilderMode && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
@@ -1662,6 +1663,7 @@ function ChatLandingContent() {
                 Nueva conversación
               </TooltipContent>
             </Tooltip>
+            )}
           </div>
         </TooltipProvider>
       )}

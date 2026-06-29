@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "framer-motion";
 import type { OrgRole } from "@/lib/plan-limits";
-import { Users, UserPlus, Loader2, Trash2, RefreshCw, Mail, X } from "lucide-react";
+import { UserPlus, Loader2, Trash2, Mail, X } from "lucide-react";
 
 interface MembersTabProps {
   orgId: string;
@@ -67,18 +68,18 @@ export function MembersTab({
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-xl font-black">Miembros</h2>
-          <p className="text-sm text-muted-foreground">
-            {seatActiveCount} activos · {invitations.length} invitaciones pendientes · {seatCount} asientos contratados
+          <h2 className="text-2xl font-black tracking-tight">Miembros</h2>
+          <p className="text-sm text-neutral-500 dark:text-zinc-400 mt-1">
+            {seatActiveCount} activos · {invitations.length} pendientes · {seatCount} asientos contratados
           </p>
         </div>
         {canManage && (
           <button
             onClick={() => setShowInvite(true)}
             disabled={role === "admin"}
-            className="inline-flex items-center gap-2 bg-[#1890FF] hover:bg-[#0f7be0] text-white text-sm font-bold px-4 py-2.5 rounded-xl transition"
+            className="inline-flex items-center gap-2 bg-neutral-950 dark:bg-white text-white dark:text-black text-sm font-bold px-5 py-2.5 rounded-full transition-all hover:gap-3 disabled:opacity-40 disabled:hover:gap-2"
           >
             <UserPlus className="w-4 h-4" />
             Invitar
@@ -87,20 +88,20 @@ export function MembersTab({
       </div>
 
       {loading ? (
-        <div className="py-16 flex items-center justify-center">
-          <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
+        <div className="py-20 flex items-center justify-center">
+          <Loader2 className="w-6 h-6 text-neutral-400 dark:text-zinc-500 animate-spin" />
         </div>
       ) : (
         <>
           {/* Active members */}
-          <div className="bg-card rounded-2xl border border-border overflow-hidden">
-            <div className="px-5 py-3 border-b border-border bg-accent/30">
-              <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Miembros activos</p>
+          <div className="bg-white dark:bg-zinc-900 border border-neutral-200/80 dark:border-zinc-800/80 rounded-[32px] overflow-hidden shadow-sm">
+            <div className="px-6 py-4 border-b border-neutral-100 dark:border-zinc-800">
+              <p className="text-[10px] font-black uppercase tracking-wide text-neutral-500 dark:text-zinc-400">Miembros activos</p>
             </div>
-            <ul className="divide-y divide-border">
+            <ul className="divide-y divide-neutral-100 dark:divide-zinc-800">
               {members.filter((m) => m.status === "active").map((m) => (
-                <li key={m.id} className="flex items-center gap-3 px-5 py-3">
-                  <div className="w-9 h-9 rounded-full bg-accent flex items-center justify-center text-sm font-bold overflow-hidden shrink-0">
+                <li key={m.id} className="flex items-center gap-3 px-6 py-3.5">
+                  <div className="w-9 h-9 rounded-full bg-neutral-100 dark:bg-zinc-800 flex items-center justify-center text-sm font-black overflow-hidden shrink-0">
                     {m.avatar_url ? (
                       <img src={m.avatar_url} alt="" className="w-full h-full object-cover" />
                     ) : (
@@ -108,8 +109,8 @@ export function MembersTab({
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold truncate">{m.name || m.email || "Usuario"}</p>
-                    <p className="text-xs text-muted-foreground truncate">{m.email ?? m.invited_email ?? "—"}</p>
+                    <p className="text-sm font-bold truncate">{m.name || m.email || "Usuario"}</p>
+                    <p className="text-xs text-neutral-500 dark:text-zinc-400 truncate">{m.email ?? m.invited_email ?? "—"}</p>
                   </div>
                   {canManage && (
                     <div className="flex items-center gap-2">
@@ -117,7 +118,7 @@ export function MembersTab({
                         value={m.role}
                         disabled={busy || role === "admin"}
                         onChange={(e) => handleChangeRole(m.user_id, e.target.value as OrgRole)}
-                        className="text-xs font-bold rounded-lg border border-border bg-background px-2 py-1.5 outline-none focus:border-[#1890FF] disabled:opacity-50"
+                        className="text-xs font-bold rounded-full border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 px-3 py-1.5 outline-none focus:border-neutral-900 dark:focus:border-white disabled:opacity-50"
                       >
                         <option value="owner">Propietario</option>
                         <option value="admin">Administrador</option>
@@ -126,7 +127,7 @@ export function MembersTab({
                       <button
                         onClick={() => handleRemove(m.user_id)}
                         disabled={busy || m.role === "owner" && role !== "owner"}
-                        className="p-1.5 rounded-lg text-muted-foreground hover:text-[#f7525f] hover:bg-accent disabled:opacity-40"
+                        className="p-1.5 rounded-full text-neutral-400 hover:text-[#f7525f] hover:bg-red-50 dark:hover:bg-red-500/10 disabled:opacity-40 transition-colors"
                         title="Remover"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -134,7 +135,7 @@ export function MembersTab({
                     </div>
                   )}
                   {!canManage && (
-                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-accent">
+                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-zinc-800 text-neutral-600 dark:text-zinc-300 uppercase tracking-wide">
                       {m.role === "owner" ? "Owner" : m.role === "admin" ? "Admin" : "Miembro"}
                     </span>
                   )}
@@ -145,42 +146,40 @@ export function MembersTab({
 
           {/* Pending invitations */}
           {invitations.length > 0 && (
-            <div className="bg-card rounded-2xl border border-border overflow-hidden">
-              <div className="px-5 py-3 border-b border-border bg-accent/30 flex items-center justify-between">
-                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Invitaciones pendientes</p>
+            <div className="bg-white dark:bg-zinc-900 border border-neutral-200/80 dark:border-zinc-800/80 rounded-[32px] overflow-hidden shadow-sm">
+              <div className="px-6 py-4 border-b border-neutral-100 dark:border-zinc-800 flex items-center justify-between">
+                <p className="text-[10px] font-black uppercase tracking-wide text-neutral-500 dark:text-zinc-400">Invitaciones pendientes</p>
                 {canManage && (
                   <button
                     onClick={() => { invitations.forEach((inv) => handleRevoke(inv.token, inv.email)); }}
                     disabled={busy}
-                    className="text-[11px] text-[#f7525f] font-semibold flex items-center gap-1 hover:underline disabled:opacity-50"
+                    className="text-[11px] text-[#f7525f] font-bold flex items-center gap-1 hover:underline disabled:opacity-50"
                   >
                     <X className="w-3 h-3" /> Revocar todas
                   </button>
                 )}
               </div>
-              <ul className="divide-y divide-border">
+              <ul className="divide-y divide-neutral-100 dark:divide-zinc-800">
                 {invitations.map((inv) => (
-                  <li key={inv.id} className="flex items-center gap-3 px-5 py-3">
-                    <div className="w-9 h-9 rounded-full bg-accent flex items-center justify-center shrink-0">
-                      <Mail className="w-4 h-4 text-muted-foreground" />
+                  <li key={inv.id} className="flex items-center gap-3 px-6 py-3.5">
+                    <div className="w-9 h-9 rounded-full bg-neutral-100 dark:bg-zinc-800 flex items-center justify-center shrink-0">
+                      <Mail className="w-4 h-4 text-neutral-400 dark:text-zinc-500" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold truncate">{inv.email}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-sm font-bold truncate">{inv.email}</p>
+                      <p className="text-xs text-neutral-500 dark:text-zinc-400">
                         Expira {new Date(inv.expires_at).toLocaleDateString("es-CL")} · rol {inv.role}
                       </p>
                     </div>
                     {canManage && (
-                      <>
-                        <button
-                          onClick={() => handleRevoke(inv.token, inv.email)}
-                          disabled={busy}
-                          className="p-1.5 rounded-lg text-muted-foreground hover:text-[#f7525f] hover:bg-accent disabled:opacity-50"
-                          title="Revocar"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </>
+                      <button
+                        onClick={() => handleRevoke(inv.token, inv.email)}
+                        disabled={busy}
+                        className="p-1.5 rounded-full text-neutral-400 hover:text-[#f7525f] hover:bg-red-50 dark:hover:bg-red-500/10 disabled:opacity-50 transition-colors"
+                        title="Revocar"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     )}
                   </li>
                 ))}
@@ -229,52 +228,58 @@ function InviteModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <form onSubmit={handleSubmit} className="bg-card rounded-3xl border border-border max-w-md w-full p-6">
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-black">Invitar miembro</h2>
-          <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+      <motion.form
+        initial={{ opacity: 0, scale: 0.96, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.25, ease: "easeOut" }}
+        onSubmit={handleSubmit}
+        className="bg-white dark:bg-zinc-900 border border-neutral-200 dark:border-zinc-800 rounded-[32px] max-w-md w-full p-8 shadow-2xl text-neutral-900 dark:text-neutral-100"
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-black">Invitar miembro</h2>
+          <button type="button" onClick={onClose} className="p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-zinc-800 text-neutral-400 hover:text-neutral-700 dark:hover:text-white transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
-        <div className="space-y-4">
+        <div className="space-y-5">
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Email del invitado</label>
+            <label className="block text-[11px] font-black text-neutral-500 dark:text-zinc-400 uppercase tracking-wide mb-2">Email del invitado</label>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="colega@empresa.cl"
-              className="w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-[#1890FF]"
+              className="w-full rounded-2xl border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800/60 px-4 py-3 text-sm outline-none focus:border-neutral-900 dark:focus:border-white transition-colors"
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Rol</label>
+            <label className="block text-[11px] font-black text-neutral-500 dark:text-zinc-400 uppercase tracking-wide mb-2">Rol</label>
             <select
               value={inviteRole}
               onChange={(e) => setInviteRole(e.target.value as OrgRole)}
               disabled={role === "admin"}
-              className="w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-[#1890FF] disabled:opacity-60"
+              className="w-full rounded-2xl border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800/60 px-4 py-3 text-sm outline-none focus:border-neutral-900 dark:focus:border-white transition-colors disabled:opacity-60"
             >
               <option value="member">Miembro</option>
               {role === "owner" && <option value="admin">Administrador</option>}
             </select>
-            <p className="text-[11px] text-muted-foreground mt-1.5">
-              El invitado recibirá un email con un enlace para unirse. Debes registrarse con ese mismo email.
+            <p className="text-[11px] text-neutral-500 dark:text-zinc-400 mt-2">
+              El invitado recibirá un email con un enlace para unirse. Debe registrarse con ese mismo email.
             </p>
           </div>
           {error && <p className="text-[#f7525f] text-xs">{error}</p>}
           <button
             type="submit"
             disabled={busy}
-            className="w-full bg-[#1890FF] hover:bg-[#0f7be0] disabled:opacity-60 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2"
+            className="w-full bg-neutral-950 dark:bg-white text-white dark:text-black font-bold py-3.5 rounded-full flex items-center justify-center gap-2 hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-all active:scale-[0.98] disabled:opacity-60"
           >
             {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
             {busy ? "Enviando…" : "Enviar invitación"}
           </button>
         </div>
-      </form>
+      </motion.form>
     </div>
   );
 }

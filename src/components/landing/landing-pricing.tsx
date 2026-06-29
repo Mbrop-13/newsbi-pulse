@@ -152,7 +152,7 @@ export function LandingPricing() {
             </p>
           </div>
           <Link
-            href="/empresas"
+            href="/suscripcion"
             className="inline-flex items-center gap-1.5 bg-white text-slate-950 text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-slate-100 transition shrink-0"
           >
             Ver planes para empresas

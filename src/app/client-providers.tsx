@@ -200,8 +200,8 @@ export function ClientLayoutProviders({
               children
             )}
           </main>
-          {(!isFullscreenPage || showMobileNavOnSidebar) && !isAdminPage && !isLandingPage && !isSharePage && <Footer />}
-          {(!isFullscreenPage || showMobileNavOnSidebar) && !isAdminPage && !isLandingPage && !isSharePage && <MobileBottomNav />}
+          {mounted && (!isFullscreenPage || showMobileNavOnSidebar) && !isAdminPage && !isLandingPage && !isSharePage && <Footer />}
+          {mounted && (!isFullscreenPage || showMobileNavOnSidebar) && !isAdminPage && !isLandingPage && !isSharePage && <MobileBottomNav />}
           <ServiceWorkerRegistration />
           <CapacitorInit />
           {!isAdminPage && <PersonalizationApplier />}

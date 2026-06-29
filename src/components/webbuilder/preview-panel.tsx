@@ -620,6 +620,11 @@ function getAgentLineStats(reportContent: string, existingFiles: Record<string, 
 function SandpackSyncListener() {
   const { sandpack } = useSandpack();
   const { updateFile, files } = useWebBuilderStore();
+  // Mientras la IA responde, el STORE es la fuente de verdad (la IA escribe
+  // archivos, no el usuario). Permitir que el bundler reescriba el store aquí
+  // generaría un ping-pong: store→Sandpack→aquí→store→Sandpack... que escala
+  // a React #185 con el live-preview incremental. Bloqueamos durante streaming.
+  const isAiResponding = useWebBuilderStore((s) => s.isAiResponding);
 
   // Ventana de supresión: cuando SandpackStoreSync empuja código al bundler,
   // emite "maverlang-suppress-sync" con un timestamp hasta el cual debemos
@@ -643,6 +648,8 @@ function SandpackSyncListener() {
     // Anti-ping-pong: si estamos dentro de la ventana de supresión tras un
     // empuje del store→Sandpack, no reescribimos el store.
     if (Date.now() < suppressUntilRef.current) return;
+    // Durante streaming, el store es la fuente de verdad → no reescribir.
+    if (useWebBuilderStore.getState().isAiResponding) return;
 
     const currentCode = sandpack.files[activeFile]?.code;
     const storeCode = files[activeFile]?.code;
@@ -652,6 +659,7 @@ function SandpackSyncListener() {
         // Doble check dentro del timeout: la supresión pudo activarse tras
         // programar el timeout.
         if (Date.now() < suppressUntilRef.current) return;
+        if (useWebBuilderStore.getState().isAiResponding) return;
         updateFile(activeFile, currentCode);
       }, 800);
       return () => clearTimeout(timeout);
@@ -777,7 +785,12 @@ function SandpackStoreSync({ stableFiles }: { stableFiles: Record<string, { code
       // Suprimir el SandpackSyncListener durante ~400ms tras empujar, para que
       // no re-empuje de Sandpack→store el mismo código que acabamos de inyectar
       // (ping-pong). 400ms cubre la propagación async de updateFile/refresh.
-      suppressUntilRef.current = Date.now() + 400;
+      // Ventana anti-ping-pong: debe cubrir el timeout de 800ms del
+      // SandpackSyncListener (que reescribe al store desde Sandpack). 400ms
+      // era insuficiente → el listener disparaba tras la ventana y reescribía
+      // el store → stableFiles effect → re-push → bucle (React #185).
+      // 1500ms cubre holadamente el timeout del listener + propagación async.
+      suppressUntilRef.current = Date.now() + 1500;
       window.dispatchEvent(
         new CustomEvent("maverlang-suppress-sync", {
           detail: { until: suppressUntilRef.current, paths: pushedPaths },

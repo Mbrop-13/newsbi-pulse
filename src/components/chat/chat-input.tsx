@@ -524,11 +524,6 @@ export function ChatInput({
           )}
         </AnimatePresence>
 
-        {/* Tarjeta de cambios de la última generación de la IA (modo build).
-            Lista archivos creados/modificados con +/− líneas; al tocar un
-            archivo abre el editor. Botón "Aceptar" la cierra. */}
-        {isWebBuilderMode && !isStreaming && <BuildChangesCard />}
-
         {/* Active Tool Pills & Attachments */}
         {(activeTools.length > 0 || attachedArticles.length > 0) && (
           <div className="absolute bottom-full left-4 mb-2.5 flex flex-wrap gap-2 pointer-events-auto">
@@ -589,6 +584,11 @@ export function ChatInput({
           "shadow-[inset_0_0_1px_0_rgba(0,0,0,1),0_1px_2px_0_rgba(0,0,0,0.04),0_2px_12px_0_rgba(0,0,0,0.03)] transition-all duration-300 relative group focus-within:border-zinc-400 dark:focus-within:border-zinc-600 focus-within:shadow-[inset_0_0_1px_0_rgba(0,0,0,1),0_1px_2px_0_rgba(0,0,0,0.04),0_4px_16px_0_rgba(0,0,0,0.06)]",
           isListening && "border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.15)]"
         )}>
+          {/* Tarjeta de cambios (modo build) — integrada DENTRO de la barra de
+              input como su sección superior, fusionándose visualmente con la
+              barra (sin borde/fondo propios, separador sutil inferior). */}
+          {isWebBuilderMode && !isStreaming && <BuildChangesCard />}
+
           {/* File Previews inside the input box */}
           {attachedFiles.length > 0 && (
             <div className="flex flex-wrap gap-3 p-3 border-b border-border/20 mb-2">

@@ -289,29 +289,59 @@ export const useAIChatStore = create<AIChatStore>()(
         
         if (cloudSyncEnabled && user) {
           const supabase = createClient();
+          // Base payload SIN is_web_builder (columna que puede no existir aún
+          // en algunas BBDD → PostgREST responde 400 y rompe TODO el guardado).
+          // Intentamos primero CON el flag; si falla por la columna ausente
+          // (mensaje típico de PostgREST: "Could not find the 'is_web_builder'
+          // column"), reintentamos SIN él para no perder el guardado del chat.
+          const baseInsert: Record<string, any> = {
+            user_id: user.id,
+            chat_id: chatId,
+            title,
+            messages: messagesWithMeta,
+            attached_articles: attachedArticles,
+            attached_files: attachedFiles,
+          };
+          const baseUpdate: Record<string, any> = {
+            title,
+            messages: messagesWithMeta,
+            attached_articles: attachedArticles,
+            attached_files: attachedFiles,
+          };
+          const isMissingColumnErr = (e: any) =>
+            !!e && typeof e.message === "string" && /is_web_builder/i.test(e.message);
+
           if (isNewChat) {
-            const { error } = await supabase.from("ai_saved_chats").insert({
-              user_id: user.id,
-              chat_id: chatId,
-              title,
-              messages: messagesWithMeta,
-              attached_articles: attachedArticles,
-              attached_files: attachedFiles,
-              // Persistir el flag de modo build en la fila para restaurarlo
-              // de forma fiable al recargar/abrir el chat (no solo vía fallback
-              // de artefactos en mensajes).
-              is_web_builder: isWB
-            });
-            if (error) console.error(error);
+            const { error } = await supabase
+              .from("ai_saved_chats")
+              .insert({ ...baseInsert, is_web_builder: isWB });
+            if (error) {
+              console.error(error);
+              if (isMissingColumnErr(error)) {
+                // Reintento sin la columna para no perder el chat.
+                const { error: err2 } = await supabase
+                  .from("ai_saved_chats")
+                  .insert(baseInsert);
+                if (err2) console.error("SavedChats insert fallback failed:", err2);
+              }
+            }
           } else {
-            const { error } = await supabase.from("ai_saved_chats").update({
-              title,
-              messages: messagesWithMeta,
-              attached_articles: attachedArticles,
-              attached_files: attachedFiles,
-              is_web_builder: isWB
-            }).eq("chat_id", chatId).eq("user_id", user.id);
-            if (error) console.error(error);
+            const { error } = await supabase
+              .from("ai_saved_chats")
+              .update({ ...baseUpdate, is_web_builder: isWB })
+              .eq("chat_id", chatId)
+              .eq("user_id", user.id);
+            if (error) {
+              console.error(error);
+              if (isMissingColumnErr(error)) {
+                const { error: err2 } = await supabase
+                  .from("ai_saved_chats")
+                  .update(baseUpdate)
+                  .eq("chat_id", chatId)
+                  .eq("user_id", user.id);
+                if (err2) console.error("SavedChats update fallback failed:", err2);
+              }
+            }
           }
         }
       },

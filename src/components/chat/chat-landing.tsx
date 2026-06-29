@@ -1314,7 +1314,11 @@ function ChatLandingContent() {
       if (webBuilderFilesObj?.files) {
         const merged = { ...store.files, ...webBuilderFilesObj.files };
         if (!filesEqual(merged, store.files)) {
-          store.setFiles(merged);
+          // setFilesStreaming (no setFiles): acumula el diff contra el
+          // snapshot previo inicial del ciclo en vez de sobrescribirlo en
+          // cada emisión incremental. Sin esto, la tarjeta de cambios solo
+          // reflejaría la última emisión parcial, perdiendo archivos previos.
+          store.setFilesStreaming(merged);
           store.syncToCloud();
         }
       }

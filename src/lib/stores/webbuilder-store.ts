@@ -176,6 +176,14 @@ interface WebBuilderStore {
   clearBuildDiff: () => void;
   // Revierte UN archivo al estado que tenía antes del último build (si existe).
   revertFileToPrev: (path: string) => boolean;
+  // #8 Aplicación en streaming que acumula el diff (no sobrescribe): durante
+  // una orquestación multi-agente, cada emisión incremental vía onFileReady
+  // llama a esta función. Si reseteásemos lastBuildDiff cada vez, el diff final
+  // solo reflejaría la última emisión parcial y se perderían archivos previos.
+  // Aquí calculamos el diff contra el estado previo INICIAL conservado por el
+  // primer llamado, y lo acumulamos por path (último gana si un mismo archivo
+  // se actualiza múltiples veces).
+  setFilesStreaming: (files: Record<string, WebBuilderFile>) => void;
 
   // ── Multi-tab de archivos abiertos (estilo editor)
   // activeFilePath sigue siendo el archivo visible; openTabs son los que el
@@ -430,6 +438,28 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
         set({ files: nextFiles });
         debouncedSync();
         return true;
+      },
+      setFilesStreaming: (incoming) => {
+        // Normalizar y calcular diff contra el snapshot previo conservado
+        // en lastBuildPrevFiles (el estado ANTES de la orquestación).
+        const prev = get().lastBuildPrevFiles;
+        // Si no hay snapshot previo (primera emisión del ciclo), capturar
+        // el estado actual como base de comparación.
+        const base = Object.keys(prev).length > 0
+          ? prev
+          : get().files;
+        const normalized = normalizeFiles(incoming as Record<string, unknown>);
+        const currentActive = get().activeFilePath;
+        const newActive = !currentActive || currentActive === ""
+          ? Object.keys(normalized).find(k => k.endsWith("/App.tsx") || k.endsWith("/App.js")) || Object.keys(normalized)[0] || ""
+          : currentActive;
+        set({ files: normalized, activeFilePath: newActive });
+        // Diff acumulado: el snapshot previo es la base inicial; los archivos
+        // nuevos en cada emisión se van sumando. Re-calculamos completo desde
+        // la base previa al estado final para que todo el ciclo esté reflejado.
+        const diff = diffFileMaps(base, normalized);
+        set({ lastBuildDiff: diff, lastBuildPrevFiles: base });
+        debouncedSync();
       },
 
       // Multi-tab de archivos abiertos

@@ -11,6 +11,7 @@ import { SandpackPreviewWrapper } from "./sandpack-preview-wrapper";
 import { PremiumSkeletonLoader } from "./premium-skeleton-loader";
 import { parseArtifact } from "@/lib/webbuilder-parser";
 import { detectDependencies } from "@/lib/webbuilder-deps";
+import { validateProjectSyntax, formatSyntaxError } from "@/lib/webbuilder-syntax-validator";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -682,14 +683,25 @@ function SandpackStatusListener() {
   const { sandpack } = useSandpack();
   const setCompiling = useWebBuilderStore((s) => s.setCompiling);
   const status = sandpack.status;
-  // Watchdog: si el bundler se queda en 'running' demasiado tiempo, asumimos
-  // que se rompió internamente (bug conocido: "Cannot assign to read only
-  // property 'message'" tragándose el SyntaxError dentro del worker, lo que
-  // deja al bundler reintentando la transpilación en bucle sin emitir ningún
-  // mensaje de error que SandpackErrorListener pueda interceptar). Tras el
-  // timeout mostramos la pantalla de error genérico y cortamos el bucle.
+
+  // ── Watchdog 1: bundler trabado en 'running' ──
+  // Si el bundler se queda en 'running' demasiado tiempo, asumimos que se
+  // rompió internamente (bug conocido: "Cannot assign to read only property
+  // 'message'" tragándose el SyntaxError dentro del worker). Tras el timeout
+  // mostramos la pantalla de error genérico y cortamos el bucle.
   const watchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const WATCHDOG_MS = 25000;
+
+  // ── Watchdog 2: oscilación de recompilaciones ──
+  // El bucle más común no es 'running' sostenido, sino OSCILACIÓN: el bundler
+  // compila (running) → termina (done) → el SandpackStoreSync dispara refresh()
+  // → recompila (running) → termina (done) → ... Esto nunca dispara el watchdog
+  // 1 porque el estado baja a 'done' entre cada ciclo. Contamos las
+  // transiciones running→done en una ventana móvil; si superan un umbral,
+  // estamos en un bucle de recompilación → cortamos.
+  const compileCountRef = useRef(0);
+  const windowStartRef = useRef(Date.now());
+  const MAX_COMPILES_PER_15S = 8;
 
   useEffect(() => {
     const compiling = status === "running" || status === "initial";
@@ -698,15 +710,42 @@ function SandpackStatusListener() {
       setCompiling(compiling);
     }
 
-    // Arrancar/parar el watchdog según el estado.
+    const store = useWebBuilderStore.getState();
+    // Si la IA está respondiendo o ya hay error surficado, no intervenimos:
+    // las oscilaciones son normales durante el streaming de código.
+    if (store.isAiResponding || store.hasBuildError || store.isAutoFixing) {
+      // Reseteamos contadores para no contar durante estos periodos.
+      compileCountRef.current = 0;
+      windowStartRef.current = Date.now();
+    } else if (compiling) {
+      // Contamos cada vez que entra a compilar (running).
+      compileCountRef.current += 1;
+      const now = Date.now();
+      if (now - windowStartRef.current > 15000) {
+        // Ventana vencida: reiniciamos.
+        compileCountRef.current = 1;
+        windowStartRef.current = now;
+      } else if (compileCountRef.current > MAX_COMPILES_PER_15S) {
+        console.warn(
+          `[SandpackStatusListener] Watchdog de oscilación: ${compileCountRef.current} compilaciones en <15s. Bucle de recompilación detectado; mostrando pantalla de error.`
+        );
+        useWebBuilderStore.getState().failAutoFix(
+          "Se detectó un bucle de recompilación: el preview se está recompilando repetidamente sin converger.\n\nEsto suele indicar un error de sintaxis en el código generado (JSX mal cerrado, imports rotos) que el auto-fix no pudo resolver automáticamente. Revisa el código con \"Abrir en Editor\" y corrige manualmente, o usa \"Reintentar Compilación\"."
+        );
+        compileCountRef.current = 0;
+        windowStartRef.current = Date.now();
+      }
+    }
+
+    // Arrancar/parar el watchdog de 'running' sostenido según el estado.
     if (compiling && !watchdogRef.current) {
       watchdogRef.current = setTimeout(() => {
-        const store = useWebBuilderStore.getState();
+        const s = useWebBuilderStore.getState();
         // Si seguimos compilando tras el timeout y todavía no hay error
         // surficado, forzamos la pantalla de error para salir del bucle.
-        if (sandpack.status === "running" && !store.hasBuildError && !store.isAiResponding) {
+        if (sandpack.status === "running" && !s.hasBuildError && !s.isAiResponding && !s.isAutoFixing) {
           console.warn("[SandpackStatusListener] Watchdog: el bundler lleva >25s compilando. Posible bucle interno; mostrando pantalla de error.");
-          store.failAutoFix(
+          s.failAutoFix(
             "La compilación está tardando demasiado y el empaquetador parece haberse trabado (posible error de sintaxis no reportado por el bundler).\n\nRevisa el código en busca de paréntesis/llaves sin cerrar, comillas mal emparejadas o JSX mal formado. Usa \"Abrir en Editor\" para inspeccionar, o \"Reintentar Compilación\" tras corregir."
           );
         }
@@ -815,6 +854,16 @@ function SandpackStoreSync({ stableFiles }: { stableFiles: Record<string, { code
 
     // 3. Un único refresh al final si hubo cambios (no por archivo).
     //    Sandpack no expone `refresh()` directamente; se dispara vía dispatch.
+    //
+    //    CORTE DE BUCLE: si hay un error de build activo (hasBuildError) o el
+    //    auto-fix está corriendo (isAutoFixing), NO disparamos refresh(). Razón:
+    //    refresh() fuerza recompilar → si el código sigue roto el bundler emite
+    //    el error de nuevo → SandpackErrorListener lo recibe → dispara auto-fix
+    //    → la IA regenera → stableFiles cambia → effect vuelve a correr →
+    //    refresh() otra vez → bucle infinito. Cortamos aquí: cuando hay error,
+    //    dejamos que la pantalla de BuildErrorView tome el control y sea el
+    //    usuario quien decida (reintentar / editar). Aun así empujamos los
+    //    archivos (paso 1) para que el editor refleje el código actual.
     if (hasChanges) {
       // Suprimir el SandpackSyncListener durante ~400ms tras empujar, para que
       // no re-empuje de Sandpack→store el mismo código que acabamos de inyectar
@@ -830,16 +879,23 @@ function SandpackStoreSync({ stableFiles }: { stableFiles: Record<string, { code
           detail: { until: suppressUntilRef.current, paths: pushedPaths },
         })
       );
-      try {
-        // API moderna: dispatch con tipo "refresh" fuerza recompilación.
-        const sp = sandpack as any;
-        if (typeof sp.refresh === "function") {
-          sp.refresh();
-        } else if (typeof sp.dispatch === "function") {
-          sp.dispatch({ type: "refresh" });
+
+      const storeState = useWebBuilderStore.getState();
+      const shouldSkipRefresh =
+        storeState.hasBuildError || storeState.isAutoFixing;
+
+      if (!shouldSkipRefresh) {
+        try {
+          // API moderna: dispatch con tipo "refresh" fuerza recompilación.
+          const sp = sandpack as any;
+          if (typeof sp.refresh === "function") {
+            sp.refresh();
+          } else if (typeof sp.dispatch === "function") {
+            sp.dispatch({ type: "refresh" });
+          }
+        } catch (e) {
+          /* noop */
         }
-      } catch (e) {
-        /* noop */
       }
     }
     // Intencionalmente NO incluimos sandpack en deps (su ref es inestable).
@@ -1327,6 +1383,52 @@ export function PreviewPanel() {
       if (livePreviewTimerRef.current) clearTimeout(livePreviewTimerRef.current);
     };
   }, [files, isAiResponding]);
+
+  // ── Pre-validación sintáctica (anti-bucle del worker de Sandpack) ──
+  //
+  // El worker de Babel que Sandpack descarga del CDN tiene un bug: al
+  // encontrar un SyntaxError intenta mutar error.message (read-only) y lanza
+  // un TypeError interno que cuelga al worker reintentando para siempre —
+  // nunca emite un error procesable, así que el auto-fix no lo intercepta y
+  // el preview queda en bucle.
+  //
+  // Solución: parseamos nosotros mismos con @babel/standalone (thread
+  // principal, donde sí capturamos el SyntaxError) cada vez que cambia
+  // stableFiles. Si detectamos error, disparamos failAutoFix con el mensaje
+  // real → se muestra la pantalla de error directamente, y al marcar
+  // hasBuildError=true el SandpackStoreSync evita inyectar el código roto en
+  // el bundler. Así el worker buggy nunca ve código inválido.
+  //
+  // Recíprocamente, si había un error y el usuario/edita y ahora el código
+  // valida, limpiamos hasBuildError para que se reanude la compilación.
+  //
+  // Solo validamos cuando la IA NO está respondiendo: durante el streaming el
+  // código está a medio escribir y es normal que sea inválido temporalmente.
+  useEffect(() => {
+    if (isAiResponding) return;
+    if (Object.keys(stableFiles).length === 0) return;
+
+    const store = useWebBuilderStore.getState();
+    const syntaxError = validateProjectSyntax(stableFiles);
+
+    if (syntaxError) {
+      const formatted = formatSyntaxError(syntaxError);
+      console.warn(
+        `[Pre-Validation] Error de sintaxis detectado en ${syntaxError.path}:${syntaxError.line}: ${syntaxError.message}`
+      );
+      // Solo disparamos el error si no es ya el que está mostrándose (evita
+      // disparar failAutoFix repetidamente sobre el mismo error).
+      if (store.lastAutoFixError !== formatted) {
+        useWebBuilderStore.getState().failAutoFix(formatted);
+      }
+    } else if (store.hasBuildError && !store.isAutoFixing) {
+      // El código ya valida pero hay un flag de error stale (el usuario corrigió
+      // manualmente en el editor). Limpiamos para reanudar la compilación.
+      console.log("[Pre-Validation] El código vuelve a validar. Limpiando error de build.");
+      useWebBuilderStore.getState().setBuildError(false);
+      useWebBuilderStore.getState().completeAutoFix();
+    }
+  }, [stableFiles, isAiResponding]);
 
   // handleRefresh: recarga de verdad la vista previa.
   //

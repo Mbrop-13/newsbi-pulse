@@ -33,9 +33,18 @@ export async function updateSession(request: NextRequest) {
   // supabase.auth.getUser(). A simple mistake could make it very hard to debug
   // issues with users being randomly logged out.
 
+  // NOTE: we intentionally use getSession() instead of getUser() here.
+  // getUser() makes a blocking network call to the Supabase auth server on
+  // EVERY request (200-500ms), which is the dominant latency cost of the
+  // middleware. getSession() reads the JWT from the cookie locally (no network).
+  // Token validity is still enforced where it matters: each protected API
+  // route and page calls getUser() / verifies the session itself
+  // (defense-in-depth). The middleware's job is only coarse access control:
+  // keep anonymous users out of /admin and non-public /api routes.
   const {
-    data: { user },
-  } = await supabase.auth.getUser()
+    data: { session },
+  } = await supabase.auth.getSession()
+  const user = session?.user ?? null
 
   // The assistant route is no longer protected here because it has its own unauthenticated landing page.
 

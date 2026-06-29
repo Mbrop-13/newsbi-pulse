@@ -153,7 +153,7 @@ function SandpackErrorListener() {
   return null;
 }
 
-import { PremiumSkeletonLoader } from "./preview-panel";
+import { PremiumSkeletonLoader } from "./premium-skeleton-loader";
 
 /**
  * Wrapper de la preview de Sandpack con auto-fix integrado.

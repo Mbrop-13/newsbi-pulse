@@ -174,7 +174,7 @@ export function ClientLayoutProviders({
           {/* Top Navbar removed as requested to unify layout */}
           <main
             className={`flex-1 transition-all duration-300 ease-in-out ${
-              isFullscreenPage ? "overflow-hidden h-full" : "overflow-y-auto h-full"
+              (isFixedLayout || isAiPage) ? "overflow-hidden h-full" : "overflow-y-auto h-full"
             } ${isAdminPage ? "" : "pb-16 md:pb-0"}`}
             style={{
               ...((!isAdminPage && audioMode === "pinned") ? { marginRight: pinnedWidth } : {}),
@@ -189,7 +189,7 @@ export function ClientLayoutProviders({
                   <div className={cn(
                     (isFixedLayout || isAiPage)
                       ? "flex flex-col h-[100dvh] w-full min-w-0 overflow-hidden relative"
-                      : "flex flex-col h-full min-h-screen w-full min-w-0 overflow-y-auto overflow-x-hidden",
+                      : "flex flex-col min-h-full w-full min-w-0",
                     showMobileNavOnSidebar && "pb-24"
                   )}>
                     {children}

@@ -17,12 +17,16 @@ const nextConfig = {
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob: https: http:",
       "font-src 'self' data: https://fonts.gstatic.com",
-      // connect-src incluye https://*.codesandbox.io y https://codesandbox.io:
-      // el bundler de Sandpack (webbuilder) descarga su runtime y mantiene el
-      // canal con el worker desde esos dominios. Sin esto, aunque el iframe esté
-      // permitido por frame-src, el runtime no conecta y la preview se queda
-      // cargando hasta TIME_OUT.
-      "connect-src 'self' https://*.supabase.co https://api.mercadopago.com https://api.openai.com https://openrouter.ai https://api.x.ai https://api.mapbox.com https://api.newsdata.io https://www.googleapis.com https://generativelanguage.googleapis.com https://*.upstash.io https://*.codesandbox.io https://codesandbox.io wss: ws:",
+      // connect-src incluye los dominios del bundler de Sandpack (webbuilder):
+      //  - https://*.codesandbox.io y https://codesandbox.io: el bundler
+      //    descarga su runtime y mantiene el canal con el worker desde ahí.
+      //  - https://col.csbops.io y https://*.csbops.io: endpoint de telemetría
+      //    de CodeSandbox. El bundler hace POSTs aquí; si la CSP lo bloquea, el
+      //    worker del iframe puede quedarse esperando y contribuir al
+      //    ERR_CONNECTION_TIMED_OUT / TIME_OUT de la preview.
+      // Sin estos, aunque el iframe esté permitido por frame-src, el runtime no
+      // conecta bien y la preview se queda cargando hasta TIME_OUT.
+      "connect-src 'self' https://*.supabase.co https://api.mercadopago.com https://api.openai.com https://openrouter.ai https://api.x.ai https://api.mapbox.com https://api.newsdata.io https://www.googleapis.com https://generativelanguage.googleapis.com https://*.upstash.io https://*.codesandbox.io https://codesandbox.io https://col.csbops.io https://*.csbops.io wss: ws:",
       // frame-src incluye los dominios del bundler de Sandpack (webbuilder):
       // - sandpack.codesandbox.io (worker/runtime por versión, ej. 2-19-8-sandpack.codesandbox.io)
       // - *.codesandbox.io  (cubre versiones nuevas y subdominios del bundler)

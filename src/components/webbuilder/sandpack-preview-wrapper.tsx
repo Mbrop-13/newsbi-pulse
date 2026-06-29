@@ -62,7 +62,16 @@ function SandpackErrorListener() {
         }
       }
 
-      if (!errorMessage) return;
+      if (!errorMessage) {
+        // Compilación limpia (mensaje 'done' sin compileError, o acción sin
+        // error): aseguramos que el flag de error de build esté bajado para
+        // que el watchdog de SandpackStatusListener no dispare falsos positivos
+        // y la pantalla de BuildErrorView se oculte.
+        if (message.type === "done" && useWebBuilderStore.getState().hasBuildError) {
+          useWebBuilderStore.getState().setBuildError(false);
+        }
+        return;
+      }
 
       const store = useWebBuilderStore.getState();
       if (store.isAiResponding) return;

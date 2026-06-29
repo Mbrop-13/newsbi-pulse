@@ -56,9 +56,16 @@ export async function middleware(request: NextRequest) {
   }
 
   // 3. No language prefix: resolve locale (cookie > Accept-Language > 'en')
-  //    and REWRITE internally instead of issuing a 307 redirect. This avoids
-  //    a full extra round-trip to the server before any HTML is painted, which
-  //    is the main perceived-latency cost on the initial load.
+  //    and REWRITE to the CLEAN path (without prepending the locale) while
+  //    communicating the locale via header + cookie.
+  //
+  //    IMPORTANT: do NOT rewrite to `/${locale}/...` here. Unlike a redirect,
+  //    Next.js does NOT re-run middleware after a rewrite, so a rewrite to
+  //    `/es/ai` would look for a literal `/es/ai` route (which doesn't exist in
+  //    the app router) and 404. Instead we rewrite to the existing clean path
+  //    (e.g. `/ai`, `/`) and set the locale header so the app knows the locale.
+  //    This keeps the single-request benefit of a rewrite (no extra round-trip)
+  //    without the 404.
   const localeCookie = request.cookies.get('maverlang_locale')?.value
   let locale = localeCookie
 
@@ -67,12 +74,11 @@ export async function middleware(request: NextRequest) {
     locale = acceptLanguage.toLowerCase().includes('es') ? 'es' : 'en'
   }
 
-  // Rewrite internally to the localized path WITHOUT changing the browser URL.
-  // The locale cookie is set so subsequent requests keep the same locale.
-  url.pathname = `/${locale}${pathname === '/' ? '' : pathname}`
   const requestHeaders = new Headers(request.headers)
   requestHeaders.set('x-next-intl-locale', locale)
 
+  // Rewrite to the SAME clean path (no locale prefix). url.pathname already
+  // holds the clean path (e.g. '/', '/ai'), so we just attach the locale header.
   const response = NextResponse.rewrite(url, {
     request: {
       headers: requestHeaders,

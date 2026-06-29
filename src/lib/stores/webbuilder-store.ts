@@ -142,6 +142,14 @@ interface WebBuilderStore {
   isAutoFixing: boolean;
   lastAutoFixError: string | null;
   isAiResponding: boolean;
+  // True cuando el bundler ha reportado un error de compilación (cualquier
+  // tipo). El listener de Sandpack (SandpackErrorListener) lo sube cuando
+  // detecta un error; el watcher de conexión lo baja cuando se recupera.
+  // Sirve para cortar el bucle de reintentos del auto-fix: si ya sabemos que
+  // hay un error activo, no disparamos auto-fix de nuevo hasta que el usuario
+  // actúe o se recompile.
+  hasBuildError: boolean;
+  setBuildError: (val: boolean) => void;
   startAutoFix: () => void;
   completeAutoFix: () => void;
   failAutoFix: (error: string) => void;
@@ -397,6 +405,8 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
       isAutoFixing: false,
       lastAutoFixError: null,
       isAiResponding: false,
+      hasBuildError: false,
+      setBuildError: (val) => set({ hasBuildError: val }),
 
       // Guardia anti-bucle de auto-fix
       appliedFixHashes: [],
@@ -665,9 +675,12 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
       },
 
       startAutoFix: () => set((s) => ({ isAutoFixing: true, autoFixAttempts: s.autoFixAttempts + 1 })),
-      completeAutoFix: () => set({ isAutoFixing: false, lastAutoFixError: null }),
-      failAutoFix: (error) => set({ isAutoFixing: false, lastAutoFixError: error }),
-      resetAutoFixAttempts: () => set({ autoFixAttempts: 0, isAutoFixing: false, lastAutoFixError: null, appliedFixHashes: [] }),
+      // completeAutoFix = un fix se aplicó y compiló bien → limpiar todo.
+      completeAutoFix: () => set({ isAutoFixing: false, lastAutoFixError: null, hasBuildError: false }),
+      // failAutoFix = el error sigue → hasBuildError permanece true para que la
+      // pantalla de BuildErrorView se muestre y el bucle de reintentos se corte.
+      failAutoFix: (error) => set({ isAutoFixing: false, lastAutoFixError: error, hasBuildError: true }),
+      resetAutoFixAttempts: () => set({ autoFixAttempts: 0, isAutoFixing: false, lastAutoFixError: null, appliedFixHashes: [], hasBuildError: false }),
       setAiResponding: (val) => set({ isAiResponding: val }),
 
       // ── Cloud Sync Actions ──

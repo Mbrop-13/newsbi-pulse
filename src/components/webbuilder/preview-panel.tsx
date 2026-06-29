@@ -682,6 +682,14 @@ function SandpackStatusListener() {
   const { sandpack } = useSandpack();
   const setCompiling = useWebBuilderStore((s) => s.setCompiling);
   const status = sandpack.status;
+  // Watchdog: si el bundler se queda en 'running' demasiado tiempo, asumimos
+  // que se rompió internamente (bug conocido: "Cannot assign to read only
+  // property 'message'" tragándose el SyntaxError dentro del worker, lo que
+  // deja al bundler reintentando la transpilación en bucle sin emitir ningún
+  // mensaje de error que SandpackErrorListener pueda interceptar). Tras el
+  // timeout mostramos la pantalla de error genérico y cortamos el bucle.
+  const watchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const WATCHDOG_MS = 25000;
 
   useEffect(() => {
     const compiling = status === "running" || status === "initial";
@@ -689,7 +697,32 @@ function SandpackStatusListener() {
     if (useWebBuilderStore.getState().isCompiling !== compiling) {
       setCompiling(compiling);
     }
-  }, [status, setCompiling]);
+
+    // Arrancar/parar el watchdog según el estado.
+    if (compiling && !watchdogRef.current) {
+      watchdogRef.current = setTimeout(() => {
+        const store = useWebBuilderStore.getState();
+        // Si seguimos compilando tras el timeout y todavía no hay error
+        // surficado, forzamos la pantalla de error para salir del bucle.
+        if (sandpack.status === "running" && !store.hasBuildError && !store.isAiResponding) {
+          console.warn("[SandpackStatusListener] Watchdog: el bundler lleva >25s compilando. Posible bucle interno; mostrando pantalla de error.");
+          store.failAutoFix(
+            "La compilación está tardando demasiado y el empaquetador parece haberse trabado (posible error de sintaxis no reportado por el bundler).\n\nRevisa el código en busca de paréntesis/llaves sin cerrar, comillas mal emparejadas o JSX mal formado. Usa \"Abrir en Editor\" para inspeccionar, o \"Reintentar Compilación\" tras corregir."
+          );
+        }
+      }, WATCHDOG_MS);
+    } else if (!compiling && watchdogRef.current) {
+      clearTimeout(watchdogRef.current);
+      watchdogRef.current = null;
+    }
+
+    return () => {
+      if (watchdogRef.current) {
+        clearTimeout(watchdogRef.current);
+        watchdogRef.current = null;
+      }
+    };
+  }, [status, setCompiling, sandpack]);
 
   return null;
 }

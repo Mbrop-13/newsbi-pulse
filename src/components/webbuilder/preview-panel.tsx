@@ -684,24 +684,30 @@ function SandpackStatusListener() {
   const setCompiling = useWebBuilderStore((s) => s.setCompiling);
   const status = sandpack.status;
 
-  // ── Watchdog 1: bundler trabado en 'running' ──
-  // Si el bundler se queda en 'running' demasiado tiempo, asumimos que se
-  // rompió internamente (bug conocido: "Cannot assign to read only property
-  // 'message'" tragándose el SyntaxError dentro del worker). Tras el timeout
-  // mostramos la pantalla de error genérico y cortamos el bucle.
+  // ── Watchdog: bundler trabado en 'running' ──
+  // ÚNICA red de seguridad. Si el bundler se queda en 'running' demasiado
+  // tiempo (worker colgado por el bug "Cannot assign to read only property"),
+  // mostramos la pantalla de error genérico.
+  //
+  // ANTI-FALSO-POSITIVO:
+  //   - El timeout es 40s (no 25s): la primera compilación de un proyecto
+  //     grande con muchas deps tarda legítimamente 30s+ en máquinas lentas
+  //     (descarga del bundler desde el CDN + transpile). 25s disparaba el
+  //     watchdog en proyectos normales. 40s está por encima de cualquier
+  //     compilación legítima pero por debajo del timeout del iframe de
+  //     SandpackConnectionWatcher (~30s de red, que ya tiene su propio UI).
+  //   - Se OMITE en el primer montaje del provider (hasCompiledOnceRef):
+  //     la compilación inicial siempre es la más lenta (cold start del
+  //     worker + descarga). Cortarla con un watchdog ahí era la causa #1 de
+  //     falsos positivos. Solo vigilamos las recompilaciones posteriores,
+  //     que deberían ser rápidas; si una de ésas excede 40s, sí hay un
+  //     cuelgue del worker.
+  //   - Solo dispara si NO hay ya un error surficado (la pre-validación con
+  //     @babel/standalone captura los SyntaxError reales antes; este watchdog
+  //     es fallback para casos que la pre-validación no cubre).
   const watchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const WATCHDOG_MS = 25000;
-
-  // ── Watchdog 2: oscilación de recompilaciones ──
-  // El bucle más común no es 'running' sostenido, sino OSCILACIÓN: el bundler
-  // compila (running) → termina (done) → el SandpackStoreSync dispara refresh()
-  // → recompila (running) → termina (done) → ... Esto nunca dispara el watchdog
-  // 1 porque el estado baja a 'done' entre cada ciclo. Contamos las
-  // transiciones running→done en una ventana móvil; si superan un umbral,
-  // estamos en un bucle de recompilación → cortamos.
-  const compileCountRef = useRef(0);
-  const windowStartRef = useRef(Date.now());
-  const MAX_COMPILES_PER_15S = 8;
+  const hasCompiledOnceRef = useRef(false);
+  const WATCHDOG_MS = 40000;
 
   useEffect(() => {
     const compiling = status === "running" || status === "initial";
@@ -710,41 +716,21 @@ function SandpackStatusListener() {
       setCompiling(compiling);
     }
 
-    const store = useWebBuilderStore.getState();
-    // Si la IA está respondiendo o ya hay error surficado, no intervenimos:
-    // las oscilaciones son normales durante el streaming de código.
-    if (store.isAiResponding || store.hasBuildError || store.isAutoFixing) {
-      // Reseteamos contadores para no contar durante estos periodos.
-      compileCountRef.current = 0;
-      windowStartRef.current = Date.now();
-    } else if (compiling) {
-      // Contamos cada vez que entra a compilar (running).
-      compileCountRef.current += 1;
-      const now = Date.now();
-      if (now - windowStartRef.current > 15000) {
-        // Ventana vencida: reiniciamos.
-        compileCountRef.current = 1;
-        windowStartRef.current = now;
-      } else if (compileCountRef.current > MAX_COMPILES_PER_15S) {
-        console.warn(
-          `[SandpackStatusListener] Watchdog de oscilación: ${compileCountRef.current} compilaciones en <15s. Bucle de recompilación detectado; mostrando pantalla de error.`
-        );
-        useWebBuilderStore.getState().failAutoFix(
-          "Se detectó un bucle de recompilación: el preview se está recompilando repetidamente sin converger.\n\nEsto suele indicar un error de sintaxis en el código generado (JSX mal cerrado, imports rotos) que el auto-fix no pudo resolver automáticamente. Revisa el código con \"Abrir en Editor\" y corrige manualmente, o usa \"Reintentar Compilación\"."
-        );
-        compileCountRef.current = 0;
-        windowStartRef.current = Date.now();
-      }
+    // Marcar que ya completamos al menos una compilación con éxito.
+    if (status === "done" || status === "idle") {
+      hasCompiledOnceRef.current = true;
     }
 
     // Arrancar/parar el watchdog de 'running' sostenido según el estado.
-    if (compiling && !watchdogRef.current) {
+    // Solo vigilamos DESPUÉS de la primera compilación exitosa para evitar
+    // disparar en el cold start legítimo.
+    if (compiling && hasCompiledOnceRef.current && !watchdogRef.current) {
       watchdogRef.current = setTimeout(() => {
         const s = useWebBuilderStore.getState();
         // Si seguimos compilando tras el timeout y todavía no hay error
         // surficado, forzamos la pantalla de error para salir del bucle.
         if (sandpack.status === "running" && !s.hasBuildError && !s.isAiResponding && !s.isAutoFixing) {
-          console.warn("[SandpackStatusListener] Watchdog: el bundler lleva >25s compilando. Posible bucle interno; mostrando pantalla de error.");
+          console.warn("[SandpackStatusListener] Watchdog: el bundler lleva >40s en recompilación (no es cold start). Posible cuelgue; mostrando pantalla de error.");
           s.failAutoFix(
             "La compilación está tardando demasiado y el empaquetador parece haberse trabado (posible error de sintaxis no reportado por el bundler).\n\nRevisa el código en busca de paréntesis/llaves sin cerrar, comillas mal emparejadas o JSX mal formado. Usa \"Abrir en Editor\" para inspeccionar, o \"Reintentar Compilación\" tras corregir."
           );
@@ -1271,6 +1257,7 @@ export function PreviewPanel() {
     activeAgentReports,
     pendingPlan,
     lastAutoFixError,
+    hasBuildError,
   } = useWebBuilderStore();
   const chatLoading = useAIChatStore((s) => s.isLoading);
   const currentChatId = useAIChatStore((s) => s.currentChatId);
@@ -1409,6 +1396,14 @@ export function PreviewPanel() {
     if (Object.keys(stableFiles).length === 0) return;
 
     const store = useWebBuilderStore.getState();
+    // Si un auto-fix está corriendo (posiblemente para un error de runtime que
+    // la pre-validación de sintaxis no cubre), salimos SIN validar: el fix va
+    // a mutar stableFiles y el efecto se reejecutará cuando acabe. Ejecutar
+    // validateProjectSyntax aquí es costoso (parsea todos los archivos) e
+    // inútil mientras isAutoFixing=true (no debemos surfear ni limpiar errores
+    // hasta que el fix termine).
+    if (store.isAutoFixing) return;
+
     const syntaxError = validateProjectSyntax(stableFiles);
 
     if (syntaxError) {
@@ -1421,11 +1416,13 @@ export function PreviewPanel() {
       if (store.lastAutoFixError !== formatted) {
         useWebBuilderStore.getState().failAutoFix(formatted);
       }
-    } else if (store.hasBuildError && !store.isAutoFixing) {
+    } else if (store.hasBuildError) {
       // El código ya valida pero hay un flag de error stale (el usuario corrigió
       // manualmente en el editor). Limpiamos para reanudar la compilación.
+      // completeAutoFix() ya pone hasBuildError=false + lastAutoFixError=null +
+      // isAutoFixing=false, así que no hace falta setBuildError(false) aparte
+      // (eso causaba 2 writes / 2 renders redundantes).
       console.log("[Pre-Validation] El código vuelve a validar. Limpiando error de build.");
-      useWebBuilderStore.getState().setBuildError(false);
       useWebBuilderStore.getState().completeAutoFix();
     }
   }, [stableFiles, isAiResponding]);
@@ -2065,8 +2062,8 @@ export function PreviewPanel() {
                   <div className="flex-grow min-h-0 relative w-full h-full bg-white dark:bg-background">
                     {(isAiResponding || chatLoading) ? (
                       <PremiumSkeletonLoader isAiResponding={isAiResponding || chatLoading} />
-                    ) : lastAutoFixError ? (
-                      <BuildErrorView error={lastAutoFixError} />
+                    ) : (hasBuildError || lastAutoFixError) ? (
+                      <BuildErrorView error={lastAutoFixError ?? "Error de compilación detectado. Usa \"Abrir en Editor\" para inspeccionar o \"Reintentar Compilación\"."} />
                     ) : (
                       <SandpackPreviewWrapper key={iframeKey} />
                     )}

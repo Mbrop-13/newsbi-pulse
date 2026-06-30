@@ -3,46 +3,42 @@
 import { useEffect, useRef, useState } from "react";
 import { bundleProject } from "@/lib/webbuilder-bundler";
 import { detectDependencies } from "@/lib/webbuilder-deps";
-import { useWebBuilderStore, djb2Hash, hashFiles } from "@/lib/stores/webbuilder-store";
-import { attemptAutoFix } from "@/lib/services/auto-fix-service";
+import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
 import { PremiumSkeletonLoader } from "./premium-skeleton-loader";
-import { AlertTriangle } from "lucide-react";
 
 /**
  * Preview autocontenido: reemplaza a SandpackPreview.
  *
- * En vez de descargar el bundler de Sandpack desde sandpack.codesandbox.io
- * (worker remoto con bugs + telemetría a csbops.io), aquí bundleamos el
- * proyecto con esbuild-wasm EN EL NAVEGADOR y lo inyectamos en un iframe
- * srcdoc. Cero dependencia de CodeSandbox.
+ * Bundlea el proyecto con esbuild-wasm EN EL NAVEGADOR (cero dependencia del
+ * CDN de CodeSandbox) y lo inyecta en un iframe srcdoc.
  *
- * Flujo:
- *  1. stableFiles cambia → debounce 300ms (evita rebundle en cada token).
- *  2. bundleProject(files, deps) → { html, error }.
- *  3. Si hay error → dispara el auto-fix (attemptAutoFix): la IA intenta
- *     reparar el código. Si el fix funciona → setFiles → re-bundle. Si falla
- *     (2 intentos o bucle detectado) → failAutoFix → BuildErrorView muestra
- *     el error real con línea/columna exactas. Mensaje limpio, sin worker
- *     colgado.
- *  4. Si OK → seteamos el srcdoc del iframe. El navegador ejecuta el módulo,
- *     react carga desde esm.sh, la app se monta.
+ * FILOSOFÍA: SIMPLE Y A PRUEBA DE FALLOS.
+ * - Si el código compila → muestra el preview. ✅
+ * - Si el código NO compila → muestra el error exacto (línea/columna) vía la
+ *   pantalla de error del padre (failAutoFix reutilizada solo como canal de
+ *   UI, no como LLM). El usuario lo corrige en el editor. ✅
  *
- * El inspector (clic en elementos) sigue funcionando porque el bundler
- * inyecta el mismo script del inspector que usaba Sandpack.
+ * NO hay auto-fix (LLM regenerando código): era la causa de los 504 de
+ * /api/webbuilder-fix y de buena parte de los bucles. Cada editor serio
+ * (VS Code, CodeSandbox) te muestra el error y tú lo arreglas.
  */
 export function SelfHostedPreview({ stableFiles }: { stableFiles: Record<string, { code: string }> }) {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const [html, setHtml] = useState<string | null>(null);
   const [bundling, setBundling] = useState(false);
-  const [bundleError, setBundleError] = useState<string | null>(null);
-  const bundleDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const autoFixDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastProcessedErrorRef = useRef<string | null>(null);
-  // Cache del último hash de stableFiles para no rebundlear si no cambió.
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastKeyRef = useRef<string>("");
+  const isMountedRef = useRef(true);
 
-  // stableFiles puede cambiar de ref sin que el contenido cambie (re-render).
-  // Lo serializamos a un key estable para comparar.
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  // Key estable del contenido: cambia SOLO si los archivos realmente cambiaron
+  // (no en cada re-render). Evita rebundle innecesario.
   const filesKey = JSON.stringify(
     Object.entries(stableFiles)
       .sort(([a], [b]) => a.localeCompare(b))
@@ -50,145 +46,54 @@ export function SelfHostedPreview({ stableFiles }: { stableFiles: Record<string,
   );
 
   useEffect(() => {
-    if (bundleDebounceRef.current) clearTimeout(bundleDebounceRef.current);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
 
-    // Skip si el contenido no cambió realmente (misma key).
     if (filesKey === lastKeyRef.current) return;
     lastKeyRef.current = filesKey;
 
-    const store = useWebBuilderStore.getState();
-    // Si la IA está respondiendo, no bundleamos (código a medio escribir).
-    if (store.isAiResponding) return;
-    // Si un auto-fix está corriendo, esperamos a que termine (va a mutar
-    // stableFiles y este effect se reejecutará).
-    if (store.isAutoFixing) return;
+    // No bundlear mientras la IA escribe (código a medio generar).
+    if (useWebBuilderStore.getState().isAiResponding) return;
 
-    bundleDebounceRef.current = setTimeout(async () => {
+    debounceRef.current = setTimeout(async () => {
       setBundling(true);
-      setBundleError(null);
       try {
         const deps = detectDependencies(stableFiles);
         const result = await bundleProject(stableFiles, deps);
+        if (!isMountedRef.current) return;
+
         if (result.error) {
-          handleBundleError(result.error);
+          // Mostrar el error exacto en la pantalla de error del padre.
+          // NO llamamos a attemptAutoFix ni a ningún LLM: solo mostramos.
+          const store = useWebBuilderStore.getState();
+          if (store.lastAutoFixError !== result.error) {
+            store.failAutoFix(result.error);
+          }
         } else if (result.html) {
           setHtml(result.html);
-          setBundleError(null);
-          // Limpiar error previo si ahora compila.
-          const s = useWebBuilderStore.getState();
-          if (s.hasBuildError && !s.isAutoFixing) {
-            s.completeAutoFix();
+          // Si había un error previo y ahora compila, limpiarlo.
+          const store = useWebBuilderStore.getState();
+          if (store.hasBuildError) {
+            store.completeAutoFix();
           }
         }
       } catch (err: any) {
         console.error("[SelfHostedPreview] Bundle exception:", err);
-        handleBundleError(err?.message || String(err));
+        if (isMountedRef.current) {
+          const store = useWebBuilderStore.getState();
+          if (store.lastAutoFixError !== err?.message) {
+            store.failAutoFix(err?.message || String(err));
+          }
+        }
       } finally {
-        setBundling(false);
+        if (isMountedRef.current) setBundling(false);
       }
-    }, 300);
+    }, 400);
 
     return () => {
-      if (bundleDebounceRef.current) clearTimeout(bundleDebounceRef.current);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filesKey]);
-
-  /**
-   * Maneja un error de bundling disparando el auto-fix (igual que el viejo
-   * SandpackErrorListener): la IA intenta reparar el código. Si falla tras 2
-   * intentos o se detecta bucle, failAutoFix muestra la pantalla de error.
-   */
-  const handleBundleError = (errorMessage: string) => {
-    const store = useWebBuilderStore.getState();
-    if (store.isAiResponding) return;
-    // Evita re-procesar el mismo error exacto.
-    if (errorMessage === lastProcessedErrorRef.current) return;
-
-    // Límite de 2 intentos de auto-fix.
-    if (store.autoFixAttempts >= 2) {
-      console.warn("[SelfHostedPreview] Máximo de intentos de auto-fix alcanzado.");
-      store.failAutoFix(errorMessage);
-      return;
-    }
-
-    // Debounce de 2s para no disparar en cada recompilación intermedia.
-    if (autoFixDebounceRef.current) clearTimeout(autoFixDebounceRef.current);
-    autoFixDebounceRef.current = setTimeout(() => {
-      const currentStore = useWebBuilderStore.getState();
-      if (currentStore.isAiResponding) return;
-
-      // Guardia anti-bucle: si ya aplicamos un fix para este (error + snapshot)
-      // de archivos y el mismo error reapareció, el fix no sirvió. Abortar.
-      const errHash = djb2Hash(errorMessage);
-      const filesHash = hashFiles(currentStore.files);
-      if (currentStore.isRepeatingFix(errHash, filesHash)) {
-        console.warn("[SelfHostedPreview] Bucle detectado: el mismo error reapareció tras un fix idéntico. Abortando.");
-        currentStore.failAutoFix(
-          `${errorMessage}\n\n⚠️ Se detectó un bucle de auto-reparación: el error reaparece tras aplicar el mismo fix. Edita el código manualmente con "Abrir en Editor".`
-        );
-        return;
-      }
-
-      lastProcessedErrorRef.current = errorMessage;
-      console.log(`[SelfHostedPreview] Auto-Fix disparado: "${errorMessage}". Intento #${currentStore.autoFixAttempts + 1}`);
-
-      currentStore.startAutoFix();
-
-      attemptAutoFix(errorMessage, currentStore.files)
-        .then((fixResult) => {
-          if (fixResult) {
-            console.log("[SelfHostedPreview] Fix recibido. Aplicando...");
-            const formatted: Record<string, { code: string }> = {};
-            for (const [path, code] of Object.entries(fixResult.files)) {
-              formatted[path] = { code };
-            }
-            const merged = { ...currentStore.files, ...formatted };
-            useWebBuilderStore.getState().recordAppliedFix(errHash, filesHash);
-            useWebBuilderStore.getState().setFiles(merged);
-            if (fixResult.warnings.length > 0) {
-              const detail = fixResult.warnings
-                .map((w) => `${w.filePath}: ${w.reason}`)
-                .join("; ");
-              useWebBuilderStore.getState().failAutoFix(
-                `La reparación se aplicó parcialmente, pero ${fixResult.warnings.length} bloque(s) no coincidieron con el código actual (${detail}). Revisa el archivo y vuelve a pedirlo indicando el código exacto.`
-              );
-            } else {
-              useWebBuilderStore.getState().completeAutoFix();
-            }
-          } else {
-            console.warn("[SelfHostedPreview] No se pudo generar un fix.");
-            useWebBuilderStore.getState().failAutoFix(errorMessage);
-          }
-        })
-        .catch((err) => {
-          console.error("[SelfHostedPreview] Error ejecutando el fix:", err);
-          useWebBuilderStore.getState().failAutoFix(errorMessage);
-        });
-    }, 2000);
-  };
-
-  // Limpieza al desmontar.
-  useEffect(() => {
-    return () => {
-      if (autoFixDebounceRef.current) clearTimeout(autoFixDebounceRef.current);
-    };
-  }, []);
-
-  // Error local de bundling (mostrado solo si no lo tomó el padre).
-  if (bundleError && !useWebBuilderStore.getState().hasBuildError) {
-    return (
-      <div className="flex-grow flex flex-col items-center justify-center min-h-0 w-full h-full relative bg-[#0B1329] text-white p-6">
-        <div className="w-12 h-12 rounded-2xl bg-red-500/10 flex items-center justify-center mb-4 border border-red-500/25">
-          <AlertTriangle className="w-6 h-6 text-red-400" />
-        </div>
-        <p className="text-sm font-bold mb-2">Error al compilar el proyecto</p>
-        <pre className="text-[11px] text-gray-300 font-mono whitespace-pre-wrap max-w-md max-h-40 overflow-y-auto text-center">
-          {bundleError}
-        </pre>
-      </div>
-    );
-  }
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100%", flex: "1 1 0%" }}>
@@ -196,9 +101,6 @@ export function SelfHostedPreview({ stableFiles }: { stableFiles: Record<string,
       <iframe
         ref={iframeRef}
         title="Maverlang Preview"
-        // srcdoc ejecuta el HTML completo (importmap + JS + inspector) en un
-        // sandbox aislado. allow-scripts para correr React; sin allow-same-origin
-        // para que no toque la app principal (el inspector usa postMessage).
         sandbox="allow-scripts allow-forms allow-popups allow-modals"
         srcDoc={html ?? undefined}
         className="w-full h-full border-none bg-white"

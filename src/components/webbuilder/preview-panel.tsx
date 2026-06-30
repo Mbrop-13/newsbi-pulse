@@ -7,12 +7,10 @@ import { SandpackConsole, SandpackProvider, SandpackCodeEditor, useSandpack } fr
 import { useTheme } from "next-themes";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import { SandpackPreviewWrapper } from "./sandpack-preview-wrapper";
 import { SelfHostedPreview } from "./self-hosted-preview";
 import { PremiumSkeletonLoader } from "./premium-skeleton-loader";
 import { parseArtifact } from "@/lib/webbuilder-parser";
 import { detectDependencies } from "@/lib/webbuilder-deps";
-import { validateProjectSyntax, formatSyntaxError } from "@/lib/webbuilder-syntax-validator";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -783,89 +781,45 @@ function SandpackStatusListener() {
  */
 function SandpackStoreSync({ stableFiles }: { stableFiles: Record<string, { code: string }> }) {
   const { sandpack } = useSandpack();
-  // Ref local: path -> code que ya empujamos a Sandpack. NO se incluye en el
-  // array de deps del effect (es un ref). Es la clave del anti-bucle.
-  const appliedRef = useRef<Map<string, string>>(new Map());
-
-  // Guard anti-ping-pong: cuando el usuario edita en Sandpack, SandpackSyncListener
-  // empuja ese código al store, lo que dispara este effect y re-empujaría el mismo
-  // código de vuelta a Sandpack. Como el código es idéntico, appliedRef ya lo
-  // tendría registrado y el bloque de "empujar" no haría nada... PERO el
-  // SandpackSyncListener usa updateFile del STORE, que cambia la ref de files y
-  // re-deriva stableFiles, y si el usuario editó caracteres, el código sí difiere.
-  // En ese caso re-empujar es CORRECTO (es la edición del usuario, ya en el store).
-  // El riesgo de ping-pong real es: store→Sandpack → SandpackSyncListener ve
-  // sandpack.files[path] !== store[path] y lo empuja al store → effect re-empuja.
-  // Para cortarlo, marcamos `suppressUntilRef` justo tras empujar: durante esa
-  // ventana, SandpackSyncListener NO debe escribir al store. Lo coordinamos vía
-  // un evento global "maverlang-suppress-sync" que ese listener escucha.
   const suppressUntilRef = useRef<number>(0);
 
+  // SYNC UNIDIRECCIONAL SIMPLE: store → editor.
+  // Solo empujamos a Sandpack los archivos cuyo contenido en el store DIFIERE
+  // del que ya tiene el editor (sandpack.files). Si son iguales, no hacemos
+  // nada → no hay render → no hay ping-pong → no hay React #185.
+  //
+  // El bundler de Sandpack está apagado (autorun: false); solo usamos el
+  // editor. Así que NO hay refresh() y NO hay listener de errores del bundler.
+  // El preview lo hace SelfHostedPreview con esbuild-wasm.
   useEffect(() => {
-    const applied = appliedRef.current;
     let hasChanges = false;
     const pushedPaths: string[] = [];
 
-    // 1. Empujar archivos nuevos/modificados.
     for (const [path, file] of Object.entries(stableFiles)) {
-      const code = file?.code ?? "";
-      if (applied.get(path) !== code) {
-        // updateFile puede lanzar si el path no es válido; lo protegemos.
+      const storeCode = file?.code ?? "";
+      const editorCode = sandpack.files[path]?.code;
+      // Solo empujar si el editor no tiene este código (comparación de strings).
+      if (editorCode !== storeCode) {
         try {
-          sandpack.updateFile(path, code);
+          sandpack.updateFile(path, storeCode);
+          hasChanges = true;
+          pushedPaths.push(path);
         } catch (e) {
-          // eslint-disable-next-line no-console
-          console.warn("[SandpackStoreSync] updateFile failed for", path, e);
+          /* noop: path inválido, ignoramos */
         }
-        applied.set(path, code);
-        hasChanges = true;
-        pushedPaths.push(path);
       }
     }
 
-    // 2. Eliminar archivos que ya no están en el store.
-    for (const path of Array.from(applied.keys())) {
-      if (!(path in stableFiles)) {
-        try {
-          // Sandpack no expone deleteFile público estable; marcar como vacío
-          // es más seguro que intentar eliminar (puede romper el bundler).
-          sandpack.updateFile(path, "");
-        } catch (e) {
-          /* noop */
-        }
-        applied.delete(path);
-        hasChanges = true;
-        pushedPaths.push(path);
-      }
-    }
-
-    // 3. Anti-ping-pong (sin refresh).
-    //
-    //    ANTES: tras empujar los archivos se llamaba sp.refresh() para forzar
-    //    la recompilación del bundler de Sandpack. Eso era la causa principal
-    //    del React #185 ("Maximum update depth exceeded"): refresh() →
-    //    sandpack.files cambia → SandpackSyncListener empuja al store →
-    //    stableFiles cambia → este effect re-empuja + refresh() otra vez →
-    //    bucle de renders infinito.
-    //
-    //    AHORA no hace falta refresh(): el preview lo hace SelfHostedPreview
-    //    (esbuild-wasm), y el SandpackProvider aquí SOLO alimenta al editor
-    //    (autorun: false). Solo necesitamos que el editor MUESTRE los archivos
-    //    (updateFile del paso 1), no que recompile nada.
-    //
-    //    Mantenemos el suppress (ventana anti-ping-pong) para que el
-    //    SandpackSyncListener no re-empuje al store el código que acabamos de
-    //    inyectar desde el store (caso: IA genera código → store → provider →
-    //    listener ve diferencia → escribe al store → bucle).
+    // Suprimir el SandpackSyncListener durante ~1s para que no re-empuje al
+    // store el código que acabamos de inyectar (anti-ping-pong residual).
     if (hasChanges) {
-      suppressUntilRef.current = Date.now() + 1500;
+      suppressUntilRef.current = Date.now() + 1000;
       window.dispatchEvent(
         new CustomEvent("maverlang-suppress-sync", {
           detail: { until: suppressUntilRef.current, paths: pushedPaths },
         })
       );
     }
-    // Intencionalmente NO incluimos sandpack en deps (su ref es inestable).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stableFiles]);
 
@@ -889,6 +843,9 @@ function SandpackStoreSync({ stableFiles }: { stableFiles: Record<string, { code
  *
  * Vive dentro de <SandpackProvider>, por lo que solo puede usar useSandpack().
  * El remontaje real lo delega en PreviewPanel vía el callback onRetry.
+ *
+ * NOTA: actualmente desmontado (ya no usamos el bundler de Sandpack; el
+ * preview lo hace SelfHostedPreview). Se conserva por si se reactiva.
  */
 function SandpackConnectionWatcher({ onRetry }: { onRetry: () => void }) {
   const { listen, sandpack } = useSandpack();
@@ -1352,61 +1309,10 @@ export function PreviewPanel() {
     };
   }, [files, isAiResponding]);
 
-  // ── Pre-validación sintáctica (anti-bucle del worker de Sandpack) ──
-  //
-  // El worker de Babel que Sandpack descarga del CDN tiene un bug: al
-  // encontrar un SyntaxError intenta mutar error.message (read-only) y lanza
-  // un TypeError interno que cuelga al worker reintentando para siempre —
-  // nunca emite un error procesable, así que el auto-fix no lo intercepta y
-  // el preview queda en bucle.
-  //
-  // Solución: parseamos nosotros mismos con @babel/standalone (thread
-  // principal, donde sí capturamos el SyntaxError) cada vez que cambia
-  // stableFiles. Si detectamos error, disparamos failAutoFix con el mensaje
-  // real → se muestra la pantalla de error directamente, y al marcar
-  // hasBuildError=true el SandpackStoreSync evita inyectar el código roto en
-  // el bundler. Así el worker buggy nunca ve código inválido.
-  //
-  // Recíprocamente, si había un error y el usuario/edita y ahora el código
-  // valida, limpiamos hasBuildError para que se reanude la compilación.
-  //
-  // Solo validamos cuando la IA NO está respondiendo: durante el streaming el
-  // código está a medio escribir y es normal que sea inválido temporalmente.
-  useEffect(() => {
-    if (isAiResponding) return;
-    if (Object.keys(stableFiles).length === 0) return;
-
-    const store = useWebBuilderStore.getState();
-    // Si un auto-fix está corriendo (posiblemente para un error de runtime que
-    // la pre-validación de sintaxis no cubre), salimos SIN validar: el fix va
-    // a mutar stableFiles y el efecto se reejecutará cuando acabe. Ejecutar
-    // validateProjectSyntax aquí es costoso (parsea todos los archivos) e
-    // inútil mientras isAutoFixing=true (no debemos surfear ni limpiar errores
-    // hasta que el fix termine).
-    if (store.isAutoFixing) return;
-
-    const syntaxError = validateProjectSyntax(stableFiles);
-
-    if (syntaxError) {
-      const formatted = formatSyntaxError(syntaxError);
-      console.warn(
-        `[Pre-Validation] Error de sintaxis detectado en ${syntaxError.path}:${syntaxError.line}: ${syntaxError.message}`
-      );
-      // Solo disparamos el error si no es ya el que está mostrándose (evita
-      // disparar failAutoFix repetidamente sobre el mismo error).
-      if (store.lastAutoFixError !== formatted) {
-        useWebBuilderStore.getState().failAutoFix(formatted);
-      }
-    } else if (store.hasBuildError) {
-      // El código ya valida pero hay un flag de error stale (el usuario corrigió
-      // manualmente en el editor). Limpiamos para reanudar la compilación.
-      // completeAutoFix() ya pone hasBuildError=false + lastAutoFixError=null +
-      // isAutoFixing=false, así que no hace falta setBuildError(false) aparte
-      // (eso causaba 2 writes / 2 renders redundantes).
-      console.log("[Pre-Validation] El código vuelve a validar. Limpiando error de build.");
-      useWebBuilderStore.getState().completeAutoFix();
-    }
-  }, [stableFiles, isAiResponding]);
+  // NOTA: la pre-validación con @babel/standalone se eliminó. Ahora el preview
+  // lo hace SelfHostedPreview (esbuild-wasm), que YA valida la sintaxis al
+  // bundlear y muestra el error exacto. Duplicar la validación aquí solo añadía
+  // complejidad y potencial de bucles. Una sola fuente de verdad: esbuild.
 
   // handleRefresh: recarga de verdad la vista previa.
   //
@@ -1956,12 +1862,12 @@ export function PreviewPanel() {
               autoReload: false,
             }}
           >
+            {/* Sync store ↔ editor. NO hay listeners de bundler/errores:
+                el bundler de Sandpack está apagado (autorun: false) y el
+                preview lo hace SelfHostedPreview. Solo sincronizamos archivos
+                entre el store y el CodeMirror del editor. */}
             <SandpackSyncListener />
-            <SandpackStatusListener />
             <SandpackStoreSync stableFiles={stableFiles} />
-            {/* Vigila la conexión con el bundler: detecta TIME_OUT, reintenta
-                automáticamente y muestra un botón de reconexión manual. */}
-            <SandpackConnectionWatcher onRetry={() => setBuildVersion((v) => v + 1)} />
             {/* Code Editor Tab */}
             {selectedTab === "code" && (
               <div className="flex-grow flex min-h-0 w-full">

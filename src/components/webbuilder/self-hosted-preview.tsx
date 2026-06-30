@@ -26,6 +26,8 @@ export function SelfHostedPreview({ stableFiles }: { stableFiles: Record<string,
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const [html, setHtml] = useState<string | null>(null);
   const [bundling, setBundling] = useState(false);
+  // forceBundleIdx: incrementar para forzar un re-bundle (botón Reintentar).
+  const [forceBundleIdx, setForceBundleIdx] = useState(0);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastKeyRef = useRef<string>("");
   const isMountedRef = useRef(true);
@@ -35,6 +37,18 @@ export function SelfHostedPreview({ stableFiles }: { stableFiles: Record<string,
     return () => {
       isMountedRef.current = false;
     };
+  }, []);
+
+  // Escuchar peticiones de "reintentar compilación" / "recargar preview" desde
+  // el padre (BuildErrorView / botón refresh). Fuerza un re-bundle ignorando el
+  // cache (útil tras que el usuario corrija el código o quiera reintentar).
+  useEffect(() => {
+    const forceRebundle = () => {
+      lastKeyRef.current = ""; // invalida el cache
+      setForceBundleIdx((i) => i + 1); // dispara el effect principal
+    };
+    window.addEventListener("maverlang-force-rebundle", forceRebundle);
+    return () => window.removeEventListener("maverlang-force-rebundle", forceRebundle);
   }, []);
 
   // Key estable del contenido: cambia SOLO si los archivos realmente cambiaron
@@ -93,7 +107,7 @@ export function SelfHostedPreview({ stableFiles }: { stableFiles: Record<string,
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filesKey]);
+  }, [filesKey, forceBundleIdx]);
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100%", flex: "1 1 0%" }}>

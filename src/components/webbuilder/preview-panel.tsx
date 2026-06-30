@@ -1334,12 +1334,21 @@ export function PreviewPanel() {
   };
 
   // Escuchar peticiones de "reintentar compilación" lanzadas desde BuildErrorView.
-  // Subir buildVersion fuerza el remontaje del SandpackProvider y recompila desde
-  // cero; resetAutoFixAttempts() solo limpiaba el flag y dejaba el preview muerto.
+  //
+  // ANTES: subía buildVersion para remontar el SandpackProvider y recompilar.
+  // AHORA: el preview lo hace SelfHostedPreview (esbuild-wasm), no el bundler
+  // de Sandpack. Para que "Reintentar" funcione debemos:
+  //   1. Limpiar el error (resetAutoFixAttempts → hasBuildError=false).
+  //   2. Pedir al SelfHostedPreview que re-bundlee (evento force-rebundle).
+  // Sin esto, el botón "Reintentar" no haría nada visible.
   useEffect(() => {
-    const retryHandler = () => setBuildVersion((v) => v + 1);
+    const retryHandler = () => {
+      useWebBuilderStore.getState().resetAutoFixAttempts();
+      window.dispatchEvent(new CustomEvent("maverlang-force-rebundle"));
+    };
     const refreshHandler = async () => {
-      setIframeKey((prev) => prev + 1);
+      useWebBuilderStore.getState().resetAutoFixAttempts();
+      window.dispatchEvent(new CustomEvent("maverlang-force-rebundle"));
       toast.success("Vista previa recargada");
     };
 

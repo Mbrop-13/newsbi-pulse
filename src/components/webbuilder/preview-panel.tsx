@@ -839,51 +839,31 @@ function SandpackStoreSync({ stableFiles }: { stableFiles: Record<string, { code
       }
     }
 
-    // 3. Un único refresh al final si hubo cambios (no por archivo).
-    //    Sandpack no expone `refresh()` directamente; se dispara vía dispatch.
+    // 3. Anti-ping-pong (sin refresh).
     //
-    //    CORTE DE BUCLE: si hay un error de build activo (hasBuildError) o el
-    //    auto-fix está corriendo (isAutoFixing), NO disparamos refresh(). Razón:
-    //    refresh() fuerza recompilar → si el código sigue roto el bundler emite
-    //    el error de nuevo → SandpackErrorListener lo recibe → dispara auto-fix
-    //    → la IA regenera → stableFiles cambia → effect vuelve a correr →
-    //    refresh() otra vez → bucle infinito. Cortamos aquí: cuando hay error,
-    //    dejamos que la pantalla de BuildErrorView tome el control y sea el
-    //    usuario quien decida (reintentar / editar). Aun así empujamos los
-    //    archivos (paso 1) para que el editor refleje el código actual.
+    //    ANTES: tras empujar los archivos se llamaba sp.refresh() para forzar
+    //    la recompilación del bundler de Sandpack. Eso era la causa principal
+    //    del React #185 ("Maximum update depth exceeded"): refresh() →
+    //    sandpack.files cambia → SandpackSyncListener empuja al store →
+    //    stableFiles cambia → este effect re-empuja + refresh() otra vez →
+    //    bucle de renders infinito.
+    //
+    //    AHORA no hace falta refresh(): el preview lo hace SelfHostedPreview
+    //    (esbuild-wasm), y el SandpackProvider aquí SOLO alimenta al editor
+    //    (autorun: false). Solo necesitamos que el editor MUESTRE los archivos
+    //    (updateFile del paso 1), no que recompile nada.
+    //
+    //    Mantenemos el suppress (ventana anti-ping-pong) para que el
+    //    SandpackSyncListener no re-empuje al store el código que acabamos de
+    //    inyectar desde el store (caso: IA genera código → store → provider →
+    //    listener ve diferencia → escribe al store → bucle).
     if (hasChanges) {
-      // Suprimir el SandpackSyncListener durante ~400ms tras empujar, para que
-      // no re-empuje de Sandpack→store el mismo código que acabamos de inyectar
-      // (ping-pong). 400ms cubre la propagación async de updateFile/refresh.
-      // Ventana anti-ping-pong: debe cubrir el timeout de 800ms del
-      // SandpackSyncListener (que reescribe al store desde Sandpack). 400ms
-      // era insuficiente → el listener disparaba tras la ventana y reescribía
-      // el store → stableFiles effect → re-push → bucle (React #185).
-      // 1500ms cubre holadamente el timeout del listener + propagación async.
       suppressUntilRef.current = Date.now() + 1500;
       window.dispatchEvent(
         new CustomEvent("maverlang-suppress-sync", {
           detail: { until: suppressUntilRef.current, paths: pushedPaths },
         })
       );
-
-      const storeState = useWebBuilderStore.getState();
-      const shouldSkipRefresh =
-        storeState.hasBuildError || storeState.isAutoFixing;
-
-      if (!shouldSkipRefresh) {
-        try {
-          // API moderna: dispatch con tipo "refresh" fuerza recompilación.
-          const sp = sandpack as any;
-          if (typeof sp.refresh === "function") {
-            sp.refresh();
-          } else if (typeof sp.dispatch === "function") {
-            sp.dispatch({ type: "refresh" });
-          }
-        } catch (e) {
-          /* noop */
-        }
-      }
     }
     // Intencionalmente NO incluimos sandpack en deps (su ref es inestable).
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -182,7 +182,12 @@ if (root && App) {
       format: "esm",
       target: "es2020",
       jsx: "automatic",
+      // write:false + outfile garantiza que outputFiles tenga exactamente un
+      // elemento con el JS completo (path = el outfile). Sin outfile, esbuild-wasm
+      // a veces no popula outputFiles o usa paths inconsistentes → "El bundling
+      // no produjo código JS".
       write: false,
+      outfile: "/bundle.js",
       sourcemap: false,
       // Externos: react, react-dom y cualquier paquete npm detectado.
       // Se resuelven en runtime vía importmap → esm.sh.
@@ -249,10 +254,35 @@ if (root && App) {
       console.warn("[Bundler] warnings:", result.warnings.map((w) => w.text));
     }
 
-    const jsFile = result.outputFiles.find((f) => f.path.endsWith(".js"));
-    const cssFile = result.outputFiles.find((f) => f.path.endsWith(".css"));
-    if (!jsFile) {
-      return { html: null, error: "El bundling no produjo código JS." };
+    // Diagnóstico de outputFiles: logueamos qué paths produjo esbuild para que,
+    // si algo vuelve a fallar, tengamos info en consola en vez de un mensaje
+    // genérico.
+    const outPaths = result.outputFiles?.map((f) => f.path) ?? [];
+    console.log("[Bundler] outputFiles paths:", outPaths);
+
+    // Estrategia robusta para encontrar el JS:
+    //  1. outfile explícito (/bundle.js)
+    //  2. cualquier .js
+    //  3. el primer outputFile (a veces el path no tiene extensión clara)
+    const jsFile =
+      result.outputFiles?.find((f) => f.path === "/bundle.js") ||
+      result.outputFiles?.find((f) => f.path.endsWith(".js")) ||
+      result.outputFiles?.[0];
+    const cssFile = result.outputFiles?.find(
+      (f) => f.path.endsWith(".css") && f.text && f.text.trim().length > 0
+    );
+    if (!jsFile || !jsFile.text) {
+      console.error(
+        "[Bundler] outputFiles vacío o sin texto. paths:",
+        outPaths,
+        "errors:",
+        result.errors
+      );
+      return {
+        html: null,
+        error:
+          "El bundling no produjo código JS. Esto puede indicar un problema de inicialización del compilador (esbuild-wasm). Recarga la página e inténtalo de nuevo.",
+      };
     }
     const jsCode = jsFile.text;
     const cssCode = cssFile ? cssFile.text : "";

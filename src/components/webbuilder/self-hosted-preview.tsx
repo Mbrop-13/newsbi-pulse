@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { bundleProject } from "@/lib/webbuilder-bundler";
-import { detectDependencies } from "@/lib/webbuilder-deps";
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
 import { PremiumSkeletonLoader } from "./premium-skeleton-loader";
 
@@ -71,8 +70,7 @@ export function SelfHostedPreview({ stableFiles }: { stableFiles: Record<string,
     debounceRef.current = setTimeout(async () => {
       setBundling(true);
       try {
-        const deps = detectDependencies(stableFiles);
-        const result = await bundleProject(stableFiles, deps);
+        const result = await bundleProject(stableFiles);
         if (!isMountedRef.current) return;
 
         if (result.error) {

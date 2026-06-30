@@ -8,6 +8,7 @@ import { useTheme } from "next-themes";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { SandpackPreviewWrapper } from "./sandpack-preview-wrapper";
+import { SelfHostedPreview } from "./self-hosted-preview";
 import { PremiumSkeletonLoader } from "./premium-skeleton-loader";
 import { parseArtifact } from "@/lib/webbuilder-parser";
 import { detectDependencies } from "@/lib/webbuilder-deps";
@@ -1966,8 +1967,13 @@ export function PreviewPanel() {
               // Tailwind, la IA debe inyectar el <script> de Tailwind CDN
               // directamente en el index.html del proyecto (autocontenido,
               // fuera del bundler de Sandpack).
-              autorun: true,
-              autoReload: true,
+              // autorun: false — NO lanzamos el bundler de Sandpack. El preview
+              // ahora lo hace SelfHostedPreview (esbuild-wasm autocontenido),
+              // sin el worker remoto de sandpack.codesandbox.io ni la telemetría
+              // a csbops.io que causaban TIME_OUT/bucles. El SandpackProvider
+              // aquí SOLO alimenta al SandpackCodeEditor (CodeMirror local).
+              autorun: false,
+              autoReload: false,
             }}
           >
             <SandpackSyncListener />
@@ -2065,7 +2071,7 @@ export function PreviewPanel() {
                     ) : (hasBuildError || lastAutoFixError) ? (
                       <BuildErrorView error={lastAutoFixError ?? "Error de compilación detectado. Usa \"Abrir en Editor\" para inspeccionar o \"Reintentar Compilación\"."} />
                     ) : (
-                      <SandpackPreviewWrapper key={iframeKey} />
+                      <SelfHostedPreview stableFiles={stableFiles} />
                     )}
 
                     {/* #7 POPOVER DE EDICIÓN INLINE: flotante sobre el iframe.

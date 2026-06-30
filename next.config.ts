@@ -13,7 +13,11 @@ const nextConfig = {
     // 'unsafe-eval' kept for dev tooling; remove for prod if no eval-based lib is used.
     const csp = [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com",
+      // script-src incluye https://esm.sh y https://*.esm.sh: el preview del
+      // webbuilder (SelfHostedPreview) carga React y otras deps como módulos
+      // ESM desde esm.sh vía importmap. esm.sh es un CDN ESM estándar y
+      // estable (muy distinto del worker frágil de CodeSandbox que sustituimos).
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com https://esm.sh https://*.esm.sh",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob: https: http:",
       "font-src 'self' data: https://fonts.gstatic.com",
@@ -26,7 +30,7 @@ const nextConfig = {
       //    ERR_CONNECTION_TIMED_OUT / TIME_OUT de la preview.
       // Sin estos, aunque el iframe esté permitido por frame-src, el runtime no
       // conecta bien y la preview se queda cargando hasta TIME_OUT.
-      "connect-src 'self' https://*.supabase.co https://api.mercadopago.com https://api.openai.com https://openrouter.ai https://api.x.ai https://api.mapbox.com https://api.newsdata.io https://www.googleapis.com https://generativelanguage.googleapis.com https://*.upstash.io https://*.codesandbox.io https://codesandbox.io https://col.csbops.io https://*.csbops.io wss: ws:",
+      "connect-src 'self' https://*.supabase.co https://api.mercadopago.com https://api.openai.com https://openrouter.ai https://api.x.ai https://api.mapbox.com https://api.newsdata.io https://www.googleapis.com https://generativelanguage.googleapis.com https://*.upstash.io https://*.codesandbox.io https://codesandbox.io https://col.csbops.io https://*.csbops.io https://esm.sh https://*.esm.sh wss: ws:",
       // frame-src incluye los dominios del bundler de Sandpack (webbuilder):
       // - sandpack.codesandbox.io (worker/runtime por versión, ej. 2-19-8-sandpack.codesandbox.io)
       // - *.codesandbox.io  (cubre versiones nuevas y subdominios del bundler)

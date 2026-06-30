@@ -51,7 +51,7 @@ import {
 } from "lucide-react";
 
 // ─── Inspector Injection Helper ───────────────────
-function injectInspectorScript(html: string): string {
+export function injectInspectorScript(html: string): string {
   if (html.includes("MAVERLANG_ELEMENT_CLICKED")) return html;
 
   const styleTag = `

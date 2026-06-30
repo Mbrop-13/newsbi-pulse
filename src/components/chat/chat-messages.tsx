@@ -1533,8 +1533,8 @@ function AssistantAvatar({ isResponding, isWebBuilderMode }: { isResponding: boo
 
   const isDark = mounted && resolvedTheme === "dark";
 
-  // Desactivar el video en móvil
-  const showVideo = isResponding && !isMobile;
+  // Desactivar el video en móvil y en modo claro (solo mostrar en modo oscuro)
+  const showVideo = isResponding && !isMobile && isDark;
 
   if (showVideo) {
     const videoSrc = isDark

@@ -9,6 +9,7 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { SelfHostedPreview } from "./self-hosted-preview";
 import { PremiumSkeletonLoader } from "./premium-skeleton-loader";
+import { bundleProject } from "@/lib/webbuilder-bundler";
 import { parseArtifact } from "@/lib/webbuilder-parser";
 import { detectDependencies } from "@/lib/webbuilder-deps";
 import { toast } from "sonner";
@@ -46,6 +47,7 @@ import {
   Lock,
   ClipboardList,
   Sparkles,
+  ExternalLink,
 } from "lucide-react";
 
 // ─── Inspector Injection Helper ───────────────────
@@ -1754,7 +1756,7 @@ export function PreviewPanel() {
           {/* Refresh button */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <button 
+              <button
                 onClick={handleRefresh}
                 className="flex items-center justify-center w-8 h-8 bg-secondary hover:bg-secondary/85 text-secondary-foreground rounded-full active:scale-95 transition-all duration-200"
               >
@@ -1763,6 +1765,39 @@ export function PreviewPanel() {
             </TooltipTrigger>
             <TooltipContent hideArrow side="bottom" sideOffset={6} className="text-xs bg-popover text-popover-foreground border border-border px-2.5 py-1.5 rounded-xl shadow-lg font-semibold">
               Recargar vista previa
+            </TooltipContent>
+          </Tooltip>
+
+          {/* Open in new tab — bundle el proyecto actual y abre el preview HTML
+              en una pestaña nueva a pantalla completa (igual que el canvas). */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={async () => {
+                  try {
+                    const currentFiles = useWebBuilderStore.getState().files;
+                    const result = await bundleProject(currentFiles);
+                    if (result.error || !result.html) {
+                      toast.error(result.error || "No se pudo generar la vista previa");
+                      return;
+                    }
+                    const blob = new Blob([result.html], { type: "text/html;charset=utf-8" });
+                    const url = URL.createObjectURL(blob);
+                    window.open(url, "_blank");
+                    // Liberar el Blob tras un rato (la pestaña ya lo cargó).
+                    setTimeout(() => URL.revokeObjectURL(url), 30000);
+                  } catch (err: any) {
+                    console.error("Open in new tab error:", err);
+                    toast.error("Error al abrir la vista previa");
+                  }
+                }}
+                className="flex items-center justify-center w-8 h-8 bg-secondary hover:bg-secondary/85 text-secondary-foreground rounded-full active:scale-95 transition-all duration-200"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent hideArrow side="bottom" sideOffset={6} className="text-xs bg-popover text-popover-foreground border border-border px-2.5 py-1.5 rounded-xl shadow-lg font-semibold">
+              Abrir en pestaña nueva
             </TooltipContent>
           </Tooltip>
 

@@ -646,6 +646,11 @@ async function generateWebBuilderCodeWithVerification(
   let attempt = 1;
   let currentSystemPrompt = systemPrompt;
   let totalUsageTokens = 0;
+  // Guardamos el último texto que CONTENIA un artifact parseable, aunque luego
+  // fallara validaciones. Si agotamos intentos, es mejor devolver este código
+  // (con posibles errores menores) que devolver '' y reportar el archivo como
+  // fallado. El bundler del preview validará el código de verdad.
+  let lastParseableText = '';
 
   while (attempt <= MAX_ATTEMPTS) {
     if (attempt > 1) {
@@ -688,6 +693,12 @@ async function generateWebBuilderCodeWithVerification(
       }
     }
 
+    // El artifact parseó: lo guardamos como fallback. Si las validaciones
+    // siguientes fallan en todos los intentos, devolveremos este texto en vez
+    // de '' para que el archivo se aplique (mejor código con un error menor
+    // que nada). El bundler del preview hará la validación real.
+    if (text) lastParseableText = text;
+
     // 3. Check for syntax and exports
     let syntaxValid = true;
     let syntaxErrorMsg = '';
@@ -707,6 +718,10 @@ async function generateWebBuilderCodeWithVerification(
         attempt++;
         continue;
       } else {
+        // Último intento: devolver el código aunque tenga errores de validación.
+        // Es mejor mostrarlo en el preview (el bundler dará el error exacto) que
+        // reportar el archivo como "fallado" y no mostrar nada.
+        onProgress?.(`⚠️ [Agente] ${agent.agentName}: validación falló tras ${MAX_ATTEMPTS} intentos (${syntaxErrorMsg}). Aplicando código para inspección en el preview.\n`);
         return { text, usage: { totalTokens: totalUsageTokens } };
       }
     }
@@ -760,6 +775,14 @@ async function generateWebBuilderCodeWithVerification(
     return { text, usage: { totalTokens: totalUsageTokens } };
   }
 
+  // Agotamos todos los intentos. Si llegamos a tener un artifact parseable en
+  // algún momento (aunque no pasara validaciones), lo devolvemos. Es mejor
+  // aplicar código imperfecto que el usuario puede ver y corregir en el
+  // preview que reportar "fallado" y no mostrar nada.
+  if (lastParseableText) {
+    onProgress?.(`⚠️ [Agente] ${agent.agentName}: devolviendo el último código generado tras agotar intentos.\n`);
+    return { text: lastParseableText, usage: { totalTokens: totalUsageTokens } };
+  }
   return { text: '', usage: { totalTokens: totalUsageTokens } };
 }
 
@@ -980,8 +1003,8 @@ Recuerda devolver ÚNICAMENTE el XML con tu código.`;
 
       const agentResponse = await withTimeout(
         agentPromise,
-        180000,
-        new Error("Excedió el tiempo límite de ejecución de 180 segundos")
+        240000,
+        new Error("Excedió el tiempo límite de ejecución de 240 segundos")
       );
 
       const duration = Date.now() - agentStartTime;

@@ -1107,6 +1107,12 @@ function ChatLandingContent() {
     const isWB = useWebBuilderStore.getState().isWebBuilderMode
     if (isWB) {
       useWebBuilderStore.getState().resetAutoFixAttempts()
+      // Reset del snapshot de diff entre builds: cada orquestación debe partir
+      // de base limpia. Sin esto, el diff y "revertir archivo" del build 2+
+      // apuntan al estado PRE-build-anterior (lastBuildPrevFiles nunca se
+      // limpia entre turnos del mismo chat), acumulando cambios stale y
+      // perdiendo trabajo al revertir.
+      useWebBuilderStore.getState().clearBuildDiff()
       useWebBuilderStore.getState().setAiResponding(true)
     }
     // Create chat ID if new
@@ -1313,8 +1319,16 @@ function ChatLandingContent() {
         store.clearPendingPlan();
       }
 
-      // Find webbuilder files
-      const webBuilderFilesObj = (data as any[]).find((d: any) => d?.type === 'webbuilder_files');
+      // Find webbuilder files — usar la ÚLTIMA emisión, no la primera.
+      // Durante el streaming el servidor emite múltiples eventos
+      // webbuilder_files (uno por agente + reconciliación final), cada uno
+      // un superset del anterior (acumula con Object.assign en filesToApply).
+      // .find() devolvería solo el PRIMERO (ej. solo agent1), ignorando los
+      // archivos de los agentes 2, 3, 4 → el usuario vería 1 de N archivos.
+      // .filter(...).pop() toma el último, que tiene el estado acumulado más
+      // completo (todos los archivos generados hasta ese punto).
+      const allFilesEmissions = (data as any[]).filter((d: any) => d?.type === 'webbuilder_files');
+      const webBuilderFilesObj = allFilesEmissions[allFilesEmissions.length - 1];
       if (webBuilderFilesObj?.files) {
         const merged = { ...store.files, ...webBuilderFilesObj.files };
         if (!filesEqual(merged, store.files)) {

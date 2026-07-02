@@ -320,9 +320,18 @@ if (root) {
               { filter: /.*/, namespace: "esm-sh" },
               async (args) => {
                 try {
+                  // AbortController con timeout: sin esto, si esm.sh acepta la
+                  // conexión pero no responde (o tarda mucho), el await cuelga
+                  // indefinidamente. Como el bundler corre en el main thread
+                  // (worker:false), eso congela la UI para siempre. 15s es
+                  // suficiente para cualquier módulo de esm.sh.
+                  const controller = new AbortController();
+                  const timeoutId = setTimeout(() => controller.abort(), 15000);
                   const res = await fetch(args.path, {
                     redirect: "follow",
+                    signal: controller.signal,
                   });
+                  clearTimeout(timeoutId);
                   if (!res.ok) {
                     return {
                       errors: [

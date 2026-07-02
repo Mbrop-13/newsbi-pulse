@@ -489,11 +489,51 @@ export async function POST(req: NextRequest) {
           }
 
           if (webBuilder) {
-            // Los archivos ya fueron emitidos incrementalmente vía onFileReady
-            // (streaming apply live) a medida que cada agente terminó. Aquí no
-            // re-procesamos ni re-enviamos filesToApply: solo construimos el
-            // system message final para el LLM conversacional usando el estado
-            // acumulado (que ya refleja todos los archivos generados).
+            // ── RECONCILIACIÓN FINAL DE ARCHIVOS ──
+            // El streaming incremental (onFileReady) puede perder archivos si:
+            //  - un agente tardó >240s (timeout) y onFileReady hizo early return
+            //    con success=false → el archivo nunca entra a filesToApply
+            //  - el stream de red se cortó (504, ERR_NETWORK_IO_SUSPENDED) antes
+            //    de que el último agente emitiera su archivo al stream
+            //  - el callback falló silenciosamente por un edge-case de parseo
+            // Re-procesamos TODOS los agentReports exitosos para garantizar que
+            // filesToApply refleje el estado real y final del proyecto. Sin esto,
+            // archivos generados correctamente por agentes que no emitieron a
+            // tiempo se pierden silenciosamente y el usuario solo ve 1 de N
+            // archivos como tab. Esta emisión es autoritativa y final.
+            const reportsForReconcile = orchestrationResult.agentReports || [];
+            let reconciledNew = 0;
+            for (const report of reportsForReconcile) {
+              if (report.success === false) continue;
+              if (!report.content || !containsArtifact(report.content)) continue;
+              const parsedR = parseArtifact(report.content);
+              if (!parsedR || parsedR.actions.length === 0) continue;
+              const { files: fileChanges } = actionsToFiles(parsedR.actions, filesToApply);
+              if (Object.keys(fileChanges).length > 0) {
+                Object.assign(filesToApply, fileChanges);
+                reconciledNew++;
+              }
+            }
+            // Emitir el estado FINAL completo. El cliente hace merge incremental
+            // ({ ...store.files, ...payload }), así que esto no duplica archivos:
+            // asegura que ningún archivo generado se haya quedado fuera por un
+            // fallo del streaming live. Es idempotente para type="file" (sobrescribe
+            // con el mismo contenido) y safe para type="update" (si el diff ya se
+            // aplicó, el SEARCH no coincide y se reporta como failedUpdate sin
+            // dañar el estado actual).
+            try {
+              fakeStreamData.append({ type: 'webbuilder_files', files: filesToApply });
+            } catch (e) {
+              console.error("Failed to append reconciled webbuilder_files:", e);
+            }
+            if (reconciledNew > 0) {
+              try {
+                fakeStreamData.append({
+                  type: 'reasoning',
+                  text: `\n📦 Reconciliación final: ${reconciledNew} archivo(s) confirmados en el estado completo del proyecto.\n`,
+                });
+              } catch (e) { /* ignore */ }
+            }
 
             // REPORTAR HONESTAMENTE (#3): distinguir agentes exitosos de fallidos
             // para que el LLM no diga "se construyó" cuando algunos fallaron.

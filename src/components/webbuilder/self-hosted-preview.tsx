@@ -51,11 +51,13 @@ export function SelfHostedPreview({ stableFiles }: { stableFiles: Record<string,
   }, []);
 
   // Key estable del contenido: cambia SOLO si los archivos realmente cambiaron
-  // (no en cada re-render). Evita rebundle innecesario.
+  // (no en cada re-render). Evita rebundle innecesario. Usar el código completo
+  // (no solo .length): cambios de igual longitud (true→false, "foo"→"bar",
+  // renombrar vars) NO disparaban re-bundle y el preview quedaba desincronizado.
   const filesKey = JSON.stringify(
     Object.entries(stableFiles)
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([p, f]) => `${p}::${(f?.code ?? "").length}`)
+      .map(([p, f]) => `${p}::${f?.code ?? ""}`)
   );
 
   useEffect(() => {

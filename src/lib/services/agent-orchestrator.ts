@@ -677,7 +677,14 @@ async function generateWebBuilderCodeWithVerification(
         attempt++;
         continue;
       } else {
-        return { text, usage: { totalTokens: totalUsageTokens } };
+        // Último intento sin artifact: si un intento anterior sí parseó,
+        // devolver ese código (mejor imperfecto que nada). Si no, devolver
+        // vacío para que el reporter hable de fallo real, NO de éxito falso.
+        if (lastParseableText) {
+          onProgress?.(`⚠️ [Agente] ${agent.agentName}: el último intento no generó artifact válido, aplicando el código parseable anterior.\n`);
+          return { text: lastParseableText, usage: { totalTokens: totalUsageTokens } };
+        }
+        return { text: '', usage: { totalTokens: totalUsageTokens } };
       }
     }
 
@@ -689,7 +696,12 @@ async function generateWebBuilderCodeWithVerification(
         attempt++;
         continue;
       } else {
-        return { text, usage: { totalTokens: totalUsageTokens } };
+        // Mismo principio que arriba: priorizar el último código parseable.
+        if (lastParseableText) {
+          onProgress?.(`⚠️ [Agente] ${agent.agentName}: el último intento no parseó como artifact, aplicando el código anterior.\n`);
+          return { text: lastParseableText, usage: { totalTokens: totalUsageTokens } };
+        }
+        return { text: '', usage: { totalTokens: totalUsageTokens } };
       }
     }
 

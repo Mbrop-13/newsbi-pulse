@@ -253,20 +253,21 @@ export async function POST(req: NextRequest) {
     // Cloudflare, reverse proxy) interpreta como inactividad → 504 Gateway
     // Timeout.
     //
-    // Solución: un interval que envíe un comentario SSE-style (línea que empieza
-    // con ':') cada 10 segundos. Los comentarios SSE son ignorados por el cliente
-    // (useChat no los procesa como datos) pero mantienen la conexión TCP viva a
-    // los ojos del proxy. Es el mismo patrón que usa OpenAI, Anthropic y Vercel
-    // AI SDK internamente para sus streams de larga duración.
+    // Solución: un interval que envíe un chunk de 'data' vacío cada 10 segundos
+    // usando el formato Data Stream VÁLIDO de Vercel AI SDK. El parser del
+    // cliente lo procesa sin romper (un array vacío de data no renderiza nada),
+    // pero el byte viaja por el TCP → el proxy ve actividad → no corta.
+    // NO usar comentarios SSE (': foo\n'): el protocolo Data Stream de Vercel
+    // AI SDK no los soporta y el parser lanza "Failed to parse stream string.
+    // Invalid code .", matando todo el stream.
     const heartbeatInterval = setInterval(() => {
       if (!streamController) return;
       try {
-        // ':keepalive\n' es un comentario SSE válido (la primera línea con ':'
-        // se ignora en el protocolo text/event-stream). El cliente useChat lo
-        // descarta silenciosamente. Mantiene el socket vivo sin ensuciar el stream.
-        streamController.enqueue(encoder.encode(': keepalive\n'));
+        // Reusamos el MISMO formato que onOrchProgress (reasoning), que ya
+        // sabemos que el parser del cliente procesa sin romper. Texto vacío =
+        // no renderiza nada en la UI pero el byte viaja por el TCP.
+        sendData('data', [{ type: 'reasoning', text: '' }]);
       } catch (err) {
-        // controller ya cerrado → limpiar.
         clearInterval(heartbeatInterval);
       }
     }, 10000);

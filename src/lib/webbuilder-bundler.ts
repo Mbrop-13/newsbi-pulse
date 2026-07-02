@@ -283,6 +283,12 @@ if (root) {
               };
             });
             // Resolver imports absolutos desde / raíz del proyecto.
+            // IMPORTANTE: esm.sh sirve módulos con imports internos absolutos
+            // (ej: import "/motion-utils@^12.39.0?target=es2022"). rewriteEsmImports
+            // intenta convertirlos a URLs https, pero no captura todos los casos.
+            // Si un path / no está en el fileMap del proyecto, es casi seguro un
+            // specifier interno de esm.sh → redirigir al plugin esm-sh en vez de
+            // fallar. Los archivos reales del proyecto SIEMPRE están en fileMap.
             build.onResolve({ filter: /^\// }, (args) => {
               const t = normalizePath(args.path);
               if (fileMap[t] !== undefined) {
@@ -292,8 +298,12 @@ if (root) {
               if (resolved) {
                 return { path: resolved, namespace: "maverlang" };
               }
+              // No es archivo del proyecto → es un specifier interno de esm.sh
+              // (con @version, ?query, o nombre de paquete). Mandarlo al plugin
+              // esm-sh con la URL absoluta. Origen por defecto: esm.sh.
               return {
-                errors: [{ text: `No se pudo resolver "${args.path}".` }],
+                path: `https://esm.sh${args.path}`,
+                namespace: "esm-sh",
               };
             });
             // Cargar archivos del proyecto desde el fileMap.

@@ -740,8 +740,20 @@ function ChatLandingContent() {
         requestAnimationFrame(() => {
           try {
             const latestMessages = aiMessagesRef.current;
-            const lastAssistantIdx = [...latestMessages].reverse().findIndex(m => m.role === 'assistant' || m.role === 'tool');
-            const targetIdx = lastAssistantIdx !== -1 ? (latestMessages.length - 1 - lastAssistantIdx) : -1;
+            // Buscar el mensaje por ID (confiable: el SDK garantiza el mismo id
+            // durante todo el stream). ANTES buscábamos "el último assistant",
+            // pero si el ref estaba stale (useEffect aún no flusheó aiMessages al
+            // ref al dispararse el RAF), apuntábamos a un assistant ANTERIOR y
+            // sobrescribíamos ese — perdiendo el mensaje del resumen final. Esto
+            // era especialmente frecuente en WebBuilder, donde el resumen llega al
+            // final del stream justo en la ventana de carrera del flush.
+            let targetIdx = latestMessages.findIndex(m => m.id === message.id);
+            if (targetIdx === -1) {
+              // Fallback: último assistant/tool (comportamiento anterior) si por
+              // algún motivo el id exacto no coincide (ej. ID regenerado).
+              const lastAssistantIdx = [...latestMessages].reverse().findIndex(m => m.role === 'assistant' || m.role === 'tool');
+              targetIdx = lastAssistantIdx !== -1 ? (latestMessages.length - 1 - lastAssistantIdx) : -1;
+            }
 
             const firstMsgText = message.content || "";
             const toolsCalled = message.toolInvocations || [];
@@ -749,7 +761,7 @@ function ChatLandingContent() {
             const finalContent = (firstMsgText.trim().length > 0)
               ? firstMsgText
               : hasTools
-                ? "He procesado los datos financieros solicitados y configurado los paneles interactivos correspondientes. Puedes revisar la información en los widgets de arriba."
+                ? "He procesado los datos financieros solicitado y configurado los paneles interactivos correspondientes. Puedes revisar la información en los widgets de arriba."
                 : "Lo siento, la respuesta de la IA se detuvo inesperadamente sin generar texto. Por favor, intenta de nuevo.";
 
             const currentStoreMessages = useAIChatStore.getState().messages;
@@ -787,6 +799,9 @@ function ChatLandingContent() {
             });
 
             if (targetIdx === -1) {
+              // El mensaje del asistente NO estaba en el ref (stale). Lo añadimos
+              // al final en vez de perderlo. Esto era la causa de que el mensaje
+              // del resumen desapareciera al finalizar en modo WebBuilder.
               storeMessages.push({
                 id: message.id,
                 role: "assistant",
@@ -797,6 +812,7 @@ function ChatLandingContent() {
                 citations: citationsList,
                 reasoning: reasoningText || undefined,
                 reasoningSteps: agentReportsData.length > 0 ? agentReportsData : undefined,
+                pendingPlan: messagePendingPlan,
               });
             }
 

@@ -501,7 +501,11 @@ function ChatLandingContent() {
   const language = useLanguageStore((s) => s.language)
 
   const [activeMenu, setActiveMenu] = useState<'noticias' | 'mercados' | 'portafolio' | 'mundo' | null>(null);
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = useState<string | null>(
+    // En PC (vista de escritorio) arrancamos con "Sitios Web & Landings"
+    // seleccionado para mostrar la galería de inmediato. En móvil, null.
+    typeof window !== "undefined" && window.innerWidth >= 768 ? "sitios" : null
+  );
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   // Legacy data fetching and activeMenu state have been removed as part of Phase 5 cleanup.
 
@@ -1726,7 +1730,7 @@ function ChatLandingContent() {
                overflow-y-auto permite que el overlay de tarjetas (absoluto) se
                despliegue hacia abajo sin mover el logo; el contenido en flujo
                sigue centrado gracias a justify-center. */
-            <div className="flex-1 flex flex-col items-center justify-center px-4 pt-[12vh] pb-4 relative h-full overflow-x-hidden overflow-y-auto scrollbar-hide">
+            <div className="flex-1 flex flex-col items-center justify-center px-4 pt-[20vh] pb-4 relative h-full overflow-x-hidden overflow-y-auto scrollbar-hide">
               <div className="w-full max-w-4xl mx-auto flex flex-col items-center justify-center">
                 <div className="text-center mb-4">
                   <div className="flex items-center justify-center">

@@ -513,10 +513,10 @@ function validateBasicSyntax(action: ParsedAction): { isValid: boolean; reason?:
     //    maxTokens probablemente cortó la generación.
     const trimmedEnd = code.trimEnd();
     const lastNonWhitespace = trimmedEnd.slice(-1);
-    if (lastNonWhitespace && !/[;}\>)\]]/.test(lastNonWhitespace)) {
-      // Permito `default` (export default function) y comentarios, pero si
-      // claramente cortó a mitad de línea lo marcamos.
-      if (!/export\s+default|^\s*\/\//m.test(trimmedEnd.slice(-200))) {
+    if (lastNonWhitespace && !/[;}\>)\]$`]/.test(lastNonWhitespace)) {
+      // Permito `default`, comentarios, template literals y strings — solo
+      // marcamos truncado si claramente cortó a mitad de una expresión.
+      if (!/export\s+default|^\s*\/\/|^\s*\*|return\b|\bconst\b|\blet\b|\bfunction\b|\bclass\b/m.test(trimmedEnd.slice(-200))) {
         return {
           isValid: false,
           reason: `El archivo parece estar truncado (termina en '${lastNonWhitespace}'). Es probable que el límite de tokens cortó la generación. Genera el archivo completo.`,
@@ -611,11 +611,14 @@ function estimateMaxTokens(agent: WebBuilderAgentInfo, existingFiles?: Record<st
   const taskLower = (agent.task || '').toLowerCase();
   const bigTaskKeywords = ['dashboard', 'landing', 'completo', 'completa', 'página', 'pagina', 'app', 'aplicación', 'rediseño', 'redisenio'];
   if (bigTaskKeywords.some(k => taskLower.includes(k)) && existingLen === 0) {
-    estimate = Math.max(estimate, 8192);
+    estimate = Math.max(estimate, 12000);
   }
 
-  // Techo: 16000 tokens de salida (suficiente para un App.tsx grande completo).
-  return Math.min(Math.max(estimate, 4096), 16000);
+  // Techo: 32000 tokens de salida. Antes era 16000 y los App.tsx grandes
+  // (dashboards, landings con muchos componentes inlineados) se truncaban
+  // → validación de truncamiento fallaba → "❌ /App.tsx falló".
+  // 32000 cubre incluso los archivos más grandes que pueda generar un LLM.
+  return Math.min(Math.max(estimate, 4096), 32000);
 }
 
 /**
@@ -637,13 +640,16 @@ async function generateWebBuilderCodeWithVerification(
   onProgress?: (text: string) => void,
   existingFiles?: Record<string, string>
 ): Promise<{ text: string; usage?: { totalTokens?: number } }> {
+  // Máximo 3 intentos. Antes era 2; el tercero da margen para recuperarse de
+  // un truncamiento por maxTokens en modelos con salida más verbosa (GLM-5.2).
+  const MAX_ATTEMPTS = 3;
   let attempt = 1;
   let currentSystemPrompt = systemPrompt;
   let totalUsageTokens = 0;
 
-  while (attempt <= 2) {
+  while (attempt <= MAX_ATTEMPTS) {
     if (attempt > 1) {
-      onProgress?.(`⚠️ [Agente] ${agent.agentName} re-intentando con feedback (verificación de sintaxis o bloque SEARCH)...\n`);
+      onProgress?.(`⚠️ [Agente] ${agent.agentName} re-intentando (intento ${attempt}/${MAX_ATTEMPTS}) con feedback (verificación de sintaxis o bloque SEARCH)...\n`);
     }
 
     const { text, usage } = await generateText({
@@ -661,7 +667,7 @@ async function generateWebBuilderCodeWithVerification(
 
     // 1. Check if contains artifact XML tag
     if (!containsArtifact(text)) {
-      if (attempt === 1) {
+      if (attempt < MAX_ATTEMPTS) {
         currentSystemPrompt = `${systemPrompt}\n\n[ERROR ANTERIOR] Tu respuesta anterior no contenía el tag XML <maverlangArtifact>. Recuerda que tu respuesta DEBE contener ÚNICAMENTE el XML <maverlangArtifact> correspondiente, sin explicaciones ni markdown fuera de él.`;
         attempt++;
         continue;
@@ -673,7 +679,7 @@ async function generateWebBuilderCodeWithVerification(
     // 2. Check if XML structure is parseable
     const parsed = parseArtifact(text);
     if (!parsed || parsed.actions.length === 0) {
-      if (attempt === 1) {
+      if (attempt < MAX_ATTEMPTS) {
         currentSystemPrompt = `${systemPrompt}\n\n[ERROR ANTERIOR] Tu respuesta anterior no pudo ser parseada correctamente como un bloque XML de Maverlang Artifact. Asegúrate de cerrar todos los tags <maverlangArtifact> y <maverlangAction> correctamente, y no agregues texto de introducción ni de cierre.`;
         attempt++;
         continue;
@@ -696,7 +702,7 @@ async function generateWebBuilderCodeWithVerification(
     }
 
     if (!syntaxValid) {
-      if (attempt === 1) {
+      if (attempt < MAX_ATTEMPTS) {
         currentSystemPrompt = `${systemPrompt}\n\n[ERROR ANTERIOR] El código que generaste anteriormente tenía errores de compilación o de estructura:\n"${syntaxErrorMsg}"\nPor favor, corrige este error. Asegúrate de balancear todos los paréntesis, corchetes y llaves, y de incluir una exportación por defecto si es App.tsx.`;
         attempt++;
         continue;
@@ -710,7 +716,7 @@ async function generateWebBuilderCodeWithVerification(
     //    ANTES de aceptar la generación. Si no coincide, re-pedir al LLM con el
     //    bloque fallido + el código real como contexto. Los `type="file"` no
     //    tienen SEARCH (reemplazan el archivo completo) → se omiten.
-    if (existingFiles && attempt === 1) {
+    if (existingFiles && attempt < MAX_ATTEMPTS) {
       const failedSearchBlocks: string[] = [];
       for (const action of parsed.actions) {
         if (action.type === 'update') {
@@ -974,8 +980,8 @@ Recuerda devolver ÚNICAMENTE el XML con tu código.`;
 
       const agentResponse = await withTimeout(
         agentPromise,
-        120000,
-        new Error("Excedió el tiempo límite de ejecución de 120 segundos")
+        180000,
+        new Error("Excedió el tiempo límite de ejecución de 180 segundos")
       );
 
       const duration = Date.now() - agentStartTime;

@@ -212,22 +212,86 @@ const DEFAULT_FILES: Record<string, WebBuilderFile> = {
   "/App.tsx": {
     code: `export default function App() {
   return (
-    <div className="min-h-screen bg-[#07090e] flex items-center justify-center p-8 text-white select-none">
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.01)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.01)_1px,transparent_1px)] bg-[size:1.5rem_1.5rem] opacity-30 pointer-events-none" />
-      <div className="absolute -top-12 -left-12 w-64 h-64 bg-blue-500/10 rounded-full blur-[80px] pointer-events-none" />
-      <div className="absolute -bottom-12 -right-12 w-64 h-64 bg-purple-500/5 rounded-full blur-[80px] pointer-events-none" />
-      <div className="relative z-10 text-center max-w-sm">
-        <div className="w-12 h-12 rounded-2xl bg-white/[0.03] border border-white/[0.08] flex items-center justify-center mx-auto mb-4 shadow-xl">
-          <svg className="w-5 h-5 text-gray-400 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    <div style={{
+      minHeight: "100vh",
+      background: "linear-gradient(135deg, #07090e 0%, #0d1117 50%, #111827 100%)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "2rem",
+      fontFamily: "system-ui, -apple-system, sans-serif",
+      position: "relative",
+      overflow: "hidden",
+    }}>
+      {/* Glow orbs */}
+      <div style={{
+        position: "absolute", top: "-10%", left: "-5%",
+        width: "320px", height: "320px",
+        background: "radial-gradient(circle, rgba(24,144,255,0.12) 0%, transparent 70%)",
+        filter: "blur(60px)", pointerEvents: "none",
+      }} />
+      <div style={{
+        position: "absolute", bottom: "-10%", right: "-5%",
+        width: "320px", height: "320px",
+        background: "radial-gradient(circle, rgba(139,92,246,0.08) 0%, transparent 70%)",
+        filter: "blur(60px)", pointerEvents: "none",
+      }} />
+
+      {/* Loader card */}
+      <div style={{
+        position: "relative", zIndex: 1,
+        display: "flex", flexDirection: "column", alignItems: "center", gap: "1.25rem",
+        maxWidth: "380px", textAlign: "center",
+      }}>
+        {/* Spinner */}
+        <div style={{
+          width: "48px", height: "48px",
+          borderRadius: "14px",
+          background: "rgba(255,255,255,0.03)",
+          border: "1px solid rgba(255,255,255,0.08)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          boxShadow: "0 20px 40px -12px rgba(0,0,0,0.5)",
+        }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ animation: "spin 1s linear infinite" }}>
+            <circle cx="12" cy="12" r="9" stroke="rgba(255,255,255,0.15)" strokeWidth="2.5" />
+            <path d="M21 12a9 9 0 0 0-9-9" stroke="#1890FF" strokeWidth="2.5" strokeLinecap="round" />
           </svg>
         </div>
-        <h2 className="text-sm font-bold text-gray-200 tracking-wide">Workspace Ready</h2>
-        <p className="text-[11px] text-gray-400 mt-1.5 leading-relaxed">
-          Describe lo que quieres construir en el chat. La IA creará y actualizará la interfaz en tiempo real.
-        </p>
+
+        <div>
+          <h2 style={{
+            fontSize: "0.95rem", fontWeight: 700, color: "#e4e7ec",
+            letterSpacing: "0.01em", margin: 0,
+          }}>
+            Preparando tu proyecto
+          </h2>
+          <p style={{
+            fontSize: "0.8rem", color: "#94a3b8", marginTop: "0.4rem",
+            lineHeight: 1.5, margin: "0.4rem 0 0 0",
+          }}>
+            Describe en el chat qué quieres construir y la IA generará la interfaz aquí en tiempo real.
+          </p>
+        </div>
+
+        {/* Pulse dots */}
+        <div style={{ display: "flex", gap: "6px", marginTop: "0.25rem" }}>
+          {[0, 1, 2].map((i) => (
+            <span key={i} style={{
+              width: "6px", height: "6px", borderRadius: "50%",
+              background: "#1890FF",
+              animation: \`pulse 1.4s ease-in-out \${i * 0.2}s infinite\`,
+            }} />
+          ))}
+        </div>
       </div>
+
+      <style>{\`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse {
+          0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+          40% { opacity: 1; transform: scale(1); }
+        }
+      \`}</style>
     </div>
   );
 }`,

@@ -245,6 +245,32 @@ export async function POST(req: NextRequest) {
       }
     };
 
+    // ── Heartbeat keepalive ──
+    // GLM-5.2 (y modelos lentos en general) pueden tardar 30-120s en la
+    // orquestación de agentes antes de emitir el primer texto visible. Durante
+    // ese tiempo, aunque enviamos chunks de 'reasoning' de progreso, puede
+    // haber pausas largas entre agentes que el gateway/proxy (Vercel,
+    // Cloudflare, reverse proxy) interpreta como inactividad → 504 Gateway
+    // Timeout.
+    //
+    // Solución: un interval que envíe un comentario SSE-style (línea que empieza
+    // con ':') cada 10 segundos. Los comentarios SSE son ignorados por el cliente
+    // (useChat no los procesa como datos) pero mantienen la conexión TCP viva a
+    // los ojos del proxy. Es el mismo patrón que usa OpenAI, Anthropic y Vercel
+    // AI SDK internamente para sus streams de larga duración.
+    const heartbeatInterval = setInterval(() => {
+      if (!streamController) return;
+      try {
+        // ':keepalive\n' es un comentario SSE válido (la primera línea con ':'
+        // se ignora en el protocolo text/event-stream). El cliente useChat lo
+        // descarta silenciosamente. Mantiene el socket vivo sin ensuciar el stream.
+        streamController.enqueue(encoder.encode(': keepalive\n'));
+      } catch (err) {
+        // controller ya cerrado → limpiar.
+        clearInterval(heartbeatInterval);
+      }
+    }, 10000);
+
     // Run async execution in the background
     (async () => {
       try {
@@ -668,6 +694,7 @@ REGLAS OBLIGATORIAS PARA EL MODO NAVEGADOR:
         console.error("[AI Chat Stream] Error in stream execution:", err);
         sendData('error', err.message || String(err));
       } finally {
+        clearInterval(heartbeatInterval);
         streamController?.close();
       }
     })();

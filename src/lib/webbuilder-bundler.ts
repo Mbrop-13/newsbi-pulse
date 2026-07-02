@@ -395,12 +395,21 @@ if (root) {
  * SIN importmap — todo está inline en el bundle (modo build).
  */
 function buildPreviewHtml(jsCode: string, cssCode: string): string {
+  // Filtramos las directivas @tailwind del CSS del usuario: esbuild-wasm no las
+  // procesa (necesita PostCSS), y dejarlas como <style> no hace nada útil.
+  // En su lugar, inyectamos el Tailwind Play CDN que genera utilidades en
+  // runtime desde las clases que aparece en el DOM. Sin esto, las apps que
+  // usan clases Tailwind se ven "sin diseño" (HTML puro).
+  const userCss = cssCode
+    ? cssCode.replace(/@tailwind\s+(base|components|utilities);?/g, "")
+    : "";
   let html = `<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-${cssCode ? `<style>${cssCode}</style>` : ""}
+<script src="https://cdn.tailwindcss.com"></script>
+${userCss ? `<style>${userCss}</style>` : ""}
 </head>
 <body>
 <div id="root"></div>

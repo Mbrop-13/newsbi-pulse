@@ -527,7 +527,17 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
         const newActive = !currentActive || currentActive === ""
           ? Object.keys(normalized).find(k => k.endsWith("/App.tsx") || k.endsWith("/App.js")) || Object.keys(normalized)[0] || ""
           : currentActive;
-        set({ files: normalized, activeFilePath: newActive });
+        // Sincronizar openTabs: cualquier archivo nuevo que llegó en esta
+        // emisión debe abrirse como pestaña visible. Sin esto, el segundo
+        // archivo generado por un agente (ej. /components/Foo.tsx o /styles.css)
+        // queda en `files` pero no aparece como tab → el usuario cree que falta.
+        const currentTabs = get().openTabs;
+        const newPaths = Object.keys(normalized).filter(p => !currentTabs.includes(p));
+        set({
+          files: normalized,
+          activeFilePath: newActive,
+          openTabs: newPaths.length > 0 ? [...currentTabs, ...newPaths] : currentTabs,
+        });
         // Diff acumulado: el snapshot previo es la base inicial; los archivos
         // nuevos en cada emisión se van sumando. Re-calculamos completo desde
         // la base previa al estado final para que todo el ciclo esté reflejado.
@@ -628,7 +638,15 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
         const newActive = !currentActive || currentActive === ""
           ? Object.keys(normalized).find(k => k.endsWith("/App.tsx") || k.endsWith("/App.js")) || Object.keys(normalized)[0] || ""
           : currentActive;
-        set({ files: normalized, activeFilePath: newActive });
+        // Sincronizar openTabs con los archivos nuevos (mismo motivo que
+        // setFilesStreaming: sin esto, archivos nuevos no aparecen como pestaña).
+        const currentTabs = get().openTabs;
+        const newPaths = Object.keys(normalized).filter(p => !currentTabs.includes(p));
+        set({
+          files: normalized,
+          activeFilePath: newActive,
+          openTabs: newPaths.length > 0 ? [...currentTabs, ...newPaths] : currentTabs,
+        });
         // Diff entre el snapshot previo y el nuevo (para el mini-diff de la toolbar).
         const diff = diffFileMaps(prev, normalized);
         // #8 Guardar también el snapshot previo para permitir revertir archivos.

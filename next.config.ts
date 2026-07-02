@@ -13,11 +13,13 @@ const nextConfig = {
     // 'unsafe-eval' kept for dev tooling; remove for prod if no eval-based lib is used.
     const csp = [
       "default-src 'self'",
-      // script-src incluye https://esm.sh y https://*.esm.sh: el preview del
-      // webbuilder (SelfHostedPreview) carga React y otras deps como módulos
-      // ESM desde esm.sh vía importmap. esm.sh es un CDN ESM estándar y
-      // estable (muy distinto del worker frágil de CodeSandbox que sustituimos).
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com https://esm.sh https://*.esm.sh",
+      // script-src incluye:
+      //  - https://esm.sh y https://*.esm.sh: el bundler (esbuild-wasm) inlinea
+      //    deps npm fetchéandolas desde esm.sh en tiempo de bundling.
+      //  - https://cdn.tailwindcss.com: Tailwind Play CDN, inyectado en el
+      //    iframe del preview para procesar clases Tailwind en runtime (esbuild
+      //    no puede procesar @tailwind). Sin esto, las apps se ven sin estilos.
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com https://esm.sh https://*.esm.sh https://cdn.tailwindcss.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob: https: http:",
       "font-src 'self' data: https://fonts.gstatic.com",

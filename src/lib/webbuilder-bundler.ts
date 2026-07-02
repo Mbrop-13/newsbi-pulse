@@ -336,9 +336,16 @@ if (root) {
                   // Reescribir imports internos a URLs absolutas para que
                   // esbuild los resuelva de vuelta por este plugin.
                   text = rewriteEsmImports(text, args.path);
+                  // loader "ts" (NO "tsx" ni "js"):
+                  //  - "js" pasa TypeScript crudo → "Unexpected identifier 'as'"
+                  //    cuando esm.sh sirve código con type assertions.
+                  //  - "tsx" interpreta `<` como JSX → rompe comparaciones como
+                  //    `x < 5` en el JS compilado de las dependencias.
+                  //  - "ts" transpila TypeScript (as, interfaces, generics) pero
+                  //    NO parsea JSX. Perfecto: esm.sh ya compiló el JSX a JS.
                   return {
                     contents: text,
-                    loader: "js",
+                    loader: "ts",
                   };
                 } catch (err: any) {
                   return {

@@ -1730,7 +1730,7 @@ function ChatLandingContent() {
                overflow-y-auto permite que el overlay de tarjetas (absoluto) se
                despliegue hacia abajo sin mover el logo; el contenido en flujo
                sigue centrado gracias a justify-center. */
-            <div className="flex-1 flex flex-col items-center justify-center px-4 pt-[20vh] pb-4 relative h-full overflow-x-hidden overflow-y-auto scrollbar-hide">
+            <div className="flex-1 flex flex-col items-center justify-center px-4 pt-[14vh] pb-4 relative h-full overflow-x-hidden overflow-y-auto scrollbar-hide">
               <div className="w-full max-w-4xl mx-auto flex flex-col items-center justify-center">
                 <div className="text-center mb-4">
                   <div className="flex items-center justify-center">

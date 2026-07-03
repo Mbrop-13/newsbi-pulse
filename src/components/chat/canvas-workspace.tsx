@@ -120,7 +120,7 @@ export function CanvasWorkspace({ chatPanel }: CanvasWorkspaceProps) {
     <div ref={containerRef} className="flex h-full w-full overflow-hidden bg-[#F8F9FA] dark:bg-[#0A0A0A]">
       {/* Chat Panel - Left side */}
       <div
-        className="h-full flex flex-col relative overflow-hidden bg-[#F8F9FA] dark:bg-[#0A0A0A] shrink-0"
+        className="h-full flex flex-col relative overflow-hidden bg-[#F8F9FA] dark:bg-[#0A0A0A] shrink-0 min-w-0"
         style={{ width: isOpen ? `${chatPercent}%` : "100%" }}
       >
         {chatPanel}
@@ -159,7 +159,7 @@ export function CanvasWorkspace({ chatPanel }: CanvasWorkspaceProps) {
 
       {/* Canvas Panel - Right side: Floating card layout handled by CanvasPanel margins */}
       {isOpen && (
-        <div className="h-full flex flex-col overflow-hidden flex-1 bg-[#F8F9FA] dark:bg-[#0A0A0A]">
+        <div className="h-full flex flex-col overflow-hidden flex-1 min-w-0 bg-[#F8F9FA] dark:bg-[#0A0A0A]">
           <CanvasPanel />
         </div>
       )}

@@ -48,9 +48,17 @@ export async function POST(req: NextRequest) {
 
     const { error, files } = parseResult.data;
 
+    const apiKey = process.env.LLM_API_KEY || process.env.MIMO_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json(
+        { success: false, error: "LLM_API_KEY o MIMO_API_KEY no configurada en el servidor. Configúrala en Vercel env vars." },
+        { status: 500 }
+      );
+    }
+
     const mimo = createOpenAI({
       baseURL: process.env.LLM_BASE_URL || 'https://api.xiaomimimo.com/v1',
-      apiKey: process.env.LLM_API_KEY || process.env.MIMO_API_KEY,
+      apiKey,
     });
 
     const debugPrompt = `Eres un debugger experto de React, TypeScript, CSS y JavaScript en un entorno Sandpack (Vite + React). Analiza un error de compilación/ejecución y los archivos actuales del proyecto, y genera la corrección MÍNIMA necesaria.

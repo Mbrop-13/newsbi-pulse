@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useAIChatStore, type ChatMessage } from "@/lib/stores/ai-chat-store"
+import { useShallow } from "zustand/shallow"
 
 import { useAuthStore, useAuthModalStore } from "@/lib/stores/auth-store"
 import { useConversionStore } from "@/lib/stores/conversion-store"
@@ -482,6 +483,11 @@ function ChatLandingContent() {
   // un usuario no autenticado intenta enviar un mensaje.
   const { openModal: openAuthModal } = useAuthModalStore()
 
+  // useShallow: suscribe a múltiples campos del store PERO solo re-renderiza
+  // cuando los VALORES seleccionados cambian (comparación superficial). Sin
+  // esto, useAIChatStore() sin selector re-renderiza ChatLandingContent en
+  // CUALQUIER cambio del store (incluyendo props no usadas aquí) → durante el
+  // streaming, las escrituras al store en ráfaga saturan la cola de React → #185.
   const {
     messages: storeMessages,
     addMessage,
@@ -496,7 +502,21 @@ function ChatLandingContent() {
     messageFeedback,
     setFeedback,
     currentChatId,
-  } = useAIChatStore()
+  } = useAIChatStore(useShallow((s) => ({
+    messages: s.messages,
+    addMessage: s.addMessage,
+    isLoading: s.isLoading,
+    selectedModel: s.selectedModel,
+    setModel: s.setModel,
+    clearMessages: s.clearMessages,
+    savedChats: s.savedChats,
+    attachedArticles: s.attachedArticles,
+    attachedFiles: s.attachedFiles,
+    activeTools: s.activeTools,
+    messageFeedback: s.messageFeedback,
+    setFeedback: s.setFeedback,
+    currentChatId: s.currentChatId,
+  })))
 
   const language = useLanguageStore((s) => s.language)
 

@@ -452,8 +452,8 @@ export function CanvasPanel() {
             <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg" className="opacity-90">
               <path d="M11.6667 5.33333C12.5871 5.33333 13.3333 4.58713 13.3333 3.66667C13.3333 2.74619 12.5871 2 11.6667 2C10.7462 2 10 2.74619 10 3.66667C10 4.58713 10.7462 5.33333 11.6667 5.33333Z" stroke="currentColor" strokeWidth="1.33333" strokeLinejoin="round" fill="none"></path>
               <path d="M4.3339 9.66683C5.25437 9.66683 6.00057 8.00016 6.00057 8.00016C6.00057 7.0797 5.25437 6.3335 4.3339 6.3335C3.41344 6.3335 2.66724 7.0797 2.66724 8.00016C2.66724 8.92063 3.41344 9.66683 4.3339 9.66683Z" stroke="currentColor" strokeWidth="1.33333" strokeLinejoin="round" fill="none"></path>
-              <path d="M10 4.5249L5.77966 7.08187" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"></path>
-              <path d="M5.7793 8.85449L10.2261 11.4822" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"></path>
+              <path d="M10 4.5249L5.77966 7.08187" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"></path>
+              <path d="M5.7793 8.85449L10.2261 11.4822" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"></path>
               <path d="M11.6667 10.6665C12.5871 10.6665 13.3333 11.4127 13.3333 12.3332C13.3333 13.2536 12.5871 13.9998 11.6667 13.9998C10.7462 13.9998 10 13.2536 10 12.3332C10 11.4127 10.7462 10.6665 11.6667 10.6665Z" stroke="currentColor" strokeWidth="1.33333" strokeLinejoin="round" fill="none"></path>
             </svg>
             Compartir

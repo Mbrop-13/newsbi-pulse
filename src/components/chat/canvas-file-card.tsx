@@ -30,7 +30,9 @@ export function CanvasFileCard({
   
   return (
     <button
-      onClick={() => {
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
         openCanvas({
           title,
           code,

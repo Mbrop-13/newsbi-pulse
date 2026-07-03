@@ -47,7 +47,7 @@ export function ChatMessages({
   openReasoning = {},
   onToggleReasoning,
 }: ChatMessagesProps) {
-  const { isWebBuilderMode } = useWebBuilderStore()
+  const isWebBuilderMode = useWebBuilderStore((s) => s.isWebBuilderMode)
   const isBrowserOpen = useBrowserStore((s) => s.isOpen)
   const isCanvasOpen = useCanvasStore((s) => s.isOpen)
   const isSplitMode = isWebBuilderMode || isBrowserOpen || isCanvasOpen

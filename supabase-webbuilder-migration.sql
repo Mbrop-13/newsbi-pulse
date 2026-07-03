@@ -8,6 +8,12 @@ CREATE TABLE IF NOT EXISTS public.ai_webbuilder_projects (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
 );
 
+-- Constraint único (chat_id, user_id) para evitar duplicados en upsert
+ALTER TABLE public.ai_webbuilder_projects
+  DROP CONSTRAINT IF EXISTS uq_ai_webbuilder_projects_chat_user;
+ALTER TABLE public.ai_webbuilder_projects
+  ADD CONSTRAINT uq_ai_webbuilder_projects_chat_user UNIQUE (chat_id, user_id);
+
 -- Crear un índice en chat_id para búsquedas ultra rápidas
 CREATE INDEX IF NOT EXISTS idx_ai_webbuilder_projects_chat_id ON public.ai_webbuilder_projects(chat_id);
 

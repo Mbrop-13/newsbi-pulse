@@ -362,46 +362,23 @@ async function performCloudUpsert(
 ): Promise<void> {
   const supabase = createClient();
 
-  // 1. Intentar UPDATE (caso común: el proyecto ya existe).
-  const { error: updateError } = await supabase
+  // Atomic upsert: INSERT or UPDATE in a single query.
+  // Requires UNIQUE constraint on (chat_id, user_id) — added in
+  // supabase-webbuilder-migration.sql (uq_ai_webbuilder_projects_chat_user).
+  const { error } = await supabase
     .from("ai_webbuilder_projects")
-    .update({
-      project_files: projectFiles,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("chat_id", chatId)
-    .eq("user_id", userId);
-
-  if (updateError) {
-    // Re-lanzar como error de red para que el caller reintente.
-    throw new Error(`UPDATE failed: ${updateError.message}`);
-  }
-
-  // 2. Comprobar si el UPDATE afectó alguna fila. Si no, hacer INSERT.
-  const { data: existingList, error: selectError } = await supabase
-    .from("ai_webbuilder_projects")
-    .select("id")
-    .eq("chat_id", chatId)
-    .eq("user_id", userId)
-    .limit(1);
-
-  if (selectError) {
-    throw new Error(`SELECT failed: ${selectError.message}`);
-  }
-
-  const existing = existingList && existingList.length > 0 ? existingList[0] : null;
-
-  if (!existing) {
-    const { error: insertError } = await supabase
-      .from("ai_webbuilder_projects")
-      .insert({
+    .upsert(
+      {
         chat_id: chatId,
         user_id: userId,
         project_files: projectFiles,
-      });
-    if (insertError) {
-      throw new Error(`INSERT failed: ${insertError.message}`);
-    }
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "chat_id,user_id" }
+    );
+
+  if (error) {
+    throw new Error(`Upsert failed: ${error.message}`);
   }
 }
 
@@ -484,7 +461,24 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
 
       // Active Agent Reports
       activeAgentReports: null,
-      setActiveAgentReports: (reports) => set({ activeAgentReports: reports }),
+      setActiveAgentReports: (reports) => {
+        // Guard de igualdad: durante el streaming el effect de chat-landing
+        // llama setActiveAgentReports en cada tick de data que contiene
+        // agentReports. Sin esta comparación, cada tick escribe un array nuevo
+        // → re-renders encadenados en preview-panel (que lee el store sin
+        // selector) → tormenta de renders → React #185. Comparamos por
+        // contenido (filePath + success) para no re-escribir lo mismo.
+        const current = get().activeAgentReports;
+        const same = current && reports &&
+          current.length === reports.length &&
+          current.every((c: any, i: number) =>
+            c?.filePath === reports[i]?.filePath &&
+            c?.success === reports[i]?.success &&
+            c?.agentName === reports[i]?.agentName
+          );
+        if (same) return;
+        set({ activeAgentReports: reports });
+      },
 
       // Cloud Sync state
       hasPendingSave: false,
@@ -533,16 +527,22 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
         // queda en `files` pero no aparece como tab → el usuario cree que falta.
         const currentTabs = get().openTabs;
         const newPaths = Object.keys(normalized).filter(p => !currentTabs.includes(p));
-        set({
-          files: normalized,
-          activeFilePath: newActive,
-          openTabs: newPaths.length > 0 ? [...currentTabs, ...newPaths] : currentTabs,
-        });
         // Diff acumulado: el snapshot previo es la base inicial; los archivos
         // nuevos en cada emisión se van sumando. Re-calculamos completo desde
         // la base previa al estado final para que todo el ciclo esté reflejado.
         const diff = diffFileMaps(base, normalized);
-        set({ lastBuildDiff: diff, lastBuildPrevFiles: base });
+        // UN SOLO set() con todo: antes había dos set separados (files/active/tabs
+        // y luego diff/prevFiles), lo que disparaba 2 notificaciones de Zustand
+        // por emisión. Durante el streaming (múltiples agentes en ráfaga) esto
+        // duplicaba los re-renders de preview-panel (que lee el store sin selector)
+        // y saturaba la cola de React → #185 Maximum update depth exceeded.
+        set({
+          files: normalized,
+          activeFilePath: newActive,
+          openTabs: newPaths.length > 0 ? [...currentTabs, ...newPaths] : currentTabs,
+          lastBuildDiff: diff,
+          lastBuildPrevFiles: base,
+        });
         debouncedSync();
       },
 
@@ -642,15 +642,17 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
         // setFilesStreaming: sin esto, archivos nuevos no aparecen como pestaña).
         const currentTabs = get().openTabs;
         const newPaths = Object.keys(normalized).filter(p => !currentTabs.includes(p));
+        // Diff entre el snapshot previo y el nuevo (para el mini-diff de la toolbar).
+        const diff = diffFileMaps(prev, normalized);
+        // UN SOLO set() con todo (mismo motivo que setFilesStreaming: evitar
+        // doble notificación de Zustand que duplica re-renders durante streaming).
         set({
           files: normalized,
           activeFilePath: newActive,
           openTabs: newPaths.length > 0 ? [...currentTabs, ...newPaths] : currentTabs,
+          lastBuildDiff: diff,
+          lastBuildPrevFiles: prev,
         });
-        // Diff entre el snapshot previo y el nuevo (para el mini-diff de la toolbar).
-        const diff = diffFileMaps(prev, normalized);
-        // #8 Guardar también el snapshot previo para permitir revertir archivos.
-        set({ lastBuildDiff: diff, lastBuildPrevFiles: prev });
         debouncedSync();
       },
 

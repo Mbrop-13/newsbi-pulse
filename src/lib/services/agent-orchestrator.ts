@@ -1,5 +1,6 @@
 import { generateText, LanguageModel } from 'ai';
 import { containsArtifact, parseArtifact, ParsedAction, validateDiffsAgainstFile } from '@/lib/webbuilder-parser';
+import { validateFileSyntax } from '@/lib/webbuilder-syntax-validator';
 import { BUILDER_DESIGN_GUIDELINES } from '@/app/api/ai-chat/prompts/builder-guidelines';
 
 export interface AgentInfo {
@@ -539,40 +540,21 @@ function validateBasicSyntax(action: ParsedAction): { isValid: boolean; reason?:
       return { isValid: false, reason: 'Hay un import con comillas sin cerrar en la cláusula from.' };
     }
 
-    // 5. Detección de JSX malformado básico: tags JSX abiertos que nunca se
-    //    cierran (sintaxis tipo <div> ... sin </div> ni self-closing />).
-    //    Es una heurística ligera (no un parser completo) para captar lo común.
-    const jsxOpenRegex = /<([A-Za-z][A-Za-z0-9]*)\b[^/>]*?(?<!\/)>/g;
-    const jsxCloseRegex = /<\/([A-Za-z][A-Za-z0-9]*)>/g;
-    const openTags: string[] = [];
-    let m: RegExpExecArray | null;
-    while ((m = jsxOpenRegex.exec(code)) !== null) {
-      // Filtrar componentes auto-cerrados ya cubiertos por la regex (no debería por el lookbehind)
-      openTags.push(m[1]);
-    }
-    const closeTags: string[] = [];
-    while ((m = jsxCloseRegex.exec(code)) !== null) {
-      closeTags.push(m[1]);
-    }
-    // Tags void/HTML que no necesitan cierre explícito.
-    const voidTags = new Set(['img', 'br', 'hr', 'input', 'meta', 'link', 'area', 'base', 'col', 'embed', 'source', 'track', 'wbr']);
-    let unclosed = 0;
-    const closeCount: Record<string, number> = {};
-    for (const t of closeTags) closeCount[t] = (closeCount[t] || 0) + 1;
-    for (const t of openTags) {
-      if (voidTags.has(t.toLowerCase())) continue;
-      if ((closeCount[t] || 0) > 0) {
-        closeCount[t]--;
-      } else {
-        unclosed++;
-      }
-    }
-    // Permitimos cierta tolerancia (1) por fragmentos de JSX en interpolaciones,
-    // pero muchos tags sin cerrar = truncado/malformado.
-    if (unclosed > 2) {
+    // 5. Validación REAL de sintaxis con Babel (parsea el AST de verdad).
+    //    ANTES usábamos una heurística por regex que contaba tags JSX abiertos
+    //    vs cerrados, pero era frágil: no matcheaba tags con '/' en atributos,
+    //    permitía hasta 2 tags sin cerrar, y no respetaba anidamiento. Un <p>
+    //    truncado pasaba la validación y llegaba al bundler →
+    //    "Unexpected end of file before a closing 'p' tag".
+    //    Babel es el parser real: detecta JSX malformado, tags sin cerrar,
+    //    truncamiento real, etc. con precisión de compilador. Solo se aplica a
+    //    archivos .tsx/.jsx/.ts/.js (los que Babel sabe parsear).
+    const babelError = validateFileSyntax(action.filePath, code);
+    if (babelError) {
+      const loc = babelError.line > 0 ? ` (línea ${babelError.line})` : '';
       return {
         isValid: false,
-        reason: `Se detectaron ${unclosed} tags JSX posiblemente sin cerrar. Revisa que cada tag tenga su cierre (</Tag>) o sea self-closing (/>). El archivo puede estar truncado.`,
+        reason: `Error de sintaxis en ${action.filePath}${loc}: ${babelError.message}. El archivo puede estar truncado o tener JSX malformado. Genera el código completo y válido.`,
       };
     }
   } else if (action.type === 'update') {
@@ -599,26 +581,28 @@ function estimateMaxTokens(agent: WebBuilderAgentInfo, existingFiles?: Record<st
   const existing = existingFiles?.[agent.filePath];
   const existingLen = existing ? existing.length : 0;
 
-  // 1 char ≈ 0.27 tokens aprox; salida necesita ~1.5x del contenido.
-  let estimate = 4096;
+  // 1 char ≈ 0.27 tokens aprox; pero la salida necesita ~2x del contenido
+  // (el LLM tiende a expandir: añade imports, comentarios, reformatea). Usamos
+  // 0.55 (0.27 * 2) + 4096 de margen fijo. Antes era 0.35 + 2048, lo que dejaba
+  // a la mayoría de App.tsx con ~7-12k tokens insuficientes → truncamiento
+  // → "Unexpected end of file before a closing 'p' tag".
+  let estimate = 8192;
   if (existingLen > 0) {
     // Para type="update" el output es pequeño (solo diffs), pero para
-    // type="file" puede ser el archivo completo. Damos margen.
-    estimate = Math.max(estimate, Math.ceil(existingLen * 0.35) + 2048);
+    // type="file" puede ser el archivo completo. Damos margen generoso.
+    estimate = Math.max(estimate, Math.ceil(existingLen * 0.55) + 4096);
   }
 
   // Tareas complejas (palabras clave) piden archivos grandes nuevos.
   const taskLower = (agent.task || '').toLowerCase();
-  const bigTaskKeywords = ['dashboard', 'landing', 'completo', 'completa', 'página', 'pagina', 'app', 'aplicación', 'rediseño', 'redisenio'];
+  const bigTaskKeywords = ['dashboard', 'landing', 'completo', 'completa', 'página', 'pagina', 'app', 'aplicación', 'rediseño', 'redisenio', 'home', 'inicio', 'componente', 'sección', 'seccion', 'navegación', 'navegacion', 'hero'];
   if (bigTaskKeywords.some(k => taskLower.includes(k)) && existingLen === 0) {
-    estimate = Math.max(estimate, 12000);
+    estimate = Math.max(estimate, 16000);
   }
 
-  // Techo: 32000 tokens de salida. Antes era 16000 y los App.tsx grandes
-  // (dashboards, landings con muchos componentes inlineados) se truncaban
-  // → validación de truncamiento fallaba → "❌ /App.tsx falló".
-  // 32000 cubre incluso los archivos más grandes que pueda generar un LLM.
-  return Math.min(Math.max(estimate, 4096), 32000);
+  // Techo: 32000 tokens de salida. 32000 cubre incluso los archivos más grandes
+  // que pueda generar un LLM (dashboards completos con muchos componentes).
+  return Math.min(Math.max(estimate, 8192), 32000);
 }
 
 /**
@@ -1015,8 +999,8 @@ Recuerda devolver ÚNICAMENTE el XML con tu código.`;
 
       const agentResponse = await withTimeout(
         agentPromise,
-        240000,
-        new Error("Excedió el tiempo límite de ejecución de 240 segundos")
+        200000,
+        new Error("Excedió el tiempo límite de ejecución de 200 segundos")
       );
 
       const duration = Date.now() - agentStartTime;

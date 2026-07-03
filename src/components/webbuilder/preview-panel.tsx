@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useShallow } from "zustand/shallow";
 import { useWebBuilderStore, djb2Hash } from "@/lib/stores/webbuilder-store";
 import { useAIChatStore } from "@/lib/stores/ai-chat-store";
 import { SandpackConsole, SandpackProvider, SandpackCodeEditor, useSandpack } from "@codesandbox/sandpack-react";
@@ -259,7 +260,11 @@ function getFileIcon(path: string) {
 
 // ─── File Tree Component ────────────────────────────
 function FileTree() {
-  const { files, activeFilePath, setActiveFile } = useWebBuilderStore();
+  const { files, activeFilePath, setActiveFile } = useWebBuilderStore(useShallow((s) => ({
+    files: s.files,
+    activeFilePath: s.activeFilePath,
+    setActiveFile: s.setActiveFile,
+  })));
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
   // Build a tree from file paths
@@ -356,7 +361,13 @@ function FileTree() {
 
 // ─── Code Viewer ─────────────────────────────────────
 function CodeViewer() {
-  const { files, activeFilePath, setActiveFile, openTabs, closeTab } = useWebBuilderStore();
+  const { files, activeFilePath, setActiveFile, openTabs, closeTab } = useWebBuilderStore(useShallow((s) => ({
+    files: s.files,
+    activeFilePath: s.activeFilePath,
+    setActiveFile: s.setActiveFile,
+    openTabs: s.openTabs,
+    closeTab: s.closeTab,
+  })));
   const [copied, setCopied] = useState(false);
   const file = files[activeFilePath];
   // Ref al contenedor del editor para localizar el CodeMirror interno y poder
@@ -513,7 +524,11 @@ function CodeViewer() {
 
 // ─── Files Panel ───────────────────────────────────
 function FilesPanel() {
-  const { files, setActiveFile, setSelectedTab } = useWebBuilderStore();
+  const { files, setActiveFile, setSelectedTab } = useWebBuilderStore(useShallow((s) => ({
+    files: s.files,
+    setActiveFile: s.setActiveFile,
+    setSelectedTab: s.setSelectedTab,
+  })));
   const fileList = Object.entries(files);
 
   if (fileList.length === 0) {
@@ -622,7 +637,10 @@ function getAgentLineStats(reportContent: string, existingFiles: Record<string, 
 
 function SandpackSyncListener() {
   const { sandpack } = useSandpack();
-  const { updateFile, files } = useWebBuilderStore();
+  const { updateFile, files } = useWebBuilderStore(useShallow((s) => ({
+    updateFile: s.updateFile,
+    files: s.files,
+  })));
   // Mientras la IA responde, el STORE es la fuente de verdad (la IA escribe
   // archivos, no el usuario). Permitir que el bundler reescriba el store aquí
   // generaría un ping-pong: store→Sandpack→aquí→store→Sandpack... que escala
@@ -1181,6 +1199,11 @@ function BuildErrorView({ error }: { error: string }) {
 }
 
 export function PreviewPanel() {
+  // useShallow: suscribe a múltiples campos PERO solo re-renderiza cuando los
+  // VALORES seleccionados cambian (comparación superficial). Sin esto,
+  // useWebBuilderStore() sin selector re-renderiza en CUALQUIER cambio del store
+  // (incluyendo isSaving, lastBuildDiff, openTabs, etc. que cambian en ráfaga
+  // durante el streaming) → tormenta de re-renders → React #185.
   const {
     selectedTab,
     setSelectedTab,
@@ -1198,7 +1221,24 @@ export function PreviewPanel() {
     pendingPlan,
     lastAutoFixError,
     hasBuildError,
-  } = useWebBuilderStore();
+  } = useWebBuilderStore(useShallow((s) => ({
+    selectedTab: s.selectedTab,
+    setSelectedTab: s.setSelectedTab,
+    files: s.files,
+    cloudSyncEnabled: s.cloudSyncEnabled,
+    isSaving: s.isSaving,
+    isCompiling: s.isCompiling,
+    activeFilePath: s.activeFilePath,
+    undo: s.undo,
+    redo: s.redo,
+    canUndo: s.canUndo,
+    canRedo: s.canRedo,
+    isAiResponding: s.isAiResponding,
+    activeAgentReports: s.activeAgentReports,
+    pendingPlan: s.pendingPlan,
+    lastAutoFixError: s.lastAutoFixError,
+    hasBuildError: s.hasBuildError,
+  })));
   const chatLoading = useAIChatStore((s) => s.isLoading);
   const currentChatId = useAIChatStore((s) => s.currentChatId);
   const { resolvedTheme } = useTheme();

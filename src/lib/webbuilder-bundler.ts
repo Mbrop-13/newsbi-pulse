@@ -45,7 +45,13 @@ function ensureInit(): Promise<void> {
       })
       .catch((err) => {
         initPromise = null;
-        throw err;
+        // Provide a clear error so the user knows what went wrong instead of
+        // a cryptic "Cannot read properties of undefined" from esbuild-wasm.
+        throw new Error(
+          `No se pudo cargar el bundler (esbuild.wasm). ` +
+          `Verifica que /esbuild.wasm exista en public/ y que la conexión sea estable. ` +
+          `Detalle: ${err?.message || String(err)}`
+        );
       });
   }
   return initPromise;

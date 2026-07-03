@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Search, Sun, Moon, LogIn, ChevronDown, User, Users, Headphones, Filter, ArrowLeft, Bot, Sparkles, Layers, Settings, X, Check, Settings2, TrendingUp, Landmark, LineChart, Globe, PieChart, Cpu, BookOpen, Briefcase, Scale, Zap, BarChart3, Crown } from "lucide-react";
+import { Menu, Search, Sun, Moon, LogIn, ChevronDown, User, Users, Gift, Headphones, Filter, ArrowLeft, Bot, Sparkles, Layers, Settings, X, Check, Settings2, TrendingUp, Landmark, LineChart, Globe, PieChart, Cpu, BookOpen, Briefcase, Scale, Zap, BarChart3, Crown } from "lucide-react";
 import { NotificationBell } from "@/components/notification-bell";
 import { AuthModals } from "./auth-modals";
 import { SearchDialog } from "./search-dialog";
@@ -349,6 +349,12 @@ export function Navbar() {
                     <DropdownMenuItem className="text-sm py-2 px-3 cursor-pointer rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                       <Settings className="w-4 h-4 mr-2 text-gray-500" />
                       Configuración
+                    </DropdownMenuItem>
+                  </Link>
+                  <Link href="/referidos">
+                    <DropdownMenuItem className="text-sm py-2 px-3 cursor-pointer rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                      <Gift className="w-4 h-4 mr-2 text-[#1890FF]" />
+                      Referidos
                     </DropdownMenuItem>
                   </Link>
                   <div className="px-2 py-1">

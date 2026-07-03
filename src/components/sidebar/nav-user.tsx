@@ -19,6 +19,7 @@ import {
   Check,
   Monitor,
   Building2,
+  Gift,
 } from "lucide-react"
 import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
@@ -273,6 +274,18 @@ export function NavUser() {
                 >
                   <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
                   <span>Mi Organización</span>
+                </DropdownMenuItem>
+
+                {/* Referrals program */}
+                <DropdownMenuItem
+                  onClick={() => {
+                    if (isMobile) setOpenMobile(false);
+                    router.push("/referidos");
+                  }}
+                  className="text-[13px] font-medium py-2 px-3 rounded-xl cursor-pointer flex items-center gap-3 focus:bg-muted focus:text-foreground"
+                >
+                  <Gift className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <span>Referidos</span>
                 </DropdownMenuItem>
 
                 {/* Install apps */}

@@ -1483,10 +1483,10 @@ function ChatLandingContent() {
       <button
         onClick={() => setActiveCategory(prev => prev === cat.id ? null : cat.id)}
         className={cn(
-          "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 whitespace-nowrap active:scale-95 cursor-pointer snap-start",
+          "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all duration-200 whitespace-nowrap active:scale-95 cursor-pointer snap-start",
           mobile && "shrink-0",
           isActive
-            ? "bg-zinc-950 dark:bg-white text-white dark:text-zinc-900 border-transparent shadow-xs"
+            ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 border-zinc-200 dark:border-zinc-700"
             : "bg-transparent border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-250 hover:bg-zinc-50 dark:hover:bg-zinc-900/50"
         )}
       >
@@ -1780,9 +1780,14 @@ function ChatLandingContent() {
                overflow-y-auto permite que el overlay de tarjetas (absoluto) se
                despliegue hacia abajo sin mover el logo; el contenido en flujo
                sigue centrado gracias a justify-center. */
-            <div className="flex-1 flex flex-col items-center justify-start px-4 pt-[18vh] pb-4 relative h-full overflow-x-hidden overflow-y-auto scrollbar-hide">
+            <div className="flex-1 flex flex-col items-center justify-start px-4 pt-[21vh] pb-4 relative h-full overflow-x-hidden overflow-y-auto scrollbar-hide">
               <div className="w-full max-w-4xl mx-auto flex flex-col items-center justify-start">
-                <div className="text-center mb-4">
+                <motion.div
+                  initial={{ opacity: 0, y: -10, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ duration: 0.5, ease: "easeOut" }}
+                  className="text-center mb-4"
+                >
                   <div className="flex items-center justify-center">
                     <img
                       src={chatLogoSrc}
@@ -1790,9 +1795,14 @@ function ChatLandingContent() {
                       className="h-14 w-auto object-contain select-none pointer-events-none"
                     />
                   </div>
-                </div>
+                </motion.div>
 
-                <div className="w-full max-w-3xl pb-2">
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
+                  className="w-full max-w-3xl pb-2"
+                >
                   <ChatInput
                     placeholder="Pregúntame lo que quieras..."
                     onSubmit={handleSend}
@@ -1802,16 +1812,21 @@ function ChatLandingContent() {
                     value={input}
                     onChange={setInput}
                   />
-                </div>
+                </motion.div>
 
                 {/* Categorías y Tarjetas de Previsualización */}
                 <div className="w-full mt-2 sm:mt-3 flex flex-col items-center relative">
                   {/* Categorías (Pills) - Fixed and Wrapped to prevent clipping */}
-                  <div className="flex flex-wrap items-center justify-center gap-2 w-full max-w-2xl py-2 px-4 mt-1">
+                  <motion.div
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, ease: "easeOut", delay: 0.2 }}
+                    className="flex flex-wrap items-center justify-center gap-2 w-full max-w-2xl py-2 px-4 mt-1"
+                  >
                     {CREATIVE_CATEGORIES.map((cat) => (
                       <CategoryPill key={cat.id} cat={cat} isActive={activeCategory === cat.id} />
                     ))}
-                  </div>
+                  </motion.div>
 
                   {/* Grid de Previsualización - overlay absoluto que se superpone
                       hacia abajo sin entrar al flujo, así no desplaza el logo

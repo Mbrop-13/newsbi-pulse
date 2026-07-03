@@ -361,7 +361,7 @@ export function CanvasPanel() {
   };
 
   return (
-    <div className="flex-1 w-full min-h-0 flex flex-col border border-[#DBDBDB] dark:border-[#2e2e2e] rounded-xl bg-white dark:bg-[#1E1E1E] shadow-[inset_0_0_1px_0_rgba(0,0,0,0.1),0_1px_2px_0_rgba(0,0,0,0.04),0_4px_24px_0_rgba(0,0,0,0.08)] overflow-hidden transition-colors duration-300 md:mt-8 md:mb-4 md:mr-4 mt-1 mb-1 mx-1 md:mx-0 border relative">
+    <div className="flex-1 w-full min-h-0 flex flex-col border border-[#DBDBDB] dark:border-[#2e2e2e] rounded-xl bg-white dark:bg-[#1E1E1E] shadow-[inset_0_0_1px_0_rgba(0,0,0,0.1),0_1px_2px_0_rgba(0,0,0,0.04),0_4px_24px_0_rgba(0,0,0,0.08)] overflow-hidden transition-colors duration-300 md:mt-8 md:mb-4 md:mr-8 md:ml-0 mt-1 mb-1 mr-1 ml-1 border relative">
       <style dangerouslySetInnerHTML={{ __html: `
         .hk-comment { color: #9ca3af; font-style: italic; }
         .dark .hk-comment { color: #71717a; }

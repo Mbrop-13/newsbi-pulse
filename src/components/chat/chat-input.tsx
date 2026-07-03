@@ -9,6 +9,7 @@ import { useAIChatStore } from "@/lib/stores/ai-chat-store";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
 import { useConversionStore } from "@/lib/stores/conversion-store";
+import { useCanvasStore } from "@/lib/stores/canvas-store";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { ModelSelector } from "@/components/chat/model-selector";
@@ -805,7 +806,7 @@ export function ChatInput({
               <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [scrollbar-width:none] select-none flex-nowrap pr-2 max-w-[calc(100vw-180px)] sm:max-w-none">
                 {!isStreaming && (
                   <>
-                    <WebBuilderPill onActivate={() => { setCodeInterpreter(false); setBrowser(false); }} />
+                    <WebBuilderPill onActivate={() => { setCodeInterpreter(false); setBrowser(false); useCanvasStore.getState().setOpen(false); }} />
                     {(!isWebBuilderMode || messages.length === 0) && (
                       <>
                         <Pill
@@ -816,6 +817,12 @@ export function ChatInput({
                             if (next) {
                               setWebBuilderMode(false);
                               setBrowser(false);
+                              // Mostrar el canvas de inmediato a la derecha
+                              // (estado vacío "Comienza a crear") sin esperar a
+                              // que el LLM genere código.
+                              useCanvasStore.getState().setOpen(true);
+                            } else {
+                              useCanvasStore.getState().setOpen(false);
                             }
                           }}
                           icon={<Code2 className="h-4 w-4" />}

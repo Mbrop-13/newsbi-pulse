@@ -13,6 +13,7 @@ import { AuthToast } from "@/components/auth-toast";
 import { ReadingListWidget } from "@/components/reading-list-widget";
 import { CapacitorInit } from "@/components/capacitor-init";
 import { AuthSync } from "@/components/auth-sync";
+import { ReferralAttribution } from "@/components/referral-attribution";
 import { PremiumConversionModal } from "@/components/premium-conversion-modal";
 import { AuthModals } from "@/components/auth-modals";
 import { useAuthModalStore } from "@/lib/stores/auth-store";
@@ -112,6 +113,7 @@ export function ClientLayoutProviders({
     "/impacto-global",
     "/suscripcion",
     "/profile",
+    "/referidos",
     "/guardados",
     "/lista-lectura",
     "/para-ti",
@@ -169,7 +171,8 @@ export function ClientLayoutProviders({
   return (
     <ThemeProvider>
       <TooltipProvider>
-        <AuthSync />
+          <AuthSync />
+          <ReferralAttribution />
         <div className="flex flex-col h-[100dvh] overflow-hidden relative">
           {/* Top Navbar removed as requested to unify layout */}
           <main
@@ -183,9 +186,9 @@ export function ClientLayoutProviders({
           >
             {isSidebarPage ? (
               <SidebarProvider>
-                {!showBuilderWorkspace && pathname !== "/suscripcion" && <AppSidebar />}
+                {!showBuilderWorkspace && pathname !== "/suscripcion" && pathname !== "/referidos" && <AppSidebar />}
                 <SidebarInset className={cn((isFixedLayout || isAiPage) && "h-[100dvh] overflow-hidden bg-background")}>
-                  {isMobile && !isFixedLayout && pathname !== "/suscripcion" && <MobileMenuButton />}
+                  {isMobile && !isFixedLayout && pathname !== "/suscripcion" && pathname !== "/referidos" && <MobileMenuButton />}
                   <div className={cn(
                     (isFixedLayout || isAiPage)
                       ? "flex flex-col h-[100dvh] w-full min-w-0 overflow-hidden relative"

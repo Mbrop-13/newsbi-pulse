@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { sendEmail } from "@/lib/email/azure-client";
 import { paymentSuccessEmail } from "@/lib/email/email-templates";
 import { verifyMercadoPagoSignature } from "@/lib/mercadopago/verify-signature";
+import { grantReferralReward } from "@/lib/referrals";
 import type { PlanTier } from "@/lib/plan-limits";
 
 const supabase = createClient(
@@ -179,6 +180,15 @@ async function handleSubscriptionEvent(preapprovalId: string) {
       }
     } catch (emailErr) {
       console.error("[Webhook] Email error:", emailErr);
+    }
+
+    // ── Programa de referidos: cualifica al referido que acaba de pagar ──
+    // Idempotente (no-op si no tiene referrer o ya fue cualificado) y envuelto
+    // en try/catch: un fallo del referido NUNCA afecta el procesamiento del pago.
+    try {
+      await grantReferralReward(userId);
+    } catch (refErr) {
+      console.error("[Webhook] Referral grant error:", refErr);
     }
   }
 

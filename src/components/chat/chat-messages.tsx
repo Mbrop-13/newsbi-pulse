@@ -22,6 +22,7 @@ import { AIChartCard } from "@/components/assistant/ai-chart-card"
 import { PriceAlertCard } from "@/components/assistant/price-alert-card"
 import { EarningsCalendarCard } from "@/components/assistant/earnings-calendar-card"
 import { motion, AnimatePresence } from "framer-motion"
+import { useStickToBottom } from "use-stick-to-bottom"
 import { WebPreview, WebPreviewNavigation, WebPreviewUrl, WebPreviewBody } from "@/components/ai/web-preview"
 
 interface ChatMessagesProps {
@@ -65,51 +66,25 @@ export function ChatMessages({
     const reportsObj = streamData.find((d: any) => d?.type === 'agentReports');
     return reportsObj?.reports || [];
   }, [streamData]);
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [showScrollButton, setShowScrollButton] = useState(false)
-  const isAtBottomRef = useRef(true)
-
-  const handleScroll = () => {
-    const el = containerRef.current
-    if (!el) return
-    const isAtB = el.scrollHeight - el.scrollTop - el.clientHeight < 150
-    isAtBottomRef.current = isAtB
-    setShowScrollButton(!isAtB)
-  }
-
-  // Auto-scroll to bottom on new messages
-  const lastMessageContent = messages[messages.length - 1]?.content || '';
-  const messagesCount = messages.length;
-
-  useEffect(() => {
-    if (isAtBottomRef.current) {
-      // Use requestAnimationFrame to avoid sudden jumps while layout shifts
-      requestAnimationFrame(() => {
-        const el = containerRef.current
-        if (el) el.scrollTop = el.scrollHeight
-      });
-    }
-  }, [messagesCount, lastMessageContent, isLoading])
-
-  const scrollToBottom = () => {
-    const el = containerRef.current
-    if (el) el.scrollTop = el.scrollHeight
-    isAtBottomRef.current = true
-    setShowScrollButton(false)
-  }
+  // Stick-to-bottom robusto: la librería distingue el scroll programático
+  // (streaming de la IA) del scroll manual del usuario. Mantiene la vista al
+  // final mientras la IA escribe, pero si el usuario sube a leer, deja de
+  // forzar el scroll y solo re-engancha cuando vuelve a bajar al final.
+  const { scrollRef, contentRef, isAtBottom, scrollToBottom } = useStickToBottom({
+    initial: "smooth",
+    resize: "smooth",
+  })
 
   return (
     <div className="relative flex flex-col flex-1 min-h-0 w-full h-full">
       <div
-        ref={containerRef}
-        onScroll={handleScroll}
+        ref={scrollRef}
         className={cn(
           "flex-1 overflow-y-auto scrollbar-hide w-full",
           isSplitMode ? "pl-5 pr-3" : "px-4 md:px-6"
         )}
       >
-        <div className={cn("pt-20 md:pt-16 pb-28 md:pb-6 space-y-6", isSplitMode ? "w-full max-w-full" : "max-w-3xl mx-auto")}>
+        <div ref={contentRef} className={cn("pt-20 md:pt-16 pb-28 md:pb-6 space-y-6", isSplitMode ? "w-full max-w-full" : "max-w-3xl mx-auto")}>
           {messages.map((msg, idx) => (
             <MessageBubble
               key={msg.id}
@@ -227,17 +202,16 @@ export function ChatMessages({
             </div>
           )}
 
-          <div ref={messagesEndRef} />
         </div>
       </div>
 
       <AnimatePresence>
-        {showScrollButton && (
+        {!isAtBottom && (
           <motion.button
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
-            onClick={scrollToBottom}
+            onClick={() => scrollToBottom()}
             className={cn(
               "absolute bottom-6 z-50 w-10 h-10 bg-black dark:bg-white hover:bg-black/90 dark:hover:bg-white/90 text-white dark:text-black rounded-full shadow-lg flex items-center justify-center transition-all cursor-pointer border border-black/10 dark:border-white/10 active:scale-95",
               isWebBuilderMode ? "right-6" : "right-6 md:right-12"

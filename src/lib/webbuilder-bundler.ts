@@ -249,6 +249,162 @@ function rewriteEsmImports(code: string, importerUrl: string): string {
   return code;
 }
 
+/**
+ * Detecta "type assertions" de TypeScript residuales (`x as Type`) en un bundle
+ * JS YA transpilado por esbuild. Si las hay, el bundle fallará en runtime con
+ * un críptico "Unexpected identifier 'as'". Esta función las detecta ANTES de
+ * inyectar el bundle en el iframe y devuelve un error claro con la línea exacta.
+ *
+ * Por qué es necesario: esbuild a veces NO transpila `as` cuando:
+ *  - Un módulo de esm.sh se carga con loader "js" en lugar de "ts" (edge case).
+ *  - El código del usuario llega por un camino que no pasa por loaderFor correctamente.
+ *  - Una aserción queda dentro de un contexto que el parser automático no toca.
+ *
+ * Tracker de contexto: un `as` es LEGAL dentro de braces de import/export
+ * (`import { foo as bar }`). Por eso trackeamos `importExportDepth`.
+ */
+function detectStrayTypeAssertion(code: string): {
+  line: number;
+  column: number;
+  snippet: string;
+} | null {
+  const n = code.length;
+  let i = 0;
+  let pendingImportExport = false;
+  let importExportDepth = 0;
+
+  const isWordChar = (ch: string) =>
+    ch.length === 1 && /[a-zA-Z0-9_$]/.test(ch);
+  const isWordAt = (pos: number) => pos >= 0 && pos < n && isWordChar(code[pos]);
+  const readWordAt = (pos: number) => {
+    let j = pos;
+    while (j < n && isWordChar(code[j])) j++;
+    return code.slice(pos, j);
+  };
+
+  while (i < n) {
+    const c = code[i];
+    const c2 = code[i + 1];
+
+    // Comentarios
+    if (c === "/" && c2 === "/") {
+      i += 2;
+      while (i < n && code[i] !== "\n") i++;
+      continue;
+    }
+    if (c === "/" && c2 === "*") {
+      i += 2;
+      while (i < n && !(code[i] === "*" && code[i + 1] === "/")) i++;
+      i += 2;
+      continue;
+    }
+    // Strings (incluye template literals con ${})
+    if (c === '"' || c === "'" || c === "`") {
+      const quote = c;
+      i++;
+      while (i < n && code[i] !== quote) {
+        if (code[i] === "\\") {
+          i += 2;
+          continue;
+        }
+        if (quote === "`" && code[i] === "$" && code[i + 1] === "{") {
+          i += 2;
+          let depth = 1;
+          while (i < n && depth > 0) {
+            if (code[i] === "\\") {
+              i += 2;
+              continue;
+            }
+            if (code[i] === "{") depth++;
+            else if (code[i] === "}") depth--;
+            i++;
+          }
+          continue;
+        }
+        i++;
+      }
+      i++;
+      pendingImportExport = false;
+      continue;
+    }
+
+    // import/export statement → marca para ignorar `as` dentro de sus braces
+    if ((c === "i" || c === "e") && !isWordAt(i - 1)) {
+      const word = readWordAt(i);
+      if (word === "import" || word === "export") {
+        let prev = i - 1;
+        while (prev >= 0 && /\s/.test(code[prev])) prev--;
+        if (prev < 0 || code[prev] !== ".") {
+          pendingImportExport = true;
+        }
+        i += word.length;
+        continue;
+      }
+    }
+
+    if (c === "{") {
+      if (pendingImportExport && importExportDepth === 0) {
+        importExportDepth = 1;
+        pendingImportExport = false;
+      } else if (importExportDepth > 0) {
+        importExportDepth++;
+      }
+      i++;
+      continue;
+    }
+    if (c === "}") {
+      if (importExportDepth > 0) importExportDepth--;
+      i++;
+      continue;
+    }
+    if (c === ";" || c === "(" || c === "=" || c === "*" || c === "\n") {
+      if (importExportDepth === 0) pendingImportExport = false;
+      i++;
+      continue;
+    }
+
+    // `as` residual FUERA de import/export braces → type assertion no transpilada.
+    // Un cast TS tiene forma `expr as Type`: después de "as" debe haber un
+    // identificador (el tipo). Esto descarta `function as(`, `obj.as(`, etc.
+    // donde "as" es un nombre propio.
+    if (c === "a" && c2 === "s" && !isWordAt(i - 1) && !isWordAt(i + 2)) {
+      // Saltar espacios después de "as" y verificar que sigue un identificador
+      let k = i + 2;
+      while (k < n && (code[k] === " " || code[k] === "\t")) k++;
+      const typeStartsWithIdentifier = k < n && isWordChar(code[k]);
+      if (importExportDepth === 0 && typeStartsWithIdentifier) {
+        let j = i - 1;
+        while (j >= 0 && /\s/.test(code[j])) j--;
+        if (
+          j >= 0 &&
+          (code[j] === ")" || code[j] === "]" || isWordChar(code[j]) || code[j] === ">")
+        ) {
+          let line = 1;
+          let lineStart = 0;
+          for (let k2 = 0; k2 < i; k2++) {
+            if (code[k2] === "\n") {
+              line++;
+              lineStart = k2 + 1;
+            }
+          }
+          let lineEnd = code.indexOf("\n", i);
+          if (lineEnd === -1) lineEnd = n;
+          return {
+            line,
+            column: i - lineStart,
+            snippet: code.slice(lineStart, lineEnd).trim(),
+          };
+        }
+      }
+      i += 2;
+      continue;
+    }
+
+    i++;
+  }
+  return null;
+}
+
 export interface BundleResult {
   /** HTML completo para el iframe srcdoc, o null si hubo error. */
   html: string | null;
@@ -496,6 +652,26 @@ if (root) {
         error:
           result.errors?.[0]?.text ||
           "El bundling no produjo código JS. Recarga la página e inténtalo de nuevo.",
+      };
+    }
+
+    // Guardia de robustez: detectar type assertions de TS (`x as Type`) que
+    // sobrevivieron al bundling. Si las hay, el iframe fallaría en runtime con
+    // un críptico "Unexpected identifier 'as'". Lo interceptamos aquí para dar
+    // un error claro con la línea exacta del bundle.
+    const stray = detectStrayTypeAssertion(jsFile.text);
+    if (stray) {
+      console.error(
+        `[Bundler] type assertion residual en línea ${stray.line}:`,
+        stray.snippet
+      );
+      return {
+        html: null,
+        error:
+          `Se detectó una aserción de TypeScript sin transpilar ("as") en el ` +
+          `bundle final (línea ${stray.line}). Esto suele ocurrir cuando una ` +
+          `dependencia se cargó con el loader equivocado. ` +
+          `Snippet: ${stray.snippet.slice(0, 120)}`,
       };
     }
 

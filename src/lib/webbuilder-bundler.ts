@@ -222,18 +222,23 @@ function rewriteEsmImports(code: string, importerUrl: string): string {
     return spec;
   };
   // import/export [clauses] from "spec"
-  // Anclado al inicio de línea (^ + flag m) para NO matchear la palabra
-  // "import"/"export" dentro de string literals o comentarios. En ESM los
-  // imports/exports son top-level, así que siempre están al inicio de línea
-  // (con whitespace opcional).
+  // IMPORTANTE: esm.sh sirve módulos MINIFICADOS en una sola línea con varios
+  // imports pegados por ';'. No podemos anclar a ^ (inicio de línea) porque
+  // solo matchearía el PRIMERO de cada línea y dejaría los demás sin reescribir
+  // (bug que rompía framer-motion@12.x: "No se pudo resolver ../sequence/create.mjs").
+  // En su lugar exigimos un separador de statement antes de import/export
+  // (^, ;, {}, (), =, o whitespace) para evitar falsos positivos dentro de
+  // strings/comentarios.
+  // Grupos: 1=prefix(sep), 2=keyword, 3=mid, 4=quote, 5=specifier.
   code = code.replace(
-    /^\s*(import|export)(\b[^'"`;]*?\bfrom\s*)['"]([^'"]+)['"]/gm,
-    (_m, kw, mid, spec) => `${kw}${mid}"${resolve(spec)}"`
+    /(^|[;{}()\s=])(import|export)([^'";]*?\bfrom\s*)(['"])([^'"]+)\4/g,
+    (_m, p, kw, mid, _q, spec) => `${p}${kw}${mid}"${resolve(spec)}"`
   );
-  // import "spec" (side-effect) — evita los que ya tienen 'from'
+  // import "spec" (side-effect) — evita los que ya tienen 'from'. Mismo
+  // razonamiento: separador previo en vez de ^ para soportar código minificado.
   code = code.replace(
-    /^\s*(import)(\s+)['"]([^'"]+)['"]/gm,
-    (_m, kw, sp, spec) => `${kw}${sp}"${resolve(spec)}"`
+    /(^|[;{}()\s=])(import)(\s+)(['"])([^'"]+)\4/g,
+    (_m, p, kw, sp, _q, spec) => `${p}${kw}${sp}"${resolve(spec)}"`
   );
   // dynamic import("spec") — no se puede anclar a inicio de línea porque es
   // una expresión. \b antes de import reduce falsos positivos.

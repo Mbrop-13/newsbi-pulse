@@ -111,6 +111,21 @@ export function NotificationBell({ asMenuItem }: { asMenuItem?: boolean }) {
 
     const checkPortfolioVariation = async () => {
       try {
+        // ── Guard: no disparar alertas de variación "de hoy" si el mercado no
+        //    operó hoy (findes de semana, festivos). En esos días Yahoo devuelve
+        //    la cotización congelada del último día hábil, con el % de cambio de
+        //    ese día — y la lógica la confundiría con un movimiento "de hoy".
+        //    Verificamos dos condiciones:
+        //    1) Hoy es sábado (6) o domingo (0) → mercado de renta variable
+        //       cerrado (suficiente para el caso reportado por el usuario).
+        //    2) Refuerzo: si los datos traen regularMarketTime, comprobamos que
+        //       el último precio sea realmente del día calendario de hoy.
+        const now = new Date();
+        const dayOfWeek = now.getDay(); // 0=Dom, 6=Sáb
+        if (dayOfWeek === 0 || dayOfWeek === 6) {
+          return;
+        }
+
         // Cooldown check (15 minutes locally to avoid overloading)
         const LOCAL_COOLDOWN_MS = 15 * 60 * 1000;
         const lastCheck = localStorage.getItem(`last_portfolio_check_${user.id}`);
@@ -150,9 +165,32 @@ export function NotificationBell({ asMenuItem }: { asMenuItem?: boolean }) {
             price: live.price || 0,
             change: live.change || 0,
             changePercent: live.changePercent || 0,
+            // regularMarketTime viene en segundos (epoch) desde Yahoo Finance.
+            regularMarketTime: live.regularMarketTime ?? null,
             shares: dbA.shares || 0,
           };
         });
+
+        // ── Refuerzo anti-falso-positivo: además del corte por día de la
+        //    semana, comprobamos que la cotización sea realmente del día de
+        //    hoy. Si el último precio es de un día anterior (festivo en EE.UU.,
+        //    cierre adelantado, mercado cerrado por cualquier motivo), los
+        //    % de cambio no corresponden a "hoy" y no debemos notificar.
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+        const freshQuotes = enriched.filter(
+          (a) => typeof a.regularMarketTime === "number"
+        );
+        if (freshQuotes.length > 0) {
+          // Si NINGÚN activo tiene cotización del día de hoy, abortamos.
+          const anyFreshToday = freshQuotes.some((a) => {
+            const quoteDate = new Date((a.regularMarketTime as number) * 1000);
+            return quoteDate.getTime() >= startOfToday.getTime();
+          });
+          if (!anyFreshToday) {
+            return;
+          }
+        }
 
         // 1. Check Portfolio-Wide Variation (if not notified today)
         const hasPortfolioNotif = existingNotifs?.some((n) => n.type === "portfolio_pnl");

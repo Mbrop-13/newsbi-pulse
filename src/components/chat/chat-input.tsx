@@ -817,10 +817,9 @@ export function ChatInput({
                             if (next) {
                               setWebBuilderMode(false);
                               setBrowser(false);
-                              // Mostrar el canvas de inmediato a la derecha
-                              // (estado vacío "Comienza a crear") sin esperar a
-                              // que el LLM genere código.
-                              useCanvasStore.getState().setOpen(true);
+                              // No abrir el canvas aquí: se mostrará a la
+                              // derecha recién cuando la IA empiece a responder
+                              // (cuando llegue el primer archivo/contenido).
                             } else {
                               useCanvasStore.getState().setOpen(false);
                             }

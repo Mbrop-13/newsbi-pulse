@@ -35,6 +35,10 @@ export async function GET(request: Request) {
       price: q.regularMarketPrice,
       change: q.regularMarketChange,
       changePercent: q.regularMarketChangePercent,
+      // Timestamp (segundos, epoch) del último precio regular. Nos sirve para
+      // saber si la cotización es del día de hoy o está "congelada" de un día
+      // de mercado anterior (findes de semana, festivos, etc.).
+      regularMarketTime: q.regularMarketTime ?? null,
       logo: `https://assets.parqet.com/logos/symbol/${q.symbol.toUpperCase()}`
     }));
 

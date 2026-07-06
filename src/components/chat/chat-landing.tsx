@@ -1228,9 +1228,10 @@ function ChatLandingContent() {
     if (options.browser) {
       useBrowserStore.getState().setOpen(true);
     }
-    if (options.codeInterpreter) {
-      useCanvasStore.getState().setOpen(true);
-    }
+    // Nota: en modo Canvas NO abrimos el panel aquí. El canvas se muestra
+    // recién cuando la IA empieza a responder (cuando llega el primer
+    // archivo vía openCanvas()), no apenas se activa la píldora ni al
+    // enviar el mensaje.
 
     // If WebBuilder mode is active, ensure split view is shown
     if (isWB) {
@@ -1780,7 +1781,7 @@ function ChatLandingContent() {
                overflow-y-auto permite que el overlay de tarjetas (absoluto) se
                despliegue hacia abajo sin mover el logo; el contenido en flujo
                sigue centrado gracias a justify-center. */
-            <div className="flex-1 flex flex-col items-center justify-start px-4 pt-[21vh] pb-4 relative h-full overflow-x-hidden overflow-y-auto scrollbar-hide">
+            <div className="flex-1 flex flex-col items-center justify-start px-4 pt-[25vh] pb-4 relative h-full overflow-x-hidden overflow-y-auto scrollbar-hide">
               <div className="w-full max-w-4xl mx-auto flex flex-col items-center justify-start">
                 <motion.div
                   initial={{ opacity: 0, y: -10, scale: 0.98 }}

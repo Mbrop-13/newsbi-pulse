@@ -50,6 +50,25 @@ export function SelfHostedPreview({ stableFiles }: { stableFiles: Record<string,
     return () => window.removeEventListener("maverlang-force-rebundle", forceRebundle);
   }, []);
 
+  // ── Capturar errores de runtime del iframe ──
+  // El iframe inyecta postMessage con type=MAVERLANG_RUNTIME_ERROR cuando
+  // el código del usuario falla en runtime (TypeError, ReferenceError, etc.).
+  // Sin esto, el preview queda en blanco sin explicación.
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type === "MAVERLANG_RUNTIME_ERROR" && e.data?.message) {
+        const errMsg = `Error en tiempo de ejecución: ${e.data.message}` +
+          (e.data.lineno ? ` (línea ${e.data.lineno})` : "");
+        const store = useWebBuilderStore.getState();
+        if (store.lastAutoFixError !== errMsg) {
+          store.failAutoFix(errMsg);
+        }
+      }
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, []);
+
   // Key estable del contenido: cambia SOLO si los archivos realmente cambiaron
   // (no en cada re-render). Evita rebundle innecesario. Usar el código completo
   // (no solo .length): cambios de igual longitud (true→false, "foo"→"bar",

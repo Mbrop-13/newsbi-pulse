@@ -57,6 +57,21 @@ function ensureInit(): Promise<void> {
   return initPromise;
 }
 
+/**
+ * Verifica que esbuild esté realmente listo para usarse. Si initialize()
+ * falló (ej. el .wasm no cargó por Content-Type incorrecto o red caída),
+ * no podemos bundlear: devolver falso para que el caller muestre un error
+ * en lugar de inyectar código TS crudo en el iframe.
+ */
+async function isEsbuildReady(): Promise<boolean> {
+  try {
+    await ensureInit();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function loaderFor(path: string): esbuild.Loader {
   if (path.endsWith(".tsx")) return "tsx";
   if (path.endsWith(".ts")) return "ts";
@@ -78,6 +93,10 @@ const PARSABLE_EXT = [".tsx", ".ts", ".jsx", ".js"];
  * Resuelve un import relativo (./foo, ../bar, /baz) contra el directorio del
  * importador, probando extensiones. Devuelve el path del archivo en fileMap o
  * null si no se encuentra.
+ *
+ * Implementación: concatena importDir + spec y luego normaliza (resuelve . y ..).
+ * Esto evita el bug anterior donde el cálculo de "subir N directorios" con
+ * splice era incorrecto y además se volvía a prepend importDir al candidate.
  */
 function resolveRelative(
   spec: string,
@@ -85,29 +104,43 @@ function resolveRelative(
   fileMap: Record<string, string>
 ): string | null {
   const importDir = importer ? importer.replace(/\/[^/]*$/, "") : "";
-  let base = spec;
-  if (base.startsWith("./")) base = base.slice(2);
-  if (base.startsWith("../")) {
-    const parts = importDir.split("/").filter(Boolean);
-    base = base.replace(/^(\.\.\/)+/, "");
-    const ups = (spec.match(/^\.\.\//g) || []).length;
-    parts.splice(parts.length - ups + 1, ups);
-    base = parts.join("/") + "/" + base;
+
+  // Construir el path completo concatenando dir + spec
+  let fullPath: string;
+  if (spec.startsWith("./")) {
+    fullPath = (importDir || "") + "/" + spec.slice(2);
+  } else if (spec.startsWith("../")) {
+    fullPath = (importDir || "") + "/" + spec;
+  } else if (spec.startsWith("/")) {
+    fullPath = spec;
+  } else {
+    fullPath = spec;
   }
-  if (base.startsWith("/")) base = base.slice(1);
-  const dir = importDir.replace(/^\//, "");
-  const candidate = (dir ? dir + "/" : "") + base;
+
+  // Normalizar: resolver . y .. segmento a segmento
+  const segments = fullPath.split("/").filter((s) => s && s !== ".");
+  const resolved: string[] = [];
+  for (const seg of segments) {
+    if (seg === "..") {
+      resolved.pop();
+    } else {
+      resolved.push(seg);
+    }
+  }
+  const normalized = normalizePath(resolved.join("/"));
+
+  // Probar con extensiones y /index
   const tries = [
-    candidate,
-    candidate + ".tsx",
-    candidate + ".ts",
-    candidate + ".jsx",
-    candidate + ".js",
-    candidate + "/index.tsx",
-    candidate + "/index.ts",
-    candidate + "/index.jsx",
-    candidate + "/index.js",
-  ].map(normalizePath);
+    normalized,
+    normalized + ".tsx",
+    normalized + ".ts",
+    normalized + ".jsx",
+    normalized + ".js",
+    normalized + "/index.tsx",
+    normalized + "/index.ts",
+    normalized + "/index.jsx",
+    normalized + "/index.js",
+  ];
   for (const t of tries) {
     if (fileMap[t] !== undefined) return t;
   }
@@ -124,6 +157,13 @@ function resolveRelative(
 // "https://esm.sh/..." y vuelve a entrar al plugin → fetch → inlinear.
 // Resultado: un único bundle con TODO dentro, una sola instancia de React.
 // ---------------------------------------------------------------------------
+
+// Caché en memoria para módulos de esm.sh. Sin esto, cada re-bundle
+// (disparado por cualquier cambio de código tras 400ms de debounce) vuelve
+// a descargar TODOS los paquetes npm desde esm.sh. Para un proyecto típico
+// con react + react-dom + lucide-react + framer-motion son ~8-12 fetchs
+// por re-bundle. El caché es por URL y dura toda la sesión del navegador.
+const esmShCache = new Map<string, { text: string; status: number }>();
 
 // Versiones pinneadas para los paquetes críticos (evita mezclar versiones
 // entre react y react/jsx-runtime, que causaba las dos instancias de React).
@@ -182,18 +222,23 @@ function rewriteEsmImports(code: string, importerUrl: string): string {
     return spec;
   };
   // import/export [clauses] from "spec"
+  // Anclado al inicio de línea (^ + flag m) para NO matchear la palabra
+  // "import"/"export" dentro de string literals o comentarios. En ESM los
+  // imports/exports son top-level, así que siempre están al inicio de línea
+  // (con whitespace opcional).
   code = code.replace(
-    /(import|export)(\b[^'"`;]*?\bfrom\s*)['"]([^'"]+)['"]/g,
+    /^\s*(import|export)(\b[^'"`;]*?\bfrom\s*)['"]([^'"]+)['"]/gm,
     (_m, kw, mid, spec) => `${kw}${mid}"${resolve(spec)}"`
   );
   // import "spec" (side-effect) — evita los que ya tienen 'from'
   code = code.replace(
-    /(import)(\s+)['"]([^'"]+)['"]/g,
+    /^\s*(import)(\s+)['"]([^'"]+)['"]/gm,
     (_m, kw, sp, spec) => `${kw}${sp}"${resolve(spec)}"`
   );
-  // dynamic import("spec")
+  // dynamic import("spec") — no se puede anclar a inicio de línea porque es
+  // una expresión. \b antes de import reduce falsos positivos.
   code = code.replace(
-    /import\(\s*['"]([^'"]+)['"]\s*\)/g,
+    /\bimport\(\s*['"]([^'"]+)['"]\s*\)/g,
     (_m, spec) => `import("${resolve(spec)}")`
   );
   return code;
@@ -251,7 +296,20 @@ if (root) {
 `;
 
   try {
-    await ensureInit();
+    // Verificar que esbuild está realmente listo antes de intentar bundlear.
+    // Si el .wasm no cargó (Content-Type incorrecto en Vercel, red caída),
+    // devolvemos error claro en lugar de inyectar código TS crudo en el iframe.
+    const ready = await isEsbuildReady();
+    if (!ready) {
+      return {
+        html: null,
+        error:
+          "No se pudo cargar el motor de previsualización (esbuild.wasm). " +
+          "Esto suele ocurrir cuando el archivo .wasm se sirve con un " +
+          "Content-Type incorrecto (debe ser application/wasm). " +
+          "Recarga la página e inténtalo de nuevo.",
+      };
+    }
 
     const result = await esbuild.build({
       stdin: {
@@ -336,6 +394,24 @@ if (root) {
               { filter: /.*/, namespace: "esm-sh" },
               async (args) => {
                 try {
+                  // Caché: si ya descargamos este módulo en esta sesión,
+                  // usar la versión cacheada en lugar de volver a hacer fetch.
+                  const cached = esmShCache.get(args.path);
+                  if (cached) {
+                    if (cached.status >= 400) {
+                      return {
+                        errors: [
+                          {
+                            text: `No se pudo cargar "${args.path}" (HTTP ${cached.status}, cacheado). El paquete no existe o la versión es inválida.`,
+                          },
+                        ],
+                      };
+                    }
+                    let text = cached.text;
+                    text = rewriteEsmImports(text, args.path);
+                    return { contents: text, loader: "ts" };
+                  }
+
                   // AbortController con timeout: sin esto, si esm.sh acepta la
                   // conexión pero no responde (o tarda mucho), el await cuelga
                   // indefinidamente. Como el bundler corre en el main thread
@@ -349,6 +425,8 @@ if (root) {
                   });
                   clearTimeout(timeoutId);
                   if (!res.ok) {
+                    // Guardar el error en caché para no reintentar fetchs fallidos.
+                    esmShCache.set(args.path, { text: "", status: res.status });
                     return {
                       errors: [
                         {
@@ -358,6 +436,10 @@ if (root) {
                     };
                   }
                   let text = await res.text();
+                  // Guardar en caché ANTES de reescribir imports (la versión
+                  // cruda de esm.sh es la que cacheamos; rewriteEsmImports se
+                  // aplica en cada uso porque args.path puede cambiar).
+                  esmShCache.set(args.path, { text, status: res.status });
                   // Reescribir imports internos a URLs absolutas para que
                   // esbuild los resuelva de vuelta por este plugin.
                   text = rewriteEsmImports(text, args.path);
@@ -432,6 +514,14 @@ function buildPreviewHtml(jsCode: string, cssCode: string): string {
   // En su lugar, inyectamos el Tailwind Play CDN que genera utilidades en
   // runtime desde las clases que aparece en el DOM. Sin esto, las apps que
   // usan clases Tailwind se ven "sin diseño" (HTML puro).
+  //
+  // NOTA: el warning "cdn.tailwindcss.com should not be used in production" es
+  // esperado y aceptable aquí. Este iframe es un sandbox de previsualización
+  // de código generado por el usuario, no una página de producción real.
+  // No hay alternativa viable: procesar Tailwind con PostCSS en el navegador
+  // requeriría un worker adicional y ~2MB extra de payload. El CDN de Play
+  // es la solución estándar para previews en vivo (usada por StackBlitz,
+  // CodeSandbox, etc.).
   const userCss = cssCode
     ? cssCode.replace(/@tailwind\s+(base|components|utilities);?/g, "")
     : "";
@@ -440,7 +530,38 @@ function buildPreviewHtml(jsCode: string, cssCode: string): string {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+// ── Captura de errores de runtime ──
+// Sin esto, un error de runtime (ej. undefined.foo, TypeError) deja el
+// iframe en blanco sin feedback. El usuario piensa que la app no funciona
+// cuando en realidad tiene un bug en su código.
+window.addEventListener('error', function(e) {
+  window.parent.postMessage({
+    type: 'MAVERLANG_RUNTIME_ERROR',
+    message: e.message,
+    filename: e.filename,
+    lineno: e.lineno,
+    colno: e.colno,
+  }, '*');
+});
+window.addEventListener('unhandledrejection', function(e) {
+  window.parent.postMessage({
+    type: 'MAVERLANG_RUNTIME_ERROR',
+    message: 'Unhandled Promise rejection: ' + (e.reason && e.reason.message ? e.reason.message : String(e.reason)),
+    filename: '',
+    lineno: 0,
+    colno: 0,
+  }, '*');
+});
+</script>
+<script>
+// ── Suprimir solo el warning del CDN de Tailwind ──
+// Guardamos el original ANTES de reemplazar, y lo restauramos después.
+var _origWarn = console.warn;
+console.warn = function() {};
+</script>
 <script src="https://cdn.tailwindcss.com"></script>
+<script>console.warn = _origWarn;</script>
 ${userCss ? `<style>${userCss}</style>` : ""}
 </head>
 <body>

@@ -48,6 +48,25 @@ const nextConfig = {
     ].join("; ");
 
     return [
+      // esbuild.wasm debe servirse con Content-Type: application/wasm.
+      // Sin este header, Vercel lo sirve como application/octet-stream
+      // → el navegador rechaza el compile/instantiate → esbuild.initialize()
+      // falla → el bundler nunca corre → el código TS crudo se inyecta en el
+      // iframe → "Unexpected identifier 'as'" + "Cannot read properties of
+      // null (reading 'useContext')" + "Minified React error #31".
+      {
+        source: '/esbuild.wasm',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'application/wasm',
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
       {
         source: '/:path*',
         headers: [

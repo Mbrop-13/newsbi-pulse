@@ -94,6 +94,20 @@ export function SelfHostedPreview({ stableFiles }: { stableFiles: Record<string,
         const result = await bundleProject(stableFiles);
         if (!isMountedRef.current) return;
 
+        // Si todos los archivos están vacíos o son solo whitespace (suele
+        // pasar mientras la IA "crea el plan" y aún no escribió código),
+        // ignoramos el error y DESPEJAMOS cualquier error previo para que el
+        // preview se quede limpio en vez de mostrar "Could not resolve...".
+        const hasRealCode = Object.values(stableFiles).some(
+          (f) => (typeof f === "string" ? f : f?.code ?? "").trim().length > 0
+        );
+
+        if (result.error && !hasRealCode) {
+          const store = useWebBuilderStore.getState();
+          if (store.hasBuildError) store.completeAutoFix();
+          return;
+        }
+
         if (result.error) {
           // Mostrar el error exacto en la pantalla de error del padre.
           // NO llamamos a attemptAutoFix ni a ningún LLM: solo mostramos.

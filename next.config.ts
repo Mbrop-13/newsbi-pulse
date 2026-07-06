@@ -6,6 +6,11 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // esbuild nativo se importa desde /api/webbuilder-bundle (route handler).
+  // Sin esto, webpack intenta bundlear esbuild/lib/main.d.ts (un .d.ts con
+  // sintaxis TS) -> "Module parse failed: Unexpected token". Marcándolo como
+  // externo, Next lo carga vía require() normal desde node_modules.
+  serverExternalPackages: ["esbuild"],
   async headers() {
     // ── Content-Security-Policy (ASVS 7.2.1) ──
     // Mitigates XSS (incl. the WebBuilder iframe previews) and injection.
@@ -14,12 +19,12 @@ const nextConfig = {
     const csp = [
       "default-src 'self'",
       // script-src incluye:
-      //  - https://esm.sh y https://*.esm.sh: el bundler (esbuild-wasm) inlinea
-      //    deps npm fetchéandolas desde esm.sh en tiempo de bundling.
       //  - https://cdn.tailwindcss.com: Tailwind Play CDN, inyectado en el
       //    iframe del preview para procesar clases Tailwind en runtime (esbuild
-      //    no puede procesar @tailwind). Sin esto, las apps se ven sin estilos.
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com https://esm.sh https://*.esm.sh https://cdn.tailwindcss.com",
+      //    no procesa @tailwind en el bundle). Sin esto, las apps se ven sin estilos.
+      //  (Tras la migración al servidor en jul-2026 ya no se necesitan esm.sh
+      //   porque el bundling se hace con esbuild nativo + node_modules reales.)
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com https://cdn.tailwindcss.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob: https: http:",
       "font-src 'self' data: https://fonts.gstatic.com",
@@ -32,7 +37,9 @@ const nextConfig = {
       //    ERR_CONNECTION_TIMED_OUT / TIME_OUT de la preview.
       // Sin estos, aunque el iframe esté permitido por frame-src, el runtime no
       // conecta bien y la preview se queda cargando hasta TIME_OUT.
-      "connect-src 'self' https://*.supabase.co https://api.mercadopago.com https://api.openai.com https://openrouter.ai https://api.x.ai https://api.mapbox.com https://api.newsdata.io https://www.googleapis.com https://generativelanguage.googleapis.com https://*.upstash.io https://*.codesandbox.io https://codesandbox.io https://col.csbops.io https://*.csbops.io https://esm.sh https://*.esm.sh wss: ws:",
+      //  (Tras la migración a SelfHostedPreview el bundler de Sandpack casi no se
+      //   usa, pero el editor (CodeMirror) sigue cargándose desde ahí.)
+      "connect-src 'self' https://*.supabase.co https://api.mercadopago.com https://api.openai.com https://openrouter.ai https://api.x.ai https://api.mapbox.com https://api.newsdata.io https://www.googleapis.com https://generativelanguage.googleapis.com https://*.upstash.io https://*.codesandbox.io https://codesandbox.io https://col.csbops.io https://*.csbops.io wss: ws:",
       // frame-src incluye los dominios del bundler de Sandpack (webbuilder):
       // - sandpack.codesandbox.io (worker/runtime por versión, ej. 2-19-8-sandpack.codesandbox.io)
       // - *.codesandbox.io  (cubre versiones nuevas y subdominios del bundler)
@@ -48,25 +55,6 @@ const nextConfig = {
     ].join("; ");
 
     return [
-      // esbuild.wasm debe servirse con Content-Type: application/wasm.
-      // Sin este header, Vercel lo sirve como application/octet-stream
-      // → el navegador rechaza el compile/instantiate → esbuild.initialize()
-      // falla → el bundler nunca corre → el código TS crudo se inyecta en el
-      // iframe → "Unexpected identifier 'as'" + "Cannot read properties of
-      // null (reading 'useContext')" + "Minified React error #31".
-      {
-        source: '/esbuild.wasm',
-        headers: [
-          {
-            key: 'Content-Type',
-            value: 'application/wasm',
-          },
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
       {
         source: '/:path*',
         headers: [

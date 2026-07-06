@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { bundleProject } from "@/lib/webbuilder-bundler";
+import { bundleProject, invalidateBundleCache } from "@/lib/webbuilder-bundle-client";
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
 import { PremiumSkeletonLoader } from "./premium-skeleton-loader";
 
 /**
  * Preview autocontenido: reemplaza a SandpackPreview.
  *
- * Bundlea el proyecto con esbuild-wasm EN EL NAVEGADOR (cero dependencia del
- * CDN de CodeSandbox) y lo inyecta en un iframe srcdoc.
+ * Bundlea el proyecto en el SERVIDOR (POST /api/webbuilder-bundle, esbuild
+ * nativo con node_modules reales) y lo inyecta en un iframe srcdoc.
  *
  * FILOSOFÍA: SIMPLE Y A PRUEBA DE FALLOS.
  * - Si el código compila → muestra el preview. ✅
@@ -17,9 +17,8 @@ import { PremiumSkeletonLoader } from "./premium-skeleton-loader";
  *   pantalla de error del padre (failAutoFix reutilizada solo como canal de
  *   UI, no como LLM). El usuario lo corrige en el editor. ✅
  *
- * NO hay auto-fix (LLM regenerando código): era la causa de los 504 de
- * /api/webbuilder-fix y de buena parte de los bucles. Cada editor serio
- * (VS Code, CodeSandbox) te muestra el error y tú lo arreglas.
+ * NO hay auto-fix (LLM regenerando código): cada editor serio (VS Code,
+ * CodeSandbox) te muestra el error y tú lo arreglas.
  */
 export function SelfHostedPreview({ stableFiles }: { stableFiles: Record<string, { code: string }> }) {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
@@ -43,7 +42,8 @@ export function SelfHostedPreview({ stableFiles }: { stableFiles: Record<string,
   // cache (útil tras que el usuario corrija el código o quiera reintentar).
   useEffect(() => {
     const forceRebundle = () => {
-      lastKeyRef.current = ""; // invalida el cache
+      lastKeyRef.current = ""; // invalida el cache local del efecto
+      invalidateBundleCache(); // invalida la caché del wrapper del cliente
       setForceBundleIdx((i) => i + 1); // dispara el effect principal
     };
     window.addEventListener("maverlang-force-rebundle", forceRebundle);

@@ -10,7 +10,7 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { SelfHostedPreview } from "./self-hosted-preview";
 import { PremiumSkeletonLoader } from "./premium-skeleton-loader";
-import { bundleProject } from "@/lib/webbuilder-bundler";
+import { bundleProject } from "@/lib/webbuilder-bundle-client";
 import { parseArtifact } from "@/lib/webbuilder-parser";
 import { detectDependencies } from "@/lib/webbuilder-deps";
 import { toast } from "sonner";
@@ -52,174 +52,12 @@ import {
 } from "lucide-react";
 
 // ─── Inspector Injection Helper ───────────────────
-export function injectInspectorScript(html: string): string {
-  if (html.includes("MAVERLANG_ELEMENT_CLICKED")) return html;
+// Re-exportado desde el módulo isomorfo para mantener compatibilidad hacia
+// atrás. La implementación vive en webbuilder-html.ts (compartida con el
+// endpoint de bundling del servidor).
+import { injectInspectorScript } from "@/lib/webbuilder-html";
+export { injectInspectorScript };
 
-  const styleTag = `
-    <style>
-      .maverlang-inspector-hover {
-        outline: 2px solid #3b82f6 !important;
-        outline-offset: -2px !important;
-        cursor: crosshair !important;
-        box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.5) !important;
-        background-color: rgba(59, 130, 246, 0.1) !important;
-        transition: all 0.1s !important;
-      }
-
-      @media (max-width: 768px) {
-        ::-webkit-scrollbar {
-          display: none !important;
-          width: 0 !important;
-          height: 0 !important;
-        }
-        *::-webkit-scrollbar {
-          display: none !important;
-          width: 0 !important;
-          height: 0 !important;
-        }
-        html, body, #root, #app, * {
-          scrollbar-width: none !important;
-          -ms-overflow-style: none !important;
-        }
-      }
-    </style>
-  `;
-
-  const scriptTag = `
-    <script>
-      let isInspectorActive = false;
-      
-      window.addEventListener('message', (e) => {
-        if (e.data?.type === 'TOGGLE_INSPECTOR') {
-          isInspectorActive = e.data.active;
-          if (!isInspectorActive) {
-            document.querySelectorAll('.maverlang-inspector-hover').forEach(el => el.classList.remove('maverlang-inspector-hover'));
-          }
-        }
-      });
-
-      document.addEventListener('mouseover', (e) => {
-        if (!isInspectorActive) return;
-        e.stopPropagation();
-        if (e.target !== document.body && e.target !== document.documentElement) {
-          e.target.classList.add('maverlang-inspector-hover');
-        }
-      }, true);
-
-      document.addEventListener('mouseout', (e) => {
-        if (!isInspectorActive) return;
-        e.stopPropagation();
-        if (e.target && e.target.classList) {
-          e.target.classList.remove('maverlang-inspector-hover');
-        }
-      }, true);
-
-      document.addEventListener('click', (e) => {
-        if (!isInspectorActive) return;
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const el = e.target;
-        if (!el || el === document.body || el === document.documentElement) return;
-
-        el.classList.remove('maverlang-inspector-hover');
-        
-        const clone = el.cloneNode(false);
-        let innerText = el.innerText || '';
-        if (innerText.length > 50) innerText = innerText.substring(0, 50) + '...';
-        if (innerText) clone.innerText = innerText;
-
-        // #7 EDICIÓN INLINE: además del HTML, enviamos los estilos computados
-        // relevantes para que el popover de edición los muestre como campos
-        // editables (texto, color, fondo, tamaño, radius) y el usuario pueda
-        // previsualizar y generar un prompt concreto para la IA.
-        const cs = window.getComputedStyle(el);
-        const rect = el.getBoundingClientRect();
-        const computedStyle = {
-          color: cs.color,
-          backgroundColor: cs.backgroundColor,
-          fontSize: cs.fontSize,
-          fontWeight: cs.fontWeight,
-          borderRadius: cs.borderRadius,
-          padding: cs.padding,
-          margin: cs.margin,
-        };
-        const editableText = (el.innerText || '').trim();
-        const anchor = {
-          // Posición relativa al viewport del iframe (lo posiciona el padre).
-          top: rect.top,
-          left: rect.left,
-          width: rect.width,
-          height: rect.height,
-        };
-        
-        window.parent.postMessage({
-          type: 'MAVERLANG_ELEMENT_CLICKED',
-          elementHtml: clone.outerHTML,
-          tagName: el.tagName,
-          className: el.className || '',
-          editableText,
-          computedStyle,
-          anchor,
-        }, '*');
-        
-        isInspectorActive = false;
-        window.parent.postMessage({ type: 'MAVERLANG_INSPECTOR_DISABLED' }, '*');
-      }, true);
-
-      // #7 Aplicar estilo en vivo al elemento seleccionado (mientras el usuario
-      // edita en el popover, sin recargar). Identificamos el elemento por un
-      // atributo data temporal marcado tras el click.
-      window.addEventListener('message', (e) => {
-        const d = e.data;
-        if (!d) return;
-        if (d.type === 'MAVERLANG_MARK_ELEMENT') {
-          // Marca el último elemento clickeado para poder referenciarlo.
-          // Re-marca quitando marcas previas.
-          document.querySelectorAll('[data-maverlang-target]').forEach(n => n.removeAttribute('data-maverlang-target'));
-          // No podemos re-obtener el elemento por referencia tras el click (ya
-          // se desactivó), así que usamos el anchor para encontrarlo.
-          const candidates = document.querySelectorAll('*');
-          for (const node of candidates) {
-            const r = (node as HTMLElement).getBoundingClientRect();
-            if (Math.abs(r.top - d.anchor.top) < 3 && Math.abs(r.left - d.anchor.left) < 3 && Math.abs(r.width - d.anchor.width) < 3) {
-              node.setAttribute('data-maverlang-target', '1');
-              break;
-            }
-          }
-        } else if (d.type === 'MAVERLANG_APPLY_LIVE_STYLE') {
-          const target = document.querySelector('[data-maverlang-target]') as HTMLElement | null;
-          if (target) {
-            const s = d.style || {};
-            if (s.color) target.style.color = s.color;
-            if (s.backgroundColor) target.style.backgroundColor = s.backgroundColor;
-            if (s.fontSize) target.style.fontSize = s.fontSize;
-            if (s.borderRadius) target.style.borderRadius = s.borderRadius;
-            if (s.text !== undefined) target.innerText = s.text;
-          }
-        }
-      });
-
-      // Notify parent that the preview is loaded and ready
-      window.parent.postMessage({ type: 'MAVERLANG_PREVIEW_LOADED' }, '*');
-    </script>
-  `;
-
-  let modifiedHtml = html;
-  if (modifiedHtml.includes("</head>")) {
-    modifiedHtml = modifiedHtml.replace("</head>", styleTag + "</head>");
-  } else {
-    modifiedHtml = styleTag + modifiedHtml;
-  }
-
-  if (modifiedHtml.includes("</body>")) {
-    modifiedHtml = modifiedHtml.replace("</body>", scriptTag + "</body>");
-  } else {
-    modifiedHtml = modifiedHtml + scriptTag;
-  }
-
-  return modifiedHtml;
-}
 
 // ─── Preview Iframe Selector Helper ───────────────
 // #7 Convierte rgb(r, g, b) / rgba(...) a #hex para los inputs color del popover.
@@ -810,7 +648,7 @@ function SandpackStoreSync({ stableFiles }: { stableFiles: Record<string, { code
   //
   // El bundler de Sandpack está apagado (autorun: false); solo usamos el
   // editor. Así que NO hay refresh() y NO hay listener de errores del bundler.
-  // El preview lo hace SelfHostedPreview con esbuild-wasm.
+  // El preview lo hace SelfHostedPreview (bundling en el servidor con esbuild nativo).
   useEffect(() => {
     let hasChanges = false;
     const pushedPaths: string[] = [];
@@ -1352,7 +1190,7 @@ export function PreviewPanel() {
   }, [files, isAiResponding]);
 
   // NOTA: la pre-validación con @babel/standalone se eliminó. Ahora el preview
-  // lo hace SelfHostedPreview (esbuild-wasm), que YA valida la sintaxis al
+  // lo hace SelfHostedPreview (esbuild nativo en el servidor), que YA valida la sintaxis al
   // bundlear y muestra el error exacto. Duplicar la validación aquí solo añadía
   // complejidad y potencial de bucles. Una sola fuente de verdad: esbuild.
 
@@ -1378,7 +1216,7 @@ export function PreviewPanel() {
   // Escuchar peticiones de "reintentar compilación" lanzadas desde BuildErrorView.
   //
   // ANTES: subía buildVersion para remontar el SandpackProvider y recompilar.
-  // AHORA: el preview lo hace SelfHostedPreview (esbuild-wasm), no el bundler
+  // AHORA: el preview lo hace SelfHostedPreview (esbuild nativo en el servidor), no el bundler
   // de Sandpack. Para que "Reintentar" funcione debemos:
   //   1. Limpiar el error (resetAutoFixAttempts → hasBuildError=false).
   //   2. Pedir al SelfHostedPreview que re-bundlee (evento force-rebundle).
@@ -1938,7 +1776,7 @@ export function PreviewPanel() {
               // directamente en el index.html del proyecto (autocontenido,
               // fuera del bundler de Sandpack).
               // autorun: false — NO lanzamos el bundler de Sandpack. El preview
-              // ahora lo hace SelfHostedPreview (esbuild-wasm autocontenido),
+              // ahora lo hace SelfHostedPreview (esbuild nativo en el servidor, autocontenido),
               // sin el worker remoto de sandpack.codesandbox.io ni la telemetría
               // a csbops.io que causaban TIME_OUT/bucles. El SandpackProvider
               // aquí SOLO alimenta al SandpackCodeEditor (CodeMirror local).

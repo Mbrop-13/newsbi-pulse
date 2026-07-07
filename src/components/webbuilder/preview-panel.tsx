@@ -8,9 +8,9 @@ import { SandpackConsole, SandpackProvider, SandpackCodeEditor, useSandpack } fr
 import { useTheme } from "next-themes";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import { SelfHostedPreview } from "./self-hosted-preview";
+import { CanvasPreview } from "./canvas-preview";
 import { PremiumSkeletonLoader } from "./premium-skeleton-loader";
-import { bundleProject } from "@/lib/webbuilder-bundle-client";
+import { renderProjectToHtml } from "@/lib/webbuilder-canvas-renderer";
 import { parseArtifact } from "@/lib/webbuilder-parser";
 import { detectDependencies } from "@/lib/webbuilder-deps";
 import { toast } from "sonner";
@@ -52,10 +52,9 @@ import {
 } from "lucide-react";
 
 // ─── Inspector Injection Helper ───────────────────
-// Re-exportado desde el módulo isomorfo para mantener compatibilidad hacia
-// atrás. La implementación vive en webbuilder-html.ts (compartida con el
-// endpoint de bundling del servidor).
-import { injectInspectorScript } from "@/lib/webbuilder-html";
+// Re-exportado desde el renderer canvas-style. La implementación vive en
+// webbuilder-canvas-renderer.ts (única fuente de verdad para el HTML del iframe).
+import { injectInspectorScript } from "@/lib/webbuilder-canvas-renderer";
 export { injectInspectorScript };
 
 
@@ -648,7 +647,7 @@ function SandpackStoreSync({ stableFiles }: { stableFiles: Record<string, { code
   //
   // El bundler de Sandpack está apagado (autorun: false); solo usamos el
   // editor. Así que NO hay refresh() y NO hay listener de errores del bundler.
-  // El preview lo hace SelfHostedPreview (bundling en el servidor con esbuild nativo).
+  // El preview lo hace CanvasPreview (renderer canvas-style: importmap + Babel).
   useEffect(() => {
     let hasChanges = false;
     const pushedPaths: string[] = [];
@@ -1190,7 +1189,7 @@ export function PreviewPanel() {
   }, [files, isAiResponding]);
 
   // NOTA: la pre-validación con @babel/standalone se eliminó. Ahora el preview
-  // lo hace SelfHostedPreview (esbuild nativo en el servidor), que YA valida la sintaxis al
+  // lo hace CanvasPreview (renderer canvas-style), que YA valida la sintaxis al
   // bundlear y muestra el error exacto. Duplicar la validación aquí solo añadía
   // complejidad y potencial de bucles. Una sola fuente de verdad: esbuild.
 
@@ -1216,7 +1215,7 @@ export function PreviewPanel() {
   // Escuchar peticiones de "reintentar compilación" lanzadas desde BuildErrorView.
   //
   // ANTES: subía buildVersion para remontar el SandpackProvider y recompilar.
-  // AHORA: el preview lo hace SelfHostedPreview (esbuild nativo en el servidor), no el bundler
+  // AHORA: el preview lo hace CanvasPreview (renderer canvas-style), no el bundler
   // de Sandpack. Para que "Reintentar" funcione debemos:
   //   1. Limpiar el error (resetAutoFixAttempts → hasBuildError=false).
   //   2. Pedir al SelfHostedPreview que re-bundlee (evento force-rebundle).
@@ -1654,7 +1653,7 @@ export function PreviewPanel() {
                 onClick={async () => {
                   try {
                     const currentFiles = useWebBuilderStore.getState().files;
-                    const result = await bundleProject(currentFiles);
+                    const result = renderProjectToHtml(currentFiles);
                     if (result.error || !result.html) {
                       toast.error(result.error || "No se pudo generar la vista previa");
                       return;
@@ -1879,7 +1878,7 @@ export function PreviewPanel() {
                     ) : (hasBuildError || lastAutoFixError) ? (
                       <BuildErrorView error={lastAutoFixError ?? "Error de compilación detectado. Usa \"Abrir en Editor\" para inspeccionar o \"Reintentar Compilación\"."} />
                     ) : (
-                      <SelfHostedPreview stableFiles={stableFiles} />
+                      <CanvasPreview stableFiles={stableFiles} />
                     )}
 
                     {/* #7 POPOVER DE EDICIÓN INLINE: flotante sobre el iframe.

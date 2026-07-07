@@ -1,31 +1,32 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { bundleProject, invalidateBundleCache } from "@/lib/webbuilder-bundle-client";
+import { renderProjectToHtml } from "@/lib/webbuilder-canvas-renderer";
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
 import { PremiumSkeletonLoader } from "./premium-skeleton-loader";
 
 /**
- * Preview autocontenido: reemplaza a SandpackPreview.
+ * Preview canvas-style: renderiza el proyecto del LLM en un iframe usando
+ * React/deps desde esm.sh (importmap) + Babel standalone. SIN bundling, SIN
+ * servidor: todo client-side.
  *
- * Bundlea el proyecto en el SERVIDOR (POST /api/webbuilder-bundle, esbuild
- * nativo con node_modules reales) y lo inyecta en un iframe srcdoc.
+ * FILOSOFÍA: SIMPLE Y A PRUEBA DE FALLOS (igual que el modo canvas).
+ * - Si el código es válido → muestra el preview. ✅
+ * - Si el código tiene error de sintaxis → Babel lanza en runtime dentro del
+ *   iframe → se captura como MAVERLANG_RUNTIME_ERROR → se muestra vía failAutoFix.
+ * - Si todos los archivos están vacíos (la IA está "creando el plan") → no se
+ *   muestra nada, preview limpio.
  *
- * FILOSOFÍA: SIMPLE Y A PRUEBA DE FALLOS.
- * - Si el código compila → muestra el preview. ✅
- * - Si el código NO compila → muestra el error exacto (línea/columna) vía la
- *   pantalla de error del padre (failAutoFix reutilizada solo como canal de
- *   UI, no como LLM). El usuario lo corrige en el editor. ✅
- *
- * NO hay auto-fix (LLM regenerando código): cada editor serio (VS Code,
- * CodeSandbox) te muestra el error y tú lo arreglas.
+ * No hay fetch, no hay endpoint, no hay node_modules que resolver. Lo que
+ * rompía el enfoque de bundling (React duplicado, "as" residual, Could not
+ * resolve en Vercel) es imposible aquí: el importmap con `?external=react`
+ * fuerza una sola instancia de React siempre.
  */
-export function SelfHostedPreview({ stableFiles }: { stableFiles: Record<string, { code: string }> }) {
+export function CanvasPreview({ stableFiles }: { stableFiles: Record<string, { code: string }> }) {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const [html, setHtml] = useState<string | null>(null);
-  const [bundling, setBundling] = useState(false);
-  // forceBundleIdx: incrementar para forzar un re-bundle (botón Reintentar).
-  const [forceBundleIdx, setForceBundleIdx] = useState(0);
+  const [rendering, setRendering] = useState(false);
+  const [forceRenderIdx, setForceRenderIdx] = useState(0);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastKeyRef = useRef<string>("");
   const isMountedRef = useRef(true);
@@ -38,22 +39,20 @@ export function SelfHostedPreview({ stableFiles }: { stableFiles: Record<string,
   }, []);
 
   // Escuchar peticiones de "reintentar compilación" / "recargar preview" desde
-  // el padre (BuildErrorView / botón refresh). Fuerza un re-bundle ignorando el
-  // cache (útil tras que el usuario corrija el código o quiera reintentar).
+  // el padre (BuildErrorView / botón refresh). Fuerza un re-render ignorando
+  // el cache.
   useEffect(() => {
-    const forceRebundle = () => {
-      lastKeyRef.current = ""; // invalida el cache local del efecto
-      invalidateBundleCache(); // invalida la caché del wrapper del cliente
-      setForceBundleIdx((i) => i + 1); // dispara el effect principal
+    const forceRerender = () => {
+      lastKeyRef.current = ""; // invalida el cache local
+      setForceRenderIdx((i) => i + 1); // dispara el effect principal
     };
-    window.addEventListener("maverlang-force-rebundle", forceRebundle);
-    return () => window.removeEventListener("maverlang-force-rebundle", forceRebundle);
+    window.addEventListener("maverlang-force-rebundle", forceRerender);
+    return () => window.removeEventListener("maverlang-force-rebundle", forceRerender);
   }, []);
 
   // ── Capturar errores de runtime del iframe ──
   // El iframe inyecta postMessage con type=MAVERLANG_RUNTIME_ERROR cuando
-  // el código del usuario falla en runtime (TypeError, ReferenceError, etc.).
-  // Sin esto, el preview queda en blanco sin explicación.
+  // el código del usuario falla en runtime (sintaxis, TypeError, etc.).
   useEffect(() => {
     const handler = (e: MessageEvent) => {
       if (e.data?.type === "MAVERLANG_RUNTIME_ERROR" && e.data?.message) {
@@ -70,9 +69,7 @@ export function SelfHostedPreview({ stableFiles }: { stableFiles: Record<string,
   }, []);
 
   // Key estable del contenido: cambia SOLO si los archivos realmente cambiaron
-  // (no en cada re-render). Evita rebundle innecesario. Usar el código completo
-  // (no solo .length): cambios de igual longitud (true→false, "foo"→"bar",
-  // renombrar vars) NO disparaban re-bundle y el preview quedaba desincronizado.
+  // (no en cada re-render). Evita re-render innecesario.
   const filesKey = JSON.stringify(
     Object.entries(stableFiles)
       .sort(([a], [b]) => a.localeCompare(b))
@@ -85,19 +82,19 @@ export function SelfHostedPreview({ stableFiles }: { stableFiles: Record<string,
     if (filesKey === lastKeyRef.current) return;
     lastKeyRef.current = filesKey;
 
-    // No bundlear mientras la IA escribe (código a medio generar).
+    // No renderizar mientras la IA escribe (código a medio generar).
     if (useWebBuilderStore.getState().isAiResponding) return;
 
-    debounceRef.current = setTimeout(async () => {
-      setBundling(true);
+    debounceRef.current = setTimeout(() => {
+      setRendering(true);
       try {
-        const result = await bundleProject(stableFiles);
+        const result = renderProjectToHtml(stableFiles);
         if (!isMountedRef.current) return;
 
         // Si todos los archivos están vacíos o son solo whitespace (suele
         // pasar mientras la IA "crea el plan" y aún no escribió código),
-        // ignoramos el error y DESPEJAMOS cualquier error previo para que el
-        // preview se quede limpio en vez de mostrar "Could not resolve...".
+        // ignoramos cualquier error y DESPEJAMOS errores previos para que el
+        // preview se quede limpio.
         const hasRealCode = Object.values(stableFiles).some(
           (f) => (typeof f === "string" ? f : f?.code ?? "").trim().length > 0
         );
@@ -109,22 +106,19 @@ export function SelfHostedPreview({ stableFiles }: { stableFiles: Record<string,
         }
 
         if (result.error) {
-          // Mostrar el error exacto en la pantalla de error del padre.
-          // NO llamamos a attemptAutoFix ni a ningún LLM: solo mostramos.
           const store = useWebBuilderStore.getState();
           if (store.lastAutoFixError !== result.error) {
             store.failAutoFix(result.error);
           }
         } else if (result.html) {
           setHtml(result.html);
-          // Si había un error previo y ahora compila, limpiarlo.
           const store = useWebBuilderStore.getState();
           if (store.hasBuildError) {
             store.completeAutoFix();
           }
         }
       } catch (err: any) {
-        console.error("[SelfHostedPreview] Bundle exception:", err);
+        console.error("[CanvasPreview] Render exception:", err);
         if (isMountedRef.current) {
           const store = useWebBuilderStore.getState();
           if (store.lastAutoFixError !== err?.message) {
@@ -132,7 +126,7 @@ export function SelfHostedPreview({ stableFiles }: { stableFiles: Record<string,
           }
         }
       } finally {
-        if (isMountedRef.current) setBundling(false);
+        if (isMountedRef.current) setRendering(false);
       }
     }, 400);
 
@@ -140,11 +134,11 @@ export function SelfHostedPreview({ stableFiles }: { stableFiles: Record<string,
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filesKey, forceBundleIdx]);
+  }, [filesKey, forceRenderIdx]);
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100%", flex: "1 1 0%" }}>
-      {bundling && !html && <PremiumSkeletonLoader isAiResponding={false} />}
+      {rendering && !html && <PremiumSkeletonLoader isAiResponding={false} />}
       <iframe
         ref={iframeRef}
         title="Maverlang Preview"

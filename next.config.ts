@@ -6,11 +6,6 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  // esbuild nativo se importa desde /api/webbuilder-bundle (route handler).
-  // Sin esto, webpack intenta bundlear esbuild/lib/main.d.ts (un .d.ts con
-  // sintaxis TS) -> "Module parse failed: Unexpected token". Marcándolo como
-  // externo, Next lo carga vía require() normal desde node_modules.
-  serverExternalPackages: ["esbuild"],
   async headers() {
     // ── Content-Security-Policy (ASVS 7.2.1) ──
     // Mitigates XSS (incl. the WebBuilder iframe previews) and injection.
@@ -18,13 +13,12 @@ const nextConfig = {
     // 'unsafe-eval' kept for dev tooling; remove for prod if no eval-based lib is used.
     const csp = [
       "default-src 'self'",
-      // script-src incluye:
-      //  - https://cdn.tailwindcss.com: Tailwind Play CDN, inyectado en el
-      //    iframe del preview para procesar clases Tailwind en runtime (esbuild
-      //    no procesa @tailwind en el bundle). Sin esto, las apps se ven sin estilos.
-      //  (Tras la migración al servidor en jul-2026 ya no se necesitan esm.sh
-      //   porque el bundling se hace con esbuild nativo + node_modules reales.)
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com https://cdn.tailwindcss.com",
+      // script-src incluye los CDN que usa el iframe del preview canvas-style:
+      //  - https://esm.sh y https://*.esm.sh: React, framer-motion, lucide-react,
+      //    recharts, etc. cargados vía importmap del iframe.
+      //  - https://unpkg.com: Babel standalone (transpila el TSX del LLM en el navegador).
+      //  - https://cdn.tailwindcss.com: Tailwind Play CDN (procesa clases en runtime).
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com https://esm.sh https://*.esm.sh https://unpkg.com https://cdn.tailwindcss.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob: https: http:",
       "font-src 'self' data: https://fonts.gstatic.com",

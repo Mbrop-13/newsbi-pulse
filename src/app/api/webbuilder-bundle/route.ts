@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as esbuild from "esbuild";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { join, resolve, dirname } from "node:path";
+import { createRequire } from "node:module";
 import { buildPreviewHtml } from "@/lib/webbuilder-html";
 
 /**
@@ -72,6 +74,51 @@ function loaderFor(path: string): esbuild.Loader {
   if (path.endsWith(".css")) return "css";
   if (path.endsWith(".json")) return "json";
   return "text";
+}
+
+/**
+ * Busca todos los directorios node_modules relevantes donde esbuild debería
+ * buscar bare specifiers. En Vercel serverless el layout puede ser distinto al
+ * local (node_modules hoisteado, /var/task/, /var/lang/, monorepo, etc.), así
+ * que reunimos candidatos de varias fuentes:
+ *  - process.cwd()/node_modules (raíz del deploy)
+ *  - el dirname del propio módulo (require.resolve de esbuild), subiendo
+ *  - require.resolve.paths("react") (donde Node resuelve paquetes)
+ * Las rutas que no existen se filtran. nodePaths acepta varias y esbuild las
+ * prueba en orden, así que damos todas las plausibles.
+ */
+function findNodeModulesDirs(): string[] {
+  const candidates = new Set<string>();
+
+  // 1. process.cwd()/node_modules
+  candidates.add(resolve(process.cwd(), "node_modules"));
+
+  // 2. Subir directorios desde process.cwd() buscando node_modules
+  let dir = process.cwd();
+  for (let i = 0; i < 8; i++) {
+    candidates.add(join(dir, "node_modules"));
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+
+  // 3. Donde Node resuelve paquetes (require.resolve.paths)
+  try {
+    const req = createRequire(import.meta.url);
+    const paths = req.resolve.paths("react") || [];
+    for (const p of paths) if (p) candidates.add(p);
+  } catch {
+    /* noop */
+  }
+
+  // Filtrar las que existen realmente
+  return [...candidates].filter((p) => {
+    try {
+      return existsSync(p);
+    } catch {
+      return false;
+    }
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -197,17 +244,26 @@ if (root) {
 `;
     await writeFile(bootstrapPath, bootstrap, "utf8");
 
-    // Bundling con esbuild nativo. resolveDir = tmpDir para que los imports
-    // relativos y los bare specifiers (react, framer-motion...) resuelvan contra
-    // tmpDir y los node_modules del proyecto (subiendo desde tmpDir).
+    // Bundling con esbuild nativo.
     let result: esbuild.BuildResult;
     try {
-      // nodePaths: rutas absolutas donde esbuild buscará node_modules para
-      // resolver bare specifiers (react, framer-motion, ...). El tmpDir donde
-      // se escriben los archivos del proyecto NO tiene node_modules, así que
-      // apuntamos al del proyecto real (process.cwd() en Vercel = raíz del
-      // deploy). Sin esto, esbuild no encontraría nada que importar.
-      const projectNodeModules = resolve(process.cwd(), "node_modules");
+      // nodePaths: esbuild resuelve bare specifiers buscando node_modules
+      // SUBIENDO desde el directorio de cada archivo fuente. El tmpDir
+      // (/tmp/xxx en Vercel, %TEMP% en local) no tiene node_modules, así que
+      // damos rutas absolutas explícitas. findNodeModulesDirs() reúne
+      // candidatos de process.cwd(), require.resolve.paths("react") y
+      // directorios padres, para cubrir layouts de Vercel, monorepos, etc.
+      const nodePaths = findNodeModulesDirs();
+      if (nodePaths.length === 0) {
+        return NextResponse.json<BundleResponse>(
+          {
+            html: null,
+            error:
+              "No se encontró node_modules en el servidor. Esto indica un problema de configuración del deploy.",
+          },
+          { status: 500 }
+        );
+      }
       result = await esbuild.build({
         entryPoints: [bootstrapPath],
         bundle: true,
@@ -221,7 +277,7 @@ if (root) {
         // garantizar UNA instancia de React (deduplicación por path del FS).
         logLevel: "silent",
         absWorkingDir: tmpDir,
-        nodePaths: [projectNodeModules],
+        nodePaths,
       });
     } catch (err) {
       // esbuild lanza con .errors cuando hay errores de build.

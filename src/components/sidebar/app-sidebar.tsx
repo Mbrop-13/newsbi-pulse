@@ -9,6 +9,7 @@ import {
   Newspaper,
   Globe,
   Settings,
+  FolderKanban,
 } from "lucide-react"
 
 import { NavMain } from "@/components/sidebar/nav-main"
@@ -61,6 +62,11 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
         icon: Search,
         isAction: true,
         onClick: () => setSearchOpen(true),
+      },
+      {
+        title: t("projects"),
+        url: `/${language}/proyectos`,
+        icon: FolderKanban,
       },
       {
         title: t("portfolio"),

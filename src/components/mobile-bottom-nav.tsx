@@ -15,15 +15,16 @@ import {
   Search,
   Briefcase,
   Bookmark,
-  Sparkles
+  Sparkles,
+  FolderKanban
 } from "lucide-react";
 
 const tabs = [
   { id: "home", href: "/noticias", icon: Home, label: "Inicio" },
   { id: "mercados", href: "/mercados", icon: TrendingUp, label: "Mercados" },
   { id: "ai", href: "/ai", icon: Sparkles, label: "AI" },
+  { id: "proyectos", href: "/proyectos", icon: FolderKanban, label: "Proyectos" },
   { id: "portafolio", href: "/portafolio", icon: Briefcase, label: "Portafolio" },
-  { id: "mundo", href: "/mundo", icon: Globe, label: "Mundo" },
 ];
 
 export function MobileBottomNav() {

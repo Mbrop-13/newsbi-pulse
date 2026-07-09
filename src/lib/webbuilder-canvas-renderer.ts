@@ -203,23 +203,23 @@ function moduleName(path: string): string {
 
 /**
  * Transforma los imports de un archivo para inlineado:
- *  - Imports relativos → const { X } = __mod_xxx;
- *  - Imports bare → se eliminan (Babel + importmap los resuelven en runtime,
- *    pero dentro del IIFE no podemos tener `import` estático; los convertimos
- *    a `await import()` dinámico al inicio del IIFE).
+ *  - Imports relativos → const { X } = __mod_xxx; (referencia al módulo inlineado)
+ *  - Imports bare → se MANTIENEN como imports estáticos (Babel + importmap los
+ *    resuelven en runtime). Se coleccionan para ir TODOS al inicio del módulo
+ *    completo (ESM hace hoisting de imports → resuelve el temporal dead zone).
  */
 function transformImports(
   code: string,
   importerPath: string,
   fileMap: Record<string, string>
-): { code: string; bareImports: { spec: string; clauses: string }[] } {
-  const bareImports: { spec: string; clauses: string }[] = [];
+): { code: string; bareImports: string[] } {
+  const bareImports: string[] = [];
   let out = code;
 
-  // Caso 1: import default { } / * as / named from "spec"
+  // Caso 1: import ... from "spec"
   out = out.replace(
     /\bimport\s+([^'";]+?)\s+from\s+['"]([^'"]+)['"]/g,
-    (_match, clause: string, spec: string) => {
+    (fullMatch: string, clause: string, spec: string) => {
       const trimmedClause = clause.trim();
       if (spec.startsWith("./") || spec.startsWith("../")) {
         // Import relativo → resolver al módulo inlineado
@@ -231,23 +231,22 @@ function transformImports(
           const mod = moduleName(resolvedPath);
           return transformClauseToDestructuring(trimmedClause, mod);
         }
-        // Si no se resuelve, dejar el import (dará error claro en runtime)
         return `/* unresolved relative: ${spec} */`;
       }
-      // Import bare → acumular para import() dinámico al inicio del IIFE
-      bareImports.push({ spec, clauses: trimmedClause });
-      return ""; // eliminar el import estático
+      // Import bare → coleccionar el import ORIGINAL para el inicio del módulo
+      bareImports.push(fullMatch);
+      return ""; // eliminar del cuerpo (irá al inicio)
     }
   );
 
   // Caso 2: import "spec" (side-effect, sin cláusula)
   out = out.replace(
     /\bimport\s+['"]([^'"]+)['"]/g,
-    (_match, spec: string) => {
+    (fullMatch: string, spec: string) => {
       if (spec.startsWith("./") || spec.startsWith("../")) {
         return `/* unresolved side-effect relative: ${spec} */`;
       }
-      bareImports.push({ spec, clauses: "" });
+      bareImports.push(fullMatch);
       return "";
     }
   );
@@ -359,39 +358,29 @@ function generateBareImportBlock(
 // ─── Generador del código concatenado ─────────────────────────────────────
 
 /**
- * Convierte un archivo parsable en un IIFE que devuelve su namespace:
- *   const __mod_xxx = (async () => { ...imports...; ...code...; return { default }; })();
+ * Convierte un archivo parsable en un bloque que asigna su namespace a una
+ * variable local: `const __mod_xxx = (() => { ...body...; return { default, ...named }; })();`
  *
- * El return al final expone el `export default`. Los named exports se exponen
- * eliminando la palabra `export` (quedan como const/function en el scope del IIFE,
- * pero como devolvemos { default } y los named se acceden por destructuring del
- * namespace, necesitamos recolectarlos. Simplificación: devolvemos un objeto con
- * todos los nombres exportados).
+ * Los imports bare NO se inlinean aquí: se coleccionan y van TODOS al inicio
+ * del módulo completo (ESM hace hoisting de imports estáticos, así se evita
+ * el temporal dead zone). Los imports relativos se resuelven a referencias
+ * a las variables `__mod_yyy` de otros módulos inlineados.
  */
 function wrapFileAsModule(
   path: string,
   code: string,
   fileMap: Record<string, string>
-): { code: string; error: string | null } {
+): { code: string; bareImports: string[]; error: string | null } {
   const { code: transformed, bareImports } = transformImports(
     code,
     path,
     fileMap
   );
 
-  // Recolectar exports para construir el return del namespace.
-  // export default X        → return { default: X, ...named }
-  // export const Y          → Y va al namespace
-  // export function Z       → Z va al namespace
   const exportNames: string[] = [];
   let body = transformed;
 
-  // export default ...
-  const defaultMatch = body.match(
-    /\bexport\s+default\s+(?:function\s+(\w+)|class\s+(\w+)|(\w+))/
-  );
-
-  // Qitar la palabra "export" de export const/function/class/let
+  // Quitar "export" de export const/function/class/let (quedan como declarations)
   body = body.replace(
     /\bexport\s+(const|let|var|function|class|async\s+function)\s+(\w+)/g,
     (_m, kw: string, name: string) => {
@@ -400,24 +389,19 @@ function wrapFileAsModule(
     }
   );
 
-  // Quitar "export default" dejando la declaración (la referenciamos en return)
+  // Quitar "export default" dejando la declaración
   let defaultExpr = "undefined";
   if (body.includes("export default")) {
-    // export default function Name() {...}  →  function Name() {...}
-    const fnMatch = body.match(
-      /\bexport\s+default\s+function\s+(\w+)\s*\(/,
-    );
+    const fnMatch = body.match(/\bexport\s+default\s+function\s+(\w+)\s*\(/);
     if (fnMatch) {
       body = body.replace(/\bexport\s+default\s+function/, "function");
       defaultExpr = fnMatch[1];
     } else {
-      // export default class Name
       const clsMatch = body.match(/\bexport\s+default\s+class\s+(\w+)/);
       if (clsMatch) {
         body = body.replace(/\bexport\s+default\s+class/, "class");
         defaultExpr = clsMatch[1];
       } else {
-        // export default <expression>
         body = body.replace(
           /\bexport\s+default\s+/,
           "const __default_export = "
@@ -427,30 +411,25 @@ function wrapFileAsModule(
     }
   }
 
-  // Quitar "export { }" (re-export) — raro en este contexto, ignorar
+  // Quitar re-exports no soportados
   body = body.replace(/\bexport\s*\{[^}]*\}\s*(?:from\s*['"][^'"]+['"])?;?/g, "");
-
-  // Quitar "export * from" — no soportado en este contexto simple
   body = body.replace(/\bexport\s*\*\s+from\s*['"][^'"]+['"];?/g, "");
 
-  // Construir return del namespace
   const namespaceEntries = [
     `default: ${defaultExpr}`,
     ...exportNames.map((n) => `${n}: ${n}`),
   ];
 
-  const bareBlock = generateBareImportBlock(bareImports);
   const modVar = moduleName(path);
 
-  // El IIFE es async (necesita await import() para bare specifiers).
-  // Como el script completo es un módulo (data-type="module"), top-level await
-  // está permitido → esperamos el IIFE al asignar la variable del módulo.
-  const wrapped = `const ${modVar} = await (async () => {
-${bareBlock ? bareBlock + "\n" : ""}${body}
+  // IIFE síncrono (NO async): los imports bare van al inicio del módulo
+  // completo, no aquí. Esto evita el temporal dead zone.
+  const wrapped = `const ${modVar} = (() => {
+${body}
 return { ${namespaceEntries.join(", ")} };
 })();`;
 
-  return { code: wrapped, error: null };
+  return { code: wrapped, bareImports, error: null };
 }
 
 // ─── Inspector de elementos (migrado de webbuilder-html.ts) ───────────────
@@ -578,6 +557,113 @@ export interface RenderResult {
  * Genera el HTML completo del iframe del preview desde los archivos del LLM.
  * Es la única función pública del módulo.
  */
+/**
+ * Fusiona imports bare del mismo specifier para evitar conflictos de
+ * identificadores duplicados. Ej:
+ *   import { useContext } from "react";
+ *   import { createContext, useState } from "react";
+ * →
+ *   import { useContext, createContext, useState } from "react";
+ *
+ * También fusiona default + named del mismo specifier:
+ *   import React from "react";
+ *   import { useState } from "react";
+ * →
+ *   import React, { useState } from "react";
+ *
+ * Los imports side-effect (import "x") y namespace (import * as x) se dejan
+ * intactos (no se fusionan).
+ */
+function mergeBareImports(imports: string[]): string[] {
+  const bySpec = new Map<
+    string,
+    { defaults: string[]; named: Set<string>; sideEffect: boolean; namespace: string[] }
+  >();
+
+  for (const imp of imports) {
+    // import "spec" (side-effect)
+    const sideMatch = imp.match(/^import\s+['"]([^'"]+)['"];?$/);
+    if (sideMatch) {
+      const spec = sideMatch[1];
+      const entry = bySpec.get(spec) || { defaults: [], named: new Set(), sideEffect: false, namespace: [] };
+      entry.sideEffect = true;
+      bySpec.set(spec, entry);
+      continue;
+    }
+    // import * as ns from "spec"
+    const nsMatch = imp.match(/^import\s+\*\s+as\s+(\w+)\s+from\s+['"]([^'"]+)['"];?$/);
+    if (nsMatch) {
+      const ns = nsMatch[1];
+      const spec = nsMatch[2];
+      const entry = bySpec.get(spec) || { defaults: [], named: new Set(), sideEffect: false, namespace: [] };
+      entry.namespace.push(ns);
+      bySpec.set(spec, entry);
+      continue;
+    }
+    // import Default, { A, B as C } from "spec"
+    const mixedMatch = imp.match(
+      /^import\s+(\w+)\s*,\s*\{([^}]*)\}\s+from\s+['"]([^'"]+)['"];?$/
+    );
+    if (mixedMatch) {
+      const def = mixedMatch[1];
+      const namedStr = mixedMatch[2];
+      const spec = mixedMatch[3];
+      const entry = bySpec.get(spec) || { defaults: [], named: new Set(), sideEffect: false, namespace: [] };
+      entry.defaults.push(def);
+      for (const n of namedStr.split(",").map((s) => s.trim()).filter(Boolean)) {
+        entry.named.add(n);
+      }
+      bySpec.set(spec, entry);
+      continue;
+    }
+    // import { A, B as C } from "spec"
+    const namedMatch = imp.match(/^import\s+\{([^}]*)\}\s+from\s+['"]([^'"]+)['"];?$/);
+    if (namedMatch) {
+      const namedStr = namedMatch[1];
+      const spec = namedMatch[2];
+      const entry = bySpec.get(spec) || { defaults: [], named: new Set(), sideEffect: false, namespace: [] };
+      for (const n of namedStr.split(",").map((s) => s.trim()).filter(Boolean)) {
+        entry.named.add(n);
+      }
+      bySpec.set(spec, entry);
+      continue;
+    }
+    // import Default from "spec"
+    const defaultMatch = imp.match(/^import\s+(\w+)\s+from\s+['"]([^'"]+)['"];?$/);
+    if (defaultMatch) {
+      const def = defaultMatch[1];
+      const spec = defaultMatch[2];
+      const entry = bySpec.get(spec) || { defaults: [], named: new Set(), sideEffect: false, namespace: [] };
+      entry.defaults.push(def);
+      bySpec.set(spec, entry);
+      continue;
+    }
+  }
+
+  // Reconstruir imports fusionados
+  const result: string[] = [];
+  for (const [spec, entry] of bySpec) {
+    if (entry.sideEffect && entry.defaults.length === 0 && entry.named.size === 0 && entry.namespace.length === 0) {
+      result.push(`import "${spec}";`);
+      continue;
+    }
+    const parts: string[] = [];
+    if (entry.defaults.length > 0) {
+      // Si hay múltiples defaults del mismo spec (raro), tomar el primero.
+      parts.push(entry.defaults[0]);
+    }
+    for (const ns of entry.namespace) {
+      parts.push(`* as ${ns}`);
+    }
+    if (entry.named.size > 0) {
+      parts.push(`{ ${[...entry.named].join(", ")} }`);
+    }
+    const clause = parts.join(", ");
+    result.push(`import ${clause} from "${spec}";`);
+  }
+  return result;
+}
+
 export function renderProjectToHtml(files: ProjectFiles): RenderResult {
   // 1. Normalizar el input a Record<string, string>
   const fileMap: Record<string, string> = {};
@@ -628,10 +714,11 @@ export function renderProjectToHtml(files: ProjectFiles): RenderResult {
     return { html: null, error: topoError };
   }
 
-  // 5. Envolver cada archivo como módulo (IIFE async) y concatenar
+  // 5. Envolver cada archivo como módulo y recolectar imports bare
   const moduleBlocks: string[] = [];
+  const allBareImports: string[] = [];
   for (const path of order) {
-    const { code: wrapped, error: wrapError } = wrapFileAsModule(
+    const { code: wrapped, bareImports, error: wrapError } = wrapFileAsModule(
       path,
       fileMap[path],
       fileMap
@@ -640,23 +727,51 @@ export function renderProjectToHtml(files: ProjectFiles): RenderResult {
       return { html: null, error: wrapError };
     }
     moduleBlocks.push(`// === ${path} ===\n${wrapped}`);
+    allBareImports.push(...bareImports);
   }
 
-  // 6. Bootstrap: monta el entry en #root.
-  // ${entryMod} ya está resuelto (es await de IIFE async → namespace directo).
+  // 6. Imports bare al inicio (con hoisting de ESM, evita temporal dead zone).
+  //    Hay que FUSIONAR imports del mismo specifier: si App.tsx importa
+  //    `{ useContext }` de "react" y Badge.tsx también, no podemos tener dos
+  //    `import { useContext } from "react"` (chocarían). Los fusionamos en uno.
+  const reactImports = [
+    'import React from "react";',
+    'import { createRoot } from "react-dom/client";',
+  ];
+  // Asegurar que React y createRoot estén importados (el bootstrap los usa).
+  const hasReactDefaultImport = allBareImports.some((i) =>
+    /^import\s+React\s+from\s+["']react["']/.test(i)
+  );
+  const hasCreateRootImport = allBareImports.some((i) =>
+    /from\s+["']react-dom\/client["']/.test(i)
+  );
+  const bootstrapImports = [
+    !hasReactDefaultImport ? reactImports[0] : null,
+    !hasCreateRootImport ? reactImports[1] : null,
+  ].filter(Boolean);
+  // Fusionar imports bare del usuario por specifier.
+  const uniqueImports = mergeBareImports([...bootstrapImports, ...allBareImports]);
+
+  // 7. Bootstrap: monta el entry en #root.
+  //    Como los imports están arriba (hoisting), React y createRoot están
+  //    disponibles. __entry es el namespace del módulo entry (IIFE síncrono).
   const entryMod = moduleName(entry);
   const bootstrap = `
 // === bootstrap ===
 const __entry = ${entryMod};
-const React = await import("react");
-const { createRoot } = await import("react-dom/client");
 const root = document.getElementById("root");
 if (root) {
   const App = __entry.default;
   createRoot(root).render(App ? React.createElement(App) : React.createElement("div", null, "El archivo principal no exporta un componente por defecto."));
 }`;
 
-  const fullCode = moduleBlocks.join("\n\n") + "\n\n" + bootstrap;
+  const fullCode =
+    "// === imports (hoisted por ESM) ===\n" +
+    uniqueImports.join("\n") +
+    "\n\n" +
+    moduleBlocks.join("\n\n") +
+    "\n\n" +
+    bootstrap;
 
   // 7. Generar HTML
   const html = buildIframeHtml(fullCode, userCss);

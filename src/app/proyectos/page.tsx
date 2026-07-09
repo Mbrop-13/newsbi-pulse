@@ -219,13 +219,7 @@ export default function ProyectosPage() {
           </div>
 
           {/* Contenido: Rejilla de proyectos */}
-          {showLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 relative z-10">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <ProjectSkeleton key={i} />
-              ))}
-            </div>
-          ) : !isAuthenticated ? (
+          {!isAuthenticated ? (
             /* Vista de Usuario No Autenticado */
             <div className="flex flex-col items-center justify-center py-16 text-center max-w-sm mx-auto relative z-10">
               <div className="w-16 h-16 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-4">
@@ -242,28 +236,9 @@ export default function ProyectosPage() {
                 Ingresar ahora
               </button>
             </div>
-          ) : projects.length === 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 relative z-10">
-              {/* Tarjeta Nuevo Proyecto con bordes discontinuos */}
-              <div
-                onClick={scrollToTop}
-                className="group border-2 border-dashed border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900/10 transition-all rounded-2xl h-[220px] flex flex-col items-center justify-center cursor-pointer select-none bg-zinc-900/5"
-              >
-                <div className="w-10 h-10 rounded-full border border-dashed border-zinc-700 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform duration-300">
-                  <Plus className="w-5 h-5 text-zinc-400" />
-                </div>
-                <span className="text-xs font-bold text-zinc-400 group-hover:text-zinc-200 transition-colors">
-                  Nuevo proyecto
-                </span>
-              </div>
-              
-              <div className="col-span-1 sm:col-span-2 flex items-center justify-center p-8 border border-zinc-800/40 rounded-2xl bg-zinc-900/5">
-                <p className="text-xs text-zinc-400">Aún no tienes proyectos. ¡Escribe un prompt arriba para comenzar!</p>
-              </div>
-            </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 relative z-10">
-              {/* Tarjeta Nuevo Proyecto con bordes discontinuos */}
+              {/* Tarjeta Nuevo Proyecto con bordes discontinuos - SIEMPRE VISIBLE */}
               <div
                 onClick={scrollToTop}
                 className="group border-2 border-dashed border-zinc-800 hover:border-zinc-700 hover:bg-[#121214]/50 hover:border-white/20 transition-all rounded-2xl h-[220px] flex flex-col items-center justify-center cursor-pointer select-none bg-zinc-900/5"
@@ -276,10 +251,26 @@ export default function ProyectosPage() {
                 </span>
               </div>
 
-              {/* Tarjetas de Proyectos Reales */}
-              {filteredProjects.map((project, i) => (
-                <ProjectCard key={project.id} project={project} index={i} />
-              ))}
+              {showLoading ? (
+                // Skeletons en los espacios libres mientras carga (2 espacios para completar la fila)
+                Array.from({ length: 2 }).map((_, i) => (
+                  <ProjectSkeleton key={i} />
+                ))
+              ) : filteredProjects.length === 0 ? (
+                // Mensaje si no hay proyectos creados
+                <div className="col-span-1 sm:col-span-2 flex flex-col items-center justify-center p-6 border border-zinc-800/40 rounded-2xl bg-zinc-900/5 h-[220px] text-center">
+                  <p className="text-xs text-zinc-450">
+                    {search || filter !== "all"
+                      ? "No se encontraron proyectos con los filtros de búsqueda aplicados."
+                      : "Aún no tienes proyectos creados. ¡Escribe un prompt en el chat de arriba para comenzar!"}
+                  </p>
+                </div>
+              ) : (
+                // Tarjetas de proyectos reales
+                filteredProjects.map((project, i) => (
+                  <ProjectCard key={project.id} project={project} index={i} />
+                ))
+              )}
             </div>
           )}
         </div>

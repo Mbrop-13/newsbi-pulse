@@ -806,6 +806,31 @@ window.addEventListener('unhandledrejection', function(e) {
     lineno: 0,
   }, '*');
 });
+window.addEventListener('click', function(e) {
+  var target = e.target;
+  while (target && target.tagName !== 'A') {
+    target = target.parentNode;
+  }
+  if (target && target.tagName === 'A') {
+    var href = target.getAttribute('href');
+    if (href) {
+      var isAnchor = href.startsWith('#');
+      var isJavascript = href.startsWith('javascript:');
+      if (!isAnchor && !isJavascript) {
+        e.preventDefault();
+        if (href.startsWith('http://') || href.startsWith('https://')) {
+          window.open(href, '_blank');
+        } else {
+          window.parent.postMessage({
+            type: 'MAVERLANG_PREVIEW_NAVIGATE',
+            href: href
+          }, '*');
+          console.log('[Maverlang Preview] Navegación interceptada a: ' + href);
+        }
+      }
+    }
+  }
+}, true);
 </script>
 <script>
 var _origWarn = console.warn;

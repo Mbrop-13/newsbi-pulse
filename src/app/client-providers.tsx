@@ -86,14 +86,7 @@ export function ClientLayoutProviders({
   const rawPathname = usePathname();
   const pathname = getCleanPathname(rawPathname);
 
-  if (isInIframe) {
-    return (
-      <div className="min-h-screen bg-[#0F1117] flex flex-col items-center justify-center p-4 text-center text-white">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-3" />
-        <p className="text-xs text-zinc-400">Restaurando vista previa...</p>
-      </div>
-    );
-  }
+
 
   // Sync URL language prefix with Zustand language store
   useEffect(() => {
@@ -185,6 +178,15 @@ export function ClientLayoutProviders({
       root.classList.remove("sepia");
     }
   }, [fontSize, colorScheme]);
+
+  if (isInIframe) {
+    return (
+      <div className="min-h-screen bg-[#0F1117] flex flex-col items-center justify-center p-4 text-center text-white">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-3" />
+        <p className="text-xs text-zinc-400">Restaurando vista previa...</p>
+      </div>
+    );
+  }
 
   return (
     <ThemeProvider>

@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { useTheme } from "next-themes";
 import { useAuthStore, useAuthModalStore } from "@/lib/stores/auth-store";
 import { useProjectsStore } from "@/lib/stores/projects-store";
+import { useLanguageStore } from "@/lib/stores/language-store";
 import { ProjectCard } from "@/components/projects/project-card";
 import { ProjectWizard } from "@/components/projects/project-wizard";
 import { ChatInput } from "@/components/chat/chat-input";
@@ -59,6 +60,7 @@ export default function ProyectosPage() {
   const [input, setInput] = useState("");
   const [filter, setFilter] = useState<ProjectFilter>("all");
   const [search, setSearch] = useState("");
+  const language = useLanguageStore((s) => s.language);
 
   useEffect(() => {
     setThemeMounted(true);
@@ -121,7 +123,7 @@ export default function ProyectosPage() {
       <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-indigo-500/[0.03] rounded-full blur-[100px] translate-x-1/4 translate-y-1/4 pointer-events-none" />
 
       {/* SECCIÓN 1: Réplica superior del Chat de IA */}
-      <div className="w-full max-w-3xl mx-auto px-4 pt-16 flex flex-col items-center">
+      <div className="w-full max-w-3xl mx-auto px-4 pt-[25vh] flex flex-col items-center">
         {/* Logotipo Centrado */}
         <motion.div
           initial={{ opacity: 0, y: -10, scale: 0.98 }}
@@ -198,7 +200,7 @@ export default function ProyectosPage() {
                       : "text-zinc-400 hover:text-zinc-200"
                   )}
                 >
-                  Lovable templates
+                  {language === "en" ? "Templates" : "Plantillas"}
                 </button>
               </div>
             </div>

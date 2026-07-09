@@ -49,6 +49,7 @@ import {
   ClipboardList,
   Sparkles,
   ExternalLink,
+  Settings,
 } from "lucide-react";
 
 // ─── Inspector Injection Helper ───────────────────
@@ -56,6 +57,10 @@ import {
 // webbuilder-canvas-renderer.ts (única fuente de verdad para el HTML del iframe).
 import { injectInspectorScript } from "@/lib/webbuilder-canvas-renderer";
 export { injectInspectorScript };
+
+import { useProjectsStore, type ProjectType, type ProjectStyle, type Project } from "@/lib/stores/projects-store";
+import { buildProjectBrief } from "@/app/proyectos/[id]/page";
+import { Button } from "@/components/ui/button";
 
 
 // ─── Preview Iframe Selector Helper ───────────────
@@ -1148,6 +1153,140 @@ export function PreviewPanel() {
   const [isInspectorActive, setIsInspectorActive] = useState(false);
   const [iframeKey, setIframeKey] = useState(0);
 
+  // ── States for Project Settings ──
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const projects = useProjectsStore((s) => s.projects);
+  const activeProjectId = useWebBuilderStore((s) => s.activeProjectId);
+  const currentProject = useMemo(() => projects.find((p) => p.chatId === activeProjectId), [projects, activeProjectId]);
+
+  const [settingsName, setSettingsName] = useState("");
+  const [settingsDesc, setSettingsDesc] = useState("");
+  const [settingsType, setSettingsType] = useState<ProjectType>("web");
+  const [settingsStyleVal, setSettingsStyleVal] = useState<ProjectStyle>("minimal");
+  const [colorPrimary, setColorPrimary] = useState("#1890FF");
+  const [colorSecondary, setColorSecondary] = useState("#6366F1");
+  const [colorAccent, setColorAccent] = useState("#10B981");
+  const [colorBackground, setColorBackground] = useState("#0F1117");
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+
+  // Sync state values when settings opens or project changes
+  useEffect(() => {
+    if (isSettingsOpen && currentProject) {
+      setSettingsName(currentProject.name);
+      setSettingsDesc(currentProject.description || "");
+      setSettingsType(currentProject.projectType || "web");
+      setSettingsStyleVal(currentProject.style || "minimal");
+      setColorPrimary(currentProject.colorScheme?.primary || "#1890FF");
+      setColorSecondary(currentProject.colorScheme?.secondary || "#6366F1");
+      setColorAccent(currentProject.colorScheme?.accent || "#10B981");
+      setColorBackground(currentProject.colorScheme?.background || "#0F1117");
+    }
+  }, [isSettingsOpen, currentProject]);
+
+  const handleSaveSettings = async () => {
+    if (!currentProject) return;
+    setIsSavingSettings(true);
+    try {
+      const updateProject = useProjectsStore.getState().updateProject;
+      
+      // 1. Guardar cambios de metadatos en Supabase y local store
+      await updateProject(currentProject.id, {
+        name: settingsName.trim() || currentProject.name,
+        description: settingsDesc.trim(),
+        projectType: settingsType,
+        style: settingsStyleVal,
+        colorScheme: {
+          primary: colorPrimary,
+          secondary: colorSecondary,
+          accent: colorAccent,
+          background: colorBackground,
+        }
+      });
+
+      // 2. Sincronizar el brief en los mensajes de chat para mantener el contexto del LLM al día
+      const msgs = useAIChatStore.getState().messages;
+      const briefMsg = msgs.find(m => m.id === `proj-brief-${currentProject.id}`);
+      if (briefMsg) {
+        const newBrief = buildProjectBrief({
+          ...currentProject,
+          name: settingsName.trim() || currentProject.name,
+          description: settingsDesc.trim(),
+          projectType: settingsType,
+          style: settingsStyleVal,
+          colorScheme: {
+            primary: colorPrimary,
+            secondary: colorSecondary,
+            accent: colorAccent,
+            background: colorBackground,
+          }
+        });
+        
+        const updatedMsgs = msgs.map(m => m.id === briefMsg.id ? { ...m, content: newBrief } : m);
+        useAIChatStore.setState({ messages: updatedMsgs });
+        useAIChatStore.getState().updateCurrentChat();
+      }
+
+      // 3. Reemplazo de colores y títulos en los archivos en caliente
+      const oldPrimary = currentProject.colorScheme?.primary || "#1890FF";
+      const oldSecondary = currentProject.colorScheme?.secondary || "#6366F1";
+      const oldAccent = currentProject.colorScheme?.accent || "#10B981";
+      const oldBackground = currentProject.colorScheme?.background || "#0F1117";
+
+      const store = useWebBuilderStore.getState();
+      const updatedFiles = { ...store.files };
+      let changed = false;
+
+      for (const [path, fileObj] of Object.entries(updatedFiles)) {
+        let code = typeof fileObj === "string" ? fileObj : fileObj.code;
+        let originalCode = code;
+
+        // Función de reemplazo
+        const replaceColor = (codeStr: string, oldColor: string, newColor: string) => {
+          let res = codeStr;
+          // Reemplazar hex completo #hex
+          res = res.replace(new RegExp(oldColor, "gi"), newColor);
+          // Reemplazar sin almohadilla para configs de Tailwind/CSS
+          const oldHex = oldColor.replace("#", "");
+          const newHex = newColor.replace("#", "");
+          if (oldHex && newHex) {
+            res = res.replace(new RegExp(oldHex, "gi"), newHex);
+          }
+          return res;
+        };
+
+        code = replaceColor(code, oldPrimary, colorPrimary);
+        code = replaceColor(code, oldSecondary, colorSecondary);
+        code = replaceColor(code, oldAccent, colorAccent);
+        code = replaceColor(code, oldBackground, colorBackground);
+
+        // Reemplazar título en index.html
+        if (path.endsWith("index.html")) {
+          code = code.replace(/<title>[\s\S]*?<\/title>/gi, `<title>${settingsName.trim()}</title>`);
+        }
+
+        if (code !== originalCode) {
+          updatedFiles[path] = { code };
+          changed = true;
+        }
+      }
+
+      if (changed) {
+        store.setFilesStreaming(updatedFiles);
+        store.syncToCloud();
+        toast.success("¡Código y previsualización actualizados con el nuevo diseño!");
+      } else {
+        toast.success("Ajustes del proyecto actualizados.");
+      }
+
+      setIsSettingsOpen(false);
+    } catch (err) {
+      console.error("[ProjectSettings] Save error:", err);
+      toast.error("Error al guardar los ajustes del proyecto");
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
   // Cache de HTML con inspector ya inyectado, key = hash del HTML original.
   // Evita reconstruir el script del inspector (string building costoso) cuando
   // el HTML no cambió entre renders. El reset del cache va en un effect más
@@ -1630,6 +1769,28 @@ export function PreviewPanel() {
 
         {/* Right: Actions */}
         <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+          {/* Settings button */}
+          {currentProject && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                  className={cn(
+                    "flex items-center justify-center w-8 h-8 rounded-full active:scale-95 transition-all duration-200",
+                    isSettingsOpen
+                      ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                      : "bg-secondary hover:bg-secondary/85 text-secondary-foreground"
+                  )}
+                >
+                  <Settings className="w-3.5 h-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent hideArrow side="bottom" sideOffset={6} className="text-xs bg-popover text-popover-foreground border border-border px-2.5 py-1.5 rounded-xl shadow-lg font-semibold">
+                Ajustes de diseño
+              </TooltipContent>
+            </Tooltip>
+          )}
+
           {/* Refresh button */}
           <Tooltip>
             <TooltipTrigger asChild>
@@ -1747,6 +1908,200 @@ export function PreviewPanel() {
 
       {/* Content wrapper */}
       <div className="flex-1 flex flex-col min-h-0 bg-background border border-border/40 rounded-2xl overflow-hidden relative">
+        <AnimatePresence>
+          {isSettingsOpen && (
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="absolute inset-y-0 right-0 z-50 w-80 border-l border-border bg-card/95 backdrop-blur-md shadow-2xl flex flex-col min-h-0"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 py-3.5 border-b border-border">
+                <div className="flex items-center gap-2">
+                  <Settings className="w-4 h-4 text-blue-500 animate-spin-slow" />
+                  <span className="text-xs font-bold text-foreground">Ajustes de Diseño</span>
+                </div>
+                <button
+                  onClick={() => setIsSettingsOpen(false)}
+                  className="w-6 h-6 rounded-md hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="flex-grow overflow-y-auto p-4 space-y-5 hidden-scrollbar">
+                {/* Name */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Nombre del Proyecto</label>
+                  <input
+                    type="text"
+                    value={settingsName}
+                    onChange={(e) => setSettingsName(e.target.value)}
+                    className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all text-foreground"
+                  />
+                </div>
+
+                {/* Description */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Descripción</label>
+                  <textarea
+                    value={settingsDesc}
+                    onChange={(e) => setSettingsDesc(e.target.value)}
+                    rows={2}
+                    className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all resize-none text-foreground"
+                  />
+                </div>
+
+                {/* Type */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Tipo de Proyecto</label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(["web", "app", "multiplatform"] as const).map((type) => (
+                      <button
+                        key={type}
+                        onClick={() => setSettingsType(type)}
+                        className={cn(
+                          "py-1.5 rounded-lg border text-[10px] font-bold transition-all capitalize cursor-pointer",
+                          settingsType === type
+                            ? "border-blue-500 bg-blue-500/10 text-blue-450 dark:text-blue-400"
+                            : "border-border bg-background text-muted-foreground hover:text-foreground hover:bg-muted"
+                        )}
+                      >
+                        {type === "web" ? "Web" : type === "app" ? "App" : "Multi"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Visual Style */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Estilo Visual</label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {(["minimal", "glassmorphism", "brutalist", "neomorphism", "corporate", "playful"] as const).map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => setSettingsStyleVal(s)}
+                        className={cn(
+                          "py-1.5 rounded-lg border text-[10px] font-bold transition-all capitalize cursor-pointer",
+                          settingsStyleVal === s
+                            ? "border-blue-500 bg-blue-500/10 text-blue-455 dark:text-blue-400"
+                            : "border-border bg-background text-muted-foreground hover:text-foreground hover:bg-muted"
+                        )}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Color Scheme */}
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Paleta de Colores</label>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <span className="text-[9px] text-muted-foreground font-semibold">Primario</span>
+                      <div className="flex gap-1.5 items-center">
+                        <input
+                          type="color"
+                          value={colorPrimary}
+                          onChange={(e) => setColorPrimary(e.target.value)}
+                          className="w-6 h-6 rounded-md border border-border cursor-pointer bg-transparent"
+                        />
+                        <input
+                          type="text"
+                          value={colorPrimary}
+                          onChange={(e) => setColorPrimary(e.target.value)}
+                          className="w-full border border-border bg-background rounded px-1.5 py-0.5 text-[10px] outline-none font-mono text-foreground"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <span className="text-[9px] text-muted-foreground font-semibold">Secundario</span>
+                      <div className="flex gap-1.5 items-center">
+                        <input
+                          type="color"
+                          value={colorSecondary}
+                          onChange={(e) => setColorSecondary(e.target.value)}
+                          className="w-6 h-6 rounded-md border border-border cursor-pointer bg-transparent"
+                        />
+                        <input
+                          type="text"
+                          value={colorSecondary}
+                          onChange={(e) => setColorSecondary(e.target.value)}
+                          className="w-full border border-border bg-background rounded px-1.5 py-0.5 text-[10px] outline-none font-mono text-foreground"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <span className="text-[9px] text-muted-foreground font-semibold">Acento</span>
+                      <div className="flex gap-1.5 items-center">
+                        <input
+                          type="color"
+                          value={colorAccent}
+                          onChange={(e) => setColorAccent(e.target.value)}
+                          className="w-6 h-6 rounded-md border border-border cursor-pointer bg-transparent"
+                        />
+                        <input
+                          type="text"
+                          value={colorAccent}
+                          onChange={(e) => setColorAccent(e.target.value)}
+                          className="w-full border border-border bg-background rounded px-1.5 py-0.5 text-[10px] outline-none font-mono text-foreground"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <span className="text-[9px] text-muted-foreground font-semibold">Fondo</span>
+                      <div className="flex gap-1.5 items-center">
+                        <input
+                          type="color"
+                          value={colorBackground}
+                          onChange={(e) => setColorBackground(e.target.value)}
+                          className="w-6 h-6 rounded-md border border-border cursor-pointer bg-transparent"
+                        />
+                        <input
+                          type="text"
+                          value={colorBackground}
+                          onChange={(e) => setColorBackground(e.target.value)}
+                          className="w-full border border-border bg-background rounded px-1.5 py-0.5 text-[10px] outline-none font-mono text-foreground"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 border-t border-border bg-muted/20 flex gap-2 shrink-0">
+                <Button
+                  variant="ghost"
+                  className="flex-1 text-xs h-9 cursor-pointer"
+                  onClick={() => setIsSettingsOpen(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  className="flex-1 text-xs h-9 bg-blue-600 hover:bg-blue-500 text-white cursor-pointer"
+                  onClick={handleSaveSettings}
+                  disabled={isSavingSettings}
+                >
+                  {isSavingSettings ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <span>Aplicar</span>
+                  )}
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {hasFiles ? (
           <SandpackProvider
             key={buildVersion}

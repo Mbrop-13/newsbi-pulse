@@ -89,7 +89,7 @@ interface ProjectsStore {
   loadProjects: () => Promise<void>;
   createProject: () => Promise<Project | null>;
   deleteProject: (id: string) => Promise<void>;
-  updateProject: (id: string, updates: Partial<Pick<Project, "name" | "description" | "icon">>) => Promise<void>;
+  updateProject: (id: string, updates: Partial<Project>) => Promise<void>;
 }
 
 // ── Helper: mapea fila de Supabase a nuestro tipo ──
@@ -275,12 +275,19 @@ export const useProjectsStore = create<ProjectsStore>()(
         try {
           const supabase = createClient();
 
+          const supabaseUpdates: any = {
+            updated_at: new Date().toISOString(),
+          };
+          if (updates.name !== undefined) supabaseUpdates.name = updates.name;
+          if (updates.description !== undefined) supabaseUpdates.description = updates.description;
+          if (updates.icon !== undefined) supabaseUpdates.icon = updates.icon;
+          if (updates.projectType !== undefined) supabaseUpdates.project_type = updates.projectType;
+          if (updates.colorScheme !== undefined) supabaseUpdates.color_scheme = updates.colorScheme;
+          if (updates.style !== undefined) supabaseUpdates.style = updates.style;
+
           const { error } = await supabase
             .from("ai_projects")
-            .update({
-              ...updates,
-              updated_at: new Date().toISOString(),
-            })
+            .update(supabaseUpdates)
             .eq("id", id)
             .eq("user_id", user.id);
 

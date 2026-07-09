@@ -222,7 +222,7 @@ export default function ProjectWorkspacePage() {
 
 // ── Helper: genera el brief del proyecto para la IA ──
 
-function buildProjectBrief(project: Project): string {
+export function buildProjectBrief(project: Project): string {
   const typeLabel = getProjectTypeLabel(project.projectType);
   const colors = project.colorScheme;
 

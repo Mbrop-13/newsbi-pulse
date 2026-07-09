@@ -2,6 +2,8 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { useAIChatStore } from "@/lib/stores/ai-chat-store";
+import { useProjectsStore } from "@/lib/stores/projects-store";
 import type { FileDiff } from "@/lib/webbuilder-diff";
 import { diffFileMaps } from "@/lib/webbuilder-diff";
 
@@ -379,6 +381,59 @@ async function performCloudUpsert(
 
   if (error) {
     throw new Error(`Upsert failed: ${error.message}`);
+  }
+
+  // ── Auto-creación de metadatos en ai_projects si no existe ──
+  try {
+    const { data: existingProj, error: checkError } = await supabase
+      .from("ai_projects")
+      .select("id")
+      .eq("chat_id", chatId)
+      .maybeSingle();
+
+    if (!checkError && !existingProj) {
+      let name = "Proyecto WebBuilder";
+      // Buscar título en index.html
+      const indexHtml = projectFiles["/index.html"];
+      if (indexHtml) {
+        const titleMatch = indexHtml.match(/<title>([\s\S]*?)<\/title>/i);
+        if (titleMatch && titleMatch[1]?.trim()) {
+          name = titleMatch[1].trim();
+        }
+      }
+      
+      if (name === "Proyecto WebBuilder" || name === "React App" || name === "Vite + React + TS") {
+        const chatTitle = useAIChatStore.getState().savedChats?.find((c: any) => c.id === chatId)?.title;
+        if (chatTitle) name = chatTitle;
+      }
+
+      // Estimar project_type
+      let projectType = "web";
+      if (projectFiles["/App.tsx"] || projectFiles["/App.jsx"]) {
+        projectType = "web";
+      }
+
+      await supabase
+        .from("ai_projects")
+        .insert({
+          user_id: userId,
+          name: name,
+          description: "Proyecto generado en modo construcción.",
+          project_type: projectType,
+          chat_id: chatId,
+          color_scheme: {
+            primary: "#1890FF",
+            secondary: "#6366F1",
+            accent: "#10B981",
+            background: "#0F1117"
+          }
+        });
+        
+      // Recargar proyectos en el store para que aparezca
+      useProjectsStore.getState().loadProjects();
+    }
+  } catch (e) {
+    console.error("Failed to auto-create project metadata in ai_projects:", e);
   }
 }
 

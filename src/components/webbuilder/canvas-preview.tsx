@@ -50,6 +50,12 @@ export function CanvasPreview({ stableFiles }: { stableFiles: Record<string, { c
     return () => window.removeEventListener("maverlang-force-rebundle", forceRerender);
   }, []);
 
+  const htmlRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    htmlRef.current = html;
+  }, [html]);
+
   // ── Capturar errores de runtime del iframe ──
   // El iframe inyecta postMessage con type=MAVERLANG_RUNTIME_ERROR cuando
   // el código del usuario falla en runtime (sintaxis, TypeError, etc.).
@@ -61,6 +67,14 @@ export function CanvasPreview({ stableFiles }: { stableFiles: Record<string, { c
         const store = useWebBuilderStore.getState();
         if (store.lastAutoFixError !== errMsg) {
           store.failAutoFix(errMsg);
+        }
+      } else if (
+        e.data?.type === "MAVERLANG_IFRAME_BLOCKED_NAVIGATION" ||
+        e.data?.type === "MAVERLANG_PREVIEW_NAVIGATE"
+      ) {
+        console.warn("[CanvasPreview] Intento de navegación interceptado, restaurando vista previa...");
+        if (iframeRef.current && htmlRef.current) {
+          iframeRef.current.srcdoc = htmlRef.current;
         }
       }
     };

@@ -66,9 +66,17 @@ export function ClientLayoutProviders({
   const settingsTab = useAssistantStore((s) => s.settingsTab);
   const [isMobile, setIsMobile] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [isInIframe, setIsInIframe] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    if (typeof window !== "undefined" && window.self !== window.top) {
+      setIsInIframe(true);
+      window.parent.postMessage({
+        type: "MAVERLANG_IFRAME_BLOCKED_NAVIGATION",
+        url: window.location.href
+      }, "*");
+    }
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
     window.addEventListener("resize", checkMobile);
@@ -77,6 +85,15 @@ export function ClientLayoutProviders({
 
   const rawPathname = usePathname();
   const pathname = getCleanPathname(rawPathname);
+
+  if (isInIframe) {
+    return (
+      <div className="min-h-screen bg-[#0F1117] flex flex-col items-center justify-center p-4 text-center text-white">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-3" />
+        <p className="text-xs text-zinc-400">Restaurando vista previa...</p>
+      </div>
+    );
+  }
 
   // Sync URL language prefix with Zustand language store
   useEffect(() => {

@@ -284,7 +284,7 @@ export async function POST(req: NextRequest) {
           close: () => {}
         } as any;
 
-        const mimo = createMimoWithWebSearch(userId, fakeStreamData, webSearch !== false);
+        const mimo = createMimoWithWebSearch(userId, fakeStreamData, webBuilder ? false : (webSearch !== false));
 
         // Load user portfolio context for orchestration
         let portfolioText = "";

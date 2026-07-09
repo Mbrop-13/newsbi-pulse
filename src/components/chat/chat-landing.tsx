@@ -1787,7 +1787,7 @@ function ChatLandingContent() {
                   initial={{ opacity: 0, y: -10, scale: 0.98 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   transition={{ duration: 0.5, ease: "easeOut" }}
-                  className="text-center mb-4"
+                  className="text-center mb-8"
                 >
                   <div className="flex items-center justify-center">
                     <img

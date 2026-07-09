@@ -43,7 +43,7 @@ import {
 import { cn, formatDate as fmtDate, getFallbackImage, slugify, getCleanPathname } from "@/lib/utils"
 import { useLanguageStore } from "@/lib/stores/language-store"
 import { motion, AnimatePresence } from "framer-motion"
-import { Newspaper, Sparkles, Headphones, LineChart, Coins, Landmark, Briefcase, Shield, Lightbulb, Globe, Flame, Calendar, Cpu, ArrowUpRight, ArrowDownRight, MoreHorizontal, Link2, SquarePen, Trash2, FolderOpen, Code2, FileCode2, ChevronRight, Copy, Eye } from "lucide-react"
+import { Newspaper, Sparkles, Headphones, LineChart, Coins, Landmark, Briefcase, Shield, Lightbulb, Globe, Flame, Calendar, Cpu, ArrowUpRight, ArrowDownRight, MoreHorizontal, Link2, SquarePen, Trash2, FolderOpen, Code2, FileCode2, ChevronRight, Copy, Eye, Smartphone, Monitor } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useSidebar } from "@/components/ui/sidebar"
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store"
@@ -71,9 +71,9 @@ interface CreativeCategory {
 }
 
 const CREATIVE_CATEGORIES: CreativeCategory[] = [
-  { id: "sitios", label: "Sitios Web & Landings", icon: Globe },
-  { id: "simuladores", label: "Simuladores & Calculadoras", icon: Landmark },
-  { id: "mini-apps", label: "Mini-aplicaciones", icon: Code2 },
+  { id: "sitios", label: "Sitios Web", icon: Globe },
+  { id: "apps", label: "Aplicaciones", icon: Smartphone },
+  { id: "multiplatform", label: "Multiplataforma", icon: Monitor },
 ];
 
 interface PreviewItem {
@@ -112,10 +112,10 @@ const PREVIEW_ITEMS: PreviewItem[] = [
     mockType: "gym",
     prompt: "Diseña una página de aterrizaje de alto rendimiento para el gimnasio 'Iron & Steel Gym'. Utiliza colores oscuros (carbón y negro) con acentos de color naranja neón brillante. Incluye titulares audaces en mayúsculas, una sección con planes de entrenamiento de fuerza y una calculadora para estimar la carga máxima de entrenamiento."
   },
-  // simuladores
+  // apps
   {
     id: "compound",
-    category: "simuladores",
+    category: "apps",
     title: "Calculadora de Interés Compuesto",
     desc: "Simulador interactivo con sliders de aportes mensuales, tasas de retorno y gráfico exponencial.",
     mockType: "compound",
@@ -123,7 +123,7 @@ const PREVIEW_ITEMS: PreviewItem[] = [
   },
   {
     id: "goal",
-    category: "simuladores",
+    category: "apps",
     title: "Proyector de Metas de Ahorro",
     desc: "Calcula los años requeridos para jubilarte según tu tasa de ahorro y rentabilidad esperada.",
     mockType: "goal",
@@ -131,16 +131,16 @@ const PREVIEW_ITEMS: PreviewItem[] = [
   },
   {
     id: "mortgage",
-    category: "simuladores",
+    category: "apps",
     title: "Simulador de Hipoteca Premium",
     desc: "Desglosa la amortización de principal vs intereses y calcula tu pago mensual neto.",
     mockType: "mortgage",
     prompt: "Crea un simulador interactivo de hipoteca y crédito para vivienda. Permite ingresar el valor de la propiedad, la cuota inicial (%), la tasa de interés anual y el plazo en años. Visualiza mediante un gráfico de barras apiladas la porción mensual dedicada a amortizar el capital frente a los intereses pagados."
   },
-  // mini-apps
+  // multiplatform
   {
     id: "pomodoro-planner",
-    category: "mini-apps",
+    category: "multiplatform",
     title: "Board Kanban + Pomodoro",
     desc: "Gestor de tareas integrado con temporizador para sesiones enfocadas de desarrollo.",
     mockType: "kanban",
@@ -148,7 +148,7 @@ const PREVIEW_ITEMS: PreviewItem[] = [
   },
   {
     id: "expense-tracker",
-    category: "mini-apps",
+    category: "multiplatform",
     title: "Ledger de Control de Gastos",
     desc: "Registro contable sencillo con etiquetas de categorías y resúmenes de flujos.",
     mockType: "ledger",
@@ -156,7 +156,7 @@ const PREVIEW_ITEMS: PreviewItem[] = [
   },
   {
     id: "code-sandbox",
-    category: "mini-apps",
+    category: "multiplatform",
     title: "Editor de Código Interactiva",
     desc: "Entorno sandbox con ventanas de edición y renderizado en vivo de layouts HTML/CSS.",
     mockType: "sandbox",

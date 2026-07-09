@@ -813,12 +813,22 @@ console.warn = function() {};
 </script>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
-<script>console.warn = _origWarn;</script>
+<script>
+console.warn = _origWarn;
+if (typeof Babel !== 'undefined') {
+  Babel.registerPreset('typescript-custom', {
+    presets: [
+      [Babel.availablePresets['typescript'], { allExtensions: true, isTSX: true }],
+      Babel.availablePresets['react']
+    ]
+  });
+}
+</script>
 ${styleTag}
 </head>
 <body>
 <div id="root"></div>
-<script type="text/babel" data-type="module" data-presets="react,typescript">
+<script type="text/babel" data-type="module" data-presets="typescript-custom">
 ${jsCode}
 </script>
 </body>

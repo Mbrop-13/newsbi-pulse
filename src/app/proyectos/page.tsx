@@ -259,7 +259,7 @@ export default function ProyectosPage() {
               ) : filteredProjects.length === 0 ? (
                 // Mensaje si no hay proyectos creados
                 <div className="col-span-1 sm:col-span-2 flex flex-col items-center justify-center p-6 border border-zinc-800/40 rounded-2xl bg-zinc-900/5 h-[220px] text-center">
-                  <p className="text-xs text-zinc-450">
+                  <p className="text-xs text-zinc-200">
                     {search || filter !== "all"
                       ? "No se encontraron proyectos con los filtros de búsqueda aplicados."
                       : "Aún no tienes proyectos creados. ¡Escribe un prompt en el chat de arriba para comenzar!"}

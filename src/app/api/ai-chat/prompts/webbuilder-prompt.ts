@@ -1,7 +1,20 @@
 // WebBuilder system prompt generator
 import { BUILDER_DESIGN_GUIDELINES } from "./builder-guidelines";
 
-export function getWebBuilderSystemPrompt(existingFiles?: Record<string, string>): string {
+export function getWebBuilderSystemPrompt(existingFiles?: Record<string, string>, projectType?: string): string {
+  let mobileContext = "";
+  if (projectType === "app") {
+    mobileContext = `\n\n[INSTRUCCIÓN CRÍTICA DE DISEÑO MÓVIL (MOBILE APP)]
+El usuario está creando una aplicación móvil nativa. El preview se renderizará estrictamente en un viewport móvil de 390px de ancho.
+1. Diseña una interfaz móvil nativa de primer nivel (inspirada en las mejores apps modernas).
+2. Agrega una barra de navegación inferior funcional (bottom navigation) con pestañas claras utilizando iconos de lucide-react y useState para cambiar de vista.
+3. Asegúrate de que todos los botones y áreas táctiles tengan una altura mínima de 48px y espaciados amplios y limpios.
+4. El diseño debe estar 100% autocontenido en la pantalla móvil, utilizando scroll vertical interno si es necesario. Evita rigurosamente scrolls horizontales.
+5. PWA (Progressive Web App): Agrega siempre un archivo '/manifest.json' que describa la app móvil (nombre, colores, start_url, display="standalone") y enlázalo en el head de '/index.html' con '<link rel="manifest" href="/manifest.json">'.
+6. Si es un juego o app interactiva, optimiza los controles táctiles para que sean grandes y responsivos en pantallas de celular.
+`;
+  }
+
   const existingFilesContext = existingFiles && Object.keys(existingFiles).length > 0
     ? `\n\nARCHIVOS EXISTENTES DEL PROYECTO:\n${Object.entries(existingFiles).map(([path, code]) => `--- ${path} ---\n${code}\n---`).join("\n\n")}\n\nCuando el usuario pida modificaciones, usa type="update" con bloques SEARCH/REPLACE para cambiar SOLO las partes necesarias de los archivos existentes. NO regeneres archivos completos a menos que los cambios afecten más del 60% del archivo.`
     : "";
@@ -54,5 +67,5 @@ Reglas del formato de diffs:
 13. Responde SIEMPRE en el mismo idioma en el que te hable el usuario.
 
 CONVENCIÓN DE RUTAS: Los archivos SIEMPRE se referencian con barra inicial y SIN la carpeta "src/". El archivo principal es "/App.tsx", los estilos globales son "/styles.css", y los componentes van en "/components/Nombre.tsx". NUNCA uses rutas como "src/App.tsx" o "/src/App.tsx".
-${BUILDER_DESIGN_GUIDELINES}${existingFilesContext}`;
+${BUILDER_DESIGN_GUIDELINES}${mobileContext}${existingFilesContext}`;
 }

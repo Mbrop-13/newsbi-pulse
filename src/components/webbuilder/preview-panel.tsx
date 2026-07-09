@@ -1183,6 +1183,13 @@ export function PreviewPanel() {
     }
   }, [isSettingsOpen, currentProject]);
 
+  // Enforce mobile viewport for mobile apps
+  useEffect(() => {
+    if (currentProject?.projectType === "app") {
+      setViewport("mobile");
+    }
+  }, [currentProject]);
+
   const handleSaveSettings = async () => {
     if (!currentProject) return;
     setIsSavingSettings(true);
@@ -1695,7 +1702,7 @@ export function PreviewPanel() {
             </div>
 
             {/* Viewport (Only in Preview) */}
-            {selectedTab === "preview" && (
+            {selectedTab === "preview" && currentProject?.projectType !== "app" && (
               <div className="flex items-center gap-1 bg-muted/30 rounded-lg p-1 border border-border/30">
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -1875,10 +1882,122 @@ export function PreviewPanel() {
                       const cleanPath = path.startsWith("/") ? path.slice(1) : path;
                       zip.file(cleanPath, file.code);
                     });
+
+                    // Si es una aplicación móvil, inyectar archivos y dependencias de Capacitor
+                    if (currentProject?.projectType === "app") {
+                      const appName = currentProject.name.replace(/[^a-zA-Z0-9]/g, "");
+                      const appId = `com.maverlang.${appName.toLowerCase() || "app"}`;
+                      
+                      // 1. capacitor.config.json
+                      const capConfig = {
+                        appId: appId,
+                        appName: currentProject.name,
+                        webDir: "dist",
+                        server: {
+                          androidScheme: "https"
+                        }
+                      };
+                      zip.file("capacitor.config.json", JSON.stringify(capConfig, null, 2));
+
+                      // 2. README_MOBILE.md
+                      const readmeMobile = `# Proyecto de Aplicación Móvil Maverlang\n\n` +
+                        `Este proyecto ha sido exportado con soporte nativo para **Android** y **iOS** utilizando **Capacitor**.\n\n` +
+                        `## Requisitos Previos\n\n` +
+                        `- Node.js instalado\n` +
+                        `- Para Android: Android Studio instalado\n` +
+                        `- Para iOS: macOS con Xcode instalado\n\n` +
+                        `## Instrucciones de Compilación y Lanzamiento\n\n` +
+                        `1. Instala las dependencias del proyecto:\n` +
+                        `   \`\`\`bash\n` +
+                        `   npm install\n` +
+                        `   \`\`\`\n\n` +
+                        `2. Compila la aplicación web:\n` +
+                        `   \`\`\`bash\n` +
+                        `   npm run build\n` +
+                        `   \`\`\`\n\n` +
+                        `3. Añade la plataforma móvil de tu elección:\n` +
+                        `   - **Android:**\n` +
+                        `     \`\`\`bash\n` +
+                        `     npx cap add android\n` +
+                        `     \`\`\`\n` +
+                        `   - **iOS:**\n` +
+                        `     \`\`\`bash\n` +
+                        `     npx cap add ios\n` +
+                        `     \`\`\`\n\n` +
+                        `4. Sincroniza el código compilado con las plataformas móviles:\n` +
+                        `   \`\`\`bash\n` +
+                        `   npx cap sync\n` +
+                        `   \`\`\`\n\n` +
+                        `5. Abre el proyecto en el IDE nativo para ejecutar en un emulador o dispositivo real:\n` +
+                        `   - Para Android (Android Studio):\n` +
+                        `     \`\`\`bash\n` +
+                        `     npx cap open android\n` +
+                        `     \`\`\`\n` +
+                        `   - Para iOS (Xcode):\n` +
+                        `     \`\`\`bash\n` +
+                        `     npx cap open ios\n` +
+                        `     \`\`\`\n`;
+                      zip.file("README_MOBILE.md", readmeMobile);
+
+                      // 3. Modificar o inyectar package.json para agregar comandos y dependencias de Capacitor
+                      let packageJson: any = {
+                        name: appName.toLowerCase() || "maverlang-app",
+                        version: "1.0.0",
+                        scripts: {
+                          "dev": "vite",
+                          "build": "tsc && vite build",
+                          "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+                          "preview": "vite preview",
+                          "cap:sync": "npx cap sync",
+                          "cap:open:android": "npx cap open android",
+                          "cap:open:ios": "npx cap open ios"
+                        },
+                        dependencies: {
+                          "react": "^18.2.0",
+                          "react-dom": "^18.2.0",
+                          "@capacitor/core": "^5.0.0"
+                        },
+                        devDependencies: {
+                          "@capacitor/cli": "^5.0.0",
+                          "@capacitor/android": "^5.0.0",
+                          "@capacitor/ios": "^5.0.0"
+                        }
+                      };
+
+                      const existingPkg = currentFiles["/package.json"];
+                      if (existingPkg) {
+                        try {
+                          const parsed = JSON.parse(existingPkg.code);
+                          packageJson = {
+                            ...parsed,
+                            scripts: {
+                              ...parsed.scripts,
+                              "cap:sync": "npx cap sync",
+                              "cap:open:android": "npx cap open android",
+                              "cap:open:ios": "npx cap open ios"
+                            },
+                            dependencies: {
+                              ...parsed.dependencies,
+                              "@capacitor/core": "^5.0.0"
+                            },
+                            devDependencies: {
+                              ...parsed.devDependencies,
+                              "@capacitor/cli": "^5.0.0",
+                              "@capacitor/android": "^5.0.0",
+                              "@capacitor/ios": "^5.0.0"
+                            }
+                          };
+                        } catch (e) {
+                          console.error("Failed to parse existing package.json", e);
+                        }
+                      }
+                      
+                      zip.file("package.json", JSON.stringify(packageJson, null, 2));
+                    }
                     
                     const blob = await zip.generateAsync({ type: "blob" });
                     saveAs(blob, "maverlang-project.zip");
-                    toast.success("Proyecto descargado en ZIP!");
+                    toast.success("¡Proyecto móvil descargado en ZIP!");
 
                     // 2. Sync to cloud as backup
                     await useWebBuilderStore.getState().syncToCloud();
@@ -2221,7 +2340,7 @@ export function PreviewPanel() {
                   viewport === "mobile" && "w-full max-w-[390px] aspect-[390/800] max-h-full shrink-0 rounded-[2rem] sm:rounded-3xl border border-border/40 shadow-2xl overflow-hidden ring-1 ring-black/5 dark:ring-white/10 [&_*::-webkit-scrollbar]:hidden [&_*]:[scrollbar-width:none] [&_*]:[-ms-overflow-style:none] [&_iframe]:[scrollbar-width:none] [&_iframe::-webkit-scrollbar]:hidden"
                 )}>
                   {/* Notch sutil (solo en viewport mobile) para realismo de teléfono */}
-                  {viewport === "mobile" && (
+                  {viewport === "mobile" && currentProject?.projectType !== "app" && (
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 z-30 w-24 h-5 bg-black rounded-b-2xl pointer-events-none flex items-center justify-center">
                       <div className="w-10 h-1 bg-white/20 rounded-full" />
                     </div>

@@ -51,6 +51,7 @@ const aiChatSchema = z.object({
   browser: z.boolean().optional(),
   webBuilder: z.boolean().optional(),
   webBuilderFiles: z.record(z.string(), z.any()).optional(),
+  projectType: z.enum(["web", "app", "multiplatform"]).optional(),
   // Modo de construcción del WebBuilder: "plan" (planifica y pide aprobación)
   // o "turbo" (planifica y construye de una). Default implícito: turbo si no viene.
   buildMode: z.enum(["plan", "turbo"]).optional(),
@@ -89,7 +90,7 @@ export async function POST(req: NextRequest) {
       }), { status: 400 });
     }
 
-    const { messages, articles, files, modelId, activeTools, contextOverride, webSearch, browser, webBuilder, webBuilderFiles, buildMode, approvedPlan, replanFeedback, cancelPlan, originalUserMessage, codeInterpreter } = parseResult.data;
+    const { messages, articles, files, modelId, activeTools, contextOverride, webSearch, browser, webBuilder, webBuilderFiles, projectType, buildMode, approvedPlan, replanFeedback, cancelPlan, originalUserMessage, codeInterpreter } = parseResult.data;
 
     // #6 SANITIZACIÓN: el feedback/mensaje original del usuario se inyecta en
     // el prompt del planner. Saneamos para neutralizar intentos de prompt
@@ -685,7 +686,7 @@ ${reportsSummary}`,
         }
 
         let systemPrompt = webBuilder
-          ? getWebBuilderSystemPrompt(finalSystemPromptFiles)
+          ? getWebBuilderSystemPrompt(finalSystemPromptFiles, projectType)
           : getSystemPrompt(assistantName, assistantTone, assistantRole, assistantTopics);
 
         // Only include Canvas / Code Interpreter instructions when NOT in WebBuilder (build) mode

@@ -55,6 +55,7 @@ import { useCanvasStore } from "@/lib/stores/canvas-store"
 import { useBrowserStore } from "@/lib/stores/browser-store"
 import { BrowserWorkspace } from "@/components/chat/browser-workspace"
 import { InteractiveQuestionCard, WebBuilderQuestion } from "./interactive-question-card"
+import { useProjectsStore } from "@/lib/stores/projects-store"
 
 // Model ID mapping for our API
 const MODEL_MAP: Record<string, string> = {
@@ -1207,6 +1208,9 @@ function ChatLandingContent() {
       }
     }
 
+    // Find matching project type
+    const currentProject = useProjectsStore.getState().projects.find(p => p.chatId === activeChatId);
+
     // Use AI SDK append
     append(
       { role: "user", content: text },
@@ -1221,6 +1225,7 @@ function ChatLandingContent() {
           codeInterpreter: options.codeInterpreter,
           webBuilder: isWB,
           webBuilderFiles: isWB ? useWebBuilderStore.getState().files : undefined,
+          projectType: isWB ? currentProject?.projectType : undefined,
           buildMode: isWB ? useWebBuilderStore.getState().buildMode : undefined,
           ...planBodyExtras,
         },

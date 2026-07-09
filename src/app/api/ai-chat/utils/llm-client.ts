@@ -15,8 +15,8 @@ export function decodeJsonString(escapedStr: string): string {
   }
 }
 
-// ── MiMo client factory with web_search injection ──
-export function createMimoWithWebSearch(userId: string, streamData?: StreamData, webSearchEnabled: boolean = true) {
+// ── LLM client factory with web_search injection ──
+export function createLlmWithWebSearch(userId: string, streamData?: StreamData, webSearchEnabled: boolean = true) {
   return createOpenAI({
     baseURL: process.env.LLM_BASE_URL || 'https://api.xiaomimimo.com/v1',
     apiKey: process.env.LLM_API_KEY || process.env.MIMO_API_KEY,
@@ -64,7 +64,7 @@ export function createMimoWithWebSearch(userId: string, streamData?: StreamData,
           const errMsg = errBody?.error?.message || errBody?.message || errText || "";
           
           if (res.status === 402 || errMsg.toLowerCase().includes("balance") || errMsg.toLowerCase().includes("insufficient")) {
-            console.warn("[MIMO-CLIENT] Insufficient balance or error from MiMo. Falling back to OpenRouter...");
+            console.warn("[LLM-CLIENT] Insufficient balance or error from primary provider. Falling back to OpenRouter...");
             
             const urlString = typeof url === 'string' ? url : 'href' in url ? url.href : String(url);
             const currentBaseUrl = process.env.LLM_BASE_URL || 'https://api.xiaomimimo.com/v1';
@@ -78,7 +78,7 @@ export function createMimoWithWebSearch(userId: string, streamData?: StreamData,
             if (options?.body && typeof options.body === 'string') {
               try {
                 const body = JSON.parse(options.body);
-                // Map MiMo models to OpenRouter fallback models
+                // Map models to OpenRouter fallback models
                 if (body.model && body.model.includes("pro")) {
                   body.model = "google/gemini-2.5-pro";
                 } else {
@@ -95,7 +95,7 @@ export function createMimoWithWebSearch(userId: string, streamData?: StreamData,
             });
           }
         } catch (e) {
-          console.error("[MIMO-CLIENT] Failed to fall back to OpenRouter:", e);
+          console.error("[LLM-CLIENT] Failed to fall back to OpenRouter:", e);
         }
       }
 

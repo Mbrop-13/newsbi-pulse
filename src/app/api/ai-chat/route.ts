@@ -12,7 +12,7 @@ import { containsArtifact, parseArtifact, actionsToFiles } from "@/lib/webbuilde
 // Modular imports
 import { getSystemPrompt } from "./prompts/finance-prompt";
 import { getWebBuilderSystemPrompt } from "./prompts/webbuilder-prompt";
-import { createMimoWithWebSearch } from "./utils/mimo-client";
+import { createLlmWithWebSearch } from "./utils/llm-client";
 import { getFinanceTools } from "./handlers/finance-tools";
 import { getBrowserTools } from "./handlers/browser-tools";
 
@@ -284,7 +284,7 @@ export async function POST(req: NextRequest) {
           close: () => {}
         } as any;
 
-        const mimo = createMimoWithWebSearch(userId, fakeStreamData, webBuilder ? false : (webSearch !== false));
+        const llm = createLlmWithWebSearch(userId, fakeStreamData, webBuilder ? false : (webSearch !== false));
 
         // Load user portfolio context for orchestration
         let portfolioText = "";
@@ -301,7 +301,7 @@ export async function POST(req: NextRequest) {
         }
 
         // ── Multi-Agent Orchestration ──
-        const orchestratorModel = mimo(finalModelStr);
+        const orchestratorModel = llm(finalModelStr);
         let orchestrationResult = { isComplex: false, agentReports: [] as any[], totalTokensUsed: 0, reason: "", agents: [] as any[] };
         // Bandera: si true, el flujo de plan/cancel/replan ya resolvió todo y NO
         // debe correr el streamText final (el plan es un "turno" que termina aquí).
@@ -679,7 +679,7 @@ REGLAS OBLIGATORIAS PARA EL MODO NAVEGADOR:
         }
 
         const result = await streamText({
-          model: mimo(finalModelStr),
+          model: llm(finalModelStr),
           system: systemPrompt,
           messages: messagesForFinalLlm,
           maxTokens: (webBuilder && orchestrationResult.isComplex) ? 2048 : 8192,

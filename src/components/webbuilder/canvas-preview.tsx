@@ -142,7 +142,7 @@ export function CanvasPreview({ stableFiles }: { stableFiles: Record<string, { c
       <iframe
         ref={iframeRef}
         title="Maverlang Preview"
-        sandbox="allow-scripts allow-forms allow-popups allow-modals"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
         srcDoc={html ?? undefined}
         className="w-full h-full border-none bg-white"
         style={{ minHeight: "100%" }}

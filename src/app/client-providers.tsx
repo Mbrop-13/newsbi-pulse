@@ -101,6 +101,7 @@ export function ClientLayoutProviders({
   const sidebarPages = [
     "/",
     "/ai",
+    "/proyectos",
     "/noticias",
     "/mercados",
     "/portafolio",

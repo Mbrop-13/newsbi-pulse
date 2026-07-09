@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { useProjectsStore, type Project } from "@/lib/stores/projects-store";
 import { useLanguageStore } from "@/lib/stores/language-store";
+import { useAuthStore } from "@/lib/stores/auth-store";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
@@ -54,35 +55,124 @@ function getProjectTypeLabel(type: string): string {
   }
 }
 
-function getProjectTypeBadgeColor(type: string): string {
-  switch (type) {
-    case "web":
-      return "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20";
-    case "app":
-      return "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20";
-    case "multiplatform":
-      return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20";
-    default:
-      return "bg-muted text-muted-foreground border-border";
-  }
-}
-
 function formatRelativeDate(dateStr: string): string {
   const date = new Date(dateStr);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
+  const diffDays = Math.floor(diffMs / 8640000);
 
-  if (diffMins < 1) return "Hace un momento";
-  if (diffMins < 60) return `Hace ${diffMins} min`;
-  if (diffHours < 24) return `Hace ${diffHours}h`;
-  if (diffDays < 7) return `Hace ${diffDays}d`;
-  return date.toLocaleDateString("es", { day: "numeric", month: "short" });
+  if (diffMins < 1) return "hace un momento";
+  if (diffMins < 60) return `hace ${diffMins} min`;
+  if (diffHours < 24) return `hace ${diffHours}h`;
+  if (diffDays < 7) return `hace ${diffDays}d`;
+  return date.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
 }
 
-// ── Componente ──
+// ── Previsualización de Mockup de Proyecto Dinámico ──
+
+function ProjectMockupPreview({ project }: { project: Project }) {
+  const primary = project.colorScheme.primary;
+  const secondary = project.colorScheme.secondary;
+  const accent = project.colorScheme.accent;
+  const bg = project.colorScheme.background || "#0b0f19";
+
+  return (
+    <div
+      className="w-full h-full p-2.5 flex flex-col justify-between font-sans text-[8px] select-none overflow-hidden relative"
+      style={{ backgroundColor: bg }}
+    >
+      {/* Background glow using project colors */}
+      <div
+        className="absolute inset-0 opacity-20 pointer-events-none blur-2xl"
+        style={{
+          background: `radial-gradient(circle at 60% 40%, ${primary}, ${secondary} 50%, transparent 100%)`,
+        }}
+      />
+
+      {/* Grid pattern */}
+      <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#fff_1px,transparent_1px)] bg-[size:10px_10px] pointer-events-none" />
+
+      {/* Browser address bar */}
+      <div className="flex justify-between items-center border-b border-white/10 pb-1.5 z-10 shrink-0">
+        <div className="flex gap-1">
+          <div className="w-1.5 h-1.5 rounded-full bg-red-500/60" />
+          <div className="w-1.5 h-1.5 rounded-full bg-yellow-500/60" />
+          <div className="w-1.5 h-1.5 rounded-full bg-green-500/60" />
+        </div>
+        <div className="w-24 h-3 rounded bg-white/5 border border-white/10 flex items-center justify-center text-[5px] text-white/30 font-mono tracking-tight px-1 truncate">
+          {project.name.toLowerCase().replace(/\s+/g, "-")}.maverlang.cl
+        </div>
+        <div className="w-3.5 h-3 rounded bg-white/10 flex items-center justify-center" />
+      </div>
+
+      {/* Viewport content */}
+      <div className="flex-1 flex gap-2 mt-2 items-stretch z-10 min-h-0">
+        {/* Mock Sidebar */}
+        <div className="w-7 bg-white/5 border border-white/10 rounded p-1 flex flex-col gap-1.5 shrink-0">
+          <div className="h-1.5 rounded w-full" style={{ backgroundColor: primary }} />
+          <div className="h-1 w-4 bg-white/10 rounded" />
+          <div className="h-1 w-3 bg-white/10 rounded" />
+          <div className="h-1 w-5 bg-white/10 rounded" />
+        </div>
+
+        {/* Mock Canvas Area */}
+        <div className="flex-1 flex flex-col gap-2 min-w-0 justify-between">
+          <div className="space-y-1">
+            <div className="h-2 w-14 rounded" style={{ backgroundColor: primary }} />
+            <div className="h-1 w-20 bg-white/20 rounded" />
+          </div>
+
+          {/* Graphical widget mock */}
+          {project.projectType === "web" ? (
+            <div className="flex-1 border border-white/10 bg-white/5 rounded p-1 flex flex-col justify-between">
+              <div className="flex justify-between items-center">
+                <div className="h-1 w-6 bg-white/30 rounded" />
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: accent }} />
+              </div>
+              <div className="flex gap-0.5 items-end h-6 mt-1">
+                <div className="w-full h-[40%] rounded-sm" style={{ backgroundColor: primary }} />
+                <div className="w-full h-[75%] rounded-sm" style={{ backgroundColor: secondary }} />
+                <div className="w-full h-[100%] rounded-sm" style={{ backgroundColor: accent }} />
+                <div className="w-full h-[60%] rounded-sm bg-white/10" />
+              </div>
+            </div>
+          ) : project.projectType === "app" ? (
+            <div className="flex-1 border border-white/10 bg-white/5 rounded p-1 flex flex-col justify-between items-center">
+              <div className="w-6 h-6 rounded-full border border-dashed border-white/20 flex items-center justify-center mt-0.5">
+                <div className="w-4 h-4 rounded-full" style={{ backgroundColor: primary }} />
+              </div>
+              <div className="h-1.5 w-12 rounded" style={{ backgroundColor: secondary }} />
+            </div>
+          ) : (
+            <div className="flex-grow grid grid-cols-2 gap-1">
+              <div className="border border-white/10 bg-white/5 rounded p-1 flex flex-col justify-between">
+                <div className="h-1 w-4 bg-white/20 rounded" />
+                <div className="h-2 w-full rounded" style={{ backgroundColor: primary }} />
+              </div>
+              <div className="border border-white/10 bg-white/5 rounded p-1 flex flex-col justify-between">
+                <div className="h-1 w-4 bg-white/20 rounded" />
+                <div className="h-2 w-full rounded" style={{ backgroundColor: secondary }} />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Mock status line */}
+      <div className="mt-1.5 flex justify-between items-center text-[5px] text-white/30 z-10 border-t border-white/5 pt-1">
+        <span className="capitalize">{getProjectTypeLabel(project.projectType)} • {project.style}</span>
+        <span className="font-mono flex items-center gap-0.5" style={{ color: accent }}>
+          <span className="w-1.5 h-1.5 rounded-full bg-current" />
+          activo
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ── Componente Principal ──
 
 interface ProjectCardProps {
   project: Project;
@@ -93,12 +183,11 @@ export function ProjectCard({ project, index }: ProjectCardProps) {
   const language = useLanguageStore((s) => s.language);
   const deleteProject = useProjectsStore((s) => s.deleteProject);
   const updateProject = useProjectsStore((s) => s.updateProject);
+  const user = useAuthStore((s) => s.user);
 
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(project.name);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  const TypeIcon = getProjectTypeIcon(project.projectType);
 
   const handleDelete = async () => {
     if (!confirm(`¿Eliminar "${project.name}"? Esta acción no se puede deshacer.`)) return;
@@ -120,6 +209,13 @@ export function ProjectCard({ project, index }: ProjectCardProps) {
     toast.success("Nombre actualizado");
   };
 
+  // Generar la inicial del avatar del creador
+  const userInitial = user?.name
+    ? user.name.slice(0, 1).toUpperCase()
+    : user?.email
+    ? user.email.slice(0, 1).toUpperCase()
+    : "M";
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16, scale: 0.97 }}
@@ -133,36 +229,23 @@ export function ProjectCard({ project, index }: ProjectCardProps) {
       <Link
         href={`/${language}/proyectos/${project.id}`}
         className={cn(
-          "group relative block rounded-2xl border border-zinc-200/60 dark:border-white/[0.06] overflow-hidden transition-all duration-300",
-          "hover:border-zinc-300/80 dark:hover:border-white/[0.1] hover:shadow-xl hover:shadow-black/[0.03] dark:hover:shadow-black/20",
+          "group relative block rounded-2xl border border-zinc-800 bg-[#16161a] overflow-hidden transition-all duration-300",
+          "hover:border-zinc-700 hover:shadow-2xl hover:shadow-black/60",
           "hover:-translate-y-1 active:scale-[0.98]",
           isDeleting && "opacity-50 pointer-events-none"
         )}
       >
-        {/* Gradient band at top */}
-        <div
-          className="h-24 relative overflow-hidden"
-          style={{
-            background: `linear-gradient(135deg, ${project.colorScheme.primary}30, ${project.colorScheme.secondary}20, ${project.colorScheme.accent}15)`,
-          }}
-        >
-          {/* Decorative orbs */}
-          <div
-            className="absolute -top-6 -right-6 w-24 h-24 rounded-full blur-2xl opacity-40 group-hover:opacity-60 transition-opacity duration-500"
-            style={{ backgroundColor: project.colorScheme.primary }}
-          />
-          <div
-            className="absolute -bottom-4 -left-4 w-16 h-16 rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity duration-500"
-            style={{ backgroundColor: project.colorScheme.accent }}
-          />
+        {/* Mockup Preview Area at Top */}
+        <div className="h-36 relative overflow-hidden border-b border-zinc-800">
+          <ProjectMockupPreview project={project} />
 
-          {/* Options menu */}
-          <div className="absolute top-2.5 right-2.5 z-10">
+          {/* Options menu floating on top right */}
+          <div className="absolute top-2.5 right-2.5 z-20">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
                   onClick={(e) => e.preventDefault()}
-                  className="w-7 h-7 rounded-lg bg-white/60 dark:bg-black/40 backdrop-blur-md flex items-center justify-center text-zinc-700 dark:text-zinc-300 hover:bg-white/80 dark:hover:bg-black/60 transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
+                  className="w-6 h-6 rounded-md bg-[#16161a]/80 backdrop-blur-md flex items-center justify-center text-zinc-400 hover:text-zinc-200 border border-zinc-800 hover:bg-zinc-800 transition-all cursor-pointer"
                 >
                   <MoreHorizontal className="w-3.5 h-3.5" />
                 </button>
@@ -170,7 +253,7 @@ export function ProjectCard({ project, index }: ProjectCardProps) {
               <DropdownMenuContent
                 align="end"
                 sideOffset={4}
-                className="w-44 rounded-xl border border-zinc-200/60 dark:border-white/[0.06] bg-white dark:bg-zinc-950 shadow-xl p-1"
+                className="w-44 rounded-xl border border-zinc-850 bg-[#16161a] shadow-2xl p-1 text-zinc-300"
                 onClick={(e) => e.preventDefault()}
               >
                 <DropdownMenuItem
@@ -178,18 +261,18 @@ export function ProjectCard({ project, index }: ProjectCardProps) {
                     e.preventDefault();
                     setIsRenaming(true);
                   }}
-                  className="text-xs rounded-lg cursor-pointer"
+                  className="text-xs rounded-lg cursor-pointer hover:bg-zinc-805 hover:text-white"
                 >
                   <Pencil className="w-3.5 h-3.5 mr-2" />
                   Renombrar
                 </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-border/40" />
+                <DropdownMenuSeparator className="bg-zinc-850" />
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.preventDefault();
                     handleDelete();
                   }}
-                  className="text-xs rounded-lg text-red-500 focus:text-red-600 cursor-pointer"
+                  className="text-xs rounded-lg text-red-400 focus:text-red-500 hover:bg-red-950/20 cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5 mr-2" />
                   Eliminar
@@ -197,97 +280,57 @@ export function ProjectCard({ project, index }: ProjectCardProps) {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-
-          {/* Type badge */}
-          <div className="absolute bottom-2.5 left-3 z-10">
-            <span
-              className={cn(
-                "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider border backdrop-blur-md",
-                getProjectTypeBadgeColor(project.projectType)
-              )}
-            >
-              <TypeIcon className="w-2.5 h-2.5" />
-              {getProjectTypeLabel(project.projectType)}
-            </span>
-          </div>
         </div>
 
-        {/* Card body */}
-        <div className="p-4">
-          {/* Icon + Name */}
-          <div className="flex items-start gap-3 mb-2">
-            <div className="w-9 h-9 rounded-xl bg-zinc-100 dark:bg-white/[0.04] border border-zinc-200/60 dark:border-white/[0.06] flex items-center justify-center text-lg shrink-0 group-hover:scale-105 transition-transform duration-300">
-              {project.icon}
-            </div>
-            <div className="flex-1 min-w-0">
-              {isRenaming ? (
-                <div
-                  className="flex items-center gap-1.5"
-                  onClick={(e) => e.preventDefault()}
-                >
-                  <input
-                    autoFocus
-                    value={renameValue}
-                    onChange={(e) => setRenameValue(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleRename();
-                      if (e.key === "Escape") {
-                        setIsRenaming(false);
-                        setRenameValue(project.name);
-                      }
-                    }}
-                    className="flex-1 text-sm font-bold text-foreground bg-transparent border-b border-blue-500/40 focus:outline-none py-0.5"
-                  />
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleRename();
-                    }}
-                    className="w-5 h-5 rounded-md bg-blue-500/10 text-blue-500 flex items-center justify-center hover:bg-blue-500/20 transition-all cursor-pointer"
-                  >
-                    <Check className="w-3 h-3" />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setIsRenaming(false);
-                      setRenameValue(project.name);
-                    }}
-                    className="w-5 h-5 rounded-md bg-red-500/10 text-red-500 flex items-center justify-center hover:bg-red-500/20 transition-all cursor-pointer"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              ) : (
-                <h3 className="text-sm font-bold text-foreground truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                  {project.name}
-                </h3>
-              )}
-              {project.description && (
-                <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
-                  {project.description}
-                </p>
-              )}
-            </div>
+        {/* Card Body: User Avatar + Project metadata stacked vertically */}
+        <div className="p-4 bg-[#121215] flex items-center gap-3">
+          {/* User Initial Avatar (styled like the image) */}
+          <div 
+            className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs text-white select-none shrink-0"
+            style={{
+              background: `linear-gradient(135deg, ${project.colorScheme.primary}, ${project.colorScheme.secondary})`
+            }}
+          >
+            {userInitial}
           </div>
 
-          {/* Footer: timestamp + colors preview */}
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-              <Clock className="w-3 h-3" />
-              {formatRelativeDate(project.updatedAt)}
-            </span>
-            <div className="flex -space-x-1">
-              {Object.values(project.colorScheme)
-                .slice(0, 3)
-                .map((color, i) => (
-                  <div
-                    key={i}
-                    className="w-3 h-3 rounded-full border border-white dark:border-zinc-900"
-                    style={{ backgroundColor: color }}
-                  />
-                ))}
-            </div>
+          <div className="flex-1 min-w-0">
+            {isRenaming ? (
+              <div
+                className="flex items-center gap-1.5"
+                onClick={(e) => e.preventDefault()}
+              >
+                <input
+                  autoFocus
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleRename();
+                    if (e.key === "Escape") {
+                      setIsRenaming(false);
+                      setRenameValue(project.name);
+                    }
+                  }}
+                  className="flex-1 text-xs font-bold text-white bg-transparent border-b border-blue-500 focus:outline-none py-0.5"
+                />
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleRename();
+                  }}
+                  className="w-5 h-5 rounded-md bg-blue-500/10 text-blue-400 flex items-center justify-center hover:bg-blue-500/20 transition-all cursor-pointer"
+                >
+                  <Check className="w-3 h-3" />
+                </button>
+              </div>
+            ) : (
+              <h3 className="text-[13px] font-bold text-zinc-100 truncate group-hover:text-blue-400 transition-colors">
+                {project.name}
+              </h3>
+            )}
+            <p className="text-[10px] text-zinc-400 mt-0.5">
+              Editado {formatRelativeDate(project.updatedAt)}
+            </p>
           </div>
         </div>
       </Link>

@@ -748,7 +748,7 @@ export function renderProjectToHtml(files: ProjectFiles): RenderResult {
   const bootstrapImports = [
     !hasReactDefaultImport ? reactImports[0] : null,
     !hasCreateRootImport ? reactImports[1] : null,
-  ].filter(Boolean);
+  ].filter((x): x is string => x !== null);
   // Fusionar imports bare del usuario por specifier.
   const uniqueImports = mergeBareImports([...bootstrapImports, ...allBareImports]);
 

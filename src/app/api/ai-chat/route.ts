@@ -382,7 +382,12 @@ export async function POST(req: NextRequest) {
               onOrchProgress,
               safeReplanFeedback
             );
-            if (plan.isComplex && plan.agents.length > 0) {
+            if (plan.question) {
+              try {
+                fakeStreamData.append({ type: 'question', question: plan.question });
+              } catch (e) { console.error("Failed to append question to streamData:", e); }
+              orchestrationResult = { isComplex: false, agentReports: [], totalTokensUsed: plan.totalTokensUsed, reason: plan.reason, agents: [] };
+            } else if (plan.isComplex && plan.agents.length > 0) {
               // Emitir la nueva tarjeta del plan y terminar el turno aquí.
               try {
                 fakeStreamData.append({ type: 'plan', planId: `plan-${Date.now()}`, reason: plan.reason, agents: plan.agents });
@@ -401,7 +406,13 @@ export async function POST(req: NextRequest) {
               webBuilderFiles || {},
               onOrchProgress
             );
-            if (plan.isComplex && plan.agents.length > 0) {
+            if (plan.question) {
+              try {
+                fakeStreamData.append({ type: 'question', question: plan.question });
+              } catch (e) { console.error("Failed to append question to streamData:", e); }
+              orchestrationResult = { isComplex: false, agentReports: [], totalTokensUsed: plan.totalTokensUsed, reason: plan.reason, agents: [] };
+              planTurnHandled = true;
+            } else if (plan.isComplex && plan.agents.length > 0) {
               // Emitir la tarjeta del plan y terminar el turno aquí. El LLM final
               // escribirá el mensaje "escribe aprobado / no / cambios".
               try {
@@ -416,13 +427,37 @@ export async function POST(req: NextRequest) {
             }
           } else {
             // ── Modo TURBO (o sin buildMode): planificar + ejecutar de una ──
-            orchestrationResult = await runWebBuilderOrchestration(
+            const plan = await planWebBuilder(
               orchestratorModel,
               lastUserMessage,
               webBuilderFiles || {},
-              onOrchProgress,
-              onFileReady
+              onOrchProgress
             );
+            if (plan.question) {
+              try {
+                fakeStreamData.append({ type: 'question', question: plan.question });
+              } catch (e) { console.error("Failed to append question to streamData:", e); }
+              orchestrationResult = { isComplex: false, agentReports: [], totalTokensUsed: plan.totalTokensUsed, reason: plan.reason, agents: [] };
+              planTurnHandled = true;
+            } else if (plan.isComplex && plan.agents.length > 0) {
+              const exec = await executeWebBuilderAgents(
+                orchestratorModel,
+                plan.agents,
+                lastUserMessage,
+                webBuilderFiles || {},
+                onOrchProgress,
+                onFileReady
+              );
+              orchestrationResult = {
+                isComplex: true,
+                reason: plan.reason,
+                agents: plan.agents,
+                agentReports: exec.agentReports,
+                totalTokensUsed: plan.totalTokensUsed + exec.totalTokensUsed,
+              };
+            } else {
+              orchestrationResult = { isComplex: false, agentReports: [], totalTokensUsed: plan.totalTokensUsed, reason: plan.reason, agents: [] };
+            }
           }
         } else {
           orchestrationResult = await runOrchestration(

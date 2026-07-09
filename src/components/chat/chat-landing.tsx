@@ -54,6 +54,7 @@ import { CanvasWorkspace } from "@/components/chat/canvas-workspace"
 import { useCanvasStore } from "@/lib/stores/canvas-store"
 import { useBrowserStore } from "@/lib/stores/browser-store"
 import { BrowserWorkspace } from "@/components/chat/browser-workspace"
+import { InteractiveQuestionCard, WebBuilderQuestion } from "./interactive-question-card"
 
 // Model ID mapping for our API
 const MODEL_MAP: Record<string, string> = {
@@ -673,6 +674,7 @@ function ChatLandingContent() {
 
   const accumulatedReasoningRef = useRef<string>("")
   const accumulatedCitationsRef = useRef<string[]>([]);
+  const [activeQuestion, setActiveQuestion] = useState<WebBuilderQuestion | null>(null);
 
   // Track store hydration
   const [isStoreHydrated, setIsStoreHydrated] = useState(false)
@@ -1135,6 +1137,7 @@ function ChatLandingContent() {
 
     accumulatedReasoningRef.current = ""
     accumulatedCitationsRef.current = []
+    setActiveQuestion(null)
     // Ocultar el banner de límite de tokens al iniciar un nuevo envío.
     useConversionStore.getState().clearTokenLimitReached()
 
@@ -1334,6 +1337,12 @@ function ChatLandingContent() {
     // 1. Process structured streamData (agent reports and webbuilder files)
     if (data && data.length > 0) {
       const store = useWebBuilderStore.getState();
+
+      // Find the interactive question: {type:'question', question}
+      const questionObj = (data as any[]).find((d: any) => d?.type === 'question');
+      if (questionObj?.question && activeQuestion?.title !== questionObj.question.title) {
+        setActiveQuestion(questionObj.question);
+      }
 
       // Find the plan card (modo Plan): {type:'plan', planId, reason, agents}
       const planObj = (data as any[]).find((d: any) => d?.type === 'plan');
@@ -1922,8 +1931,26 @@ function ChatLandingContent() {
 
             <div className="absolute bottom-4 left-0 right-0 z-10 bg-transparent px-4 pb-0 md:relative md:bottom-auto md:px-4 md:pb-5 md:pt-0">
               <div className={cn("w-full transition-all", (isBrowserOpen || isCanvasOpen || isWebBuilderMode) ? "max-w-full" : "max-w-3xl mx-auto")}>
+                {activeQuestion && (
+                  <div className="mb-3">
+                    <InteractiveQuestionCard
+                      question={activeQuestion}
+                      onSubmit={(answer) => {
+                        setActiveQuestion(null);
+                        handleSend(answer, { webSearch: false, image: false, codeInterpreter: false, browser: false });
+                      }}
+                      onSkip={() => {
+                        setActiveQuestion(null);
+                        handleSend("Omitir preguntas y continuar con la configuración estándar", { webSearch: false, image: false, codeInterpreter: false, browser: false });
+                      }}
+                      onClose={() => {
+                        setActiveQuestion(null);
+                      }}
+                    />
+                  </div>
+                )}
                 <ChatInput
-                  placeholder="Envía un mensaje..."
+                  placeholder={activeQuestion ? "Responde a la pregunta de arriba para continuar..." : "Envía un mensaje..."}
                   onSubmit={handleSend}
                   disabled={false}
                   isStreaming={aiLoading}

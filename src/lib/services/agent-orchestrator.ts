@@ -782,11 +782,24 @@ async function generateWebBuilderCodeWithVerification(
   return { text: '', usage: { totalTokens: totalUsageTokens } };
 }
 
+export interface WebBuilderQuestionOption {
+  id: string;
+  title: string;
+  description?: string;
+}
+
+export interface WebBuilderQuestion {
+  title: string;
+  options: WebBuilderQuestionOption[];
+  allowWriteIn?: boolean;
+}
+
 export interface WebBuilderPlan {
   isComplex: boolean;
   reason: string;
   agents: WebBuilderAgentInfo[];
   totalTokensUsed: number;
+  question?: WebBuilderQuestion;
 }
 
 /**
@@ -814,19 +827,28 @@ export async function planWebBuilder(
   const basePlannerPrompt = `Actúas como el Arquitecto de Software y Orquestador de Maverlang WebBuilder.
 Tu tarea es analizar la consulta del usuario y los archivos existentes en el proyecto (si los hay), y planificar los cambios de código.
 
+Si la consulta es muy general o vaga (ej: "quiero una web", "crea una tienda online", "diseña un ecommerce", "agrega una sección de productos", etc.) y consideras que es más profesional aclararla haciendo una pregunta interactiva al usuario sobre sus requerimientos específicos antes de armar el plan, DEBES responder con una estructura de pregunta interactiva.
+
 Determina si la consulta es simple (isComplex: false) o compleja (isComplex: true).
 - Consultas simples (isComplex: false): Saludos, preguntas conceptuales de programación, o cambios muy pequeños en un único archivo que pueden ser realizados directamente por el LLM final (ej. "cambia el color del botón a azul", "cambia el título de la página").
 - Consultas complejas (isComplex: true): Crear una nueva aplicación web desde cero, agregar múltiples componentes interactivos, realizar modificaciones extensas en más de un archivo, o cambios estructurales grandes.
 
-Si la consulta es compleja (isComplex: true), debes descomponer la tarea en archivos individuales. Asigna cada archivo a un agente constructor especializado (mínimo 2, máximo 5 archivos/agentes en total). Cada agente se encargará de crear o actualizar UN ÚNICO archivo de código.
-Por ejemplo, si necesitas crear una dashboard interactiva, podrías planificar:
-1. "/App.tsx" -> asignado a AppAgent (Desarrollador React Principal) para el layout y estado general.
-2. "/components/FinanceChart.tsx" -> asignado a ChartAgent (Especialista en Visualización) para el gráfico interactivo.
-3. "/styles.css" -> asignado a StyleAgent (Especialista CSS) para los estilos globales y Tailwind.
+Si decides hacer una pregunta interactiva antes de planificar, responde con el siguiente formato JSON (con isComplex: false, agentes vacíos, y el objeto "question"):
+{
+  "isComplex": false,
+  "reason": "Explicación breve de por qué se requiere aclarar esta información",
+  "agents": [],
+  "question": {
+    "title": "La pregunta principal aclaratoria (ej: ¿Qué tipo de funcionalidad o sección necesitas?)",
+    "options": [
+      { "id": "opcion1", "title": "Título de la opción 1", "description": "Descripción breve y profesional de la opción 1" },
+      { "id": "opcion2", "title": "Título de la opción 2", "description": "Descripción breve y profesional de la opción 2" }
+    ],
+    "allowWriteIn": true
+  }
+}
 
-IMPORTANTE - CONVENCIÓN DE RUTAS: Los archivos SIEMPRE se referencian con barra inicial y SIN la carpeta "src/". El archivo principal es "/App.tsx", los estilos globales son "/styles.css", y los componentes van en "/components/Nombre.tsx". NUNCA uses rutas como "src/App.tsx" o "/src/App.tsx".
-
-DEBES responder ÚNICAMENTE con un bloque JSON en el siguiente formato (sin explicaciones, sin markdown, solo el JSON):
+Si decides generar el plan directamente porque tienes suficiente información, responde con (isComplex: true):
 {
   "isComplex": true,
   "reason": "Explicación del diseño y plan de archivos",
@@ -840,12 +862,16 @@ DEBES responder ÚNICAMENTE con un bloque JSON en el siguiente formato (sin expl
   ]
 }
 
-Si determinas que no requiere delegación (isComplex: false), responde con:
+Si determinas que no requiere delegación ni preguntas (isComplex: false), responde con:
 {
   "isComplex": false,
   "reason": "Explicación breve del motivo de no delegar",
   "agents": []
 }
+
+IMPORTANTE - CONVENCIÓN DE RUTAS: Los archivos SIEMPRE se referencian con barra inicial y SIN la carpeta "src/". El archivo principal es "/App.tsx", los estilos globales son "/styles.css", y los componentes van en "/components/Nombre.tsx". NUNCA uses rutas como "src/App.tsx" o "/src/App.tsx".
+
+DEBES responder ÚNICAMENTE con un bloque JSON en uno de los formatos anteriores (sin explicaciones, sin markdown, solo el JSON).
 `;
 
   const replanSection = isReplan
@@ -857,6 +883,7 @@ Si determinas que no requiere delegación (isComplex: false), responde con:
   let isComplex = false;
   let reason = "";
   let agents: WebBuilderAgentInfo[] = [];
+  let question: WebBuilderQuestion | undefined = undefined;
 
   try {
     const { text, usage } = await generateText({
@@ -866,7 +893,7 @@ Si determinas que no requiere delegación (isComplex: false), responde con:
         {
           role: 'user',
           content: `Consulta del usuario: "${userMessage}"
-
+ 
 ${existingFilesContext ? `Archivos existentes:\n${Object.keys(existingFiles).map(p => `- ${p}`).join('\n')}` : '(Proyecto vacío)'}`
         }
       ],
@@ -887,6 +914,18 @@ ${existingFilesContext ? `Archivos existentes:\n${Object.keys(existingFiles).map
       task: a.task || 'Crear código',
       filePath: a.filePath || '/App.tsx'
     }));
+
+    if (result.question) {
+      question = {
+        title: result.question.title || 'Pregunta aclaratoria',
+        options: Array.isArray(result.question.options) ? result.question.options.map((o: any) => ({
+          id: o.id || String(Math.random()),
+          title: o.title || 'Opción',
+          description: o.description
+        })) : [],
+        allowWriteIn: result.question.allowWriteIn !== false
+      };
+    }
   } catch (err: any) {
     console.error("WebBuilder planning phase failed:", err);
     isComplex = false;
@@ -894,13 +933,15 @@ ${existingFilesContext ? `Archivos existentes:\n${Object.keys(existingFiles).map
     agents = [];
   }
 
-  if (!isComplex || agents.length === 0) {
+  if (question) {
+    onProgress?.(`❓ [Orquestador WebBuilder] Se ha generado una pregunta aclaratoria para el usuario: "${question.title}"\n\n`);
+  } else if (!isComplex || agents.length === 0) {
     onProgress?.(`✅ [Orquestador WebBuilder] Análisis completo: Es una consulta simple. Se resolverá de forma directa (${reason}).\n\n`);
   } else {
     onProgress?.(`🔍 [Orquestador WebBuilder] Plan de archivos creado: "${reason}"\n`);
   }
 
-  return { isComplex, reason, agents, totalTokensUsed };
+  return { isComplex, reason, agents, totalTokensUsed, question };
 }
 
 /**

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAssistantStore } from "@/lib/stores/assistant-store";
 import { useAuthStore } from "@/lib/stores/auth-store";
-import { Sparkles, Laptop, TrendingUp, Check, Loader2, ArrowRight, User } from "lucide-react";
+import { Sparkles, Laptop, TrendingUp, Check, Loader2, ArrowRight, User, X } from "lucide-react";
 
 function MovingStarsBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -166,8 +166,18 @@ export function OnboardingDialog() {
         className="w-full max-w-lg bg-white p-[3px] rounded-[36px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)] overflow-hidden relative"
       >
         {/* Starry Background (Black space inner wrapper) */}
-        <div className="rounded-[33px] overflow-hidden relative bg-black aspect-video min-h-[380px] md:min-h-[420px] flex flex-col items-center justify-center p-6 md:p-10 select-none">
+        <div className="rounded-[33px] overflow-hidden relative bg-black w-full min-h-[380px] md:min-h-[420px] flex flex-col items-center justify-center p-6 md:p-8 select-none">
           <MovingStarsBackground />
+
+          {/* Floating close X icon in the top right of the starry container */}
+          <button
+            type="button"
+            onClick={handleSkipAll}
+            className="absolute top-5 right-5 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all z-20 active:scale-95 cursor-pointer shadow-sm"
+            title="Cerrar"
+          >
+            <X className="w-4 h-4" />
+          </button>
 
           {/* Foreground Main Card Panel */}
           <div className="relative z-10 w-full max-w-sm bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-[24px] p-6 shadow-xl border border-white/20 text-zinc-900 dark:text-white flex flex-col justify-between min-h-[290px] md:min-h-[320px]">

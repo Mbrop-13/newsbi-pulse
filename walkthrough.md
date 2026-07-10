@@ -773,6 +773,19 @@ Hemos optimizado el diseño de la barra lateral en el modo Flow consolidando la 
 
 ---
 
+## 40. Corrección de Alineación Centrada y Cierre en OnboardingDialog
+
+Hemos solucionado los problemas de posicionamiento y visualización del popup de onboarding:
+
+*   **Centrado y Ajuste de Dimensiones (`w-full`):**
+    *   **Archivo Modificado**: [onboarding-dialog.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/onboarding-dialog.tsx)
+    *   Se eliminó la propiedad `aspect-video` del contenedor de estrellas negro que provocaba que se sobredimensionara horizontalmente más allá de los límites de la tarjeta blanca exterior (`max-w-lg`) debido a la regla `min-h`. Esto causaba un desbordamiento hacia la derecha y que la tarjeta de preguntas interior pareciera desalineada o cortada.
+    *   El contenedor ahora ocupa exactamente el `w-full` (100% de la tarjeta exterior), asegurando un centrado pixel-perfect en todos los dispositivos.
+*   **Botón de Cierre (`X`):**
+    *   Se incorporó un botón flotante de cierre `X` en la esquina superior derecha del fondo de estrellas, permitiendo a los usuarios registrados e históricos descartar instantáneamente el popup y guardar el estado de completado en Supabase sin necesidad de rellenar los datos.
+
+---
+
 ## Verificación Realizada
 
 * **Type Safety:** La compilación y validación estática de TypeScript ha finalizado de forma correcta (`npx tsc --noEmit` completado sin errores).

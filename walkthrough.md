@@ -542,9 +542,30 @@ Se ha implementado una cuadrícula de mosaico (masonry grid) con soporte para m�
 
 ---
 
+* **Type Safety:** La compilación y validación estática de TypeScript ha finalizado de forma correcta (`npx tsc --noEmit` completado sin errores).
+
+---
+
+## 27. Submenú Colapsable 'Finanzas' en la Barra Lateral
+
+Se ha agrupado el acceso a las vistas financieras principales bajo una nueva categoría colapsable denominada **Finanzas**, manteniendo la consistencia de navegación y seguridad:
+
+*   **Creación del Componente de Finanzas:**
+    *   **Archivo Creado**: [nav-finance.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/sidebar/nav-finance.tsx)
+    *   Implementa un submenú desplegable usando los componentes de Collapsible y el sistema de estilos de la barra lateral.
+    *   El menú se inicializa **cerrado de forma predeterminada** (`isOpen: false`).
+    *   Mantiene los accesos con sus respectivos iconos a: **Portafolio** (`Briefcase`), **Mercados** (`TrendingUp`), **Noticias** (`Newspaper`) y **Mundo** (`Globe`).
+*   **Integración en la Estructura Principal:**
+    *   **Archivo Modificado**: [app-sidebar.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/sidebar/app-sidebar.tsx)
+    *   Removidos los botones individuales del listado de botones raíz `mainButtons` para reducir saturación en el sidebar.
+    *   Se inyecta el menú `<NavFinance items={financeButtons} />` justo encima del submenú de Chats (`NavChats`) cuando el estado de la barra lateral es expandido.
+    *   Mantiene la protección de rutas: si un usuario intenta hacer clic en cualquiera de las subcategorías sin haber iniciado sesión, se bloquea la navegación y se abre el modal de registro automáticamente.
+
+---
+
 ## Verificación Realizada
 
-*   **Type Safety:** La compilación y validación estática de TypeScript ha finalizado de forma correcta (`npx tsc --noEmit` completado sin errores).
+* **Type Safety:** La compilación y validación estática de TypeScript ha finalizado de forma correcta (`npx tsc --noEmit` completado sin errores).
 
 
 

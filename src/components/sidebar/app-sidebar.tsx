@@ -25,6 +25,7 @@ import {
 import { NavMain } from "@/components/sidebar/nav-main"
 import { NavUser } from "@/components/sidebar/nav-user"
 import { NavChats } from "@/components/sidebar/nav-chats"
+import { NavFinance } from "@/components/sidebar/nav-finance"
 import { SidebarLogo } from "@/components/sidebar/sidebar-logo"
 import { SearchDialog } from "@/components/search-dialog"
 import {
@@ -85,6 +86,17 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
         icon: FolderKanban,
       },
       {
+        title: "Flow",
+        url: `/${language}/flow`,
+        icon: Workflow,
+      },
+    ],
+    [clearMessages, t, language]
+  )
+
+  const financeButtons = React.useMemo(
+    () => [
+      {
         title: t("portfolio"),
         url: `/${language}/portafolio`,
         icon: Briefcase,
@@ -104,13 +116,8 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
         url: `/${language}/mundo`,
         icon: Globe,
       },
-      {
-        title: "Flow",
-        url: `/${language}/flow`,
-        icon: Workflow,
-      },
     ],
-    [clearMessages, t, language]
+    [t, language]
   )
 
   if (isFlowPage) {
@@ -204,7 +211,12 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
         </SidebarHeader>
         <SidebarContent className="[&::-webkit-scrollbar]:hidden [scrollbar-width:none] [-ms-overflow-style:none] gap-0">
           <NavMain items={mainButtons} />
-          {state === "expanded" && mounted && <NavChats />}
+          {state === "expanded" && mounted && (
+            <>
+              <NavFinance items={financeButtons} />
+              <NavChats />
+            </>
+          )}
         </SidebarContent>
         <SidebarFooter>
           <NavUser />

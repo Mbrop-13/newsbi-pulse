@@ -638,6 +638,24 @@ Hemos realizado un pulido extremo de la interfaz a nivel global y en la sección
 
 ---
 
+* **Type Safety:** La compilación y validación estática de TypeScript ha finalizado de forma correcta (`npx tsc --noEmit` completado sin errores).
+
+---
+
+## 32. Cohesión de Estilo de la Barra de Escritura de Flow con la Plataforma
+
+Hemos unificado la experiencia táctil y visual de la consola creativa de Flow con el componente de chat principal:
+
+*   **Rediseño a Textarea Dinámico en Flow:**
+    *   **Archivo Modificado**: [flow-client.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/app/flow/flow-client.tsx)
+    *   Reemplazado el elemento `<input>` de una sola línea por un elemento `<textarea>` de auto-redimensionado adaptativo con altura dinámica.
+    *   **Estilo Unificado:** Se aplicaron exactamente las mismas clases de borde (`border-[#DBDBDB]`), sombreado sutil (`shadow-[0_1px_2px_0_rgba(0,0,0,0.04),0_2px_12px_0_rgba(0,0,0,0.03)]`) y esquinas redondeadas (`rounded-xl p-2.5`) de la caja de chat principal.
+    *   **Distribución de Herramientas:** Las acciones quedan integradas exactamente en la misma barra inferior interna del prompt:
+        *   **Lado izquierdo:** Botón Plus `+` y pastilla del modo **Agente**.
+        *   **Lado derecho:** Píldora selectora de modelos/formatos con dropdown emergente y botón circular de enviar/generar.
+
+---
+
 ## Verificación Realizada
 
 * **Type Safety:** La compilación y validación estática de TypeScript ha finalizado de forma correcta (`npx tsc --noEmit` completado sin errores).

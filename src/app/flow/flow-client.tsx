@@ -124,6 +124,18 @@ export default function FlowClient() {
   
   // Track active generation locally to prevent store overwrite
   const generatingRef = useRef(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const resizeTextarea = () => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  };
+
+  useEffect(() => {
+    resizeTextarea();
+  }, [prompt]);
 
   // Select active Flow chat
   const currentChatId = useAIChatStore((s) => s.currentChatId);
@@ -484,208 +496,216 @@ export default function FlowClient() {
         </div>
       </main>
 
-      {/* Floating Prompt Chat Panel at the bottom (Light Mode styled) */}
+      {/* Floating Prompt Chat Panel a      {/* Floating Prompt Chat Panel at the bottom (Light Mode styled matching normal ChatInput exactly) */}
       <div className="w-full max-w-xl mx-auto px-4 pb-3 absolute bottom-0 left-1/2 -translate-x-1/2 shrink-0 z-20">
         <form onSubmit={handleSubmit} className="relative">
-          <div className="bg-white border border-zinc-200/80 rounded-3xl p-3 flex items-center justify-between gap-3 shadow-xl focus-within:border-zinc-300/80 transition-all duration-200 relative">
+          <div className="rounded-xl p-2.5 bg-white border-[#DBDBDB] border shadow-[0_1px_2px_0_rgba(0,0,0,0.04),0_2px_12px_0_rgba(0,0,0,0.03)] transition-all duration-300 relative group focus-within:border-zinc-400">
             
-            {/* Left Options group */}
-            <div className="flex items-center gap-1.5 shrink-0">
-              {/* Attach/Upload Button */}
-              <button
-                type="button"
-                onClick={() => toast.info("Carga de archivos multimedia (Próximamente)")}
-                className="w-8 h-8 rounded-full bg-zinc-100 hover:bg-zinc-200/80 border border-zinc-200/50 hover:text-zinc-900 text-zinc-500 flex items-center justify-center transition-all cursor-pointer active:scale-95 shrink-0"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-
-              {/* Agent Pill Toggle */}
-              <button
-                type="button"
-                onClick={() => {
-                  const next = !isAgentActive;
-                  setIsAgentActive(next);
-                  toast.success(next ? "Modo Agente activado" : "Modo Agente desactivado");
+            {/* Textarea area */}
+            <div className="flex items-center px-1 bg-transparent relative">
+              <textarea
+                ref={textareaRef}
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="¿Qué quieres crear?"
+                disabled={loading}
+                rows={1}
+                className="w-full min-h-10 max-h-72 text-[15px] px-1 resize-none overflow-y-auto border-0 bg-transparent shadow-none focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder-zinc-450 font-medium text-zinc-800 leading-normal"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmit(e);
+                  }
                 }}
-                className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all duration-200 active:scale-95 cursor-pointer flex items-center gap-1.5 shrink-0 select-none border ${
-                  isAgentActive 
-                    ? "bg-[#1890FF]/15 text-[#1890FF] border-[#1890FF]/30" 
-                    : "bg-zinc-100 hover:bg-zinc-250 border border-zinc-200/50 text-zinc-500 hover:text-zinc-700"
-                }`}
-              >
-                <Bot className="w-3.5 h-3.5" />
-                <span>Agente</span>
-              </button>
+              />
             </div>
 
-            {/* Prompt input field */}
-            <input
-              type="text"
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="¿Qué quieres crear?"
-              className="flex-1 bg-transparent text-xs text-zinc-800 placeholder-zinc-450 focus:outline-none py-1.5 font-bold min-w-0"
-            />
-
-            {/* Right Options group */}
-            <div className="flex items-center gap-2 shrink-0 relative">
-              {/* Image/Video LLM Selector Pill */}
-              <div className="relative">
+            {/* Bottom actions row */}
+            <div className="mt-2 flex items-center justify-between px-1">
+              {/* Left group: Plus and Agent pill */}
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setShowModelDropdown(!showModelDropdown)}
-                  className="px-3.5 py-2 rounded-full bg-zinc-100 hover:bg-zinc-200/80 border border-zinc-200/60 text-zinc-700 hover:text-zinc-900 text-[11px] font-bold flex items-center gap-2 transition-all duration-200 select-none cursor-pointer leading-none"
+                  onClick={() => toast.info("Carga de archivos multimedia (Próximamente)")}
+                  className="w-8 h-8 rounded-full hover:bg-zinc-100 border border-zinc-200/50 hover:text-zinc-900 text-zinc-505 flex items-center justify-center transition-all cursor-pointer active:scale-95 shrink-0"
                 >
-                  <span className="truncate">{selectedModel.icon} {selectedModel.name}</span>
-                  <span className="text-[10px] text-[#1890FF] font-bold leading-none flex items-center gap-1 shrink-0">
-                    {getAspectRatioIcon(aspectRatio)} {multiplier}
-                  </span>
+                  <Plus className="w-4 h-4" />
                 </button>
 
-                {/* Model Selector Dropdown (Light Mode Card) */}
-                <AnimatePresence>
-                  {showModelDropdown && (
-                    <>
-                      <div className="fixed inset-0 z-30" onClick={() => setShowModelDropdown(false)} />
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                        className="absolute right-0 bottom-full mb-3 w-[22rem] bg-white border border-zinc-200/80 rounded-[28px] shadow-2xl p-4.5 z-40 text-zinc-950 flex flex-col gap-4.5 select-none font-sans"
-                      >
-                        {/* 1. Tabs at the top (Imagen / Vídeo) */}
-                        <div className="flex bg-zinc-100 rounded-2xl p-1 gap-1">
-                          <button
-                            type="button"
-                            onClick={() => setGenerationType("imagen")}
-                            className={cn(
-                              "flex-1 py-2 rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition-all duration-200 cursor-pointer",
-                              generationType === "imagen"
-                                ? "bg-white text-zinc-950 border border-zinc-200/30 shadow-xs"
-                                : "text-zinc-500 hover:text-zinc-800"
-                            )}
-                          >
-                            <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                            <span>Imagen</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setGenerationType("video")}
-                            className={cn(
-                              "flex-1 py-2 rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition-all duration-200 cursor-pointer",
-                              generationType === "video"
-                                ? "bg-white text-zinc-950 border border-zinc-200/30 shadow-xs"
-                                : "text-zinc-500 hover:text-zinc-800"
-                            )}
-                          >
-                            <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-                            <span>Vídeo</span>
-                          </button>
-                        </div>
-
-                        {/* 2. Aspect Ratio Row */}
-                        <div className="grid grid-cols-5 gap-1.5">
-                          {[
-                            { id: "16:9", label: "16:9", icon: <rect x="2" y="6" width="20" height="12" rx="1.5" className="fill-none stroke-current" strokeWidth="2" /> },
-                            { id: "4:3", label: "4:3", icon: <rect x="3" y="5" width="18" height="14" rx="1.5" className="fill-none stroke-current" strokeWidth="2" /> },
-                            { id: "1:1", label: "1:1", icon: <rect x="4" y="4" width="16" height="16" rx="1.5" className="fill-none stroke-current" strokeWidth="2" /> },
-                            { id: "3:4", label: "3:4", icon: <rect x="5" y="3" width="14" height="18" rx="1.5" className="fill-none stroke-current" strokeWidth="2" /> },
-                            { id: "9:16", label: "9:16", icon: <rect x="6" y="2" width="12" height="20" rx="1.5" className="fill-none stroke-current" strokeWidth="2" /> },
-                          ].map((item) => {
-                            const active = aspectRatio === item.id;
-                            return (
-                              <button
-                                key={item.id}
-                                type="button"
-                                onClick={() => setAspectRatio(item.id as any)}
-                                className={cn(
-                                  "flex flex-col items-center justify-center p-2 rounded-2xl gap-2 transition-all cursor-pointer aspect-square",
-                                  active
-                                    ? "bg-zinc-100 border border-zinc-200 text-zinc-950 shadow-xs"
-                                    : "text-zinc-400 hover:text-zinc-800 hover:bg-zinc-50"
-                                )}
-                              >
-                                <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0">{item.icon}</svg>
-                                <span className="text-[10px] font-black">{item.label}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-
-                        {/* 3. Multiplier Row (1x, x2, x3, x4) */}
-                        <div className="grid grid-cols-4 bg-zinc-100 rounded-2xl p-1 gap-1">
-                          {["1x", "x2", "x3", "x4"].map((m) => {
-                            const active = multiplier === m;
-                            return (
-                              <button
-                                key={m}
-                                type="button"
-                                onClick={() => setMultiplier(m as any)}
-                                className={cn(
-                                  "py-1.5 rounded-xl text-xs font-bold text-center transition-all cursor-pointer",
-                                  active
-                                    ? "bg-white text-zinc-950 border border-zinc-200/30 shadow-xs"
-                                    : "text-zinc-500 hover:text-zinc-800"
-                                )}
-                              >
-                                {m}
-                              </button>
-                            );
-                          })}
-                        </div>
-
-                        {/* 4. Model Selection Dropdown Field */}
-                        <div className="relative">
-                          <select
-                            value={selectedModel.id}
-                            onChange={(e) => {
-                              const found = FLOW_MODELS.find(m => m.id === e.target.value);
-                              if (found) setSelectedModel(found);
-                            }}
-                            className="w-full bg-zinc-100 border border-zinc-200/60 rounded-2xl px-4 py-3 text-xs font-bold text-zinc-800 outline-none cursor-pointer appearance-none pr-10 hover:bg-zinc-200/40 transition-colors"
-                          >
-                            {FLOW_MODELS.map((m) => (
-                              <option key={m.id} value={m.id} className="bg-white text-zinc-850 font-bold">
-                                {m.icon} {m.name} ({m.badge})
-                              </option>
-                            ))}
-                          </select>
-                          <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
-                        </div>
-
-                        {/* 5. Points cost indicator */}
-                        <div className="text-center py-1 border-t border-zinc-100 pt-3">
-                          <p className="text-[11px] text-zinc-500 font-semibold leading-none">
-                            La generación consumirá <span className="underline decoration-zinc-400 decoration-wavy underline-offset-2 font-bold text-[#1890FF]">{totalCost} puntos</span>
-                          </p>
-                        </div>
-
-                      </motion.div>
-                    </>
-                  )}
-                </AnimatePresence>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !isAgentActive;
+                    setIsAgentActive(next);
+                    toast.success(next ? "Modo Agente activado" : "Modo Agente desactivado");
+                  }}
+                  className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all duration-200 active:scale-95 cursor-pointer flex items-center gap-1.5 shrink-0 select-none border ${
+                    isAgentActive 
+                      ? "bg-[#1890FF]/15 text-[#1890FF] border-[#1890FF]/30" 
+                      : "bg-zinc-100 hover:bg-zinc-255 border border-zinc-200/50 text-zinc-505 hover:text-zinc-750"
+                  }`}
+                >
+                  <Bot className="w-3.5 h-3.5" />
+                  <span>Agente</span>
+                </button>
               </div>
 
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={!prompt.trim() || loading}
-                className={`w-8 h-8 rounded-full flex items-center justify-center transition-all shrink-0 ${
-                  prompt.trim() && !loading
-                    ? "bg-[#1890FF] hover:bg-blue-600 text-white active:scale-90 shadow-md cursor-pointer"
-                    : "bg-zinc-100 text-zinc-400 border border-zinc-200/40 cursor-not-allowed"
-                }`}
-              >
-                <ArrowRight className="w-4.5 h-4.5" />
-              </button>
+              {/* Right group: Model selector & send button */}
+              <div className="flex items-center gap-2 relative">
+                {/* Image/Video LLM Selector Pill */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowModelDropdown(!showModelDropdown)}
+                    className="px-3.5 py-1.5 rounded-full bg-zinc-100 hover:bg-zinc-200/80 border border-zinc-200/60 text-zinc-700 hover:text-zinc-900 text-[11px] font-bold flex items-center gap-2 transition-all duration-200 select-none cursor-pointer leading-none"
+                  >
+                    <span className="truncate">{selectedModel.icon} {selectedModel.name}</span>
+                    <span className="text-[10px] text-[#1890FF] font-bold leading-none flex items-center gap-1 shrink-0">
+                      {getAspectRatioIcon(aspectRatio)} {multiplier}
+                    </span>
+                  </button>
+
+                  {/* Model Selector Dropdown (Light Mode Card) */}
+                  <AnimatePresence>
+                    {showModelDropdown && (
+                      <>
+                        <div className="fixed inset-0 z-30" onClick={() => setShowModelDropdown(false)} />
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                          className="absolute right-0 bottom-full mb-3 w-[22rem] bg-white border border-zinc-200/80 rounded-[28px] shadow-2xl p-4.5 z-40 text-zinc-950 flex flex-col gap-4.5 select-none font-sans"
+                        >
+                          {/* 1. Tabs at the top (Imagen / Vídeo) */}
+                          <div className="flex bg-zinc-100 rounded-2xl p-1 gap-1">
+                            <button
+                              type="button"
+                              onClick={() => setGenerationType("imagen")}
+                              className={cn(
+                                "flex-1 py-2 rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition-all duration-200 cursor-pointer",
+                                generationType === "imagen"
+                                  ? "bg-white text-zinc-950 border border-zinc-200/30 shadow-xs"
+                                  : "text-zinc-500 hover:text-zinc-800"
+                              )}
+                            >
+                              <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                              <span>Imagen</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setGenerationType("video")}
+                              className={cn(
+                                "flex-1 py-2 rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition-all duration-200 cursor-pointer",
+                                generationType === "video"
+                                  ? "bg-white text-zinc-950 border border-zinc-200/30 shadow-xs"
+                                  : "text-zinc-500 hover:text-zinc-800"
+                              )}
+                            >
+                              <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                              <span>Vídeo</span>
+                            </button>
+                          </div>
+
+                          {/* 2. Aspect Ratio Row */}
+                          <div className="grid grid-cols-5 gap-1.5">
+                            {[
+                              { id: "16:9", label: "16:9", icon: <rect x="2" y="6" width="20" height="12" rx="1.5" className="fill-none stroke-current" strokeWidth="2" /> },
+                              { id: "4:3", label: "4:3", icon: <rect x="3" y="5" width="18" height="14" rx="1.5" className="fill-none stroke-current" strokeWidth="2" /> },
+                              { id: "1:1", label: "1:1", icon: <rect x="4" y="4" width="16" height="16" rx="1.5" className="fill-none stroke-current" strokeWidth="2" /> },
+                              { id: "3:4", label: "3:4", icon: <rect x="5" y="3" width="14" height="18" rx="1.5" className="fill-none stroke-current" strokeWidth="2" /> },
+                              { id: "9:16", label: "9:16", icon: <rect x="6" y="2" width="12" height="20" rx="1.5" className="fill-none stroke-current" strokeWidth="2" /> },
+                            ].map((item) => {
+                              const active = aspectRatio === item.id;
+                              return (
+                                <button
+                                  key={item.id}
+                                  type="button"
+                                  onClick={() => setAspectRatio(item.id as any)}
+                                  className={cn(
+                                    "flex flex-col items-center justify-center p-2 rounded-2xl gap-2 transition-all cursor-pointer aspect-square",
+                                    active
+                                      ? "bg-zinc-100 border border-zinc-200 text-zinc-955 shadow-xs"
+                                      : "text-zinc-400 hover:text-zinc-800 hover:bg-zinc-50"
+                                  )}
+                                >
+                                  <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0">{item.icon}</svg>
+                                  <span className="text-[10px] font-black">{item.label}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          {/* 3. Multiplier Row (1x, x2, x3, x4) */}
+                          <div className="grid grid-cols-4 bg-zinc-100 rounded-2xl p-1 gap-1">
+                            {["1x", "x2", "x3", "x4"].map((m) => {
+                              const active = multiplier === m;
+                              return (
+                                <button
+                                  key={m}
+                                  type="button"
+                                  onClick={() => setMultiplier(m as any)}
+                                  className={cn(
+                                    "py-1.5 rounded-xl text-xs font-bold text-center transition-all cursor-pointer",
+                                    active
+                                      ? "bg-white text-zinc-955 border border-zinc-200/30 shadow-xs"
+                                      : "text-zinc-500 hover:text-zinc-800"
+                                  )}
+                                >
+                                  {m}
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          {/* 4. Model Selection Dropdown Field */}
+                          <div className="relative">
+                            <select
+                              value={selectedModel.id}
+                              onChange={(e) => {
+                                const found = FLOW_MODELS.find(m => m.id === e.target.value);
+                                if (found) setSelectedModel(found);
+                              }}
+                              className="w-full bg-zinc-100 border border-zinc-200/60 rounded-2xl px-4 py-3 text-xs font-bold text-zinc-800 outline-none cursor-pointer appearance-none pr-10 hover:bg-zinc-200/40 transition-colors"
+                            >
+                              {FLOW_MODELS.map((m) => (
+                                <option key={m.id} value={m.id} className="bg-white text-zinc-850 font-bold">
+                                  {m.icon} {m.name} ({m.badge})
+                                </option>
+                              ))}
+                            </select>
+                            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+                          </div>
+
+                          {/* 5. Points cost indicator */}
+                          <div className="text-center py-1 border-t border-zinc-100 pt-3">
+                            <p className="text-[11px] text-zinc-500 font-semibold leading-none">
+                              La generación consumirá <span className="underline decoration-zinc-400 decoration-wavy underline-offset-2 font-bold text-[#1890FF]">{totalCost} puntos</span>
+                            </p>
+                          </div>
+
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={!prompt.trim() || loading}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all shrink-0 ${
+                    prompt.trim() && !loading
+                      ? "bg-[#1890FF] hover:bg-blue-600 text-white active:scale-90 shadow-md cursor-pointer"
+                      : "bg-zinc-100 text-zinc-400 border border-zinc-200/40 cursor-not-allowed"
+                  }`}
+                >
+                  <ArrowRight className="w-4.5 h-4.5" />
+                </button>
             </div>
-
           </div>
-        </form>
-
-
-      </div>
+        </div>
+      </form>
     </div>
+  </div>
   );
 }

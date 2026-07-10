@@ -64,7 +64,13 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   // Navigation data for main buttons
   const mainButtons = React.useMemo(
     () => {
-      const buttons = [
+      const buttons: Array<{
+        title: string;
+        url: string;
+        icon: any;
+        isAction?: boolean;
+        onClick?: () => void;
+      }> = [
         {
           title: t("new_chat"),
           url: `/${language}/ai`,

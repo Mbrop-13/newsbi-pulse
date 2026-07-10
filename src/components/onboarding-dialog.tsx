@@ -6,7 +6,8 @@ import { useAssistantStore } from "@/lib/stores/assistant-store";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { Sparkles, Laptop, TrendingUp, Check, Loader2, ArrowRight, User, X } from "lucide-react";
 
-function MovingStarsBackground() {
+/* ─── Animated Stars Border ─────────────────────────────────────────── */
+function StarsBorder() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -26,53 +27,60 @@ function MovingStarsBackground() {
     };
     window.addEventListener("resize", handleResize);
 
-    const stars: Array<{
+    interface Star {
       x: number;
       y: number;
       size: number;
+      speedX: number;
       speedY: number;
       opacity: number;
-    }> = [];
+      twinkleSpeed: number;
+      twinkleOffset: number;
+    }
 
-    // Pre-fill starry sky particles
-    const starCount = 60;
+    const stars: Star[] = [];
+    const starCount = 40;
+
     for (let i = 0; i < starCount; i++) {
       stars.push({
         x: Math.random() * width,
         y: Math.random() * height,
-        size: Math.random() * 1.5 + 0.5,
-        speedY: Math.random() * 0.25 + 0.05,
-        opacity: Math.random() * 0.6 + 0.2,
+        size: Math.random() * 1.2 + 0.4,
+        speedX: (Math.random() - 0.5) * 0.15,
+        speedY: Math.random() * 0.2 + 0.03,
+        opacity: Math.random() * 0.7 + 0.3,
+        twinkleSpeed: Math.random() * 0.02 + 0.005,
+        twinkleOffset: Math.random() * Math.PI * 2,
       });
     }
 
+    let time = 0;
     const animate = () => {
       if (!ctx || !canvas) return;
       ctx.clearRect(0, 0, width, height);
+      time += 1;
 
-      // Solid pitch black base
-      ctx.fillStyle = "#000000";
-      ctx.fillRect(0, 0, width, height);
-
-      // Render star particles
-      ctx.fillStyle = "#ffffff";
       for (let i = 0; i < stars.length; i++) {
         const star = stars[i];
-        ctx.globalAlpha = star.opacity;
+        const twinkle = Math.sin(time * star.twinkleSpeed + star.twinkleOffset) * 0.3 + 0.7;
+        ctx.globalAlpha = star.opacity * twinkle;
+        ctx.fillStyle = "#ffffff";
         ctx.beginPath();
         ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
         ctx.fill();
 
-        // Animate particles downwards
+        star.x += star.speedX;
         star.y += star.speedY;
 
-        // Reset particles looping
         if (star.y > height) {
           star.y = 0;
           star.x = Math.random() * width;
         }
+        if (star.x < 0) star.x = width;
+        if (star.x > width) star.x = 0;
       }
 
+      ctx.globalAlpha = 1;
       animationFrameId = requestAnimationFrame(animate);
     };
 
@@ -84,21 +92,52 @@ function MovingStarsBackground() {
     };
   }, []);
 
-  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block pointer-events-none rounded-[33px]" />;
+  return (
+    <canvas
+      ref={canvasRef}
+      className="absolute inset-0 w-full h-full block pointer-events-none"
+      style={{ borderRadius: "inherit" }}
+    />
+  );
 }
 
+/* ─── Step Indicator ────────────────────────────────────────────────── */
+function StepIndicator({ current, total }: { current: number; total: number }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      {Array.from({ length: total }, (_, i) => {
+        const stepNum = i + 1;
+        const isActive = stepNum === current;
+        const isDone = stepNum < current;
+        return (
+          <motion.div
+            key={stepNum}
+            animate={{
+              width: isActive ? 24 : 8,
+              backgroundColor: isActive || isDone ? "#1E293B" : "#E2E8F0",
+            }}
+            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            className="h-2 rounded-full"
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+/* ─── Main Dialog ───────────────────────────────────────────────────── */
 export function OnboardingDialog() {
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  
+
   const hasCompletedSetup = useAssistantStore((s) => s.hasCompletedSetup);
   const completeSetup = useAssistantStore((s) => s.completeSetup);
   const saveToSupabase = useAssistantStore((s) => s.saveToSupabase);
   const isLoadingConfig = useAssistantStore((s) => s.isLoadingConfig);
-  
+
   const getUserName = useAssistantStore((s) => s.getUserName);
   const setUserName = useAssistantStore((s) => s.setUserName);
-  
+
   const getPrimaryInterest = useAssistantStore((s) => s.getPrimaryInterest);
   const setPrimaryInterest = useAssistantStore((s) => s.setPrimaryInterest);
 
@@ -157,190 +196,228 @@ export function OnboardingDialog() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xl">
-      {/* Outer Border Layer: Pure white rectangle wrapper */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      {/* ── Outer Popup Container ──────────────────────────────── */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        initial={{ opacity: 0, scale: 0.92, y: 30 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ type: "spring", damping: 25, stiffness: 350 }}
-        className="w-full max-w-lg bg-white p-[3px] rounded-[36px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)] overflow-hidden relative"
+        transition={{ type: "spring", damping: 28, stiffness: 380 }}
+        className="relative w-full max-w-xl bg-white rounded-3xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.25)] overflow-hidden"
       >
-        {/* Starry Background (Black space inner wrapper) */}
-        <div className="rounded-[33px] overflow-hidden relative bg-black w-full min-h-[380px] md:min-h-[420px] flex flex-col items-center justify-center p-6 md:p-8 select-none">
-          <MovingStarsBackground />
+        {/* Close X Button — top right corner of the white popup */}
+        <button
+          type="button"
+          onClick={handleSkipAll}
+          disabled={saving}
+          className="absolute top-4 right-4 z-30 p-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-400 hover:text-zinc-700 transition-all active:scale-90 cursor-pointer disabled:opacity-50"
+          title="Cerrar"
+        >
+          <X className="w-4 h-4" />
+        </button>
 
-          {/* Floating close X icon in the top right of the starry container */}
-          <button
-            type="button"
-            onClick={handleSkipAll}
-            className="absolute top-5 right-5 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all z-20 active:scale-95 cursor-pointer shadow-sm"
-            title="Cerrar"
-          >
-            <X className="w-4 h-4" />
-          </button>
+        {/* ── Decorative Stars Border ────────────────────────── */}
+        <div className="p-[6px]">
+          <div className="relative rounded-[20px] overflow-hidden bg-[#0a0a0f]">
+            <StarsBorder />
 
-          {/* Foreground Main Card Panel */}
-          <div className="relative z-10 w-full max-w-sm bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-[24px] p-6 shadow-xl border border-white/20 text-zinc-900 dark:text-white flex flex-col justify-between min-h-[290px] md:min-h-[320px]">
-            <AnimatePresence mode="wait">
-              {step === 1 ? (
-                <motion.div
-                  key="step1"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 10 }}
-                  transition={{ duration: 0.2 }}
-                  className="flex-1 flex flex-col justify-between"
-                >
-                  <div>
-                    {/* Welcome Header */}
-                    <div className="flex items-center gap-2 mb-2 text-[#1890FF]">
-                      <Sparkles className="w-5 h-5 animate-pulse" />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Bienvenido</span>
-                    </div>
-                    <h2 className="text-lg font-black tracking-tight leading-snug mb-2 text-zinc-950 dark:text-white">
-                      ¡Te damos la bienvenida a Maverlang!
-                    </h2>
-                    <p className="text-zinc-500 dark:text-zinc-400 text-xs leading-relaxed mb-6 font-medium">
-                      Escribe tu nombre para que tu asistente de Inteligencia Artificial pueda recordarte e interactuar contigo de manera más personalizada.
-                    </p>
+            {/* ── Inner White Content Card ───────────────────── */}
+            <div className="relative z-10 m-[6px] bg-white rounded-[16px] overflow-hidden">
+              {/* Content area with generous padding */}
+              <div className="px-8 pt-8 pb-7 md:px-10 md:pt-10 md:pb-8">
 
-                    {/* Input name wrapper */}
-                    <div className="relative flex items-center">
-                      <User className="absolute left-3.5 w-4 h-4 text-zinc-400 pointer-events-none" />
-                      <input
-                        type="text"
-                        value={localName}
-                        onChange={(e) => setLocalName(e.target.value)}
-                        placeholder="Escribe tu nombre (opcional)"
-                        className="w-full pl-10 pr-4 py-3 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs outline-none focus:border-zinc-950 dark:focus:border-white transition-all font-semibold"
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") handleNext();
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Foot actions */}
-                  <div className="flex items-center justify-between gap-3 mt-6 border-t border-zinc-100 dark:border-zinc-800/50 pt-4 shrink-0">
-                    <button
-                      type="button"
-                      disabled={saving}
-                      onClick={handleSkipAll}
-                      className="text-[11px] font-bold text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors disabled:opacity-50"
+                <AnimatePresence mode="wait">
+                  {step === 1 ? (
+                    <motion.div
+                      key="step1"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20 }}
+                      transition={{ duration: 0.25, ease: "easeOut" }}
                     >
-                      Saltar todo
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleNext}
-                      className="inline-flex items-center gap-1.5 bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-zinc-100 font-bold text-xs px-4 py-2.5 rounded-full transition-all active:scale-95 shadow-sm"
+                      {/* Header area */}
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-zinc-900 to-zinc-700 flex items-center justify-center shadow-sm">
+                            <Sparkles className="w-4 h-4 text-white" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400">Bienvenido a</p>
+                            <p className="text-sm font-extrabold text-zinc-900 -mt-0.5">Maverlang</p>
+                          </div>
+                        </div>
+                        <StepIndicator current={1} total={2} />
+                      </div>
+
+                      {/* Title */}
+                      <h2 className="text-xl md:text-2xl font-black tracking-tight text-zinc-900 leading-tight mb-2">
+                        Cuéntanos sobre ti
+                      </h2>
+                      <p className="text-zinc-500 text-sm leading-relaxed mb-8 max-w-sm">
+                        Escribe tu nombre para que la IA pueda recordarte y personalizar la experiencia.
+                      </p>
+
+                      {/* Name input */}
+                      <div className="relative">
+                        <User className="absolute left-4 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-zinc-400 pointer-events-none" />
+                        <input
+                          type="text"
+                          value={localName}
+                          onChange={(e) => setLocalName(e.target.value)}
+                          placeholder="Tu nombre (opcional)"
+                          className="w-full pl-12 pr-5 py-4 bg-zinc-50 border border-zinc-200 rounded-2xl text-sm font-semibold text-zinc-900 placeholder:text-zinc-400 outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-100 transition-all"
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleNext();
+                          }}
+                        />
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center justify-between mt-8 pt-5 border-t border-zinc-100">
+                        <button
+                          type="button"
+                          disabled={saving}
+                          onClick={handleSkipAll}
+                          className="text-xs font-bold text-zinc-400 hover:text-zinc-600 transition-colors disabled:opacity-50"
+                        >
+                          Saltar todo
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleNext}
+                          className="inline-flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-sm px-6 py-3 rounded-full transition-all active:scale-95 shadow-sm"
+                        >
+                          Siguiente
+                          <ArrowRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="step2"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ duration: 0.25, ease: "easeOut" }}
                     >
-                      Siguiente
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="step2"
-                  initial={{ opacity: 0, x: 10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  transition={{ duration: 0.2 }}
-                  className="flex-1 flex flex-col justify-between"
-                >
-                  <div>
-                    <h2 className="text-lg font-black tracking-tight leading-snug mb-1 text-zinc-950 dark:text-white">
-                      ¿Qué te interesa principalmente?
-                    </h2>
-                    <p className="text-zinc-500 dark:text-zinc-400 text-[11px] font-medium mb-4">
-                      Personalizaremos las respuestas de la IA según tus objetivos principales.
-                    </p>
+                      {/* Header area */}
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-zinc-900 to-zinc-700 flex items-center justify-center shadow-sm">
+                            <Sparkles className="w-4 h-4 text-white" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400">Configura tu</p>
+                            <p className="text-sm font-extrabold text-zinc-900 -mt-0.5">Experiencia</p>
+                          </div>
+                        </div>
+                        <StepIndicator current={2} total={2} />
+                      </div>
 
-                    {/* Interest options */}
-                    <div className="space-y-2">
-                      {[
-                        {
-                          id: "crear_apps",
-                          label: "Crear aplicaciones y plataformas",
-                          desc: "Proyectos interactivos, código e interfaces",
-                          icon: <Laptop className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />,
-                        },
-                        {
-                          id: "finanzas",
-                          label: "Funciones de finanzas y mercados",
-                          desc: "Portafolios, tickers e insights económicos",
-                          icon: <TrendingUp className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />,
-                        },
-                        {
-                          id: "ambas",
-                          label: "Ambas cosas por igual",
-                          desc: "Aprovechar al máximo todas las funciones",
-                          icon: <Sparkles className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />,
-                        },
-                      ].map((item) => {
-                        const isSelected = localInterest === item.id;
-                        return (
-                          <button
-                            key={item.id}
-                            type="button"
-                            onClick={() => {
-                              setLocalInterest(item.id as any);
-                              // Auto save on selection for better UX
-                              handleSave(item.id as any);
-                            }}
-                            className={`w-full text-left p-3 rounded-xl border transition-all flex items-center gap-3 active:scale-[0.99] ${
-                              isSelected
-                                ? "border-zinc-950 dark:border-white bg-zinc-50 dark:bg-zinc-950 shadow-xs"
-                                : "border-zinc-200/80 dark:border-zinc-800 hover:bg-zinc-50/50 dark:hover:bg-zinc-950/20"
-                            }`}
-                          >
-                            <div className="p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 shrink-0">
-                              {item.icon}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-bold text-zinc-950 dark:text-white leading-tight">
-                                {item.label}
-                              </p>
-                              <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5 font-medium leading-none">
-                                {item.desc}
-                              </p>
-                            </div>
-                            {isSelected && (
-                              <Check className="w-4 h-4 text-zinc-900 dark:text-white shrink-0" />
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
+                      {/* Title */}
+                      <h2 className="text-xl md:text-2xl font-black tracking-tight text-zinc-900 leading-tight mb-2">
+                        ¿Qué te interesa?
+                      </h2>
+                      <p className="text-zinc-500 text-sm leading-relaxed mb-6">
+                        Personalizaremos tu experiencia de IA según tus objetivos.
+                      </p>
 
-                  {/* Foot actions */}
-                  <div className="mt-5 shrink-0 flex flex-col gap-3">
-                    <p className="text-[9px] text-zinc-400 text-center font-semibold">
-                      * Puedes cambiar estas preferencias en cualquier momento desde los ajustes.
-                    </p>
-                    <div className="flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800/50 pt-3">
-                      <button
-                        type="button"
-                        onClick={() => setStep(1)}
-                        className="text-[11px] font-bold text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
-                      >
-                        Atrás
-                      </button>
-                      <button
-                        type="button"
-                        disabled={saving}
-                        onClick={() => handleSave()}
-                        className="inline-flex items-center justify-center min-w-[80px] bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-zinc-100 font-bold text-xs px-4 py-2 rounded-full transition-all active:scale-95 shadow-sm disabled:opacity-50"
-                      >
-                        {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Comenzar"}
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                      {/* Interest options */}
+                      <div className="space-y-3">
+                        {[
+                          {
+                            id: "crear_apps" as const,
+                            label: "Crear aplicaciones",
+                            desc: "Proyectos interactivos, código e interfaces",
+                            icon: <Laptop className="w-5 h-5" />,
+                          },
+                          {
+                            id: "finanzas" as const,
+                            label: "Finanzas y mercados",
+                            desc: "Portafolios, tickers e insights económicos",
+                            icon: <TrendingUp className="w-5 h-5" />,
+                          },
+                          {
+                            id: "ambas" as const,
+                            label: "Ambas cosas",
+                            desc: "Aprovecha al máximo todas las funciones",
+                            icon: <Sparkles className="w-5 h-5" />,
+                          },
+                        ].map((item) => {
+                          const isSelected = localInterest === item.id;
+                          return (
+                            <motion.button
+                              key={item.id}
+                              type="button"
+                              whileHover={{ scale: 1.01 }}
+                              whileTap={{ scale: 0.99 }}
+                              onClick={() => {
+                                setLocalInterest(item.id);
+                                handleSave(item.id);
+                              }}
+                              className={`w-full text-left p-4 rounded-2xl border-2 transition-all flex items-center gap-4 cursor-pointer ${
+                                isSelected
+                                  ? "border-zinc-900 bg-zinc-50 shadow-sm"
+                                  : "border-zinc-100 hover:border-zinc-200 hover:bg-zinc-50/50"
+                              }`}
+                            >
+                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                                isSelected
+                                  ? "bg-zinc-900 text-white"
+                                  : "bg-zinc-100 text-zinc-500"
+                              }`}>
+                                {item.icon}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-bold text-zinc-900 leading-tight">
+                                  {item.label}
+                                </p>
+                                <p className="text-xs text-zinc-500 mt-0.5 font-medium">
+                                  {item.desc}
+                                </p>
+                              </div>
+                              {isSelected && (
+                                <motion.div
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  className="w-6 h-6 rounded-full bg-zinc-900 flex items-center justify-center shrink-0"
+                                >
+                                  <Check className="w-3.5 h-3.5 text-white" />
+                                </motion.div>
+                              )}
+                            </motion.button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Note */}
+                      <p className="text-[11px] text-zinc-400 text-center mt-5 font-medium">
+                        Puedes cambiar esto en cualquier momento desde los ajustes.
+                      </p>
+
+                      {/* Actions */}
+                      <div className="flex items-center justify-between mt-5 pt-5 border-t border-zinc-100">
+                        <button
+                          type="button"
+                          onClick={() => setStep(1)}
+                          className="text-xs font-bold text-zinc-400 hover:text-zinc-600 transition-colors"
+                        >
+                          ← Atrás
+                        </button>
+                        <button
+                          type="button"
+                          disabled={saving}
+                          onClick={() => handleSave()}
+                          className="inline-flex items-center justify-center min-w-[100px] bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-sm px-6 py-3 rounded-full transition-all active:scale-95 shadow-sm disabled:opacity-50"
+                        >
+                          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Comenzar"}
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+              </div>
+            </div>
           </div>
         </div>
       </motion.div>

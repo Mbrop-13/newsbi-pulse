@@ -521,6 +521,31 @@ Perfeccionamos los elementos visuales de la landing page del chat para adaptarlo
         1. **Copiar**: Copia el prompt descriptivo optimizado en la barra de texto (`ChatInput`), enfoca el cursor y muestra un toast de éxito.
         2. **Ver**: Activa el modo WebBuilder en caliente y envía inmediatamente el prompt para iniciar el proceso de desarrollo de manera automática.
 
+---
+
+## 26. Mosaico de Imágenes (Masonry Grid) y Carga Progresiva Estética en Maverlang Flow
+
+Se ha implementado una cuadrícula de mosaico (masonry grid) con soporte para múltiples proporciones de aspecto, animaciones de carga shimmery progresivas lentas (0% a 100%) y controles flotantes con descripciones de prompt.
+
+*   **Grilla de Mosaico (Masonry Grid):**
+    *   **Archivo**: [flow-client.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/app/flow/flow-client.tsx)
+    *   Diseñada con un contenedor `columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4` para acomodar dinámicamente imágenes virtuales, cuadradas u horizontales debajo de la otra de forma orgánica, eliminando espacios vacíos.
+    *   La página se precarga con 4 patrones de olas de alta calidad similares a los del mockup del usuario.
+*   **Simulación de Carga Shimmery Lenta (0% a 100%):**
+    *   Al solicitar una nueva generación con un multiplicador de `1x` a `x4`, se insertan inmediatamente las tarjetas de carga en el mosaico con las proporciones seleccionadas (ej. `3:4`, `9:16`, `16:9`).
+    *   Las tarjetas muestran un fondo oscuro degradado con una animación de barrido de luz (`animate-shimmer`), un icono de imagen en la esquina superior izquierda y el porcentaje arriba a la derecha.
+    *   El porcentaje sube de manera gradual y estética (pasos lentos cada 450ms) y, al completarse el procesamiento de la API, se simula el llenado rápido al 100% resolviendo y revelando la ilustración generada.
+*   **Controles de Tarjeta Flotantes y Prompt Caption:**
+    *   Al pasar el mouse por encima (hover) de cualquier imagen completada, se muestra de forma suave un degradado oscuro con:
+        1.  Acciones rápidas translúcidas (favorito/corazón, descargar y menú de opciones).
+        2.  Una caja flotante semi-transparente en la parte inferior con la descripción o prompt original que originó el elemento.
+
+---
+
+## Verificación Realizada
+
+*   **Type Safety:** La compilación y validación estática de TypeScript ha finalizado de forma correcta (`npx tsc --noEmit` completado sin errores).
+
 
 
 

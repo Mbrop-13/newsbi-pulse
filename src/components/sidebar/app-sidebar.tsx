@@ -113,7 +113,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                     variant="ghost"
                     size="icon"
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleSidebar(); }}
-                    className={cn("h-8 w-8 shrink-0 transition-transform duration-200", state === "collapsed" && "rotate-180")}
+                    className="h-8 w-8 shrink-0 transition-transform duration-200"
                   >
                     <PanelLeftClose className="h-4 w-4" />
                     <span className="sr-only">Toggle sidebar</span>
@@ -124,7 +124,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                   variant="ghost"
                   size="icon"
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleSidebar(); }}
-                  className={cn("h-8 w-8 shrink-0 transition-transform duration-200", state === "collapsed" && "rotate-180")}
+                  className="h-8 w-8 shrink-0 transition-transform duration-200 rotate-180"
                 >
                   <PanelLeftClose className="h-4 w-4" />
                   <span className="sr-only">Toggle sidebar</span>

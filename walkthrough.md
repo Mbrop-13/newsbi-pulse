@@ -580,6 +580,24 @@ Se ha adaptado por completo la interfaz de **Maverlang Flow** a una estética pr
 
 ---
 
+* **Type Safety:** La compilación y validación estática de TypeScript ha finalizado de forma correcta (`npx tsc --noEmit` completado sin errores).
+
+---
+
+## 29. Unificación de la Barra Lateral y Simplificación de Acciones Rápidas en Flow
+
+Hemos perfeccionado el acoplamiento visual de **Flow** con la estructura original del dashboard para garantizar una navegación unificada y fluida:
+
+*   **Barra Lateral de la Plataforma Unificada:**
+    *   **Archivo Modificado**: [app-sidebar.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/sidebar/app-sidebar.tsx)
+    *   Se eliminó el renderizado alternativo condicional de la barra lateral de Flow. Ahora `/flow` utiliza exactamente la misma barra lateral que el chat normal (`NavMain`, `NavFinance`, `NavChats`, `NavUser`).
+    *   La única diferencia en la cabecera es el reemplazo de la marca ordinaria por un botón de retroceso `←` junto a la palabra **Flow** para retornar al chat de IA principal con un solo clic.
+*   **Simplificación de la Barra Superior de Flow:**
+    *   **Archivo Modificado**: [flow-client.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/app/flow/flow-client.tsx)
+    *   Eliminados los botones redundantes de la esquina superior derecha (`+`, `?`, `Ajustes`, `Más opciones`), logrando una visualización limpia e integrada alineada con la insignia premium `Pro` y el avatar de usuario.
+
+---
+
 ## Verificación Realizada
 
 * **Type Safety:** La compilación y validación estática de TypeScript ha finalizado de forma correcta (`npx tsc --noEmit` completado sin errores).

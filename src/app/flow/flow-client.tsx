@@ -296,38 +296,7 @@ export default function FlowClient() {
 
         {/* Right: Quick actions, PRO indicator & user */}
         <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full w-8 h-8 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
-            onClick={() => toast.info("Añadir nuevo recurso")}
-          >
-            <Plus className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full w-8 h-8 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
-            onClick={() => toast.info("Ayuda y Documentación")}
-          >
-            <HelpCircle className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full w-8 h-8 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
-            onClick={() => toast.info("Ajustes de Flow")}
-          >
-            <Settings className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full w-8 h-8 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
-            onClick={() => toast.info("Más opciones")}
-          >
-            <MoreHorizontal className="w-4 h-4" />
-          </Button>
+
 
           {/* Premium PRO badge */}
           <span className="inline-flex items-center bg-amber-500/10 text-amber-600 border border-amber-500/30 px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider select-none leading-none h-5">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -11,14 +11,12 @@ import {
   MoreHorizontal,
   ArrowRight,
   ChevronDown,
-  Sparkles,
-  Layers,
   Bot,
-  Paperclip,
   Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 // Model option interface
 interface ModelOption {
@@ -31,47 +29,94 @@ interface ModelOption {
 
 const FLOW_MODELS: ModelOption[] = [
   {
-    id: "nano-banana",
-    name: "Nano Banana 2",
-    badge: "x4",
+    id: "google/gemini-3.1-flash-lite-image",
+    name: "Nano Banana 2 Lite",
+    badge: "Lite",
     icon: "✨ 🍌",
-    desc: "Modelo rápido especializado en contenido multimedia y animaciones cortas.",
+    desc: "Modelo predeterminado rápido e inteligente de Google para flujos multimedia.",
   },
   {
-    id: "veo-2-turbo",
-    name: "Veo 2 Turbo",
-    badge: "x8",
-    icon: "🎬 🚀",
-    desc: "Generador de video hiper-realista con alta tasa de cuadros.",
+    id: "google/gemini-3.1-flash-image",
+    name: "Google: Nano Banana 2",
+    badge: "Flash",
+    icon: "⚡ 🍌",
+    desc: "Google Gemini 3.1 Flash Image. Rendimiento optimizado y gran calidad de generación.",
   },
   {
-    id: "imagen-3",
-    name: "Imagen 3 Ultra",
-    badge: "HD",
-    icon: "🎨 💎",
-    desc: "Modelo insignia para renders artísticos y diseño de personajes.",
-  },
-  {
-    id: "midjourney",
-    name: "Midjourney v6.1",
-    badge: "Ultra",
-    icon: "🔥 ⚡",
-    desc: "Estética cinematográfica y texturas hiper-detalladas.",
+    id: "google/gemini-3-pro-image",
+    name: "Google: Gemini 3 Pro",
+    badge: "Pro",
+    icon: "🌟 💎",
+    desc: "Google Gemini 3 Pro Image. Modelo de máxima capacidad y razonamiento multimedia premium.",
   },
 ];
+
+interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+}
 
 export default function FlowClient() {
   const [selectedModel, setSelectedModel] = useState<ModelOption>(FLOW_MODELS[0]);
   const [showModelDropdown, setShowModelDropdown] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [isAgentActive, setIsAgentActive] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, loading]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!prompt.trim()) return;
+    if (!prompt.trim() || loading) return;
 
-    toast.success(`Prompt enviado a ${selectedModel.name}: "${prompt}"`);
+    const userPrompt = prompt.trim();
     setPrompt("");
+
+    // Append user message
+    const userMsgId = Math.random().toString();
+    setMessages((prev) => [...prev, { id: userMsgId, role: "user", content: userPrompt }]);
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/flow", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          prompt: userPrompt,
+          model: selectedModel.id,
+          isAgentActive,
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Error al generar la respuesta.");
+      }
+
+      const data = await res.json();
+      const assistantMsgId = Math.random().toString();
+      setMessages((prev) => [
+        ...prev,
+        { id: assistantMsgId, role: "assistant", content: data.content },
+      ]);
+    } catch (err: any) {
+      console.error("[FLOW-CLIENT] Error:", err);
+      toast.error(err.message || "Error al comunicarse con la IA.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -154,42 +199,89 @@ export default function FlowClient() {
       </header>
 
       {/* Main Workspace Body */}
-      <main className="flex-1 flex flex-col items-center justify-center p-8 text-center relative z-10">
-        <div className="flex flex-col items-center max-w-sm">
-          {/* Retro Pixelated Flower SVG */}
-          <div className="w-16 h-16 text-zinc-600 dark:text-zinc-500 mb-6 flex items-center justify-center animate-pulse">
-            <svg viewBox="0 0 24 24" className="w-16 h-16" fill="currentColor">
-              {/* Petal Center */}
-              <rect x="11" y="11" width="2" height="2" />
-              {/* Top Petal */}
-              <rect x="11" y="8" width="2" height="2" />
-              <rect x="11" y="6" width="2" height="2" />
-              {/* Bottom Petal */}
-              <rect x="11" y="14" width="2" height="2" />
-              <rect x="11" y="16" width="2" height="2" />
-              {/* Left Petal */}
-              <rect x="8" y="11" width="2" height="2" />
-              <rect x="6" y="11" width="2" height="2" />
-              {/* Right Petal */}
-              <rect x="14" y="11" width="2" height="2" />
-              <rect x="16" y="11" width="2" height="2" />
-              {/* Diagonals */}
-              <rect x="9" y="9" width="2" height="2" />
-              <rect x="13" y="9" width="2" height="2" />
-              <rect x="9" y="13" width="2" height="2" />
-              <rect x="13" y="13" width="2" height="2" />
-              {/* Stem (Green) */}
-              <rect x="11" y="18" width="2" height="6" fill="#10B981" />
-              {/* Stem Leaves */}
-              <rect x="9" y="20" width="2" height="1" fill="#10B981" />
-              <rect x="13" y="21" width="2" height="1" fill="#10B981" />
-            </svg>
-          </div>
+      <main className="flex-1 flex flex-col p-6 relative z-10 overflow-y-auto hidden-scrollbar">
+        {messages.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center text-center">
+            <div className="flex flex-col items-center max-w-sm">
+              {/* Retro Pixelated Flower SVG */}
+              <div className="w-16 h-16 text-zinc-600 dark:text-zinc-500 mb-6 flex items-center justify-center animate-pulse">
+                <svg viewBox="0 0 24 24" className="w-16 h-16" fill="currentColor">
+                  {/* Petal Center */}
+                  <rect x="11" y="11" width="2" height="2" />
+                  {/* Top Petal */}
+                  <rect x="11" y="8" width="2" height="2" />
+                  <rect x="11" y="6" width="2" height="2" />
+                  {/* Bottom Petal */}
+                  <rect x="11" y="14" width="2" height="2" />
+                  <rect x="11" y="16" width="2" height="2" />
+                  {/* Left Petal */}
+                  <rect x="8" y="11" width="2" height="2" />
+                  <rect x="6" y="11" width="2" height="2" />
+                  {/* Right Petal */}
+                  <rect x="14" y="11" width="2" height="2" />
+                  <rect x="16" y="11" width="2" height="2" />
+                  {/* Diagonals */}
+                  <rect x="9" y="9" width="2" height="2" />
+                  <rect x="13" y="9" width="2" height="2" />
+                  <rect x="9" y="13" width="2" height="2" />
+                  <rect x="13" y="13" width="2" height="2" />
+                  {/* Stem (Green) */}
+                  <rect x="11" y="18" width="2" height="6" fill="#10B981" />
+                  {/* Stem Leaves */}
+                  <rect x="9" y="20" width="2" height="1" fill="#10B981" />
+                  <rect x="13" y="21" width="2" height="1" fill="#10B981" />
+                </svg>
+              </div>
 
-          <h3 className="text-sm font-bold text-zinc-400 dark:text-zinc-500 tracking-wide select-none leading-relaxed px-4">
-            Empieza a crear o arrastra y suelta contenido multimedia
-          </h3>
-        </div>
+              <h3 className="text-sm font-bold text-zinc-400 dark:text-zinc-500 tracking-wide select-none leading-relaxed px-4">
+                Empieza a crear o arrastra y suelta contenido multimedia
+              </h3>
+            </div>
+          </div>
+        ) : (
+          <div className="max-w-2xl w-full mx-auto space-y-6 py-4 flex-1">
+            {messages.map((msg) => (
+              <div
+                key={msg.id}
+                className={cn(
+                  "flex flex-col w-full animate-fade-in",
+                  msg.role === "user" ? "items-end" : "items-start"
+                )}
+              >
+                <div
+                  className={cn(
+                    "px-4.5 py-3 rounded-2xl text-xs max-w-[85%] font-medium leading-relaxed shadow-sm",
+                    msg.role === "user"
+                      ? "bg-[#1890FF] text-white rounded-tr-none"
+                      : "bg-[#121317] border border-zinc-800/80 text-zinc-200 rounded-tl-none"
+                  )}
+                >
+                  <p className="whitespace-pre-wrap">{msg.content}</p>
+                </div>
+                <span className="text-[9px] text-zinc-650 mt-1.5 px-1 font-semibold uppercase tracking-wider">
+                  {msg.role === "user" ? "Tú" : "Flow"}
+                </span>
+              </div>
+            ))}
+
+            {loading && (
+              <div className="flex flex-col items-start w-full animate-pulse">
+                <div className="px-4.5 py-3 rounded-2xl text-xs max-w-[85%] bg-[#121317] border border-zinc-800/80 text-zinc-500 rounded-tl-none flex items-center gap-2">
+                  <div className="flex gap-1 shrink-0">
+                    <span className="w-1.5 h-1.5 rounded-full bg-zinc-650 animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-zinc-650 animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-zinc-650 animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                  <span>Generando respuestas...</span>
+                </div>
+                <span className="text-[9px] text-zinc-650 mt-1.5 px-1 font-semibold uppercase tracking-wider">
+                  Generando
+                </span>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+        )}
       </main>
 
       {/* Floating Prompt Chat Panel at the bottom */}
@@ -302,9 +394,9 @@ export default function FlowClient() {
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={!prompt.trim()}
+                disabled={!prompt.trim() || loading}
                 className={`w-8 h-8 rounded-full flex items-center justify-center transition-all shrink-0 ${
-                  prompt.trim()
+                  prompt.trim() && !loading
                     ? "bg-[#1890FF] hover:bg-blue-600 text-white active:scale-90 shadow-md cursor-pointer"
                     : "bg-zinc-900 text-zinc-600 border border-zinc-850 cursor-not-allowed"
                 }`}

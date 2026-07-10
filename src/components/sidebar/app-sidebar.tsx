@@ -145,16 +145,22 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       >
         <SidebarHeader className="gap-0">
           {isFlowPage ? (
-            <div className="flex flex-col w-full">
-              {/* Row 1: Logo + Collapse (Matches SidebarLogo exactly) */}
-              <div className={`flex items-center ${state === "expanded" ? "pl-2 pr-2 py-2" : "justify-center py-2 flex-col"}`}>
+            <div className="flex flex-col w-full border-b border-zinc-100 dark:border-zinc-800/30">
+              <div className={`flex items-center ${state === "expanded" ? "pl-3 pr-2 py-3.5 gap-3" : "justify-center py-3.5"}`}>
                 {state === "expanded" ? (
                   <>
-                    <div className="flex-1 flex items-center h-full w-full pl-1">
+                    <div className="flex-1 flex items-center gap-3 min-w-0">
+                      <button 
+                        onClick={() => router.push(`/${language}/ai`)}
+                        className="p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-850 hover:text-foreground transition-all duration-200 active:scale-95 cursor-pointer shrink-0 border border-zinc-200/50 dark:border-zinc-800/40 shadow-xs"
+                        title="Volver"
+                      >
+                        <ArrowLeft className="w-4 h-4 text-zinc-550 dark:text-zinc-450" />
+                      </button>
                       <img 
-                        src={logoSrc} 
-                        alt="Maverlang Logo" 
-                        className="h-7 w-7 object-contain shrink-0 select-none pointer-events-none" 
+                        src="https://mail.programbi.com/uploads/magnific__background__71739.png" 
+                        alt="Flow" 
+                        className="h-[15px] w-auto object-contain select-none pointer-events-none" 
                       />
                     </div>
                     <Button
@@ -179,23 +185,6 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                   </Button>
                 )}
               </div>
-
-              {/* Row 2: Back Button + "Flow" brand logo image (Only when expanded) */}
-              {state === "expanded" && (
-                <div className="flex items-center gap-3 px-3.5 pb-3.5 pt-1 border-b border-zinc-100 dark:border-zinc-800/30">
-                  <button 
-                    onClick={() => router.push(`/${language}/ai`)}
-                    className="p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-850 hover:text-foreground transition-all duration-200 active:scale-95 cursor-pointer shrink-0 border border-zinc-200/50 dark:border-zinc-800/40 shadow-xs"
-                  >
-                    <ArrowLeft className="w-4 h-4 text-zinc-550 dark:text-zinc-450" />
-                  </button>
-                  <img 
-                    src="https://mail.programbi.com/uploads/magnific__background__71739.png" 
-                    alt="Flow" 
-                    className="h-[15px] w-auto object-contain select-none pointer-events-none" 
-                  />
-                </div>
-              )}
             </div>
           ) : (
             <SidebarLogo />

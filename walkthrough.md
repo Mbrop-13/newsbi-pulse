@@ -762,6 +762,17 @@ Hemos creado una interfaz de bienvenida y recopilación de preferencias opcional
 
 ---
 
+## 39. Cabecera Unificada en Modo Flow de la Barra Lateral
+
+Hemos optimizado el diseño de la barra lateral en el modo Flow consolidando la cabecera en una sola fila limpia cuando está expandido:
+
+*   **Cabecera de Fila Única:**
+    *   **Archivo Modificado**: [app-sidebar.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/sidebar/app-sidebar.tsx)
+    *   Se eliminó la cabecera anterior de doble fila. Ahora, al estar en el modo Flow, no aparece el logotipo genérico de Maverlang en el extremo superior.
+    *   En su lugar, el botón de retroceso (flecha izquierda `←`) y la imagen oficial de Flow (`https://mail.programbi.com/uploads/magnific__background__71739.png`) se renderizan directamente en la primera fila, alineados a la izquierda, mientras que el botón de colapso de la barra lateral se ubica a la derecha, logrando una distribución pixel-perfect y ahorrando espacio vertical.
+
+---
+
 ## Verificación Realizada
 
 * **Type Safety:** La compilación y validación estática de TypeScript ha finalizado de forma correcta (`npx tsc --noEmit` completado sin errores).

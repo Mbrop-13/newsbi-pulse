@@ -286,25 +286,12 @@ function SubscriptionPageContent() {
             />
           </div>
           
-          {currentTier === "free" ? (
-            <>
-              <h1 className="text-3xl md:text-5xl font-black tracking-tight mt-2 mb-3 text-neutral-900 dark:text-white leading-tight">
-                Planes y Suscripciones Premium
-              </h1>
-              <p className="text-neutral-500 dark:text-neutral-400 text-xs md:text-sm max-w-lg mt-1">
-                Elige la facturación que prefieras. El plan Pro incluye 7 días de prueba gratis en la modalidad mensual.
-              </p>
-            </>
-          ) : (
-            <>
-              <h1 className="text-3xl md:text-5xl font-black tracking-tight mt-2 mb-3 text-neutral-900 dark:text-white leading-tight">
-                Gestiona tu Suscripción Premium
-              </h1>
-              <p className="text-neutral-500 dark:text-neutral-400 text-xs md:text-sm max-w-lg mt-1">
-                Sube el nivel de tu cuenta para continuar operando con las máximas capacidades financieras.
-              </p>
-            </>
-          )}
+          <h1 className="text-3xl md:text-5xl font-black tracking-tight mt-2 mb-3 text-neutral-900 dark:text-white leading-tight">
+            Planes y Suscripciones Premium
+          </h1>
+          <p className="text-neutral-500 dark:text-neutral-400 text-xs md:text-sm max-w-lg mt-1">
+            Elige la facturación que prefieras para potenciar tu experiencia en la plataforma.
+          </p>
 
 
           {currentTier === "free" && isPromoX2Active() && (

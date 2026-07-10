@@ -656,6 +656,21 @@ Hemos unificado la experiencia táctil y visual de la consola creativa de Flow c
 
 ---
 
+* **Type Safety:** La compilación y validación estática de TypeScript ha finalizado de forma correcta (`npx tsc --noEmit` completado sin errores).
+
+---
+
+## 33. Logo de la Plataforma y Botón de Colapso en la Barra Lateral de Flow
+
+Hemos alineado el comportamiento del header de la barra lateral en el modo Flow con el del chat general:
+
+*   **Cabecera de Flow Dinámica:**
+    *   **Archivo Modificado**: [app-sidebar.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/sidebar/app-sidebar.tsx)
+    *   **Barra Expandida:** Al estar expandida la barra lateral, se despliegan simultáneamente: el botón de retroceso `←`, el logo oficial de la plataforma (ajustado de forma reactiva al tema claro/oscuro), el título **Flow** y el botón para colapsar/ocultar a la derecha.
+    *   **Barra Colapsada:** Al contraerse, el sistema oculta ordenadamente los textos y el logo, mostrando únicamente el botón centrado de tracción lateral, asegurando una transición perfecta y una estética unificada al 100%.
+
+---
+
 ## Verificación Realizada
 
 * **Type Safety:** La compilación y validación estática de TypeScript ha finalizado de forma correcta (`npx tsc --noEmit` completado sin errores).

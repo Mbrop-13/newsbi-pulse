@@ -497,7 +497,7 @@ export default function FlowClient() {
       </main>
 
       {/* Floating Prompt Chat Panel at the bottom (Light Mode styled matching normal ChatInput exactly) */}
-      <div className="w-full max-w-xl mx-auto px-4 pb-3 absolute bottom-0 left-1/2 -translate-x-1/2 shrink-0 z-20">
+      <div className="w-full max-w-3xl mx-auto px-4 pb-5 absolute bottom-0 left-1/2 -translate-x-1/2 shrink-0 z-20">
         <form onSubmit={handleSubmit} className="relative">
           <div className={cn(
             "rounded-xl p-2.5 bg-white dark:bg-[#1E1E20] border-[#DBDBDB] dark:border-[#2e2e2e] border",
@@ -513,7 +513,7 @@ export default function FlowClient() {
                 placeholder="¿Qué quieres crear?"
                 disabled={loading}
                 rows={1}
-                className="w-full min-h-10 max-h-72 text-[15px] px-1 resize-none overflow-y-auto border-0 bg-transparent shadow-none focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder-zinc-450 font-medium text-zinc-800 leading-normal"
+                className="w-full min-h-12 max-h-72 text-[15px] md:!text-[15px] px-1 resize-none overflow-y-auto border-0 bg-transparent shadow-none focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder-zinc-450 font-medium text-zinc-800 leading-normal"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
@@ -696,11 +696,12 @@ export default function FlowClient() {
                 <button
                   type="submit"
                   disabled={!prompt.trim() || loading}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all shrink-0 ${
+                  className={cn(
+                    "rounded-full h-8 w-8 transition-opacity flex items-center justify-center shrink-0",
                     prompt.trim() && !loading
-                      ? "bg-[#1890FF] hover:bg-blue-600 text-white active:scale-90 shadow-md cursor-pointer"
-                      : "bg-zinc-100 text-zinc-400 border border-zinc-200/40 cursor-not-allowed"
-                  }`}
+                      ? "bg-foreground text-background hover:opacity-90 cursor-pointer"
+                      : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-650 border border-zinc-200/40 dark:border-zinc-700/40 cursor-not-allowed"
+                  )}
                 >
                   <ArrowRight className="w-4.5 h-4.5" />
                 </button>

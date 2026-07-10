@@ -705,6 +705,24 @@ Hemos rediseñado la cabecera de la barra lateral en el modo Flow para conservar
 
 ---
 
+* **Type Safety:** La compilación y validación estática de TypeScript ha finalizado de forma correcta (`npx tsc --noEmit` completado sin errores).
+
+---
+
+## 36. Sincronización Estricta de Ancho y Posición de la Barra de Escritura de Flow
+
+Hemos alineado con absoluta fidelidad las dimensiones y el espaciado de la barra de prompt de Flow con los del componente `ChatInput` del chat activo de la plataforma:
+
+*   **Alineación de Ancho (`max-w-3xl`):**
+    *   **Archivo Modificado**: [flow-client.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/app/flow/flow-client.tsx)
+    *   Se aumentó el ancho de la caja de prompt en Flow a `max-w-3xl` (idéntico al del chat normal), en lugar de la anterior restricción más estrecha `max-w-xl`.
+*   **Posicionamiento e Intercalado:**
+    *   Cambiamos la separación inferior y el padding del contenedor flotante a `pb-5 px-4` (igual al del chat activo).
+    *   Se ajustó la altura mínima de la caja del textarea a `min-h-12` e incorporamos el estilo de tamaño de fuente responsivo (`text-[15px] md:!text-[15px] px-1`).
+    *   **Botón de Envío:** Sincronizado el estilo de color del botón de envío a `bg-foreground text-background hover:opacity-90` (blanco/negro dinámico) manteniendo el icono del vector de envío `ArrowRight`.
+
+---
+
 ## Verificación Realizada
 
 * **Type Safety:** La compilación y validación estática de TypeScript ha finalizado de forma correcta (`npx tsc --noEmit` completado sin errores).

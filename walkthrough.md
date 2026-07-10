@@ -723,6 +723,27 @@ Hemos alineado con absoluta fidelidad las dimensiones y el espaciado de la barra
 
 ---
 
+* **Type Safety:** La compilación y validación estática de TypeScript ha finalizado de forma correcta (`npx tsc --noEmit` completado sin errores).
+
+---
+
+## 37. Dialog Modal de Referidos y Rediseño con Colores de la Plataforma
+
+Hemos transformado la sección de referidos de una ruta independiente a un diálogo modal superpuesto (popup) unificado, aplicando una paleta neutral y oscura coherente:
+
+*   **Redirección y Carga SPA:**
+    *   **Archivo Modificado**: [page.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/app/referidos/page.tsx)
+    *   La ruta `/referidos` ahora redirige automáticamente al usuario a `/[lang]/ai` abriendo simultáneamente el modal de referidos en primer plano, evitando páginas vacías y garantizando un flujo fluido sin recargar la aplicación.
+*   **Contenedor Global Dialog (`ReferralsDialog`):**
+    *   **Archivo Creado**: [referrals-dialog.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/referrals/referrals-dialog.tsx)
+    *   Se implementó el modal con AnimatePresence para transiciones de opacidad y escala de spring. El logo, título de "Invita y gana" y la descripción se movieron dentro del contenedor scrollable, permitiendo que se desplacen naturalmente con el resto del contenido al hacer scroll.
+*   **Paleta de Colores Neutral y Negra:**
+    *   **Archivos Modificados**: [referral-hero.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/referrals/referral-hero.tsx), [referral-stats.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/referrals/referral-stats.tsx), y [milestone-progress.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/referrals/milestone-progress.tsx).
+    *   Se reemplazaron todos los colores azules y gradientes neón llamativos por un degradado negro/zinc premium (`bg-gradient-to-br from-zinc-800 via-zinc-900 to-black`) en el hero.
+    *   Las tarjetas de estadísticas y progreso se unificaron bajo un tema de grises neutrales (`bg-zinc-50 dark:bg-zinc-900/50`) y textos negros/blancos para complementar el diseño del portal de Maverlang.
+
+---
+
 ## Verificación Realizada
 
 * **Type Safety:** La compilación y validación estática de TypeScript ha finalizado de forma correcta (`npx tsc --noEmit` completado sin errores).

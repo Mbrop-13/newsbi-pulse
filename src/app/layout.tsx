@@ -25,8 +25,8 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "Maverlang", url: "https://maverlang.cl" }],
   icons: {
-    icon: "/assets/maverlang-favicon.png",
-    apple: "/assets/maverlang-favicon.png",
+    icon: "https://mail.programbi.com/uploads/magnific__background__76233.png",
+    apple: "https://mail.programbi.com/uploads/magnific__background__76233.png",
   },
   openGraph: {
     title: "Maverlang | Inteligencia Artificial y Toma de Decisiones",

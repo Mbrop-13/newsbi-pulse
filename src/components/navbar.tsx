@@ -28,6 +28,7 @@ import { useAudioPlayerStore } from "@/lib/stores/audio-player-store";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useFilterStore } from "@/lib/stores/filter-store";
 import { useSidebar } from "@/components/ui/sidebar";
+import { useReferralsDialogStore } from "@/lib/stores/referrals-dialog-store";
 import { getCleanPathname } from "@/lib/utils";
 export function Navbar() {
   const { theme, setTheme, resolvedTheme } = useTheme();
@@ -351,12 +352,13 @@ export function Navbar() {
                       Configuración
                     </DropdownMenuItem>
                   </Link>
-                  <Link href="/referidos">
-                    <DropdownMenuItem className="text-sm py-2 px-3 cursor-pointer rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-                      <Gift className="w-4 h-4 mr-2 text-[#1890FF]" />
-                      Referidos
-                    </DropdownMenuItem>
-                  </Link>
+                  <DropdownMenuItem 
+                    onClick={() => useReferralsDialogStore.getState().setOpen(true)}
+                    className="text-sm py-2 px-3 cursor-pointer rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  >
+                    <Gift className="w-4 h-4 mr-2 text-zinc-500" />
+                    Referidos
+                  </DropdownMenuItem>
                   <div className="px-2 py-1">
                     <Link href="/suscripcion">
                       <DropdownMenuItem className="text-sm py-2 px-4 cursor-pointer rounded-full transition-all duration-300 text-[#1890FF] font-bold bg-[#1890FF]/10 hover:bg-[#1890FF]/20 hover:scale-[1.02] flex items-center justify-center gap-2 group relative overflow-hidden shadow-[0_0_15px_-3px_rgba(24,144,255,0.3)]">

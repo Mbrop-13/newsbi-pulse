@@ -21,8 +21,8 @@ export function MilestoneProgress({ qualified }: { qualified: number }) {
     <div className="rounded-[32px] bg-white dark:bg-zinc-900 border border-neutral-200/80 dark:border-zinc-800/80 p-6 md:p-8 shadow-sm">
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-[#1890FF]/10 flex items-center justify-center">
-            <Gift className="w-4 h-4 text-[#1890FF]" />
+          <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
+            <Gift className="w-4 h-4 text-zinc-800 dark:text-zinc-200" />
           </div>
           <h3 className="text-sm md:text-base font-bold text-neutral-900 dark:text-white">
             Tu progreso
@@ -40,7 +40,7 @@ export function MilestoneProgress({ qualified }: { qualified: number }) {
             {allDone ? "¡Todos los niveles desbloqueados! 🎉" : `Faltan ${next!.threshold - qualified} para el siguiente nivel`}
           </span>
           {next && (
-            <span className="text-[10px] font-bold text-[#1890FF]">
+            <span className="text-[10px] font-black text-zinc-900 dark:text-zinc-100">
               +{next.days} días · {next.badge}
             </span>
           )}
@@ -50,7 +50,7 @@ export function MilestoneProgress({ qualified }: { qualified: number }) {
             initial={{ width: 0 }}
             animate={{ width: `${pct}%` }}
             transition={{ duration: 0.8, ease: "easeOut" }}
-            className="h-full rounded-full bg-gradient-to-r from-[#0052CC] to-[#22D3EE]"
+            className="h-full rounded-full bg-zinc-800 dark:bg-zinc-200"
           />
         </div>
       </div>
@@ -66,10 +66,10 @@ export function MilestoneProgress({ qualified }: { qualified: number }) {
                 <div
                   className={`w-10 h-10 md:w-12 md:h-12 rounded-2xl flex items-center justify-center border-2 transition-all ${
                     isReached
-                      ? "bg-gradient-to-br from-[#0052CC] to-[#0066FF] border-transparent text-white shadow-lg shadow-blue-500/30"
+                      ? "bg-foreground border-transparent text-background shadow-sm"
                       : isNext
-                        ? "border-[#1890FF] bg-[#1890FF]/10 text-[#1890FF]"
-                        : "border-neutral-200 dark:border-zinc-800 bg-neutral-50 dark:bg-zinc-900 text-neutral-300 dark:text-zinc-600"
+                        ? "border-zinc-400 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+                        : "border-neutral-200 dark:border-zinc-800 bg-neutral-50 dark:bg-zinc-900 text-neutral-300 dark:text-zinc-655"
                   }`}
                 >
                   {isReached ? (
@@ -84,7 +84,7 @@ export function MilestoneProgress({ qualified }: { qualified: number }) {
                   className={`text-[9px] md:text-[10px] font-bold text-center leading-tight ${
                     isReached
                       ? "text-neutral-900 dark:text-white"
-                      : "text-neutral-400 dark:text-zinc-500"
+                      : "text-neutral-400 dark:text-zinc-555"
                   }`}
                 >
                   {m.threshold}
@@ -94,7 +94,7 @@ export function MilestoneProgress({ qualified }: { qualified: number }) {
                 <div
                   className={`flex-1 h-0.5 mx-1 md:mx-2 -mt-5 rounded-full ${
                     isReached && qualified >= REFERRAL_MILESTONES[i + 1].threshold
-                      ? "bg-gradient-to-r from-[#0052CC] to-[#22D3EE]"
+                      ? "bg-zinc-850 dark:bg-zinc-200"
                       : "bg-neutral-200 dark:bg-zinc-800"
                   }`}
                 />

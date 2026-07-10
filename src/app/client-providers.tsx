@@ -23,6 +23,7 @@ import { AppSidebar } from "@/components/sidebar/app-sidebar";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { ActiveArticleDrawer } from "@/components/active-article-drawer";
 import { ViewSettingsDialog } from "@/components/view-settings-dialog";
+import { ReferralsDialog } from "@/components/referrals/referrals-dialog";
 import { useAssistantStore } from "@/lib/stores/assistant-store";
 
 import { useAIChatStore } from "@/lib/stores/ai-chat-store";
@@ -248,6 +249,7 @@ export function ClientLayoutProviders({
           onClose={() => setShowSettings(false)}
           defaultTab={settingsTab as any}
         />
+        <ReferralsDialog />
       </TooltipProvider>
     </ThemeProvider>
   );

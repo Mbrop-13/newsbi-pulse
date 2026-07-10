@@ -690,6 +690,21 @@ Hemos perfeccionado el acoplamiento estético de las barras en Flow para que coi
 
 ---
 
+* **Type Safety:** La compilación y validación estática de TypeScript ha finalizado de forma correcta (`npx tsc --noEmit` completado sin errores).
+
+---
+
+## 35. Cabecera de Dos Filas en Barra Lateral del Modo Flow
+
+Hemos rediseñado la cabecera de la barra lateral en el modo Flow para conservar la alineación pixel-perfect de la primera fila y colocar el botón de retroceso e identificador debajo:
+
+*   **Distribución en Dos Filas:**
+    *   **Archivo Modificado**: [app-sidebar.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/sidebar/app-sidebar.tsx)
+    *   **Fila 1 (Logo + Colapso):** Muestra de forma idéntica el logo de la plataforma (izq.) y el botón de colapsar barra lateral (der.), garantizando que la primera fila no experimente ningún cambio ni salto visual al alternar con el chat normal.
+    *   **Fila 2 (Volver + Flow) [Solo Expandida]:** Posiciona el botón de retroceso con flecha a la izquierda `←` y el texto de categoría "Flow" (en formato refinado `text-xs font-black uppercase tracking-widest`) debajo de la primera fila, con un borde de separación sutil en la parte inferior para marcar el inicio del contenido.
+
+---
+
 ## Verificación Realizada
 
 * **Type Safety:** La compilación y validación estática de TypeScript ha finalizado de forma correcta (`npx tsc --noEmit` completado sin errores).

@@ -90,45 +90,54 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
         collapsible="icon"
         {...props}
       >
-        <SidebarHeader>
+        <SidebarHeader className="gap-0">
           {isFlowPage ? (
-            <div className={`flex items-center ${state === "expanded" ? "pl-2 pr-2 py-2" : "justify-center py-2 flex-col"}`}>
-              {state === "expanded" ? (
-                <>
-                  <div className="flex-1 flex items-center gap-3 pl-1">
-                    <button 
-                      onClick={() => router.push(`/${language}/ai`)}
-                      className="p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-850 hover:text-foreground transition-all duration-200 active:scale-95 cursor-pointer shrink-0"
+            <div className="flex flex-col w-full">
+              {/* Row 1: Logo + Collapse (Matches SidebarLogo exactly) */}
+              <div className={`flex items-center ${state === "expanded" ? "pl-2 pr-2 py-2" : "justify-center py-2 flex-col"}`}>
+                {state === "expanded" ? (
+                  <>
+                    <div className="flex-1 flex items-center h-full w-full pl-1">
+                      <img 
+                        src={logoSrc} 
+                        alt="Maverlang Logo" 
+                        className="h-7 w-7 object-contain shrink-0 select-none pointer-events-none" 
+                      />
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleSidebar(); }}
+                      className="h-8 w-8 shrink-0 transition-transform duration-200"
                     >
-                      <ArrowLeft className="w-4 h-4 text-zinc-550 dark:text-zinc-450" />
-                    </button>
-                    <img 
-                      src={logoSrc} 
-                      alt="Maverlang Logo" 
-                      className="h-7 w-7 object-contain shrink-0 select-none pointer-events-none" 
-                    />
-                    <span className="text-sm font-bold text-foreground select-none leading-none mt-0.5">Flow</span>
-                  </div>
+                      <PanelLeftClose className="h-4 w-4" />
+                      <span className="sr-only">Toggle sidebar</span>
+                    </Button>
+                  </>
+                ) : (
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleSidebar(); }}
-                    className="h-8 w-8 shrink-0 transition-transform duration-200"
+                    className="h-8 w-8 shrink-0 transition-transform duration-200 rotate-180"
                   >
                     <PanelLeftClose className="h-4 w-4" />
                     <span className="sr-only">Toggle sidebar</span>
                   </Button>
-                </>
-              ) : (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleSidebar(); }}
-                  className="h-8 w-8 shrink-0 transition-transform duration-200 rotate-180"
-                >
-                  <PanelLeftClose className="h-4 w-4" />
-                  <span className="sr-only">Toggle sidebar</span>
-                </Button>
+                )}
+              </div>
+
+              {/* Row 2: Back Button + "Flow" Text (Only when expanded) */}
+              {state === "expanded" && (
+                <div className="flex items-center gap-3 px-3.5 pb-3.5 pt-1 border-b border-zinc-100 dark:border-zinc-800/30">
+                  <button 
+                    onClick={() => router.push(`/${language}/ai`)}
+                    className="p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-850 hover:text-foreground transition-all duration-200 active:scale-95 cursor-pointer shrink-0 border border-zinc-200/50 dark:border-zinc-800/40 shadow-xs"
+                  >
+                    <ArrowLeft className="w-4 h-4 text-zinc-550 dark:text-zinc-450" />
+                  </button>
+                  <span className="text-xs font-black text-foreground uppercase tracking-widest select-none mt-0.5">Flow</span>
+                </div>
               )}
             </div>
           ) : (

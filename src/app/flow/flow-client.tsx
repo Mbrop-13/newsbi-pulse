@@ -30,9 +30,9 @@ interface ModelOption {
 const FLOW_MODELS: ModelOption[] = [
   {
     id: "google/gemini-3.1-flash-lite-image",
-    name: "Nano Banana 2 Lite",
+    name: "Nano Banana Pro",
     badge: "Lite",
-    icon: "✨ 🍌",
+    icon: "🍌",
     desc: "Modelo predeterminado rápido e inteligente de Google para flujos multimedia.",
   },
   {
@@ -64,6 +64,11 @@ export default function FlowClient() {
   const [isAgentActive, setIsAgentActive] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Selector states matching the screenshot design
+  const [generationType, setGenerationType] = useState<"imagen" | "video">("imagen");
+  const [aspectRatio, setAspectRatio] = useState<"16:9" | "4:3" | "1:1" | "3:4" | "9:16">("3:4");
+  const [multiplier, setMultiplier] = useState<"1x" | "x2" | "x3" | "x4">("x2");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -116,6 +121,24 @@ export default function FlowClient() {
       toast.error(err.message || "Error al comunicarse con la IA.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Helper to map ratio string to shape emoji
+  const getAspectRatioIcon = (ratio: string) => {
+    switch (ratio) {
+      case "16:9":
+        return "🖥️";
+      case "4:3":
+        return "📺";
+      case "1:1":
+        return "⏹️";
+      case "3:4":
+        return "📱";
+      case "9:16":
+        return "📲";
+      default:
+        return "📱";
     }
   };
 
@@ -335,11 +358,12 @@ export default function FlowClient() {
                 <button
                   type="button"
                   onClick={() => setShowModelDropdown(!showModelDropdown)}
-                  className="px-3 py-1.5 rounded-full bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-800/60 hover:text-white text-zinc-350 text-[10px] font-bold flex items-center gap-1 transition-all duration-200 select-none cursor-pointer"
+                  className="px-3.5 py-2 rounded-full bg-zinc-900/80 hover:bg-zinc-855 border border-zinc-800/60 hover:text-white text-zinc-350 text-[11px] font-bold flex items-center gap-2 transition-all duration-200 select-none cursor-pointer leading-none"
                 >
                   <span className="truncate">{selectedModel.icon} {selectedModel.name}</span>
-                  <span className="text-amber-500 border border-amber-500/30 px-1 rounded-sm text-[8px] scale-90">{selectedModel.badge}</span>
-                  <ChevronDown className="w-3 h-3 text-zinc-500 ml-0.5" />
+                  <span className="text-[10px] text-zinc-400 font-bold leading-none flex items-center gap-1 shrink-0">
+                    {getAspectRatioIcon(aspectRatio)} {multiplier}
+                  </span>
                 </button>
 
                 {/* Model Selector Dropdown */}
@@ -351,40 +375,115 @@ export default function FlowClient() {
                         initial={{ opacity: 0, scale: 0.95, y: 10 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                        className="absolute right-0 bottom-full mb-2 w-72 bg-[#121317] border border-zinc-800/80 rounded-2xl shadow-2xl p-2 z-40 space-y-1"
+                        className="absolute right-0 bottom-full mb-3 w-[22rem] bg-[#16171b] border border-zinc-800/90 rounded-[28px] shadow-2xl p-4.5 z-40 text-white flex flex-col gap-4.5 select-none font-sans"
                       >
-                        <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest px-2.5 py-1">Seleccionar Modelo</p>
-                        {FLOW_MODELS.map((m) => {
-                          const selected = m.id === selectedModel.id;
-                          return (
-                            <button
-                              key={m.id}
-                              type="button"
-                              onClick={() => {
-                                setSelectedModel(m);
-                                setShowModelDropdown(false);
-                                toast.success(`Modelo cambiado a ${m.name}`);
-                              }}
-                              className={`w-full flex flex-col text-left p-2 rounded-xl transition-all duration-200 cursor-pointer ${
-                                selected
-                                  ? "bg-zinc-850/80 border border-zinc-700/50"
-                                  : "hover:bg-zinc-900/60 border border-transparent"
-                              }`}
-                            >
-                              <div className="flex items-center justify-between w-full">
-                                <span className="text-[11px] font-bold text-zinc-200 flex items-center gap-1.5">
-                                  <span>{m.icon}</span>
-                                  {m.name}
-                                </span>
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-amber-500 border border-amber-500/20 px-1 rounded text-[7px] font-black leading-none py-0.5">{m.badge}</span>
-                                  {selected && <Check className="w-3.5 h-3.5 text-[#1890FF]" />}
-                                </div>
-                              </div>
-                              <p className="text-[9px] text-zinc-500 leading-relaxed mt-1 font-medium">{m.desc}</p>
-                            </button>
-                          );
-                        })}
+                        {/* 1. Tabs at the top (Imagen / Vídeo) */}
+                        <div className="flex bg-[#0d0e11] rounded-2xl p-1 gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setGenerationType("imagen")}
+                            className={cn(
+                              "flex-1 py-2 rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition-all duration-200 cursor-pointer",
+                              generationType === "imagen"
+                                ? "bg-[#2b2d35] text-white shadow-sm"
+                                : "text-zinc-400 hover:text-zinc-200"
+                            )}
+                          >
+                            <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                            <span>Imagen</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setGenerationType("video")}
+                            className={cn(
+                              "flex-1 py-2 rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition-all duration-200 cursor-pointer",
+                              generationType === "video"
+                                ? "bg-[#2b2d35] text-white shadow-sm"
+                                : "text-zinc-400 hover:text-zinc-200"
+                            )}
+                          >
+                            <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                            <span>Vídeo</span>
+                          </button>
+                        </div>
+
+                        {/* 2. Aspect Ratio Row */}
+                        <div className="grid grid-cols-5 gap-1.5">
+                          {[
+                            { id: "16:9", label: "16:9", icon: <rect x="2" y="6" width="20" height="12" rx="1.5" className="fill-none stroke-current" strokeWidth="2" /> },
+                            { id: "4:3", label: "4:3", icon: <rect x="3" y="5" width="18" height="14" rx="1.5" className="fill-none stroke-current" strokeWidth="2" /> },
+                            { id: "1:1", label: "1:1", icon: <rect x="4" y="4" width="16" height="16" rx="1.5" className="fill-none stroke-current" strokeWidth="2" /> },
+                            { id: "3:4", label: "3:4", icon: <rect x="5" y="3" width="14" height="18" rx="1.5" className="fill-none stroke-current" strokeWidth="2" /> },
+                            { id: "9:16", label: "9:16", icon: <rect x="6" y="2" width="12" height="20" rx="1.5" className="fill-none stroke-current" strokeWidth="2" /> },
+                          ].map((item) => {
+                            const active = aspectRatio === item.id;
+                            return (
+                              <button
+                                key={item.id}
+                                type="button"
+                                onClick={() => setAspectRatio(item.id as any)}
+                                className={cn(
+                                  "flex flex-col items-center justify-center p-2 rounded-2xl gap-2 transition-all cursor-pointer aspect-square",
+                                  active
+                                    ? "bg-[#2b2d35] text-white border border-zinc-700/30"
+                                    : "text-zinc-500 hover:text-zinc-350 hover:bg-[#1a1c22]/50"
+                                )}
+                              >
+                                <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0">{item.icon}</svg>
+                                <span className="text-[10px] font-black">{item.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* 3. Multiplier Row (1x, x2, x3, x4) */}
+                        <div className="grid grid-cols-4 bg-[#0d0e11] rounded-2xl p-1 gap-1">
+                          {["1x", "x2", "x3", "x4"].map((m) => {
+                            const active = multiplier === m;
+                            return (
+                              <button
+                                key={m}
+                                type="button"
+                                onClick={() => setMultiplier(m as any)}
+                                className={cn(
+                                  "py-1.5 rounded-xl text-xs font-bold text-center transition-all cursor-pointer",
+                                  active
+                                    ? "bg-[#2b2d35] text-white shadow-sm"
+                                    : "text-zinc-500 hover:text-zinc-300"
+                                )}
+                              >
+                                {m}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* 4. Model Selection Dropdown Field */}
+                        <div className="relative">
+                          <select
+                            value={selectedModel.id}
+                            onChange={(e) => {
+                              const found = FLOW_MODELS.find(m => m.id === e.target.value);
+                              if (found) setSelectedModel(found);
+                            }}
+                            className="w-full bg-[#0d0e11] border border-zinc-800/80 rounded-2xl px-4 py-3 text-xs font-bold text-zinc-200 outline-none cursor-pointer appearance-none pr-10 hover:bg-zinc-950 transition-colors"
+                          >
+                            {FLOW_MODELS.map((m) => (
+                              <option key={m.id} value={m.id} className="bg-[#121317] text-zinc-300">
+                                {m.icon} {m.name} ({m.badge})
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+                        </div>
+
+                        {/* 5. Points cost indicator */}
+                        <div className="text-center py-1">
+                          <p className="text-[11px] text-zinc-500 font-semibold leading-none">
+                            La generación consumirá <span className="underline decoration-zinc-650 decoration-wavy underline-offset-2">0 puntos</span>
+                          </p>
+                        </div>
+
                       </motion.div>
                     </>
                   )}

@@ -744,6 +744,24 @@ Hemos transformado la sección de referidos de una ruta independiente a un diál
 
 ---
 
+## 38. Dialog de Onboarding con Fondo de Estrellas y Preferencias Personalizables
+
+Hemos creado una interfaz de bienvenida y recopilación de preferencias opcionales que aparece la primera vez que un usuario se registra/inicia sesión:
+
+*   **Zustand Store Extendido:**
+    *   **Archivo Modificado**: [assistant-store.ts](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/lib/stores/assistant-store.ts)
+    *   Se ampliaron las propiedades del store para registrar el nombre del usuario (`userName`) y su interés principal (`primaryInterest`) dentro de la estructura de configuración `interests` serializada en Supabase.
+*   **Fondo de Estrellas Animadas en Canvas:**
+    *   **Archivo Creado**: [onboarding-dialog.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/onboarding-dialog.tsx)
+    *   Implementa un canvas interactivo con un bucle `requestAnimationFrame` que simula partículas de estrellas descendentes a diferentes velocidades para lograr un efecto de profundidad premium.
+    *   Sigue el diseño de tres capas: borde blanco exterior de 3px, fondo negro con estrellas animadas y tarjeta blanca interna redondeada.
+*   **Edición en Ajustes e Inyección en IA:**
+    *   **Archivos Modificados**: [view-settings-dialog.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/view-settings-dialog.tsx) y [route.ts](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/app/api/ai-chat/route.ts)
+    *   Se agregó la sección "Mis Preferencias" en los Ajustes globales para modificar el nombre e intereses.
+    *   La API del chat de IA lee estos valores desde Supabase y los inyecta en el `systemPrompt` para que la Inteligencia Artificial recuerde el nombre del usuario y personalice su enfoque automáticamente.
+
+---
+
 ## Verificación Realizada
 
 * **Type Safety:** La compilación y validación estática de TypeScript ha finalizado de forma correcta (`npx tsc --noEmit` completado sin errores).

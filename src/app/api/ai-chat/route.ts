@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
     if (user) {
       const { data } = await supabase
         .from("assistant_configs")
-        .select("name, tone, role, topics")
+        .select("name, tone, role, topics, interests")
         .eq("user_id", user.id)
         .maybeSingle();
       assistantConfig = data;
@@ -124,6 +124,9 @@ export async function POST(req: NextRequest) {
     const assistantTone = assistantConfig?.tone || "Analítico";
     const assistantRole = assistantConfig?.role || "Mentor Financiero";
     const assistantTopics = assistantConfig?.topics || [];
+    const interestsObj = (assistantConfig?.interests || {}) as Record<string, any>;
+    const userName = interestsObj.userName || "";
+    const primaryInterest = interestsObj.primaryInterest || "";
 
     // ── Pre-check security scanner ──
     const lastUserMessage = [...messages].reverse().find((m: any) => m.role === 'user')?.content || '';
@@ -688,6 +691,25 @@ ${reportsSummary}`,
         let systemPrompt = webBuilder
           ? getWebBuilderSystemPrompt(finalSystemPromptFiles, projectType)
           : getSystemPrompt(assistantName, assistantTone, assistantRole, assistantTopics);
+
+        // Inject custom user preferences metadata into LLM system prompt
+        if (userName) {
+          systemPrompt += `\n\n[INFORMACIÓN DEL USUARIO (CRÍTICO)]:
+El nombre del usuario al que le respondes es "${userName}". Dirígete a él por su nombre en tus respuestas para un trato personalizado cuando sea apropiado.`;
+        }
+        if (primaryInterest) {
+          let interestText = "";
+          if (primaryInterest === "crear_apps") {
+            interestText = "crear aplicaciones interactivas, herramientas web, prototipos y plataformas en el entorno de desarrollo (Builder/Canvas). Ofrécele ayuda y ejemplos de código y diseño UI.";
+          } else if (primaryInterest === "finanzas") {
+            interestText = "el análisis de finanzas y mercados, portafolios, cotizaciones y noticias económicas en tiempo real. Adopta un enfoque con análisis cuantitativos y de inversión.";
+          } else if (primaryInterest === "ambas") {
+            interestText = "tanto la creación y desarrollo de aplicaciones web interactivas como el análisis financiero de mercados y portafolios. Combina la programación, automatización e insights de negocios en tus respuestas.";
+          }
+          if (interestText) {
+            systemPrompt += `\nEl interés principal de este usuario es: ${interestText}`;
+          }
+        }
 
         // Only include Canvas / Code Interpreter instructions when NOT in WebBuilder (build) mode
         if (!webBuilder) {

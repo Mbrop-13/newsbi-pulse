@@ -24,6 +24,7 @@ import { useAuthStore } from "@/lib/stores/auth-store";
 import { ActiveArticleDrawer } from "@/components/active-article-drawer";
 import { ViewSettingsDialog } from "@/components/view-settings-dialog";
 import { ReferralsDialog } from "@/components/referrals/referrals-dialog";
+import { OnboardingDialog } from "@/components/onboarding-dialog";
 import { useAssistantStore } from "@/lib/stores/assistant-store";
 
 import { useAIChatStore } from "@/lib/stores/ai-chat-store";
@@ -138,7 +139,14 @@ export function ClientLayoutProviders({
   const countrySlugs = ["chile", "argentina", "colombia", "brasil", "ecuador", "mexico"];
   const isCountryPage = countrySlugs.some(slug => pathname === `/${slug}` || pathname.startsWith(`/${slug}/`));
   const isSidebarRoute = isStaticSidebar || isArticlePage || isCountryPage;
-  const { isAuthenticated, isLoaded: authLoaded } = useAuthStore();
+  const { isAuthenticated, isLoaded: authLoaded, user } = useAuthStore();
+  const loadFromSupabase = useAssistantStore((s) => s.loadFromSupabase);
+
+  useEffect(() => {
+    if (isAuthenticated && user?.id) {
+      loadFromSupabase(user.id);
+    }
+  }, [isAuthenticated, user?.id, loadFromSupabase]);
   // El sidebar se muestra en rutas con sidebar. Para "/" y "/ai" (el chat de inicio)
   // lo mostramos SIEMPRE, incluso sin auth: así un visitante ve la plataforma
   // completa y al intentar navegar a una página protegida aparece el popup de
@@ -250,6 +258,7 @@ export function ClientLayoutProviders({
           defaultTab={settingsTab as any}
         />
         <ReferralsDialog />
+        <OnboardingDialog />
       </TooltipProvider>
     </ThemeProvider>
   );

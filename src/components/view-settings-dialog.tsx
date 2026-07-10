@@ -905,6 +905,36 @@ export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettings
                         <option value="Creativo">Creativo</option>
                       </select>
                     </div>
+
+                    {/* Personal User Preferences */}
+                    <div className="border-t border-gray-100 dark:border-white/5 pt-4 mt-4 space-y-4">
+                      <h3 className="text-xs font-black uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Mis Preferencias</h3>
+                      
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-gray-800 dark:text-gray-200">Tu Nombre</label>
+                        <input
+                          type="text"
+                          value={assistant.getUserName ? assistant.getUserName() : ""}
+                          onChange={(e) => assistant.setUserName && assistant.setUserName(e.target.value)}
+                          placeholder="Tu nombre..."
+                          className="w-full bg-gray-50/50 dark:bg-[#0A0A0A] border border-gray-200/60 dark:border-white/5 rounded-xl px-3 py-2 text-xs text-foreground outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all font-semibold"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-gray-800 dark:text-gray-200">¿Qué te interesa principalmente?</label>
+                        <select
+                          value={assistant.getPrimaryInterest ? assistant.getPrimaryInterest() : ""}
+                          onChange={(e) => assistant.setPrimaryInterest && assistant.setPrimaryInterest(e.target.value)}
+                          className="w-full bg-gray-55 dark:bg-[#0A0A0A] border border-gray-200/60 dark:border-white/5 rounded-xl px-3 py-2 text-xs text-foreground outline-none cursor-pointer focus:ring-1 focus:ring-teal-500 font-semibold"
+                        >
+                          <option value="">Selecciona una opción...</option>
+                          <option value="crear_apps">Crear aplicaciones y plataformas</option>
+                          <option value="finanzas">Funciones de finanzas y mercados</option>
+                          <option value="ambas">Ambas cosas</option>
+                        </select>
+                      </div>
+                    </div>
                   </div>
                 )}
 

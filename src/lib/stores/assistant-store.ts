@@ -25,7 +25,7 @@ interface AssistantState {
   settingsTab: string;
   assistantTone: string;
   assistantRole: string;
-  interests: Record<string, string[]>;
+  interests: Record<string, any>;
   messages: ChatMessage[];
   isLoadingConfig: boolean;
   setName: (name: string) => void;
@@ -43,6 +43,10 @@ interface AssistantState {
   setAssistantTone: (tone: string) => void;
   setAssistantRole: (role: string) => void;
   toggleInterest: (topic: string, interest: string) => void;
+  getUserName: () => string;
+  getPrimaryInterest: () => string;
+  setUserName: (name: string) => void;
+  setPrimaryInterest: (interest: string) => void;
   // Supabase sync
   loadFromSupabase: (userId: string) => Promise<void>;
   saveToSupabase: (userId: string) => Promise<void>;
@@ -117,6 +121,30 @@ export const useAssistantStore = create<AssistantState>()(
         }
       };
     }),
+    getUserName: () => {
+      const interests = get().interests || {};
+      return (interests.userName as string) || '';
+    },
+    getPrimaryInterest: () => {
+      const interests = get().interests || {};
+      return (interests.primaryInterest as string) || '';
+    },
+    setUserName: (name) => {
+      set((s) => ({
+        interests: {
+          ...s.interests,
+          userName: name,
+        },
+      }));
+    },
+    setPrimaryInterest: (interest) => {
+      set((s) => ({
+        interests: {
+          ...s.interests,
+          primaryInterest: interest,
+        },
+      }));
+    },
 
     // ═══ Supabase Config Sync ═══
     loadFromSupabase: async (userId: string) => {

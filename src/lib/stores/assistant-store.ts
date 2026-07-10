@@ -108,10 +108,10 @@ export const useAssistantStore = create<AssistantState>()(
     setAssistantTone: (tone) => set({ assistantTone: tone }),
     setAssistantRole: (role) => set({ assistantRole: role }),
     toggleInterest: (topic, interest) => set((state) => {
-      const currentInterests = state.interests[topic] || [];
+      const currentInterests = (state.interests[topic] || []) as string[];
       const isSelected = currentInterests.includes(interest);
       const nextInterests = isSelected
-        ? currentInterests.filter(i => i !== interest)
+        ? currentInterests.filter((i: string) => i !== interest)
         : [...currentInterests, interest];
       
       return {

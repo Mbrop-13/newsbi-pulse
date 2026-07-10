@@ -811,7 +811,9 @@ export function ChatInput({
                 <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [scrollbar-width:none] select-none flex-nowrap pr-2 max-w-[calc(100vw-180px)] sm:max-w-none">
                   {!isStreaming && (
                     <>
-                      <WebBuilderPill onActivate={() => { setCodeInterpreter(false); setBrowser(false); useCanvasStore.getState().setOpen(false); }} />
+                      {!isWebBuilderMode && (
+                        <WebBuilderPill onActivate={() => { setCodeInterpreter(false); setBrowser(false); useCanvasStore.getState().setOpen(false); }} />
+                      )}
                       {(!isWebBuilderMode || messages.length === 0) && (
                         <>
                           <Pill

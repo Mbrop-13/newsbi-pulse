@@ -6,7 +6,6 @@ import { useAssistantStore } from "@/lib/stores/assistant-store";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { Laptop, TrendingUp, Check, Loader2, ArrowRight, User, X, Sparkles } from "lucide-react";
 
-
 /* ─── Animated Stars Border ─────────────────────────────────────────── */
 function StarsBorder() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -163,7 +162,6 @@ export function OnboardingDialog() {
     setStep(2);
   };
 
-  /* "Saltar" skips the current step only */
   const handleSkipStep = () => {
     if (step === 1) {
       setStep(2);
@@ -205,225 +203,219 @@ export function OnboardingDialog() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      {/* ── Outer Popup Container (bigger: max-w-2xl) ─────────── */}
+      {/* ── Outer Starry Container (fixed size: 640px x 500px, no outer white border) ── */}
       <motion.div
         initial={{ opacity: 0, scale: 0.92, y: 30 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ type: "spring", damping: 28, stiffness: 380 }}
-        className="relative w-full max-w-2xl bg-white rounded-3xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.25)] overflow-hidden"
+        className="relative w-[640px] h-[520px] bg-[#08080e] rounded-3xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.25)] overflow-hidden p-[10px] flex flex-col shrink-0"
       >
-        {/* Close X Button */}
-        <button
-          type="button"
-          onClick={handleClose}
-          disabled={saving}
-          className="absolute top-5 right-5 z-30 p-2.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-400 hover:text-zinc-700 transition-all active:scale-90 cursor-pointer disabled:opacity-50"
-          title="Cerrar"
-        >
-          <X className="w-4.5 h-4.5" />
-        </button>
+        <StarsBorder />
 
-        {/* ── Thin outer white padding, thick stars border ───── */}
-        <div className="p-[3px]">
-          <div className="relative rounded-[22px] overflow-hidden bg-[#08080e] p-[10px]">
-            <StarsBorder />
+        {/* ── Inner White Content Card ───────────────────── */}
+        <div className="relative z-10 bg-white rounded-[18px] h-full flex flex-col justify-between p-10 select-none">
+          {/* Close X Button */}
+          <button
+            type="button"
+            onClick={handleClose}
+            disabled={saving}
+            className="absolute top-5 right-5 z-30 p-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-400 hover:text-zinc-700 transition-all active:scale-90 cursor-pointer disabled:opacity-50"
+            title="Cerrar"
+          >
+            <X className="w-4 h-4" />
+          </button>
 
-            {/* ── Inner White Content Card ───────────────────── */}
-            <div className="relative z-10 bg-white rounded-[14px] overflow-hidden">
-              <div className="px-10 pt-10 pb-9 md:px-12 md:pt-12 md:pb-10">
+          <AnimatePresence mode="wait">
+            {step === 1 ? (
+              <motion.div
+                key="step1"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.25, ease: "easeOut" }}
+                className="h-full flex flex-col justify-between"
+              >
+                {/* Header: Logo image only + Step Indicator */}
+                <div className="relative flex items-center justify-between w-full mb-4">
+                  <div className="w-10" /> {/* Spacer to center the logo */}
+                  <img
+                    src="https://mail.programbi.com/uploads/Maverlang-Logo-1.png"
+                    alt="Maverlang"
+                    className="h-8 w-auto object-contain mx-auto"
+                  />
+                  <StepIndicator current={1} total={2} />
+                </div>
 
-                <AnimatePresence mode="wait">
-                  {step === 1 ? (
-                    <motion.div
-                      key="step1"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
-                      transition={{ duration: 0.25, ease: "easeOut" }}
-                    >
-                      {/* Header: Logo + Step Indicator */}
-                      <div className="flex items-center justify-between mb-8">
-                        <div className="flex items-center gap-3">
-                          <p className="text-xs font-bold uppercase tracking-[0.12em] text-zinc-400">Bienvenido a</p>
-                          <img
-                            src="https://mail.programbi.com/uploads/Maverlang-Logo-1.png"
-                            alt="Maverlang"
-                            className="h-6 w-auto object-contain"
-                          />
-                        </div>
-                        <StepIndicator current={1} total={2} />
-                      </div>
+                {/* Body Content */}
+                <div className="flex-1 flex flex-col justify-center my-auto">
+                  <h2 className="text-2xl md:text-3xl font-black tracking-tight text-zinc-900 leading-tight mb-3 text-center">
+                    Cuéntanos sobre ti
+                  </h2>
+                  <p className="text-zinc-500 text-base leading-relaxed mb-8 text-center mx-auto max-w-md">
+                    Escribe tu nombre para que la IA pueda recordarte y personalizar tu experiencia.
+                  </p>
 
-                      {/* Title */}
-                      <h2 className="text-2xl md:text-3xl font-black tracking-tight text-zinc-900 leading-tight mb-3">
-                        Cuéntanos sobre ti
-                      </h2>
-                      <p className="text-zinc-500 text-base leading-relaxed mb-10 max-w-md">
-                        Escribe tu nombre para que la IA pueda recordarte y personalizar tu experiencia.
-                      </p>
+                  {/* Name input */}
+                  <div className="relative max-w-md mx-auto w-full">
+                    <User className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={localName}
+                      onChange={(e) => setLocalName(e.target.value)}
+                      placeholder="Tu nombre (opcional)"
+                      className="w-full pl-14 pr-6 py-4.5 bg-zinc-50 border border-zinc-200 rounded-2xl text-base font-semibold text-zinc-900 placeholder:text-zinc-400 outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-100 transition-all"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleNext();
+                      }}
+                    />
+                  </div>
+                </div>
 
-                      {/* Name input */}
-                      <div className="relative">
-                        <User className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 pointer-events-none" />
-                        <input
-                          type="text"
-                          value={localName}
-                          onChange={(e) => setLocalName(e.target.value)}
-                          placeholder="Tu nombre (opcional)"
-                          className="w-full pl-14 pr-6 py-4.5 bg-zinc-50 border border-zinc-200 rounded-2xl text-base font-semibold text-zinc-900 placeholder:text-zinc-400 outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-100 transition-all"
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") handleNext();
+                {/* Actions */}
+                <div className="flex items-center justify-between mt-6 pt-5 border-t border-zinc-100">
+                  <button
+                    type="button"
+                    disabled={saving}
+                    onClick={handleSkipStep}
+                    className="text-sm font-bold text-zinc-400 hover:text-zinc-600 transition-colors disabled:opacity-50"
+                  >
+                    Saltar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNext}
+                    className="inline-flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-base px-7 py-3.5 rounded-full transition-all active:scale-95 shadow-sm"
+                  >
+                    Siguiente
+                    <ArrowRight className="w-4.5 h-4.5" />
+                  </button>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="step2"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.25, ease: "easeOut" }}
+                className="h-full flex flex-col justify-between"
+              >
+                {/* Header: Logo image only + Step Indicator */}
+                <div className="relative flex items-center justify-between w-full mb-4">
+                  <div className="w-10" />
+                  <img
+                    src="https://mail.programbi.com/uploads/Maverlang-Logo-1.png"
+                    alt="Maverlang"
+                    className="h-8 w-auto object-contain mx-auto"
+                  />
+                  <StepIndicator current={2} total={2} />
+                </div>
+
+                {/* Body Content */}
+                <div className="flex-1 flex flex-col justify-center my-auto">
+                  <h2 className="text-2xl md:text-3xl font-black tracking-tight text-zinc-900 leading-tight mb-2 text-center">
+                    ¿Qué te interesa?
+                  </h2>
+                  <p className="text-zinc-500 text-base leading-relaxed mb-6 text-center">
+                    Personalizaremos tu experiencia de IA según tus objetivos.
+                  </p>
+
+                  {/* 3 Horizontal square options with starry backgrounds */}
+                  <div className="grid grid-cols-3 gap-4">
+                    {[
+                      {
+                        id: "crear_apps" as const,
+                        label: "Crear apps",
+                        desc: "Proyectos y código",
+                        icon: <Laptop className="w-6 h-6 text-white" />,
+                      },
+                      {
+                        id: "finanzas" as const,
+                        label: "Finanzas",
+                        desc: "Mercados e insights",
+                        icon: <TrendingUp className="w-6 h-6 text-white" />,
+                      },
+                      {
+                        id: "ambas" as const,
+                        label: "Ambas",
+                        desc: "Todas las funciones",
+                        icon: <Sparkles className="w-6 h-6 text-white" />,
+                      },
+                    ].map((item) => {
+                      const isSelected = localInterest === item.id;
+                      return (
+                        <motion.button
+                          key={item.id}
+                          type="button"
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => {
+                            setLocalInterest(item.id);
+                            handleSave(item.id);
                           }}
-                        />
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex items-center justify-between mt-10 pt-6 border-t border-zinc-100">
-                        <button
-                          type="button"
-                          disabled={saving}
-                          onClick={handleSkipStep}
-                          className="text-sm font-bold text-zinc-400 hover:text-zinc-600 transition-colors disabled:opacity-50"
+                          className={`relative overflow-hidden rounded-2xl border transition-all flex flex-col items-center justify-between p-4 aspect-square text-center cursor-pointer ${
+                            isSelected
+                              ? "border-zinc-950 shadow-md ring-2 ring-zinc-950/15"
+                              : "border-zinc-200 hover:border-zinc-300"
+                          }`}
                         >
-                          Saltar
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleNext}
-                          className="inline-flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-base px-7 py-3.5 rounded-full transition-all active:scale-95 shadow-sm"
-                        >
-                          Siguiente
-                          <ArrowRight className="w-4.5 h-4.5" />
-                        </button>
-                      </div>
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key="step2"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      transition={{ duration: 0.25, ease: "easeOut" }}
-                    >
-                      {/* Header: Logo + Step Indicator */}
-                      <div className="flex items-center justify-between mb-8">
-                        <div className="flex items-center gap-3">
-                          <p className="text-xs font-bold uppercase tracking-[0.12em] text-zinc-400">Configura tu</p>
-                          <img
-                            src="https://mail.programbi.com/uploads/Maverlang-Logo-1.png"
-                            alt="Maverlang"
-                            className="h-6 w-auto object-contain"
-                          />
-                        </div>
-                        <StepIndicator current={2} total={2} />
-                      </div>
+                          {/* Mini starry background inside each card */}
+                          <div className="absolute inset-0 bg-[#0a0a0f]">
+                            <StarsBorder />
+                            <div className="absolute inset-0 bg-black/15" />
+                          </div>
 
-                      {/* Title */}
-                      <h2 className="text-2xl md:text-3xl font-black tracking-tight text-zinc-900 leading-tight mb-3">
-                        ¿Qué te interesa?
-                      </h2>
-                      <p className="text-zinc-500 text-base leading-relaxed mb-8">
-                        Personalizaremos tu experiencia de IA según tus objetivos.
-                      </p>
+                          {/* Content */}
+                          <div className="relative z-10 flex flex-col items-center justify-center h-full w-full text-white">
+                            <div className="p-2.5 bg-white/10 rounded-xl mb-2">
+                              {item.icon}
+                            </div>
+                            <p className="text-sm font-extrabold leading-tight">
+                              {item.label}
+                            </p>
+                            <p className="text-[10px] text-zinc-400 mt-1 leading-tight max-w-[100px]">
+                              {item.desc}
+                            </p>
+                          </div>
 
-                      {/* Interest options */}
-                      <div className="space-y-3">
-                        {[
-                          {
-                            id: "crear_apps" as const,
-                            label: "Crear aplicaciones",
-                            desc: "Proyectos interactivos, código e interfaces",
-                            icon: <Laptop className="w-5 h-5" />,
-                          },
-                          {
-                            id: "finanzas" as const,
-                            label: "Finanzas y mercados",
-                            desc: "Portafolios, tickers e insights económicos",
-                            icon: <TrendingUp className="w-5 h-5" />,
-                          },
-                          {
-                            id: "ambas" as const,
-                            label: "Ambas cosas",
-                            desc: "Aprovecha al máximo todas las funciones",
-                            icon: <Sparkles className="w-5 h-5" />,
-                          },
-                        ].map((item) => {
-                          const isSelected = localInterest === item.id;
-                          return (
-                            <motion.button
-                              key={item.id}
-                              type="button"
-                              whileHover={{ scale: 1.01 }}
-                              whileTap={{ scale: 0.99 }}
-                              onClick={() => {
-                                setLocalInterest(item.id);
-                                handleSave(item.id);
-                              }}
-                              className={`w-full text-left p-5 rounded-2xl border-2 transition-all flex items-center gap-4 cursor-pointer ${
-                                isSelected
-                                  ? "border-zinc-900 bg-zinc-50 shadow-sm"
-                                  : "border-zinc-100 hover:border-zinc-200 hover:bg-zinc-50/50"
-                              }`}
+                          {/* Check Indicator */}
+                          {isSelected && (
+                            <motion.div
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              className="absolute top-2 right-2 z-20 w-5 h-5 rounded-full bg-white flex items-center justify-center shadow-sm"
                             >
-                              <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-                                isSelected
-                                  ? "bg-zinc-900 text-white"
-                                  : "bg-zinc-100 text-zinc-500"
-                              }`}>
-                                {item.icon}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-base font-bold text-zinc-900 leading-tight">
-                                  {item.label}
-                                </p>
-                                <p className="text-sm text-zinc-500 mt-0.5 font-medium">
-                                  {item.desc}
-                                </p>
-                              </div>
-                              {isSelected && (
-                                <motion.div
-                                  initial={{ scale: 0 }}
-                                  animate={{ scale: 1 }}
-                                  className="w-7 h-7 rounded-full bg-zinc-900 flex items-center justify-center shrink-0"
-                                >
-                                  <Check className="w-4 h-4 text-white" />
-                                </motion.div>
-                              )}
-                            </motion.button>
-                          );
-                        })}
-                      </div>
+                              <Check className="w-3.5 h-3.5 text-zinc-950" />
+                            </motion.div>
+                          )}
+                        </motion.button>
+                      );
+                    })}
+                  </div>
+                </div>
 
-                      {/* Note */}
-                      <p className="text-xs text-zinc-400 text-center mt-6 font-medium">
-                        Puedes cambiar esto en cualquier momento desde los ajustes.
-                      </p>
+                {/* Actions */}
+                <div className="flex items-center justify-between mt-6 pt-5 border-t border-zinc-100">
+                  <button
+                    type="button"
+                    onClick={() => setStep(1)}
+                    className="text-sm font-bold text-zinc-400 hover:text-zinc-600 transition-colors"
+                  >
+                    ← Atrás
+                  </button>
+                  <button
+                    type="button"
+                    disabled={saving}
+                    onClick={() => handleSave()}
+                    className="inline-flex items-center justify-center min-w-[120px] bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-base px-7 py-3.5 rounded-full transition-all active:scale-95 shadow-sm disabled:opacity-50"
+                  >
+                    {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Comenzar"}
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-                      {/* Actions */}
-                      <div className="flex items-center justify-between mt-6 pt-6 border-t border-zinc-100">
-                        <button
-                          type="button"
-                          onClick={() => setStep(1)}
-                          className="text-sm font-bold text-zinc-400 hover:text-zinc-600 transition-colors"
-                        >
-                          ← Atrás
-                        </button>
-                        <button
-                          type="button"
-                          disabled={saving}
-                          onClick={() => handleSave()}
-                          className="inline-flex items-center justify-center min-w-[120px] bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-base px-7 py-3.5 rounded-full transition-all active:scale-95 shadow-sm disabled:opacity-50"
-                        >
-                          {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Comenzar"}
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-              </div>
-            </div>
-          </div>
         </div>
       </motion.div>
     </div>

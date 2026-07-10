@@ -79,6 +79,7 @@ interface ChatInputProps {
   disabled?: boolean;
   className?: string;
   isStreaming?: boolean;
+  isProjectsPage?: boolean;
   onStop?: () => void;
   onSubmit?: (
     value: string,
@@ -98,6 +99,7 @@ export function ChatInput({
   disabled,
   className,
   isStreaming = false,
+  isProjectsPage = false,
   onStop,
   onSubmit,
   value: controlledValue,
@@ -717,24 +719,26 @@ export function ChatInput({
                                 </button>
                               </div>
 
-                              <div className="mt-1">
-                                <button type="button" onClick={() => setAttachMenuView('charts')}
-                                  className="group/btn w-full flex items-center justify-between px-2.5 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.03] hover:text-foreground rounded-xl transition-all duration-200 active:scale-[0.98]">
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/5 text-foreground group-hover/btn:bg-foreground group-hover/btn:text-background flex items-center justify-center shrink-0 transition-colors duration-200"><PieChart className="w-4 h-4" /></div>
-                                    Gráficos
-                                  </div>
-                                  <ChevronRight className="w-4 h-4 text-gray-400 group-hover/btn:translate-x-0.5 transition-transform" />
-                                </button>
-                                <button type="button" onClick={() => setAttachMenuView('analysis')}
-                                  className="group/btn w-full flex items-center justify-between px-2.5 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.03] hover:text-foreground rounded-xl transition-all duration-200 active:scale-[0.98] mt-1">
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/5 text-foreground group-hover/btn:bg-foreground group-hover/btn:text-background flex items-center justify-center shrink-0 transition-colors duration-200"><TrendingUp className="w-4 h-4" /></div>
-                                    Análisis
-                                  </div>
-                                  <ChevronRight className="w-4 h-4 text-gray-400 group-hover/btn:translate-x-0.5 transition-transform" />
-                                </button>
-                              </div>
+                              {!isProjectsPage && (
+                                <div className="mt-1">
+                                  <button type="button" onClick={() => setAttachMenuView('charts')}
+                                    className="group/btn w-full flex items-center justify-between px-2.5 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.03] hover:text-foreground rounded-xl transition-all duration-200 active:scale-[0.98]">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/5 text-foreground group-hover/btn:bg-foreground group-hover/btn:text-background flex items-center justify-center shrink-0 transition-colors duration-200"><PieChart className="w-4 h-4" /></div>
+                                      Gráficos
+                                    </div>
+                                    <ChevronRight className="w-4 h-4 text-gray-400 group-hover/btn:translate-x-0.5 transition-transform" />
+                                  </button>
+                                  <button type="button" onClick={() => setAttachMenuView('analysis')}
+                                    className="group/btn w-full flex items-center justify-between px-2.5 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.03] hover:text-foreground rounded-xl transition-all duration-200 active:scale-[0.98] mt-1">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/5 text-foreground group-hover/btn:bg-foreground group-hover/btn:text-background flex items-center justify-center shrink-0 transition-colors duration-200"><TrendingUp className="w-4 h-4" /></div>
+                                      Análisis
+                                    </div>
+                                    <ChevronRight className="w-4 h-4 text-gray-400 group-hover/btn:translate-x-0.5 transition-transform" />
+                                  </button>
+                                </div>
+                              )}
                             </motion.div>
                           )}
 
@@ -803,48 +807,50 @@ export function ChatInput({
               </div>
 
               {/* Feature toggle pills scrollable row */}
-              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [scrollbar-width:none] select-none flex-nowrap pr-2 max-w-[calc(100vw-180px)] sm:max-w-none">
-                {!isStreaming && (
-                  <>
-                    <WebBuilderPill onActivate={() => { setCodeInterpreter(false); setBrowser(false); useCanvasStore.getState().setOpen(false); }} />
-                    {(!isWebBuilderMode || messages.length === 0) && (
-                      <>
-                        <Pill
-                          active={codeInterpreter}
-                          onClick={() => {
-                            const next = !codeInterpreter;
-                            setCodeInterpreter(next);
-                            if (next) {
-                              setWebBuilderMode(false);
-                              setBrowser(false);
-                              // No abrir el canvas aquí: se mostrará a la
-                              // derecha recién cuando la IA empiece a responder
-                              // (cuando llegue el primer archivo/contenido).
-                            } else {
-                              useCanvasStore.getState().setOpen(false);
-                            }
-                          }}
-                          icon={<Code2 className="h-4 w-4" />}
-                          label="Canvas"
-                        />
-                        <Pill
-                          active={browser}
-                          onClick={() => {
-                            const next = !browser;
-                            setBrowser(next);
-                            if (next) {
-                              setWebBuilderMode(false);
-                              setCodeInterpreter(false);
-                            }
-                          }}
-                          icon={<Chrome className="h-4 w-4" />}
-                          label="Navegador virtual"
-                        />
-                      </>
-                    )}
-                  </>
-                )}
-              </div>
+              {!isProjectsPage && (
+                <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [scrollbar-width:none] select-none flex-nowrap pr-2 max-w-[calc(100vw-180px)] sm:max-w-none">
+                  {!isStreaming && (
+                    <>
+                      <WebBuilderPill onActivate={() => { setCodeInterpreter(false); setBrowser(false); useCanvasStore.getState().setOpen(false); }} />
+                      {(!isWebBuilderMode || messages.length === 0) && (
+                        <>
+                          <Pill
+                            active={codeInterpreter}
+                            onClick={() => {
+                              const next = !codeInterpreter;
+                              setCodeInterpreter(next);
+                              if (next) {
+                                setWebBuilderMode(false);
+                                setBrowser(false);
+                                // No abrir el canvas aquí: se mostrará a la
+                                // derecha recién cuando la IA empiece a responder
+                                // (cuando llegue el primer archivo/contenido).
+                              } else {
+                                useCanvasStore.getState().setOpen(false);
+                              }
+                            }}
+                            icon={<Code2 className="h-4 w-4" />}
+                            label="Canvas"
+                          />
+                          <Pill
+                            active={browser}
+                            onClick={() => {
+                              const next = !browser;
+                              setBrowser(next);
+                              if (next) {
+                                setWebBuilderMode(false);
+                                setCodeInterpreter(false);
+                              }
+                            }}
+                            icon={<Chrome className="h-4 w-4" />}
+                            label="Navegador virtual"
+                          />
+                        </>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-2">

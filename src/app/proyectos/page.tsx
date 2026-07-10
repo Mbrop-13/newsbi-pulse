@@ -150,6 +150,7 @@ export default function ProyectosPage() {
             onSubmit={handleSend}
             disabled={false}
             isStreaming={false}
+            isProjectsPage={true}
             onStop={() => {}}
             value={input}
             onChange={setInput}
@@ -189,7 +190,7 @@ export default function ProyectosPage() {
                       : "text-zinc-400 hover:text-zinc-200"
                   )}
                 >
-                  My projects
+                  {language === "en" ? "All" : "Todos"}
                 </button>
                 <button
                   onClick={() => setFilter("web")}
@@ -200,7 +201,29 @@ export default function ProyectosPage() {
                       : "text-zinc-400 hover:text-zinc-200"
                   )}
                 >
-                  {language === "en" ? "Templates" : "Plantillas"}
+                  Web
+                </button>
+                <button
+                  onClick={() => setFilter("app")}
+                  className={cn(
+                    "px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer",
+                    filter === "app"
+                      ? "bg-zinc-800 text-white border border-zinc-700 shadow-lg"
+                      : "text-zinc-400 hover:text-zinc-200"
+                  )}
+                >
+                  App
+                </button>
+                <button
+                  onClick={() => setFilter("multiplatform")}
+                  className={cn(
+                    "px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer",
+                    filter === "multiplatform"
+                      ? "bg-zinc-800 text-white border border-zinc-700 shadow-lg"
+                      : "text-zinc-400 hover:text-zinc-200"
+                  )}
+                >
+                  Multiplataforma ∞
                 </button>
               </div>
             </div>

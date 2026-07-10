@@ -45,11 +45,11 @@ function getProjectTypeIcon(type: string) {
 function getProjectTypeLabel(type: string): string {
   switch (type) {
     case "web":
-      return "Sitio Web";
+      return "Web";
     case "app":
-      return "App Móvil";
+      return "App";
     case "multiplatform":
-      return "Multiplataforma";
+      return "Multiplataforma ∞";
     default:
       return type;
   }

@@ -96,7 +96,7 @@ interface ProjectTypeOption {
 const PROJECT_TYPES: ProjectTypeOption[] = [
   {
     id: "web",
-    title: "Sitio Web",
+    title: "Web",
     subtitle: "Landing pages, portafolios, dashboards",
     icon: Globe,
     gradient: "from-blue-500/20 via-cyan-500/10 to-transparent",
@@ -105,7 +105,7 @@ const PROJECT_TYPES: ProjectTypeOption[] = [
   },
   {
     id: "app",
-    title: "Aplicación Móvil",
+    title: "App",
     subtitle: "Apps con interfaz nativa y funcionalidad",
     icon: Smartphone,
     gradient: "from-purple-500/20 via-pink-500/10 to-transparent",
@@ -114,7 +114,7 @@ const PROJECT_TYPES: ProjectTypeOption[] = [
   },
   {
     id: "multiplatform",
-    title: "Multiplataforma",
+    title: "Multiplataforma ∞",
     subtitle: "Web + móvil con código compartido",
     icon: Monitor,
     gradient: "from-emerald-500/20 via-teal-500/10 to-transparent",

@@ -28,6 +28,7 @@ const PLANS = [
     desc: "Para inversores y profesionales activos de la información.",
     features: [
       "Mucha más capacidad de preguntas al mes",
+      "1.000 créditos de imagen en Flow",
       "50 audios de noticias al mes",
       "5 alertas de precio activas",
       "Hasta 25 activos en portafolio",
@@ -46,6 +47,7 @@ const PLANS = [
     desc: "Para inversores exigentes que quieren el máximo potencial.",
     features: [
       "Doble de límites de preguntas (x2 límites de Pro)",
+      "2.000 créditos de imagen en Flow",
       "150 audios de noticias al mes",
       "15 alertas de precio activas",
       "Hasta 100 activos en portafolio",
@@ -64,6 +66,7 @@ const PLANS = [
     desc: "El máximo poder analítico con infraestructura dedicada.",
     features: [
       "Límites de preguntas x5 (x5 límites de Pro)",
+      "5.000 créditos de imagen en Flow",
       "300 audios de noticias al mes",
       "30 alertas de precio activas",
       "Activos de portafolio ilimitados",

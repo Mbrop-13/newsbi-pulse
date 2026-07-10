@@ -196,6 +196,7 @@ function SubscriptionPageContent() {
     if (planId === "pro") {
       return [
         { text: "Mucha más capacidad de preguntas al mes", included: true },
+        { text: "1.000 créditos de imagen en Flow", included: true },
         { text: "50 audios de noticias/mes", included: true },
         { text: "5 alertas de precio activas", included: true },
         { text: "25 activos en portafolio", included: true },
@@ -206,6 +207,7 @@ function SubscriptionPageContent() {
     if (planId === "max") {
       return [
         { text: "Doble de límites de preguntas (x2 límites de Pro)", included: true },
+        { text: "2.000 créditos de imagen en Flow", included: true },
         { text: "100 audios al mes (x2 Pro)", included: true },
         { text: "10 alertas de precio (x2 Pro)", included: true },
         { text: "50 activos en portafolio (x2 Pro)", included: true },
@@ -219,6 +221,7 @@ function SubscriptionPageContent() {
       return [
         { text: "Todas las funciones de Plan Ultra", included: true },
         { text: "Límites de preguntas x20 (x20 límites de Pro)", included: true },
+        { text: "10.000 créditos de imagen en Flow", included: true },
         { text: "1.000 audios al mes (x20 Pro)", included: true },
         { text: "100 alertas de precio (x20 Pro)", included: true },
         { text: "500 activos en portafolio (x20 Pro)", included: true },
@@ -229,6 +232,7 @@ function SubscriptionPageContent() {
     return [
       { text: "Todas las funciones de Plan Max", included: true },
       { text: "Límites de preguntas x5 (x5 límites de Pro)", included: true },
+      { text: "5.000 créditos de imagen en Flow", included: true },
       { text: "250 audios al mes (x5 Pro)", included: true },
       { text: "25 alertas de precio (x5 Pro)", included: true },
       { text: "125 activos en portafolio (x5 Pro)", included: true },

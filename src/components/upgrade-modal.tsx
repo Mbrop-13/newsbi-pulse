@@ -43,24 +43,28 @@ const TIER_BENEFITS: Record<PlanTier, string[]> = {
   free: [],
   pro: [
     "Mucha más capacidad de preguntas al mes",
+    "1.000 créditos de imagen en Flow",
     "50 audios de noticias al mes",
     "5 alertas de precio",
     "Sin publicidad",
   ],
   max: [
     "Doble de límites de preguntas (x2 límites de Pro)",
+    "2.000 créditos de imagen en Flow",
     "100 audios al mes (x2 Pro)",
     "10 alertas de precio (x2 Pro)",
     "Informe semanal IA",
   ],
   ultra: [
     "Límites de preguntas x5 (x5 límites de Pro)",
+    "5.000 créditos de imagen en Flow",
     "250 audios al mes (x5 Pro)",
     "IA con búsqueda web activa",
     "Soporte dedicado 24/7",
   ],
   ultra_x20: [
     "Límites de preguntas x20 (x20 límites de Pro)",
+    "10.000 créditos de imagen en Flow",
     "1.000 audios al mes (x20 Pro)",
     "100 alertas de precio (x20 Pro)",
     "Soporte dedicado 24/7",

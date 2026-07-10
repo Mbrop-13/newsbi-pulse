@@ -28,6 +28,7 @@ export interface PlanConfig {
   aiTokensPerWeek: number; // Límite de tokens por semana
   aiModel: string; // Modelo de IA a usar
   aiChatHistory: number; // Cantidad de chats guardados (-1 = ilimitado)
+  imageCreditsPerMonth: number; // Créditos de imagen en Flow
   aiFileAttachments: boolean;
   aiAdvancedAnalysis: boolean;
   aiWebSearch: boolean;
@@ -73,6 +74,7 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     aiTokensPerWeek: 25000,
     aiModel: "x-ai/grok-4.1-fast",
     aiChatHistory: 0,
+    imageCreditsPerMonth: 0,
     aiFileAttachments: false,
     aiAdvancedAnalysis: false,
     aiWebSearch: false,
@@ -112,6 +114,7 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     aiTokensPerWeek: 400000,
     aiModel: "x-ai/grok-4.1-fast",
     aiChatHistory: 10,
+    imageCreditsPerMonth: 1000,
     aiFileAttachments: true,
     aiAdvancedAnalysis: false,
     aiWebSearch: false,
@@ -151,6 +154,7 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     aiTokensPerWeek: 800000,
     aiModel: "x-ai/grok-4.1-fast:online",
     aiChatHistory: 20, // x2 Pro
+    imageCreditsPerMonth: 2000,
     aiFileAttachments: true,
     aiAdvancedAnalysis: true,
     aiWebSearch: false,
@@ -190,6 +194,7 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     aiTokensPerWeek: 2000000,
     aiModel: "x-ai/grok-4.1-fast:online",
     aiChatHistory: 50, // x5 Pro
+    imageCreditsPerMonth: 5000,
     aiFileAttachments: true,
     aiAdvancedAnalysis: true,
     aiWebSearch: true,
@@ -229,6 +234,7 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     aiTokensPerWeek: 8000000,
     aiModel: "x-ai/grok-4.1-fast:online",
     aiChatHistory: 200, // x20 Pro
+    imageCreditsPerMonth: 10000,
     aiFileAttachments: true,
     aiAdvancedAnalysis: true,
     aiWebSearch: true,
@@ -326,6 +332,7 @@ export interface EnterprisePlanConfig {
 
   // Features incluidas por asiento
   aiMessagesPerSeatPerMonth: number;
+  imageCreditsPerSeatPerMonth: number; // Créditos de imagen en Flow por asiento
   aiTokensPerSeatPerMonth: number;
   maxAlertsPerSeat: number;
   maxPortfolioAssetsPerSeat: number;
@@ -369,6 +376,7 @@ export const ENTERPRISE_PLANS: Record<EnterprisePlan, EnterprisePlanConfig> = {
     cta: "trial",
     annualDiscount: 2 / 12,
     aiMessagesPerSeatPerMonth: 200,
+    imageCreditsPerSeatPerMonth: 2000,
     aiTokensPerSeatPerMonth: 2000000,
     maxAlertsPerSeat: 15,
     maxPortfolioAssetsPerSeat: 75,
@@ -405,6 +413,7 @@ export const ENTERPRISE_PLANS: Record<EnterprisePlan, EnterprisePlanConfig> = {
     cta: "trial",
     annualDiscount: 2 / 12,
     aiMessagesPerSeatPerMonth: 500,
+    imageCreditsPerSeatPerMonth: 5000,
     aiTokensPerSeatPerMonth: 5000000,
     maxAlertsPerSeat: 30,
     maxPortfolioAssetsPerSeat: 150,
@@ -441,6 +450,7 @@ export const ENTERPRISE_PLANS: Record<EnterprisePlan, EnterprisePlanConfig> = {
     cta: "contact",
     annualDiscount: 2 / 12,
     aiMessagesPerSeatPerMonth: 2000,
+    imageCreditsPerSeatPerMonth: 10000,
     aiTokensPerSeatPerMonth: 20000000,
     maxAlertsPerSeat: 100,
     maxPortfolioAssetsPerSeat: 500,

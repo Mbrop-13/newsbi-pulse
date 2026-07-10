@@ -30,24 +30,17 @@ interface ModelOption {
 const FLOW_MODELS: ModelOption[] = [
   {
     id: "google/gemini-3.1-flash-lite-image",
-    name: "Nano Banana Pro",
+    name: "Nano Banana 2 Lite",
     badge: "Lite",
-    icon: "🍌",
-    desc: "Modelo predeterminado rápido e inteligente de Google para flujos multimedia.",
-  },
-  {
-    id: "google/gemini-3.1-flash-image",
-    name: "Google: Nano Banana 2",
-    badge: "Flash",
-    icon: "⚡ 🍌",
-    desc: "Google Gemini 3.1 Flash Image. Rendimiento optimizado y gran calidad de generación.",
+    icon: "✨ 🍌",
+    desc: "Google Gemini 3.1 Flash Lite Image. Modelo de generación rápido y eficiente (consume 15 créditos).",
   },
   {
     id: "google/gemini-3-pro-image",
-    name: "Google: Gemini 3 Pro",
+    name: "Nano Banana Pro",
     badge: "Pro",
-    icon: "🌟 💎",
-    desc: "Google Gemini 3 Pro Image. Modelo de máxima capacidad y razonamiento multimedia premium.",
+    icon: "🍌",
+    desc: "Google Gemini 3 Pro Image. Calidad de imagen y razonamiento de primer nivel (consume 55 créditos).",
   },
 ];
 
@@ -69,6 +62,22 @@ export default function FlowClient() {
   const [generationType, setGenerationType] = useState<"imagen" | "video">("imagen");
   const [aspectRatio, setAspectRatio] = useState<"16:9" | "4:3" | "1:1" | "3:4" | "9:16">("3:4");
   const [multiplier, setMultiplier] = useState<"1x" | "x2" | "x3" | "x4">("x2");
+
+  const getBaseCost = (modelId: string) => {
+    return modelId === "google/gemini-3.1-flash-lite-image" ? 15 : 55;
+  };
+
+  const getMultiplierNumber = (mult: string) => {
+    switch (mult) {
+      case "1x": return 1;
+      case "x2": return 2;
+      case "x3": return 3;
+      case "x4": return 4;
+      default: return 1;
+    }
+  };
+
+  const totalCost = getBaseCost(selectedModel.id) * getMultiplierNumber(multiplier);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -480,7 +489,7 @@ export default function FlowClient() {
                         {/* 5. Points cost indicator */}
                         <div className="text-center py-1">
                           <p className="text-[11px] text-zinc-500 font-semibold leading-none">
-                            La generación consumirá <span className="underline decoration-zinc-650 decoration-wavy underline-offset-2">0 puntos</span>
+                            La generación consumirá <span className="underline decoration-zinc-650 decoration-wavy underline-offset-2">{totalCost} puntos</span>
                           </p>
                         </div>
 

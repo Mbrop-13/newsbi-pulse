@@ -69,6 +69,7 @@ export interface SavedChat {
   attachedFiles: AttachedFile[];
   timestamp: Date;
   isWebBuilder?: boolean;
+  isFlow?: boolean;
 }
 
 interface AIChatStore {

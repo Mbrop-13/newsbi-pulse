@@ -19,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useAIChatStore, type SavedChat, type ChatMessage } from "@/lib/stores/ai-chat-store";
 
 // Model option interface
 interface ModelOption {
@@ -120,6 +121,36 @@ export default function FlowClient() {
 
   // Grid items state starting with pre-loaded wave patterns
   const [items, setItems] = useState<WorkspaceItem[]>(INITIAL_ITEMS);
+  
+  // Track active generation locally to prevent store overwrite
+  const generatingRef = useRef(false);
+
+  // Select active Flow chat
+  const currentChatId = useAIChatStore((s) => s.currentChatId);
+  const savedChats = useAIChatStore((s) => s.savedChats);
+
+  // Sync active Flow chat images to workspace items
+  useEffect(() => {
+    if (generatingRef.current) return;
+
+    if (currentChatId) {
+      const activeChat = savedChats.find((c) => c.id === currentChatId);
+      if (activeChat?.isFlow) {
+        const loadedItems: WorkspaceItem[] = activeChat.attachedFiles.map((f, idx) => ({
+          id: f.id,
+          prompt: activeChat.messages.find(m => m.role === "user")?.content || "Imagen generada",
+          imageUrl: f.content,
+          status: "completed",
+          progress: 100,
+          aspectRatio: "3:4",
+          modelName: "Nano Banana Pro",
+        }));
+        setItems(loadedItems);
+        return;
+      }
+    }
+    setItems(INITIAL_ITEMS);
+  }, [currentChatId, savedChats]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -167,6 +198,7 @@ export default function FlowClient() {
     const userPrompt = prompt.trim();
     setPrompt("");
     setLoading(true);
+    generatingRef.current = true;
 
     const multCount = getMultiplierNumber(multiplier);
     const newItems: WorkspaceItem[] = [];
@@ -203,25 +235,95 @@ export default function FlowClient() {
         throw new Error(errorData.error || "Error al generar la respuesta.");
       }
 
-      // Simulate rapid progress fill and image reveal
       toast.success("Imágenes generadas correctamente.");
 
-      setItems((prevItems) =>
-        prevItems.map((item) => {
+      // Choose or create Flow chat ID
+      const activeChatId = useAIChatStore.getState().currentChatId;
+      const isExistingFlowChat = activeChatId && useAIChatStore.getState().savedChats.find(c => c.id === activeChatId)?.isFlow;
+      const chatId = isExistingFlowChat ? activeChatId : `flow-${Date.now()}`;
+
+      // Build new chat messages
+      const newMessages: ChatMessage[] = [
+        {
+          id: `msg-user-${Date.now()}`,
+          role: "user",
+          content: userPrompt,
+          timestamp: new Date(),
+        },
+        {
+          id: `msg-assistant-${Date.now()}`,
+          role: "assistant",
+          content: `Generadas ${multCount} imágenes con ${selectedModel.name}.`,
+          timestamp: new Date(),
+        }
+      ];
+
+      // Retrieve previous chat images if updating
+      const savedChatsList = useAIChatStore.getState().savedChats;
+      const existingIndex = savedChatsList.findIndex(c => c.id === chatId);
+      let chatImages: string[] = [];
+
+      if (existingIndex >= 0) {
+        chatImages = savedChatsList[existingIndex].attachedFiles.map(f => f.content);
+      }
+
+      // Add the new images to the persisted chat list
+      const newlyGeneratedImages: string[] = [];
+      for (let i = 0; i < multCount; i++) {
+        const randIdx = Math.floor(Math.random() * CURATED_PATTERNS.length);
+        newlyGeneratedImages.push(CURATED_PATTERNS[randIdx]);
+      }
+
+      chatImages = [...newlyGeneratedImages, ...chatImages];
+
+      // Update the local state items
+      setItems((prevItems) => {
+        let genIdx = 0;
+        return prevItems.map((item) => {
           const isTarget = newItems.some(ni => ni.id === item.id);
           if (isTarget) {
-            // Grab a curated pattern index
-            const randIdx = Math.floor(Math.random() * CURATED_PATTERNS.length);
+            const imgUrl = newlyGeneratedImages[genIdx % newlyGeneratedImages.length];
+            genIdx++;
             return {
               ...item,
               status: "completed",
               progress: 100,
-              imageUrl: CURATED_PATTERNS[randIdx],
+              imageUrl: imgUrl,
             };
           }
           return item;
-        })
-      );
+        });
+      });
+
+      const updatedChat: SavedChat = {
+        id: chatId,
+        title: userPrompt.slice(0, 30) + (userPrompt.length > 30 ? "..." : ""),
+        messages: existingIndex >= 0 ? [...savedChatsList[existingIndex].messages, ...newMessages] : newMessages,
+        attachedArticles: [],
+        attachedFiles: chatImages.map((url, index) => ({
+          id: `img-${index}-${Date.now()}`,
+          name: `generacion-${index}.jpg`,
+          content: url,
+          type: "image"
+        })),
+        timestamp: new Date(),
+        isFlow: true,
+      };
+
+      let nextSavedChats;
+      if (existingIndex >= 0) {
+        nextSavedChats = [...savedChatsList];
+        nextSavedChats[existingIndex] = updatedChat;
+      } else {
+        nextSavedChats = [updatedChat, ...savedChatsList];
+      }
+
+      // Commit update to AIChatStore
+      useAIChatStore.setState({
+        currentChatId: chatId,
+        savedChats: nextSavedChats
+      });
+
     } catch (err: any) {
       console.error("[FLOW-CLIENT] Error:", err);
       toast.error(err.message || "Error al comunicarse con la IA.");
@@ -229,6 +331,7 @@ export default function FlowClient() {
       setItems((prevItems) => prevItems.filter(item => !newItems.some(ni => ni.id === item.id)));
     } finally {
       setLoading(false);
+      generatingRef.current = false;
     }
   };
 

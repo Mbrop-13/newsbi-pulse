@@ -18,7 +18,7 @@ import {
   SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { slugify } from "@/lib/utils"
 import { useAIChatStore, type SavedChat } from "@/lib/stores/ai-chat-store"
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store"
@@ -27,13 +27,25 @@ import { useTranslation, type TranslationKey } from "@/lib/translations"
 
 export function NavChats() {
   const router = useRouter()
+  const pathname = usePathname() || ""
   const { isMobile, setOpenMobile } = useSidebar()
   const handleNavigate = useCallback(() => {
     if (isMobile) setOpenMobile(false)
   }, [isMobile, setOpenMobile])
 
   const [isOpen, setIsOpen] = useState(true)
-  const savedChats = useAIChatStore((s) => s.savedChats)
+  
+  // Differentiate flow mode path
+  const isFlowPage = pathname.endsWith("/flow") || pathname.includes("/flow/")
+
+  const allChats = useAIChatStore((s) => s.savedChats)
+  
+  const savedChats = useMemo(() => {
+    return allChats.filter((chat) => 
+      isFlowPage ? chat.isFlow === true : chat.isFlow !== true
+    )
+  }, [allChats, isFlowPage])
+
   const loadChat = useAIChatStore((s) => s.loadChat)
   const deleteSavedChat = useAIChatStore((s) => s.deleteSavedChat)
   const currentChatId = useAIChatStore((s) => s.currentChatId)
@@ -74,12 +86,17 @@ export function NavChats() {
 
   const handleLoadChat = useCallback(
     (id: string, title?: string) => {
+      const targetChat = allChats.find(c => c.id === id)
       loadChat(id)
-      const slug = title ? slugify(title.slice(0, 40)) : ''
-      router.push(`/${language}/ai/chat/${slug ? `${slug}-` : ''}${id}`)
+      if (targetChat?.isFlow) {
+        router.push(`/${language}/flow`)
+      } else {
+        const slug = title ? slugify(title.slice(0, 40)) : ''
+        router.push(`/${language}/ai/chat/${slug ? `${slug}-` : ''}${id}`)
+      }
       handleNavigate()
     },
-    [loadChat, router, handleNavigate, language]
+    [loadChat, router, handleNavigate, language, allChats]
   )
 
   const handleDelete = useCallback(
@@ -87,6 +104,7 @@ export function NavChats() {
       e.preventDefault()
       e.stopPropagation()
       
+      const targetChat = allChats.find(c => c.id === id)
       const isActive = currentChatId === id
       deleteSavedChat(id)
       
@@ -99,10 +117,14 @@ export function NavChats() {
           activeFilePath: "/App.tsx",
           pendingPlan: null
         })
-        router.push(`/${language}/ai`)
+        if (targetChat?.isFlow) {
+          router.push(`/${language}/flow`)
+        } else {
+          router.push(`/${language}/ai`)
+        }
       }
     },
-    [deleteSavedChat, currentChatId, router, language]
+    [deleteSavedChat, currentChatId, router, language, allChats]
   )
 
   return (

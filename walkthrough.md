@@ -598,6 +598,28 @@ Hemos perfeccionado el acoplamiento visual de **Flow** con la estructura origina
 
 ---
 
+* **Type Safety:** La compilación y validación estática de TypeScript ha finalizado de forma correcta (`npx tsc --noEmit` completado sin errores).
+
+---
+
+## 30. Persistencia e Historial del Chat en Maverlang Flow
+
+Hemos incorporado persistencia local de proyectos e historial específico para **Flow**, logrando separar de forma clara las conversaciones de imágenes del chat de IA ordinario:
+
+*   **Filtro de Chats en la Barra Lateral:**
+    *   **Archivo Modificado**: [nav-chats.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/sidebar/nav-chats.tsx)
+    *   Detecta automáticamente la ruta `/flow`. Cuando se navega dentro del módulo Flow, el listado de chats muestra **únicamente los chats que pertenecen a Flow** (`isFlow: true`).
+    *   En las rutas generales del chat, los chats de imágenes son ocultados para mantener el historial limpio de elementos no conversacionales.
+    *   Al hacer clic en un chat de imágenes guardado en el sidebar, el sistema redirige automáticamente al usuario a `/${language}/flow` y carga su estado.
+*   **Persistencia de Imágenes Generadas en el Store:**
+    *   **Archivos Modificados**: [ai-chat-store.ts](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/lib/stores/ai-chat-store.ts) y [flow-client.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/app/flow/flow-client.tsx)
+    *   Se agregó la propiedad opcional `isFlow?: boolean` en la interfaz `SavedChat`.
+    *   Al realizar una generación en la consola de Flow, la consulta del prompt y el conjunto de imágenes generadas se guardan de forma local en el almacén de Zustand (`AIChatStore`).
+    *   Si hay un chat activo de Flow seleccionado, las nuevas imágenes se agregan al historial de ese mismo chat; si no, se crea uno nuevo automáticamente.
+    *   Al cargar o cambiar de chat de imágenes en la barra lateral, las imágenes del proyecto se renderizan de forma reactiva en el mosaico masonry principal.
+
+---
+
 ## Verificación Realizada
 
 * **Type Safety:** La compilación y validación estática de TypeScript ha finalizado de forma correcta (`npx tsc --noEmit` completado sin errores).

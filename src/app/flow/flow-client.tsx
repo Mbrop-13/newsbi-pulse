@@ -378,40 +378,7 @@ export default function FlowClient() {
         }}
       />
 
-      {/* Top Header Section (Light Mode) */}
-      <header className="h-16 shrink-0 bg-white/80 backdrop-blur-md border-b border-zinc-200/60 px-6 flex items-center justify-between gap-4 z-15">
-        {/* Left: Search Bar & Filters */}
-        <div className="flex-1 max-w-md relative flex items-center">
-          <Search className="absolute left-3 w-4 h-4 text-zinc-400" />
-          <input
-            type="text"
-            placeholder="Buscar multimedia, caracteres..."
-            className="w-full bg-zinc-100/80 border border-zinc-200/60 rounded-full pl-9 pr-10 py-1.5 text-xs text-zinc-800 placeholder-zinc-400 focus:outline-none focus:bg-white focus:border-zinc-300/85 transition-all duration-200 font-semibold"
-          />
-          <button 
-            type="button"
-            onClick={() => toast.info("Configuraciones de filtro avanzadas")}
-            className="absolute right-3.5 p-0.5 hover:text-[#1890FF] text-zinc-450 transition-colors cursor-pointer"
-          >
-            <Sliders className="w-3.5 h-3.5" />
-          </button>
-        </div>
 
-        {/* Right: Quick actions, PRO indicator & user */}
-        <div className="flex items-center gap-3">
-
-
-          {/* Premium PRO badge */}
-          <span className="inline-flex items-center bg-amber-500/10 text-amber-600 border border-amber-500/30 px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider select-none leading-none h-5">
-            Pro
-          </span>
-
-          {/* Dummy User Avatar */}
-          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#1890FF] to-indigo-600 text-white flex items-center justify-center text-xs font-black select-none shadow-md shrink-0">
-            M
-          </div>
-        </div>
-      </header>
 
       {/* Main Workspace Body: Premium Masonry Grid */}
       <main className="flex-1 p-6 relative z-10 overflow-y-auto hidden-scrollbar pb-32">
@@ -518,7 +485,7 @@ export default function FlowClient() {
       </main>
 
       {/* Floating Prompt Chat Panel at the bottom (Light Mode styled) */}
-      <div className="w-full max-w-xl mx-auto px-4 pb-6 absolute bottom-0 left-1/2 -translate-x-1/2 shrink-0 z-20">
+      <div className="w-full max-w-xl mx-auto px-4 pb-3 absolute bottom-0 left-1/2 -translate-x-1/2 shrink-0 z-20">
         <form onSubmit={handleSubmit} className="relative">
           <div className="bg-white border border-zinc-200/80 rounded-3xl p-3 flex items-center justify-between gap-3 shadow-xl focus-within:border-zinc-300/80 transition-all duration-200 relative">
             
@@ -717,10 +684,7 @@ export default function FlowClient() {
           </div>
         </form>
 
-        {/* Disclaimer note */}
-        <p className="text-center text-[9px] text-zinc-450 mt-3 tracking-wide font-medium select-none">
-          Maverlang Flow puede cometer errores, así que comprueba sus respuestas.
-        </p>
+
       </div>
     </div>
   );

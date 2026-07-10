@@ -5,27 +5,13 @@ import { usePathname, useRouter } from "next/navigation"
 import {
   MessageSquarePlus,
   Search,
-  Briefcase,
-  TrendingUp,
-  Newspaper,
-  Globe,
-  Settings,
-  FolderKanban,
   Workflow,
   ArrowLeft,
-  MoreHorizontal,
-  Image,
-  Users,
-  Clapperboard,
-  Sparkles,
-  Trash2,
-  EyeOff,
 } from "lucide-react"
 
 import { NavMain } from "@/components/sidebar/nav-main"
 import { NavUser } from "@/components/sidebar/nav-user"
 import { NavChats } from "@/components/sidebar/nav-chats"
-import { NavFinance } from "@/components/sidebar/nav-finance"
 import { SidebarLogo } from "@/components/sidebar/sidebar-logo"
 import { SearchDialog } from "@/components/search-dialog"
 import {
@@ -81,43 +67,12 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
         onClick: () => setSearchOpen(true),
       },
       {
-        title: t("projects"),
-        url: `/${language}/proyectos`,
-        icon: FolderKanban,
-      },
-      {
         title: "Flow",
         url: `/${language}/flow`,
         icon: Workflow,
       },
     ],
     [clearMessages, t, language]
-  )
-
-  const financeButtons = React.useMemo(
-    () => [
-      {
-        title: t("portfolio"),
-        url: `/${language}/portafolio`,
-        icon: Briefcase,
-      },
-      {
-        title: t("markets"),
-        url: `/${language}/mercados`,
-        icon: TrendingUp,
-      },
-      {
-        title: t("news"),
-        url: `/${language}/noticias`,
-        icon: Newspaper,
-      },
-      {
-        title: t("world"),
-        url: `/${language}/mundo`,
-        icon: Globe,
-      },
-    ],
-    [t, language]
   )
 
   return (
@@ -144,10 +99,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
         <SidebarContent className="[&::-webkit-scrollbar]:hidden [scrollbar-width:none] [-ms-overflow-style:none] gap-0">
           <NavMain items={mainButtons} />
           {state === "expanded" && mounted && (
-            <>
-              <NavFinance items={financeButtons} />
-              <NavChats />
-            </>
+            <NavChats />
           )}
         </SidebarContent>
         <SidebarFooter>

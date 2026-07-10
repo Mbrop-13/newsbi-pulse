@@ -620,6 +620,24 @@ Hemos incorporado persistencia local de proyectos e historial específico para *
 
 ---
 
+* **Type Safety:** La compilación y validación estática de TypeScript ha finalizado de forma correcta (`npx tsc --noEmit` completado sin errores).
+
+---
+
+## 31. Remoción de Proyectos/Finanzas en Sidebar y Depuración Visual de Flow
+
+Hemos realizado un pulido extremo de la interfaz a nivel global y en la sección Flow:
+
+*   **Simplificación Radical de la Barra Lateral:**
+    *   **Archivo Modificado**: [app-sidebar.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/sidebar/app-sidebar.tsx)
+    *   Removidos los accesos y botones de **Proyectos** y la categoría colapsable de **Finanzas** (con sus respectivos sub-enlaces de Portafolio, Mercados, Noticias y Mundo), logrando una barra lateral minimalista de gran impacto visual.
+*   **Depuración Visual del Lienzo Flow:**
+    *   **Archivo Modificado**: [flow-client.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/app/flow/flow-client.tsx)
+    *   **Remoción de Header Superior**: Se eliminó la cabecera completa superior derecha de la consola de Flow (barra de búsqueda, filtros y avatar de usuario), haciendo que la grilla de mosaico creativo aproveche todo el alto del navegador.
+    *   **Caja de Prompt Descendida**: Eliminado el párrafo secundario de descargo de responsabilidad y reducido el padding inferior (`pb-3` en lugar de `pb-6`), permitiendo que la barra de texto se sitúe más abajo y pegada al borde.
+
+---
+
 ## Verificación Realizada
 
 * **Type Safety:** La compilación y validación estática de TypeScript ha finalizado de forma correcta (`npx tsc --noEmit` completado sin errores).

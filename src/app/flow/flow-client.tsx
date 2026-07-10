@@ -12,7 +12,6 @@ import {
   ArrowRight,
   ChevronDown,
   Bot,
-  Check,
   Heart,
   Download,
   Image as ImageIcon,
@@ -264,32 +263,32 @@ export default function FlowClient() {
   };
 
   return (
-    <div className="flex-1 min-h-screen bg-[#07080a] text-white flex flex-col relative overflow-hidden font-sans select-none">
-      {/* Background Subtle Gradient Grids */}
-      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(24,144,255,0.06),transparent)]" />
+    <div className="flex-1 min-h-screen bg-[#f8f9fa] text-zinc-900 flex flex-col relative overflow-hidden font-sans select-none">
+      {/* Background Subtle Gradient Grids (Light Mode style) */}
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(24,144,255,0.04),transparent)]" />
       <div 
-        className="absolute inset-0 opacity-[0.015] pointer-events-none"
+        className="absolute inset-0 opacity-[0.03] pointer-events-none"
         style={{
-          backgroundImage: `linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px),
-                            linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)`,
+          backgroundImage: `linear-gradient(rgba(0,0,0,.1) 1px, transparent 1px),
+                            linear-gradient(90deg, rgba(0,0,0,.1) 1px, transparent 1px)`,
           backgroundSize: "24px 24px"
         }}
       />
 
-      {/* Top Header Section */}
-      <header className="h-16 shrink-0 border-b border-zinc-900/60 px-6 flex items-center justify-between gap-4 z-15">
+      {/* Top Header Section (Light Mode) */}
+      <header className="h-16 shrink-0 bg-white/80 backdrop-blur-md border-b border-zinc-200/60 px-6 flex items-center justify-between gap-4 z-15">
         {/* Left: Search Bar & Filters */}
         <div className="flex-1 max-w-md relative flex items-center">
-          <Search className="absolute left-3 w-4 h-4 text-zinc-500" />
+          <Search className="absolute left-3 w-4 h-4 text-zinc-400" />
           <input
             type="text"
             placeholder="Buscar multimedia, caracteres..."
-            className="w-full bg-[#111216] border border-zinc-800/80 rounded-full pl-9 pr-10 py-1.5 text-xs text-zinc-300 placeholder-zinc-500 focus:outline-none focus:border-zinc-700/80 focus:ring-1 focus:ring-zinc-700/80 transition-all duration-200 font-semibold"
+            className="w-full bg-zinc-100/80 border border-zinc-200/60 rounded-full pl-9 pr-10 py-1.5 text-xs text-zinc-800 placeholder-zinc-400 focus:outline-none focus:bg-white focus:border-zinc-300/85 transition-all duration-200 font-semibold"
           />
           <button 
             type="button"
             onClick={() => toast.info("Configuraciones de filtro avanzadas")}
-            className="absolute right-3.5 p-0.5 hover:text-[#1890FF] text-zinc-500 transition-colors cursor-pointer"
+            className="absolute right-3.5 p-0.5 hover:text-[#1890FF] text-zinc-450 transition-colors cursor-pointer"
           >
             <Sliders className="w-3.5 h-3.5" />
           </button>
@@ -300,7 +299,7 @@ export default function FlowClient() {
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-full w-8 h-8 text-zinc-400 hover:text-white hover:bg-zinc-900/60"
+            className="rounded-full w-8 h-8 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
             onClick={() => toast.info("Añadir nuevo recurso")}
           >
             <Plus className="w-4 h-4" />
@@ -308,7 +307,7 @@ export default function FlowClient() {
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-full w-8 h-8 text-zinc-400 hover:text-white hover:bg-zinc-900/60"
+            className="rounded-full w-8 h-8 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
             onClick={() => toast.info("Ayuda y Documentación")}
           >
             <HelpCircle className="w-4 h-4" />
@@ -316,7 +315,7 @@ export default function FlowClient() {
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-full w-8 h-8 text-zinc-400 hover:text-white hover:bg-zinc-900/60"
+            className="rounded-full w-8 h-8 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
             onClick={() => toast.info("Ajustes de Flow")}
           >
             <Settings className="w-4 h-4" />
@@ -324,14 +323,14 @@ export default function FlowClient() {
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-full w-8 h-8 text-zinc-400 hover:text-white hover:bg-zinc-900/60"
+            className="rounded-full w-8 h-8 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
             onClick={() => toast.info("Más opciones")}
           >
             <MoreHorizontal className="w-4 h-4" />
           </Button>
 
           {/* Premium PRO badge */}
-          <span className="inline-flex items-center bg-amber-500/10 text-amber-500 border border-amber-500/30 px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider select-none leading-none h-5">
+          <span className="inline-flex items-center bg-amber-500/10 text-amber-600 border border-amber-500/30 px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider select-none leading-none h-5">
             Pro
           </span>
 
@@ -353,29 +352,29 @@ export default function FlowClient() {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.92, y: 15 }}
                 transition={{ duration: 0.35 }}
-                className="relative overflow-hidden rounded-[24px] border border-zinc-800/80 bg-[#121316] transition-all duration-300 hover:shadow-2xl hover:border-zinc-700/50 break-inside-avoid group cursor-pointer"
+                className="relative overflow-hidden rounded-[24px] border border-zinc-200/60 bg-white transition-all duration-300 hover:shadow-xl hover:border-zinc-300 break-inside-avoid group cursor-pointer"
               >
                 {/* Aspect ratio frame wrapper */}
                 <div className={cn("w-full relative overflow-hidden", getAspectRatioClass(item.aspectRatio))}>
                   {item.status === "generating" ? (
-                    // Aesthetic Loading state
-                    <div className="absolute inset-0 bg-gradient-to-br from-[#18191f] via-[#111215] to-[#1a1c22] flex flex-col justify-between p-4.5 select-none overflow-hidden">
+                    // Aesthetic Loading state (Light mode styled)
+                    <div className="absolute inset-0 bg-gradient-to-br from-zinc-100 via-zinc-50/50 to-zinc-150/40 flex flex-col justify-between p-4.5 select-none overflow-hidden">
                       {/* Pulse Shimmer overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-shimmer" />
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-shimmer" />
 
                       {/* Header row in loading card */}
                       <div className="flex items-center justify-between w-full z-10">
-                        <div className="p-2 rounded-xl bg-black/40 backdrop-blur-md text-zinc-450 border border-zinc-800/40">
-                          <ImageIcon className="w-4 h-4 animate-pulse" />
+                        <div className="p-2 rounded-xl bg-white/80 border border-zinc-200/50 text-zinc-500 shadow-sm">
+                          <ImageIcon className="w-4 h-4 animate-pulse text-[#1890FF]" />
                         </div>
-                        <span className="text-[10px] font-black text-zinc-500 tracking-widest bg-black/35 px-2 py-1 rounded-lg backdrop-blur-md">
+                        <span className="text-[10px] font-black text-zinc-600 bg-white/90 border border-zinc-200/40 px-2 py-0.5 rounded-lg shadow-xs">
                           {item.progress}%
                         </span>
                       </div>
 
                       {/* Dynamic base progress bar at bottom of card */}
                       <div className="w-full z-10">
-                        <div className="h-1 w-full bg-zinc-900 rounded-full overflow-hidden">
+                        <div className="h-1.5 w-full bg-zinc-200 rounded-full overflow-hidden">
                           <div 
                             className="h-full bg-gradient-to-r from-[#1890FF] to-blue-500 transition-all duration-300 rounded-full"
                             style={{ width: `${item.progress}%` }}
@@ -395,7 +394,7 @@ export default function FlowClient() {
                       />
 
                       {/* Floating actions and prompt details shown on hover */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-between p-4 z-10">
+                      <div className="absolute inset-0 bg-black/35 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-between p-4 z-10">
                         {/* Top: Premium action buttons */}
                         <div className="flex justify-end gap-1.5">
                           <button
@@ -404,7 +403,7 @@ export default function FlowClient() {
                               e.stopPropagation();
                               toast.success("Añadido a favoritos");
                             }}
-                            className="p-2 rounded-xl bg-black/60 hover:bg-black/80 backdrop-blur-md text-zinc-300 hover:text-red-500 hover:scale-105 border border-zinc-800/40 transition-all cursor-pointer"
+                            className="p-2 rounded-xl bg-white/90 hover:bg-white text-zinc-700 hover:text-red-500 hover:scale-105 border border-zinc-200/50 transition-all cursor-pointer shadow-sm"
                           >
                             <Heart className="w-3.5 h-3.5" />
                           </button>
@@ -414,7 +413,7 @@ export default function FlowClient() {
                               e.stopPropagation();
                               toast.success("Descarga iniciada");
                             }}
-                            className="p-2 rounded-xl bg-black/60 hover:bg-black/80 backdrop-blur-md text-zinc-300 hover:text-[#1890FF] hover:scale-105 border border-zinc-800/40 transition-all cursor-pointer"
+                            className="p-2 rounded-xl bg-white/90 hover:bg-white text-zinc-700 hover:text-[#1890FF] hover:scale-105 border border-zinc-200/50 transition-all cursor-pointer shadow-sm"
                           >
                             <Download className="w-3.5 h-3.5" />
                           </button>
@@ -424,15 +423,15 @@ export default function FlowClient() {
                               e.stopPropagation();
                               toast.info(`Creado con: ${item.modelName}`);
                             }}
-                            className="p-2 rounded-xl bg-black/60 hover:bg-black/80 backdrop-blur-md text-zinc-300 hover:text-white hover:scale-105 border border-zinc-800/40 transition-all cursor-pointer"
+                            className="p-2 rounded-xl bg-white/90 hover:bg-white text-zinc-700 hover:text-zinc-900 hover:scale-105 border border-zinc-200/50 transition-all cursor-pointer shadow-sm"
                           >
                             <MoreHorizontal className="w-3.5 h-3.5" />
                           </button>
                         </div>
 
                         {/* Bottom: Prompt text caption */}
-                        <div className="bg-black/40 backdrop-blur-md border border-zinc-800/30 rounded-xl p-2 max-w-full">
-                          <p className="text-[10px] font-bold text-zinc-200 leading-snug truncate">
+                        <div className="bg-white/90 border border-zinc-200/60 rounded-xl p-2.5 max-w-full shadow-sm">
+                          <p className="text-[10px] font-bold text-zinc-800 leading-snug truncate">
                             {item.prompt}
                           </p>
                         </div>
@@ -446,10 +445,10 @@ export default function FlowClient() {
         </div>
       </main>
 
-      {/* Floating Prompt Chat Panel at the bottom */}
+      {/* Floating Prompt Chat Panel at the bottom (Light Mode styled) */}
       <div className="w-full max-w-xl mx-auto px-4 pb-6 absolute bottom-0 left-1/2 -translate-x-1/2 shrink-0 z-20">
         <form onSubmit={handleSubmit} className="relative">
-          <div className="bg-[#121317] border border-zinc-800/80 rounded-3xl p-3 flex items-center justify-between gap-3 shadow-2xl focus-within:border-zinc-700/80 transition-all duration-200 relative">
+          <div className="bg-white border border-zinc-200/80 rounded-3xl p-3 flex items-center justify-between gap-3 shadow-xl focus-within:border-zinc-300/80 transition-all duration-200 relative">
             
             {/* Left Options group */}
             <div className="flex items-center gap-1.5 shrink-0">
@@ -457,7 +456,7 @@ export default function FlowClient() {
               <button
                 type="button"
                 onClick={() => toast.info("Carga de archivos multimedia (Próximamente)")}
-                className="w-8 h-8 rounded-full bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-800/60 hover:text-white text-zinc-400 flex items-center justify-center transition-all cursor-pointer active:scale-95 shrink-0"
+                className="w-8 h-8 rounded-full bg-zinc-100 hover:bg-zinc-200/80 border border-zinc-200/50 hover:text-zinc-900 text-zinc-500 flex items-center justify-center transition-all cursor-pointer active:scale-95 shrink-0"
               >
                 <Plus className="w-4 h-4" />
               </button>
@@ -473,7 +472,7 @@ export default function FlowClient() {
                 className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all duration-200 active:scale-95 cursor-pointer flex items-center gap-1.5 shrink-0 select-none border ${
                   isAgentActive 
                     ? "bg-[#1890FF]/15 text-[#1890FF] border-[#1890FF]/30" 
-                    : "bg-zinc-900/80 text-zinc-400 border-zinc-800/60 hover:text-white"
+                    : "bg-zinc-100 hover:bg-zinc-250 border border-zinc-200/50 text-zinc-500 hover:text-zinc-700"
                 }`}
               >
                 <Bot className="w-3.5 h-3.5" />
@@ -487,7 +486,7 @@ export default function FlowClient() {
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder="¿Qué quieres crear?"
-              className="flex-1 bg-transparent text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none py-1.5 font-medium min-w-0"
+              className="flex-1 bg-transparent text-xs text-zinc-800 placeholder-zinc-450 focus:outline-none py-1.5 font-bold min-w-0"
             />
 
             {/* Right Options group */}
@@ -497,15 +496,15 @@ export default function FlowClient() {
                 <button
                   type="button"
                   onClick={() => setShowModelDropdown(!showModelDropdown)}
-                  className="px-3.5 py-2 rounded-full bg-zinc-900/80 hover:bg-zinc-855 border border-zinc-800/60 hover:text-white text-zinc-350 text-[11px] font-bold flex items-center gap-2 transition-all duration-200 select-none cursor-pointer leading-none"
+                  className="px-3.5 py-2 rounded-full bg-zinc-100 hover:bg-zinc-200/80 border border-zinc-200/60 text-zinc-700 hover:text-zinc-900 text-[11px] font-bold flex items-center gap-2 transition-all duration-200 select-none cursor-pointer leading-none"
                 >
                   <span className="truncate">{selectedModel.icon} {selectedModel.name}</span>
-                  <span className="text-[10px] text-zinc-400 font-bold leading-none flex items-center gap-1 shrink-0">
+                  <span className="text-[10px] text-[#1890FF] font-bold leading-none flex items-center gap-1 shrink-0">
                     {getAspectRatioIcon(aspectRatio)} {multiplier}
                   </span>
                 </button>
 
-                {/* Model Selector Dropdown */}
+                {/* Model Selector Dropdown (Light Mode Card) */}
                 <AnimatePresence>
                   {showModelDropdown && (
                     <>
@@ -514,18 +513,18 @@ export default function FlowClient() {
                         initial={{ opacity: 0, scale: 0.95, y: 10 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                        className="absolute right-0 bottom-full mb-3 w-[22rem] bg-[#16171b] border border-zinc-800/90 rounded-[28px] shadow-2xl p-4.5 z-40 text-white flex flex-col gap-4.5 select-none font-sans"
+                        className="absolute right-0 bottom-full mb-3 w-[22rem] bg-white border border-zinc-200/80 rounded-[28px] shadow-2xl p-4.5 z-40 text-zinc-950 flex flex-col gap-4.5 select-none font-sans"
                       >
                         {/* 1. Tabs at the top (Imagen / Vídeo) */}
-                        <div className="flex bg-[#0d0e11] rounded-2xl p-1 gap-1">
+                        <div className="flex bg-zinc-100 rounded-2xl p-1 gap-1">
                           <button
                             type="button"
                             onClick={() => setGenerationType("imagen")}
                             className={cn(
                               "flex-1 py-2 rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition-all duration-200 cursor-pointer",
                               generationType === "imagen"
-                                ? "bg-[#2b2d35] text-white shadow-sm"
-                                : "text-zinc-400 hover:text-zinc-200"
+                                ? "bg-white text-zinc-950 border border-zinc-200/30 shadow-xs"
+                                : "text-zinc-500 hover:text-zinc-800"
                             )}
                           >
                             <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
@@ -537,8 +536,8 @@ export default function FlowClient() {
                             className={cn(
                               "flex-1 py-2 rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition-all duration-200 cursor-pointer",
                               generationType === "video"
-                                ? "bg-[#2b2d35] text-white shadow-sm"
-                                : "text-zinc-400 hover:text-zinc-200"
+                                ? "bg-white text-zinc-950 border border-zinc-200/30 shadow-xs"
+                                : "text-zinc-500 hover:text-zinc-800"
                             )}
                           >
                             <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
@@ -564,8 +563,8 @@ export default function FlowClient() {
                                 className={cn(
                                   "flex flex-col items-center justify-center p-2 rounded-2xl gap-2 transition-all cursor-pointer aspect-square",
                                   active
-                                    ? "bg-[#2b2d35] text-white border border-zinc-700/30"
-                                    : "text-zinc-500 hover:text-zinc-350 hover:bg-[#1a1c22]/50"
+                                    ? "bg-zinc-100 border border-zinc-200 text-zinc-950 shadow-xs"
+                                    : "text-zinc-400 hover:text-zinc-800 hover:bg-zinc-50"
                                 )}
                               >
                                 <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0">{item.icon}</svg>
@@ -576,7 +575,7 @@ export default function FlowClient() {
                         </div>
 
                         {/* 3. Multiplier Row (1x, x2, x3, x4) */}
-                        <div className="grid grid-cols-4 bg-[#0d0e11] rounded-2xl p-1 gap-1">
+                        <div className="grid grid-cols-4 bg-zinc-100 rounded-2xl p-1 gap-1">
                           {["1x", "x2", "x3", "x4"].map((m) => {
                             const active = multiplier === m;
                             return (
@@ -587,8 +586,8 @@ export default function FlowClient() {
                                 className={cn(
                                   "py-1.5 rounded-xl text-xs font-bold text-center transition-all cursor-pointer",
                                   active
-                                    ? "bg-[#2b2d35] text-white shadow-sm"
-                                    : "text-zinc-500 hover:text-zinc-300"
+                                    ? "bg-white text-zinc-950 border border-zinc-200/30 shadow-xs"
+                                    : "text-zinc-500 hover:text-zinc-800"
                                 )}
                               >
                                 {m}
@@ -605,10 +604,10 @@ export default function FlowClient() {
                               const found = FLOW_MODELS.find(m => m.id === e.target.value);
                               if (found) setSelectedModel(found);
                             }}
-                            className="w-full bg-[#0d0e11] border border-zinc-800/80 rounded-2xl px-4 py-3 text-xs font-bold text-zinc-200 outline-none cursor-pointer appearance-none pr-10 hover:bg-zinc-950 transition-colors"
+                            className="w-full bg-zinc-100 border border-zinc-200/60 rounded-2xl px-4 py-3 text-xs font-bold text-zinc-800 outline-none cursor-pointer appearance-none pr-10 hover:bg-zinc-200/40 transition-colors"
                           >
                             {FLOW_MODELS.map((m) => (
-                              <option key={m.id} value={m.id} className="bg-[#121317] text-zinc-300">
+                              <option key={m.id} value={m.id} className="bg-white text-zinc-850 font-bold">
                                 {m.icon} {m.name} ({m.badge})
                               </option>
                             ))}
@@ -617,9 +616,9 @@ export default function FlowClient() {
                         </div>
 
                         {/* 5. Points cost indicator */}
-                        <div className="text-center py-1">
+                        <div className="text-center py-1 border-t border-zinc-100 pt-3">
                           <p className="text-[11px] text-zinc-500 font-semibold leading-none">
-                            La generación consumirá <span className="underline decoration-zinc-650 decoration-wavy underline-offset-2">{totalCost} puntos</span>
+                            La generación consumirá <span className="underline decoration-zinc-400 decoration-wavy underline-offset-2 font-bold text-[#1890FF]">{totalCost} puntos</span>
                           </p>
                         </div>
 
@@ -636,7 +635,7 @@ export default function FlowClient() {
                 className={`w-8 h-8 rounded-full flex items-center justify-center transition-all shrink-0 ${
                   prompt.trim() && !loading
                     ? "bg-[#1890FF] hover:bg-blue-600 text-white active:scale-90 shadow-md cursor-pointer"
-                    : "bg-zinc-900 text-zinc-600 border border-zinc-850 cursor-not-allowed"
+                    : "bg-zinc-100 text-zinc-400 border border-zinc-200/40 cursor-not-allowed"
                 }`}
               >
                 <ArrowRight className="w-4.5 h-4.5" />
@@ -647,7 +646,7 @@ export default function FlowClient() {
         </form>
 
         {/* Disclaimer note */}
-        <p className="text-center text-[9px] text-zinc-600 dark:text-zinc-500 mt-3 tracking-wide font-medium select-none">
+        <p className="text-center text-[9px] text-zinc-450 mt-3 tracking-wide font-medium select-none">
           Maverlang Flow puede cometer errores, así que comprueba sus respuestas.
         </p>
       </div>

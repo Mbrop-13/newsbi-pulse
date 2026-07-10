@@ -563,6 +563,23 @@ Se ha agrupado el acceso a las vistas financieras principales bajo una nueva cat
 
 ---
 
+* **Type Safety:** La compilación y validación estática de TypeScript ha finalizado de forma correcta (`npx tsc --noEmit` completado sin errores).
+
+---
+
+## 28. Flow en Modo Claro Predeterminado
+
+Se ha adaptado por completo la interfaz de **Maverlang Flow** a una estética premium en modo claro predeterminado, logrando un contraste nítido y moderno:
+
+*   **Fondo y Rejilla:** Reemplazado el fondo oscuro por un fondo gris zinc ultra claro (`#f8f9fa`) y una cuadrícula sutil en tonos grises de baja opacidad.
+*   **Header y Panel de Entrada:**
+    *   La barra de navegación superior ahora tiene fondo blanco con desenfoque de fondo y borde suave.
+    *   La barra de chat inferior es una caja blanca flotante con sombras tridimensionales (`shadow-xl`) y bordes zinc suaves.
+*   **Tarjetas de Carga en Mosaico:** Rediseñados los marcadores de carga con fondos gris claro degradados, barras de progreso azules y etiquetas legibles en fondos blancos translúcidos.
+*   **Selector Flotante:** El menú de selección de relación de aspecto, multiplicador y selector de modelos pasó a tener fondo blanco puro, botones de pestañas en gris zinc claro e indicador de costo destacado en color azul.
+
+---
+
 ## Verificación Realizada
 
 * **Type Safety:** La compilación y validación estática de TypeScript ha finalizado de forma correcta (`npx tsc --noEmit` completado sin errores).

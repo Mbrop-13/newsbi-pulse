@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAssistantStore } from "@/lib/stores/assistant-store";
 import { useAuthStore } from "@/lib/stores/auth-store";
-import { Sparkles, Laptop, TrendingUp, Check, Loader2, ArrowRight, User, X } from "lucide-react";
+import { Laptop, TrendingUp, Check, Loader2, ArrowRight, User, X, Sparkles } from "lucide-react";
+
 
 /* ─── Animated Stars Border ─────────────────────────────────────────── */
 function StarsBorder() {
@@ -39,17 +40,17 @@ function StarsBorder() {
     }
 
     const stars: Star[] = [];
-    const starCount = 40;
+    const starCount = 55;
 
     for (let i = 0; i < starCount; i++) {
       stars.push({
         x: Math.random() * width,
         y: Math.random() * height,
-        size: Math.random() * 1.2 + 0.4,
-        speedX: (Math.random() - 0.5) * 0.15,
-        speedY: Math.random() * 0.2 + 0.03,
-        opacity: Math.random() * 0.7 + 0.3,
-        twinkleSpeed: Math.random() * 0.02 + 0.005,
+        size: Math.random() * 1.6 + 0.5,
+        speedX: (Math.random() - 0.5) * 0.12,
+        speedY: Math.random() * 0.18 + 0.02,
+        opacity: Math.random() * 0.5 + 0.5,
+        twinkleSpeed: Math.random() * 0.025 + 0.008,
         twinkleOffset: Math.random() * Math.PI * 2,
       });
     }
@@ -62,7 +63,7 @@ function StarsBorder() {
 
       for (let i = 0; i < stars.length; i++) {
         const star = stars[i];
-        const twinkle = Math.sin(time * star.twinkleSpeed + star.twinkleOffset) * 0.3 + 0.7;
+        const twinkle = Math.sin(time * star.twinkleSpeed + star.twinkleOffset) * 0.25 + 0.75;
         ctx.globalAlpha = star.opacity * twinkle;
         ctx.fillStyle = "#ffffff";
         ctx.beginPath();
@@ -104,7 +105,7 @@ function StarsBorder() {
 /* ─── Step Indicator ────────────────────────────────────────────────── */
 function StepIndicator({ current, total }: { current: number; total: number }) {
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-2">
       {Array.from({ length: total }, (_, i) => {
         const stepNum = i + 1;
         const isActive = stepNum === current;
@@ -113,11 +114,11 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
           <motion.div
             key={stepNum}
             animate={{
-              width: isActive ? 24 : 8,
-              backgroundColor: isActive || isDone ? "#1E293B" : "#E2E8F0",
+              width: isActive ? 28 : 10,
+              backgroundColor: isActive || isDone ? "#1E293B" : "#D4D4D8",
             }}
             transition={{ type: "spring", stiffness: 400, damping: 30 }}
-            className="h-2 rounded-full"
+            className="h-2.5 rounded-full"
           />
         );
       })}
@@ -146,7 +147,6 @@ export function OnboardingDialog() {
   const [localInterest, setLocalInterest] = useState<"crear_apps" | "finanzas" | "ambas" | "">("");
   const [saving, setSaving] = useState(false);
 
-  // Sync initial values when store completes loading
   useEffect(() => {
     if (!isLoadingConfig) {
       setLocalName(getUserName());
@@ -154,7 +154,6 @@ export function OnboardingDialog() {
     }
   }, [isLoadingConfig, getUserName, getPrimaryInterest]);
 
-  // Display only if authenticated, config has finished loading, and setup is not completed
   if (!isAuthenticated || isLoadingConfig || hasCompletedSetup) {
     return null;
   }
@@ -162,6 +161,15 @@ export function OnboardingDialog() {
   const handleNext = () => {
     setUserName(localName.trim());
     setStep(2);
+  };
+
+  /* "Saltar" skips the current step only */
+  const handleSkipStep = () => {
+    if (step === 1) {
+      setStep(2);
+    } else {
+      handleSave("");
+    }
   };
 
   const handleSave = async (interestVal?: "crear_apps" | "finanzas" | "ambas" | "") => {
@@ -181,7 +189,7 @@ export function OnboardingDialog() {
     }
   };
 
-  const handleSkipAll = async () => {
+  const handleClose = async () => {
     setSaving(true);
     try {
       completeSetup();
@@ -189,7 +197,7 @@ export function OnboardingDialog() {
         await saveToSupabase(user.id);
       }
     } catch (err) {
-      console.error("Error skipping onboarding preferences:", err);
+      console.error("Error skipping onboarding:", err);
     } finally {
       setSaving(false);
     }
@@ -197,33 +205,32 @@ export function OnboardingDialog() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      {/* ── Outer Popup Container ──────────────────────────────── */}
+      {/* ── Outer Popup Container (bigger: max-w-2xl) ─────────── */}
       <motion.div
         initial={{ opacity: 0, scale: 0.92, y: 30 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ type: "spring", damping: 28, stiffness: 380 }}
-        className="relative w-full max-w-xl bg-white rounded-3xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.25)] overflow-hidden"
+        className="relative w-full max-w-2xl bg-white rounded-3xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.25)] overflow-hidden"
       >
-        {/* Close X Button — top right corner of the white popup */}
+        {/* Close X Button */}
         <button
           type="button"
-          onClick={handleSkipAll}
+          onClick={handleClose}
           disabled={saving}
-          className="absolute top-4 right-4 z-30 p-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-400 hover:text-zinc-700 transition-all active:scale-90 cursor-pointer disabled:opacity-50"
+          className="absolute top-5 right-5 z-30 p-2.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-400 hover:text-zinc-700 transition-all active:scale-90 cursor-pointer disabled:opacity-50"
           title="Cerrar"
         >
-          <X className="w-4 h-4" />
+          <X className="w-4.5 h-4.5" />
         </button>
 
-        {/* ── Decorative Stars Border ────────────────────────── */}
-        <div className="p-[6px]">
-          <div className="relative rounded-[20px] overflow-hidden bg-[#0a0a0f]">
+        {/* ── Thin outer white padding, thick stars border ───── */}
+        <div className="p-[3px]">
+          <div className="relative rounded-[22px] overflow-hidden bg-[#08080e] p-[10px]">
             <StarsBorder />
 
             {/* ── Inner White Content Card ───────────────────── */}
-            <div className="relative z-10 m-[6px] bg-white rounded-[16px] overflow-hidden">
-              {/* Content area with generous padding */}
-              <div className="px-8 pt-8 pb-7 md:px-10 md:pt-10 md:pb-8">
+            <div className="relative z-10 bg-white rounded-[14px] overflow-hidden">
+              <div className="px-10 pt-10 pb-9 md:px-12 md:pt-12 md:pb-10">
 
                 <AnimatePresence mode="wait">
                   {step === 1 ? (
@@ -234,37 +241,36 @@ export function OnboardingDialog() {
                       exit={{ opacity: 0, x: 20 }}
                       transition={{ duration: 0.25, ease: "easeOut" }}
                     >
-                      {/* Header area */}
-                      <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-zinc-900 to-zinc-700 flex items-center justify-center shadow-sm">
-                            <Sparkles className="w-4 h-4 text-white" />
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400">Bienvenido a</p>
-                            <p className="text-sm font-extrabold text-zinc-900 -mt-0.5">Maverlang</p>
-                          </div>
+                      {/* Header: Logo + Step Indicator */}
+                      <div className="flex items-center justify-between mb-8">
+                        <div className="flex items-center gap-3">
+                          <p className="text-xs font-bold uppercase tracking-[0.12em] text-zinc-400">Bienvenido a</p>
+                          <img
+                            src="https://mail.programbi.com/uploads/Maverlang-Logo-1.png"
+                            alt="Maverlang"
+                            className="h-6 w-auto object-contain"
+                          />
                         </div>
                         <StepIndicator current={1} total={2} />
                       </div>
 
                       {/* Title */}
-                      <h2 className="text-xl md:text-2xl font-black tracking-tight text-zinc-900 leading-tight mb-2">
+                      <h2 className="text-2xl md:text-3xl font-black tracking-tight text-zinc-900 leading-tight mb-3">
                         Cuéntanos sobre ti
                       </h2>
-                      <p className="text-zinc-500 text-sm leading-relaxed mb-8 max-w-sm">
-                        Escribe tu nombre para que la IA pueda recordarte y personalizar la experiencia.
+                      <p className="text-zinc-500 text-base leading-relaxed mb-10 max-w-md">
+                        Escribe tu nombre para que la IA pueda recordarte y personalizar tu experiencia.
                       </p>
 
                       {/* Name input */}
                       <div className="relative">
-                        <User className="absolute left-4 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-zinc-400 pointer-events-none" />
+                        <User className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 pointer-events-none" />
                         <input
                           type="text"
                           value={localName}
                           onChange={(e) => setLocalName(e.target.value)}
                           placeholder="Tu nombre (opcional)"
-                          className="w-full pl-12 pr-5 py-4 bg-zinc-50 border border-zinc-200 rounded-2xl text-sm font-semibold text-zinc-900 placeholder:text-zinc-400 outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-100 transition-all"
+                          className="w-full pl-14 pr-6 py-4.5 bg-zinc-50 border border-zinc-200 rounded-2xl text-base font-semibold text-zinc-900 placeholder:text-zinc-400 outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-100 transition-all"
                           onKeyDown={(e) => {
                             if (e.key === "Enter") handleNext();
                           }}
@@ -272,22 +278,22 @@ export function OnboardingDialog() {
                       </div>
 
                       {/* Actions */}
-                      <div className="flex items-center justify-between mt-8 pt-5 border-t border-zinc-100">
+                      <div className="flex items-center justify-between mt-10 pt-6 border-t border-zinc-100">
                         <button
                           type="button"
                           disabled={saving}
-                          onClick={handleSkipAll}
-                          className="text-xs font-bold text-zinc-400 hover:text-zinc-600 transition-colors disabled:opacity-50"
+                          onClick={handleSkipStep}
+                          className="text-sm font-bold text-zinc-400 hover:text-zinc-600 transition-colors disabled:opacity-50"
                         >
-                          Saltar todo
+                          Saltar
                         </button>
                         <button
                           type="button"
                           onClick={handleNext}
-                          className="inline-flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-sm px-6 py-3 rounded-full transition-all active:scale-95 shadow-sm"
+                          className="inline-flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-base px-7 py-3.5 rounded-full transition-all active:scale-95 shadow-sm"
                         >
                           Siguiente
-                          <ArrowRight className="w-4 h-4" />
+                          <ArrowRight className="w-4.5 h-4.5" />
                         </button>
                       </div>
                     </motion.div>
@@ -299,25 +305,24 @@ export function OnboardingDialog() {
                       exit={{ opacity: 0, x: -20 }}
                       transition={{ duration: 0.25, ease: "easeOut" }}
                     >
-                      {/* Header area */}
-                      <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-zinc-900 to-zinc-700 flex items-center justify-center shadow-sm">
-                            <Sparkles className="w-4 h-4 text-white" />
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400">Configura tu</p>
-                            <p className="text-sm font-extrabold text-zinc-900 -mt-0.5">Experiencia</p>
-                          </div>
+                      {/* Header: Logo + Step Indicator */}
+                      <div className="flex items-center justify-between mb-8">
+                        <div className="flex items-center gap-3">
+                          <p className="text-xs font-bold uppercase tracking-[0.12em] text-zinc-400">Configura tu</p>
+                          <img
+                            src="https://mail.programbi.com/uploads/Maverlang-Logo-1.png"
+                            alt="Maverlang"
+                            className="h-6 w-auto object-contain"
+                          />
                         </div>
                         <StepIndicator current={2} total={2} />
                       </div>
 
                       {/* Title */}
-                      <h2 className="text-xl md:text-2xl font-black tracking-tight text-zinc-900 leading-tight mb-2">
+                      <h2 className="text-2xl md:text-3xl font-black tracking-tight text-zinc-900 leading-tight mb-3">
                         ¿Qué te interesa?
                       </h2>
-                      <p className="text-zinc-500 text-sm leading-relaxed mb-6">
+                      <p className="text-zinc-500 text-base leading-relaxed mb-8">
                         Personalizaremos tu experiencia de IA según tus objetivos.
                       </p>
 
@@ -354,13 +359,13 @@ export function OnboardingDialog() {
                                 setLocalInterest(item.id);
                                 handleSave(item.id);
                               }}
-                              className={`w-full text-left p-4 rounded-2xl border-2 transition-all flex items-center gap-4 cursor-pointer ${
+                              className={`w-full text-left p-5 rounded-2xl border-2 transition-all flex items-center gap-4 cursor-pointer ${
                                 isSelected
                                   ? "border-zinc-900 bg-zinc-50 shadow-sm"
                                   : "border-zinc-100 hover:border-zinc-200 hover:bg-zinc-50/50"
                               }`}
                             >
-                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                              <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
                                 isSelected
                                   ? "bg-zinc-900 text-white"
                                   : "bg-zinc-100 text-zinc-500"
@@ -368,10 +373,10 @@ export function OnboardingDialog() {
                                 {item.icon}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold text-zinc-900 leading-tight">
+                                <p className="text-base font-bold text-zinc-900 leading-tight">
                                   {item.label}
                                 </p>
-                                <p className="text-xs text-zinc-500 mt-0.5 font-medium">
+                                <p className="text-sm text-zinc-500 mt-0.5 font-medium">
                                   {item.desc}
                                 </p>
                               </div>
@@ -379,9 +384,9 @@ export function OnboardingDialog() {
                                 <motion.div
                                   initial={{ scale: 0 }}
                                   animate={{ scale: 1 }}
-                                  className="w-6 h-6 rounded-full bg-zinc-900 flex items-center justify-center shrink-0"
+                                  className="w-7 h-7 rounded-full bg-zinc-900 flex items-center justify-center shrink-0"
                                 >
-                                  <Check className="w-3.5 h-3.5 text-white" />
+                                  <Check className="w-4 h-4 text-white" />
                                 </motion.div>
                               )}
                             </motion.button>
@@ -390,16 +395,16 @@ export function OnboardingDialog() {
                       </div>
 
                       {/* Note */}
-                      <p className="text-[11px] text-zinc-400 text-center mt-5 font-medium">
+                      <p className="text-xs text-zinc-400 text-center mt-6 font-medium">
                         Puedes cambiar esto en cualquier momento desde los ajustes.
                       </p>
 
                       {/* Actions */}
-                      <div className="flex items-center justify-between mt-5 pt-5 border-t border-zinc-100">
+                      <div className="flex items-center justify-between mt-6 pt-6 border-t border-zinc-100">
                         <button
                           type="button"
                           onClick={() => setStep(1)}
-                          className="text-xs font-bold text-zinc-400 hover:text-zinc-600 transition-colors"
+                          className="text-sm font-bold text-zinc-400 hover:text-zinc-600 transition-colors"
                         >
                           ← Atrás
                         </button>
@@ -407,9 +412,9 @@ export function OnboardingDialog() {
                           type="button"
                           disabled={saving}
                           onClick={() => handleSave()}
-                          className="inline-flex items-center justify-center min-w-[100px] bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-sm px-6 py-3 rounded-full transition-all active:scale-95 shadow-sm disabled:opacity-50"
+                          className="inline-flex items-center justify-center min-w-[120px] bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-base px-7 py-3.5 rounded-full transition-all active:scale-95 shadow-sm disabled:opacity-50"
                         >
-                          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Comenzar"}
+                          {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Comenzar"}
                         </button>
                       </div>
                     </motion.div>

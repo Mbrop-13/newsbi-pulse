@@ -92,10 +92,10 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       >
         <SidebarHeader>
           {isFlowPage ? (
-            <div className={`flex items-center ${state === "expanded" ? "pl-2.5 pr-2 py-2" : "justify-center py-2 flex-col"}`}>
+            <div className={`flex items-center ${state === "expanded" ? "pl-2 pr-2 py-2" : "justify-center py-2 flex-col"}`}>
               {state === "expanded" ? (
                 <>
-                  <div className="flex-1 flex items-center gap-3">
+                  <div className="flex-1 flex items-center gap-3 pl-1">
                     <button 
                       onClick={() => router.push(`/${language}/ai`)}
                       className="p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-850 hover:text-foreground transition-all duration-200 active:scale-95 cursor-pointer shrink-0"
@@ -113,7 +113,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                     variant="ghost"
                     size="icon"
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleSidebar(); }}
-                    className="h-8 w-8 shrink-0 transition-transform duration-200"
+                    className={cn("h-8 w-8 shrink-0 transition-transform duration-200", state === "collapsed" && "rotate-180")}
                   >
                     <PanelLeftClose className="h-4 w-4" />
                     <span className="sr-only">Toggle sidebar</span>
@@ -124,7 +124,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                   variant="ghost"
                   size="icon"
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleSidebar(); }}
-                  className="h-8 w-8 shrink-0 transition-transform duration-200 rotate-180"
+                  className={cn("h-8 w-8 shrink-0 transition-transform duration-200", state === "collapsed" && "rotate-180")}
                 >
                   <PanelLeftClose className="h-4 w-4" />
                   <span className="sr-only">Toggle sidebar</span>

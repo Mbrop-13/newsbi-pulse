@@ -496,10 +496,13 @@ export default function FlowClient() {
         </div>
       </main>
 
-      {/* Floating Prompt Chat Panel a      {/* Floating Prompt Chat Panel at the bottom (Light Mode styled matching normal ChatInput exactly) */}
+      {/* Floating Prompt Chat Panel at the bottom (Light Mode styled matching normal ChatInput exactly) */}
       <div className="w-full max-w-xl mx-auto px-4 pb-3 absolute bottom-0 left-1/2 -translate-x-1/2 shrink-0 z-20">
         <form onSubmit={handleSubmit} className="relative">
-          <div className="rounded-xl p-2.5 bg-white border-[#DBDBDB] border shadow-[0_1px_2px_0_rgba(0,0,0,0.04),0_2px_12px_0_rgba(0,0,0,0.03)] transition-all duration-300 relative group focus-within:border-zinc-400">
+          <div className={cn(
+            "rounded-xl p-2.5 bg-white dark:bg-[#1E1E20] border-[#DBDBDB] dark:border-[#2e2e2e] border",
+            "shadow-[inset_0_0_1px_0_rgba(0,0,0,1),0_1px_2px_0_rgba(0,0,0,0.04),0_2px_12px_0_rgba(0,0,0,0.03)] transition-all duration-300 relative group focus-within:border-zinc-400 dark:focus-within:border-zinc-600 focus-within:shadow-[inset_0_0_1px_0_rgba(0,0,0,1),0_1px_2px_0_rgba(0,0,0,0.04),0_4px_16px_0_rgba(0,0,0,0.06)]"
+          )}>
             
             {/* Textarea area */}
             <div className="flex items-center px-1 bg-transparent relative">

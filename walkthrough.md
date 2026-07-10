@@ -671,6 +671,25 @@ Hemos alineado el comportamiento del header de la barra lateral en el modo Flow 
 
 ---
 
+* **Type Safety:** La compilación y validación estática de TypeScript ha finalizado de forma correcta (`npx tsc --noEmit` completado sin errores).
+
+---
+
+## 34. Homogeneidad Absoluta de Barras y Contenedores en Flow
+
+Hemos perfeccionado el acoplamiento estético de las barras en Flow para que coincidan milimétricamente con el modo normal de la plataforma:
+
+*   **Barra de Prompt Cohesiva:**
+    *   **Archivo Modificado**: [flow-client.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/app/flow/flow-client.tsx)
+    *   Se aplicó exactamente la misma cadena className que la del componente `ChatInput` original. Esto incluye bordes oscuros en tema oscuro (`dark:border-[#2e2e2e]`), fondos específicos (`dark:bg-[#1E1E20]`), sombreado interno inset (`shadow-[inset_0_0_1px_0_rgba(0,0,0,1)]`), enfoque de borde dinámico (`dark:focus-within:border-zinc-600`) y sombras fluidas.
+*   **Cabecera de la Barra Lateral Alineada:**
+    *   **Archivo Modificado**: [app-sidebar.tsx](file:///c:/Users/manue/OneDrive/Desktop/Noticias/newsbi-pulse/src/components/sidebar/app-sidebar.tsx)
+    *   Ajustado el padding lateral de la cabecera en Flow a `pl-2 pr-2 py-2` (igual al componente nativo `SidebarLogo`).
+    *   Implementado un padding interior izquierdo de `pl-1` para que el botón de retroceso y el logotipo queden en la misma rejilla que el resto de los componentes.
+    *   Sincronizados los parámetros de giro y transición del botón colapsable en base al estado del sidebar.
+
+---
+
 ## Verificación Realizada
 
 * **Type Safety:** La compilación y validación estática de TypeScript ha finalizado de forma correcta (`npx tsc --noEmit` completado sin errores).

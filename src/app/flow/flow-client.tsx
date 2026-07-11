@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -12,15 +12,44 @@ import {
   ArrowUp,
   Mic,
   ChevronDown,
+  ChevronRight,
   Heart,
   Download,
   Image as ImageIcon,
+  Paperclip,
+  PieChart,
+  TrendingUp,
+  Star,
+  X,
+  FileText,
+  BookOpen,
+  Code2,
+  Chrome,
+  BarChart3,
+  LineChart,
+  AreaChart,
+  Target,
+  Scale,
+  Layers,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAIChatStore, type SavedChat, type ChatMessage } from "@/lib/stores/ai-chat-store";
+import { useAuthStore } from "@/lib/stores/auth-store";
+import { useSidebar } from "@/components/ui/sidebar";
+
+const ADVANCED_TOOLS = [
+  { id: 'chart_bar', label: 'Gráfico de Barras', icon: BarChart3, category: 'Gráficos' },
+  { id: 'chart_line', label: 'Gráfico de Líneas', icon: LineChart, category: 'Gráficos' },
+  { id: 'chart_pie', label: 'Gráfico Circular', icon: PieChart, category: 'Gráficos' },
+  { id: 'chart_area', label: 'Gráfico de Área', icon: AreaChart, category: 'Gráficos' },
+  { id: 'chart_radar', label: 'Gráfico de Radar', icon: Target, category: 'Gráficos' },
+  { id: 'analyze_stock', label: 'Análisis Fundamental', icon: TrendingUp, category: 'Análisis' },
+  { id: 'compare_stocks', label: 'Comparar Acciones', icon: Scale, category: 'Análisis' },
+  { id: 'get_sector_performance', label: 'Rendimiento Sectorial', icon: Layers, category: 'Análisis' },
+];
 
 // Model option interface
 interface ModelOption {
@@ -139,6 +168,150 @@ export default function FlowClient() {
   useEffect(() => {
     resizeTextarea();
   }, [prompt]);
+
+  // Audio dictation & file upload states/helpers matching normal ChatInput
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [attachMenuView, setAttachMenuView] = useState<'main' | 'charts' | 'analysis'>('main');
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const attachMenuRef = useRef<HTMLDivElement>(null);
+
+  const attachedFiles = useAIChatStore((s) => s.attachedFiles);
+  const attachFile = useAIChatStore((s) => s.attachFile);
+  const removeFile = useAIChatStore((s) => s.removeFile);
+  const activeTools = useAIChatStore((s) => s.activeTools || []);
+  const favoriteTools = useAIChatStore((s) => s.favoriteTools || []);
+  const toggleTool = useAIChatStore((s) => s.toggleTool);
+  const toggleFavoriteTool = useAIChatStore((s) => s.toggleFavoriteTool);
+
+  const userTier = useAuthStore((s) => s.user?.role === "admin" ? "ultra" : (s.user?.tier || "free"));
+  const MAX_FILES = userTier === "free" ? 1 : userTier === "pro" ? 3 : 10;
+  const { isMobile } = useSidebar();
+  const openUpward = true; // Always open upward since prompt is at the bottom
+
+  // Click outside listener for attachment menu
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (attachMenuRef.current && !attachMenuRef.current.contains(event.target as Node)) {
+        setShowAttachMenu(false);
+        setTimeout(() => setAttachMenuView('main'), 200);
+      }
+    }
+    if (showAttachMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showAttachMenu]);
+
+  // Clean up recognition on unmount
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, []);
+
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast.error("La transcripción de voz no está soportada en este navegador. Usa Chrome o Edge.");
+      return;
+    }
+
+    startRecognition(SpeechRecognition);
+  };
+
+  const startRecognition = (SpeechRecognition: any) => {
+    try {
+      const rec = new SpeechRecognition();
+      rec.continuous = true;
+      rec.interimResults = false;
+      rec.lang = "es-ES";
+
+      rec.onstart = () => {
+        setIsListening(true);
+      };
+
+      rec.onresult = (event: any) => {
+        const transcript = event.results[event.results.length - 1][0].transcript;
+        setPrompt((prev) => prev + (prev ? " " : "") + transcript);
+      };
+
+      rec.onerror = (err: any) => {
+        console.error("Speech recognition error", err);
+        setIsListening(false);
+        const code = err?.error || err?.type;
+        if (code === "not-allowed" || code === "service-not-allowed") {
+          toast.error("Permiso de micrófono denegado. Haz clic en el icono del candado (o controles del sitio) a la izquierda de la barra de direcciones y cambia 'Micrófono' a 'Permitir'.");
+        } else if (code === "network") {
+          toast.error("Error de red en el servicio de transcripción. Revisa tu conexión.");
+        } else if (code !== "aborted" && code !== "no-speech" && code !== "audio-capture") {
+          toast.error("No se pudo transcribir la voz. Inténtalo de nuevo.");
+        }
+      };
+
+      rec.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = rec;
+      rec.start();
+    } catch (startErr) {
+      console.error("Failed to start speech recognition", startErr);
+      setIsListening(false);
+      toast.error("No se pudo iniciar la transcripción de voz. Inténtalo de nuevo.");
+    }
+  };
+
+  const triggerUploadFiles = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    Array.from(files).forEach(file => {
+      if (attachedFiles.length >= MAX_FILES) {
+        alert(`Has alcanzado el límite de ${MAX_FILES} archivos para tu plan.`);
+        return;
+      }
+
+      const isImage = file.type.startsWith("image/");
+      const reader = new FileReader();
+
+      reader.onload = (event) => {
+        const content = event.target?.result as string;
+        if (content) {
+          attachFile({
+            id: Math.random().toString(36).substring(7),
+            name: file.name,
+            content: isImage ? content : content.slice(0, 15000),
+            type: isImage ? "image" : file.type.includes("code") || isCode(content) ? "code" : "file",
+            size: file.size,
+          });
+        }
+      };
+
+      if (isImage) {
+        reader.readAsDataURL(file);
+      } else {
+        reader.readAsText(file);
+      }
+    });
+
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
   // Select active Flow chat
   const currentChatId = useAIChatStore((s) => s.currentChatId);
@@ -579,16 +752,76 @@ export default function FlowClient() {
           {/* The actual input bar — NEVER changes size/border/padding */}
           <div className={cn(
             "rounded-xl p-2.5 bg-white dark:bg-[#1E1E20] border-[#DBDBDB] dark:border-[#2e2e2e] border relative z-10",
-            "shadow-[0_10px_40px_rgba(0,0,0,0.04),0_1px_4px_rgba(0,0,0,0.02)] transition-all duration-300 group focus-within:border-zinc-300 dark:focus-within:border-zinc-650 focus-within:shadow-[0_12px_45px_rgba(0,0,0,0.08),0_1px_4px_rgba(0,0,0,0.02)]"
+            "shadow-[0_10px_40px_rgba(0,0,0,0.04),0_1px_4px_rgba(0,0,0,0.02)] transition-all duration-300 group focus-within:border-zinc-300 dark:focus-within:border-zinc-650 focus-within:shadow-[0_12px_45px_rgba(0,0,0,0.08),0_1px_4px_rgba(0,0,0,0.02)]",
+            isListening && "border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.15)]"
           )}>
             
+            {/* File Previews inside the input box */}
+            {attachedFiles.length > 0 && (
+              <div className="flex flex-wrap gap-3 p-3 border-b border-border/20 mb-2">
+                {attachedFiles.map(file => {
+                  const isImage = file.type === "image" || file.content.startsWith("data:image/");
+                  const isCodeFile = file.type === "code" || file.isPastedCode;
+                  
+                  return (
+                    <motion.div
+                      key={file.id}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      className="relative group w-22 h-22 rounded-2xl overflow-hidden border border-border/40 bg-muted/30 dark:bg-white/[0.02] flex flex-col justify-between p-2 shadow-sm transition-all duration-300 hover:border-border/60"
+                    >
+                      {/* Delete button floating in the corner */}
+                      <button
+                        type="button"
+                        onClick={() => removeFile(file.id)}
+                        className="absolute top-1.5 right-1.5 z-30 h-5 w-5 rounded-full bg-black/75 hover:bg-black text-white flex items-center justify-center cursor-pointer active:scale-90 transition-transform shadow-md border border-white/10"
+                        aria-label="Eliminar"
+                      >
+                        <X className="w-2.5 h-2.5" />
+                      </button>
+                      
+                      {isImage ? (
+                        /* Image preview */
+                        <div className="absolute inset-0 z-10 w-full h-full">
+                          <img
+                            src={file.content}
+                            alt={file.name}
+                            className="w-full h-full object-cover rounded-xl"
+                          />
+                        </div>
+                      ) : isCodeFile ? (
+                        /* Code preview card */
+                        <div className="w-full h-full flex flex-col justify-between font-mono text-[7px] text-muted-foreground select-none leading-normal overflow-hidden p-0.5">
+                          <div className="truncate font-bold text-[9px] text-foreground mb-1 border-b border-border/20 pb-0.5 max-w-[80%]">{file.name}</div>
+                          <div className="line-clamp-4 break-all opacity-70 mb-1 leading-tight">{file.content}</div>
+                          <div className="text-[7px] font-black uppercase text-blue-500 dark:text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded-md self-start tracking-wider">PASTED</div>
+                        </div>
+                      ) : (
+                        /* Regular file preview card */
+                        <div className="w-full h-full flex flex-col justify-between p-0.5">
+                          <div className="w-8 h-8 rounded-xl bg-green-500/10 flex items-center justify-center shrink-0">
+                            <FileText className="w-4.5 h-4.5 text-green-500" />
+                          </div>
+                          <div className="flex flex-col min-w-0 mt-1">
+                            <div className="text-[9px] font-bold truncate text-foreground">{file.name}</div>
+                            <div className="text-[7px] text-muted-foreground uppercase mt-0.5">{file.name.split('.').pop() || 'FILE'}</div>
+                          </div>
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+
             {/* Textarea area */}
             <div className="flex items-center px-2 bg-transparent relative">
               <Textarea
                 ref={textareaRef}
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder="¿Qué quieres crear?"
+                placeholder={isListening ? "Escuchando... habla ahora" : "¿Qué quieres crear?"}
                 disabled={loading}
                 rows={1}
                 className={cn(
@@ -609,16 +842,132 @@ export default function FlowClient() {
             <div className="mt-1 flex items-center justify-between px-1">
               {/* Left group: Plus and Agent pill */}
               <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="rounded-full transition-all duration-300"
-                  aria-label="Opciones"
-                  onClick={() => toast.info("Carga de archivos multimedia (Próximamente)")}
-                >
-                  <Plus className={cn("h-5 w-5")} />
-                </Button>
+                <div ref={attachMenuRef} className="relative shrink-0">
+                  <Button
+                    type="button"
+                    variant={showAttachMenu ? "secondary" : "ghost"}
+                    size="icon"
+                    className={cn("rounded-full transition-all duration-300", showAttachMenu && "bg-foreground text-background hover:bg-foreground/90 dark:bg-foreground dark:text-background shadow-md")}
+                    aria-label="Opciones"
+                    onClick={() => setShowAttachMenu(prev => !prev)}
+                  >
+                    <Plus className={cn("h-5 w-5 transition-transform duration-300", showAttachMenu && "rotate-45")} />
+                  </Button>
+                  <AnimatePresence>
+                    {showAttachMenu && (
+                      <motion.div
+                        initial={{ opacity: 0, y: openUpward ? 10 : -10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: openUpward ? 10 : -10, scale: 0.95 }}
+                        transition={{ type: "spring", damping: 20, stiffness: 300 }}
+                        className={cn(
+                          "absolute left-0 z-40 w-64 flex flex-col max-h-[350px] overflow-hidden rounded-2xl border shadow-2xl",
+                          openUpward ? "bottom-12" : "top-12",
+                          "bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl border-gray-200/50 dark:border-white/5 shadow-blue-500/5 dark:shadow-blue-900/10 text-zinc-950 dark:text-zinc-50"
+                        )}
+                      >
+                        <div className="flex-1 overflow-y-auto hidden-scrollbar p-2.5 space-y-3">
+                          
+                          {attachMenuView === 'main' && (
+                            <motion.div key="main" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}>
+                              {/* Archivos */}
+                              <div className="pt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => { setShowAttachMenu(false); triggerUploadFiles(); }}
+                                  className="group/btn w-full flex items-center gap-3 px-2.5 py-2.5 text-sm font-semibold text-gray-750 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.03] hover:text-foreground rounded-xl transition-all duration-200 active:scale-[0.98] text-left"
+                                >
+                                  <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/5 text-foreground group-hover/btn:bg-foreground group-hover/btn:text-background flex items-center justify-center shrink-0 transition-colors duration-200">
+                                    <Paperclip className="w-4 h-4" />
+                                  </div>
+                                  Subir archivo
+                                </button>
+                              </div>
+
+                              <div className="mt-1">
+                                <button type="button" onClick={() => setAttachMenuView('charts')}
+                                  className="group/btn w-full flex items-center justify-between px-2.5 py-2.5 text-sm font-semibold text-gray-750 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.03] hover:text-foreground rounded-xl transition-all duration-200 active:scale-[0.98]">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/5 text-foreground group-hover/btn:bg-foreground group-hover/btn:text-background flex items-center justify-center shrink-0 transition-colors duration-200"><PieChart className="w-4 h-4" /></div>
+                                    Gráficos
+                                  </div>
+                                  <ChevronRight className="w-4 h-4 text-gray-400 group-hover/btn:translate-x-0.5 transition-transform" />
+                                </button>
+                                <button type="button" onClick={() => setAttachMenuView('analysis')}
+                                  className="group/btn w-full flex items-center justify-between px-2.5 py-2.5 text-sm font-semibold text-gray-750 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.03] hover:text-foreground rounded-xl transition-all duration-200 active:scale-[0.98] mt-1">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/5 text-foreground group-hover/btn:bg-foreground group-hover/btn:text-background flex items-center justify-center shrink-0 transition-colors duration-200"><TrendingUp className="w-4 h-4" /></div>
+                                    Análisis
+                                  </div>
+                                  <ChevronRight className="w-4 h-4 text-gray-400 group-hover/btn:translate-x-0.5 transition-transform" />
+                                </button>
+                              </div>
+                            </motion.div>
+                          )}
+
+                          {attachMenuView === 'charts' && (
+                            <motion.div key="charts" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
+                              <button type="button" onClick={() => setAttachMenuView('main')} className="flex items-center gap-1.5 text-[10px] font-black text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-2.5 py-1 mb-2 transition-colors">
+                                <ChevronRight className="w-3.5 h-3.5 rotate-180" /> Volver
+                              </button>
+                              <div className="px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-[#1890FF] dark:text-blue-400 mb-1 opacity-80">Gráficos</div>
+                              <div className="space-y-1">
+                                {ADVANCED_TOOLS.filter(t => t.category === 'Gráficos').map(tool => {
+                                  const Icon = tool.icon;
+                                  const isActive = activeTools.includes(tool.id);
+                                  return (
+                                    <div key={tool.id} className={cn("w-full flex items-center justify-between px-2 py-1.5 rounded-xl transition-all duration-200 group border border-transparent", isActive && "bg-blue-50/50 dark:bg-blue-950/20 border-blue-100/50 dark:border-blue-900/50")}>
+                                      <button type="button" onClick={() => { toggleTool(tool.id, tool.category); setShowAttachMenu(false); setTimeout(() => setAttachMenuView('main'), 200); }} 
+                                        className={cn("flex-1 flex items-center gap-3 text-left text-sm font-semibold transition-colors", isActive ? "text-[#1890FF] dark:text-blue-400" : "text-gray-750 dark:text-gray-300 hover:text-[#1890FF]")}>
+                                        <div className={cn("w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors", isActive ? "bg-[#1890FF] text-white" : "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400")}>
+                                          <Icon className="w-4 h-4" />
+                                        </div>
+                                        {tool.label}
+                                      </button>
+                                      <button type="button" onClick={(e) => { e.stopPropagation(); toggleFavoriteTool(tool.id); }} className={cn("p-1.5 transition-all", favoriteTools.includes(tool.id) ? "text-amber-500" : "text-gray-300 hover:text-amber-500 dark:text-gray-655 dark:hover:text-amber-550 opacity-0 group-hover:opacity-100")}>
+                                        <Star className={cn("w-4 h-4 transition-transform duration-200 active:scale-125", favoriteTools.includes(tool.id) ? "fill-amber-500 text-amber-500" : "")} />
+                                      </button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </motion.div>
+                          )}
+
+                          {attachMenuView === 'analysis' && (
+                            <motion.div key="analysis" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
+                              <button type="button" onClick={() => setAttachMenuView('main')} className="flex items-center gap-1.5 text-[10px] font-black text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-2.5 py-1 mb-2 transition-colors">
+                                <ChevronRight className="w-3.5 h-3.5 rotate-180" /> Volver
+                              </button>
+                              <div className="px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-purple-500 dark:text-purple-400 mb-1 opacity-80">Análisis</div>
+                              <div className="space-y-1">
+                                {ADVANCED_TOOLS.filter(t => t.category === 'Análisis').map(tool => {
+                                  const Icon = tool.icon;
+                                  const isActive = activeTools.includes(tool.id);
+                                  return (
+                                    <div key={tool.id} className={cn("w-full flex items-center justify-between px-2 py-1.5 rounded-xl transition-all duration-200 group border border-transparent", isActive && "bg-purple-50/50 dark:bg-purple-950/20 border-purple-100/50 dark:border-purple-900/50")}>
+                                      <button type="button" onClick={() => { toggleTool(tool.id, tool.category); setShowAttachMenu(false); setTimeout(() => setAttachMenuView('main'), 200); }} 
+                                        className={cn("flex-1 flex items-center gap-3 text-left text-sm font-semibold transition-colors", isActive ? "text-purple-600 dark:text-purple-400" : "text-gray-750 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400")}>
+                                        <div className={cn("w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors", isActive ? "bg-purple-500 text-white" : "bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400")}>
+                                          <Icon className="w-4 h-4" />
+                                        </div>
+                                        {tool.label}
+                                      </button>
+                                      <button type="button" onClick={(e) => { e.stopPropagation(); toggleFavoriteTool(tool.id); }} className={cn("p-1.5 transition-all", favoriteTools.includes(tool.id) ? "text-amber-500" : "text-gray-300 hover:text-amber-500 dark:text-gray-655 dark:hover:text-amber-550 opacity-0 group-hover:opacity-100")}>
+                                        <Star className={cn("w-4 h-4 transition-transform duration-200 active:scale-125", favoriteTools.includes(tool.id) ? "fill-amber-500 text-amber-500" : "")} />
+                                      </button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </motion.div>
+                          )}
+
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
 
                 <button
                   type="button"
@@ -725,7 +1074,7 @@ export default function FlowClient() {
                                   className={cn(
                                     "flex flex-col items-center justify-center py-1.5 rounded-lg gap-1 transition-all duration-200 cursor-pointer aspect-square",
                                     active
-                                      ? "bg-zinc-200/90 text-zinc-950 dark:bg-zinc-800 dark:text-zinc-50 shadow-xs"
+                                      ? "bg-zinc-200/90 text-zinc-955 dark:bg-zinc-800 dark:text-zinc-50 shadow-xs"
                                       : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
                                   )}
                                 >
@@ -826,16 +1175,46 @@ export default function FlowClient() {
                   </AnimatePresence>
                 </div>
 
-                {/* Primary action button (Microphone when empty, Send when has text) */}
-                {prompt.trim() === "" ? (
+                {/* Primary action button (Microphone when empty/listening, Send when has text) */}
+                {isListening || prompt.trim() === "" ? (
                   <Button
                     type="button"
                     size="icon"
-                    className="rounded-full h-8 w-8 bg-foreground text-background hover:opacity-90 transition-all cursor-pointer flex items-center justify-center shrink-0"
-                    aria-label="Dictar mensaje"
-                    onClick={() => toast.info("Dictado por voz (Próximamente)")}
+                    onClick={toggleListening}
+                    className={cn(
+                      "rounded-full h-8 w-8 transition-all cursor-pointer flex items-center justify-center shrink-0",
+                      isListening
+                        ? "bg-red-500 text-white hover:bg-red-600 shadow-[0_0_12px_rgba(239,68,68,0.3)] animate-pulse"
+                        : "bg-foreground text-background hover:opacity-90"
+                    )}
+                    aria-label={isListening ? "Detener grabación" : "Dictar mensaje"}
                   >
-                    <Mic className="h-4.5 w-4.5" />
+                    {isListening ? (
+                      <div className="flex items-center justify-center gap-[2px] h-3.5 w-5 select-none pointer-events-none">
+                        {[1, 2, 3, 4, 5].map((bar) => (
+                          <motion.span
+                            key={bar}
+                            className="w-[2px] bg-white rounded-full shrink-0"
+                            animate={{
+                              height: bar === 1 || bar === 5 
+                                ? ["4px", "8px", "4px"] 
+                                : bar === 2 || bar === 4 
+                                ? ["6px", "12px", "6px"] 
+                                : ["6px", "15px", "6px"],
+                            }}
+                            transition={{
+                              duration: 0.6,
+                              repeat: Infinity,
+                              repeatType: "reverse",
+                              delay: bar * 0.08,
+                              ease: "easeInOut",
+                            }}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <Mic className="h-4.5 w-4.5" />
+                    )}
                   </Button>
                 ) : (
                   <Button
@@ -848,11 +1227,75 @@ export default function FlowClient() {
                     <ArrowUp className="h-4.5 w-4.5" />
                   </Button>
                 )}
+              </div>
             </div>
           </div>
-        </div>
-      </form>
+
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={handleFileUpload}
+          />
+        </form>
+      </div>
     </div>
-  </div>
   );
 }
+
+const isCode = (text: string): boolean => {
+  if (text.length < 20) return false;
+  
+  const lines = text.split("\n");
+  if (lines.length < 2) {
+    if (text.startsWith("<!DOCTYPE") || text.startsWith("<html>")) return true;
+    return false;
+  }
+
+  const indicators = [
+    /^\s*(import|export|const|let|var|function|class)\s/m,
+    /^\s*(public|private|protected|static|void|int|double|string)\s/m,
+    /^\s*(def|class|import|from)\s.*:/m,
+    /^\s*<\?php/m,
+    /^\s*(using\s+System|namespace|class|public\s+class)/m,
+    /^\s*(#include|using\s+namespace|int\s+main)/m,
+    /^\s*package\s+main/m,
+    /^\s*(select|insert|update|delete)\s+.*\s+from/mi,
+    /^\s*<!DOCTYPE html/i,
+    /^\s*@import\s+/m,
+    /^\s*(interface|type|enum)\s[A-Z]/m,
+    /[{}]/m,
+  ];
+
+  let matchCount = 0;
+  for (const regex of indicators) {
+    if (regex.test(text)) {
+      matchCount++;
+    }
+  }
+
+  return matchCount >= 2 || text.trim().startsWith("<!DOCTYPE") || text.trim().startsWith("<html>");
+};
+
+const detectLanguage = (text: string): string => {
+  if (/^\s*<!DOCTYPE html/i.test(text) || /^\s*<html/i.test(text)) return "html";
+  if (/^\s*<\?php/i.test(text)) return "php";
+  if (/^\s*import\s+.*\s+from\s+['"]/m.test(text) || /const\s+.*\s+=\s+require\(/m.test(text)) return "js";
+  if (/^\s*def\s+\w+\(.*\):/m.test(text) || /^\s*import\s+(os|sys|math|pandas|numpy)/m.test(text)) return "py";
+  if (/^\s*(public|private|protected)\s+class\s+\w+/m.test(text)) return "java";
+  if (/^\s*(#include|using\s+namespace)/m.test(text)) return "cpp";
+  if (/^\s*using\s+System/m.test(text)) return "cs";
+  if (/^\s*package\s+main/m.test(text)) return "go";
+  if (/^\s*(select|insert|update|delete|create)\s+.*\s+from/mi.test(text)) return "sql";
+  if (/^\s*@import|body\s*\{|\.\w+\s*\{/m.test(text)) return "css";
+  const trimmed = text.trim();
+  if ((trimmed.startsWith("{") && trimmed.endsWith("}")) || (trimmed.startsWith("[") && trimmed.endsWith("]"))) {
+    try {
+      JSON.parse(trimmed);
+      return "json";
+    } catch (_) {}
+  }
+  return "txt";
+};

@@ -4,6 +4,8 @@ import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { UseCasePreview } from "@/components/chat/use-case-preview";
 import { UseCasePrompt } from "@/components/chat/use-case-prompt";
+import { Navbar } from "@/components/navbar";
+import { Footer } from "@/components/footer";
 
 interface UseCaseData {
   title: string;
@@ -5515,6 +5517,7 @@ export default async function CasoDeUsoPage({ params }: CasosPageProps) {
 
   return (
     <div className="bg-white h-screen w-screen overflow-y-auto pt-24 pb-20 font-sans text-slate-800 selection:bg-blue-150 selection:text-white select-none fixed inset-0 z-50">
+      <Navbar />
       
       {/* Container header and navigation */}
       <div className="max-w-6xl mx-auto px-6">
@@ -5704,13 +5707,7 @@ export default async function CasoDeUsoPage({ params }: CasosPageProps) {
 
       </div>
 
-      {/* Footer copyright note */}
-      <footer className="mt-20 border-t border-slate-200/80 pt-8 flex items-center justify-center text-[10px] text-slate-450 font-bold uppercase tracking-widest gap-1">
-        <span>© {new Date().getFullYear()} Maverlang. Hecho con</span>
-        <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500" />
-        <span>en Chile 🇨🇱</span>
-      </footer>
-
+      <Footer />
     </div>
   );
 }

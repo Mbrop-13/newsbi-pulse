@@ -70,6 +70,7 @@ interface CreativeCategory {
   icon: React.ComponentType<any>;
   imageSrc: string;
   slug: string;
+  examples: { label: string; slug: string }[];
 }
 
 const CREATIVE_CATEGORIES: CreativeCategory[] = [
@@ -78,21 +79,35 @@ const CREATIVE_CATEGORIES: CreativeCategory[] = [
     label: "Sitios Web", 
     icon: Globe, 
     imageSrc: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=600",
-    slug: "sitio-web"
+    slug: "sitio-web",
+    examples: [
+      { label: "Vestra (Inversión Social)", slug: "sitio-web" },
+      { label: "Lumen (SaaS Productividad)", slug: "aplicacion" },
+      { label: "Nocturne (Videojuegos Boutique)", slug: "multiplataforma" }
+    ]
   },
   { 
     id: "apps", 
     label: "Aplicaciones", 
     icon: Smartphone, 
     imageSrc: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?q=80&w=600",
-    slug: "aplicacion"
+    slug: "aplicacion",
+    examples: [
+      { label: "Agora (Marketplace Móvil)", slug: "aplicacion-2" },
+      { label: "Clarity Invest (React Native)", slug: "aplicacion-3" }
+    ]
   },
   { 
     id: "multiplatform", 
     label: "Multiplataforma", 
     icon: Monitor, 
     imageSrc: "https://images.unsplash.com/photo-1531403009284-440f080d1e12?q=80&w=600",
-    slug: "multiplataforma"
+    slug: "multiplataforma",
+    examples: [
+      { label: "SplitWise Pro (Gestor de Gastos)", slug: "multiplataforma" },
+      { label: "Circle (Red Social Familiar)", slug: "multiplataforma-2" },
+      { label: "MentorMatch (Mentoría IA)", slug: "multiplataforma-3" }
+    ]
   },
 ];
 
@@ -543,6 +558,7 @@ function ChatLandingContent() {
   const language = useLanguageStore((s) => s.language)
 
   const [activeMenu, setActiveMenu] = useState<'noticias' | 'mercados' | 'portafolio' | 'mundo' | null>(null);
+  const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string | null>(
     // En PC (vista de escritorio) arrancamos con "Sitios Web & Landings"
     // seleccionado para mostrar la galería de inmediato. En móvil, null.
@@ -1860,28 +1876,27 @@ function ChatLandingContent() {
                     {CREATIVE_CATEGORIES.map((cat) => {
                       const CatIcon = cat.icon;
                       return (
-                        <a
+                        <div
                           key={cat.id}
-                          href={`/casos-de-uso/${cat.slug}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="group relative h-36 rounded-2xl overflow-hidden shadow-md border border-zinc-200/40 dark:border-white/5 bg-zinc-950 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 active:scale-98 text-left"
+                          onClick={() => setOpenSubmenu(prev => prev === cat.id ? null : cat.id)}
+                          className="group relative h-36 rounded-2xl overflow-hidden shadow-md border border-zinc-200/40 dark:border-white/5 bg-zinc-950 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 text-left select-none cursor-pointer"
                         >
-                          {/* Glow background on hover */}
-                          <div className="absolute inset-0 bg-[#1890FF]/15 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 pointer-events-none" />
-
                           {/* Image background */}
                           <img
                             src={cat.imageSrc}
                             alt={cat.label}
-                            className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:scale-105 group-hover:opacity-65 transition-all duration-500 ease-out"
+                            className={`absolute inset-0 w-full h-full object-cover opacity-50 group-hover:scale-102 group-hover:opacity-45 transition-all duration-500 ease-out ${
+                              openSubmenu === cat.id ? 'scale-102 opacity-45' : ''
+                            }`}
                           />
 
                           {/* Overlay gradient */}
                           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent z-10" />
 
-                          {/* Content */}
-                          <div className="absolute inset-0 z-20 p-4 flex flex-col justify-between">
+                          {/* Content (default layout) */}
+                          <div className={`absolute inset-0 z-20 p-4 flex flex-col justify-between transition-opacity duration-300 group-hover:opacity-0 pointer-events-none ${
+                            openSubmenu === cat.id ? 'opacity-0' : ''
+                          }`}>
                             {/* Icon container */}
                             <div className="w-7 h-7 rounded-lg bg-white/10 backdrop-blur-md flex items-center justify-center text-white border border-white/10 shrink-0">
                               <CatIcon className="w-3.5 h-3.5" />
@@ -1890,17 +1905,39 @@ function ChatLandingContent() {
                             {/* Title and Action */}
                             <div className="space-y-0.5">
                               <span className="text-[8px] font-black uppercase text-[#1890FF] tracking-wider block">
-                                Ver Ejemplo
+                                Explorar Ejemplos
                               </span>
                               <div className="flex items-center justify-between">
                                 <h4 className="text-xs font-bold text-white tracking-tight leading-none">
                                   {cat.label}
                                 </h4>
-                                <ArrowUpRight className="w-3.5 h-3.5 text-white/50 group-hover:text-white group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+                                <ArrowUpRight className="w-3.5 h-3.5 text-white/50" />
                               </div>
                             </div>
                           </div>
-                        </a>
+
+                          {/* Expandable Hover Overlay Submenu (renders on top of the card) */}
+                          <div className={`absolute inset-0 bg-zinc-950/95 z-30 flex flex-col justify-center gap-1.5 p-3.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ease-out pointer-events-none group-hover:pointer-events-auto ${
+                            openSubmenu === cat.id ? 'opacity-100 pointer-events-auto' : ''
+                          }`}>
+                            <span className="text-[8px] font-black uppercase text-[#1890FF] tracking-wider block mb-1">
+                              {cat.label} — Selecciona un Caso:
+                            </span>
+                            {cat.examples.map((ex) => (
+                              <Link
+                                key={ex.slug}
+                                href={`/casos-de-uso/${ex.slug}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()} // Prevent closing accordion when clicking links
+                                className="w-full text-left py-1.5 px-3 bg-white/5 hover:bg-[#1890FF] text-white rounded-xl text-[10px] md:text-xs font-semibold transition-all border border-white/5 active:scale-98 select-none flex items-center justify-between group/btn cursor-pointer"
+                              >
+                                <span>{ex.label}</span>
+                                <ArrowUpRight className="w-3.5 h-3.5 text-white/50 group-hover/btn:text-white transition-colors" />
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
                       );
                     })}
                   </motion.div>

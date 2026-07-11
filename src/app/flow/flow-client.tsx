@@ -578,10 +578,10 @@ export default function FlowClient() {
             )}
 
           <div className={cn(
-            "rounded-[calc(0.75rem-0.5px)] p-2.5 bg-white dark:bg-[#1E1E20] relative",
+            "p-2.5 bg-white dark:bg-[#1E1E20] relative",
             isAgentActive
-              ? "border border-transparent"
-              : "border-[#DBDBDB] dark:border-[#2e2e2e] border",
+              ? "rounded-[calc(0.75rem-1.5px)] border border-transparent"
+              : "rounded-xl border-[#DBDBDB] dark:border-[#2e2e2e] border",
             "shadow-[0_10px_40px_rgba(0,0,0,0.04),0_1px_4px_rgba(0,0,0,0.02)] transition-all duration-300 group focus-within:shadow-[0_12px_45px_rgba(0,0,0,0.08),0_1px_4px_rgba(0,0,0,0.02)]",
             !isAgentActive && "focus-within:border-zinc-300 dark:focus-within:border-zinc-650"
           )}>

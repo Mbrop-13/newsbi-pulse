@@ -93,6 +93,7 @@ const CREATIVE_CATEGORIES: CreativeCategory[] = [
     imageSrc: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?q=80&w=600",
     slug: "aplicacion",
     examples: [
+      { label: "NEXUS Blocks (Tetris Arcade)", slug: "aplicacion-1" },
       { label: "Agora (Marketplace Móvil)", slug: "aplicacion-2" },
       { label: "Clarity Invest (React Native)", slug: "aplicacion-3" }
     ]

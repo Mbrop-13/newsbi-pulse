@@ -17,6 +17,7 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAIChatStore, type SavedChat, type ChatMessage } from "@/lib/stores/ai-chat-store";
@@ -131,7 +132,8 @@ export default function FlowClient() {
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = `${el.scrollHeight}px`;
+    const max = 256;
+    el.style.height = Math.min(el.scrollHeight, max) + "px";
   };
 
   useEffect(() => {
@@ -582,14 +584,18 @@ export default function FlowClient() {
             
             {/* Textarea area */}
             <div className="flex items-center px-2 bg-transparent relative">
-              <textarea
+              <Textarea
                 ref={textareaRef}
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="¿Qué quieres crear?"
                 disabled={loading}
                 rows={1}
-                className="w-full min-h-12 max-h-72 text-[15px] md:!text-[15px] px-1 resize-none overflow-y-auto border-0 bg-transparent shadow-none focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder-zinc-450 font-medium text-zinc-800 leading-normal"
+                className={cn(
+                  "min-h-12 max-h-72 text-[15px] md:!text-[15px] px-1",
+                  "resize-none overflow-y-auto",
+                  "border-0 bg-transparent dark:bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                )}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();

@@ -130,7 +130,7 @@ const PREVIEW_ITEMS: PreviewItem[] = [
     title: "Vestra — Inversión Social",
     desc: "Landing page de trading social con gráficos dinámicos de velas y panel de copy-trading.",
     imageSrc: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?q=80&w=600",
-    slug: "sitio-web",
+    slug: "sitio-web-1",
     prompt: `Diseña una página de inicio para una plataforma de inversión social y trading de acciones que transmite confianza, transparencia y empoderamiento financiero: el antídoto a las aplicaciones de trading caóticas, opacas e intimidantes.`
   },
   {
@@ -139,7 +139,7 @@ const PREVIEW_ITEMS: PreviewItem[] = [
     title: "Lumen — SaaS Productividad",
     desc: "Software de productividad y gestión de proyectos con un enfoque de diseño limpio y calmado.",
     imageSrc: "https://images.unsplash.com/photo-1531403009284-440f080d1e12?q=80&w=600",
-    slug: "aplicacion",
+    slug: "sitio-web-2",
     prompt: `Diseña una página de inicio de producto SaaS para una herramienta de gestión de proyectos y comunicación de equipos llamada 'Lumen'...`
   },
   {
@@ -148,7 +148,7 @@ const PREVIEW_ITEMS: PreviewItem[] = [
     title: "Nocturne — Boutique Gaming",
     desc: "Plataforma de e-commerce de videojuegos con estética cinematográfica brutalista oscura.",
     imageSrc: "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=600",
-    slug: "multiplataforma",
+    slug: "sitio-web-3",
     prompt: `Diseña una página de inicio para un sitio de comercio electrónico premium de videojuegos boutique llamado 'NOCTURNE'...`
   },
   // apps
@@ -186,7 +186,7 @@ const PREVIEW_ITEMS: PreviewItem[] = [
     title: "SplitWise Pro — Gastos",
     desc: "Panel web interactivo para control de gastos grupales y división automática de cuentas.",
     imageSrc: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=600",
-    slug: "multiplataforma",
+    slug: "multiplataforma-1",
     prompt: `Crea una aplicación interactiva estilo SplitWise para control de gastos grupales y división de cuentas.`
   },
   {

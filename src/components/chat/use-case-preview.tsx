@@ -170,12 +170,6 @@ export function UseCasePreview({ code, title, type = 'html', previewCode, device
             // Mobile Device Wrapper Frame
             <div className="flex justify-center items-center py-8 bg-slate-50/50 w-full min-h-[720px] select-none">
               <div className="relative w-[360px] h-[640px] border-[12px] border-zinc-950 dark:border-zinc-900 rounded-[44px] shadow-2xl overflow-hidden bg-white">
-                {/* Simulated Phone Camera / Speaker Notch */}
-                <div className="absolute top-2 left-1/2 -translate-x-1/2 w-28 h-4 bg-zinc-950 dark:bg-zinc-900 rounded-full z-30 pointer-events-none flex items-center justify-center">
-                  <div className="w-3 h-3 rounded-full bg-zinc-800/80 absolute right-3" />
-                  <div className="w-10 h-1 bg-zinc-800/40 rounded-full" />
-                </div>
-                
                 {/* Mobile Preview Frame */}
                 <iframe
                   srcDoc={previewCode || code}

@@ -66,7 +66,7 @@ const USE_CASE_MAP: Record<string, UseCaseData> = {
       { value: "1.2k+", label: "Usuarios Simulados", sublabel: "Operando de forma concurrente" }
     ]
   },
-  "sitio-web": {
+  "sitio-web-1": {
     title: `Vestra — Plataforma de Inversión Social`,
     brand: `Caso de Éxito: Sitio Web`,
     desc: `Landing page premium para una plataforma de inversión social y trading de acciones, generada en un solo prompt.`,
@@ -1787,7 +1787,7 @@ document.querySelectorAll('.risk-btn').forEach(btn => {
                 </body>
               </html>`
   },
-  "aplicacion": {
+  "sitio-web-2": {
     title: `Lumen — Software de Productividad Sereno`,
     brand: `Caso de Éxito: Aplicación`,
     desc: `Dashboard interactivo de Lumen, una app boutique de software (SaaS) orientada a flujos de trabajo complejos.`,
@@ -3583,13 +3583,13 @@ Ambiente general: Profesional, moderno, cálido, premium, confiable, inteligente
   document.addEventListener('mousemove', (e) => {
                                             mouseX = e.clientX;
                                         mouseY = e.clientY;
-                                        dot.style.transform = \`translate(\${mouseX}px, \${mouseY}px) translate(-50%, -50%)\`;
+                                        dot.style.transform = 'translate(' + mouseX + 'px, ' + mouseY + 'px) translate(-50%, -50%)';
   });
 
                                         function animateRing() {
                                             ringX += (mouseX - ringX) * 0.15;
                                         ringY += (mouseY - ringY) * 0.15;
-                                        ring.style.transform = \`translate(\${ringX}px, \${ringY}px) translate(-50%, -50%)\`;
+                                        ring.style.transform = 'translate(' + ringX + 'px, ' + ringY + 'px) translate(-50%, -50%)';
                                         requestAnimationFrame(animateRing);
   }
                                         animateRing();
@@ -3610,7 +3610,7 @@ Ambiente general: Profesional, moderno, cálido, premium, confiable, inteligente
     const scrolled = window.scrollY;
                                         const max = document.documentElement.scrollHeight - window.innerHeight;
                                         const pct = Math.min(scrolled / max, 1);
-                                        progress.style.transform = \`scaleX(\${pct})\`;
+                                        progress.style.transform = 'scaleX(' + pct + ')';
   });
 
   // Reveal on scroll
@@ -3669,7 +3669,7 @@ Ambiente general: Profesional, moderno, cálido, premium, confiable, inteligente
                                             document.addEventListener('mousemove', (e) => {
                                                 const x = (e.clientX / window.innerWidth - 0.5) * 8;
                                                 const y = (e.clientY / window.innerHeight - 0.5) * 8;
-                                                heroMockup.style.transform = \`perspective(1000px) rotateY(\${x * 0.3}deg) rotateX(\${-y * 0.3}deg)\`;
+                                                heroMockup.style.transform = 'perspective(1000px) rotateY(' + (x * 0.3) + 'deg) rotateX(' + (-y * 0.3) + 'deg)';
                                             });
   }
                                     </script>
@@ -3677,7 +3677,7 @@ Ambiente general: Profesional, moderno, cálido, premium, confiable, inteligente
                                 </body>
                             </html>`
   },
-  "multiplataforma": {
+  "multiplataforma-1": {
     title: `SplitWise Pro — Finanzas Compartidas Premium`,
     brand: `Caso de Éxito: Multiplataforma`,
     desc: `Versión premium y más avanzada de una app para dividir gastos y gestionar presupuestos de eventos y hogares compartidos.`,
@@ -4392,6 +4392,2052 @@ Ambiente general: Íntimo, cálido, seguro y profundo.Debe sentirse como un espa
     demoTitle: `MentorMatch — Plataforma de Mentoría Inteligente`,
     demoPrompt: ``,
     demoCode: ``
+  },
+    "sitio-web-3": {
+    title: `NOCTURNE — Boutique Cinematográfica de Videojuegos Premium`,
+    brand: `Caso de Éxito: Sitio Web`,
+    desc: `Página de inicio premium para una tienda boutique de videojuegos que transmite emoción controlada, sofisticación y calidad cinematográfica.`,
+    gradient: `from-purple-900 to-rose-700`,
+    challenge: `Diseñar una experiencia e-commerce de gaming que transmita sofisticación y misterio visual, evitando la estética infantil de las tiendas tradicionales.`,
+    solution: `Se estructuró una landing page brutalista oscura con partículas interactivas de fondo, cursor personalizado responsivo y transiciones de tarjetas 3D en hover.`,
+    products: ["Diseñador Web IA (Maverlang AI)","Maverlang 2.5 Pro"],
+    region: `Europa & Asia`,
+    industry: `Gaming / E-commerce`,
+    quote: `El efecto de cursor personalizado con la órbita de partículas y la rotación 3D de las portadas logró capturar exactamente el tono cinematográfico que buscábamos.`,
+    quoteAuthor: `Klaus Vanhoutte`,
+    quoteRole: `Creative Director, Nocturne Games`,
+    metrics: [{"value":"🎮 AAA","label":"Curaduría","sublabel":"Solo lanzamientos seleccionados"},{"value":"100%","label":"Responsivo","sublabel":"Perfecto en móviles y desktop"},{"value":"1 Prompt","label":"Generación","sublabel":"Layout y efectos creados en un paso"}],
+    demoTitle: `NOCTURNE — Boutique de Videojuegos Premium`,
+    demoPrompt: `Diseña una página de inicio para una tienda boutique de videojuegos premium que transmita emoción controlada, sofisticación y calidad cinematográfica: el antídoto a las tiendas caóticas, llenas de ofertas agresivas y diseño infantil.
+Estrategia visual:
+
+Imágenes: Arte clave de juegos AAA e indie de alta calidad, capturas cinematográficas en juego, personajes épicos, mundos inmersivos, escenas de acción dramáticas y momentos tranquilos.Incluye mockups de consolas, PCs gaming y periféricos premium.
+    Fotografía: Estilo cinematográfico, iluminación dramática(rim lighting y volumétrica), contraste alto, colores saturados en las imágenes de juegos y tonos más controlados en el resto del sitio.
+        Composición: Espacio negativo generoso, hero masivo, scroll vertical cinematográfico, superposiciones elegantes de elementos flotantes y parallax sutil.
+Paleta de colores:
+Primarios: Negro profundo(#0A0A0A), gris carbón(#1F1F1F), blanco puro.
+    Acentos: Púrpura neón(#A855F7), cyan eléctrico(#06B6D4), rojo cereza(#F43F5E), dorado sutil(#EAB308) para destacar ediciones especiales.
+
+        Tipografía:
+Encabezados: Sans - serif geométrica bold y moderna(tipo Rajdhani, Orbitron o Neue Machina), con excelente presencia.
+    Cuerpo: Sans - serif limpia y legible(Inter o Satoshi), interlineado generoso.
+
+        Fondo: Dark mode dominante con gradientes sutiles, partículas o efectos de luz muy discretos en secciones específicas.
+
+Diseño general: Estilo premium, elegante y cinematográfico.Mucho espacio para respirar, jerarquía clara y enfoque en la experiencia visual del juego.
+Estructura de la página:
+
+Hero principal: Video background o gran imagen cinemática de un juego destacado + título impactante + subtítulo + botones grandes(“Comprar ahora”, “Ver tráiler”, “Añadir a wishlist”).Incluye countdown para lanzamientos próximos.
+Juegos destacados: Carrusel o grid grande de portadas de juegos con hover que revela precio, descuento, plataforma y calificación(Metacritic / Steam).
+    Categorías: Secciones elegantes para PC, PlayStation, Xbox, Nintendo, Indie, Ediciones Coleccionista, Accesorios Premium.
+Próximos lanzamientos: Calendario visual con tarjetas grandes y fecha destacada.
+Ofertas y Deals: Sección con diseño premium(no barata), destacando descuentos reales y bundles.
+Testimonios de jugadores: Citas con fotos de usuarios reales + avatar de Steam o logo de plataforma.
+    Comunidad / Blog: Últimos artículos, noticias o contenido detrás de cámaras.
+        Newsletter: Formulario destacado con incentivo(descuento en primera compra o acceso anticipado).
+
+Detalles de interacción:
+
+Hover en cualquier portada de juego: elevación 3D, brillo neón sutil, zoom suave en el arte y aparición de información rápida.
+La imagen del hero tiene un parallax lento y efecto de profundidad.
+Los títulos de secciones aparecen con animación cinematográfica(fade + slide desde abajo).
+Carrito de compras con animación fluida al añadir juegos.
+    Efecto “scanline” o glow muy sutil al pasar el cursor por elementos interactivos.
+Scroll con velocidad variable según la sección(más lento en hero).
+Sonido ambiental muy bajo y opcional al entrar al sitio(estilo trailer de juego).
+
+Ambiente general: Profesional, inmersivo, cinematográfico, premium, emocionante pero elegante.Debe transmitir que es una tienda seria para gamers exigentes que valoran calidad, curaduría y experiencia premium.`,
+    demoCode: `<!DOCTYPE html>
+        <html lang="es">
+            <head>
+                <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <title>NOCTURNE — Boutique Cinematográfica de Videojuegos Premium</title>
+                        <script src="https://cdn.tailwindcss.com"></script>
+                        <link rel="preconnect" href="https://fonts.googleapis.com">
+                            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                                <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+                                    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+                                        <style>
+                                            :root {
+                                                --bg-deep: #0A0A0A;
+                                            --bg-charcoal: #141414;
+                                            --bg-elevated: #1F1F1F;
+                                            --text-pure: #FFFFFF;
+                                            --text-muted: #8B8B8B;
+                                            --text-dim: #555555;
+                                            --accent-purple: #A855F7;
+                                            --accent-cyan: #06B6D4;
+                                            --accent-red: #F43F5E;
+                                            --accent-gold: #EAB308;
+                                            --border: rgba(255,255,255,0.08);
+                                            --border-bright: rgba(255,255,255,0.15);
+}
+
+                                            * {-webkit - font - smoothing: antialiased; }
+                                            html {scroll - behavior: smooth; }
+                                            body {
+                                                background: var(--bg-deep);
+                                            color: var(--text-pure);
+                                            font-family: 'Inter', sans-serif;
+                                            overflow-x: hidden;
+                                            cursor: none;
+}
+                                            .font-display {font - family: 'Rajdhani', sans-serif; letter-spacing: -0.01em; }
+
+                                            /* Custom cursor */
+                                            .cursor-dot {
+                                                position: fixed; width: 6px; height: 6px;
+                                            background: var(--accent-cyan); border-radius: 50%;
+                                            pointer-events: none; z-index: 9999;
+                                            transform: translate(-50%, -50%);
+                                            transition: width 0.3s, height 0.3s, background 0.3s;
+                                            mix-blend-mode: difference;
+}
+                                            .cursor-ring {
+                                                position: fixed; width: 36px; height: 36px;
+                                            border: 1px solid rgba(168, 85, 247, 0.5); border-radius: 50%;
+                                            pointer-events: none; z-index: 9998;
+                                            transform: translate(-50%, -50%);
+                                            transition: width 0.3s, height 0.3s, border-color 0.3s, background 0.3s;
+}
+                                            .cursor-dot.hover {width: 10px; height: 10px; background: var(--accent-purple); }
+                                            .cursor-ring.hover {width: 56px; height: 56px; border-color: var(--accent-cyan); background: rgba(6,182,212,0.05); }
+
+                                            /* Grain */
+                                            .bg-grain {
+                                                position: fixed; inset: 0; pointer-events: none;
+                                            opacity: 0.05; z-index: 1;
+                                            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' /%3E%3C/svg%3E");
+}
+
+                                            /* Scanline */
+                                            .scanlines {
+                                                position: absolute; inset: 0; pointer-events: none; opacity: 0;
+                                            background: repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(6,182,212,0.04) 3px, rgba(6,182,212,0.04) 4px);
+                                            transition: opacity 0.4s;
+}
+                                            .interactive:hover .scanlines {opacity: 1; }
+
+                                            /* Hero */
+                                            .hero-bg {
+                                                position: absolute; inset: -10% 0 0 0; height: 120%;
+                                            background-image: url('https://picsum.photos/seed/nocturnehero7/1920/1200.jpg');
+                                            background-size: cover; background-position: center;
+                                            will-change: transform;
+                                            filter: brightness(0.5) contrast(1.15) saturate(1.2);
+}
+                                            .hero-overlay {
+                                                position: absolute; inset: 0;
+                                            background:
+                                            radial-gradient(ellipse at 15% 50%, rgba(168, 85, 247, 0.18), transparent 50%),
+                                            radial-gradient(ellipse at 85% 70%, rgba(6, 182, 212, 0.12), transparent 50%),
+                                            linear-gradient(180deg, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.3) 40%, rgba(10,10,10,0.98) 100%),
+                                            linear-gradient(90deg, rgba(10,10,10,0.9) 0%, rgba(10,10,10,0.2) 50%, transparent 100%);
+}
+                                            #particles {position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+
+                                            /* Title reveal */
+                                            .reveal-mask {overflow: hidden; display: block; }
+                                            .reveal-up {display: inline-block; transform: translateY(110%); animation: revealUp 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+                                            @keyframes revealUp {to {transform: translateY(0); } }
+                                            .fade-in {opacity: 0; animation: fadeIn 1.2s ease forwards; }
+                                            @keyframes fadeIn {to {opacity: 1; } }
+
+                                            /* Fade slide on scroll */
+                                            .fade-slide {opacity: 0; transform: translateY(40px); transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1), transform 0.9s cubic-bezier(0.22, 1, 0.36, 1); }
+                                            .fade-slide.in-view {opacity: 1; transform: translateY(0); }
+
+                                            /* Game card 3D */
+                                            .game-card {transform - style: preserve-3d; transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1); will-change: transform; position: relative; }
+                                            .game-card .card-inner {transform - style: preserve-3d; }
+                                            .game-card .card-overlay {transform: translateZ(30px); transition: opacity 0.4s; }
+                                            .game-card .card-glow {
+                                                position: absolute; inset: -2px; border-radius: 6px;
+                                            opacity: 0; transition: opacity 0.5s;
+                                            background: linear-gradient(135deg, rgba(168, 85, 247, 0.5), transparent 40%, rgba(6, 182, 212, 0.4));
+                                            filter: blur(24px); z-index: -1;
+}
+                                            .game-card:hover .card-glow {opacity: 1; }
+                                            .game-card .card-img {transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1), filter 0.5s; }
+                                            .game-card:hover .card-img {transform: scale(1.08); filter: brightness(0.7) saturate(1.2); }
+                                            .game-card .card-info {opacity: 0; transform: translateY(20px); transition: opacity 0.4s 0.1s, transform 0.4s 0.1s; }
+                                            .game-card:hover .card-info {opacity: 1; transform: translateY(0); }
+
+                                            /* Buttons */
+                                            .btn-primary {
+                                                position: relative; background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+                                            color: white; padding: 18px 38px; font-family: 'Rajdhani', sans-serif;
+                                            font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; font-size: 15px;
+                                            overflow: hidden; transition: transform 0.3s, box-shadow 0.3s;
+                                            display: inline-flex; align-items: center; gap: 12px;
+}
+                                            .btn-primary::before {
+                                                content: ''; position: absolute; inset: 0;
+                                            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+                                            opacity: 0; transition: opacity 0.4s;
+}
+                                            .btn-primary:hover::before {opacity: 1; }
+                                            .btn-primary:hover {transform: translateY(-2px); box-shadow: 0 12px 40px rgba(168, 85, 247, 0.5); }
+.btn-primary > * {position: relative; z-index: 1; }
+
+                                            .btn-ghost {
+                                                border: 1px solid rgba(255,255,255,0.2); color: white;
+                                            padding: 18px 38px; font-family: 'Rajdhani', sans-serif;
+                                            font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; font-size: 15px;
+                                            transition: all 0.3s; background: rgba(255,255,255,0.03);
+                                            backdrop-filter: blur(10px);
+                                            display: inline-flex; align-items: center; gap: 12px;
+}
+                                            .btn-ghost:hover {border - color: var(--accent-cyan); background: rgba(6, 182, 212, 0.08); box-shadow: 0 0 30px rgba(6, 182, 212, 0.2); }
+
+                                            .btn-wishlist {
+                                                border: 1px solid rgba(255,255,255,0.15); color: white;
+                                            padding: 18px; width: 56px; height: 56px;
+                                            transition: all 0.3s; background: rgba(255,255,255,0.03);
+                                            display: inline-flex; align-items: center; justify-content: center;
+                                            backdrop-filter: blur(10px);
+}
+                                            .btn-wishlist:hover {border - color: var(--accent-red); color: var(--accent-red); box-shadow: 0 0 30px rgba(244, 63, 94, 0.3); }
+
+                                            /* Section number */
+                                            .section-num {
+                                                font - family: 'Rajdhani', sans-serif; color: var(--accent-purple);
+                                            font-size: 13px; letter-spacing: 0.4em; font-weight: 600;
+                                            display: inline-flex; align-items: center; gap: 14px;
+}
+                                            .section-num::before {content: ''; width: 40px; height: 1px; background: var(--accent-purple); }
+
+                                            /* Category card */
+                                            .category-card {position: relative; overflow: hidden; transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1); border: 1px solid var(--border); }
+                                            .category-card::before {
+                                                content: ''; position: absolute; inset: 0;
+                                            background: linear-gradient(180deg, transparent 20%, rgba(10,10,10,0.85) 70%, rgba(10,10,10,0.98) 100%);
+                                            z-index: 1; transition: opacity 0.5s;
+}
+                                            .category-card:hover {transform: translateY(-6px); border-color: var(--accent-cyan); box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 30px rgba(6,182,212,0.15); }
+                                            .category-card .cat-bg {transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1), filter 0.5s; filter: brightness(0.5) saturate(1.1); }
+                                            .category-card:hover .cat-bg {transform: scale(1.1); filter: brightness(0.7) saturate(1.3); }
+
+                                            /* Countdown */
+                                            .countdown-box {
+                                                background: rgba(255,255,255,0.025); border: 1px solid var(--border);
+                                            backdrop-filter: blur(10px); padding: 18px 10px; text-align: center;
+                                            border-radius: 3px; position: relative; overflow: hidden;
+}
+                                            .countdown-box::before {
+                                                content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 1px;
+                                            background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent); opacity: 0.7;
+}
+                                            .countdown-num {
+                                                font - family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 42px;
+                                            line-height: 1; background: linear-gradient(180deg, #fff, #888);
+                                            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+
+                                            /* Marquee */
+                                            .marquee {display: flex; overflow: hidden; user-select: none; }
+                                            .marquee-content {flex - shrink: 0; display: flex; align-items: center; gap: 3rem; animation: scroll 50s linear infinite; padding-right: 3rem; }
+                                            @keyframes scroll {from {transform: translateX(0); } to {transform: translateX(-100%); } }
+
+                                            /* Glow text */
+                                            .glow-purple {text - shadow: 0 0 40px rgba(168, 85, 247, 0.6), 0 0 80px rgba(168, 85, 247, 0.3); }
+                                            .glow-cyan {text - shadow: 0 0 40px rgba(6, 182, 212, 0.5); }
+
+                                            /* Pulse */
+                                            @keyframes pulse-dot {0 %, 100 % { opacity: 1; transform: scale(1); } 50% {opacity: 0.4; transform: scale(0.7); } }
+                                            .pulse-dot {animation: pulse-dot 2s ease-in-out infinite; }
+
+                                            /* Scrollbar */
+                                            ::-webkit-scrollbar {width: 8px; }
+                                            ::-webkit-scrollbar-track {background: var(--bg-deep); }
+                                            ::-webkit-scrollbar-thumb {background: linear-gradient(180deg, var(--accent-purple), var(--accent-cyan)); border-radius: 4px; }
+
+                                            @media (max-width: 768px) {
+                                                body {cursor: auto; }
+                                            .cursor-dot, .cursor-ring {display: none; }
+}
+
+                                            /* Nav */
+                                            .nav-blur {backdrop - filter: blur(24px) saturate(180%); background: rgba(10, 10, 10, 0.65); border-bottom: 1px solid var(--border); transition: background 0.3s; }
+                                            .nav-blur.scrolled {background: rgba(10, 10, 10, 0.92); }
+
+                                            /* Glass */
+                                            .glass {background: rgba(255,255,255,0.025); backdrop-filter: blur(20px); border: 1px solid var(--border); }
+
+                                            /* Deal badge */
+                                            .deal-badge {background: linear-gradient(135deg, var(--accent-red), #be123c); color: white; padding: 5px 11px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.06em; border-radius: 2px; }
+
+                                            .gold-text {background: linear-gradient(135deg, #fde047, var(--accent-gold)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+                                            .purple-text {color: var(--accent-purple); }
+                                            .cyan-text {color: var(--accent-cyan); }
+
+                                            /* Scroll indicator */
+                                            .scroll-indicator {position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 12px; color: var(--text-muted); font-family: 'Rajdhani', sans-serif; letter-spacing: 0.4em; font-size: 11px; z-index: 5; }
+                                            .scroll-line {width: 1px; height: 50px; background: linear-gradient(180deg, var(--accent-cyan), transparent); animation: scroll-down 2s ease-in-out infinite; transform-origin: top; }
+                                            @keyframes scroll-down {0 % { transform: scaleY(0); } 50% {transform: scaleY(1); } 100% {transform: scaleY(0); transform-origin: bottom; } }
+
+                                            /* Sound toggle */
+                                            .sound-toggle {position: fixed; bottom: 30px; right: 30px; z-index: 100; width: 52px; height: 52px; border-radius: 50%; background: rgba(20,20,20,0.8); backdrop-filter: blur(10px); border: 1px solid var(--border-bright); display: flex; align-items: center; justify-content: center; transition: all 0.3s; color: var(--text-muted); }
+                                            .sound-toggle:hover {border - color: var(--accent-cyan); color: var(--accent-cyan); box-shadow: 0 0 25px rgba(6, 182, 212, 0.3); }
+                                            .sound-toggle.active {border - color: var(--accent-cyan); color: var(--accent-cyan); background: rgba(6, 182, 212, 0.1); }
+
+                                            /* Cart pop */
+                                            @keyframes cart-pop {0 % { transform: scale(1); } 50% {transform: scale(1.4); color: var(--accent-cyan); } 100% {transform: scale(1); } }
+                                            .cart-pop {animation: cart-pop 0.5s ease; }
+
+                                            /* Toast */
+                                            .toast {position: fixed; bottom: 100px; right: 30px; background: rgba(20, 20, 20, 0.95); backdrop-filter: blur(20px); border: 1px solid var(--accent-cyan); border-left: 3px solid var(--accent-cyan); padding: 18px 26px; border-radius: 4px; transform: translateX(140%); transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1); z-index: 200; box-shadow: 0 10px 40px rgba(0,0,0,0.6), 0 0 30px rgba(6, 182, 212, 0.2); display: flex; align-items: center; gap: 14px; }
+                                            .toast.show {transform: translateX(0); }
+
+                                            /* Floating */
+                                            .float-anim {animation: float 6s ease-in-out infinite; }
+                                            @keyframes float {0 %, 100 % { transform: translateY(0); } 50% {transform: translateY(-12px); } }
+
+                                            /* Upcoming cards horizontal scroll */
+                                            .h-scroll {overflow - x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+                                            .h-scroll::-webkit-scrollbar {display: none; }
+.h-scroll > * {scroll - snap - align: start; }
+
+                                            /* Deal card */
+                                            .deal-card {position: relative; overflow: hidden; transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1); border: 1px solid var(--border); }
+                                            .deal-card:hover {transform: translateY(-4px); border-color: rgba(168,85,247,0.5); box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(168,85,247,0.15); }
+                                            .deal-card .deal-bg {transition: transform 0.8s; filter: brightness(0.6) saturate(1.2); }
+                                            .deal-card:hover .deal-bg {transform: scale(1.06); filter: brightness(0.75) saturate(1.3); }
+
+                                            /* Vignette */
+                                            .vignette {position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 200px rgba(0,0,0,0.7); }
+
+                                            /* Newsletter */
+                                            .newsletter-bg {
+                                                background:
+                                            radial-gradient(ellipse at 30% 50%, rgba(168, 85, 247, 0.15), transparent 60%),
+                                            radial-gradient(ellipse at 70% 50%, rgba(6, 182, 212, 0.12), transparent 60%),
+                                            linear-gradient(180deg, #0A0A0A, #141414, #0A0A0A);
+}
+
+                                            input:focus {outline: none; }
+
+                                            /* Tag */
+                                            .tag {font - family: 'Rajdhani', sans-serif; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; padding: 4px 10px; border: 1px solid var(--border-bright); border-radius: 2px; color: var(--text-muted); }
+
+                                            /* Vertical text */
+                                            .v-text {writing - mode: vertical-rl; transform: rotate(180deg); }
+
+                                            /* Floating badge */
+                                            .float-badge {background: rgba(10,10,10,0.7); backdrop-filter: blur(12px); border: 1px solid var(--border-bright); }
+
+                                            /* Game cover treatment */
+                                            .cover-treatment {position: relative; }
+                                            .cover-treatment::after {content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 40%, rgba(10,10,10,0.4) 75%, rgba(10,10,10,0.95) 100%); pointer-events: none; }
+
+                                            /* Section divider */
+                                            .divider-line {height: 1px; background: linear-gradient(90deg, transparent, var(--border-bright) 20%, var(--border-bright) 80%, transparent); }
+
+                                            /* Card border hover */
+                                            .card-interactive {transition: all 0.4s; border: 1px solid var(--border); }
+                                            .card-interactive:hover {border - color: var(--border-bright); transform: translateY(-3px); }
+
+                                            /* Hidden mobile nav */
+                                            .mobile-menu {transform: translateX(100%); transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
+                                            .mobile-menu.open {transform: translateX(0); }
+                                        </style>
+                                    </head>
+                                    <body>
+
+                                        <!-- Cursor -->
+                                        <div class="cursor-dot" id="cursorDot"></div>
+                                        <div class="cursor-ring" id="cursorRing"></div>
+
+                                        <!-- Grain -->
+                                        <div class="bg-grain"></div>
+
+                                        <!-- Toast -->
+                                        <div class="toast" id="toast">
+                                            <i class="fa-solid fa-circle-check text-cyan-400"></i>
+                                            <div>
+                                                <div class="font-display text-sm tracking-wider">AÑADIDO AL CARRITO</div>
+                                                <div class="toast-msg text-xs text-gray-400 mt-1">Artículo añadido correctamente</div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Sound Toggle -->
+                                        <button class="sound-toggle" id="soundToggle" aria-label="Activar sonido ambiental">
+                                            <i class="fa-solid fa-volume-xmark"></i>
+                                        </button>
+
+                                        <!-- Navigation -->
+                                        <nav class="nav-blur fixed top-0 left-0 right-0 z-50" id="nav">
+                                            <div class="max-w-[1600px] mx-auto px-8 lg:px-12 py-5 flex items-center justify-between">
+                                                <a href="#" class="flex items-center gap-3 interactive">
+                                                    <div class="w-9 h-9 relative">
+                                                        <div class="absolute inset-0 border border-purple-400/60 rotate-45"></div>
+                                                        <div class="absolute inset-1 bg-gradient-to-br from-purple-500 to-cyan-400 rotate-45 opacity-80"></div>
+                                                    </div>
+                                                    <div>
+                                                        <div class="font-display font-bold text-xl tracking-[0.2em] leading-none">NOCTURNE</div>
+                                                        <div class="text-[9px] text-gray-500 tracking-[0.3em] mt-1">PREMIUM GAMING BOUTIQUE</div>
+                                                    </div>
+                                                </a>
+
+                                                <div class="hidden lg:flex items-center gap-10">
+                                                    <a href="#featured" class="interactive font-display text-sm tracking-widest text-gray-300 hover:text-white transition">TIENDA</a>
+                                                    <a href="#categories" class="interactive font-display text-sm tracking-widest text-gray-300 hover:text-white transition">PLATAFORMAS</a>
+                                                    <a href="#upcoming" class="interactive font-display text-sm tracking-widest text-gray-300 hover:text-white transition">PRÓXIMAMENTE</a>
+                                                    <a href="#deals" class="interactive font-display text-sm tracking-widest text-gray-300 hover:text-white transition">OFERTAS</a>
+                                                    <a href="#blog" class="interactive font-display text-sm tracking-widest text-gray-300 hover:text-white transition">DIARIO</a>
+                                                </div>
+
+                                                <div class="flex items-center gap-5">
+                                                    <button class="interactive w-10 h-10 flex items-center justify-center text-gray-300 hover:text-cyan-400 transition" aria-label="Buscar">
+                                                        <i class="fa-solid fa-magnifying-glass"></i>
+                                                    </button>
+                                                    <button class="interactive w-10 h-10 flex items-center justify-center text-gray-300 hover:text-cyan-400 transition" aria-label="Cuenta">
+                                                        <i class="fa-regular fa-user"></i>
+                                                    </button>
+                                                    <button class="interactive relative w-10 h-10 flex items-center justify-center text-gray-300 hover:text-cyan-400 transition" aria-label="Carrito">
+                                                        <i class="fa-solid fa-bag-shopping"></i>
+                                                        <span id="cartCount" class="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-br from-purple-500 to-cyan-400 rounded-full text-[10px] font-bold flex items-center justify-center text-white">0</span>
+                                                    </button>
+                                                    <button class="lg:hidden interactive w-10 h-10 flex items-center justify-center text-gray-300" id="menuBtn" aria-label="Menú">
+                                                        <i class="fa-solid fa-bars"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </nav>
+
+                                        <!-- HERO -->
+                                        <section class="relative h-screen overflow-hidden" id="hero">
+                                            <div class="hero-bg" id="heroBg"></div>
+                                            <div class="hero-overlay"></div>
+                                            <canvas id="particles"></canvas>
+                                            <div class="vignette"></div>
+
+                                            <!-- Floating top label -->
+                                            <div class="absolute top-28 left-8 lg:left-12 z-10 fade-in" style="animation-delay: 0.2s">
+                                                <div class="flex items-center gap-3">
+                                                    <span class="w-2 h-2 bg-red-500 rounded-full pulse-dot"></span>
+                                                    <span class="font-display text-xs tracking-[0.4em] text-gray-300">ESTRENO MUNDIAL · 12.12.2024</span>
+                                                </div>
+                                            </div>
+
+                                            <!-- Floating right badge -->
+                                            <div class="hidden lg:block absolute top-32 right-12 z-10 fade-in float-badge px-5 py-4" style="animation-delay: 1s">
+                                                <div class="font-display text-[10px] tracking-[0.3em] gold-text mb-1">EDICIÓN COLECCIONISTA</div>
+                                                <div class="font-display text-2xl font-bold">Disponible</div>
+                                                <div class="text-xs text-gray-400 mt-2">Incluye figura 30cm + artbook + OST</div>
+                                            </div>
+
+                                            <!-- Main hero content -->
+                                            <div class="relative z-10 h-full flex items-center px-8 lg:px-12 max-w-[1600px] mx-auto">
+                                                <div class="grid lg:grid-cols-12 gap-8 w-full items-center">
+
+                                                    <div class="lg:col-span-8">
+                                                        <div class="reveal-mask mb-4">
+                                                            <span class="reveal-up font-display text-sm tracking-[0.3em] text-purple-400" style="animation-delay: 0.3s">VESPER STUDIOS PRESENTA</span>
+                                                        </div>
+
+                                                        <h1 class="font-display font-bold leading-[0.85] tracking-tight">
+                                                            <span class="reveal-mask block">
+                                                                <span class="reveal-up text-7xl md:text-8xl lg:text-[9rem] glow-purple" style="animation-delay: 0.4s">ASHES OF</span>
+                                                            </span>
+                                                            <span class="reveal-mask block">
+                                                                <span class="reveal-up text-7xl md:text-8xl lg:text-[9rem] glow-purple" style="animation-delay: 0.55s">ETERNITY</span>
+                                                            </span>
+                                                        </h1>
+
+                                                        <div class="reveal-mask mt-6 max-w-xl">
+                                                            <span class="reveal-up text-gray-300 text-lg leading-relaxed block" style="animation-delay: 0.7s">
+                                                                Un RPG de mundo abierto donde cada decisión forja un reino.
+                                                                Cinco reinos. Tres mil años. Una última oportunidad.
+                                                            </span>
+                                                        </div>
+
+                                                        <div class="fade-in mt-8 flex flex-wrap items-center gap-4" style="animation-delay: 1.2s">
+                                                            <button class="btn-primary interactive" data-add-cart>
+                                                                <i class="fa-solid fa-bolt"></i>
+                                                                <span>Comprar ahora</span>
+                                                            </button>
+                                                            <button class="btn-ghost interactive">
+                                                                <i class="fa-solid fa-play"></i>
+                                                                <span>Ver tráiler</span>
+                                                            </button>
+                                                            <button class="btn-wishlist interactive" aria-label="Añadir a wishlist">
+                                                                <i class="fa-regular fa-heart"></i>
+                                                            </button>
+                                                        </div>
+
+                                                        <div class="fade-in mt-10 flex flex-wrap items-center gap-6 text-sm text-gray-400" style="animation-delay: 1.4s">
+                                                            <div class="flex items-center gap-2">
+                                                                <span class="font-display text-2xl gold-text font-bold">94</span>
+                                                                <span class="text-xs uppercase tracking-widest">Metacritic</span>
+                                                            </div>
+                                                            <div class="w-px h-8 bg-white/15"></div>
+                                                            <div class="flex items-center gap-2">
+                                                                <i class="fa-solid fa-gamepad text-purple-400"></i>
+                                                                <span class="font-display tracking-wider">RPG · MUNDO ABIERTO</span>
+                                                            </div>
+                                                            <div class="w-px h-8 bg-white/15"></div>
+                                                            <div class="flex items-center gap-3">
+                                                                <i class="fa-brands fa-playstation text-gray-300"></i>
+                                                                <i class="fa-brands fa-xbox text-gray-300"></i>
+                                                                <i class="fa-brands fa-steam text-gray-300"></i>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Countdown panel -->
+                                                    <div class="lg:col-span-4 fade-in" style="animation-delay: 1.6s">
+                                                        <div class="glass p-8 relative overflow-hidden">
+                                                            <div class="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
+
+                                                            <div class="flex items-center justify-between mb-6">
+                                                                <span class="font-display text-xs tracking-[0.3em] text-gray-400">LANZAMIENTO EN</span>
+                                                                <span class="w-2 h-2 bg-cyan-400 rounded-full pulse-dot"></span>
+                                                            </div>
+
+                                                            <div class="grid grid-cols-4 gap-2 mb-6">
+                                                                <div class="countdown-box">
+                                                                    <div class="countdown-num" id="days">45</div>
+                                                                    <div class="text-[10px] tracking-widest text-gray-500 mt-2">DÍAS</div>
+                                                                </div>
+                                                                <div class="countdown-box">
+                                                                    <div class="countdown-num" id="hours">12</div>
+                                                                    <div class="text-[10px] tracking-widest text-gray-500 mt-2">HRS</div>
+                                                                </div>
+                                                                <div class="countdown-box">
+                                                                    <div class="countdown-num" id="minutes">34</div>
+                                                                    <div class="text-[10px] tracking-widest text-gray-500 mt-2">MIN</div>
+                                                                </div>
+                                                                <div class="countdown-box">
+                                                                    <div class="countdown-num" id="seconds">56</div>
+                                                                    <div class="text-[10px] tracking-widest text-gray-500 mt-2">SEG</div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="space-y-3 text-sm">
+                                                                <div class="flex items-center justify-between py-2 border-b border-white/5">
+                                                                    <span class="text-gray-400">Edición Estándar</span>
+                                                                    <span class="font-display font-semibold">\$59.99</span>
+                                                                </div>
+                                                                <div class="flex items-center justify-between py-2 border-b border-white/5">
+                                                                    <span class="text-gray-400">Edición Deluxe</span>
+                                                                    <span class="font-display font-semibold">\$89.99</span>
+                                                                </div>
+                                                                <div class="flex items-center justify-between py-2">
+                                                                    <span class="gold-text font-display tracking-wider">Edición Coleccionista</span>
+                                                                    <span class="font-display font-bold gold-text">\$199.99</span>
+                                                                </div>
+                                                            </div>
+
+                                                            <button class="mt-6 w-full py-3 border border-purple-400/40 hover:bg-purple-500/10 transition font-display text-sm tracking-widest interactive">
+                                                                RESERVAR AHORA
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                </div>
+                                            </div>
+
+                                            <!-- Scroll indicator -->
+                                            <div class="scroll-indicator">
+                                                <span>SCROLL</span>
+                                                <div class="scroll-line"></div>
+                                            </div>
+                                        </section>
+
+                                        <!-- Trending ticker -->
+                                        <div class="border-y border-white/5 py-5 overflow-hidden bg-[#0c0c0c] relative z-10">
+                                            <div class="marquee">
+                                                <div class="marquee-content">
+                                                    <span class="font-display text-sm tracking-[0.3em] text-gray-500">TENDENCIA AHORA</span>
+                                                    <span class="text-purple-500">◆</span>
+                                                    <span class="font-display text-sm tracking-widest text-gray-200">ASHES OF ETERNITY</span>
+                                                    <span class="text-cyan-500">◆</span>
+                                                    <span class="font-display text-sm tracking-widest text-gray-200">CRIMSON VEIL</span>
+                                                    <span class="text-purple-500">◆</span>
+                                                    <span class="font-display text-sm tracking-widest text-gray-200">VOIDWALKER</span>
+                                                    <span class="text-cyan-500">◆</span>
+                                                    <span class="font-display text-sm tracking-widest text-gray-200">NEON REQUIEM</span>
+                                                    <span class="text-purple-500">◆</span>
+                                                    <span class="font-display text-sm tracking-widest text-gray-200">HOLLOW SANCTUM</span>
+                                                    <span class="text-cyan-500">◆</span>
+                                                    <span class="font-display text-sm tracking-widest text-gray-200">ECHELON PROTOCOL</span>
+                                                    <span class="text-purple-500">◆</span>
+                                                </div>
+                                                <div class="marquee-content" aria-hidden="true">
+                                                    <span class="font-display text-sm tracking-[0.3em] text-gray-500">TENDENCIA AHORA</span>
+                                                    <span class="text-purple-500">◆</span>
+                                                    <span class="font-display text-sm tracking-widest text-gray-200">ASHES OF ETERNITY</span>
+                                                    <span class="text-cyan-500">◆</span>
+                                                    <span class="font-display text-sm tracking-widest text-gray-200">CRIMSON VEIL</span>
+                                                    <span class="text-purple-500">◆</span>
+                                                    <span class="font-display text-sm tracking-widest text-gray-200">VOIDWALKER</span>
+                                                    <span class="text-cyan-500">◆</span>
+                                                    <span class="font-display text-sm tracking-widest text-gray-200">NEON REQUIEM</span>
+                                                    <span class="text-purple-500">◆</span>
+                                                    <span class="font-display text-sm tracking-widest text-gray-200">HOLLOW SANCTUM</span>
+                                                    <span class="text-cyan-500">◆</span>
+                                                    <span class="font-display text-sm tracking-widest text-gray-200">ECHELON PROTOCOL</span>
+                                                    <span class="text-purple-500">◆</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- FEATURED GAMES -->
+                                        <section id="featured" class="py-32 px-8 lg:px-12 relative">
+                                            <div class="max-w-[1600px] mx-auto">
+
+                                                <div class="flex flex-wrap items-end justify-between mb-16 gap-6 fade-slide">
+                                                    <div>
+                                                        <div class="section-num mb-6">01 — SELECCIÓN CURADA</div>
+                                                        <h2 class="font-display font-bold text-5xl md:text-7xl leading-none">
+                                                            Obras maestras,<br>
+                                                                <span class="text-gray-500">no productos.</span>
+                                                        </h2>
+                                                    </div>
+                                                    <p class="text-gray-400 max-w-md text-lg leading-relaxed">
+                                                        Cada título en nuestra boutique ha sido evaluado por nuestro equipo de curadores.
+                                                        Solo sobreviven los que merecen tu tiempo.
+                                                    </p>
+                                                </div>
+
+                                                <!-- Game grid -->
+                                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+                                                    <!-- Game 1 -->
+                                                    <article class="game-card interactive fade-slide" style="transition-delay: 0s">
+                                                        <div class="card-glow"></div>
+                                                        <div class="card-inner relative aspect-[3/4] overflow-hidden bg-charcoal">
+                                                            <div class="card-img absolute inset-0 cover-treatment" style="background: url('https://picsum.photos/seed/crimsonveil3/600/800.jpg') center/cover; filter: brightness(0.65) contrast(1.1) saturate(1.2) hue-rotate(-10deg);"></div>
+                                                            <div class="scanlines"></div>
+
+                                                            <div class="absolute top-5 left-5 z-10 flex gap-2">
+                                                                <span class="deal-badge">-30%</span>
+                                                                <span class="tag bg-black/60 backdrop-blur">ACCIÓN</span>
+                                                            </div>
+
+                                                            <div class="absolute top-5 right-5 z-10 float-badge px-3 py-1.5">
+                                                                <span class="font-display font-bold gold-text">91</span>
+                                                            </div>
+
+                                                            <div class="card-overlay absolute bottom-0 left-0 right-0 p-6 z-10">
+                                                                <div class="card-info">
+                                                                    <div class="text-xs tracking-widest text-purple-400 mb-2 font-display">VESPER STUDIOS</div>
+                                                                    <h3 class="font-display font-bold text-3xl mb-3">CRIMSON VEIL</h3>
+                                                                    <div class="flex items-center justify-between mb-4">
+                                                                        <div class="flex items-center gap-2 text-gray-400 text-sm">
+                                                                            <i class="fa-brands fa-playstation"></i>
+                                                                            <i class="fa-brands fa-xbox"></i>
+                                                                            <i class="fa-brands fa-steam"></i>
+                                                                        </div>
+                                                                        <div class="flex items-baseline gap-2">
+                                                                            <span class="text-gray-500 line-through text-sm">\$69.99</span>
+                                                                            <span class="font-display font-bold text-2xl cyan-text">\$48.99</span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <button class="w-full py-3 bg-white text-black font-display font-semibold tracking-widest text-sm hover:bg-cyan-400 transition interactive" data-add-cart>
+                                                                        AÑADIR AL CARRITO
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </article>
+
+                                                    <!-- Game 2 -->
+                                                    <article class="game-card interactive fade-slide" style="transition-delay: 0.1s">
+                                                        <div class="card-glow"></div>
+                                                        <div class="card-inner relative aspect-[3/4] overflow-hidden bg-charcoal">
+                                                            <div class="card-img absolute inset-0 cover-treatment" style="background: url('https://picsum.photos/seed/voidwalker9/600/800.jpg') center/cover; filter: brightness(0.6) contrast(1.15) saturate(1.3) hue-rotate(20deg);"></div>
+                                                            <div class="scanlines"></div>
+
+                                                            <div class="absolute top-5 left-5 z-10 flex gap-2">
+                                                                <span class="tag bg-black/60 backdrop-blur">CIENCIA FICCIÓN</span>
+                                                            </div>
+
+                                                            <div class="absolute top-5 right-5 z-10 float-badge px-3 py-1.5">
+                                                                <span class="font-display font-bold gold-text">88</span>
+                                                            </div>
+
+                                                            <div class="card-overlay absolute bottom-0 left-0 right-0 p-6 z-10">
+                                                                <div class="card-info">
+                                                                    <div class="text-xs tracking-widest text-purple-400 mb-2 font-display">ABYSSAL GAMES</div>
+                                                                    <h3 class="font-display font-bold text-3xl mb-3">VOIDWALKER</h3>
+                                                                    <div class="flex items-center justify-between mb-4">
+                                                                        <div class="flex items-center gap-2 text-gray-400 text-sm">
+                                                                            <i class="fa-brands fa-playstation"></i>
+                                                                            <i class="fa-brands fa-xbox"></i>
+                                                                            <i class="fa-brands fa-steam"></i>
+                                                                        </div>
+                                                                        <span class="font-display font-bold text-2xl">\$54.99</span>
+                                                                    </div>
+                                                                    <button class="w-full py-3 bg-white text-black font-display font-semibold tracking-widest text-sm hover:bg-cyan-400 transition interactive" data-add-cart>
+                                                                        AÑADIR AL CARRITO
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </article>
+
+                                                    <!-- Game 3 -->
+                                                    <article class="game-card interactive fade-slide" style="transition-delay: 0.2s">
+                                                        <div class="card-glow"></div>
+                                                        <div class="card-inner relative aspect-[3/4] overflow-hidden bg-charcoal">
+                                                            <div class="card-img absolute inset-0 cover-treatment" style="background: url('https://picsum.photos/seed/hollowsanctum4/600/800.jpg') center/cover; filter: brightness(0.55) contrast(1.2) saturate(0.9);"></div>
+                                                            <div class="scanlines"></div>
+
+                                                            <div class="absolute top-5 left-5 z-10 flex gap-2">
+                                                                <span class="tag bg-black/60 backdrop-blur">HORROR</span>
+                                                            </div>
+
+                                                            <div class="absolute top-5 right-5 z-10 float-badge px-3 py-1.5">
+                                                                <span class="font-display font-bold gold-text">89</span>
+                                                            </div>
+
+                                                            <div class="card-overlay absolute bottom-0 left-0 right-0 p-6 z-10">
+                                                                <div class="card-info">
+                                                                    <div class="text-xs tracking-widest text-purple-400 mb-2 font-display">NOCTEM</div>
+                                                                    <h3 class="font-display font-bold text-3xl mb-3">HOLLOW SANCTUM</h3>
+                                                                    <div class="flex items-center justify-between mb-4">
+                                                                        <div class="flex items-center gap-2 text-gray-400 text-sm">
+                                                                            <i class="fa-brands fa-playstation"></i>
+                                                                            <i class="fa-brands fa-xbox"></i>
+                                                                            <i class="fa-brands fa-steam"></i>
+                                                                            <i class="fa-solid fa-n"></i>
+                                                                        </div>
+                                                                        <span class="font-display font-bold text-2xl">\$44.99</span>
+                                                                    </div>
+                                                                    <button class="w-full py-3 bg-white text-black font-display font-semibold tracking-widest text-sm hover:bg-cyan-400 transition interactive" data-add-cart>
+                                                                        AÑADIR AL CARRITO
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </article>
+
+                                                    <!-- Game 4 -->
+                                                    <article class="game-card interactive fade-slide" style="transition-delay: 0s">
+                                                        <div class="card-glow"></div>
+                                                        <div class="card-inner relative aspect-[3/4] overflow-hidden bg-charcoal">
+                                                            <div class="card-img absolute inset-0 cover-treatment" style="background: url('https://picsum.photos/seed/neonrequiem5/600/800.jpg') center/cover; filter: brightness(0.65) contrast(1.15) saturate(1.4) hue-rotate(280deg);"></div>
+                                                            <div class="scanlines"></div>
+
+                                                            <div class="absolute top-5 left-5 z-10 flex gap-2">
+                                                                <span class="tag bg-black/60 backdrop-blur">CYBERPUNK</span>
+                                                            </div>
+
+                                                            <div class="absolute top-5 right-5 z-10 float-badge px-3 py-1.5">
+                                                                <span class="font-display font-bold gold-text">92</span>
+                                                            </div>
+
+                                                            <div class="card-overlay absolute bottom-0 left-0 right-0 p-6 z-10">
+                                                                <div class="card-info">
+                                                                    <div class="text-xs tracking-widest text-purple-400 mb-2 font-display">CHROMA WORKS</div>
+                                                                    <h3 class="font-display font-bold text-3xl mb-3">NEON REQUIEM</h3>
+                                                                    <div class="flex items-center justify-between mb-4">
+                                                                        <div class="flex items-center gap-2 text-gray-400 text-sm">
+                                                                            <i class="fa-brands fa-playstation"></i>
+                                                                            <i class="fa-brands fa-xbox"></i>
+                                                                            <i class="fa-brands fa-steam"></i>
+                                                                        </div>
+                                                                        <span class="font-display font-bold text-2xl">\$64.99</span>
+                                                                    </div>
+                                                                    <button class="w-full py-3 bg-white text-black font-display font-semibold tracking-widest text-sm hover:bg-cyan-400 transition interactive" data-add-cart>
+                                                                        AÑADIR AL CARRITO
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </article>
+
+                                                    <!-- Game 5 -->
+                                                    <article class="game-card interactive fade-slide" style="transition-delay: 0.1s">
+                                                        <div class="card-glow"></div>
+                                                        <div class="card-inner relative aspect-[3/4] overflow-hidden bg-charcoal">
+                                                            <div class="card-img absolute inset-0 cover-treatment" style="background: url('https://picsum.photos/seed/ironclad2/600/800.jpg') center/cover; filter: brightness(0.6) contrast(1.2) saturate(1.1) sepia(0.2);"></div>
+                                                            <div class="scanlines"></div>
+
+                                                            <div class="absolute top-5 left-5 z-10 flex gap-2">
+                                                                <span class="deal-badge">-25%</span>
+                                                                <span class="tag bg-black/60 backdrop-blur">ESTRATEGIA</span>
+                                                            </div>
+
+                                                            <div class="absolute top-5 right-5 z-10 float-badge px-3 py-1.5">
+                                                                <span class="font-display font-bold gold-text">87</span>
+                                                            </div>
+
+                                                            <div class="card-overlay absolute bottom-0 left-0 right-0 p-6 z-10">
+                                                                <div class="card-info">
+                                                                    <div class="text-xs tracking-widest text-purple-400 mb-2 font-display">FORGE INTERACTIVE</div>
+                                                                    <h3 class="font-display font-bold text-3xl mb-3">IRONCLAD DESTINY</h3>
+                                                                    <div class="flex items-center justify-between mb-4">
+                                                                        <div class="flex items-center gap-2 text-gray-400 text-sm">
+                                                                            <i class="fa-brands fa-playstation"></i>
+                                                                            <i class="fa-brands fa-xbox"></i>
+                                                                            <i class="fa-brands fa-steam"></i>
+                                                                        </div>
+                                                                        <div class="flex items-baseline gap-2">
+                                                                            <span class="text-gray-500 line-through text-sm">\$52.99</span>
+                                                                            <span class="font-display font-bold text-2xl cyan-text">\$39.74</span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <button class="w-full py-3 bg-white text-black font-display font-semibold tracking-widest text-sm hover:bg-cyan-400 transition interactive" data-add-cart>
+                                                                        AÑADIR AL CARRITO
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </article>
+
+                                                    <!-- Game 6 -->
+                                                    <article class="game-card interactive fade-slide" style="transition-delay: 0.2s">
+                                                        <div class="card-glow"></div>
+                                                        <div class="card-inner relative aspect-[3/4] overflow-hidden bg-charcoal">
+                                                            <div class="card-img absolute inset-0 cover-treatment" style="background: url('https://picsum.photos/seed/spectraldrift8/600/800.jpg') center/cover; filter: brightness(0.6) contrast(1.15) saturate(1.3) hue-rotate(160deg);"></div>
+                                                            <div class="scanlines"></div>
+
+                                                            <div class="absolute top-5 left-5 z-10 flex gap-2">
+                                                                <span class="tag bg-black/60 backdrop-blur">INDIE</span>
+                                                                <span class="tag bg-purple-500/20 backdrop-blur text-purple-300 border-purple-400/30">NUEVO</span>
+                                                            </div>
+
+                                                            <div class="absolute top-5 right-5 z-10 float-badge px-3 py-1.5">
+                                                                <span class="font-display font-bold gold-text">90</span>
+                                                            </div>
+
+                                                            <div class="card-overlay absolute bottom-0 left-0 right-0 p-6 z-10">
+                                                                <div class="card-info">
+                                                                    <div class="text-xs tracking-widest text-purple-400 mb-2 font-display">LUMEN STUDIO</div>
+                                                                    <h3 class="font-display font-bold text-3xl mb-3">SPECTRAL DRIFT</h3>
+                                                                    <div class="flex items-center justify-between mb-4">
+                                                                        <div class="flex items-center gap-2 text-gray-400 text-sm">
+                                                                            <i class="fa-brands fa-steam"></i>
+                                                                            <i class="fa-solid fa-n"></i>
+                                                                        </div>
+                                                                        <span class="font-display font-bold text-2xl">\$24.99</span>
+                                                                    </div>
+                                                                    <button class="w-full py-3 bg-white text-black font-display font-semibold tracking-widest text-sm hover:bg-cyan-400 transition interactive" data-add-cart>
+                                                                        AÑADIR AL CARRITO
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </article>
+
+                                                </div>
+
+                                                <div class="mt-12 text-center fade-slide">
+                                                    <a href="#" class="btn-ghost interactive">
+                                                        <span>Ver todo el catálogo</span>
+                                                        <i class="fa-solid fa-arrow-right"></i>
+                                                    </a>
+                                                </div>
+
+                                            </div>
+                                        </section>
+
+                                        <!-- CATEGORIES -->
+                                        <section id="categories" class="py-32 px-8 lg:px-12 relative bg-[#0c0c0c]">
+                                            <div class="max-w-[1600px] mx-auto">
+
+                                                <div class="flex flex-wrap items-end justify-between mb-16 gap-6 fade-slide">
+                                                    <div>
+                                                        <div class="section-num mb-6">02 — PLATAFORMAS</div>
+                                                        <h2 class="font-display font-bold text-5xl md:text-7xl leading-none">
+                                                            Encuentra tu<br>
+                                                                <span class="text-gray-500">próximo universo.</span>
+                                                        </h2>
+                                                    </div>
+                                                    <p class="text-gray-400 max-w-md text-lg leading-relaxed">
+                                                        Desde la última generación de consolas hasta setups de élite.
+                                                        Accesorios premium, ediciones de coleccionista y periféricos seleccionados a mano.
+                                                    </p>
+                                                </div>
+
+                                                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+
+                                                    <a href="#" class="category-card interactive fade-slide aspect-[4/5] relative block">
+                                                        <div class="cat-bg absolute inset-0" style="background: url('https://picsum.photos/seed/pcgaming2/600/750.jpg') center/cover;"></div>
+                                                        <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-[2]"></div>
+                                                        <div class="relative z-10 h-full p-7 flex flex-col justify-between">
+                                                            <div class="flex items-center justify-between">
+                                                                <i class="fa-solid fa-computer text-3xl text-cyan-400"></i>
+                                                                <span class="text-xs text-gray-400 font-display tracking-widest">01</span>
+                                                            </div>
+                                                            <div>
+                                                                <div class="text-xs tracking-widest text-gray-400 mb-2 font-display">2,847 ARTÍCULOS</div>
+                                                                <h3 class="font-display font-bold text-3xl mb-2">PC GAMING</h3>
+                                                                <div class="flex items-center gap-2 text-cyan-400 text-sm">
+                                                                    <span class="font-display tracking-wider">Explorar</span>
+                                                                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </a>
+
+                                                    <a href="#" class="category-card interactive fade-slide aspect-[4/5] relative block" style="transition-delay: 0.05s">
+                                                        <div class="cat-bg absolute inset-0" style="background: url('https://picsum.photos/seed/playstation5/600/750.jpg') center/cover;"></div>
+                                                        <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-[2]"></div>
+                                                        <div class="relative z-10 h-full p-7 flex flex-col justify-between">
+                                                            <div class="flex items-center justify-between">
+                                                                <i class="fa-brands fa-playstation text-3xl text-blue-400"></i>
+                                                                <span class="text-xs text-gray-400 font-display tracking-widest">02</span>
+                                                            </div>
+                                                            <div>
+                                                                <div class="text-xs tracking-widest text-gray-400 mb-2 font-display">1,523 ARTÍCULOS</div>
+                                                                <h3 class="font-display font-bold text-3xl mb-2">PLAYSTATION</h3>
+                                                                <div class="flex items-center gap-2 text-cyan-400 text-sm">
+                                                                    <span class="font-display tracking-wider">Explorar</span>
+                                                                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </a>
+
+                                                    <a href="#" class="category-card interactive fade-slide aspect-[4/5] relative block" style="transition-delay: 0.1s">
+                                                        <div class="cat-bg absolute inset-0" style="background: url('https://picsum.photos/seed/xboxseries/600/750.jpg') center/cover;"></div>
+                                                        <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-[2]"></div>
+                                                        <div class="relative z-10 h-full p-7 flex flex-col justify-between">
+                                                            <div class="flex items-center justify-between">
+                                                                <i class="fa-brands fa-xbox text-3xl text-green-400"></i>
+                                                                <span class="text-xs text-gray-400 font-display tracking-widest">03</span>
+                                                            </div>
+                                                            <div>
+                                                                <div class="text-xs tracking-widest text-gray-400 mb-2 font-display">1,284 ARTÍCULOS</div>
+                                                                <h3 class="font-display font-bold text-3xl mb-2">XBOX</h3>
+                                                                <div class="flex items-center gap-2 text-cyan-400 text-sm">
+                                                                    <span class="font-display tracking-wider">Explorar</span>
+                                                                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </a>
+
+                                                    <a href="#" class="category-card interactive fade-slide aspect-[4/5] relative block" style="transition-delay: 0.15s">
+                                                        <div class="cat-bg absolute inset-0" style="background: url('https://picsum.photos/seed/nintendoswitch/600/750.jpg') center/cover;"></div>
+                                                        <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-[2]"></div>
+                                                        <div class="relative z-10 h-full p-7 flex flex-col justify-between">
+                                                            <div class="flex items-center justify-between">
+                                                                <i class="fa-solid fa-n text-3xl text-red-400"></i>
+                                                                <span class="text-xs text-gray-400 font-display tracking-widest">04</span>
+                                                            </div>
+                                                            <div>
+                                                                <div class="text-xs tracking-widest text-gray-400 mb-2 font-display">967 ARTÍCULOS</div>
+                                                                <h3 class="font-display font-bold text-3xl mb-2">NINTENDO</h3>
+                                                                <div class="flex items-center gap-2 text-cyan-400 text-sm">
+                                                                    <span class="font-display tracking-wider">Explorar</span>
+                                                                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </a>
+
+                                                    <a href="#" class="category-card interactive fade-slide aspect-[4/5] relative block" style="transition-delay: 0.2s">
+                                                        <div class="cat-bg absolute inset-0" style="background: url('https://picsum.photos/seed/indiegames/600/750.jpg') center/cover; filter: hue-rotate(60deg);"></div>
+                                                        <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-[2]"></div>
+                                                        <div class="relative z-10 h-full p-7 flex flex-col justify-between">
+                                                            <div class="flex items-center justify-between">
+                                                                <i class="fa-solid fa-gem text-3xl text-purple-400"></i>
+                                                                <span class="text-xs text-gray-400 font-display tracking-widest">05</span>
+                                                            </div>
+                                                            <div>
+                                                                <div class="text-xs tracking-widest text-gray-400 mb-2 font-display">3,412 ARTÍCULOS</div>
+                                                                <h3 class="font-display font-bold text-3xl mb-2">INDIE</h3>
+                                                                <div class="flex items-center gap-2 text-cyan-400 text-sm">
+                                                                    <span class="font-display tracking-wider">Explorar</span>
+                                                                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </a>
+
+                                                    <a href="#" class="category-card interactive fade-slide aspect-[4/5] relative block" style="transition-delay: 0.25s">
+                                                        <div class="cat-bg absolute inset-0" style="background: url('https://picsum.photos/seed/collectors/600/750.jpg') center/cover; filter: sepia(0.3);"></div>
+                                                        <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-[2]"></div>
+                                                        <div class="absolute top-5 right-5 z-10">
+                                                            <span class="gold-text font-display text-xs tracking-widest font-bold">PREMIUM</span>
+                                                        </div>
+                                                        <div class="relative z-10 h-full p-7 flex flex-col justify-between">
+                                                            <div class="flex items-center justify-between">
+                                                                <i class="fa-solid fa-crown text-3xl gold-text"></i>
+                                                                <span class="text-xs text-gray-400 font-display tracking-widest">06</span>
+                                                            </div>
+                                                            <div>
+                                                                <div class="text-xs tracking-widest text-gray-400 mb-2 font-display">142 ARTÍCULOS</div>
+                                                                <h3 class="font-display font-bold text-3xl mb-2">COLECCIONISTA</h3>
+                                                                <div class="flex items-center gap-2 text-cyan-400 text-sm">
+                                                                    <span class="font-display tracking-wider">Explorar</span>
+                                                                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </a>
+
+                                                    <a href="#" class="category-card interactive fade-slide aspect-[4/5] relative block" style="transition-delay: 0.3s">
+                                                        <div class="cat-bg absolute inset-0" style="background: url('https://picsum.photos/seed/accessories/600/750.jpg') center/cover;"></div>
+                                                        <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-[2]"></div>
+                                                        <div class="relative z-10 h-full p-7 flex flex-col justify-between">
+                                                            <div class="flex items-center justify-between">
+                                                                <i class="fa-solid fa-keyboard text-3xl text-cyan-400"></i>
+                                                                <span class="text-xs text-gray-400 font-display tracking-widest">07</span>
+                                                            </div>
+                                                            <div>
+                                                                <div class="text-xs tracking-widest text-gray-400 mb-2 font-display">856 ARTÍCULOS</div>
+                                                                <h3 class="font-display font-bold text-3xl mb-2">ACCESORIOS</h3>
+                                                                <div class="flex items-center gap-2 text-cyan-400 text-sm">
+                                                                    <span class="font-display tracking-wider">Explorar</span>
+                                                                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </a>
+
+                                                    <a href="#" class="category-card interactive fade-slide aspect-[4/5] relative block" style="transition-delay: 0.35s">
+                                                        <div class="cat-bg absolute inset-0" style="background: url('https://picsum.photos/seed/vrheadset/600/750.jpg') center/cover; filter: hue-rotate(200deg);"></div>
+                                                        <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-[2]"></div>
+                                                        <div class="relative z-10 h-full p-7 flex flex-col justify-between">
+                                                            <div class="flex items-center justify-between">
+                                                                <i class="fa-solid fa-vr-cardboard text-3xl text-purple-400"></i>
+                                                                <span class="text-xs text-gray-400 font-display tracking-widest">08</span>
+                                                            </div>
+                                                            <div>
+                                                                <div class="text-xs tracking-widest text-gray-400 mb-2 font-display">234 ARTÍCULOS</div>
+                                                                <h3 class="font-display font-bold text-3xl mb-2">VR</h3>
+                                                                <div class="flex items-center gap-2 text-cyan-400 text-sm">
+                                                                    <span class="font-display tracking-wider">Explorar</span>
+                                                                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </a>
+
+                                                </div>
+                                            </div>
+                                        </section>
+
+                                        <!-- UPCOMING RELEASES -->
+                                        <section id="upcoming" class="py-32 px-8 lg:px-12 relative">
+                                            <div class="max-w-[1600px] mx-auto">
+
+                                                <div class="flex flex-wrap items-end justify-between mb-16 gap-6 fade-slide">
+                                                    <div>
+                                                        <div class="section-num mb-6">03 — CALENDARIO</div>
+                                                        <h2 class="font-display font-bold text-5xl md:text-7xl leading-none">
+                                                            El futuro,<br>
+                                                                <span class="text-gray-500">en reserva.</span>
+                                                        </h2>
+                                                    </div>
+                                                    <p class="text-gray-400 max-w-md text-lg leading-relaxed">
+                                                        Próximos lanzamientos confirmados. Reserva con antelación y asegura ediciones limitadas,
+                                                        contenido exclusivo y acceso anticipado.
+                                                    </p>
+                                                </div>
+
+                                                <div class="h-scroll flex gap-6 pb-6 -mx-8 px-8 lg:-mx-12 lg:px-12">
+
+                                                    <article class="flex-shrink-0 w-[340px] md:w-[420px] group interactive">
+                                                        <div class="relative aspect-[3/4] overflow-hidden bg-charcoal mb-5">
+                                                            <div class="absolute inset-0 transition-transform duration-700 group-hover:scale-105" style="background: url('https://picsum.photos/seed/echelon1/500/700.jpg') center/cover; filter: brightness(0.6) saturate(1.2) hue-rotate(-20deg);"></div>
+                                                            <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+                                                            <div class="scanlines"></div>
+
+                                                            <div class="absolute top-5 left-5">
+                                                                <span class="tag bg-black/60 backdrop-blur">RESERVA ABIERTA</span>
+                                                            </div>
+
+                                                            <div class="absolute top-5 right-5 float-badge p-3 text-center">
+                                                                <div class="font-display text-[10px] tracking-widest text-gray-400">DIC</div>
+                                                                <div class="font-display font-bold text-3xl gold-text leading-none">12</div>
+                                                                <div class="font-display text-[10px] tracking-widest text-gray-400">2024</div>
+                                                            </div>
+
+                                                            <div class="absolute bottom-0 left-0 right-0 p-6">
+                                                                <div class="text-xs tracking-widest text-purple-400 mb-2 font-display">SYNCWARE</div>
+                                                                <h3 class="font-display font-bold text-4xl">ECHELON PROTOCOL</h3>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="space-y-3">
+                                                            <div class="flex items-center justify-between text-sm">
+                                                                <span class="text-gray-400">Plataformas</span>
+                                                                <div class="flex gap-3 text-gray-300">
+                                                                    <i class="fa-brands fa-playstation"></i>
+                                                                    <i class="fa-brands fa-xbox"></i>
+                                                                    <i class="fa-brands fa-steam"></i>
+                                                                </div>
+                                                            </div>
+                                                            <div class="flex items-center justify-between text-sm">
+                                                                <span class="text-gray-400">Género</span>
+                                                                <span class="font-display tracking-wider">SHOOTER TÁCTICO</span>
+                                                            </div>
+                                                            <div class="flex items-center justify-between text-sm">
+                                                                <span class="text-gray-400">Edición reservada</span>
+                                                                <span class="gold-text font-display font-bold">\$129.99</span>
+                                                            </div>
+                                                            <button class="w-full mt-4 py-3 border border-white/15 hover:border-purple-400 hover:bg-purple-500/10 transition font-display tracking-widest text-sm interactive" data-add-cart>
+                                                                RESERVAR AHORA
+                                                            </button>
+                                                        </div>
+                                                    </article>
+
+                                                    <article class="flex-shrink-0 w-[340px] md:w-[420px] group interactive">
+                                                        <div class="relative aspect-[3/4] overflow-hidden bg-charcoal mb-5">
+                                                            <div class="absolute inset-0 transition-transform duration-700 group-hover:scale-105" style="background: url('https://picsum.photos/seed/spectraldrift2/500/700.jpg') center/cover; filter: brightness(0.6) saturate(1.3) hue-rotate(150deg);"></div>
+                                                            <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+                                                            <div class="scanlines"></div>
+
+                                                            <div class="absolute top-5 left-5">
+                                                                <span class="tag bg-black/60 backdrop-blur">RESERVA ABIERTA</span>
+                                                            </div>
+
+                                                            <div class="absolute top-5 right-5 float-badge p-3 text-center">
+                                                                <div class="font-display text-[10px] tracking-widest text-gray-400">ENE</div>
+                                                                <div class="font-display font-bold text-3xl gold-text leading-none">08</div>
+                                                                <div class="font-display text-[10px] tracking-widest text-gray-400">2025</div>
+                                                            </div>
+
+                                                            <div class="absolute bottom-0 left-0 right-0 p-6">
+                                                                <div class="text-xs tracking-widest text-purple-400 mb-2 font-display">LUMEN STUDIO</div>
+                                                                <h3 class="font-display font-bold text-4xl">SPECTRAL DRIFT</h3>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="space-y-3">
+                                                            <div class="flex items-center justify-between text-sm">
+                                                                <span class="text-gray-400">Plataformas</span>
+                                                                <div class="flex gap-3 text-gray-300">
+                                                                    <i class="fa-brands fa-steam"></i>
+                                                                    <i class="fa-solid fa-n"></i>
+                                                                </div>
+                                                            </div>
+                                                            <div class="flex items-center justify-between text-sm">
+                                                                <span class="text-gray-400">Género</span>
+                                                                <span class="font-display tracking-wider">EXPLORACIÓN</span>
+                                                            </div>
+                                                            <div class="flex items-center justify-between text-sm">
+                                                                <span class="text-gray-400">Edición estándar</span>
+                                                                <span class="gold-text font-display font-bold">\$24.99</span>
+                                                            </div>
+                                                            <button class="w-full mt-4 py-3 border border-white/15 hover:border-purple-400 hover:bg-purple-500/10 transition font-display tracking-widest text-sm interactive" data-add-cart>
+                                                                RESERVAR AHORA
+                                                            </button>
+                                                        </div>
+                                                    </article>
+
+                                                    <article class="flex-shrink-0 w-[340px] md:w-[420px] group interactive">
+                                                        <div class="relative aspect-[3/4] overflow-hidden bg-charcoal mb-5">
+                                                            <div class="absolute inset-0 transition-transform duration-700 group-hover:scale-105" style="background: url('https://picsum.photos/seed/lasthorizon3/500/700.jpg') center/cover; filter: brightness(0.6) saturate(1.2) sepia(0.2);"></div>
+                                                            <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+                                                            <div class="scanlines"></div>
+
+                                                            <div class="absolute top-5 left-5">
+                                                                <span class="tag bg-black/60 backdrop-blur">PRÓXIMAMENTE</span>
+                                                            </div>
+
+                                                            <div class="absolute top-5 right-5 float-badge p-3 text-center">
+                                                                <div class="font-display text-[10px] tracking-widest text-gray-400">FEB</div>
+                                                                <div class="font-display font-bold text-3xl gold-text leading-none">14</div>
+                                                                <div class="font-display text-[10px] tracking-widest text-gray-400">2025</div>
+                                                            </div>
+
+                                                            <div class="absolute bottom-0 left-0 right-0 p-6">
+                                                                <div class="text-xs tracking-widest text-purple-400 mb-2 font-display">HORIZON FORGE</div>
+                                                                <h3 class="font-display font-bold text-4xl">THE LAST HORIZON</h3>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="space-y-3">
+                                                            <div class="flex items-center justify-between text-sm">
+                                                                <span class="text-gray-400">Plataformas</span>
+                                                                <div class="flex gap-3 text-gray-300">
+                                                                    <i class="fa-brands fa-playstation"></i>
+                                                                    <i class="fa-brands fa-xbox"></i>
+                                                                    <i class="fa-brands fa-steam"></i>
+                                                                </div>
+                                                            </div>
+                                                            <div class="flex items-center justify-between text-sm">
+                                                                <span class="text-gray-400">Género</span>
+                                                                <span class="font-display tracking-wider">SPACE SIM</span>
+                                                            </div>
+                                                            <div class="flex items-center justify-between text-sm">
+                                                                <span class="text-gray-400">Edición estándar</span>
+                                                                <span class="gold-text font-display font-bold">\$69.99</span>
+                                                            </div>
+                                                            <button class="w-full mt-4 py-3 border border-white/15 hover:border-cyan-400 hover:bg-cyan-500/10 transition font-display tracking-widest text-sm interactive">
+                                                                NOTIFICARME
+                                                            </button>
+                                                        </div>
+                                                    </article>
+
+                                                    <article class="flex-shrink-0 w-[340px] md:w-[420px] group interactive">
+                                                        <div class="relative aspect-[3/4] overflow-hidden bg-charcoal mb-5">
+                                                            <div class="absolute inset-0 transition-transform duration-700 group-hover:scale-105" style="background: url('https://picsum.photos/seed/ironveil4/500/700.jpg') center/cover; filter: brightness(0.6) saturate(1.2) hue-rotate(220deg);"></div>
+                                                            <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+                                                            <div class="scanlines"></div>
+
+                                                            <div class="absolute top-5 left-5">
+                                                                <span class="tag bg-black/60 backdrop-blur">PRÓXIMAMENTE</span>
+                                                            </div>
+
+                                                            <div class="absolute top-5 right-5 float-badge p-3 text-center">
+                                                                <div class="font-display text-[10px] tracking-widest text-gray-400">MAR</div>
+                                                                <div class="font-display font-bold text-3xl gold-text leading-none">21</div>
+                                                                <div class="font-display text-[10px] tracking-widest text-gray-400">2025</div>
+                                                            </div>
+
+                                                            <div class="absolute bottom-0 left-0 right-0 p-6">
+                                                                <div class="text-xs tracking-widest text-purple-400 mb-2 font-display">VESPER STUDIOS</div>
+                                                                <h3 class="font-display font-bold text-4xl">IRON VEIL</h3>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="space-y-3">
+                                                            <div class="flex items-center justify-between text-sm">
+                                                                <span class="text-gray-400">Plataformas</span>
+                                                                <div class="flex gap-3 text-gray-300">
+                                                                    <i class="fa-brands fa-playstation"></i>
+                                                                    <i class="fa-brands fa-xbox"></i>
+                                                                    <i class="fa-brands fa-steam"></i>
+                                                                </div>
+                                                            </div>
+                                                            <div class="flex items-center justify-between text-sm">
+                                                                <span class="text-gray-400">Género</span>
+                                                                <span class="font-display tracking-wider">ACCIÓN RPG</span>
+                                                            </div>
+                                                            <div class="flex items-center justify-between text-sm">
+                                                                <span class="text-gray-400">Edición estándar</span>
+                                                                <span class="gold-text font-display font-bold">\$69.99</span>
+                                                            </div>
+                                                            <button class="w-full mt-4 py-3 border border-white/15 hover:border-cyan-400 hover:bg-cyan-500/10 transition font-display tracking-widest text-sm interactive">
+                                                                NOTIFICARME
+                                                            </button>
+                                                        </div>
+                                                    </article>
+
+                                                    <article class="flex-shrink-0 w-[340px] md:w-[420px] group interactive">
+                                                        <div class="relative aspect-[3/4] overflow-hidden bg-charcoal mb-5">
+                                                            <div class="absolute inset-0 transition-transform duration-700 group-hover:scale-105" style="background: url('https://picsum.photos/seed/quietus5/500/700.jpg') center/cover; filter: brightness(0.6) saturate(1.2);"></div>
+                                                            <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+                                                            <div class="scanlines"></div>
+
+                                                            <div class="absolute top-5 left-5">
+                                                                <span class="tag bg-black/60 backdrop-blur">PRÓXIMAMENTE</span>
+                                                            </div>
+
+                                                            <div class="absolute top-5 right-5 float-badge p-3 text-center">
+                                                                <div class="font-display text-[10px] tracking-widest text-gray-400">ABR</div>
+                                                                <div class="font-display font-bold text-3xl gold-text leading-none">03</div>
+                                                                <div class="font-display text-[10px] tracking-widest text-gray-400">2025</div>
+                                                            </div>
+
+                                                            <div class="absolute bottom-0 left-0 right-0 p-6">
+                                                                <div class="text-xs tracking-widest text-purple-400 mb-2 font-display">NOCTEM</div>
+                                                                <h3 class="font-display font-bold text-4xl">QUIETUS</h3>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="space-y-3">
+                                                            <div class="flex items-center justify-between text-sm">
+                                                                <span class="text-gray-400">Plataformas</span>
+                                                                <div class="flex gap-3 text-gray-300">
+                                                                    <i class="fa-brands fa-playstation"></i>
+                                                                    <i class="fa-brands fa-steam"></i>
+                                                                </div>
+                                                            </div>
+                                                            <div class="flex items-center justify-between text-sm">
+                                                                <span class="text-gray-400">Género</span>
+                                                                <span class="font-display tracking-wider">NARRATIVO</span>
+                                                            </div>
+                                                            <div class="flex items-center justify-between text-sm">
+                                                                <span class="text-gray-400">Edición estándar</span>
+                                                                <span class="gold-text font-display font-bold">\$39.99</span>
+                                                            </div>
+                                                            <button class="w-full mt-4 py-3 border border-white/15 hover:border-cyan-400 hover:bg-cyan-500/10 transition font-display tracking-widest text-sm interactive">
+                                                                NOTIFICARME
+                                                            </button>
+                                                        </div>
+                                                    </article>
+
+                                                </div>
+                                            </div>
+                                        </section>
+
+                                        <!-- DEALS -->
+                                        <section id="deals" class="py-32 px-8 lg:px-12 relative bg-[#0c0c0c]">
+                                            <div class="max-w-[1600px] mx-auto">
+
+                                                <div class="flex flex-wrap items-end justify-between mb-16 gap-6 fade-slide">
+                                                    <div>
+                                                        <div class="section-num mb-6">04 — SELECCIÓN PREMIUM</div>
+                                                        <h2 class="font-display font-bold text-5xl md:text-7xl leading-none">
+                                                            Ofertas<br>
+                                                                <span class="text-gray-500">sin rebajas de calidad.</span>
+                                                        </h2>
+                                                    </div>
+                                                    <p class="text-gray-400 max-w-md text-lg leading-relaxed">
+                                                        Descuentos reales en títulos seleccionados.
+                                                        Sin trucos, sin inflar precios para luego "rebajarlos". Solo ahorro honesto.
+                                                    </p>
+                                                </div>
+
+                                                <div class="grid lg:grid-cols-3 gap-6">
+
+                                                    <article class="deal-card interactive fade-slide">
+                                                        <div class="relative aspect-[16/11] overflow-hidden">
+                                                            <div class="deal-bg absolute inset-0" style="background: url('https://picsum.photos/seed/bundle1/700/500.jpg') center/cover;"></div>
+                                                            <div class="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
+                                                            <div class="scanlines"></div>
+
+                                                            <div class="absolute top-5 left-5 flex gap-2">
+                                                                <span class="deal-badge">-40%</span>
+                                                                <span class="tag bg-black/60 backdrop-blur">BUNDLE</span>
+                                                            </div>
+
+                                                            <div class="absolute bottom-0 left-0 right-0 p-6">
+                                                                <div class="text-xs tracking-widest text-purple-400 mb-1 font-display">OFERTA DESTACADA</div>
+                                                                <h3 class="font-display font-bold text-3xl">CRIMSON VEIL + DLC</h3>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="p-6">
+                                                            <div class="space-y-2 mb-5 text-sm text-gray-400">
+                                                                <div class="flex items-center gap-2"><i class="fa-solid fa-check text-cyan-400 text-xs"></i> Juego base completo</div>
+                                                                <div class="flex items-center gap-2"><i class="fa-solid fa-check text-cyan-400 text-xs"></i> expansión "Veil of Shadows"</div>
+                                                                <div class="flex items-center gap-2"><i class="fa-solid fa-check text-cyan-400 text-xs"></i> Skins exclusivas</div>
+                                                                <div class="flex items-center gap-2"><i class="fa-solid fa-check text-cyan-400 text-xs"></i> Banda sonora digital</div>
+                                                            </div>
+
+                                                            <div class="flex items-baseline justify-between mb-5">
+                                                                <div>
+                                                                    <span class="text-gray-500 line-through text-sm">\$99.98</span>
+                                                                    <div class="font-display font-bold text-4xl cyan-text">\$59.99</div>
+                                                                </div>
+                                                                <div class="text-right">
+                                                                    <div class="text-xs text-gray-500">AHORRAS</div>
+                                                                    <div class="font-display font-bold text-2xl gold-text">\$39.99</div>
+                                                                </div>
+                                                            </div>
+
+                                                            <button class="w-full py-4 bg-white text-black font-display font-semibold tracking-widest hover:bg-cyan-400 transition interactive" data-add-cart>
+                                                                COMPRAR BUNDLE
+                                                            </button>
+                                                        </div>
+                                                    </article>
+
+                                                    <article class="deal-card interactive fade-slide" style="transition-delay: 0.1s">
+                                                        <div class="relative aspect-[16/11] overflow-hidden">
+                                                            <div class="deal-bg absolute inset-0" style="background: url('https://picsum.photos/seed/bundle2/700/500.jpg') center/cover; filter: hue-rotate(60deg);"></div>
+                                                            <div class="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
+                                                            <div class="scanlines"></div>
+
+                                                            <div class="absolute top-5 left-5 flex gap-2">
+                                                                <span class="deal-badge">-25%</span>
+                                                                <span class="tag bg-black/60 backdrop-blur">DELUXE</span>
+                                                            </div>
+
+                                                            <div class="absolute bottom-0 left-0 right-0 p-6">
+                                                                <div class="text-xs tracking-widest text-purple-400 mb-1 font-display">EDICIÓN PREMIUM</div>
+                                                                <h3 class="font-display font-bold text-3xl">VOIDWALKER DELUXE</h3>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="p-6">
+                                                            <div class="space-y-2 mb-5 text-sm text-gray-400">
+                                                                <div class="flex items-center gap-2"><i class="fa-solid fa-check text-cyan-400 text-xs"></i> Juego base completo</div>
+                                                                <div class="flex items-center gap-2"><i class="fa-solid fa-check text-cyan-400 text-xs"></i> Season Pass completo</div>
+                                                                <div class="flex items-center gap-2"><i class="fa-solid fa-check text-cyan-400 text-xs"></i> Artbook digital</div>
+                                                                <div class="flex items-center gap-2"><i class="fa-solid fa-check text-cyan-400 text-xs"></i> Acceso 72h anticipado</div>
+                                                            </div>
+
+                                                            <div class="flex items-baseline justify-between mb-5">
+                                                                <div>
+                                                                    <span class="text-gray-500 line-through text-sm">\$94.99</span>
+                                                                    <div class="font-display font-bold text-4xl cyan-text">\$71.24</div>
+                                                                </div>
+                                                                <div class="text-right">
+                                                                    <div class="text-xs text-gray-500">AHORRAS</div>
+                                                                    <div class="font-display font-bold text-2xl gold-text">\$23.75</div>
+                                                                </div>
+                                                            </div>
+
+                                                            <button class="w-full py-4 bg-white text-black font-display font-semibold tracking-widest hover:bg-cyan-400 transition interactive" data-add-cart>
+                                                                COMPRAR DELUXE
+                                                            </button>
+                                                        </div>
+                                                    </article>
+
+                                                    <article class="deal-card interactive fade-slide" style="transition-delay: 0.2s">
+                                                        <div class="relative aspect-[16/11] overflow-hidden">
+                                                            <div class="deal-bg absolute inset-0" style="background: url('https://picsum.photos/seed/bundle3/700/500.jpg') center/cover; filter: hue-rotate(180deg);"></div>
+                                                            <div class="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
+                                                            <div class="scanlines"></div>
+
+                                                            <div class="absolute top-5 left-5 flex gap-2">
+                                                                <span class="deal-badge">-60%</span>
+                                                                <span class="tag bg-purple-500/30 backdrop-blur text-purple-300 border-purple-400/30">INDIE</span>
+                                                            </div>
+
+                                                            <div class="absolute bottom-0 left-0 right-0 p-6">
+                                                                <div class="text-xs tracking-widest text-purple-400 mb-1 font-display">COLECCIÓN CURADA</div>
+                                                                <h3 class="font-display font-bold text-3xl">INDIE SPOTLIGHT</h3>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="p-6">
+                                                            <div class="space-y-2 mb-5 text-sm text-gray-400">
+                                                                <div class="flex items-center gap-2"><i class="fa-solid fa-check text-cyan-400 text-xs"></i> 5 juegos indie premiados</div>
+                                                                <div class="flex items-center gap-2"><i class="fa-solid fa-check text-cyan-400 text-xs"></i> Banda sonora de cada título</div>
+                                                                <div class="flex items-center gap-2"><i class="fa-solid fa-check text-cyan-400 text-xs"></i> Wallpapers 4K exclusivos</div>
+                                                                <div class="flex items-center gap-2"><i class="fa-solid fa-check text-cyan-400 text-xs"></i> Créditos de desarrollador</div>
+                                                            </div>
+
+                                                            <div class="flex items-baseline justify-between mb-5">
+                                                                <div>
+                                                                    <span class="text-gray-500 line-through text-sm">\$124.95</span>
+                                                                    <div class="font-display font-bold text-4xl cyan-text">\$49.98</div>
+                                                                </div>
+                                                                <div class="text-right">
+                                                                    <div class="text-xs text-gray-500">AHORRAS</div>
+                                                                    <div class="font-display font-bold text-2xl gold-text">\$74.97</div>
+                                                                </div>
+                                                            </div>
+
+                                                            <button class="w-full py-4 bg-white text-black font-display font-semibold tracking-widest hover:bg-cyan-400 transition interactive" data-add-cart>
+                                                                COMPRAR COLECCIÓN
+                                                            </button>
+                                                        </div>
+                                                    </article>
+
+                                                </div>
+                                            </div>
+                                        </section>
+
+                                        <!-- TESTIMONIALS -->
+                                        <section class="py-32 px-8 lg:px-12 relative">
+                                            <div class="max-w-[1600px] mx-auto">
+
+                                                <div class="flex flex-wrap items-end justify-between mb-16 gap-6 fade-slide">
+                                                    <div>
+                                                        <div class="section-num mb-6">05 — COMUNIDAD</div>
+                                                        <h2 class="font-display font-bold text-5xl md:text-7xl leading-none">
+                                                            Voces de quienes<br>
+                                                                <span class="text-gray-500">saben jugar.</span>
+                                                        </h2>
+                                                    </div>
+                                                    <div class="flex items-center gap-4">
+                                                        <div class="flex items-center gap-2">
+                                                            <i class="fa-solid fa-star text-gold-text" style="color: #EAB308"></i>
+                                                            <span class="font-display font-bold text-2xl">4.9</span>
+                                                            <span class="text-gray-500 text-sm">/ 5.0</span>
+                                                        </div>
+                                                        <div class="w-px h-8 bg-white/15"></div>
+                                                        <div class="text-sm text-gray-400">
+                                                            <span class="font-display font-bold text-white">12,847</span> reseñas verificadas
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="grid md:grid-cols-3 gap-6">
+
+                                                    <article class="glass p-8 fade-slide card-interactive interactive relative">
+                                                        <i class="fa-solid fa-quote-left text-3xl text-purple-400/30 mb-4"></i>
+                                                        <p class="text-lg text-gray-200 leading-relaxed mb-8">
+                                                            "Finalmente una tienda que trata a los videojuegos como lo que son: obras de arte.
+                                                            La curaduría es impecable y el diseño del sitio es una obra en sí mismo."
+                                                        </p>
+                                                        <div class="flex items-center justify-between">
+                                                            <div class="flex items-center gap-4">
+                                                                <div class="w-12 h-12 rounded-full overflow-hidden border border-purple-400/30">
+                                                                    <img src="https://picsum.photos/seed/avatar1/100/100.jpg" alt="Avatar" class="w-full h-full object-cover">
+                                                                </div>
+                                                                <div>
+                                                                    <div class="font-display font-semibold tracking-wider">SHADOWRIVEN</div>
+                                                                    <div class="text-xs text-gray-500">@shadow_riven · Verificado</div>
+                                                                </div>
+                                                            </div>
+                                                            <i class="fa-brands fa-steam text-2xl text-gray-600"></i>
+                                                        </div>
+                                                        <div class="mt-6 pt-6 border-t border-white/5 flex justify-between text-xs text-gray-500">
+                                                            <span>1,247 horas jugadas</span>
+                                                            <span>Cliente desde 2022</span>
+                                                        </div>
+                                                    </article>
+
+                                                    <article class="glass p-8 fade-slide card-interactive interactive relative" style="transition-delay: 0.1s">
+                                                        <i class="fa-solid fa-quote-left text-3xl text-purple-400/30 mb-4"></i>
+                                                        <p class="text-lg text-gray-200 leading-relaxed mb-8">
+                                                            "No es solo una tienda, es una experiencia. Cada visita se siente como entrar a una
+                                                            galería. Y los bundles premium valen cada céntimo. Calidad sobre cantidad."
+                                                        </p>
+                                                        <div class="flex items-center justify-between">
+                                                            <div class="flex items-center gap-4">
+                                                                <div class="w-12 h-12 rounded-full overflow-hidden border border-purple-400/30">
+                                                                    <img src="https://picsum.photos/seed/avatar2/100/100.jpg" alt="Avatar" class="w-full h-full object-cover">
+                                                                </div>
+                                                                <div>
+                                                                    <div class="font-display font-semibold tracking-wider">NIGHTFALL_GX</div>
+                                                                    <div class="text-xs text-gray-500">@nightfall_gx · Verificado</div>
+                                                                </div>
+                                                            </div>
+                                                            <i class="fa-brands fa-playstation text-2xl text-gray-600"></i>
+                                                        </div>
+                                                        <div class="mt-6 pt-6 border-t border-white/5 flex justify-between text-xs text-gray-500">
+                                                            <span>3,892 horas jugadas</span>
+                                                            <span>Cliente desde 2021</span>
+                                                        </div>
+                                                    </article>
+
+                                                    <article class="glass p-8 fade-slide card-interactive interactive relative" style="transition-delay: 0.2s">
+                                                        <i class="fa-solid fa-quote-left text-3xl text-purple-400/30 mb-4"></i>
+                                                        <p class="text-lg text-gray-200 leading-relaxed mb-8">
+                                                            "El mejor descubrimiento del año. Compré una edición coleccionista y llegó impecable,
+                                                            con empaquetado premium. Esto es a lo que aspiran otras tiendas."
+                                                        </p>
+                                                        <div class="flex items-center justify-between">
+                                                            <div class="flex items-center gap-4">
+                                                                <div class="w-12 h-12 rounded-full overflow-hidden border border-purple-400/30">
+                                                                    <img src="https://picsum.photos/seed/avatar3/100/100.jpg" alt="Avatar" class="w-full h-full object-cover">
+                                                                </div>
+                                                                <div>
+                                                                    <div class="font-display font-semibold tracking-wider">VORTEXKNIGHT</div>
+                                                                    <div class="text-xs text-gray-500">@vortex_knight · Verificado</div>
+                                                                </div>
+                                                            </div>
+                                                            <i class="fa-brands fa-xbox text-2xl text-gray-600"></i>
+                                                        </div>
+                                                        <div class="mt-6 pt-6 border-t border-white/5 flex justify-between text-xs text-gray-500">
+                                                            <span>2,156 horas jugadas</span>
+                                                            <span>Cliente desde 2023</span>
+                                                        </div>
+                                                    </article>
+
+                                                </div>
+                                            </div>
+                                        </section>
+
+                                        <!-- BLOG -->
+                                        <section id="blog" class="py-32 px-8 lg:px-12 relative bg-[#0c0c0c]">
+                                            <div class="max-w-[1600px] mx-auto">
+
+                                                <div class="flex flex-wrap items-end justify-between mb-16 gap-6 fade-slide">
+                                                    <div>
+                                                        <div class="section-num mb-6">06 — DIARIO</div>
+                                                        <h2 class="font-display font-bold text-5xl md:text-7xl leading-none">
+                                                            Detrás<br>
+                                                                <span class="text-gray-500">del pixel.</span>
+                                                        </h2>
+                                                    </div>
+                                                    <a href="#" class="btn-ghost interactive">
+                                                        <span>Ver todo</span>
+                                                        <i class="fa-solid fa-arrow-right"></i>
+                                                    </a>
+                                                </div>
+
+                                                <div class="grid lg:grid-cols-3 gap-6">
+
+                                                    <article class="group interactive fade-slide cursor-pointer">
+                                                        <div class="relative aspect-[16/10] overflow-hidden mb-5">
+                                                            <div class="absolute inset-0 transition-transform duration-700 group-hover:scale-105" style="background: url('https://picsum.photos/seed/blog1/600/400.jpg') center/cover; filter: brightness(0.7) saturate(1.2);"></div>
+                                                            <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                                                            <div class="scanlines"></div>
+                                                            <div class="absolute top-5 left-5">
+                                                                <span class="tag bg-black/60 backdrop-blur">DESARROLLO</span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="text-xs text-gray-500 mb-3 font-display tracking-widest">12 NOV 2024 · 8 MIN LECTURA</div>
+                                                        <h3 class="font-display font-bold text-2xl mb-3 group-hover:text-cyan-400 transition leading-tight">
+                                                            Detrás de cámaras: el desarrollo de Ashes of Eternity
+                                                        </h3>
+                                                        <p class="text-gray-400 leading-relaxed mb-4">
+                                                            Cinco años de desarrollo, un equipo de 200 personas y una visión: crear el RPG que
+                                                            redefina el género. Conversamos con Vesper Studios.
+                                                        </p>
+                                                        <div class="flex items-center gap-3 text-sm">
+                                                            <div class="w-8 h-8 rounded-full overflow-hidden">
+                                                                <img src="https://picsum.photos/seed/author1/50/50.jpg" alt="Autor" class="w-full h-full object-cover">
+                                                            </div>
+                                                            <span class="text-gray-400">Elena Vasquez</span>
+                                                        </div>
+                                                    </article>
+
+                                                    <article class="group interactive fade-slide cursor-pointer" style="transition-delay: 0.1s">
+                                                        <div class="relative aspect-[16/10] overflow-hidden mb-5">
+                                                            <div class="absolute inset-0 transition-transform duration-700 group-hover:scale-105" style="background: url('https://picsum.photos/seed/blog2/600/400.jpg') center/cover; filter: brightness(0.7) saturate(1.2) hue-rotate(60deg);"></div>
+                                                            <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                                                            <div class="scanlines"></div>
+                                                            <div class="absolute top-5 left-5">
+                                                                <span class="tag bg-black/60 backdrop-blur">ANÁLISIS</span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="text-xs text-gray-500 mb-3 font-display tracking-widest">08 NOV 2024 · 12 MIN LECTURA</div>
+                                                        <h3 class="font-display font-bold text-2xl mb-3 group-hover:text-cyan-400 transition leading-tight">
+                                                            El renacimiento del RPG: una conversación con Studio Vesper
+                                                        </h3>
+                                                        <p class="text-gray-400 leading-relaxed mb-4">
+                                                            Sobre narrativa emergente, sistemas de elección que importan de verdad, y por qué
+                                                            el futuro del género pasa por respetar la inteligencia del jugador.
+                                                        </p>
+                                                        <div class="flex items-center gap-3 text-sm">
+                                                            <div class="w-8 h-8 rounded-full overflow-hidden">
+                                                                <img src="https://picsum.photos/seed/author2/50/50.jpg" alt="Autor" class="w-full h-full object-cover">
+                                                            </div>
+                                                            <span class="text-gray-400">Marcus Chen</span>
+                                                        </div>
+                                                    </article>
+
+                                                    <article class="group interactive fade-slide cursor-pointer" style="transition-delay: 0.2s">
+                                                        <div class="relative aspect-[16/10] overflow-hidden mb-5">
+                                                            <div class="absolute inset-0 transition-transform duration-700 group-hover:scale-105" style="background: url('https://picsum.photos/seed/blog3/600/400.jpg') center/cover; filter: brightness(0.7) saturate(1.2) hue-rotate(180deg);"></div>
+                                                            <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                                                            <div class="scanlines"></div>
+                                                            <div class="absolute top-5 left-5">
+                                                                <span class="tag bg-black/60 backdrop-blur">GUÍAS</span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="text-xs text-gray-500 mb-3 font-display tracking-widest">02 NOV 2024 · 15 MIN LECTURA</div>
+                                                        <h3 class="font-display font-bold text-2xl mb-3 group-hover:text-cyan-400 transition leading-tight">
+                                                            Configurando el setup gaming definitivo para 2025
+                                                        </h3>
+                                                        <p class="text-gray-400 leading-relaxed mb-4">
+                                                            Desde el monitor hasta la silla. Guía completa de periféricos premium,
+                                                            optimización de PC y cómo construir un setup que dure años sin obsolescencia.
+                                                        </p>
+                                                        <div class="flex items-center gap-3 text-sm">
+                                                            <div class="w-8 h-8 rounded-full overflow-hidden">
+                                                                <img src="https://picsum.photos/seed/author3/50/50.jpg" alt="Autor" class="w-full h-full object-cover">
+                                                            </div>
+                                                            <span class="text-gray-400">Sofia Reyes</span>
+                                                        </div>
+                                                    </article>
+
+                                                </div>
+                                            </div>
+                                        </section>
+
+                                        <!-- NEWSLETTER -->
+                                        <section class="py-32 px-8 lg:px-12 relative newsletter-bg overflow-hidden">
+                                            <div class="absolute inset-0 opacity-20" style="background: url('https://picsum.photos/seed/newsbg/1600/600.jpg') center/cover; filter: brightness(0.4) saturate(1.3);"></div>
+                                            <div class="absolute inset-0 bg-gradient-to-b from-black via-transparent to-black"></div>
+
+                                            <div class="max-w-3xl mx-auto text-center relative z-10 fade-slide">
+                                                <div class="section-num justify-center mb-6 inline-flex">EXCLUSIVO · MIEMBROS</div>
+                                                <h2 class="font-display font-bold text-5xl md:text-7xl leading-[0.95] mb-6">
+                                                    Únete a la<br>
+                                                        <span class="glow-purple">avant-garde</span> del gaming.
+                                                </h2>
+                                                <p class="text-gray-300 text-lg leading-relaxed mb-10 max-w-xl mx-auto">
+                                                    <span class="gold-text font-display font-bold">10% en tu primera compra</span> + acceso anticipado a ediciones limitadas,
+                                                    contenido exclusivo y curaduría semanal directamente en tu inbox.
+                                                </p>
+
+                                                <form class="flex flex-col sm:flex-row gap-3 max-w-lg mx-auto" onsubmit="event.preventDefault(); subscribeNewsletter();">
+                                                    <input
+                                                        type="email"
+                                                        id="emailInput"
+                                                        required
+                                                        placeholder="tu@email.com"
+                                                        class="flex-1 bg-white/5 backdrop-blur border border-white/15 px-6 py-4 text-white placeholder-gray-500 font-display tracking-wider focus:border-cyan-400 transition"
+                                                    >
+                                                        <button type="submit" class="btn-primary interactive justify-center">
+                                                            <span>Suscribirme</span>
+                                                            <i class="fa-solid fa-arrow-right"></i>
+                                                        </button>
+                                                </form>
+
+                                                <p class="text-xs text-gray-500 mt-6 tracking-wider">
+                                                    Sin spam. Curaduría semanal. Cancela cuando quieras. · <a href="#" class="hover:text-gray-300 underline">Términos</a>
+                                                </p>
+                                            </div>
+                                        </section>
+
+                                        <!-- FOOTER -->
+                                        <footer class="bg-black border-t border-white/5 pt-20 pb-10 px-8 lg:px-12">
+                                            <div class="max-w-[1600px] mx-auto">
+                                                <div class="grid lg:grid-cols-12 gap-12 mb-16">
+
+                                                    <div class="lg:col-span-4">
+                                                        <div class="flex items-center gap-3 mb-6">
+                                                            <div class="w-10 h-10 relative">
+                                                                <div class="absolute inset-0 border border-purple-400/60 rotate-45"></div>
+                                                                <div class="absolute inset-1 bg-gradient-to-br from-purple-500 to-cyan-400 rotate-45 opacity-80"></div>
+                                                            </div>
+                                                            <div>
+                                                                <div class="font-display font-bold text-2xl tracking-[0.2em] leading-none">NOCTURNE</div>
+                                                                <div class="text-[9px] text-gray-500 tracking-[0.3em] mt-1">PREMIUM GAMING BOUTIQUE</div>
+                                                            </div>
+                                                        </div>
+                                                        <p class="text-gray-400 leading-relaxed mb-6 max-w-sm">
+                                                            Una tienda para gamers exigentes que valoran la curaduría, el diseño y la experiencia
+                                                            por encima del ruido. Seleccionado a mano, entregado con cuidado.
+                                                        </p>
+                                                        <div class="flex gap-4">
+                                                            <a href="#" class="w-10 h-10 border border-white/10 flex items-center justify-center text-gray-400 hover:text-cyan-400 hover:border-cyan-400 transition interactive" aria-label="Twitter">
+                                                                <i class="fa-brands fa-x-twitter"></i>
+                                                            </a>
+                                                            <a href="#" class="w-10 h-10 border border-white/10 flex items-center justify-center text-gray-400 hover:text-cyan-400 hover:border-cyan-400 transition interactive" aria-label="Discord">
+                                                                <i class="fa-brands fa-discord"></i>
+                                                            </a>
+                                                            <a href="#" class="w-10 h-10 border border-white/10 flex items-center justify-center text-gray-400 hover:text-cyan-400 hover:border-cyan-400 transition interactive" aria-label="YouTube">
+                                                                <i class="fa-brands fa-youtube"></i>
+                                                            </a>
+                                                            <a href="#" class="w-10 h-10 border border-white/10 flex items-center justify-center text-gray-400 hover:text-cyan-400 hover:border-cyan-400 transition interactive" aria-label="Instagram">
+                                                                <i class="fa-brands fa-instagram"></i>
+                                                            </a>
+                                                            <a href="#" class="w-10 h-10 border border-white/10 flex items-center justify-center text-gray-400 hover:text-cyan-400 hover:border-cyan-400 transition interactive" aria-label="Twitch">
+                                                                <i class="fa-brands fa-twitch"></i>
+                                                            </a>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="lg:col-span-2">
+                                                        <h4 class="font-display text-sm tracking-widest text-gray-500 mb-5">TIENDA</h4>
+                                                        <ul class="space-y-3 text-sm">
+                                                            <li><a href="#" class="text-gray-300 hover:text-cyan-400 transition interactive">Destacados</a></li>
+                                                            <li><a href="#" class="text-gray-300 hover:text-cyan-400 transition interactive">Novedades</a></li>
+                                                            <li><a href="#" class="text-gray-300 hover:text-cyan-400 transition interactive">Próximos lanzamientos</a></li>
+                                                            <li><a href="#" class="text-gray-300 hover:text-cyan-400 transition interactive">Ofertas</a></li>
+                                                            <li><a href="#" class="text-gray-300 hover:text-cyan-400 transition interactive">Ediciones coleccionista</a></li>
+                                                        </ul>
+                                                    </div>
+
+                                                    <div class="lg:col-span-2">
+                                                        <h4 class="font-display text-sm tracking-widest text-gray-500 mb-5">PLATAFORMAS</h4>
+                                                        <ul class="space-y-3 text-sm">
+                                                            <li><a href="#" class="text-gray-300 hover:text-cyan-400 transition interactive">PC Gaming</a></li>
+                                                            <li><a href="#" class="text-gray-300 hover:text-cyan-400 transition interactive">PlayStation</a></li>
+                                                            <li><a href="#" class="text-gray-300 hover:text-cyan-400 transition interactive">Xbox</a></li>
+                                                            <li><a href="#" class="text-gray-300 hover:text-cyan-400 transition interactive">Nintendo</a></li>
+                                                            <li><a href="#" class="text-gray-300 hover:text-cyan-400 transition interactive">VR</a></li>
+                                                        </ul>
+                                                    </div>
+
+                                                    <div class="lg:col-span-2">
+                                                        <h4 class="font-display text-sm tracking-widest text-gray-500 mb-5">COMPAÑÍA</h4>
+                                                        <ul class="space-y-3 text-sm">
+                                                            <li><a href="#" class="text-gray-300 hover:text-cyan-400 transition interactive">Sobre nosotros</a></li>
+                                                            <li><a href="#" class="text-gray-300 hover:text-cyan-400 transition interactive">Curaduría</a></li>
+                                                            <li><a href="#" class="text-gray-300 hover:text-cyan-400 transition interactive">Diario</a></li>
+                                                            <li><a href="#" class="text-gray-300 hover:text-cyan-400 transition interactive">Carreras</a></li>
+                                                            <li><a href="#" class="text-gray-300 hover:text-cyan-400 transition interactive">Contacto</a></li>
+                                                        </ul>
+                                                    </div>
+
+                                                    <div class="lg:col-span-2">
+                                                        <h4 class="font-display text-sm tracking-widest text-gray-500 mb-5">SOPORTE</h4>
+                                                        <ul class="space-y-3 text-sm">
+                                                            <li><a href="#" class="text-gray-300 hover:text-cyan-400 transition interactive">Centro de ayuda</a></li>
+                                                            <li><a href="#" class="text-gray-300 hover:text-cyan-400 transition interactive">Envíos</a></li>
+                                                            <li><a href="#" class="text-gray-300 hover:text-cyan-400 transition interactive">Devoluciones</a></li>
+                                                            <li><a href="#" class="text-gray-300 hover:text-cyan-400 transition interactive">Garantía</a></li>
+                                                            <li><a href="#" class="text-gray-300 hover:text-cyan-400 transition interactive">Estado de pedido</a></li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+
+                                                <div class="divider-line mb-8"></div>
+
+                                                <div class="flex flex-wrap justify-between items-center gap-6 text-xs text-gray-500">
+                                                    <div class="flex flex-wrap items-center gap-6">
+                                                        <span>© 2024 Nocturne Boutique. Todos los derechos reservados.</span>
+                                                        <a href="#" class="hover:text-gray-300 transition interactive">Términos</a>
+                                                        <a href="#" class="hover:text-gray-300 transition interactive">Privacidad</a>
+                                                        <a href="#" class="hover:text-gray-300 transition interactive">Cookies</a>
+                                                    </div>
+                                                    <div class="flex items-center gap-4">
+                                                        <i class="fa-brands fa-cc-visa text-2xl text-gray-600"></i>
+                                                        <i class="fa-brands fa-cc-mastercard text-2xl text-gray-600"></i>
+                                                        <i class="fa-brands fa-cc-paypal text-2xl text-gray-600"></i>
+                                                        <i class="fa-brands fa-cc-amex text-2xl text-gray-600"></i>
+                                                        <i class="fa-brands fa-apple-pay text-2xl text-gray-600"></i>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </footer>
+
+                                        <script>
+// Custom cursor
+                                            const cursorDot = document.getElementById('cursorDot');
+                                            const cursorRing = document.getElementById('cursorRing');
+                                            let mouseX = 0, mouseY = 0, ringX = 0, ringY = 0;
+
+document.addEventListener('mousemove', (e) => {
+                                                mouseX = e.clientX;
+                                            mouseY = e.clientY;
+                                            cursorDot.style.left = mouseX + 'px';
+                                            cursorDot.style.top = mouseY + 'px';
+});
+
+                                            function animateRing() {
+                                                ringX += (mouseX - ringX) * 0.18;
+                                            ringY += (mouseY - ringY) * 0.18;
+                                            cursorRing.style.left = ringX + 'px';
+                                            cursorRing.style.top = ringY + 'px';
+                                            requestAnimationFrame(animateRing);
+}
+                                            animateRing();
+
+                                            // Hover states
+                                            function bindCursorHover() {
+                                                document.querySelectorAll('a, button, .interactive, .game-card, .category-card, input').forEach(el => {
+                                                    el.addEventListener('mouseenter', () => {
+                                                        cursorDot.classList.add('hover');
+                                                        cursorRing.classList.add('hover');
+                                                    });
+                                                    el.addEventListener('mouseleave', () => {
+                                                        cursorDot.classList.remove('hover');
+                                                        cursorRing.classList.remove('hover');
+                                                    });
+                                                });
+}
+                                            bindCursorHover();
+
+                                            // Hero parallax
+                                            const heroBg = document.getElementById('heroBg');
+                                            const heroSection = document.getElementById('hero');
+                                            let lastScrollY = 0;
+
+window.addEventListener('scroll', () => {
+  const scrolled = window.pageYOffset;
+                                            if (heroBg && scrolled < window.innerHeight) {
+                                                heroBg.style.transform = 'translateY(' + (scrolled * 0.4) + 'px) scale(' + (1 + scrolled * 0.0002) + ')';
+  }
+
+                                            // Nav background
+                                            const nav = document.getElementById('nav');
+  if (scrolled > 50) nav.classList.add('scrolled');
+                                            else nav.classList.remove('scrolled');
+
+                                            lastScrollY = scrolled;
+});
+
+// Mouse parallax on hero
+document.addEventListener('mousemove', (e) => {
+  if (window.pageYOffset > window.innerHeight) return;
+                                            const x = (e.clientX / window.innerWidth - 0.5) * 20;
+                                            const y = (e.clientY / window.innerHeight - 0.5) * 20;
+                                            if (heroBg) {
+    const scrolled = window.pageYOffset;
+                                            heroBg.style.transform = 'translate(' + x + 'px, ' + (scrolled * 0.4 + y) + 'px) scale(' + (1 + scrolled * 0.0002) + ')';
+  }
+});
+
+                                            // Particles
+                                            const canvas = document.getElementById('particles');
+                                            const ctx = canvas.getContext('2d');
+
+                                            function resizeCanvas() {
+                                                canvas.width = canvas.offsetWidth;
+                                            canvas.height = canvas.offsetHeight;
+}
+                                            resizeCanvas();
+
+                                            const particles = [];
+                                            for (let i = 0; i < 70; i++) {
+                                                particles.push({
+                                                    x: Math.random() * canvas.width,
+                                                    y: Math.random() * canvas.height,
+                                                    r: Math.random() * 1.6 + 0.3,
+                                                    vx: (Math.random() - 0.5) * 0.25,
+                                                    vy: (Math.random() - 0.5) * 0.25,
+                                                    opacity: Math.random() * 0.5 + 0.1,
+                                                    color: Math.random() > 0.5 ? '168, 85, 247' : '6, 182, 212'
+                                                });
+}
+
+                                            function animateParticles() {
+                                                ctx.clearRect(0, 0, canvas.width, canvas.height);
+  particles.forEach(p => {
+                                                p.x += p.vx;
+                                            p.y += p.vy;
+                                            if (p.x < 0) p.x = canvas.width;
+    if (p.x > canvas.width) p.x = 0;
+                                            if (p.y < 0) p.y = canvas.height;
+    if (p.y > canvas.height) p.y = 0;
+
+                                            ctx.beginPath();
+                                            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                                            ctx.fillStyle = 'rgba(' + p.color + ', ' + p.opacity + ')';
+                                            ctx.fill();
+
+                                            // Glow
+                                            ctx.beginPath();
+                                            ctx.arc(p.x, p.y, p.r * 3, 0, Math.PI * 2);
+                                            ctx.fillStyle = 'rgba(' + p.color + ', ' + (p.opacity * 0.1) + ')';
+                                            ctx.fill();
+  });
+                                            requestAnimationFrame(animateParticles);
+}
+                                            animateParticles();
+
+                                            window.addEventListener('resize', resizeCanvas);
+
+                                            // Countdown
+                                            const targetDate = new Date();
+                                            targetDate.setDate(targetDate.getDate() + 45);
+                                            targetDate.setHours(23, 59, 59, 0);
+
+                                            function updateCountdown() {
+  const now = new Date();
+                                            const diff = targetDate - now;
+
+                                            if (diff < 0) return;
+
+                                            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                                            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                                            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                                            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+                                            document.getElementById('days').textContent = String(days).padStart(2, '0');
+                                            document.getElementById('hours').textContent = String(hours).padStart(2, '0');
+                                            document.getElementById('minutes').textContent = String(minutes).padStart(2, '0');
+                                            document.getElementById('seconds').textContent = String(seconds).padStart(2, '0');
+}
+                                            setInterval(updateCountdown, 1000);
+                                            updateCountdown();
+
+// Scroll reveal
+const observer = new IntersectionObserver((entries) => {
+                                                entries.forEach(entry => {
+                                                    if (entry.isIntersecting) {
+                                                        entry.target.classList.add('in-view');
+                                                    }
+                                                });
+}, {threshold: 0.12, rootMargin: '0px 0px -50px 0px' });
+
+document.querySelectorAll('.fade-slide').forEach(el => observer.observe(el));
+
+// 3D tilt on game cards
+document.querySelectorAll('.game-card').forEach(card => {
+                                                card.addEventListener('mousemove', (e) => {
+                                                    const rect = card.getBoundingClientRect();
+                                                    const x = e.clientX - rect.left;
+                                                    const y = e.clientY - rect.top;
+                                                    const cx = rect.width / 2;
+                                                    const cy = rect.height / 2;
+                                                    const rotateY = ((x - cx) / cx) * 8;
+                                                    const rotateX = -((y - cy) / cy) * 8;
+                                                    card.style.transform = 'perspective(1200px) rotateX(' + rotateX + 'deg) rotateY(' + rotateY + 'deg) translateZ(15px)';
+                                                });
+  card.addEventListener('mouseleave', () => {
+                                                card.style.transform = 'perspective(1200px) rotateX(0) rotateY(0) translateZ(0)';
+  });
+});
+
+                                            // Add to cart
+                                            let cartCount = 0;
+                                            const cartCountEl = document.getElementById('cartCount');
+
+document.querySelectorAll('[data-add-cart]').forEach(btn => {
+                                                btn.addEventListener('click', (e) => {
+                                                    e.stopPropagation();
+                                                    e.preventDefault();
+                                                    cartCount++;
+                                                    cartCountEl.textContent = cartCount;
+                                                    cartCountEl.classList.add('cart-pop');
+                                                    setTimeout(() => cartCountEl.classList.remove('cart-pop'), 500);
+
+                                                    // Get context for message
+                                                    let msg = 'Artículo añadido correctamente';
+                                                    const card = btn.closest('article');
+                                                    if (card) {
+                                                        const title = card.querySelector('h3');
+                                                        if (title) msg = title.textContent;
+                                                    }
+                                                    showToast(msg);
+                                                });
+});
+
+                                            function showToast(msg) {
+  const toast = document.getElementById('toast');
+                                            toast.querySelector('.toast-msg').textContent = msg;
+                                            toast.classList.add('show');
+                                            clearTimeout(window.toastTimeout);
+  window.toastTimeout = setTimeout(() => toast.classList.remove('show'), 2800);
+}
+
+                                            // Newsletter
+                                            function subscribeNewsletter() {
+  const input = document.getElementById('emailInput');
+                                            if (input.value && input.checkValidity()) {
+                                                showToast('Suscripción confirmada. Revisa tu email para el código de descuento.');
+                                            input.value = '';
+  }
+}
+
+                                            // Sound toggle with Web Audio API
+                                            let audioCtx, masterGain, isPlaying = false;
+                                            const soundBtn = document.getElementById('soundToggle');
+
+soundBtn.addEventListener('click', () => {
+  if (!audioCtx) {
+                                                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                                            masterGain = audioCtx.createGain();
+                                            masterGain.gain.value = 0;
+                                            masterGain.connect(audioCtx.destination);
+
+                                            // Ambient drone - low frequencies
+                                            const freqs = [55, 82.4, 110, 164.8];
+    freqs.forEach((f, i) => {
+      const osc = audioCtx.createOscillator();
+                                            osc.frequency.value = f;
+                                            osc.type = i % 2 === 0 ? 'sine' : 'triangle';
+                                            const g = audioCtx.createGain();
+                                            g.gain.value = 0.08 / (i + 1);
+
+                                            // Slight detune for richness
+                                            osc.detune.value = (Math.random() - 0.5) * 8;
+
+                                            // LFO for subtle movement
+                                            const lfo = audioCtx.createOscillator();
+                                            lfo.frequency.value = 0.1 + Math.random() * 0.2;
+                                            const lfoGain = audioCtx.createGain();
+                                            lfoGain.gain.value = 2;
+                                            lfo.connect(lfoGain);
+                                            lfoGain.connect(osc.frequency);
+                                            lfo.start();
+
+                                            osc.connect(g);
+                                            g.connect(masterGain);
+                                            osc.start();
+    });
+
+                                            // Add a subtle filter
+                                            const filter = audioCtx.createBiquadFilter();
+                                            filter.type = 'lowpass';
+                                            filter.frequency.value = 400;
+                                            filter.Q.value = 1;
+  }
+
+                                            isPlaying = !isPlaying;
+                                            const targetVol = isPlaying ? 0.06 : 0;
+                                            masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
+                                            masterGain.gain.linearRampToValueAtTime(targetVol, audioCtx.currentTime + 1.2);
+
+                                            soundBtn.classList.toggle('active', isPlaying);
+                                            soundBtn.querySelector('i').className = isPlaying ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark';
+});
+
+                                            // Horizontal scroll for upcoming section
+                                            const hScroll = document.querySelector('.h-scroll');
+                                            if (hScroll) {
+                                                hScroll.addEventListener('wheel', (e) => {
+                                                    if (Math.abs(e.deltaX) === 0 && Math.abs(e.deltaY) > 0) {
+                                                        // Only hijack if within bounds
+                                                        const maxScroll = hScroll.scrollWidth - hScroll.clientWidth;
+                                                        if ((e.deltaY > 0 && hScroll.scrollLeft < maxScroll) ||
+                                                            (e.deltaY < 0 && hScroll.scrollLeft > 0)) {
+                                                            // Don't prevent default - let user scroll naturally too
+                                                        }
+                                                    }
+                                                });
+}
+
+                                            // Re-bind cursor for dynamically added elements
+                                            setTimeout(bindCursorHover, 100);
+                                        </script>
+
+                                    </body>
+                                </html>`
   },
   "aplicacion-1": {
     title: `NEXUS Blocks — Tetris Arcade Futurista`,

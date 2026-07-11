@@ -104,7 +104,7 @@ function StarsBorder() {
 /* ─── Step Indicator ────────────────────────────────────────────────── */
 function StepIndicator({ current, total }: { current: number; total: number }) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 shrink-0">
       {Array.from({ length: total }, (_, i) => {
         const stepNum = i + 1;
         const isActive = stepNum === current;
@@ -153,7 +153,8 @@ export function OnboardingDialog() {
     }
   }, [isLoadingConfig, getUserName, getPrimaryInterest]);
 
-  if (!isAuthenticated || isLoadingConfig || hasCompletedSetup) {
+  // CRITICAL: The popup MUST NOT show if the user is not authenticated or not logged in
+  if (!isAuthenticated || !user || isLoadingConfig || hasCompletedSetup) {
     return null;
   }
 
@@ -202,24 +203,24 @@ export function OnboardingDialog() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      {/* ── Outer Starry Container (fixed size: 640px x 500px, no outer white border) ── */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      {/* ── Outer Starry Container (Responsive: fixed in desktop, auto/scrollable in mobile) ── */}
       <motion.div
         initial={{ opacity: 0, scale: 0.92, y: 30 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ type: "spring", damping: 28, stiffness: 380 }}
-        className="relative w-[640px] h-[520px] bg-[#08080e] rounded-3xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.25)] overflow-hidden p-[10px] flex flex-col shrink-0"
+        className="relative w-full max-w-[94vw] md:w-[640px] h-auto md:h-[530px] bg-[#08080e] rounded-3xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.25)] overflow-hidden p-[8px] md:p-[10px] flex flex-col"
       >
         <StarsBorder />
 
-        {/* ── Inner White Content Card ───────────────────── */}
-        <div className="relative z-10 bg-white rounded-[18px] h-full flex flex-col justify-between p-10 select-none">
+        {/* ── Inner White Content Card (with inner scroll if content overflows on small viewports) ── */}
+        <div className="relative z-10 bg-white rounded-[18px] h-full flex flex-col justify-between p-6 md:p-10 select-none overflow-y-auto md:overflow-visible">
           {/* Close X Button */}
           <button
             type="button"
             onClick={handleClose}
             disabled={saving}
-            className="absolute top-5 right-5 z-30 p-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-400 hover:text-zinc-700 transition-all active:scale-90 cursor-pointer disabled:opacity-50"
+            className="absolute top-4 right-4 md:top-5 md:right-5 z-35 p-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-400 hover:text-zinc-700 transition-all active:scale-90 cursor-pointer disabled:opacity-50"
             title="Cerrar"
           >
             <X className="w-4 h-4" />
@@ -233,11 +234,11 @@ export function OnboardingDialog() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
                 transition={{ duration: 0.25, ease: "easeOut" }}
-                className="h-full flex flex-col justify-between"
+                className="h-full flex flex-col justify-between gap-6 md:gap-0"
               >
                 {/* Header: Logo image only + Step Indicator */}
-                <div className="relative flex items-center justify-between w-full mb-4">
-                  <div className="w-10" /> {/* Spacer to center the logo */}
+                <div className="relative flex items-center justify-between w-full mb-2">
+                  <div className="w-10" />
                   <img
                     src="https://mail.programbi.com/uploads/Maverlang-Logo-1.png"
                     alt="Maverlang"
@@ -247,11 +248,11 @@ export function OnboardingDialog() {
                 </div>
 
                 {/* Body Content */}
-                <div className="flex-1 flex flex-col justify-center my-auto">
+                <div className="flex-1 flex flex-col justify-center my-auto py-4 md:py-0">
                   <h2 className="text-2xl md:text-3xl font-black tracking-tight text-zinc-900 leading-tight mb-3 text-center">
                     Cuéntanos sobre ti
                   </h2>
-                  <p className="text-zinc-500 text-base leading-relaxed mb-8 text-center mx-auto max-w-md">
+                  <p className="text-zinc-500 text-sm md:text-base leading-relaxed mb-6 md:mb-8 text-center mx-auto max-w-md">
                     Escribe tu nombre para que la IA pueda recordarte y personalizar tu experiencia.
                   </p>
 
@@ -263,7 +264,7 @@ export function OnboardingDialog() {
                       value={localName}
                       onChange={(e) => setLocalName(e.target.value)}
                       placeholder="Tu nombre (opcional)"
-                      className="w-full pl-14 pr-6 py-4.5 bg-zinc-50 border border-zinc-200 rounded-2xl text-base font-semibold text-zinc-900 placeholder:text-zinc-400 outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-100 transition-all"
+                      className="w-full pl-14 pr-6 py-4 bg-zinc-50 border border-zinc-200 rounded-2xl text-base font-semibold text-zinc-900 placeholder:text-zinc-400 outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-100 transition-all"
                       onKeyDown={(e) => {
                         if (e.key === "Enter") handleNext();
                       }}
@@ -272,7 +273,7 @@ export function OnboardingDialog() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center justify-between mt-6 pt-5 border-t border-zinc-100">
+                <div className="flex items-center justify-between mt-auto pt-5 border-t border-zinc-100 shrink-0">
                   <button
                     type="button"
                     disabled={saving}
@@ -284,7 +285,7 @@ export function OnboardingDialog() {
                   <button
                     type="button"
                     onClick={handleNext}
-                    className="inline-flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-base px-7 py-3.5 rounded-full transition-all active:scale-95 shadow-sm"
+                    className="inline-flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-base px-7 py-3 rounded-full transition-all active:scale-95 shadow-sm"
                   >
                     Siguiente
                     <ArrowRight className="w-4.5 h-4.5" />
@@ -298,10 +299,10 @@ export function OnboardingDialog() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.25, ease: "easeOut" }}
-                className="h-full flex flex-col justify-between"
+                className="h-full flex flex-col justify-between gap-6 md:gap-0"
               >
                 {/* Header: Logo image only + Step Indicator */}
-                <div className="relative flex items-center justify-between w-full mb-4">
+                <div className="relative flex items-center justify-between w-full mb-2">
                   <div className="w-10" />
                   <img
                     src="https://mail.programbi.com/uploads/Maverlang-Logo-1.png"
@@ -312,16 +313,16 @@ export function OnboardingDialog() {
                 </div>
 
                 {/* Body Content */}
-                <div className="flex-1 flex flex-col justify-center my-auto">
+                <div className="flex-1 flex flex-col justify-center my-auto py-2 md:py-0">
                   <h2 className="text-2xl md:text-3xl font-black tracking-tight text-zinc-900 leading-tight mb-2 text-center">
                     ¿Qué te interesa?
                   </h2>
-                  <p className="text-zinc-500 text-base leading-relaxed mb-6 text-center">
+                  <p className="text-zinc-500 text-sm md:text-base leading-relaxed mb-4 md:mb-6 text-center">
                     Personalizaremos tu experiencia de IA según tus objetivos.
                   </p>
 
-                  {/* 3 Horizontal square options with starry backgrounds */}
-                  <div className="grid grid-cols-3 gap-4">
+                  {/* 3 Square options: horizontal on desktop, vertical list on mobile */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 max-w-full">
                     {[
                       {
                         id: "crear_apps" as const,
@@ -353,7 +354,7 @@ export function OnboardingDialog() {
                             setLocalInterest(item.id);
                             handleSave(item.id);
                           }}
-                          className={`relative overflow-hidden rounded-2xl border transition-all flex flex-col items-center justify-between p-4 aspect-square text-center cursor-pointer ${
+                          className={`relative overflow-hidden rounded-2xl border transition-all flex flex-row md:flex-col items-center justify-start md:justify-between p-4 md:p-5 h-auto md:aspect-square text-left md:text-center cursor-pointer ${
                             isSelected
                               ? "border-zinc-950 shadow-md ring-2 ring-zinc-950/15"
                               : "border-zinc-200 hover:border-zinc-300"
@@ -366,16 +367,18 @@ export function OnboardingDialog() {
                           </div>
 
                           {/* Content */}
-                          <div className="relative z-10 flex flex-col items-center justify-center h-full w-full text-white">
-                            <div className="p-2.5 bg-white/10 rounded-xl mb-2">
+                          <div className="relative z-10 flex flex-row md:flex-col items-center justify-start md:justify-center h-full w-full text-white gap-3.5 md:gap-0">
+                            <div className="p-2.5 bg-white/10 rounded-xl md:mb-2 shrink-0">
                               {item.icon}
                             </div>
-                            <p className="text-sm font-extrabold leading-tight">
-                              {item.label}
-                            </p>
-                            <p className="text-[10px] text-zinc-400 mt-1 leading-tight max-w-[100px]">
-                              {item.desc}
-                            </p>
+                            <div className="flex flex-col md:items-center">
+                              <p className="text-sm font-extrabold leading-tight">
+                                {item.label}
+                              </p>
+                              <p className="text-[10px] text-zinc-400 mt-0.5 md:mt-1 leading-tight md:max-w-[100px]">
+                                {item.desc}
+                              </p>
+                            </div>
                           </div>
 
                           {/* Check Indicator */}
@@ -383,7 +386,7 @@ export function OnboardingDialog() {
                             <motion.div
                               initial={{ scale: 0 }}
                               animate={{ scale: 1 }}
-                              className="absolute top-2 right-2 z-20 w-5 h-5 rounded-full bg-white flex items-center justify-center shadow-sm"
+                              className="absolute right-4 top-1/2 -translate-y-1/2 md:top-2 md:right-2 md:translate-y-0 z-20 w-5 h-5 rounded-full bg-white flex items-center justify-center shadow-sm"
                             >
                               <Check className="w-3.5 h-3.5 text-zinc-950" />
                             </motion.div>
@@ -395,7 +398,7 @@ export function OnboardingDialog() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center justify-between mt-6 pt-5 border-t border-zinc-100">
+                <div className="flex items-center justify-between mt-auto pt-5 border-t border-zinc-100 shrink-0">
                   <button
                     type="button"
                     onClick={() => setStep(1)}
@@ -407,7 +410,7 @@ export function OnboardingDialog() {
                     type="button"
                     disabled={saving}
                     onClick={() => handleSave()}
-                    className="inline-flex items-center justify-center min-w-[120px] bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-base px-7 py-3.5 rounded-full transition-all active:scale-95 shadow-sm disabled:opacity-50"
+                    className="inline-flex items-center justify-center min-w-[120px] bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-base px-7 py-3 rounded-full transition-all active:scale-95 shadow-sm disabled:opacity-50"
                   >
                     {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Comenzar"}
                   </button>

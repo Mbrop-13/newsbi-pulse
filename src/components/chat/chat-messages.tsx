@@ -53,6 +53,32 @@ export function ChatMessages({
   const isCanvasOpen = useCanvasStore((s) => s.isOpen)
   const isSplitMode = isWebBuilderMode || isBrowserOpen || isCanvasOpen
   const { isMobile } = useSidebar()
+  
+  // ─── Lógica para el timeline flotante de preguntas del usuario ───
+  const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
+
+  // Extraemos todos los mensajes que son del rol "user"
+  const userMessages = useMemo(() => {
+    return messages
+      .map((msg, index) => ({ msg, index }))
+      .filter(item => item.msg.role === 'user');
+  }, [messages]);
+
+  // Se muestra solo si hay al menos 2 preguntas de usuario, no está en versión móvil y no está en modo split (Canvas/Browser/Builder)
+  const showTimeline = userMessages.length >= 2 && !isMobile && !isSplitMode;
+
+  const scrollToQuestion = (msgId: string) => {
+    const el = document.getElementById(`msg-user-${msgId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      
+      // Añadimos una clase temporal de destello (highlight)
+      el.classList.add("ring-4", "ring-blue-500/50", "transition-all", "duration-500", "rounded-3xl");
+      setTimeout(() => {
+        el.classList.remove("ring-4", "ring-blue-500/50");
+      }, 1500);
+    }
+  };
 
   // Extract live streaming data for WebBuilder loading indicator
   const liveReasoning = useMemo(() => {
@@ -222,6 +248,63 @@ export function ChatMessages({
           </motion.button>
         )}
       </AnimatePresence>
+
+      {/* Floating Question Navigation Timeline */}
+      {showTimeline && (
+        <div className="fixed right-4 top-1/2 -translate-y-1/2 flex flex-col items-end gap-2.5 z-40 select-none pr-1">
+          {userMessages.map((item, idx) => {
+            const msg = item.msg;
+            // Generate a consistent, responsive random-looking width based on length
+            const lineLengths = ["w-3.5", "w-5.5", "w-4.5", "w-6.5"];
+            const lineLength = lineLengths[msg.content.length % lineLengths.length];
+            const isHovered = hoveredMsgId === msg.id;
+
+            return (
+              <div
+                key={msg.id}
+                className="relative flex items-center justify-end"
+                onMouseEnter={() => setHoveredMsgId(msg.id)}
+                onMouseLeave={() => setHoveredMsgId(null)}
+              >
+                {/* Floating Preview Hover Card */}
+                <AnimatePresence>
+                  {isHovered && (
+                    <motion.div
+                      initial={{ opacity: 0, x: -12, scale: 0.96 }}
+                      animate={{ opacity: 1, x: 0, scale: 1 }}
+                      exit={{ opacity: 0, x: -12, scale: 0.96 }}
+                      transition={{ duration: 0.18, ease: "easeOut" }}
+                      className="absolute right-8 top-1/2 -translate-y-1/2 w-52 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border border-zinc-200/80 dark:border-zinc-800/80 p-3 rounded-2xl shadow-2xl z-50 pointer-events-none text-left"
+                    >
+                      <div className="text-[9px] font-black uppercase tracking-widest text-[#1890FF] dark:text-blue-400 mb-1 flex items-center gap-1">
+                        <span className="h-1 w-1 rounded-full bg-[#1890FF] dark:bg-blue-400 animate-pulse" />
+                        Pregunta {idx + 1}
+                      </div>
+                      <p className="text-[11px] text-zinc-700 dark:text-zinc-300 font-bold leading-relaxed line-clamp-3">
+                        {msg.content}
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Horizontal line button */}
+                <button
+                  type="button"
+                  onClick={() => scrollToQuestion(msg.id)}
+                  className={cn(
+                    "h-[3px] rounded-full transition-all duration-300 cursor-pointer active:scale-90",
+                    lineLength,
+                    isHovered
+                      ? "bg-[#1890FF] dark:bg-blue-400 shadow-[0_0_10px_rgba(24,144,255,0.6)] h-[4px]"
+                      : "bg-zinc-300/80 dark:bg-zinc-750 hover:bg-zinc-400 dark:hover:bg-zinc-650"
+                  )}
+                  aria-label={`Desplazarse a Pregunta ${idx + 1}`}
+                />
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   )
 }
@@ -1233,7 +1316,7 @@ function MessageBubble({
 
   if (isUser) {
     return (
-      <div className="flex justify-end">
+      <div className="flex justify-end" id={`msg-user-${message.id}`}>
         <div className={cn(isWebBuilderMode ? "max-w-[95%]" : "max-w-[85%] md:max-w-[75%]")}>
           <div className={cn(
             "bg-secondary dark:bg-secondary text-[15px] relative overflow-hidden",

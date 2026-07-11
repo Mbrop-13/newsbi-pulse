@@ -36,7 +36,7 @@ Las tarjetas de los inversores se inclinan ligeramente en 3D siguiendo el movimi
 Las filas de la tabla de activos se resaltan con un fondo azul muy tenue al pasar el cursor por encima.
 Ambiente general: Sofisticado, dinámico, confiable, tecnológico, accesible.
 
-  codigo:< !DOCTYPE html >
+  codigo:<!DOCTYPE html>
     <html lang="es">
       <head>
         <meta charset="UTF-8">

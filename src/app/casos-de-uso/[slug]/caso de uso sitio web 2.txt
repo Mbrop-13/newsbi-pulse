@@ -39,7 +39,7 @@ Cursor personalizado sutil en zonas interactivas(opcional pero elegante).
 
 Ambiente general: Profesional, moderno, cálido, premium, confiable, inteligente sin ser frío.Debe transmitir que “esto está pensado por personas que realmente entienden el trabajo complejo y quieren hacerlo más humano y simple”.
 
-codigo:< !DOCTYPE html >
+codigo:<!DOCTYPE html>
     <html lang="es">
         <head>
             <meta charset="UTF-8">

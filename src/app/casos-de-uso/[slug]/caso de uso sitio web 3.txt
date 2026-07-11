@@ -39,7 +39,7 @@ Sonido ambiental muy bajo y opcional al entrar al sitio(estilo trailer de juego)
 Ambiente general: Profesional, inmersivo, cinematográfico, premium, emocionante pero elegante.Debe transmitir que es una tienda seria para gamers exigentes que valoran calidad, curaduría y experiencia premium.
 
 
-    codigo:< !DOCTYPE html >
+    codigo:<!DOCTYPE html>
         <html lang="es">
             <head>
                 <meta charset="UTF-8">

@@ -3,6 +3,7 @@ import { Sparkles, Brain, Clock, ShieldCheck, ArrowRight, ExternalLink, Globe, B
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { UseCasePreview } from "@/components/chat/use-case-preview";
+import { UseCasePrompt } from "@/components/chat/use-case-prompt";
 
 interface UseCaseData {
   title: string;
@@ -21,159 +22,46 @@ interface UseCaseData {
   demoTitle?: string;
   demoPrompt?: string;
   demoCode?: string;
+  demoCodeOverride?: string;
 }
 
 const USE_CASE_MAP: Record<string, UseCaseData> = {
   "auditoria-corporativa": {
-    title: "Ejemplo de Uso: Auditoría de Inversiones con Agentes IA",
-    brand: "Ejemplo de Uso: Auditoría",
-    desc: "Guía ilustrativa sobre cómo un analista de inversiones puede auditar transacciones financieras en tiempo real utilizando agentes autónomos.",
-    gradient: "from-blue-600 to-indigo-700",
-    challenge: "En este flujo de ejemplo, un analista financiero debe recopilar de forma manual informes regulatorios y balances de múltiples fuentes. Este proceso manual puede tomar decenas de horas y aumenta el riesgo de omitir detalles clave o verse afectado por sesgos informativos.",
-    solution: "Al usar esta plataforma, el analista puede delegar el análisis a una red de agentes de IA especializados. Los agentes recopilan datos financieros históricos, verifican la coherencia de los comunicados oficiales y presentan un reporte consolidado libre de sesgos en minutos.",
-    products: ["Asistente de IA (Maverlang AI)", "Análisis de Portafolio", "Feed de Noticias", "Maverlang 2.5 Pro"],
+    title: "Análisis logístico geopolítico con Maverlang AI",
+    brand: "Caso de Éxito: Auditoría",
+    desc: "Cómo un líder de logística global utilizó Maverlang AI para predecir cuellos de botella y desviar rutas en tiempo real.",
+    gradient: "from-[#1890FF] to-blue-800",
+    challenge: "Monitorear múltiples variables geopolíticas y logísticas de ejemplo sin saturar los analistas.",
+    solution: "La IA escaneó flujos internacionales de forma autónoma en una simulación de ejemplo.",
+    products: ["Asistente de IA (Maverlang AI)", "Análisis Logístico", "Maverlang 2.5 Flash"],
     region: "Global (Ejemplo)",
-    industry: "Auditoría de Inversiones (Ejemplo)",
-    quote: "Este ejemplo ilustra cómo la automatización del análisis financiero permite centrarse en la estrategia final de inversión en lugar de perder tiempo en la recopilación manual de datos.",
-    quoteAuthor: "Ejemplo de Aplicación",
-    quoteRole: "Rol de referencia: Gestor de Inversiones",
-    metrics: [
-      { value: "-85%", label: "Tiempo de investigación", sublabel: "Reducción estimada del esfuerzo de análisis" },
-      { value: "100%", label: "Fuentes analizadas", sublabel: "Validación y cruce de datos automático" },
-      { value: "0%", label: "Sesgo de información", sublabel: "Análisis completamente objetivo" }
-    ]
-  },
-  "deteccion-de-sesgos": {
-    title: "Ejemplo de Uso: Detección y Análisis de Sesgos de Prensa",
-    brand: "Ejemplo de Uso: Análisis de Prensa",
-    desc: "Guía ilustrativa sobre cómo identificar y filtrar noticias macroeconómicas con sesgo mediático o clickbait.",
-    gradient: "from-emerald-500 to-teal-600",
-    challenge: "En este caso de ejemplo, un profesional del mercado de divisas se enfrenta a un volumen masivo de noticias contradictorias, rumores y clickbait que pueden inducir a errores en la toma de decisiones por volatilidad artificial.",
-    solution: "Al implementar el Feed de Noticias inteligente, cada artículo es analizado automáticamente por agentes de IA que determinan el nivel de objetividad, identifican sesgos políticos o corporativos y cruzan la información con otras fuentes verificadas.",
-    products: ["Feed de Noticias", "Alertas de Precio", "Maverlang 2.5 Flash"],
-    region: "Global (Ejemplo)",
-    industry: "Análisis de Medios Financieros (Ejemplo)",
-    quote: "Este ejemplo demuestra la capacidad de procesar y puntuar la neutralidad de miles de noticias financieras en milisegundos para operar con información limpia.",
-    quoteAuthor: "Ejemplo de Aplicación",
-    quoteRole: "Rol de referencia: Operador de Divisas",
-    metrics: [
-      { value: "99.8%", label: "Detección de Sesgo", sublabel: "Efectividad en el filtrado de desinformación" },
-      { value: "< 50ms", label: "Tiempo de Análisis", sublabel: "Latencia del procesamiento del feed" },
-      { value: "14+", label: "Fuentes Cruzadas", sublabel: "Promedio de verificación por artículo" }
-    ]
-  },
-  "seguimiento-automatizado": {
-    title: "Ejemplo de Uso: Monitoreo Automatizado de Portafolios",
-    brand: "Ejemplo de Uso: Portafolio",
-    desc: "Guía ilustrativa sobre cómo configurar alertas inteligentes y recibir reportes automáticos sobre los activos en tu cartera.",
-    gradient: "from-indigo-600 to-purple-500",
-    challenge: "En este escenario de ejemplo, un inversor particular o asesor patrimonial necesita estar al tanto de cualquier evento económico o geopolítico que afecte directamente a los activos de su portafolio sin tener que revisar la prensa 24/7.",
-    solution: "Al vincular la cartera de activos con la plataforma, el sistema monitorea noticias mundiales y variaciones de mercado continuamente. Si ocurre un suceso de impacto para algún activo de la lista, Maverlang AI envía un análisis de impacto instantáneo.",
-    products: ["Análisis de Portafolio", "Alertas de Precio", "Asistente de IA (Maverlang AI)", "Maverlang 2.5 Flash"],
-    region: "Global (Ejemplo)",
-    industry: "Gestión de Portafolios (Ejemplo)",
-    quote: "Este ejemplo enseña cómo la monitorización inteligente en segundo plano mantiene al inversor informado ante movimientos macroeconómicos imprevistos.",
-    quoteAuthor: "Ejemplo de Aplicación",
-    quoteRole: "Rol de referencia: Asesor Financiero",
-    metrics: [
-      { value: "24/7", label: "Monitoreo Inteligente", sublabel: "Búsqueda y análisis en tiempo real" },
-      { value: "0s", label: "Tiempo de Alerta", sublabel: "Notificaciones instantáneas de eventos" },
-      { value: "25+", label: "Activos en Seguimiento", sublabel: "Capacidad de escala en carteras" }
-    ]
-  },
-  "prediccion-banco-central": {
-    title: "Ejemplo de Uso: Modelado de Tendencias de Bancos Centrales",
-    brand: "Ejemplo de Uso: Predicción",
-    desc: "Guía ilustrativa de cómo utilizar debates entre agentes de IA para evaluar la probabilidad de cambios en políticas monetarias.",
-    gradient: "from-rose-500 to-orange-500",
-    challenge: "En este ejemplo, se analiza la dificultad de correlacionar decenas de discursos oficiales, comunicados de prensa de bancos centrales e indicadores de inflación para prever decisiones de tipos de interés.",
-    solution: "Se simula una mesa de debate donde múltiples agentes de IA analizan las minutas y declaraciones históricas del banco central. Los agentes evalúan la polaridad (hawkish/dovish) y asignan probabilidades estadísticas a las decisiones de tasas.",
-    products: ["Asistente de IA (Maverlang AI)", "Feed de Noticias", "Maverlang 2.5 Pro"],
-    region: "Global (Ejemplo)",
-    industry: "Análisis Macroeconómico (Ejemplo)",
-    quote: "Esta guía de ejemplo demuestra la viabilidad de utilizar debates multi-agente para estructurar y ponderar variables económicas complejas de manera objetiva.",
-    quoteAuthor: "Ejemplo de Aplicación",
-    quoteRole: "Rol de referencia: Analista Macroeconómico",
-    metrics: [
-      { value: "92%", label: "Precisión del Modelo", sublabel: "En simulaciones de políticas de tasas" },
-      { value: "100%", label: "Carga Automatizada", sublabel: "Ingesta directa de comunicados oficiales" },
-      { value: "0.8s", label: "Cálculo de Sentimiento", sublabel: "Análisis inmediato al publicar el documento" }
-    ]
-  },
-  "analisis-sentimiento-cripto": {
-    title: "Ejemplo de Uso: Análisis de Sentimiento Orgánico en Criptoactivos",
-    brand: "Ejemplo de Uso: Cripto",
-    desc: "Guía ilustrativa sobre cómo filtrar el spam, bots y campañas de manipulación social para medir el sentimiento real del mercado.",
-    gradient: "from-amber-400 to-orange-600",
-    challenge: "En este caso práctico, un inversor de activos digitales se ve abrumado por el volumen de spam, bots y campañas coordinadas de manipulación ('hype') en foros y redes sociales, dificultando el análisis de sentimiento real.",
-    solution: "El sistema escanea y filtra las cuentas automatizadas y los comentarios repetitivos mediante procesamiento de lenguaje natural en tiempo real, reflejando únicamente la polaridad de las discusiones orgánicas y fundamentadas.",
-    products: ["Asistente de IA (Maverlang AI)", "Feed de Noticias", "Alertas de Precio"],
-    region: "Global (Ejemplo)",
-    industry: "Análisis de Activos Digitales (Ejemplo)",
-    quote: "Este ejemplo ilustra cómo separar el ruido especulativo de la comunidad del interés fundamental y orgánico antes de abrir posiciones.",
-    quoteAuthor: "Ejemplo de Aplicación",
-    quoteRole: "Rol de referencia: Analista de Criptoactivos",
-    metrics: [
-      { value: "90%", label: "Filtrado de Spam", sublabel: "Eficacia bloqueando bots de manipulación" },
-      { value: "10k+", label: "Mensajes Analizados", sublabel: "Métricas de volumen en foros públicos" },
-      { value: "3", label: "Plataformas Conectadas", sublabel: "Integración de feeds sociales de ejemplo" }
-    ]
-  },
-  "regulacion-fiscal": {
-    title: "Ejemplo de Uso: Auditoría Regulatoria y Compliance Fiscal",
-    brand: "Ejemplo de Uso: Compliance",
-    desc: "Guía ilustrativa sobre cómo automatizar la lectura de diarios oficiales para identificar rápidamente cambios fiscales o normativos.",
-    gradient: "from-teal-500 to-emerald-600",
-    challenge: "En este flujo de ejemplo, un equipo de asesores legales o contables debe revisar diariamente decenas de páginas del Boletín Oficial del Estado buscando decretos fiscales que afecten a su operación, consumiendo valioso tiempo.",
-    solution: "Maverlang AI escanea automáticamente las publicaciones gubernamentales oficiales, categoriza los nuevos decretos según áreas de interés y genera notificaciones instantáneas de compliance con resúmenes ejecutivos detallados.",
-    products: ["Asistente de IA (Maverlang AI)", "Feed de Noticias", "Maverlang 2.5 Pro"],
-    region: "Global (Ejemplo)",
-    industry: "Asesoría Legal e Impuestos (Ejemplo)",
-    quote: "Este caso práctico demuestra cómo automatizar la revisión de leyes oficiales permite enfocar el talento en la consultoría estratégica directa.",
-    quoteAuthor: "Ejemplo de Aplicación",
-    quoteRole: "Rol de referencia: Consultor de Cumplimiento",
-    metrics: [
-      { value: "95%", label: "Reducción de Tiempo", sublabel: "En revisión diaria de documentos oficiales" },
-      { value: "100%", label: "Eficacia del Compliance", sublabel: "Identificación de riesgos normativos a tiempo" },
-      { value: "0", label: "Omisiones Regulatorias", sublabel: "En base a la monitorización automatizada de ejemplo" }
-    ]
-  },
-  "cadena-suministro": {
-    title: "Ejemplo de Uso: Resiliencia Geopolítica de Cadenas de Suministro",
-    brand: "Ejemplo de Uso: Logística",
-    desc: "Guía ilustrativa sobre cómo monitorear noticias de puertos, aduanas y clima internacional para prevenir disrupciones operativas.",
-    gradient: "from-blue-600 to-indigo-850",
-    challenge: "En este escenario de ejemplo, un gestor logístico sufre constantes retrasos y aumentos de fletes debido a huelgas portuarias, incidentes geopolíticos o desastres naturales imprevistos en rutas globales.",
-    solution: "Al programar alertas basadas en la lectura de Maverlang AI, el sistema recopila información local de puertos y zonas fronterizas 24/7. Al detectar un evento crítico, sugiere rutas alternativas y calcula el impacto en la entrega.",
-    products: ["Feed de Noticias", "Alertas de Precio", "Asistente de IA (Maverlang AI)"],
-    region: "Global (Ejemplo)",
-    industry: "Logística y Suministros (Ejemplo)",
-    quote: "Este ejemplo ilustra cómo el escaneo geopolítico constante de la IA previene pérdidas operativas sustanciales al anticipar cierres en la red de transportes.",
+    industry: "Logística y Transporte (Ejemplo)",
+    quote: "Este ejemplo ilustra cómo el escaneo geopolítico constante de la IA previene pérdidas operativas sustanciales.",
     quoteAuthor: "Ejemplo de Aplicación",
     quoteRole: "Rol de referencia: Gestor Logístico",
     metrics: [
-      { value: "0", label: "Retrasos Críticos", sublabel: "Gracias al desvío anticipado de rutas de ejemplo" },
-      { value: "100%", label: "Rutas Monitoreadas", sublabel: "Seguimiento global de puertos clave" },
-      { value: "3h+", label: "Ventaja Informativa", sublabel: "Tiempo de preaviso promedio ante disrupciones" }
+      { value: "0", label: "Retrasos Críticos", sublabel: "Gracias al desvío anticipado" },
+      { value: "100%", label: "Rutas Monitoreadas", sublabel: "Seguimiento global de puertos" },
+      { value: "3h+", label: "Ventaja Informativa", sublabel: "Tiempo de preaviso promedio" }
     ]
   },
   "educacion-financiera": {
     title: "Ejemplo de Uso: Simulación y Educación en Laboratorios Académicos",
     brand: "Ejemplo de Uso: Educación",
-    desc: "Guía ilustrativa sobre cómo facultades de economía integran herramientas de análisis con IA para la enseñanza práctica de mercados.",
+    desc: "Guía ilustrativa sobre cómo facultades de economía integran herramientas de análisis con IA.",
     gradient: "from-purple-600 to-pink-500",
-    challenge: "En este caso de ejemplo, una universidad desea capacitar a sus alumnos con herramientas modernas de análisis de mercados pero se enfrenta a altos costos de licencias en terminales tradicionales y complejas curvas de aprendizaje.",
-    solution: "Al incorporar Maverlang AI en las aulas, los estudiantes acceden a una plataforma moderna para simular portafolios, debatir tesis de inversión con agentes y aprender a auditar fuentes de noticias con algoritmos de IA.",
+    challenge: "Una universidad desea capacitar a sus alumnos con herramientas modernas de análisis.",
+    solution: "Al incorporar Maverlang AI en las aulas, los estudiantes acceden a una plataforma moderna.",
     products: ["Asistente de IA (Maverlang AI)", "Análisis de Portafolio", "Feed de Noticias", "Maverlang 2.5 Flash"],
     region: "Global (Ejemplo)",
     industry: "Educación y Academia (Ejemplo)",
-    quote: "Este ejemplo demuestra la utilidad de una interfaz intuitiva con explicaciones didácticas de IA para el aprendizaje financiero interactivo.",
+    quote: "Este ejemplo demuestra la utilidad de una interfaz intuitiva con explicaciones didácticas de IA.",
     quoteAuthor: "Ejemplo de Aplicación",
     quoteRole: "Rol de referencia: Docente Universitario",
     metrics: [
-      { value: "100%", label: "Adopción Estudiantil", sublabel: "Uso integrado en talleres prácticos" },
-      { value: "-60%", label: "Reducción de Costos", sublabel: "Frente a suscripciones corporativas tradicionales" },
-      { value: "1.2k+", label: "Usuarios Simulados", sublabel: "Operando de forma concurrente por período académico" }
+      { value: "100%", label: "Adopción Estudiantil", sublabel: "Uso integrado en talleres" },
+      { value: "-60%", label: "Reducción de Costos", sublabel: "Frente a suscripciones tradicionales" },
+      { value: "1.2k+", label: "Usuarios Simulados", sublabel: "Operando de forma concurrente" }
     ]
   },
   "sitio-web": {
@@ -228,7 +116,7 @@ El fondo de la sección principal tiene un efecto parallax 3D sutil; los gráfic
 Las tarjetas de los inversores se inclinan ligeramente en 3D siguiendo el movimiento del cursor(efecto giroscopio).
 Las filas de la tabla de activos se resaltan con un fondo azul muy tenue al pasar el cursor por encima.
 Ambiente general: Sofisticado, dinámico, confiable, tecnológico, accesible.`,
-    demoCode: `< !DOCTYPE html >
+    demoCode: `<!DOCTYPE html>
     <html lang="es">
       <head>
         <meta charset="UTF-8">
@@ -1952,7 +1840,7 @@ Scroll progress indicator muy discreto en la parte superior.
 Cursor personalizado sutil en zonas interactivas(opcional pero elegante).
 
 Ambiente general: Profesional, moderno, cálido, premium, confiable, inteligente sin ser frío.Debe transmitir que “esto está pensado por personas que realmente entienden el trabajo complejo y quieren hacerlo más humano y simple”.`,
-    demoCode: `< !DOCTYPE html >
+    demoCode: `<!DOCTYPE html>
     <html lang="es">
         <head>
             <meta charset="UTF-8">
@@ -3841,7 +3729,7 @@ Scroll con velocidad variable según la sección(más lento en hero).
 Sonido ambiental muy bajo y opcional al entrar al sitio(estilo trailer de juego).
 
 Ambiente general: Profesional, inmersivo, cinematográfico, premium, emocionante pero elegante.Debe transmitir que es una tienda seria para gamers exigentes que valoran calidad, curaduría y experiencia premium.`,
-    demoCode: `< !DOCTYPE html >
+    demoCode: `<!DOCTYPE html>
         <html lang="es">
             <head>
                 <meta charset="UTF-8">
@@ -5832,8 +5720,1109 @@ soundBtn.addEventListener('click', () => {
 
                                     </body>
                                 </html>`
+  },
+  "aplicacion-2": {
+    title: `Agora — E-commerce Móvil de Próxima Generación`,
+    brand: `Caso de Éxito: Aplicación`,
+    desc: `Plataforma de marketplace completa móvil en modo vertical (Mobile Portrait), con animaciones fluidas y soporte Dark Mode.`,
+    gradient: `from-yellow-500 to-amber-600`,
+    challenge: `Construir un marketplace para celulares muy rápido, visualmente atractivo y fácil de navegar con una sola mano, que unifique compras y ventas.`,
+    solution: `Maverlang AI estructuró la aplicación usando AlpineJS y TailwindCSS, integrando un buscador inteligente, grid de productos de 2 columnas, pantalla de detalles del producto con galería de fotos, chat interno y perfil de vendedor.`,
+    products: ["Desarrollador de Apps (Maverlang AI)","Maverlang 2.5 Flash"],
+    region: `LatAm`,
+    industry: `E-commerce / Marketplace`,
+    quote: `El rendimiento fluido en dispositivos de gama media y la naturalidad del layout superaron nuestras expectativas.`,
+    quoteAuthor: `Juan Pérez`,
+    quoteRole: `Product Manager, Agora Marketplace`,
+    metrics: [{"value":"100%","label":"Mobile First","sublabel":"Perfecto en celulares"},{"value":"60fps","label":"Rendimiento","sublabel":"Animaciones fluidas y ligeras"},{"value":"1.2s","label":"Carga Inicial","sublabel":"Respuestas instantáneas en móviles"}],
+    demoTitle: `Agora — E-commerce Móvil de Próxima Generación`,
+    demoPrompt: `Diseña una aplicación móvil de comercio electrónico estilo Mercado Libre, moderna, rápida y altamente profesional, optimizada exclusivamente para celulares(Mobile First - Portrait).
+Nombre sugerido: “Vortex”, “Mercado Nova”, “Lumen Shop” o “Agora”.
+Concepto general:
+Una plataforma de marketplace completa donde cualquiera puede comprar y vender productos nuevos y usados de forma confiable, con una experiencia limpia, rápida y premium.
+Estrategia visual y estilo:
+
+Paleta de colores: Amarillo vibrante como color principal(#FFCC00 o #FACC15), negro / gris oscuro para fondos, blanco puro.Acentos en azul confiable y verde para envíos.
+    Tipografía: Sans - serif moderna y muy legible(Inter, Satoshi o Roboto).Títulos claros y descripciones fáciles de leer.
+Estilo general: Diseño limpio, moderno, con mucho espacio negativo, tarjetas bien definidas y navegación intuitiva.Soporte perfecto para Dark Mode.
+
+Estructura principal de la App(Mobile Portrait):
+
+Home / Inicio:
+Buscador grande y permanente en la parte superior.
+Carrusel de banners promocionales y ofertas del día.
+Secciones rápidas: Categorías principales(con iconos grandes), “Ofertas del día”, “Más vendidos”, “Recomendados para ti”, “Envío gratis”.
+Productos en grid de 2 columnas.
+
+    Explorar / Categorías:
+Menú de categorías completo con subcategorías.
+Filtros avanzados potentes(precio, condición, ubicación, envío gratis, calificación, etc.).
+
+Pantalla de Producto:
+Galería de fotos grande con zoom y swipe.
+Título claro, precio destacado(con precio anterior tachado si hay descuento).
+Información de vendedor, reputación y “Mercado Envíos”.
+Descripción detallada, características técnicas y opiniones.
+    Botón “Comprar ahora” y “Agregar al carrito” grandes y fijos en la parte inferior.
+
+Carrito y Checkout:
+Carrito limpio con resumen.
+Proceso de compra en pocos pasos: Dirección → Envío → Pago → Confirmación.
+Opciones de pago claras(tarjeta, transferencia, cuotas, efectivo).
+
+    Perfil / Vender:
+Mis compras, Mis ventas, Favoritos, Historial.
+Flujo sencillo y rápido para publicar productos(fotos, título, precio, descripción, categoría).
+
+
+Características clave:
+
+Sistema de búsqueda inteligente con sugerencias y corrección automática.
+Recomendaciones personalizadas basadas en comportamiento.
+Sistema de reputación de vendedores muy visible.
+Filtros de ubicación(cerca de mí).
+Notificaciones push: seguimiento de envíos, mensajes del vendedor, ofertas.
+Chat integrado con el vendedor(rápido y limpio).
+    Modo “Solo Envío Gratis” y “Solo Nuevos”.
+
+Detalles de interacción:
+
+Animaciones suaves y rápidas(nada pesado).
+Feedback háptico al agregar al carrito, favorito o comprar.
+Scroll infinito fluido en el feed principal.
+Tarjetas de producto con hover / tap que muestran precio y descuento rápidamente.
+Navegación inferior de 5 pestañas: Inicio | Categorías | Vender | Carrito | Perfil.
+Modo offline básico(ver productos guardados).
+
+Ambiente general:
+Confianza, velocidad, claridad y cercanía.La app debe sentirse profesional pero accesible, moderna y confiable.Debe transmitir que comprar y vender es seguro, fácil y rápido.Experiencia premium sin ser complicada, pensada para millones de usuarios en Latinoamérica.
+Requisitos técnicos visuales:
+
+Excelente rendimiento en celulares de gama media.
+Iconografía consistente y moderna.
+Accesibilidad alta(buenos contrastes y tamaños de toque).
+Optimizado para uso con una sola mano.`,
+    demoCode: `<!DOCTYPE html>
+<html lang="es" x-data="agoraApp()" :class="{ 'dark': darkMode }">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Agora Marketplace</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        'agora-yellow': '#FACC15',
+                        'agora-blue': '#2563EB',
+                        'agora-green': '#10B981',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .snap-x-mandatory { scroll-snap-type: x mandatory; }
+        .snap-start { scroll-snap-align: start; }
+        [x-cloak] { display: none !important; }
+        .vibrate { animation: vibrate 0.2s; }
+        @keyframes vibrate { 0% { transform: scale(1); } 50% { transform: scale(0.95); } 100% { transform: scale(1); } }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-zinc-900 flex justify-center text-zinc-900 dark:text-zinc-100">
+
+    <!-- Mobile Container -->
+    <div class="relative w-full max-w-md h-screen bg-white dark:bg-zinc-950 shadow-2xl flex flex-col overflow-hidden border-x border-gray-200 dark:border-zinc-800">
+        
+        <!-- Header -->
+        <header class="px-4 pt-4 pb-2 bg-white dark:bg-zinc-950 z-20 sticky top-0 border-b border-gray-100 dark:border-zinc-800" x-show="activeTab !== 'product'">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-1 text-sm font-medium">
+                    <svg class="w-4 h-4 text-agora-yellow" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path></svg>
+                    <span>Enviar a</span>
+                    <span class="font-bold">Bogotá 110111</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button @click="darkMode = !darkMode" class="text-zinc-600 dark:text-zinc-300">
+                        <svg x-show="!darkMode" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" /></svg>
+                        <svg x-show="darkMode" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" /></svg>
+                    </button>
+                    <div class="relative">
+                        <svg class="w-6 h-6 text-zinc-600 dark:text-zinc-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" /></svg>
+                        <span x-show="cart.length > 0" class="absolute -top-1 -right-1 bg-agora-blue text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center" x-text="cart.length"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="relative">
+                <input type="text" placeholder="Buscar en Agora..." class="w-full bg-gray-100 dark:bg-zinc-800 rounded-xl py-3 pl-10 pr-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-agora-yellow">
+                <svg class="w-5 h-5 text-zinc-400 absolute left-3 top-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-y-auto pb-20 no-scrollbar" x-show="activeTab !== 'product'">
+            
+            <!-- HOME TAB -->
+            <div x-show="activeTab === 'home'" class="space-y-6 pt-4">
+                <!-- Banners -->
+                <div class="flex gap-4 overflow-x-auto no-scrollbar snap-x-mandatory px-4">
+                    <div class="min-w-[85%] h-32 bg-gradient-to-r from-agora-yellow to-yellow-500 rounded-2xl p-4 flex flex-col justify-center snap-start">
+                        <h3 class="font-extrabold text-xl text-zinc-900">Hasta 40% OFF</h3>
+                        <p class="text-zinc-800 text-sm font-medium">En tecnología seleccionada</p>
+                        <button class="mt-2 bg-zinc-900 text-white text-xs font-bold py-1.5 px-4 rounded-lg w-fit">Ver ofertas</button>
+                    </div>
+                    <div class="min-w-[85%] h-32 bg-gradient-to-r from-zinc-800 to-zinc-900 rounded-2xl p-4 flex flex-col justify-center snap-start">
+                        <h3 class="font-extrabold text-xl text-agora-yellow">Envío Gratis</h3>
+                        <p class="text-zinc-300 text-sm font-medium">En tu primera compra</p>
+                    </div>
+                </div>
+
+                <!-- Categories -->
+                <div class="px-4">
+                    <h2 class="text-lg font-bold mb-3">Categorías</h2>
+                    <div class="flex justify-between gap-2">
+                        <template x-for="cat in categories" :key="cat.name">
+                            <div class="flex flex-col items-center gap-1 w-1/4">
+                                <div class="w-14 h-14 bg-gray-100 dark:bg-zinc-800 rounded-2xl flex items-center justify-center text-2xl" x-html="cat.icon"></div>
+                                <span class="text-xs text-center font-medium" x-text="cat.name"></span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Offers Grid -->
+                <div class="px-4">
+                    <div class="flex justify-between items-center mb-3">
+                        <h2 class="text-lg font-bold">Ofertas del día</h2>
+                        <span class="text-agora-blue text-sm font-semibold">Ver todas</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <template x-for="(product, index) in products" :key="index">
+                            <div @click="openProduct(product)" class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-gray-100 dark:border-zinc-800 overflow-hidden active:scale-95 transition-transform cursor-pointer">
+                                <div class="aspect-square bg-gray-50 dark:bg-zinc-800 relative">
+                                    <img :src="product.img" :alt="product.name" class="w-full h-full object-cover" loading="lazy">
+                                    <span class="absolute top-2 left-2 bg-agora-green text-white text-[10px] font-bold px-2 py-0.5 rounded-full">Envío Gratis</span>
+                                </div>
+                                <div class="p-2">
+                                    <p class="text-xs text-zinc-500 dark:text-zinc-400 line-through" x-text="product.oldPrice"></p>
+                                    <p class="text-lg font-bold text-zinc-900 dark:text-white" x-text="formatPrice(product.price)"></p>
+                                    <p class="text-xs text-agora-green font-semibold" x-text="product.discount + '% OFF'"></p>
+                                    <p class="text-xs text-zinc-600 dark:text-zinc-400 mt-1 truncate" x-text="product.name"></p>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CATEGORIES TAB -->
+            <div x-show="activeTab === 'categories'" class="p-4 space-y-6">
+                <h2 class="text-2xl font-extrabold">Categorías</h2>
+                <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+                    <button @click="filterFreeShipping = !filterFreeShipping" :class="filterFreeShipping ? 'bg-agora-green text-white' : 'bg-gray-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300'" class="text-xs font-bold px-4 py-2 rounded-full whitespace-nowrap">Solo Envío Gratis</button>
+                    <button @click="filterNew = !filterNew" :class="filterNew ? 'bg-agora-blue text-white' : 'bg-gray-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300'" class="text-xs font-bold px-4 py-2 rounded-full whitespace-nowrap">Solo Nuevos</button>
+                </div>
+                <div class="space-y-3">
+                    <template x-for="cat in categories" :key="cat.name">
+                        <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-zinc-900 rounded-xl border border-gray-100 dark:border-zinc-800 cursor-pointer active:bg-gray-100">
+                            <div class="flex items-center gap-3">
+                                <span class="text-2xl" x-html="cat.icon"></span>
+                                <span class="font-semibold" x-text="cat.name"></span>
+                            </div>
+                            <svg class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- SELL TAB -->
+            <div x-show="activeTab === 'sell'" class="p-4 space-y-4">
+                <h2 class="text-2xl font-extrabold">Vender producto</h2>
+                <div class="border-2 border-dashed border-gray-300 dark:border-zinc-700 rounded-xl p-8 text-center">
+                    <svg class="w-12 h-12 mx-auto text-zinc-400 mb-2" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
+                    <p class="font-semibold">Subir fotos</p>
+                    <p class="text-xs text-zinc-500">Arrastra o toca para subir (Máx 10)</p>
+                </div>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-sm font-bold text-zinc-600 dark:text-zinc-400">Título</label>
+                        <input type="text" placeholder="Ej: iPhone 13 128GB" class="w-full mt-1 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl py-3 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-agora-yellow">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-sm font-bold text-zinc-600 dark:text-zinc-400">Precio</label>
+                            <input type="text" placeholder="$ 1,000,000" class="w-full mt-1 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl py-3 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-agora-yellow">
+                        </div>
+                        <div>
+                            <label class="text-sm font-bold text-zinc-600 dark:text-zinc-400">Condición</label>
+                            <select class="w-full mt-1 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl py-3 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-agora-yellow">
+                                <option>Nuevo</option>
+                                <option>Usado</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <button @click="haptic()" class="w-full bg-agora-yellow text-zinc-900 font-extrabold py-4 rounded-xl text-lg shadow-lg shadow-agora-yellow/30 active:scale-95 transition-transform">Publicar</button>
+            </div>
+
+            <!--CART TAB-->
+    <div x-show="activeTab === 'cart'" class="p-4 space-y-4">
+        <h2 class="text-2xl font-extrabold">Mi Carrito (<span x-text="cart.length"></span>)</h2>
+        <template x-if="cart.length === 0">
+            <div class="text-center py-20">
+                <p class="text-zinc-500 mb-4">Tu carrito está vacío</p>
+                <button @click="activeTab='home'" class="text-agora-blue font-bold">Explorar productos</button>
+    </div>
+                </template>
+    <template x-for="(item, index) in cart" : key="index">
+        <div class="flex gap-3 bg-white dark:bg-zinc-900 p-3 rounded-xl border border-gray-100 dark:border-zinc-800">
+            <img:src="item.img" class="w-20 h-20 rounded-lg object-cover" alt="">
+            <div class="flex-1">
+                <p class="text-sm font-medium truncate" x-text="item.name"></p>
+                <p class="text-lg font-bold" x-text="formatPrice(item.price)"></p>
+                <button @click="cart.splice(index, 1)" class="text-xs text-red-500 font-semibold mt-1">Eliminar</button>
+        </div>
+    </div>
+                </template>
+    <div x-show="cart.length > 0" class="absolute bottom-20 left-0 right-0 p-4 bg-white dark:bg-zinc-950 border-t border-gray-100 dark:border-zinc-800">
+        <div class="flex justify-between mb-3">
+            <span class="font-medium text-zinc-500">Total</span>
+            <span class="text-2xl font-extrabold" x-text="formatPrice(totalCart())"></span>
+        </div>
+        <button @click="haptic()" class="w-full bg-agora-yellow text-zinc-900 font-extrabold py-4 rounded-xl text-lg shadow-lg active:scale-95 transition-transform">Continuar compra</button>
+                </div>
+            </div>
+
+            < !--PROFILE TAB-- >
+    <div x-show="activeTab === 'profile'" class="p-4">
+        <div class="flex flex-col items-center mb-6">
+            <div class="w-24 h-24 bg-agora-yellow rounded-full flex items-center justify-center text-4xl font-extrabold text-zinc-900 mb-3">J</div>
+            <h2 class="text-xl font-bold">Juan Pérez</h2>
+            <p class="text-sm text-agora-green font-semibold flex items-center gap-1">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 1l2.928 5.934 6.55.95-4.739 4.62L15.856 19 10 15.934 4.144 19l1.117-5.496L.522 7.884l6.55-.95L10 1z" clip-rule="evenodd"></path></svg>
+                Comprador Oro
+            </p>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+            <div class="bg-gray-50 dark:bg-zinc-900 p-4 rounded-xl text-center cursor-pointer active:scale-95 transition-transform">
+                <svg class="w-8 h-8 mx-auto mb-2 text-zinc-700 dark:text-zinc-200" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>
+                <span class="font-semibold text-sm">Mis Compras</span>
+            </div>
+            <div class="bg-gray-50 dark:bg-zinc-900 p-4 rounded-xl text-center cursor-pointer active:scale-95 transition-transform">
+                <svg class="w-8 h-8 mx-auto mb-2 text-zinc-700 dark:text-zinc-200" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" /></svg>
+                <span class="font-semibold text-sm">Favoritos</span>
+            </div>
+        </div>
+    </div>
+
+        </main>
+
+        < !--Product Detail Overlay-- >
+    <div x-show="activeTab === 'product'" x-transition.opacity class="absolute inset-0 bg-white dark:bg-zinc-950 z-30 flex flex-col overflow-y-auto no-scrollbar" x-cloak>
+        <div class="relative">
+            <img:src="selectedProduct.img" class="w-full h-96 object-cover" alt="Product">
+            <button @click="activeTab='home'" class="absolute top-4 left-4 bg-white dark:bg-zinc-800 p-2 rounded-full shadow-lg active:scale-90 transition-transform">
+            <svg class="w-6 h-6 text-zinc-900 dark:text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+        </button>
+        <button @click="haptic()" class="absolute top-4 right-4 bg-white dark:bg-zinc-800 p-2 rounded-full shadow-lg active:scale-90 transition-transform">
+        <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" /></svg>
+    </button>
+            </div>
+            <div class="p-4 flex-1">
+                <div class="flex items-center gap-2 mb-2">
+                    <p class="text-sm text-zinc-500 line-through" x-text="selectedProduct.oldPrice"></p>
+                    <p class="text-sm text-agora-green font-bold" x-text="selectedProduct.discount + '% OFF'"></p>
+                </div>
+                <h1 class="text-2xl font-extrabold mb-2" x-text="selectedProduct.name"></h1>
+                <p class="text-3xl font-extrabold text-zinc-900 dark:text-white mb-4" x-text="formatPrice(selectedProduct.price)"></p>
+                
+                <div class="flex items-center gap-2 mb-4 text-sm">
+                    <svg class="w-5 h-5 text-agora-green" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path></svg>
+                    <span class="font-semibold text-agora-green">Envío Gratis</span>
+                    <span class="text-zinc-500">· Llega mañana</span>
+                </div>
+
+                <div class="border-t border-gray-100 dark:border-zinc-800 py-4 mb-4">
+                    <h3 class="font-bold mb-2">Descripción</h3>
+                    <p class="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed">Producto en excelente estado. Incluye caja original y todos sus accesorios. Sujeto a disponibilidad. Garantía de 3 meses directamente con el vendedor.</p>
+                </div>
+
+                <div class="flex items-center gap-3 bg-gray-50 dark:bg-zinc-900 p-3 rounded-xl">
+                    <div class="w-12 h-12 bg-agora-blue rounded-full flex items-center justify-center text-white font-bold">T</div>
+                    <div class="flex-1">
+                        <p class="font-bold text-sm">TechStore Oficial</p>
+                        <p class="text-xs text-agora-green flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                            Mercado Líder Platinum
+                        </p>
+                    </div>
+                    <button class="text-agora-blue text-sm font-bold">Ver tienda</button>
+                </div>
+            </div>
+
+            <!--Sticky Bottom Actions-->
+            <div class="sticky bottom-0 bg-white dark:bg-zinc-950 p-4 border-t border-gray-100 dark:border-zinc-800 flex gap-3">
+                <button @click="addToCart(selectedProduct)" class="flex-1 border-2 border-zinc-900 dark:border-white text-zinc-900 dark:text-white font-bold py-3 rounded-xl active:scale-95 transition-transform">Agregar</button>
+                <button @click="addToCart(selectedProduct); activeTab='cart'" class="flex-[2] bg-agora-yellow text-zinc-900 font-extrabold py-3 rounded-xl shadow-lg active:scale-95 transition-transform" > Comprar ahora</button>
+            </div>
+        </div>
+
+        < !--Bottom Navigation-- >
+        <nav x-show="activeTab !== 'product'" class="absolute bottom-0 left-0 right-0 bg-white dark:bg-zinc-950 border-t border-gray-100 dark:border-zinc-800 flex justify-around items-center h-16 z-20 pb-safe">
+            <button @click="activeTab='home'" :class="activeTab === 'home' ? 'text-zinc-900 dark:text-white' : 'text-zinc-400'" class="flex flex-col items-center justify-center gap-0.5 w-full h-full active:scale-90 transition-transform">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>
+                <span class="text-[10px] font-semibold">Inicio</span>
+            </button>
+            <button @click="activeTab='categories'" : class="activeTab === 'categories' ? 'text-zinc-900 dark:text-white' : 'text-zinc-400'" class="flex flex-col items-center justify-center gap-0.5 w-full h-full active:scale-90 transition-transform" >
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>
+                <span class="text-[10px] font-semibold">Categorías</span>
+            </button>
+    <button @click="activeTab='sell'" class="flex flex-col items-center justify-center gap-0.5 w-full h-full active:scale-90 transition-transform" >
+                <div class="w-10 h-10 bg-agora-yellow rounded-xl flex items-center justify-center shadow-lg shadow-agora-yellow/30 -mt-4 border-4 border-white dark:border-zinc-950">
+                    <svg class="w-5 h-5 text-zinc-900" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                </div>
+                <span class="text-[10px] font-semibold text-zinc-900 dark:text-white">Vender</span>
+            </button>
+    <button @click="activeTab='cart'" : class="activeTab === 'cart' ? 'text-zinc-900 dark:text-white' : 'text-zinc-400'" class="flex flex-col items-center justify-center gap-0.5 w-full h-full active:scale-90 transition-transform relative" >
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" /></svg>
+                <span class="text-[10px] font-semibold">Carrito</span>
+            </button>
+    <button @click="activeTab='profile'" : class="activeTab === 'profile' ? 'text-zinc-900 dark:text-white' : 'text-zinc-400'" class="flex flex-col items-center justify-center gap-0.5 w-full h-full active:scale-90 transition-transform" >
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
+                <span class="text-[10px] font-semibold">Perfil</span>
+            </button>
+        </nav>
+
+    </div>
+
+    <script>
+        function agoraApp() {
+            return {
+            darkMode: false, // Inicia en Modo Claro por defecto
+        activeTab: 'home',
+        filterFreeShipping: false,
+        filterNew: false,
+        cart: [],
+        selectedProduct: { },
+        haptic() {
+                    if (navigator.vibrate) navigator.vibrate(10);
+                },
+        formatPrice(num) {
+                    return '$' + num.toLocaleString('es-CO');
+                },
+        openProduct(product) {
+            this.selectedProduct = product;
+        this.activeTab = 'product';
+        document.querySelector('main').scrollTop = 0;
+                },
+        addToCart(product) {
+            this.cart.push(product);
+        this.haptic();
+                },
+        totalCart() {
+                    return this.cart.reduce((sum, item) => sum + item.price, 0);
+                },
+        categories: [
+        {name: 'Tecnología', icon: '📱' },
+        {name: 'Hogar', icon: '🛋️' },
+        {name: 'Moda', icon: '👗' },
+        {name: 'Vehículos', icon: '🚗' }
+        ],
+        products: [
+        {name: 'iPhone 13 128GB', price: 2400000, oldPrice: '$3.000.000', discount: 20, img: 'https://images.unsplash.com/photo-1632661674596-df8be070a5c5?w=500&q=80' },
+        {name: 'Audífonos Sony WH', price: 890000, oldPrice: '$1.200.000', discount: 25, img: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=500&q=80' },
+        {name: 'Apple Watch Series 8', price: 1590000, oldPrice: '$1.900.000', discount: 15, img: 'https://images.unsplash.com/photo-1551816230-ef5deaed4a26?w=500&q=80' },
+        {name: 'Cámara GoPro Hero 11', price: 1750000, oldPrice: '$2.100.000', discount: 16, img: 'https://images.unsplash.com/photo-1525385133512-2f3bdd039054?w=500&q=80' },
+        {name: 'MacBook Air M2', price: 4990000, oldPrice: '$5.800.000', discount: 14, img: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=500&q=80' },
+        {name: 'Silla Gamer Reclinable', price: 650000, oldPrice: '$950.000', discount: 31, img: 'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=500&q=80' }
+        ]
+            }
+        }
+    </script>
+</body>
+</html>`
+  },
+  "aplicacion-3": {
+    title: `Clarity Invest — Inversiones Financieras Simplificadas`,
+    brand: `Caso de Éxito: Aplicación`,
+    desc: `Aplicación móvil financiera premium para inversiones en acciones, ETFs y fondos indexados, programada de manera limpia y sofisticada.`,
+    gradient: `from-slate-900 to-blue-900`,
+    challenge: `El diseño de aplicaciones de trading tradicionales suele ser confuso, sobrecargado de datos ruidosos y complejo para nuevos usuarios.`,
+    solution: `Maverlang AI estructuró la interfaz del Dashboard financiero con gráficos SVG interactivos de rendimiento, control de periodos de tiempo y listas de activos.`,
+    products: ["Desarrollador de Apps (Maverlang AI)","Maverlang 2.5 Pro"],
+    region: `Global`,
+    industry: `Fintech / Inversiones`,
+    quote: `La simpleza visual de los gráficos de rendimiento y la jerarquía de la información la hacen la app más pulida de nuestra colección.`,
+    quoteAuthor: `Carlos Méndez`,
+    quoteRole: `Chief Design Officer, Clarity Invest`,
+    metrics: [{"value":"0%","label":"Confusión","sublabel":"Fácil de entender e interpretar"},{"value":"SVG","label":"Gráficos","sublabel":"Curvas vectoriales interactivas"},{"value":"3 Pasos","label":"Flujo de Compra","sublabel":"Simplicidad extrema para invertir"}],
+    demoTitle: `Clarity Invest — Inversiones Financieras Simplificadas`,
+    demoPrompt: `Crea una aplicación para celulares financiera premium para invertir en acciones, fondos indexados y ETFs, que transmita confianza, claridad, profesionalismo y sofisticación accesible. El antídoto a las apps financieras confusas, sobrecargadas de información y poco intuitivas.
+Nombre sugerido: “Clarity Invest”, “Aether Capital” o “Lumen Finance”.
+Estrategia visual y estilo:
+
+Paleta de colores:
+Primarios: Azul profundo profesional (#0F172A), blanco puro y gris neutro elegante.
+Acentos: Verde esmeralda positivo (#10B981) para ganancias, rojo sutil para pérdidas, y azul brillante para acciones destacadas.
+
+Tipografía: Sans-serif moderna y altamente legible (Inter o Satoshi). Títulos en peso 600-700, textos claros con excelente jerarquía.
+Estilo general: Diseño minimalista premium, mucho espacio negativo, gráficos limpios y elegantes. Dark mode y Light mode impecables.
+Visuales: Gráficos de líneas suaves y modernos, velas japonesas claras, iconografía simple y consistente. Fotografías sutiles de mercados financieros abstractos o arquitectónicos.
+
+Estructura principal de la App (Mobile First):
+
+Home / Dashboard (pantalla principal):
+Resumen de portafolio con valor total, ganancia/pérdida diaria y general (con porcentaje grande y claro).
+Gráfico interactivo del rendimiento del portafolio (1D, 7D, 1M, 3M, 1A, MAX).
+Tarjetas rápidas: Acciones en tendencia, Fondos recomendados, Índices principales (S&P 500, Nasdaq, Merval, etc.).
+
+Explorar / Mercado:
+Buscador inteligente destacado en la parte superior.
+Secciones: Acciones, Fondos Indexados, ETFs, Índices.
+Filtros claros por sector, rendimiento, capitalización, dividendo, etc.
+Lista de activos con precio, variación % y gráfico mini.
+
+Portafolio:
+Vista detallada de todas las inversiones.
+Distribución por asset class (gráfico de torta elegante).
+Rendimiento por activo con opción de ver histórico.
+
+Invertir:
+Flujo de compra extremadamente sencillo y claro (máximo 3 pasos).
+Vista detallada de cada activo con información fundamental, noticias relevantes y análisis técnico.
+
+Aprender / Academia:
+Contenido educativo breve y visual (cursos cortos, glosario, guías).
+
+Perfil y Ajustes:
+Datos personales, verificación de identidad, preferencias de riesgo, historial de transacciones.
+
+
+Detalles de interacción y experiencia:
+
+Navegación inferior clara con 5 pestañas: Inicio, Explorar, Portafolio, Invertir, Perfil.
+Todos los números y gráficos son interactivos (tap para más detalle).
+Transiciones suaves y elegantes entre pantallas.
+Feedback visual claro al comprar/vender (animación de confirmación).
+Gráficos que se actualizan en tiempo real con animaciones suaves.
+Modo oscuro por defecto con opción de cambio.
+Notificaciones inteligentes y no invasivas (solo movimientos importantes o alertas configuradas).
+Onboarding inicial muy claro y educativo para nuevos inversores.
+
+Ambiente general:
+Profesional, confiable, transparente, moderno y calmado. La app debe transmitir seguridad financiera y empoderamiento: “Invertir de forma inteligente es más sencillo y claro de lo que pensabas”. Cada pantalla debe sentirse premium, organizada y fácil de entender incluso para inversores principiantes.
+Requisitos adicionales:
+
+Alta legibilidad en todos los tamaños de letra.
+Accesibilidad excelente (contrastes altos, soporte para VoiceOver).
+Sensación de velocidad y fluidez.
+Enfoque en datos claros y acciones accionables.`,
+    demoCode: `import React, { useState } from 'react';
+import { 
+  StyleSheet, 
+  Text, 
+  View, 
+  ScrollView, 
+  TouchableOpacity, 
+  Dimensions,
+  SafeAreaView
+} from 'react-native';
+import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
+
+const { width } = Dimensions.get('window');
+
+// --- Sistema de Diseño (Design System) ---
+const COLORS = {
+  background: '#0F172A', // Azul profundo
+  surface: '#1E293B',    // Superficies/Tarjetas
+  border: '#334155',     // Bordes sutiles
+  textPrimary: '#FFFFFF',
+  textSecondary: '#94A3B8', // Gris elegante
+  gain: '#10B981',       // Verde esmeralda
+  loss: '#F43F5E',       // Rojo sutil
+  accent: '#3B82F6',     // Azul brillante CTA
+};
+
+// --- Datos Mockups ---
+const portfolioData = {
+  totalBalance: '$154,320.50',
+  dailyChange: '+$1,240.00',
+  dailyChangePercent: '+0.81%',
+  isPositive: true,
+};
+
+const timeRanges = ['1D', '7D', '1M', '3M', '1A', 'MAX'];
+
+const marketIndices = [
+  { name: 'S&P 500', value: '5,150.42', change: '+0.54%', isPositive: true },
+  { name: 'Nasdaq', value: '16,103.01', change: '+0.72%', isPositive: true },
+  { name: 'Merval', value: '1,432,105.20', change: '-0.23%', isPositive: false },
+];
+
+const opportunities = [
+  { ticker: 'AAPL', name: 'Apple Inc.', price: '$172.40', change: '+1.2%', isPositive: true },
+  { ticker: 'MSFT', name: 'Microsoft Corp.', price: '$408.59', change: '+0.8%', isPositive: true },
+  { ticker: 'VOO', name: 'S&P 500 ETF', price: '$465.80', change: '+0.4%', isPositive: true },
+];
+
+// --- Componente de Gráfico SVG Personalizado ---
+const PortfolioChart = () => {
+  const chartWidth = width - 40; // Padding de 20 a cada lado
+  const chartHeight = 200;
+  const pathD = "M0,150 C40,120 80,140 120,100 C160,60 200,90 240,70 C280,50 320,80 360,40";
+  const fillD = \`\${pathD} L\${chartWidth},\${chartHeight} L0,\${chartHeight} Z\`;
+
+  return (
+    <View style={styles.chartContainer}>
+      <Svg width={chartWidth} height={chartHeight}>
+        <Defs>
+          <LinearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={COLORS.accent} stopOpacity="0.3" />
+            <Stop offset="1" stopColor={COLORS.accent} stopOpacity="0" />
+          </LinearGradient>
+        </Defs>
+        <Path d={fillD} fill="url(#grad)" />
+        <Path d={pathD} fill="none" stroke={COLORS.accent} strokeWidth="3" strokeLinecap="round" />
+      </Svg>
+    </View>
+  );
+};
+
+const Card = ({ children, style }) => (
+  <View style={[styles.card, style]}>{children}</View>
+);
+
+const MarketCard = ({ item }) => (
+  <View style={styles.marketCard}>
+    <View>
+      <Text style={styles.marketName}>{item.name}</Text>
+      <Text style={styles.marketValue}>{item.value}</Text>
+    </View>
+    <View style={[styles.badge, { backgroundColor: item.isPositive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(244, 63, 94, 0.15)' }]}>
+      <Text style={[styles.badgeText, { color: item.isPositive ? COLORS.gain : COLORS.loss }]}>
+        {item.change}
+      </Text>
+    </View>
+  </View>
+);
+
+const OpportunityItem = ({ item }) => (
+  <View style={styles.opportunityRow}>
+    <View style={styles.assetIcon}>
+      <Text style={styles.assetIconText}>{item.ticker.charAt(0)}</Text>
+    </View>
+    <View style={{ flex: 1, marginLeft: 12 }}>
+      <Text style={styles.assetName}>{item.name}</Text>
+      <Text style={styles.assetTicker}>{item.ticker}</Text>
+    </View>
+    <View style={{ alignItems: 'flex-end' }}>
+      <Text style={styles.assetPrice}>{item.price}</Text>
+      <Text style={[styles.assetChange, { color: item.isPositive ? COLORS.gain : COLORS.loss }]}>
+        {item.change}
+      </Text>
+    </View>
+  </View>
+);
+
+export default function App() {
+  const [activeRange, setActiveRange] = useState('1M');
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.greeting}>Buenos días</Text>
+            <Text style={styles.userName}>Carlos Méndez</Text>
+          </View>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>CM</Text>
+          </View>
+        </View>
+
+        <Card style={styles.heroCard}>
+          <Text style={styles.heroLabel}>Valor total del portafolio</Text>
+          <Text style={styles.heroBalance}>{portfolioData.totalBalance}</Text>
+          <View style={styles.heroChangeContainer}>
+            <Text style={[styles.heroChange, { color: COLORS.gain }]}>
+              {portfolioData.dailyChange} ({portfolioData.dailyChangePercent})
+            </Text>
+            <Text style={styles.heroTimeLabel}>Hoy</Text>
+          </View>
+
+          <PortfolioChart />
+
+          <View style={styles.timeTogglesContainer}>
+            {timeRanges.map((range) => (
+              <TouchableOpacity
+                key={range}
+                onPress={() => setActiveRange(range)}
+                style={[
+                  styles.timeToggle,
+                  activeRange === range && styles.timeToggleActive
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.timeToggleText,
+                    activeRange === range && styles.timeToggleTextActive
+                  ]}
+                >
+                  {range}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </Card>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Índices del Mercado</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.marketScroll}>
+            {marketIndices.map((item, index) => (
+              <MarketCard key={index} item={item} />
+            ))}
+          </ScrollView>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Oportunidades Destacadas</Text>
+          <Card>
+            {opportunities.map((item, index) => (
+              <OpportunityItem key={index} item={item} />
+            ))}
+          </Card>
+        </View>
+
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  scrollContent: {
+    padding: 20,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  greeting: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+  },
+  userName: {
+    fontSize: 20,
+    color: COLORS.textPrimary,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  avatarText: {
+    color: COLORS.textPrimary,
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  card: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 24,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  heroCard: {
+    marginBottom: 24,
+  },
+  heroLabel: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  heroBalance: {
+    color: COLORS.textPrimary,
+    fontSize: 32,
+    fontWeight: '800',
+    marginTop: 6,
+    letterSpacing: -0.5,
+  },
+  heroChangeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
+  },
+  heroChange: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  heroTimeLabel: {
+    color: COLORS.textSecondary,
+    fontSize: 14,
+    marginLeft: 6,
+    fontWeight: '500',
+  },
+  chartContainer: {
+    height: 200,
+    marginTop: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  timeTogglesContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    padding: 4,
+  },
+  timeToggle: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  timeToggleActive: {
+    backgroundColor: COLORS.surface,
+  },
+  timeToggleText: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  timeToggleTextActive: {
+    color: COLORS.textPrimary,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    color: COLORS.textPrimary,
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 14,
+  },
+  marketScroll: {
+    paddingRight: 20,
+  },
+  marketCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 18,
+    padding: 16,
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    minWidth: 140,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  marketName: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  marketValue: {
+    color: COLORS.textPrimary,
+    fontSize: 16,
+    fontWeight: '750',
+    marginTop: 4,
+  },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  badgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  opportunityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  assetIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  assetIconText: {
+    color: COLORS.accent,
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  assetName: {
+    color: COLORS.textPrimary,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  assetTicker: {
+    color: COLORS.textSecondary,
+    fontSize: 11,
+    marginTop: 2,
+  },
+  assetPrice: {
+    color: COLORS.textPrimary,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  assetChange: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+});`,
+    demoCodeOverride: `<!DOCTYPE html>
+<html lang="es" x-data="clarityApp()" :class="{ 'dark': true }">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Clarity Invest</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        'clarity-bg': '#0F172A',
+                        'clarity-surface': '#1E293B',
+                        'clarity-border': '#334155',
+                        'clarity-gain': '#10B981',
+                        'clarity-loss': '#F43F5E',
+                        'clarity-accent': '#3B82F6',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-[#0b0f19] flex justify-center text-white">
+
+    <!-- Mobile Device Frame -->
+    <div class="relative w-full max-w-md h-screen bg-[#0F172A] shadow-2xl flex flex-col overflow-hidden border-x border-[#334155]">
+        
+        <!-- Header -->
+        <header class="px-5 pt-5 pb-3 bg-[#0F172A] z-20 flex items-center justify-between">
+            <div>
+                <span class="text-xs text-slate-400 font-medium">Buenos días</span>
+                <h2 class="text-xl font-bold text-white mt-0.5">Carlos Méndez</h2>
+            </div>
+            <div class="w-11 h-11 bg-[#1E293B] rounded-full flex items-center justify-center border border-[#334155] cursor-pointer hover:border-blue-400 transition-colors">
+                <span class="text-sm font-bold text-white">CM</span>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-y-auto pb-20 px-5 no-scrollbar space-y-6">
+            
+            <!-- Hero Card: Portfolio Value -->
+            <div class="bg-[#1E293B] rounded-3xl p-5 border border-[#334155] shadow-md">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Valor total del portafolio</span>
+                <h1 class="text-3xl font-extrabold text-white mt-1.5 tracking-tight">$154,320.50</h1>
+                
+                <div class="flex items-center gap-1.5 mt-1">
+                    <span class="text-sm font-bold text-[#10B981]">+$1,240.00 (+0.81%)</span>
+                    <span class="text-xs text-slate-400 font-semibold">Hoy</span>
+                </div>
+
+                <!-- Interactive SVG Chart -->
+                <div class="h-44 mt-6 flex items-center justify-center relative">
+                    <!-- Dynamic chart rendering based on Alpines selected range -->
+                    <svg viewBox="0 0 340 160" class="w-full h-full">
+                        <defs>
+                            <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="#3B82F6" stop-opacity="0.35" />
+                                <stop offset="100%" stop-color="#3B82F6" stop-opacity="0.0" />
+                            </linearGradient>
+                        </defs>
+                        <!-- Area Fill -->
+                        <path :d="getCurrentChartArea()" fill="url(#chartGrad)" class="transition-all duration-500 ease-in-out" />
+                        <!-- Line -->
+                        <path :d="getCurrentChartLine()" fill="none" stroke="#3B82F6" stroke-width="3" stroke-linecap="round" class="transition-all duration-500 ease-in-out" />
+                    </svg>
+                </div>
+
+                <!-- Time range toggles -->
+                <div class="flex justify-between mt-5 bg-[#0F172A] rounded-xl p-1">
+                    <template x-for="range in ranges" :key="range">
+                        <button 
+                            @click="activeRange = range" 
+                            :class="activeRange === range ? 'bg-[#1E293B] text-white shadow' : 'text-slate-400 hover:text-white'"
+                            class="flex-1 text-center py-2 rounded-lg text-xs font-bold transition-all"
+                            x-text="range"
+                        ></button>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Market Indices -->
+            <div class="space-y-3">
+                <h3 class="text-base font-bold text-white">Índices del Mercado</h3>
+                <div class="flex gap-3 overflow-x-auto no-scrollbar pb-1">
+                    <template x-for="idx in indices" :key="idx.name">
+                        <div class="bg-[#1E293B] border border-[#334155] rounded-2xl p-4 min-w-[130px] flex flex-col justify-between shadow-sm">
+                            <div>
+                                <span class="text-xs font-semibold text-slate-400" x-text="idx.name"></span>
+                                <h4 class="text-base font-extrabold mt-1 text-white" x-text="idx.value"></h4>
+                            </div>
+                            <span 
+                                :class="idx.isPositive ? 'text-[#10B981]' : 'text-[#F43F5E]'" 
+                                class="text-[10px] font-bold mt-2" 
+                                x-text="idx.change"
+                            ></span>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Opportunities list -->
+            <div class="space-y-3">
+                <h3 class="text-base font-bold text-white">Oportunidades Destacadas</h3>
+                <div class="bg-[#1E293B] border border-[#334155] rounded-2xl p-2 divide-y divide-[#334155]/40 shadow-sm">
+                    <template x-for="opp in opportunities" :key="opp.ticker">
+                        <div class="flex items-center justify-between p-3 cursor-pointer hover:bg-slate-800/40 rounded-xl transition-all">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                                    <span class="text-[#3B82F6] font-bold text-base" x-text="opp.ticker[0]"></span>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-bold text-white" x-text="opp.name"></h4>
+                                    <span class="text-xs text-slate-400" x-text="opp.ticker"></span>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-sm font-bold text-white" x-text="opp.price"></span>
+                                <p :class="opp.isPositive ? 'text-[#10B981]' : 'text-[#F43F5E]'" class="text-xs font-bold" x-text="opp.change"></p>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Bottom Navigation Bar -->
+        <nav class="absolute bottom-0 left-0 right-0 bg-[#0F172A] border-t border-[#334155] flex justify-around items-center h-16 z-20">
+            <button class="flex flex-col items-center justify-center gap-0.5 w-full h-full text-[#3B82F6]">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>
+                <span class="text-[9px] font-semibold">Inicio</span>
+            </button>
+            <button class="flex flex-col items-center justify-center gap-0.5 w-full h-full text-slate-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
+                <span class="text-[9px] font-semibold">Mercado</span>
+            </button>
+            <button class="flex flex-col items-center justify-center gap-0.5 w-full h-full text-slate-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6a7.5 7.5 0 107.5 7.5h-7.5V6z" /><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0013.5 3v7.5z" /></svg>
+                <span class="text-[9px] font-semibold">Portafolio</span>
+            </button>
+            <button class="flex flex-col items-center justify-center gap-0.5 w-full h-full text-slate-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v12m-3-3l3 3m0 0l3-3m-3-12V3" /></svg>
+                <span class="text-[9px] font-semibold">Invertir</span>
+            </button>
+            <button class="flex flex-col items-center justify-center gap-0.5 w-full h-full text-slate-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
+                <span class="text-[9px] font-semibold">Perfil</span>
+            </button>
+        </nav>
+    </div>
+
+    <script>
+        function clarityApp() {
+            return {
+                activeRange: '1M',
+                ranges: ['1D', '7D', '1M', '3M', '1A', 'MAX'],
+                indices: [
+                    { name: 'S&P 500', value: '5,150.42', change: '+0.54%', isPositive: true },
+                    { name: 'Nasdaq', value: '16,103.01', change: '+0.72%', isPositive: true },
+                    { name: 'Merval', value: '1,432,105.20', change: '-0.23%', isPositive: false }
+                ],
+                opportunities: [
+                    { ticker: 'AAPL', name: 'Apple Inc.', price: '$172.40', change: '+1.2%', isPositive: true },
+                    { ticker: 'MSFT', name: 'Microsoft Corp.', price: '$408.59', change: '+0.8%', isPositive: true },
+                    { ticker: 'VOO', name: 'S&P 500 ETF', price: '$465.80', change: '+0.4%', isPositive: true }
+                ],
+                charts: {
+                    '1D': {
+                        line: 'M0,130 C40,110 80,120 120,95 C160,80 200,90 240,65 C280,60 320,55 360,50',
+                        area: 'M0,130 C40,110 80,120 120,95 C160,80 200,90 240,65 C280,60 320,55 360,50 L360,160 L0,160 Z'
+                    },
+                    '7D': {
+                        line: 'M0,140 C40,130 80,110 120,115 C160,90 200,100 240,75 C280,50 320,70 360,60',
+                        area: 'M0,140 C40,130 80,110 120,115 C160,90 200,100 240,75 C280,50 320,70 360,60 L360,160 L0,160 Z'
+                    },
+                    '1M': {
+                        line: 'M0,150 C40,120 80,140 120,100 C160,60 200,90 240,70 C280,50 320,80 360,40',
+                        area: 'M0,150 C40,120 80,140 120,100 C160,60 200,90 240,70 C280,50 320,80 360,40 L360,160 L0,160 Z'
+                    },
+                    '3M': {
+                        line: 'M0,120 C40,130 80,100 120,90 C160,105 200,60 240,50 C280,30 320,40 360,30',
+                        area: 'M0,120 C40,130 80,100 120,90 C160,105 200,60 240,50 C280,30 320,40 360,30 L360,160 L0,160 Z'
+                    },
+                    '1A': {
+                        line: 'M0,100 C40,110 80,90 120,75 C160,60 200,45 240,50 C280,35 320,25 360,20',
+                        area: 'M0,100 C40,110 80,90 120,75 C160,60 200,45 240,50 C280,35 320,25 360,20 L360,160 L0,160 Z'
+                    },
+                    'MAX': {
+                        line: 'M0,160 C40,150 80,120 120,90 C160,70 200,50 240,40 C280,30 320,15 360,10',
+                        area: 'M0,160 C40,150 80,120 120,90 C160,70 200,50 240,40 C280,30 320,15 360,10 L360,160 L0,160 Z'
+                    }
+                },
+                getCurrentChartLine() {
+                    return this.charts[this.activeRange].line;
+                },
+                getCurrentChartArea() {
+                    return this.charts[this.activeRange].area;
+                }
+            }
+        }
+    </script>
+</body>
+</html>`
   }
-};;
+};;;
 
 interface CasosPageProps {
   params: Promise<{ slug: string }>;
@@ -5992,46 +6981,24 @@ export default async function CasoDeUsoPage({ params }: CasosPageProps) {
               </div>
             </blockquote>
 
-            {/* Original AI prompt block (if available) */}
-            {data.demoPrompt && (
-              <div className="w-full bg-[#0d1117] border border-zinc-800 rounded-3xl p-6 text-left relative overflow-hidden mt-10 shadow-md">
-                {/* Simulated window controls */}
-                <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3.5 mb-4">
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-2.5 h-2.5 rounded-full bg-[#FF5F56]" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-[#FFBD2E]" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-[#27C93F]" />
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
-                      Prompt de Generación Única
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <span className="text-[9px] font-black uppercase text-blue-400 tracking-wider">
-                    Instrucción del Usuario:
-                  </span>
-                  <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed font-medium select-text whitespace-pre-wrap">
-                    {data.demoPrompt}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Interactive Demo and Code Visualizer */}
-            {data.demoCode && (
-              <UseCasePreview
-                code={data.demoCode}
-                title={data.demoTitle || "Código de Ejemplo"}
-              />
-            )}
-
+            {/* We closed blockquote here */}
           </div>
 
         </div>
+
+        {/* Full-Width AI Prompt console widget (renders below the story/metrics grid) */}
+        {data.demoPrompt && (
+          <UseCasePrompt promptText={data.demoPrompt} />
+        )}
+
+        {/* Full-Width Interactive Demo and Code Visualizer */}
+        {data.demoCode && (
+          <UseCasePreview
+            code={data.demoCode}
+            previewCode={data.demoCodeOverride}
+            title={data.demoTitle || "Código de Ejemplo"}
+          />
+        )}
 
         {/* Bottom Call to Action Section */}
         <div className="bg-[#FAF9F5] border border-[#E9E8E4] rounded-3xl p-8 md:p-12 text-center mt-20 shadow-xs max-w-4xl mx-auto">

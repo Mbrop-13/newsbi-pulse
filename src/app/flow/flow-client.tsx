@@ -542,9 +542,48 @@ export default function FlowClient() {
       {/* Floating Prompt Chat Panel at the bottom (Light Mode styled matching normal ChatInput exactly) */}
       <div className="w-full max-w-3xl mx-auto px-4 pb-5 absolute bottom-0 left-1/2 -translate-x-1/2 shrink-0 z-20">
         <form onSubmit={handleSubmit} className="relative">
+          {/* Border Beam keyframes */}
+          <style>{`
+            @keyframes border-beam-spin {
+              from { transform: rotate(0deg); }
+              to { transform: rotate(360deg); }
+            }
+            @keyframes border-beam-glow {
+              0%, 100% { opacity: 0.6; }
+              50% { opacity: 1; }
+            }
+          `}</style>
+
+          {/* Border Beam wrapper — shows animated light around border when Agent is active */}
           <div className={cn(
-            "rounded-xl p-2.5 bg-white dark:bg-[#1E1E20] border-[#DBDBDB] dark:border-[#2e2e2e] border",
-            "shadow-[0_10px_40px_rgba(0,0,0,0.04),0_1px_4px_rgba(0,0,0,0.02)] transition-all duration-300 relative group focus-within:border-zinc-300 dark:focus-within:border-zinc-650 focus-within:shadow-[0_12px_45px_rgba(0,0,0,0.08),0_1px_4px_rgba(0,0,0,0.02)]"
+            "relative rounded-xl transition-all duration-500",
+            isAgentActive && "p-[1.5px]"
+          )}
+          style={isAgentActive ? { boxShadow: '0 0 20px rgba(24,144,255,0.12), 0 0 40px rgba(24,144,255,0.06)' } : undefined}
+          >
+            {isAgentActive && (
+              <div className="absolute inset-0 rounded-xl overflow-hidden pointer-events-none" style={{ animation: 'border-beam-glow 3s ease-in-out infinite' }}>
+                <div
+                  className="absolute"
+                  style={{
+                    width: '300%',
+                    height: '300%',
+                    top: '-100%',
+                    left: '-100%',
+                    background: 'conic-gradient(from 0deg, transparent 0%, transparent 55%, #1890FF 68%, #60A5FA 73%, #93C5FD 76%, transparent 85%, transparent 100%)',
+                    animation: 'border-beam-spin 4s linear infinite',
+                  }}
+                />
+              </div>
+            )}
+
+          <div className={cn(
+            "rounded-[calc(0.75rem-0.5px)] p-2.5 bg-white dark:bg-[#1E1E20] relative",
+            isAgentActive
+              ? "border border-transparent"
+              : "border-[#DBDBDB] dark:border-[#2e2e2e] border",
+            "shadow-[0_10px_40px_rgba(0,0,0,0.04),0_1px_4px_rgba(0,0,0,0.02)] transition-all duration-300 group focus-within:shadow-[0_12px_45px_rgba(0,0,0,0.08),0_1px_4px_rgba(0,0,0,0.02)]",
+            !isAgentActive && "focus-within:border-zinc-300 dark:focus-within:border-zinc-650"
           )}>
             
             {/* Textarea area */}
@@ -799,6 +838,7 @@ export default function FlowClient() {
                 </button>
             </div>
           </div>
+        </div>
         </div>
       </form>
     </div>

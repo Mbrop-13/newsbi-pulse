@@ -44,9 +44,9 @@ export function NavFinance({ items }: { items: FinanceItem[] }) {
           <SidebarMenuItem>
             <CollapsibleTrigger asChild>
               <SidebarMenuButton className="w-full justify-between hover:bg-zinc-100 dark:hover:bg-zinc-850/80 transition-all">
-                <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400">Finanzas</span>
+                <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200">Finanzas</span>
                 <ChevronRight
-                  className={`h-3.5 w-3.5 text-zinc-450 dark:text-zinc-500 transition-transform duration-200 ${
+                  className={`h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400 transition-transform duration-200 ${
                     isOpen ? "rotate-90" : ""
                   }`}
                 />
@@ -69,7 +69,7 @@ export function NavFinance({ items }: { items: FinanceItem[] }) {
                           }
                           handleNavigate()
                         }}
-                        className="flex items-center gap-2.5 w-full text-zinc-500 dark:text-zinc-400 hover:text-foreground py-1.5 text-xs font-bold transition-all"
+                        className="flex items-center gap-2.5 w-full text-zinc-800 dark:text-zinc-200 hover:text-foreground py-1.5 text-xs font-bold transition-all"
                       >
                         <item.icon className="h-4 w-4 text-zinc-400 dark:text-zinc-500 shrink-0" />
                         <span className="truncate">{item.title}</span>

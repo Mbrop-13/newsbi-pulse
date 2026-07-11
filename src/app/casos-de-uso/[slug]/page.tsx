@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { UseCasePreview } from "@/components/chat/use-case-preview";
 import { UseCasePrompt } from "@/components/chat/use-case-prompt";
-import { Navbar } from "@/components/navbar";
+import { LandingNavbar } from "@/components/landing/landing-navbar";
 import { Footer } from "@/components/footer";
 
 interface UseCaseData {
@@ -6066,7 +6066,7 @@ export default async function CasoDeUsoPage({ params }: CasosPageProps) {
 
   return (
     <div className="bg-white h-screen w-screen overflow-y-auto pt-24 pb-20 font-sans text-slate-800 selection:bg-blue-150 selection:text-white select-none fixed inset-0 z-50">
-      <Navbar />
+      <LandingNavbar />
       
       {/* Container header and navigation */}
       <div className="max-w-6xl mx-auto px-6">

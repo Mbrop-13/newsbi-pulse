@@ -9,19 +9,22 @@ import { LandingUseCases } from "@/components/landing/landing-use-cases";
 import { LandingStats } from "@/components/landing/landing-stats";
 import { LandingPricing } from "@/components/landing/landing-pricing";
 import { LandingCTA } from "@/components/landing/landing-cta";
+import { Footer } from "@/components/footer";
 
 export default function HomePage() {
   const featuresRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Track absolute window scroll position
-  const { scrollY } = useScroll();
+  // Track absolute window scroll position relative to the container element
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start end", "end center"]
+  });
 
-  // Map window scroll position: Starts expanding at 380px scroll (when title is leaving view) and completes at 680px.
-  // Initial width is 75% (20% smaller) and border radius is 32px.
-  const width = useTransform(scrollY, [380, 680], ["75%", "100%"]);
-  const borderRadius = useTransform(scrollY, [380, 680], ["32px", "0px"]);
-  const marginX = useTransform(scrollY, [380, 680], ["12.5%", "0%"]);
+  // Map relative scroll progress: Starts expanding when container starts entering screen (0) and completes near center (0.6).
+  const width = useTransform(scrollYProgress, [0.1, 0.65], ["75%", "100%"]);
+  const borderRadius = useTransform(scrollYProgress, [0.1, 0.65], ["32px", "0px"]);
+  const marginX = useTransform(scrollYProgress, [0.1, 0.65], ["12.5%", "0%"]);
 
   const scrollToFeatures = () => {
     featuresRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -57,6 +60,7 @@ export default function HomePage() {
       <LandingStats />
       <LandingPricing />
       <LandingCTA />
+      <Footer />
     </div>
   );
 }

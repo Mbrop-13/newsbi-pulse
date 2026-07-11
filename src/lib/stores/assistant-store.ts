@@ -163,6 +163,13 @@ export const useAssistantStore = create<AssistantState>()(
         }
 
         if (data) {
+          if (data.has_completed_setup && typeof window !== "undefined") {
+            try {
+              localStorage.setItem(`maverlang_onboarding_completed_${userId}`, "true");
+            } catch (e) {
+              console.warn('LocalStorage write failed:', e);
+            }
+          }
           set({
             name: data.name || '',
             topics: data.topics || [],
@@ -187,7 +194,7 @@ export const useAssistantStore = create<AssistantState>()(
         const state = get();
         const supabase = createClient();
 
-        await supabase
+        const { error } = await supabase
           .from('assistant_configs')
           .upsert({
             user_id: userId,
@@ -200,6 +207,10 @@ export const useAssistantStore = create<AssistantState>()(
             has_completed_setup: state.hasCompletedSetup,
             updated_at: new Date().toISOString(),
           }, { onConflict: 'user_id' });
+
+        if (error) {
+          console.error('Database error in saveToSupabase:', error);
+        }
       } catch (err) {
         console.error('Failed to save to Supabase:', err);
       }

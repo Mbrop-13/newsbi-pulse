@@ -145,6 +145,7 @@ export function OnboardingDialog() {
   const [localName, setLocalName] = useState("");
   const [localInterest, setLocalInterest] = useState<"crear_apps" | "finanzas" | "ambas" | "">("");
   const [saving, setSaving] = useState(false);
+  const [localCompleted, setLocalCompleted] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (!isLoadingConfig) {
@@ -153,8 +154,17 @@ export function OnboardingDialog() {
     }
   }, [isLoadingConfig, getUserName, getPrimaryInterest]);
 
+  useEffect(() => {
+    if (user?.id && typeof window !== "undefined") {
+      const val = localStorage.getItem(`maverlang_onboarding_completed_${user.id}`);
+      setLocalCompleted(val === "true");
+    } else {
+      setLocalCompleted(false);
+    }
+  }, [user?.id]);
+
   // CRITICAL: The popup MUST NOT show if the user is not authenticated or not logged in
-  if (!isAuthenticated || !user || isLoadingConfig || hasCompletedSetup) {
+  if (!isAuthenticated || !user || isLoadingConfig || hasCompletedSetup || localCompleted === null || localCompleted === true) {
     return null;
   }
 
@@ -179,6 +189,14 @@ export function OnboardingDialog() {
       setPrimaryInterest(finalInterest);
       completeSetup();
       if (user?.id) {
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem(`maverlang_onboarding_completed_${user.id}`, "true");
+          } catch (e) {
+            console.warn("LocalStorage write failed:", e);
+          }
+        }
+        setLocalCompleted(true);
         await saveToSupabase(user.id);
       }
     } catch (err) {
@@ -193,6 +211,14 @@ export function OnboardingDialog() {
     try {
       completeSetup();
       if (user?.id) {
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem(`maverlang_onboarding_completed_${user.id}`, "true");
+          } catch (e) {
+            console.warn("LocalStorage write failed:", e);
+          }
+        }
+        setLocalCompleted(true);
         await saveToSupabase(user.id);
       }
     } catch (err) {

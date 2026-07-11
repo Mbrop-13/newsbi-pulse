@@ -627,21 +627,21 @@ export default function FlowClient() {
                           initial={{ opacity: 0, scale: 0.95, y: 10 }}
                           animate={{ opacity: 1, scale: 1, y: 0 }}
                           exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                          className="absolute right-0 bottom-full mb-3 w-[22rem] bg-white dark:bg-[#1E1E20] border border-zinc-200/80 dark:border-zinc-800 shadow-2xl p-5 z-40 rounded-[28px] text-zinc-950 dark:text-zinc-50 flex flex-col gap-4 select-none font-sans"
+                          className="absolute right-0 bottom-full mb-3 w-[19rem] bg-white dark:bg-[#1E1E20] border border-zinc-200/80 dark:border-zinc-800 shadow-2xl p-3.5 z-40 rounded-3xl text-zinc-950 dark:text-zinc-50 flex flex-col gap-2.5 select-none font-sans"
                         >
                           {/* 1. Tabs at the top (Imagen / Vídeo) */}
-                          <div className="flex bg-zinc-100/80 dark:bg-zinc-900 rounded-full p-1 gap-1">
+                          <div className="flex bg-zinc-100/80 dark:bg-zinc-900 rounded-full p-0.5 gap-0.5">
                             <button
                               type="button"
                               onClick={() => setGenerationType("imagen")}
                               className={cn(
-                                "flex-1 py-2.5 rounded-full flex items-center justify-center gap-2 text-xs font-bold transition-all duration-200 cursor-pointer",
+                                "flex-1 py-1.5 rounded-full flex items-center justify-center gap-1.5 text-xs font-bold transition-all duration-200 cursor-pointer",
                                 generationType === "imagen"
                                   ? "bg-white text-zinc-955 dark:bg-zinc-800 dark:text-zinc-50 shadow-sm"
                                   : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
                               )}
                             >
-                              <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
                                 <circle cx="8.5" cy="8.5" r="1.5"/>
                                 <polyline points="21 15 16 10 5 21"/>
@@ -652,13 +652,13 @@ export default function FlowClient() {
                               type="button"
                               onClick={() => setGenerationType("video")}
                               className={cn(
-                                "flex-1 py-2.5 rounded-full flex items-center justify-center gap-2 text-xs font-bold transition-all duration-200 cursor-pointer",
+                                "flex-1 py-1.5 rounded-full flex items-center justify-center gap-1.5 text-xs font-bold transition-all duration-200 cursor-pointer",
                                 generationType === "video"
                                   ? "bg-white text-zinc-955 dark:bg-zinc-800 dark:text-zinc-50 shadow-sm"
                                   : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
                               )}
                             >
-                              <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <circle cx="12" cy="12" r="10"/>
                                 <polygon points="10 8 16 12 10 16 10 8"/>
                               </svg>
@@ -667,7 +667,7 @@ export default function FlowClient() {
                           </div>
 
                           {/* 2. Aspect Ratio Row */}
-                          <div className="bg-zinc-100/70 dark:bg-zinc-900/50 p-1.5 rounded-2xl grid grid-cols-5 gap-1">
+                          <div className="bg-zinc-100/70 dark:bg-zinc-900/50 p-1 rounded-xl grid grid-cols-5 gap-0.5">
                             {[
                               { id: "16:9", label: "16:9", icon: <rect x="2" y="6" width="20" height="12" rx="1.5" className="fill-none stroke-current" strokeWidth="2" /> },
                               { id: "4:3", label: "4:3", icon: <rect x="3.5" y="5" width="17" height="14" rx="1.5" className="fill-none stroke-current" strokeWidth="2" /> },
@@ -682,21 +682,21 @@ export default function FlowClient() {
                                   type="button"
                                   onClick={() => setAspectRatio(item.id as any)}
                                   className={cn(
-                                    "flex flex-col items-center justify-center p-2 rounded-xl gap-2 transition-all duration-200 cursor-pointer aspect-square",
+                                    "flex flex-col items-center justify-center py-1.5 rounded-lg gap-1 transition-all duration-200 cursor-pointer aspect-square",
                                     active
                                       ? "bg-zinc-200/90 text-zinc-950 dark:bg-zinc-800 dark:text-zinc-50 shadow-xs"
                                       : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
                                   )}
                                 >
-                                  <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{item.icon}</svg>
-                                  <span className="text-[10px] font-black">{item.label}</span>
+                                  <svg viewBox="0 0 24 24" className="w-4 h-4 shrink-0" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{item.icon}</svg>
+                                  <span className="text-[9px] font-black">{item.label}</span>
                                 </button>
                               );
                             })}
                           </div>
 
                           {/* 3. Multiplier Row (1x, x2, x3, x4) */}
-                          <div className="grid grid-cols-4 bg-zinc-100/70 dark:bg-zinc-900/50 p-1.5 rounded-2xl gap-1">
+                          <div className="grid grid-cols-4 bg-zinc-100/70 dark:bg-zinc-900/50 p-1 rounded-xl gap-0.5">
                             {["1x", "x2", "x3", "x4"].map((m) => {
                               const active = multiplier === m;
                               return (
@@ -705,9 +705,9 @@ export default function FlowClient() {
                                   type="button"
                                   onClick={() => setMultiplier(m as any)}
                                   className={cn(
-                                    "py-2 rounded-xl text-xs font-bold text-center transition-all duration-200 cursor-pointer",
+                                    "py-1.5 rounded-lg text-xs font-bold text-center transition-all duration-200 cursor-pointer",
                                     active
-                                      ? "bg-zinc-200/90 text-zinc-950 dark:bg-zinc-800 dark:text-zinc-50 shadow-xs"
+                                      ? "bg-zinc-200/90 text-zinc-955 dark:bg-zinc-800 dark:text-zinc-50 shadow-xs"
                                       : "text-zinc-550 dark:text-zinc-450 hover:text-zinc-800 dark:hover:text-zinc-200"
                                   )}
                                 >
@@ -718,17 +718,17 @@ export default function FlowClient() {
                           </div>
 
                           {/* 4. Model Selection Dropdown Field */}
-                          <div className="flex flex-col gap-1.5">
+                          <div className="flex flex-col gap-1">
                             <button
                               type="button"
                               onClick={() => setShowModelList(!showModelList)}
-                              className="w-full bg-zinc-100/70 dark:bg-zinc-900/50 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 rounded-2xl px-4 py-3 flex items-center justify-between transition-all select-none cursor-pointer border border-transparent hover:border-zinc-200/50 dark:hover:border-zinc-800/50"
+                              className="w-full bg-zinc-100/70 dark:bg-zinc-900/50 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 rounded-xl px-3 py-2 flex items-center justify-between transition-all select-none cursor-pointer border border-transparent hover:border-zinc-200/50 dark:hover:border-zinc-800/50"
                             >
-                              <span className="text-xs font-bold text-zinc-800 dark:text-zinc-250 flex items-center gap-2">
-                                <span className="text-sm leading-none">{selectedModel.icon}</span>
+                              <span className="text-xs font-bold text-zinc-800 dark:text-zinc-250 flex items-center gap-1.5">
+                                <span className="text-xs leading-none">{selectedModel.icon}</span>
                                 <span>{selectedModel.name}</span>
                               </span>
-                              <ChevronDown className={cn("w-4 h-4 text-zinc-500 transition-transform duration-200", showModelList && "rotate-180")} />
+                              <ChevronDown className={cn("w-3.5 h-3.5 text-zinc-500 transition-transform duration-200", showModelList && "rotate-180")} />
                             </button>
 
                             <AnimatePresence>
@@ -737,7 +737,7 @@ export default function FlowClient() {
                                   initial={{ opacity: 0, height: 0 }}
                                   animate={{ opacity: 1, height: "auto" }}
                                   exit={{ opacity: 0, height: 0 }}
-                                  className="overflow-hidden bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-900 rounded-2xl flex flex-col p-1"
+                                  className="overflow-hidden bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-900 rounded-xl flex flex-col p-0.5"
                                 >
                                   {FLOW_MODELS.map((m) => (
                                     <button
@@ -748,22 +748,22 @@ export default function FlowClient() {
                                         setShowModelList(false);
                                       }}
                                       className={cn(
-                                        "w-full text-left px-3.5 py-2.5 rounded-xl text-[11px] font-bold transition-all flex items-center justify-between cursor-pointer",
+                                        "w-full text-left px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all flex items-center justify-between cursor-pointer",
                                         selectedModel.id === m.id
                                           ? "bg-zinc-200/60 dark:bg-zinc-800/60 text-[#1890FF]"
-                                          : "text-zinc-650 dark:text-zinc-350 hover:bg-zinc-100 dark:hover:bg-zinc-800/40"
+                                          : "text-zinc-650 dark:text-zinc-355 hover:bg-zinc-100 dark:hover:bg-zinc-800/40"
                                       )}
                                     >
                                       <div className="flex flex-col gap-0.5">
-                                        <div className="flex items-center gap-1.5">
+                                        <div className="flex items-center gap-1">
                                           <span>{m.icon}</span>
                                           <span>{m.name}</span>
-                                          <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-zinc-200/50 dark:bg-zinc-800 text-zinc-500 font-black tracking-wider leading-none">{m.badge}</span>
+                                          <span className="text-[8px] uppercase px-1 py-0.5 rounded bg-zinc-200/50 dark:bg-zinc-800 text-zinc-500 font-black tracking-wider leading-none">{m.badge}</span>
                                         </div>
-                                        <span className="text-[9px] font-medium text-zinc-400 dark:text-zinc-500 line-clamp-1">{m.desc}</span>
+                                        <span className="text-[8px] font-medium text-zinc-400 dark:text-zinc-500 line-clamp-1">{m.desc}</span>
                                       </div>
                                       {selectedModel.id === m.id && (
-                                        <div className="w-1.5 h-1.5 rounded-full bg-[#1890FF]" />
+                                        <div className="w-1 h-1 rounded-full bg-[#1890FF]" />
                                       )}
                                     </button>
                                   ))}
@@ -773,8 +773,8 @@ export default function FlowClient() {
                           </div>
 
                           {/* 5. Points cost indicator */}
-                          <div className="text-center py-1 border-t border-zinc-100 dark:border-zinc-800/65 pt-3">
-                            <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-semibold leading-none">
+                          <div className="text-center py-0.5 border-t border-zinc-100 dark:border-zinc-800/65 pt-2">
+                            <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-semibold leading-none">
                               La generación consumirá <span className="underline decoration-1 underline-offset-4 font-bold text-zinc-850 dark:text-zinc-100">{totalCost} puntos</span>
                             </p>
                           </div>

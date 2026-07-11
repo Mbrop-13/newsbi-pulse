@@ -1557,12 +1557,9 @@ function ChatLandingContent() {
     );
   };
 
-  // Reusable preview card with mobile-optimized overlay visibility and slide-up entrance animation
-  const PreviewCard = ({ item, index = 0, isMobile: mobile }: { item: PreviewItem; index?: number; isMobile?: boolean }) => (
-    <motion.div
-      initial={{ opacity: 0, y: 16, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.45, ease: "easeOut", delay: index * 0.08 }}
+  // Reusable preview card with mobile-optimized overlay visibility
+  const PreviewCard = ({ item, isMobile: mobile }: { item: PreviewItem; isMobile?: boolean }) => (
+    <div
       className={cn(
         "group relative rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800/85 bg-zinc-950 hover:border-[#1890FF]/40 hover:dark:border-[#1890FF]/40 shadow-sm hover:shadow-md transition-all duration-350 cursor-pointer select-none",
         mobile ? "w-[280px] shrink-0 h-[160px] snap-start" : "h-[155px]"
@@ -1639,7 +1636,7 @@ function ChatLandingContent() {
           </button>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 
   // ── Render ──
@@ -1814,8 +1811,8 @@ function ChatLandingContent() {
                 {activeCategory && (
                   <div className="absolute bottom-full left-0 right-0 mb-2 w-full overflow-x-auto scrollbar-hide px-4 pb-2 snap-x snap-mandatory z-20">
                     <div className="flex gap-3 pb-2 justify-center min-w-max mx-auto px-4">
-                      {PREVIEW_ITEMS.filter((item) => item.category === activeCategory).map((item, index) => (
-                        <PreviewCard key={item.id} item={item} index={index} isMobile />
+                      {PREVIEW_ITEMS.filter((item) => item.category === activeCategory).map((item) => (
+                        <PreviewCard key={item.id} item={item} isMobile />
                       ))}
                     </div>
                   </div>
@@ -1898,8 +1895,8 @@ function ChatLandingContent() {
                   {activeCategory && (
                     <div className="w-full max-w-4xl px-2 pb-6 z-20 mt-4">
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
-                        {PREVIEW_ITEMS.filter((item) => item.category === activeCategory).map((item, index) => (
-                          <PreviewCard key={item.id} item={item} index={index} />
+                        {PREVIEW_ITEMS.filter((item) => item.category === activeCategory).map((item) => (
+                          <PreviewCard key={item.id} item={item} />
                         ))}
                       </div>
                     </div>

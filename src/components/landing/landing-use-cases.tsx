@@ -173,47 +173,45 @@ export function LandingUseCases() {
             <Link 
               key={uc.slug}
               href={`/casos-de-uso/${uc.slug}`}
-              className="min-w-[280px] sm:min-w-[325px] max-w-[325px] flex-shrink-0 flex"
+              className="min-w-[280px] sm:min-w-[320px] max-w-[320px] flex-shrink-0 flex"
             >
               <motion.div
-                whileHover={{ y: -6, scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
-                transition={{ type: "spring", stiffness: 260, damping: 20 }}
-                className="group w-full flex flex-col bg-white border border-[#E9E8E4]/60 rounded-[32px] p-4.5 shadow-sm hover:shadow-xl hover:border-slate-300/80 transition-all duration-300 text-left cursor-pointer"
+                whileHover={{ scale: 1.10, y: -8 }}
+                whileTap={{ scale: 1.10, y: -8 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                style={{ originX: index === 0 ? 0 : index === USE_CASES.length - 1 ? 1 : 0.5 }}
+                className="group w-full h-full flex flex-col justify-between"
               >
                 {/* Card Image area with Unsplash image */}
-                <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/40 shadow-xs mb-5">
+                <div className="relative aspect-square w-full rounded-3xl overflow-hidden bg-slate-100 border border-slate-200/40 shadow-sm transition-all duration-300 group-hover:shadow-md mb-5">
                   <img 
                     src={uc.image} 
                     alt={uc.title}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-103"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     loading="lazy"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60" />
                   
                   {/* Badge Overlay at the top right */}
-                  <div className="absolute top-3 right-3 text-white font-sans font-bold text-[9px] bg-black/60 px-2.5 py-0.5 rounded-full border border-white/10 backdrop-blur-xs tracking-wider uppercase">
+                  <div className="absolute top-4 right-4 text-white font-sans font-bold text-[11px] bg-black/60 px-3 py-1 rounded-full border border-white/10 backdrop-blur-xs tracking-wider">
                     {uc.badge}
                   </div>
                 </div>
 
-                {/* Title & Description & CTA */}
-                <div className="flex flex-col flex-1 px-1 justify-between">
-                  <div>
-                    <span className="text-[10px] font-black tracking-widest text-[#1890FF] uppercase block mb-1.5">
-                      {uc.category}
-                    </span>
-                    <h3 className="text-slate-950 font-extrabold text-base sm:text-lg mb-2.5 leading-snug tracking-tight">
-                      {uc.title}
-                    </h3>
-                    <p className="text-slate-500 text-xs font-semibold leading-relaxed mb-5 min-h-[50px] line-clamp-3">
-                      {uc.desc}
-                    </p>
-                  </div>
-                  <div className="inline-flex items-center gap-1 text-[#1890FF] text-xs font-bold mt-auto group/btn">
-                    <span>{uc.cta}</span>
-                    <ChevronRight className="w-3.5 h-3.5 transition-transform duration-300 group-hover/btn:translate-x-0.5" />
-                  </div>
+                {/* Title & Link below */}
+                <div className="flex flex-col items-start px-1">
+                  <span className="text-[11px] font-extrabold tracking-widest text-black uppercase mb-2">
+                    {uc.category}
+                  </span>
+                  <h3 className="text-slate-950 font-black text-lg md:text-xl mb-2 leading-snug tracking-tight transition-all duration-300 group-hover:text-black">
+                    {uc.title}
+                  </h3>
+                  <p className="text-slate-500 text-[13px] font-medium mb-4 leading-relaxed min-h-[64px] transition-all duration-300 group-hover:text-slate-700">
+                    {uc.desc}
+                  </p>
+                  <span className="inline-flex items-center gap-1 text-black text-xs font-bold">
+                    {uc.cta} <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
+                  </span>
                 </div>
               </motion.div>
             </Link>

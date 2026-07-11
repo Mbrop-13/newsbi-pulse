@@ -130,7 +130,7 @@ Ambiente general: Sofisticado, dinámico, confiable, tecnológico, accesible.`,
                 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
                   <style>
                     :root {
-                      --navy - 900: #060b14;
+                      --navy-900: #060b14;
                     --navy-850: #080f1c;
                     --navy-800: #0a1628;
                     --navy-700: #0f1f38;

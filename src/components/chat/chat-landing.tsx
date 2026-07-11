@@ -117,86 +117,95 @@ interface PreviewItem {
   category: string;
   title: string;
   desc: string;
-  mockType: string;
+  imageSrc: string;
+  slug: string;
   prompt: string;
-  badge?: string;
 }
 
 const PREVIEW_ITEMS: PreviewItem[] = [
   // sitios
   {
-    id: "stillwater",
+    id: "vestra",
     category: "sitios",
-    title: "Stillwater Retreat",
-    desc: "Landing page de bienestar con tipografía serif, tonos crema y galería interactiva.",
-    mockType: "retreat",
-    prompt: "Construye una landing page premium para 'Stillwater Retreat', un resort de bienestar y meditación. Usa una paleta de colores beige, crema y piedra con acentos dorados. Incluye una sección de bienvenida, galería de cabañas, un formulario de reserva de retiros interactivo y testimonios con tipografía serif elegante."
+    title: "Vestra — Inversión Social",
+    desc: "Landing page de trading social con gráficos dinámicos de velas y panel de copy-trading.",
+    imageSrc: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?q=80&w=600",
+    slug: "sitio-web",
+    prompt: `Diseña una página de inicio para una plataforma de inversión social y trading de acciones que transmite confianza, transparencia y empoderamiento financiero: el antídoto a las aplicaciones de trading caóticas, opacas e intimidantes.`
   },
   {
-    id: "severin",
+    id: "lumen",
     category: "sitios",
-    title: "Severin Halbe",
-    desc: "Portafolio brutalista de arquitectura con alto contraste, títulos serif grandes y minimalismo.",
-    mockType: "portfolio",
-    prompt: "Crea un sitio web portafolio minimalista y de estilo brutalista para el fotógrafo 'Severin Halbe'. Utiliza un diseño de alto contraste con fondo verde oscuro profundo, tipografía de serif clásica y detalles en oro. Debe incluir una cuadrícula asimétrica para exhibir fotos de proyectos de arquitectura, un menú minimalista y un formulario de contacto directo."
+    title: "Lumen — SaaS Productividad",
+    desc: "Software de productividad y gestión de proyectos con un enfoque de diseño limpio y calmado.",
+    imageSrc: "https://images.unsplash.com/photo-1531403009284-440f080d1e12?q=80&w=600",
+    slug: "aplicacion",
+    prompt: `Diseña una página de inicio de producto SaaS para una herramienta de gestión de proyectos y comunicación de equipos llamada 'Lumen'...`
   },
   {
-    id: "iron-gym",
+    id: "nocturne",
     category: "sitios",
-    title: "Iron & Steel Gym",
-    desc: "Landing de alto rendimiento deportivo con acentos naranja neón y fuentes bold.",
-    mockType: "gym",
-    prompt: "Diseña una página de aterrizaje de alto rendimiento para el gimnasio 'Iron & Steel Gym'. Utiliza colores oscuros (carbón y negro) con acentos de color naranja neón brillante. Incluye titulares audaces en mayúsculas, una sección con planes de entrenamiento de fuerza y una calculadora para estimar la carga máxima de entrenamiento."
+    title: "Nocturne — Boutique Gaming",
+    desc: "Plataforma de e-commerce de videojuegos con estética cinematográfica brutalista oscura.",
+    imageSrc: "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=600",
+    slug: "multiplataforma",
+    prompt: `Diseña una página de inicio para un sitio de comercio electrónico premium de videojuegos boutique llamado 'NOCTURNE'...`
   },
   // apps
   {
-    id: "compound",
+    id: "nexus-blocks",
     category: "apps",
-    title: "Calculadora de Interés Compuesto",
-    desc: "Simulador interactivo con sliders de aportes mensuales, tasas de retorno y gráfico exponencial.",
-    mockType: "compound",
-    prompt: "Construye una calculadora interactiva de interés compuesto en React. El usuario debe poder ajustar el capital inicial, la contribución mensual, los años de plazo y la tasa de interés anual mediante controles deslizantes. Muestra el resultado final de forma visual con un gráfico de crecimiento y una tabla desglosada por años con las ganancias."
+    title: "NEXUS Blocks — Tetris Arcade",
+    desc: "Juego móvil de Tetris moderno y pulido, con físicas SRS y animaciones glow optimizadas.",
+    imageSrc: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=600",
+    slug: "aplicacion-1",
+    prompt: `Diseña un juego móvil estilo Tetris moderno, adictivo y altamente pulido, optimizado para teléfonos (portrait), con mecánicas clásicas mejoradas y una experiencia visual premium.`
   },
   {
-    id: "goal",
+    id: "agora",
     category: "apps",
-    title: "Proyector de Metas de Ahorro",
-    desc: "Calcula los años requeridos para jubilarte según tu tasa de ahorro y rentabilidad esperada.",
-    mockType: "goal",
-    prompt: "Diseña un proyector interactivo de metas de jubilación y libertad financiera. Permite al usuario configurar sus ingresos actuales, gastos mensuales estimados y retorno de inversiones. Muestra un indicador circular de progreso y una proyección de los años necesarios para alcanzar la meta financiera basándose en la regla del 4%."
+    title: "Agora — Marketplace Móvil",
+    desc: "Aplicación móvil de e-commerce vertical con catálogo interactivo y perfil de vendedor.",
+    imageSrc: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?q=80&w=600",
+    slug: "aplicacion-2",
+    prompt: `Diseña una aplicación móvil de comercio electrónico estilo Mercado Libre, moderna, rápida y altamente profesional, optimizada exclusivamente para celulares...`
   },
   {
-    id: "mortgage",
+    id: "clarity-invest",
     category: "apps",
-    title: "Simulador de Hipoteca Premium",
-    desc: "Desglosa la amortización de principal vs intereses y calcula tu pago mensual neto.",
-    mockType: "mortgage",
-    prompt: "Crea un simulador interactivo de hipoteca y crédito para vivienda. Permite ingresar el valor de la propiedad, la cuota inicial (%), la tasa de interés anual y el plazo en años. Visualiza mediante un gráfico de barras apiladas la porción mensual dedicada a amortizar el capital frente a los intereses pagados."
+    title: "Clarity Invest — Finanzas",
+    desc: "Aplicación financiera para celulares con simulación de portafolios e interés compuesto.",
+    imageSrc: "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?q=80&w=600",
+    slug: "aplicacion-3",
+    prompt: `Diseña una aplicación móvil de finanzas personales e inversión llamada 'Clarity Invest', optimizada para celulares...`
   },
   // multiplatform
   {
-    id: "pomodoro-planner",
+    id: "splitwise-pro",
     category: "multiplatform",
-    title: "Board Kanban + Pomodoro",
-    desc: "Gestor de tareas integrado con temporizador para sesiones enfocadas de desarrollo.",
-    mockType: "kanban",
-    prompt: "Crea una aplicación de productividad que fusione un tablero Kanban minimalista con un temporizador Pomodoro. Permite agregar, mover y archivar tareas entre columnas (Pendientes, En Proceso, Terminadas). El temporizador debe integrarse con las tareas para contar los ciclos de enfoque dedicados a cada una."
+    title: "SplitWise Pro — Gastos",
+    desc: "Panel web interactivo para control de gastos grupales y división automática de cuentas.",
+    imageSrc: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=600",
+    slug: "multiplataforma",
+    prompt: `Crea una aplicación interactiva estilo SplitWise para control de gastos grupales y división de cuentas.`
   },
   {
-    id: "expense-tracker",
+    id: "circle",
     category: "multiplatform",
-    title: "Ledger de Control de Gastos",
-    desc: "Registro contable sencillo con etiquetas de categorías y resúmenes de flujos.",
-    mockType: "ledger",
-    prompt: "Diseña una aplicación tipo Ledger para registrar ingresos y gastos mensuales. Incluye un formulario rápido de entrada, etiquetas personalizables (Comida, Alquiler, Ocio, Inversión), un listado ordenado cronológicamente de transacciones recientes y un bloque superior con el balance neto total y gráficos de barra mensuales."
+    title: "Circle — Red Familiar",
+    desc: "Plataforma privada y segura para círculos familiares y sociales cercanos.",
+    imageSrc: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=600",
+    slug: "multiplataforma-2",
+    prompt: `Crea una aplicación interactiva de red social privada y familiar llamada 'Circle' con diseño cálido y moderno.`
   },
   {
-    id: "code-sandbox",
+    id: "mentormatch",
     category: "multiplatform",
-    title: "Editor de Código Interactiva",
-    desc: "Entorno sandbox con ventanas de edición y renderizado en vivo de layouts HTML/CSS.",
-    mockType: "sandbox",
-    prompt: "Desarrolla un sandbox de código interactivo ligero para desarrollo frontend. Debe presentar una pantalla dividida: a la izquierda paneles para escribir código HTML y CSS (con pestañas para cambiar entre ellos), y a la derecha un iframe o contenedor que renderice en tiempo real los cambios visuales aplicados por el usuario."
+    title: "MentorMatch — Mentoría IA",
+    desc: "Portal multiplataforma de agendamiento y tutoría impulsada por mentores virtuales.",
+    imageSrc: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=600",
+    slug: "multiplataforma-3",
+    prompt: `Crea una plataforma interactiva de mentoría y tutorías llamada 'MentorMatch'.`
   }
 ];
 
@@ -1552,19 +1561,22 @@ function ChatLandingContent() {
   const PreviewCard = ({ item, isMobile: mobile }: { item: PreviewItem; isMobile?: boolean }) => (
     <div
       className={cn(
-        "group relative rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800/85 bg-white dark:bg-zinc-900/40 hover:border-[#1890FF]/40 hover:dark:border-[#1890FF]/40 shadow-sm hover:shadow-md transition-all duration-350 cursor-pointer select-none",
+        "group relative rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800/85 bg-zinc-950 hover:border-[#1890FF]/40 hover:dark:border-[#1890FF]/40 shadow-sm hover:shadow-md transition-all duration-350 cursor-pointer select-none",
         mobile ? "w-[280px] shrink-0 h-[160px] snap-start" : "h-[155px]"
       )}
     >
-      {/* Full-width Mockup View */}
-      <div className="w-full h-full relative overflow-hidden">
-        <MockupPreview type={item.mockType} />
-      </div>
+      {/* Background Image of the example */}
+      <img
+        src={item.imageSrc}
+        alt={item.title}
+        className="absolute inset-0 w-full h-full object-cover opacity-75 group-hover:scale-103 transition-transform duration-500 ease-out"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/35 to-transparent z-10" />
 
       {/* Interactive Hover/Active Overlay with Title, Desc and Action Buttons */}
       <div
         className={cn(
-          "absolute inset-0 bg-white/80 dark:bg-black/65 backdrop-blur-xl border border-zinc-200/40 dark:border-white/10 transition-all duration-300 p-4 flex flex-col justify-between shadow-md",
+          "absolute inset-0 bg-zinc-950/90 dark:bg-zinc-950/95 border border-zinc-200/40 dark:border-white/10 transition-all duration-300 p-4 flex flex-col justify-between shadow-md",
           mobile
             ? "opacity-100 translate-y-0 pointer-events-auto"
             : "opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto"
@@ -1572,14 +1584,14 @@ function ChatLandingContent() {
       >
         <div className="space-y-1">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold text-zinc-900 dark:text-white tracking-tight">
+            <h3 className="text-xs font-bold text-white tracking-tight">
               {item.title}
             </h3>
             <span className="text-[7px] font-extrabold text-[#1890FF] bg-[#1890FF]/15 border border-[#1890FF]/30 px-1 py-0.5 rounded tracking-wide uppercase shrink-0">
               BUILD
             </span>
           </div>
-          <p className="text-[10px] text-zinc-650 dark:text-zinc-200 leading-normal line-clamp-3">
+          <p className="text-[10px] text-zinc-300 leading-normal line-clamp-3">
             {item.desc}
           </p>
         </div>
@@ -1603,7 +1615,7 @@ function ChatLandingContent() {
                 duration: 3000,
               });
             }}
-            className="flex-1 py-1.5 rounded-lg border border-zinc-300 dark:border-white/20 hover:bg-zinc-150/50 hover:dark:bg-white/10 text-zinc-800 dark:text-white text-[10px] font-bold transition-all duration-200 flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
+            className="flex-1 py-1.5 rounded-lg border border-white/20 hover:bg-white/10 text-white text-[10px] font-bold transition-all duration-200 flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
           >
             <Copy className="w-3 h-3" />
             Copiar
@@ -1611,10 +1623,9 @@ function ChatLandingContent() {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              useWebBuilderStore.getState().setWebBuilderMode(true);
-              handleSend(item.prompt, { webSearch: false, image: false, codeInterpreter: false, browser: false });
-              toast.success("Iniciando construcción...", {
-                description: `Construyendo ${item.title}`,
+              window.open(`/casos-de-uso/${item.slug}`, '_blank', 'noopener,noreferrer');
+              toast.success("Abriendo demo...", {
+                description: `Cargando el visor premium para ${item.title}`,
                 duration: 3000,
               });
             }}
@@ -1866,82 +1877,30 @@ function ChatLandingContent() {
                   />
                 </motion.div>
 
-                {/* Categorías (Tarjetas de Imagen Interactivas) */}
-                <div className="w-full mt-2 sm:mt-4 flex flex-col items-center relative">
+                {/* Categorías y Tarjetas de Previsualización */}
+                <div className="w-full mt-2 sm:mt-3 flex flex-col items-center relative">
+                  {/* Categorías (Pills) */}
                   <motion.div
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, ease: "easeOut", delay: 0.2 }}
-                    className="grid grid-cols-1 sm:grid-cols-3 gap-5 w-full max-w-3xl py-2 px-4 mt-1"
+                    className="flex flex-wrap items-center justify-center gap-2 w-full max-w-2xl py-2 px-4 mt-1"
                   >
-                    {CREATIVE_CATEGORIES.map((cat) => {
-                      const CatIcon = cat.icon;
-                      return (
-                        <div
-                          key={cat.id}
-                          onClick={() => setOpenSubmenu(prev => prev === cat.id ? null : cat.id)}
-                          className="group relative h-36 rounded-2xl overflow-hidden shadow-md border border-zinc-200/40 dark:border-white/5 bg-zinc-950 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 text-left select-none cursor-pointer"
-                        >
-                          {/* Image background */}
-                          <img
-                            src={cat.imageSrc}
-                            alt={cat.label}
-                            className={`absolute inset-0 w-full h-full object-cover opacity-50 group-hover:scale-102 group-hover:opacity-45 transition-all duration-500 ease-out ${
-                              openSubmenu === cat.id ? 'scale-102 opacity-45' : ''
-                            }`}
-                          />
-
-                          {/* Overlay gradient */}
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent z-10" />
-
-                          {/* Content (default layout) */}
-                          <div className={`absolute inset-0 z-20 p-4 flex flex-col justify-between transition-opacity duration-300 group-hover:opacity-0 pointer-events-none ${
-                            openSubmenu === cat.id ? 'opacity-0' : ''
-                          }`}>
-                            {/* Icon container */}
-                            <div className="w-7 h-7 rounded-lg bg-white/10 backdrop-blur-md flex items-center justify-center text-white border border-white/10 shrink-0">
-                              <CatIcon className="w-3.5 h-3.5" />
-                            </div>
-
-                            {/* Title and Action */}
-                            <div className="space-y-0.5">
-                              <span className="text-[8px] font-black uppercase text-[#1890FF] tracking-wider block">
-                                Explorar Ejemplos
-                              </span>
-                              <div className="flex items-center justify-between">
-                                <h4 className="text-xs font-bold text-white tracking-tight leading-none">
-                                  {cat.label}
-                                </h4>
-                                <ArrowUpRight className="w-3.5 h-3.5 text-white/50" />
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Expandable Hover Overlay Submenu (renders on top of the card) */}
-                          <div className={`absolute inset-0 bg-zinc-950/95 z-30 flex flex-col justify-center gap-1.5 p-3.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ease-out pointer-events-none group-hover:pointer-events-auto ${
-                            openSubmenu === cat.id ? 'opacity-100 pointer-events-auto' : ''
-                          }`}>
-                            <span className="text-[8px] font-black uppercase text-[#1890FF] tracking-wider block mb-1">
-                              {cat.label} — Selecciona un Caso:
-                            </span>
-                            {cat.examples.map((ex) => (
-                              <Link
-                                key={ex.slug}
-                                href={`/casos-de-uso/${ex.slug}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={(e) => e.stopPropagation()} // Prevent closing accordion when clicking links
-                                className="w-full text-left py-1.5 px-3 bg-white/5 hover:bg-[#1890FF] text-white rounded-xl text-[10px] md:text-xs font-semibold transition-all border border-white/5 active:scale-98 select-none flex items-center justify-between group/btn cursor-pointer"
-                              >
-                                <span>{ex.label}</span>
-                                <ArrowUpRight className="w-3.5 h-3.5 text-white/50 group-hover/btn:text-white transition-colors" />
-                              </Link>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
+                    {CREATIVE_CATEGORIES.map((cat) => (
+                      <CategoryPill key={cat.id} cat={cat} isActive={activeCategory === cat.id} />
+                    ))}
                   </motion.div>
+
+                  {/* Grid de Previsualización */}
+                  {activeCategory && (
+                    <div className="w-full max-w-4xl px-2 pb-6 z-20 mt-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+                        {PREVIEW_ITEMS.filter((item) => item.category === activeCategory).map((item) => (
+                          <PreviewCard key={item.id} item={item} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

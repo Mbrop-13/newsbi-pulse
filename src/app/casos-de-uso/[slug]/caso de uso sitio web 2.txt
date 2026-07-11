@@ -1,0 +1,1875 @@
+prompt:Diseña una página de inicio para una empresa boutique de software(SaaS) que transmita claridad, sofisticación técnica y confianza serena: el antídoto a las interfaces caóticas, sobrecargadas y frías del software empresarial tradicional.
+Estrategia visual:
+
+Imágenes: Capturas limpias de la interfaz del producto en uso real, personas enfocadas y calmadas trabajando(no poses forzadas), diagramas sutiles de flujos de datos, elementos abstractos de nodos y conexiones elegantes, espacios de trabajo minimalistas con luz natural.
+    Fotografía: Luz natural suave y difusa, paleta de tonos fríos pero cálidos, profundidad de campo selectiva, alta resolución con acabados premium.
+        Composición: Mucho espacio negativo, alineación rigurosa, jerarquía clara, elementos flotando con intención.Uso elegante de líneas sutiles y micro - interacciones geométricas.
+Paleta de colores:
+Primarios: Azul profundo medianoche(#0F172A), gris pizarra suave(#64748B), blanco puro con leve tinte cálido.
+    Acentos: Cyan eléctrico sutil(#22D3EE), violeta índigo(#6366F1), verde esmeralda muy suave(#10B981).
+
+        Fondo: Gradientes muy sutiles de oscuro a claro o textura casi imperceptible de ruido fino / grano.
+            Tipografía:
+Encabezados: Sans - serif geométrica moderna de alta legibilidad(tipo Satoshi, Neue Haas Grotesk o Inter Display), pesos 500 - 700.
+Cuerpo: Sans - serif neutra con excelente legibilidad(Inter o SF Pro), interlineado generoso(1.7–1.9).
+
+
+Diseño general: Márgenes y padding muy generosos, una idea clara por sección de scroll, scroll suave y lento.Estilo premium, minimalista pero cálido, que inspire confianza y deseo de usarlo.
+Estructura de la página:
+
+Hero principal: Imagen o video loop sutil del producto en acción + gran titular claro + subtítulo que explique la promesa principal + CTA principal("Empezar gratis" + "Ver demo") muy destacado.Animación sutil de los elementos de la interfaz flotando o conectándose.
+Sección de confianza / Problema - Solución: Texto breve + visual que contraste "el dolor actual" vs "la experiencia con nosotros".
+Características clave: Tres o cuatro bloques grandes con iconografía elegante + captura de pantalla + título y descripción breve.Al hacer hover se expande ligeramente y muestra un micro - video o animación del feature.
+Cómo funciona: Flujo visual paso a paso(3 - 4 pasos) con ilustraciones conectadas y animaciones suaves al hacer scroll.
+    Testimonios: Fotos reales de fundadores / usuarios + cita + logo de empresa + métrica de resultado(ej: “Redujimos 68 % el tiempo de reporting”).
+        Integraciones: Logos de herramientas populares en un grid elegante y sutil.
+            Precios / Planes: Tarjetas claras y comparativas con énfasis en el plan más recomendado.
+                Equipo / Sobre nosotros: Breves perfiles de los fundadores o miembros clave con foto y frase personal.
+                    Footer: Limpio, con enlaces importantes, newsletter y última llamada a acción.
+
+Detalles de interacción:
+
+El hero tiene una animación de “respiración” muy sutil en los elementos de la interfaz(4 - 5 segundos de ciclo).
+Todos los titulares entran con fade - up elegante y ligero retardo al hacer scroll.
+Al pasar el cursor sobre cualquier captura de producto se activa un zoom suave + overlay con highlight de la funcionalidad.
+Las tarjetas de características tienen hover con elevación sutil y cambio de color en el acento.
+Scroll progress indicator muy discreto en la parte superior.
+    Micro - interacciones en botones(scale + glow suave).
+Cursor personalizado sutil en zonas interactivas(opcional pero elegante).
+
+Ambiente general: Profesional, moderno, cálido, premium, confiable, inteligente sin ser frío.Debe transmitir que “esto está pensado por personas que realmente entienden el trabajo complejo y quieren hacerlo más humano y simple”.
+
+codigo:< !DOCTYPE html >
+    <html lang="es">
+        <head>
+            <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Lumen — Software sereno para trabajo complejo</title>
+                    <script src="https://cdn.tailwindcss.com"></script>
+                    <link rel="preconnect" href="https://fonts.googleapis.com">
+                        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                            <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+                                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+                                    <style>
+                                        :root {
+                                            --bg: #0F172A;
+                                        --bg-soft: #131C31;
+                                        --bg-card: rgba(30, 41, 59, 0.4);
+                                        --fg: #F8FAFC;
+                                        --fg-warm: #F1F5F9;
+                                        --fg-muted: #94A3B8;
+                                        --fg-subtle: #64748B;
+                                        --accent-cyan: #22D3EE;
+                                        --accent-indigo: #6366F1;
+                                        --accent-emerald: #10B981;
+                                        --border: rgba(148, 163, 184, 0.12);
+                                        --border-soft: rgba(148, 163, 184, 0.06);
+  }
+
+                                        * {box - sizing: border-box; }
+
+                                        html {scroll - behavior: smooth; }
+
+                                        body {
+                                            font - family: 'Inter', sans-serif;
+                                        background: var(--bg);
+                                        color: var(--fg);
+                                        line-height: 1.75;
+                                        overflow-x: hidden;
+                                        font-weight: 400;
+                                        -webkit-font-smoothing: antialiased;
+  }
+
+                                        h1, h2, h3, h4, .display {
+                                            font - family: 'Space Grotesk', sans-serif;
+                                        letter-spacing: -0.025em;
+                                        line-height: 1.1;
+                                        font-weight: 500;
+  }
+
+                                        /* Grano sutil */
+                                        body::before {
+                                            content: '';
+                                        position: fixed;
+                                        inset: 0;
+                                        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+                                        opacity: 0.035;
+                                        pointer-events: none;
+                                        z-index: 1;
+                                        mix-blend-mode: overlay;
+  }
+
+                                        /* Cursor personalizado */
+                                        .cursor-dot, .cursor-ring {
+                                            position: fixed;
+                                        top: 0;
+                                        left: 0;
+                                        pointer-events: none;
+                                        z-index: 9999;
+                                        transform: translate(-50%, -50%);
+                                        will-change: transform;
+  }
+                                        .cursor-dot {
+                                            width: 5px;
+                                        height: 5px;
+                                        background: var(--accent-cyan);
+                                        border-radius: 50%;
+                                        transition: width 0.3s, height 0.3s, background 0.3s;
+  }
+                                        .cursor-ring {
+                                            width: 32px;
+                                        height: 32px;
+                                        border: 1px solid rgba(34, 211, 238, 0.35);
+                                        border-radius: 50%;
+                                        transition: width 0.4s cubic-bezier(0.16,1,0.3,1), height 0.4s cubic-bezier(0.16,1,0.3,1), border-color 0.3s, background 0.3s;
+  }
+                                        .cursor-ring.hover {
+                                            width: 56px;
+                                        height: 56px;
+                                        border-color: rgba(99, 102, 241, 0.5);
+                                        background: rgba(99, 102, 241, 0.06);
+  }
+                                        .cursor-ring.cta {
+                                            width: 64px;
+                                        height: 64px;
+                                        border-color: rgba(34, 211, 238, 0.6);
+                                        background: rgba(34, 211, 238, 0.08);
+  }
+                                        @media (hover: none) { .cursor - dot, .cursor - ring {display: none; } body {cursor: auto; } }
+                                        @media (hover: hover) {body {cursor: none; } a, button {cursor: none; } }
+
+                                        /* Scroll progress */
+                                        .scroll-progress {
+                                            position: fixed;
+                                        top: 0;
+                                        left: 0;
+                                        height: 2px;
+                                        background: linear-gradient(90deg, var(--accent-cyan), var(--accent-indigo) 50%, var(--accent-emerald));
+                                        z-index: 100;
+                                        width: 100%;
+                                        transform: scaleX(0);
+                                        transform-origin: left;
+  }
+
+                                        /* Nav */
+                                        .nav-blur {
+                                            backdrop - filter: blur(20px) saturate(180%);
+                                        -webkit-backdrop-filter: blur(20px) saturate(180%);
+                                        background: rgba(15, 23, 42, 0.7);
+                                        border-bottom: 1px solid var(--border-soft);
+  }
+
+                                        /* Ambient blobs */
+                                        .ambient-blob {
+                                            position: absolute;
+                                        border-radius: 50%;
+                                        filter: blur(100px);
+                                        pointer-events: none;
+                                        will-change: transform;
+  }
+
+                                        /* Animaciones */
+                                        @keyframes breathe {
+                                            0 %, 100 % { transform: translateY(0) scale(1); }
+    50% {transform: translateY(-6px) scale(1.008); }
+  }
+                                        @keyframes breathe-slow {
+                                            0 %, 100 % { transform: translateY(0) scale(1); }
+    50% {transform: translateY(-10px) scale(1.012); }
+  }
+                                        @keyframes float-1 {
+                                            0 %, 100 % { transform: translate(0, 0) rotate(0deg); }
+    50% {transform: translate(8px, -14px) rotate(1deg); }
+  }
+                                        @keyframes float-2 {
+                                            0 %, 100 % { transform: translate(0, 0) rotate(0deg); }
+    50% {transform: translate(-10px, -8px) rotate(-1.5deg); }
+  }
+                                        @keyframes pulse-soft {
+                                            0 %, 100 % { opacity: 0.5; }
+    50% {opacity: 1; }
+  }
+                                        @keyframes dash-flow {
+                                            to {stroke - dashoffset: -40; }
+  }
+                                        @keyframes shimmer-line {
+                                            0 % { transform: translateX(-100 %); }
+    100% {transform: translateX(200%); }
+  }
+                                        @keyframes ping-soft {
+                                            0 % { transform: scale(1); opacity: 0.7; }
+    100% {transform: scale(2.5); opacity: 0; }
+  }
+                                        @keyframes bar-grow {
+                                            0 % { transform: scaleY(0); }
+    100% {transform: scaleY(1); }
+  }
+                                        @keyframes glow-pulse {
+                                            0 %, 100 % { box- shadow: 0 0 20px -5px rgba(34, 211, 238, 0.3); }
+                                        50% {box - shadow: 0 0 40px -5px rgba(34, 211, 238, 0.6); }
+  }
+
+                                        .breathe {animation: breathe 5s ease-in-out infinite; }
+                                        .breathe-slow {animation: breathe-slow 7s ease-in-out infinite; }
+                                        .float-1 {animation: float-1 6s ease-in-out infinite; }
+                                        .float-2 {animation: float-2 8s ease-in-out infinite; }
+
+                                        /* Reveal */
+                                        .reveal {
+                                            opacity: 0;
+                                        transform: translateY(30px);
+                                        transition: opacity 1s cubic-bezier(0.16, 1, 0.3, 1), transform 1s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+                                        .reveal.visible {
+                                            opacity: 1;
+                                        transform: translateY(0);
+  }
+                                        .reveal.delay-1 {transition - delay: 0.1s; }
+                                        .reveal.delay-2 {transition - delay: 0.2s; }
+                                        .reveal.delay-3 {transition - delay: 0.3s; }
+                                        .reveal.delay-4 {transition - delay: 0.4s; }
+
+                                        /* Botones */
+                                        .btn-primary {
+                                            position: relative;
+                                        background: linear-gradient(135deg, #6366F1 0%, #22D3EE 100%);
+                                        color: white;
+                                        padding: 14px 28px;
+                                        border-radius: 12px;
+                                        font-weight: 500;
+                                        font-size: 0.95rem;
+                                        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+                                        box-shadow: 0 4px 20px -5px rgba(99, 102, 241, 0.4);
+                                        overflow: hidden;
+                                        display: inline-flex;
+                                        align-items: center;
+                                        gap: 10px;
+  }
+                                        .btn-primary::before {
+                                            content: '';
+                                        position: absolute;
+                                        inset: 0;
+                                        background: linear-gradient(135deg, #22D3EE 0%, #6366F1 100%);
+                                        opacity: 0;
+                                        transition: opacity 0.4s;
+  }
+                                        .btn-primary:hover {
+                                            transform: translateY(-2px) scale(1.02);
+                                        box-shadow: 0 12px 40px -8px rgba(99, 102, 241, 0.6), 0 0 30px rgba(34, 211, 238, 0.3);
+  }
+                                        .btn-primary:hover::before {opacity: 1; }
+  .btn-primary > * {position: relative; z-index: 1; }
+
+                                        .btn-secondary {
+                                            background: rgba(148, 163, 184, 0.04);
+                                        border: 1px solid rgba(148, 163, 184, 0.2);
+                                        color: var(--fg);
+                                        padding: 14px 28px;
+                                        border-radius: 12px;
+                                        font-weight: 500;
+                                        font-size: 0.95rem;
+                                        transition: all 0.3s ease;
+                                        backdrop-filter: blur(10px);
+                                        display: inline-flex;
+                                        align-items: center;
+                                        gap: 10px;
+  }
+                                        .btn-secondary:hover {
+                                            border - color: rgba(34, 211, 238, 0.5);
+                                        background: rgba(34, 211, 238, 0.05);
+                                        transform: translateY(-2px);
+  }
+
+                                        /* Glass */
+                                        .glass {
+                                            background: rgba(30, 41, 59, 0.35);
+                                        backdrop-filter: blur(20px) saturate(150%);
+                                        -webkit-backdrop-filter: blur(20px) saturate(150%);
+                                        border: 1px solid rgba(148, 163, 184, 0.1);
+  }
+
+                                        /* Product mockup base */
+                                        .product-frame {
+                                            background: linear-gradient(135deg, rgba(30, 41, 59, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%);
+                                        border: 1px solid rgba(148, 163, 184, 0.15);
+                                        border-radius: 14px;
+                                        box-shadow:
+                                        0 50px 100px -20px rgba(0, 0, 0, 0.6),
+                                        0 30px 60px -30px rgba(99, 102, 241, 0.25),
+                                        inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
+                                        overflow: hidden;
+  }
+
+                                        .product-hover {
+                                            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+                                        .product-hover:hover {
+                                            transform: scale(1.015);
+  }
+
+                                        /* Feature card */
+                                        .feature-card {
+                                            background: linear-gradient(180deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.3) 100%);
+                                        border: 1px solid var(--border-soft);
+                                        border-radius: 18px;
+                                        padding: 32px;
+                                        transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+                                        position: relative;
+                                        overflow: hidden;
+  }
+                                        .feature-card::before {
+                                            content: '';
+                                        position: absolute;
+                                        top: 0;
+                                        left: 0;
+                                        right: 0;
+                                        height: 1px;
+                                        background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+                                        opacity: 0;
+                                        transition: opacity 0.5s;
+  }
+                                        .feature-card:hover {
+                                            transform: translateY(-6px);
+                                        border-color: rgba(99, 102, 241, 0.3);
+                                        background: linear-gradient(180deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.4) 100%);
+                                        box-shadow: 0 30px 60px -20px rgba(99, 102, 241, 0.2);
+  }
+                                        .feature-card:hover::before {opacity: 1; }
+                                        .feature-card:hover .feature-icon {
+                                            background: rgba(99, 102, 241, 0.15);
+                                        border-color: rgba(99, 102, 241, 0.4);
+                                        color: var(--accent-indigo);
+  }
+                                        .feature-card:hover .feature-preview {opacity: 1; transform: translateY(0); }
+
+                                        .feature-icon {
+                                            width: 48px;
+                                        height: 48px;
+                                        border-radius: 12px;
+                                        background: rgba(148, 163, 184, 0.06);
+                                        border: 1px solid rgba(148, 163, 184, 0.15);
+                                        color: var(--accent-cyan);
+                                        display: flex;
+                                        align-items: center;
+                                        justify-content: center;
+                                        font-size: 18px;
+                                        transition: all 0.5s;
+  }
+
+                                        .feature-preview {
+                                            opacity: 0;
+                                        transform: translateY(10px);
+                                        transition: opacity 0.5s, transform 0.5s;
+  }
+
+                                        /* Step number */
+                                        .step-num {
+                                            font - family: 'Space Grotesk', sans-serif;
+                                        font-size: 11px;
+                                        letter-spacing: 0.2em;
+                                        color: var(--accent-cyan);
+                                        text-transform: uppercase;
+                                        font-weight: 500;
+  }
+
+                                        /* Pricing */
+                                        .pricing-card {
+                                            background: linear-gradient(180deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.2) 100%);
+                                        border: 1px solid var(--border);
+                                        border-radius: 20px;
+                                        padding: 36px 32px;
+                                        transition: all 0.5s;
+                                        position: relative;
+  }
+                                        .pricing-card:hover {
+                                            border - color: rgba(148, 163, 184, 0.25);
+                                        transform: translateY(-4px);
+  }
+                                        .pricing-card.featured {
+                                            background: linear-gradient(180deg, rgba(99, 102, 241, 0.12) 0%, rgba(15, 23, 42, 0.4) 100%);
+                                        border-color: rgba(99, 102, 241, 0.4);
+                                        box-shadow: 0 30px 80px -20px rgba(99, 102, 241, 0.3);
+  }
+
+                                        /* Integration grid */
+                                        .integration-cell {
+                                            aspect - ratio: 1.6 / 1;
+                                        border: 1px solid var(--border-soft);
+                                        border-radius: 14px;
+                                        display: flex;
+                                        align-items: center;
+                                        justify-content: center;
+                                        background: rgba(30, 41, 59, 0.25);
+                                        transition: all 0.4s;
+                                        color: var(--fg-subtle);
+  }
+                                        .integration-cell:hover {
+                                            border - color: rgba(34, 211, 238, 0.3);
+                                        background: rgba(34, 211, 238, 0.04);
+                                        color: var(--fg);
+                                        transform: translateY(-2px);
+  }
+
+                                        /* Section spacing */
+                                        .section {padding: 140px 0; position: relative; }
+                                        @media (max-width: 768px) { .section {padding: 80px 0; } }
+
+                                        /* Headline gradient */
+                                        .grad-text {
+                                            background: linear-gradient(135deg, #F8FAFC 0%, #94A3B8 100%);
+                                        -webkit-background-clip: text;
+                                        background-clip: text;
+                                        color: transparent;
+  }
+                                        .grad-accent {
+                                            background: linear-gradient(135deg, #22D3EE 0%, #6366F1 100%);
+                                        -webkit-background-clip: text;
+                                        background-clip: text;
+                                        color: transparent;
+  }
+
+                                        /* Bar chart */
+                                        .bar {
+                                            transform - origin: bottom;
+                                        animation: bar-grow 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+                                        /* SVG line dash */
+                                        .dash-flow {
+                                            stroke - dasharray: 4 6;
+                                        animation: dash-flow 2s linear infinite;
+  }
+
+                                        /* Mini metric chip */
+                                        .chip {
+                                            background: rgba(15, 23, 42, 0.7);
+                                        backdrop-filter: blur(10px);
+                                        border: 1px solid rgba(148, 163, 184, 0.15);
+                                        border-radius: 10px;
+                                        padding: 10px 14px;
+  }
+
+                                        /* Logo mark */
+                                        .logo-mark {
+                                            width: 28px;
+                                        height: 28px;
+                                        border-radius: 8px;
+                                        background: linear-gradient(135deg, #6366F1, #22D3EE);
+                                        display: flex;
+                                        align-items: center;
+                                        justify-content: center;
+                                        box-shadow: 0 0 20px -5px rgba(99, 102, 241, 0.5);
+  }
+
+                                        /* Decorative grid */
+                                        .grid-bg {
+                                            background - image:
+                                        linear-gradient(rgba(148, 163, 184, 0.04) 1px, transparent 1px),
+                                        linear-gradient(90deg, rgba(148, 163, 184, 0.04) 1px, transparent 1px);
+                                        background-size: 60px 60px;
+  }
+
+                                        /* Subtle highlight line */
+                                        .highlight-line {
+                                            position: relative;
+  }
+                                        .highlight-line::after {
+                                            content: '';
+                                        position: absolute;
+                                        bottom: -4px;
+                                        left: 0;
+                                        width: 100%;
+                                        height: 1px;
+                                        background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+  }
+
+                                        /* Tab pill */
+                                        .tab-pill {
+                                            padding: 8px 16px;
+                                        border-radius: 100px;
+                                        font-size: 13px;
+                                        color: var(--fg-muted);
+                                        transition: all 0.3s;
+                                        border: 1px solid transparent;
+                                        cursor: none;
+  }
+                                        .tab-pill.active {
+                                            color: var(--fg);
+                                        background: rgba(34, 211, 238, 0.08);
+                                        border-color: rgba(34, 211, 238, 0.3);
+  }
+
+                                        /* Selection */
+                                        ::selection {background: rgba(99, 102, 241, 0.3); color: white; }
+
+                                        /* Scrollbar */
+                                        ::-webkit-scrollbar {width: 8px; }
+                                        ::-webkit-scrollbar-track {background: var(--bg); }
+                                        ::-webkit-scrollbar-thumb {background: rgba(148, 163, 184, 0.2); border-radius: 4px; }
+                                        ::-webkit-scrollbar-thumb:hover {background: rgba(148, 163, 184, 0.3); }
+                                    </style>
+                                </head>
+                                <body>
+
+                                    <!-- Cursor personalizado -->
+                                    <div class="cursor-dot" id="cursorDot"></div>
+                                    <div class="cursor-ring" id="cursorRing"></div>
+
+                                    <!-- Scroll progress -->
+                                    <div class="scroll-progress" id="scrollProgress"></div>
+
+                                    <!-- NAV -->
+                                    <nav class="fixed top-0 left-0 right-0 z-50 nav-blur">
+                                        <div class="max-w-7xl mx-auto px-6 lg:px-10 h-16 flex items-center justify-between">
+                                            <a href="#" class="flex items-center gap-2.5">
+                                                <div class="logo-mark">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                                        <path d="M12 2L2 7l10 5 10-5-10-5z" stroke="white" stroke-width="2" stroke-linejoin="round" />
+                                                        <path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" stroke-width="2" stroke-linejoin="round" opacity="0.6" />
+                                                    </svg>
+                                                </div>
+                                                <span class="font-display font-medium text-lg tracking-tight">Lumen</span>
+                                            </a>
+                                            <div class="hidden md:flex items-center gap-8 text-sm text-slate-400">
+                                                <a href="#producto" class="hover:text-white transition interactive">Producto</a>
+                                                <a href="#caracteristicas" class="hover:text-white transition interactive">Características</a>
+                                                <a href="#flujo" class="hover:text-white transition interactive">Cómo funciona</a>
+                                                <a href="#precios" class="hover:text-white transition interactive">Precios</a>
+                                                <a href="#equipo" class="hover:text-white transition interactive">Equipo</a>
+                                            </div>
+                                            <div class="flex items-center gap-3">
+                                                <a href="#" class="hidden sm:block text-sm text-slate-400 hover:text-white transition interactive">Iniciar sesión</a>
+                                                <a href="#cta" class="btn-primary text-sm interactive" style="padding: 10px 20px;">
+                                                    Empezar gratis
+                                                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </nav>
+
+                                    <!-- HERO -->
+                                    <section class="relative pt-32 pb-24 lg:pt-40 lg:pb-32 overflow-hidden">
+                                        <!-- Ambient background -->
+                                        <div class="absolute inset-0 grid-bg opacity-40"></div>
+                                        <div class="ambient-blob" style="width: 600px; height: 600px; background: #6366F1; opacity: 0.12; top: -200px; right: -100px;"></div>
+                                        <div class="ambient-blob" style="width: 500px; height: 500px; background: #22D3EE; opacity: 0.08; top: 200px; left: -150px;"></div>
+
+                                        <div class="max-w-7xl mx-auto px-6 lg:px-10 relative z-10">
+                                            <div class="grid lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+
+                                                <!-- Left: copy -->
+                                                <div class="lg:col-span-6">
+                                                    <div class="reveal inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass mb-8">
+                                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400" style="animation: pulse-soft 2s infinite;"></span>
+                                                        <span class="text-xs text-slate-300 tracking-wide">v2.4 — Ahora con flujos inteligentes</span>
+                                                    </div>
+
+                                                    <h1 class="reveal delay-1 text-5xl md:text-6xl lg:text-7xl font-medium leading-[1.05] tracking-tight mb-6">
+                                                        El trabajo complejo,<br>
+                                                            <span class="grad-accent">hecho sereno.</span>
+                                                    </h1>
+
+                                                    <p class="reveal delay-2 text-lg text-slate-400 mb-10 max-w-xl leading-relaxed">
+                                                        Lumen reúne tus datos, equipos y procesos en un espacio calmo y diseñado con intención. Menos ruido. Más claridad. Decisiones mejores, en menos tiempo.
+                                                    </p>
+
+                                                    <div class="reveal delay-3 flex flex-wrap items-center gap-4 mb-12">
+                                                        <a href="#cta" class="btn-primary interactive cta-hover">
+                                                            Empezar gratis
+                                                            <i class="fa-solid fa-arrow-right text-xs"></i>
+                                                        </a>
+                                                        <a href="#producto" class="btn-secondary interactive cta-hover">
+                                                            <i class="fa-solid fa-play text-xs"></i>
+                                                            Ver demo (2 min)
+                                                        </a>
+                                                    </div>
+
+                                                    <div class="reveal delay-4 flex items-center gap-6 text-xs text-slate-500">
+                                                        <div class="flex items-center gap-2">
+                                                            <i class="fa-solid fa-check text-emerald-400"></i>
+                                                            Sin tarjeta de crédito
+                                                        </div>
+                                                        <div class="flex items-center gap-2">
+                                                            <i class="fa-solid fa-check text-emerald-400"></i>
+                                                            14 días premium
+                                                        </div>
+                                                        <div class="flex items-center gap-2">
+                                                            <i class="fa-solid fa-check text-emerald-400"></i>
+                                                            Setup en 5 minutos
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Right: product mockup con paneles flotantes -->
+                                                <div class="lg:col-span-6 relative">
+                                                    <!-- Decorative nodes SVG -->
+                                                    <svg class="absolute -top-8 -left-8 w-32 h-32 opacity-50 float-1" viewBox="0 0 100 100">
+                                                        <line x1="20" y1="20" x2="80" y2="20" stroke="#22D3EE" stroke-width="0.5" class="dash-flow" />
+                                                        <line x1="20" y1="20" x2="20" y2="80" stroke="#22D3EE" stroke-width="0.5" class="dash-flow" />
+                                                        <line x1="80" y1="20" x2="80" y2="80" stroke="#6366F1" stroke-width="0.5" class="dash-flow" />
+                                                        <line x1="20" y1="80" x2="80" y2="80" stroke="#6366F1" stroke-width="0.5" class="dash-flow" />
+                                                        <circle cx="20" cy="20" r="3" fill="#22D3EE" />
+                                                        <circle cx="80" cy="20" r="3" fill="#22D3EE" />
+                                                        <circle cx="20" cy="80" r="3" fill="#6366F1" />
+                                                        <circle cx="80" cy="80" r="3" fill="#6366F1" />
+                                                    </svg>
+
+                                                    <!-- Main product frame -->
+                                                    <div class="product-frame product-hover breathe relative">
+                                                        <!-- Top bar -->
+                                                        <div class="flex items-center justify-between px-4 py-3 border-b border-slate-700/40">
+                                                            <div class="flex items-center gap-2">
+                                                                <div class="w-2.5 h-2.5 rounded-full bg-rose-400/40"></div>
+                                                                <div class="w-2.5 h-2.5 rounded-full bg-amber-400/40"></div>
+                                                                <div class="w-2.5 h-2.5 rounded-full bg-emerald-400/40"></div>
+                                                            </div>
+                                                            <div class="text-[10px] text-slate-500 font-mono">app.lumen.io/dashboard</div>
+                                                            <div class="flex items-center gap-1.5">
+                                                                <div class="w-5 h-5 rounded bg-slate-700/60"></div>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Body -->
+                                                        <div class="flex">
+                                                            <!-- Sidebar -->
+                                                            <div class="w-12 border-r border-slate-700/40 py-3 flex flex-col items-center gap-3">
+                                                                <div class="w-6 h-6 rounded-md bg-gradient-to-br from-indigo-500 to-cyan-400"></div>
+                                                                <div class="w-6 h-6 rounded-md bg-cyan-400/20 border border-cyan-400/40"></div>
+                                                                <div class="w-6 h-6 rounded-md bg-slate-700/40"></div>
+                                                                <div class="w-6 h-6 rounded-md bg-slate-700/40"></div>
+                                                                <div class="w-6 h-6 rounded-md bg-slate-700/40"></div>
+                                                            </div>
+
+                                                            <!-- Main content -->
+                                                            <div class="flex-1 p-4">
+                                                                <!-- Header row -->
+                                                                <div class="flex items-center justify-between mb-4">
+                                                                    <div>
+                                                                        <div class="text-[10px] text-slate-500 mb-0.5">Resumen</div>
+                                                                        <div class="text-sm text-white font-medium">Buenos días, Marina</div>
+                                                                    </div>
+                                                                    <div class="flex items-center gap-1.5">
+                                                                        <div class="px-2 py-1 rounded-md bg-slate-700/40 text-[9px] text-slate-400">Hoy</div>
+                                                                        <div class="px-2 py-1 rounded-md bg-indigo-500/20 border border-indigo-500/40 text-[9px] text-indigo-300">7d</div>
+                                                                        <div class="px-2 py-1 rounded-md bg-slate-700/40 text-[9px] text-slate-400">30d</div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <!-- KPI cards -->
+                                                                <div class="grid grid-cols-3 gap-2 mb-4">
+                                                                    <div class="p-2 rounded-md bg-slate-800/40 border border-slate-700/30">
+                                                                        <div class="text-[8px] text-slate-500 mb-0.5">Ingresos</div>
+                                                                        <div class="text-xs text-white font-medium">$48.2K</div>
+                                                                        <div class="text-[8px] text-emerald-400 mt-0.5">↑ 12.4%</div>
+                                                                    </div>
+                                                                    <div class="p-2 rounded-md bg-slate-800/40 border border-slate-700/30">
+                                                                        <div class="text-[8px] text-slate-500 mb-0.5">Conversión</div>
+                                                                        <div class="text-xs text-white font-medium">7.82%</div>
+                                                                        <div class="text-[8px] text-emerald-400 mt-0.5">↑ 3.1%</div>
+                                                                    </div>
+                                                                    <div class="p-2 rounded-md bg-slate-800/40 border border-slate-700/30">
+                                                                        <div class="text-[8px] text-slate-500 mb-0.5">Activos</div>
+                                                                        <div class="text-xs text-white font-medium">1,284</div>
+                                                                        <div class="text-[8px] text-rose-400 mt-0.5">↓ 0.4%</div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <!-- Chart -->
+                                                                <div class="p-3 rounded-md bg-slate-800/30 border border-slate-700/30 mb-3">
+                                                                    <div class="flex items-center justify-between mb-2">
+                                                                        <div class="text-[10px] text-slate-300">Rendimiento semanal</div>
+                                                                        <div class="flex items-center gap-2 text-[8px]">
+                                                                            <div class="flex items-center gap-1"><div class="w-1.5 h-1.5 rounded-full bg-cyan-400"></div><span class="text-slate-500">Actual</span></div>
+                                                                            <div class="flex items-center gap-1"><div class="w-1.5 h-1.5 rounded-full bg-indigo-400"></div><span class="text-slate-500">Anterior</span></div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <svg viewBox="0 0 240 80" class="w-full h-16">
+                                                                        <defs>
+                                                                            <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                                                                                <stop offset="0%" stop-color="#22D3EE" stop-opacity="0.4" />
+                                                                                <stop offset="100%" stop-color="#22D3EE" stop-opacity="0" />
+                                                                            </linearGradient>
+                                                                            <linearGradient id="areaGrad2" x1="0" y1="0" x2="0" y2="1">
+                                                                                <stop offset="0%" stop-color="#6366F1" stop-opacity="0.3" />
+                                                                                <stop offset="100%" stop-color="#6366F1" stop-opacity="0" />
+                                                                            </linearGradient>
+                                                                        </defs>
+                                                                        <!-- Grid lines -->
+                                                                        <line x1="0" y1="20" x2="240" y2="20" stroke="#334155" stroke-width="0.3" stroke-dasharray="2 2" />
+                                                                        <line x1="0" y1="40" x2="240" y2="40" stroke="#334155" stroke-width="0.3" stroke-dasharray="2 2" />
+                                                                        <line x1="0" y1="60" x2="240" y2="60" stroke="#334155" stroke-width="0.3" stroke-dasharray="2 2" />
+                                                                        <!-- Area 2 (indigo, behind) -->
+                                                                        <path d="M0,55 L30,50 L60,52 L90,45 L120,48 L150,40 L180,42 L210,38 L240,35 L240,80 L0,80 Z" fill="url(#areaGrad2)" />
+                                                                        <path d="M0,55 L30,50 L60,52 L90,45 L120,48 L150,40 L180,42 L210,38 L240,35" stroke="#6366F1" stroke-width="1" fill="none" opacity="0.7" />
+                                                                        <!-- Area 1 (cyan, front) -->
+                                                                        <path d="M0,60 L30,45 L60,50 L90,30 L120,38 L150,25 L180,32 L210,18 L240,22 L240,80 L0,80 Z" fill="url(#areaGrad)" />
+                                                                        <path d="M0,60 L30,45 L60,50 L90,30 L120,38 L150,25 L180,32 L210,18 L240,22" stroke="#22D3EE" stroke-width="1.5" fill="none" />
+                                                                        <!-- Dot at end -->
+                                                                        <circle cx="240" cy="22" r="3" fill="#22D3EE" />
+                                                                        <circle cx="240" cy="22" r="6" fill="#22D3EE" opacity="0.3" style="animation: pulse-soft 2s infinite;" />
+                                                                    </svg>
+                                                                </div>
+
+                                                                <!-- Mini bar chart -->
+                                                                <div class="p-3 rounded-md bg-slate-800/30 border border-slate-700/30">
+                                                                    <div class="text-[10px] text-slate-300 mb-2">Actividad por hora</div>
+                                                                    <div class="flex items-end gap-1 h-8">
+                                                                        <div class="bar w-full bg-cyan-400/30 rounded-sm" style="height: 30%; animation-delay: 0.1s;"></div>
+                                                                        <div class="bar w-full bg-cyan-400/40 rounded-sm" style="height: 50%; animation-delay: 0.15s;"></div>
+                                                                        <div class="bar w-full bg-cyan-400/50 rounded-sm" style="height: 65%; animation-delay: 0.2s;"></div>
+                                                                        <div class="bar w-full bg-cyan-400/60 rounded-sm" style="height: 45%; animation-delay: 0.25s;"></div>
+                                                                        <div class="bar w-full bg-cyan-400/70 rounded-sm" style="height: 80%; animation-delay: 0.3s;"></div>
+                                                                        <div class="bar w-full bg-cyan-400/80 rounded-sm" style="height: 95%; animation-delay: 0.35s;"></div>
+                                                                        <div class="bar w-full bg-cyan-400 rounded-sm" style="height: 70%; animation-delay: 0.4s;"></div>
+                                                                        <div class="bar w-full bg-cyan-400/70 rounded-sm" style="height: 55%; animation-delay: 0.45s;"></div>
+                                                                        <div class="bar w-full bg-cyan-400/60 rounded-sm" style="height: 65%; animation-delay: 0.5s;"></div>
+                                                                        <div class="bar w-full bg-cyan-400/50 rounded-sm" style="height: 40%; animation-delay: 0.55s;"></div>
+                                                                        <div class="bar w-full bg-cyan-400/40 rounded-sm" style="height: 35%; animation-delay: 0.6s;"></div>
+                                                                        <div class="bar w-full bg-cyan-400/30 rounded-sm" style="height: 25%; animation-delay: 0.65s;"></div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Floating chip 1 -->
+                                                    <div class="absolute -top-4 -right-4 chip float-2 hidden md:block" style="animation-delay: 0.5s;">
+                                                        <div class="flex items-center gap-2">
+                                                            <div class="w-6 h-6 rounded-md bg-emerald-400/20 border border-emerald-400/40 flex items-center justify-center">
+                                                                <i class="fa-solid fa-check text-[10px] text-emerald-400"></i>
+                                                            </div>
+                                                            <div>
+                                                                <div class="text-[9px] text-slate-500">Sincronizado</div>
+                                                                <div class="text-[10px] text-white font-medium">hace 2 segundos</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Floating chip 2 -->
+                                                    <div class="absolute -bottom-6 -left-6 chip float-1 hidden md:block" style="animation-delay: 1s;">
+                                                        <div class="flex items-center gap-2">
+                                                            <div class="w-6 h-6 rounded-md bg-indigo-400/20 border border-indigo-400/40 flex items-center justify-center">
+                                                                <i class="fa-solid fa-bolt text-[10px] text-indigo-300"></i>
+                                                            </div>
+                                                            <div>
+                                                                <div class="text-[9px] text-slate-500">Flujo automático</div>
+                                                                <div class="text-[10px] text-white font-medium">12 tareas completadas</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Floating chip 3 -->
+                                                    <div class="absolute top-1/2 -right-8 chip float-2 hidden lg:block" style="animation-delay: 1.5s;">
+                                                        <div class="text-[9px] text-slate-500 mb-1">Tiempo ahorrado</div>
+                                                        <div class="text-sm text-white font-medium font-display">+ 4.2h</div>
+                                                        <div class="text-[8px] text-emerald-400">hoy</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Logos trust bar -->
+                                            <div class="reveal mt-24 lg:mt-32">
+                                                <p class="text-center text-xs text-slate-500 tracking-widest uppercase mb-8">Equipos brillantes que confían en Lumen</p>
+                                                <div class="flex flex-wrap items-center justify-center gap-x-12 gap-y-6 opacity-50">
+                                                    <div class="text-slate-400 font-display text-lg font-medium">Northwind</div>
+                                                    <div class="text-slate-400 font-display text-lg font-medium italic">Caldera</div>
+                                                    <div class="text-slate-400 font-display text-lg font-medium tracking-widest">VERTEX</div>
+                                                    <div class="text-slate-400 font-display text-lg font-light">meridian</div>
+                                                    <div class="text-slate-400 font-display text-lg font-semibold">Quartz</div>
+                                                    <div class="text-slate-400 font-display text-lg font-medium">Helio·</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    <!-- PROBLEMA / SOLUCIÓN -->
+                                    <section class="section relative">
+                                        <div class="max-w-7xl mx-auto px-6 lg:px-10">
+                                            <div class="max-w-3xl mb-20">
+                                                <div class="step-num reveal mb-4">01 — Por qué Lumen</div>
+                                                <h2 class="reveal delay-1 text-4xl md:text-5xl font-medium tracking-tight mb-6">
+                                                    El software empresarial<br>te ha estado fallando.
+                                                </h2>
+                                                <p class="reveal delay-2 text-lg text-slate-400 leading-relaxed">
+                                                    Demasiadas pestañas. Demasiados avisos. Demasiada fricción para hacer lo que importa. Lumen existe porque el trabajo sofisticado merece una herramienta igual de sofisticada — y serena.
+                                                </p>
+                                            </div>
+
+                                            <div class="grid md:grid-cols-2 gap-6 lg:gap-8">
+                                                <!-- Problema -->
+                                                <div class="reveal glass rounded-2xl p-8 lg:p-10 relative overflow-hidden">
+                                                    <div class="absolute top-0 right-0 w-32 h-32 bg-rose-500/5 rounded-full blur-3xl"></div>
+                                                    <div class="relative">
+                                                        <div class="flex items-center gap-3 mb-6">
+                                                            <div class="w-10 h-10 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
+                                                                <i class="fa-solid fa-xmark text-rose-400"></i>
+                                                            </div>
+                                                            <span class="text-sm text-slate-400 tracking-wide">El dolor actual</span>
+                                                        </div>
+
+                                                        <!-- Caotic mockup -->
+                                                        <div class="bg-slate-900/60 rounded-lg p-3 mb-6 border border-slate-700/40">
+                                                            <div class="grid grid-cols-6 gap-1 mb-2">
+                                                                <div class="h-3 bg-slate-700/60 rounded-sm"></div>
+                                                                <div class="h-3 bg-rose-500/30 rounded-sm"></div>
+                                                                <div class="h-3 bg-slate-700/60 rounded-sm"></div>
+                                                                <div class="h-3 bg-amber-500/30 rounded-sm"></div>
+                                                                <div class="h-3 bg-slate-700/60 rounded-sm"></div>
+                                                                <div class="h-3 bg-rose-500/30 rounded-sm"></div>
+                                                            </div>
+                                                            <div class="space-y-1.5">
+                                                                <div class="h-2 bg-slate-700/40 rounded w-full"></div>
+                                                                <div class="h-2 bg-slate-700/40 rounded w-4/5"></div>
+                                                                <div class="h-2 bg-slate-700/40 rounded w-3/5"></div>
+                                                                <div class="h-2 bg-amber-500/20 rounded w-2/3"></div>
+                                                                <div class="h-2 bg-slate-700/40 rounded w-full"></div>
+                                                            </div>
+                                                            <div class="flex gap-1 mt-3">
+                                                                <div class="px-1.5 py-0.5 bg-rose-500/20 text-rose-300 text-[8px] rounded">Alerta</div>
+                                                                <div class="px-1.5 py-0.5 bg-amber-500/20 text-amber-300 text-[8px] rounded">Pendiente</div>
+                                                                <div class="px-1.5 py-0.5 bg-rose-500/20 text-rose-300 text-[8px] rounded">Error</div>
+                                                                <div class="px-1.5 py-0.5 bg-slate-700/60 text-slate-400 text-[8px] rounded">+12</div>
+                                                            </div>
+                                                        </div>
+
+                                                        <ul class="space-y-3 text-sm text-slate-400">
+                                                            <li class="flex items-start gap-3">
+                                                                <i class="fa-solid fa-circle-xmark text-rose-400/70 mt-1 text-xs"></i>
+                                                                <span>Doce herramientas desconectadas para una sola tarea</span>
+                                                            </li>
+                                                            <li class="flex items-start gap-3">
+                                                                <i class="fa-solid fa-circle-xmark text-rose-400/70 mt-1 text-xs"></i>
+                                                                <span>Notificaciones constantes que rompen tu foco</span>
+                                                            </li>
+                                                            <li class="flex items-start gap-3">
+                                                                <i class="fa-solid fa-circle-xmark text-rose-400/70 mt-1 text-xs"></i>
+                                                                <span>Datos repartidos, decisiones improvisadas</span>
+                                                            </li>
+                                                            <li class="flex items-start gap-3">
+                                                                <i class="fa-solid fa-circle-xmark text-rose-400/70 mt-1 text-xs"></i>
+                                                                <span>Onboarding eterno, adopción interminable</span>
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Solución -->
+                                                <div class="reveal delay-2 glass rounded-2xl p-8 lg:p-10 relative overflow-hidden" style="border-color: rgba(34, 211, 238, 0.2);">
+                                                    <div class="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl"></div>
+                                                    <div class="relative">
+                                                        <div class="flex items-center gap-3 mb-6">
+                                                            <div class="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center" style="animation: glow-pulse 3s infinite;">
+                                                                <i class="fa-solid fa-check text-cyan-400"></i>
+                                                            </div>
+                                                            <span class="text-sm text-slate-300 tracking-wide">La experiencia Lumen</span>
+                                                        </div>
+
+                                                        <!-- Calm mockup -->
+                                                        <div class="bg-slate-900/60 rounded-lg p-3 mb-6 border border-cyan-500/15">
+                                                            <div class="flex items-center justify-between mb-3">
+                                                                <div class="h-2 bg-slate-700/40 rounded w-1/4"></div>
+                                                                <div class="flex gap-1">
+                                                                    <div class="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
+                                                                    <div class="text-[8px] text-slate-500">Sincronizado</div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="space-y-2">
+                                                                <div class="flex items-center gap-2">
+                                                                    <div class="w-1 h-6 bg-cyan-400 rounded-full"></div>
+                                                                    <div class="flex-1">
+                                                                        <div class="h-2 bg-slate-700/40 rounded w-3/4 mb-1"></div>
+                                                                        <div class="h-1.5 bg-slate-700/30 rounded w-1/2"></div>
+                                                                    </div>
+                                                                    <div class="text-[8px] text-emerald-400">Listo</div>
+                                                                </div>
+                                                                <div class="flex items-center gap-2">
+                                                                    <div class="w-1 h-6 bg-indigo-400 rounded-full"></div>
+                                                                    <div class="flex-1">
+                                                                        <div class="h-2 bg-slate-700/40 rounded w-2/3 mb-1"></div>
+                                                                        <div class="h-1.5 bg-slate-700/30 rounded w-1/3"></div>
+                                                                    </div>
+                                                                    <div class="text-[8px] text-cyan-400">En curso</div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <ul class="space-y-3 text-sm text-slate-300">
+                                                            <li class="flex items-start gap-3">
+                                                                <i class="fa-solid fa-circle-check text-cyan-400 mt-1 text-xs"></i>
+                                                                <span>Una sola superficie, todo tu universo de trabajo</span>
+                                                            </li>
+                                                            <li class="flex items-start gap-3">
+                                                                <i class="fa-solid fa-circle-check text-cyan-400 mt-1 text-xs"></i>
+                                                                <span>Silencio por defecto, notificaciones solo cuando importan</span>
+                                                            </li>
+                                                            <li class="flex items-start gap-3">
+                                                                <i class="fa-solid fa-circle-check text-cyan-400 mt-1 text-xs"></i>
+                                                                <span>Datos unificados, decisiones claras en tiempo real</span>
+                                                            </li>
+                                                            <li class="flex items-start gap-3">
+                                                                <i class="fa-solid fa-circle-check text-cyan-400 mt-1 text-xs"></i>
+                                                                <span>Productivo en minutos, no en semanas</span>
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    <!-- CARACTERÍSTICAS -->
+                                    <section id="caracteristicas" class="section relative">
+                                        <div class="ambient-blob" style="width: 500px; height: 500px; background: #6366F1; opacity: 0.06; top: 20%; right: -200px;"></div>
+
+                                        <div class="max-w-7xl mx-auto px-6 lg:px-10 relative">
+                                            <div class="max-w-3xl mb-20">
+                                                <div class="step-num reveal mb-4">02 — Características</div>
+                                                <h2 class="reveal delay-1 text-4xl md:text-5xl font-medium tracking-tight mb-6">
+                                                    Cuatro piezas.<br>
+                                                        <span class="grad-accent">Una experiencia completa.</span>
+                                                </h2>
+                                                <p class="reveal delay-2 text-lg text-slate-400">
+                                                    Cada función está diseñada con la misma idea: eliminar fricción sin sacrificar profundidad.
+                                                </p>
+                                            </div>
+
+                                            <div class="grid md:grid-cols-2 gap-6">
+
+                                                <!-- Feature 1 -->
+                                                <div class="feature-card reveal interactive">
+                                                    <div class="flex items-start justify-between mb-6">
+                                                        <div class="feature-icon">
+                                                            <i class="fa-solid fa-wave-square"></i>
+                                                        </div>
+                                                        <span class="text-xs text-slate-500">01</span>
+                                                    </div>
+                                                    <h3 class="text-2xl font-medium mb-3">Analytics en tiempo real</h3>
+                                                    <p class="text-slate-400 text-sm leading-relaxed mb-6">
+                                                        Métricas que se actualizan al segundo. Sin refrescar. Sin esperar. Filtra, segmenta y comprende sin cambiar de pestaña.
+                                                    </p>
+
+                                                    <!-- Mini preview -->
+                                                    <div class="bg-slate-900/50 rounded-lg p-4 border border-slate-700/30">
+                                                        <div class="flex items-center justify-between mb-3">
+                                                            <div class="text-[10px] text-slate-400">Ingresos · últimos 7 días</div>
+                                                            <div class="flex items-center gap-1">
+                                                                <div class="w-1.5 h-1.5 rounded-full bg-emerald-400" style="animation: pulse-soft 2s infinite;"></div>
+                                                                <div class="text-[9px] text-emerald-400">Live</div>
+                                                            </div>
+                                                        </div>
+                                                        <svg viewBox="0 0 200 50" class="w-full h-12">
+                                                            <defs>
+                                                                <linearGradient id="f1grad" x1="0" y1="0" x2="0" y2="1">
+                                                                    <stop offset="0%" stop-color="#22D3EE" stop-opacity="0.4" />
+                                                                    <stop offset="100%" stop-color="#22D3EE" stop-opacity="0" />
+                                                                </linearGradient>
+                                                            </defs>
+                                                            <path d="M0,35 L25,28 L50,32 L75,20 L100,24 L125,15 L150,18 L175,10 L200,12 L200,50 L0,50 Z" fill="url(#f1grad)" />
+                                                            <path d="M0,35 L25,28 L50,32 L75,20 L100,24 L125,15 L150,18 L175,10 L200,12" stroke="#22D3EE" stroke-width="1.5" fill="none" />
+                                                            <circle cx="200" cy="12" r="2.5" fill="#22D3EE" />
+                                                        </svg>
+                                                        <div class="flex justify-between text-[9px] text-slate-500 mt-2">
+                                                            <span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Feature 2 -->
+                                                <div class="feature-card reveal delay-1 interactive">
+                                                    <div class="flex items-start justify-between mb-6">
+                                                        <div class="feature-icon">
+                                                            <i class="fa-solid fa-diagram-project"></i>
+                                                        </div>
+                                                        <span class="text-xs text-slate-500">02</span>
+                                                    </div>
+                                                    <h3 class="text-2xl font-medium mb-3">Flujos automatizados</h3>
+                                                    <p class="text-slate-400 text-sm leading-relaxed mb-6">
+                                                        Diseña procesos visuales que se ejecutan solos. Conecta triggers, condiciones y acciones con un lienzo limpio.
+                                                    </p>
+
+                                                    <div class="bg-slate-900/50 rounded-lg p-4 border border-slate-700/30">
+                                                        <div class="flex items-center justify-between">
+                                                            <div class="flex items-center gap-2">
+                                                                <div class="w-8 h-8 rounded-lg bg-cyan-400/15 border border-cyan-400/30 flex items-center justify-center">
+                                                                    <i class="fa-solid fa-bolt text-[10px] text-cyan-400"></i>
+                                                                </div>
+                                                                <div class="text-[10px] text-slate-300">Nuevo lead</div>
+                                                            </div>
+                                                            <svg width="30" height="10" viewBox="0 0 30 10"><line x1="0" y1="5" x2="25" y2="5" stroke="#64748B" stroke-width="1" stroke-dasharray="2 2" /><polygon points="25,2 28,5 25,8" fill="#64748B" /></svg>
+                                                            <div class="flex items-center gap-2">
+                                                                <div class="w-8 h-8 rounded-lg bg-indigo-400/15 border border-indigo-400/30 flex items-center justify-center">
+                                                                    <i class="fa-solid fa-filter text-[10px] text-indigo-300"></i>
+                                                                </div>
+                                                                <div class="text-[10px] text-slate-300">Filtrar</div>
+                                                            </div>
+                                                            <svg width="30" height="10" viewBox="0 0 30 10"><line x1="0" y1="5" x2="25" y2="5" stroke="#64748B" stroke-width="1" stroke-dasharray="2 2" /><polygon points="25,2 28,5 25,8" fill="#64748B" /></svg>
+                                                            <div class="flex items-center gap-2">
+                                                                <div class="w-8 h-8 rounded-lg bg-emerald-400/15 border border-emerald-400/30 flex items-center justify-center">
+                                                                    <i class="fa-solid fa-envelope text-[10px] text-emerald-400"></i>
+                                                                </div>
+                                                                <div class="text-[10px] text-slate-300">Email</div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="mt-3 pt-3 border-t border-slate-700/30 flex items-center justify-between">
+                                                            <div class="text-[9px] text-slate-500">847 ejecuciones · 0 errores</div>
+                                                            <div class="text-[9px] text-emerald-400">Activo</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Feature 3 -->
+                                                <div class="feature-card reveal delay-2 interactive">
+                                                    <div class="flex items-start justify-between mb-6">
+                                                        <div class="feature-icon">
+                                                            <i class="fa-solid fa-people-group"></i>
+                                                        </div>
+                                                        <span class="text-xs text-slate-500">03</span>
+                                                    </div>
+                                                    <h3 class="text-2xl font-medium mb-3">Colaboración fluida</h3>
+                                                    <p class="text-slate-400 text-sm leading-relaxed mb-6">
+                                                        Comentarios contextuales, presencia en vivo, cambios sincronizados. Tu equipo trabaja junto sin reuniones innecesarias.
+                                                    </p>
+
+                                                    <div class="bg-slate-900/50 rounded-lg p-4 border border-slate-700/30">
+                                                        <div class="flex items-center gap-2 mb-3">
+                                                            <div class="flex -space-x-2">
+                                                                <div class="w-6 h-6 rounded-full bg-gradient-to-br from-cyan-400 to-indigo-500 border-2 border-slate-900"></div>
+                                                                <div class="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 border-2 border-slate-900"></div>
+                                                                <div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-400 to-rose-400 border-2 border-slate-900"></div>
+                                                            </div>
+                                                            <div class="text-[10px] text-slate-400">3 editando ahora</div>
+                                                            <div class="ml-auto flex items-center gap-1">
+                                                                <div class="w-1.5 h-1.5 rounded-full bg-emerald-400" style="animation: pulse-soft 1.5s infinite;"></div>
+                                                                <div class="text-[9px] text-emerald-400">Sincronizado</div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="space-y-2">
+                                                            <div class="flex items-start gap-2 p-2 rounded bg-slate-800/40">
+                                                                <div class="w-5 h-5 rounded-full bg-gradient-to-br from-cyan-400 to-indigo-500 flex-shrink-0"></div>
+                                                                <div class="flex-1">
+                                                                    <div class="text-[9px] text-slate-300">Marina <span class="text-slate-500">· hace 2m</span></div>
+                                                                    <div class="text-[10px] text-slate-400">¿Aprobamos el Q3?</div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="flex items-start gap-2 p-2 rounded bg-indigo-500/5 border border-indigo-500/20">
+                                                                <div class="w-5 h-5 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex-shrink-0"></div>
+                                                                <div class="flex-1">
+                                                                    <div class="text-[9px] text-slate-300">Diego <span class="text-slate-500">· ahora</span></div>
+                                                                    <div class="text-[10px] text-slate-400">Aprobado ✓</div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Feature 4 -->
+                                                <div class="feature-card reveal delay-3 interactive">
+                                                    <div class="flex items-start justify-between mb-6">
+                                                        <div class="feature-icon">
+                                                            <i class="fa-solid fa-shield-halved"></i>
+                                                        </div>
+                                                        <span class="text-xs text-slate-500">04</span>
+                                                    </div>
+                                                    <h3 class="text-2xl font-medium mb-3">Seguridad empresarial</h3>
+                                                    <p class="text-slate-400 text-sm leading-relaxed mb-6">
+                                                        Cifrado E2E, SSO, auditoría completa y residencia de datos. SOC 2 Tipo II y GDPR por defecto, no como extra.
+                                                    </p>
+
+                                                    <div class="bg-slate-900/50 rounded-lg p-4 border border-slate-700/30">
+                                                        <div class="grid grid-cols-2 gap-3">
+                                                            <div class="p-2 rounded bg-emerald-500/5 border border-emerald-500/20">
+                                                                <div class="flex items-center gap-1.5 mb-1">
+                                                                    <i class="fa-solid fa-lock text-[9px] text-emerald-400"></i>
+                                                                    <div class="text-[9px] text-slate-300">Cifrado AES-256</div>
+                                                                </div>
+                                                                <div class="text-[8px] text-slate-500">E2E en reposo y tránsito</div>
+                                                            </div>
+                                                            <div class="p-2 rounded bg-emerald-500/5 border border-emerald-500/20">
+                                                                <div class="flex items-center gap-1.5 mb-1">
+                                                                    <i class="fa-solid fa-key text-[9px] text-emerald-400"></i>
+                                                                    <div class="text-[9px] text-slate-300">SSO / SAML</div>
+                                                                </div>
+                                                                <div class="text-[8px] text-slate-500">Okta, Azure, Google</div>
+                                                            </div>
+                                                            <div class="p-2 rounded bg-emerald-500/5 border border-emerald-500/20">
+                                                                <div class="flex items-center gap-1.5 mb-1">
+                                                                    <i class="fa-solid fa-certificate text-[9px] text-emerald-400"></i>
+                                                                    <div class="text-[9px] text-slate-300">SOC 2 Tipo II</div>
+                                                                </div>
+                                                                <div class="text-[8px] text-slate-500">Auditado anualmente</div>
+                                                            </div>
+                                                            <div class="p-2 rounded bg-emerald-500/5 border border-emerald-500/20">
+                                                                <div class="flex items-center gap-1.5 mb-1">
+                                                                    <i class="fa-solid fa-globe text-[9px] text-emerald-400"></i>
+                                                                    <div class="text-[9px] text-slate-300">GDPR / CCPA</div>
+                                                                </div>
+                                                                <div class="text-[8px] text-slate-500">Cumplimiento total</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    <!-- CÓMO FUNCIONA -->
+                                    <section id="flujo" class="section relative">
+                                        <div class="max-w-7xl mx-auto px-6 lg:px-10">
+                                            <div class="max-w-3xl mb-20">
+                                                <div class="step-num reveal mb-4">03 — Cómo funciona</div>
+                                                <h2 class="reveal delay-1 text-4xl md:text-5xl font-medium tracking-tight mb-6">
+                                                    De cero a flujo<br>en menos de una hora.
+                                                </h2>
+                                                <p class="reveal delay-2 text-lg text-slate-400">
+                                                    Sin migraciones dolorosas. Sin consultores. Sin semanas de configuración.
+                                                </p>
+                                            </div>
+
+                                            <!-- Steps con línea conectora -->
+                                            <div class="relative">
+                                                <!-- Línea decorativa horizontal -->
+                                                <div class="hidden lg:block absolute top-12 left-[12.5%] right-[12.5%] h-px">
+                                                    <div class="w-full h-full bg-gradient-to-r from-transparent via-slate-700 to-transparent"></div>
+                                                    <div class="absolute top-0 left-0 h-full" id="stepLine" style="width: 0%; background: linear-gradient(90deg, #22D3EE, #6366F1); transition: width 1.5s cubic-bezier(0.16,1,0.3,1);"></div>
+                                                </div>
+
+                                                <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-4">
+                                                    <!-- Step 1 -->
+                                                    <div class="reveal text-center lg:text-left">
+                                                        <div class="relative inline-flex items-center justify-center mb-6">
+                                                            <div class="w-24 h-24 rounded-full glass flex items-center justify-center relative z-10">
+                                                                <i class="fa-solid fa-plug text-2xl text-cyan-400"></i>
+                                                            </div>
+                                                            <div class="absolute inset-0 rounded-full border border-cyan-400/20" style="animation: ping-soft 3s infinite;"></div>
+                                                        </div>
+                                                        <div class="step-num mb-2">Paso 01</div>
+                                                        <h3 class="text-xl font-medium mb-2">Conecta tus fuentes</h3>
+                                                        <p class="text-sm text-slate-400 leading-relaxed">
+                                                            Integra tus bases de datos, APIs y herramientas en unos clics. Más de 200 conectores nativos.
+                                                        </p>
+                                                    </div>
+
+                                                    <!-- Step 2 -->
+                                                    <div class="reveal delay-1 text-center lg:text-left">
+                                                        <div class="relative inline-flex items-center justify-center mb-6">
+                                                            <div class="w-24 h-24 rounded-full glass flex items-center justify-center relative z-10">
+                                                                <i class="fa-solid fa-pen-ruler text-2xl text-indigo-400"></i>
+                                                            </div>
+                                                        </div>
+                                                        <div class="step-num mb-2" style="color: #6366F1;">Paso 02</div>
+                                                        <h3 class="text-xl font-medium mb-2">Diseña tu espacio</h3>
+                                                        <p class="text-sm text-slate-400 leading-relaxed">
+                                                            Arrastra, suelta, organiza. Crea vistas, dashboards y flujos con un lienzo visual intuitivo.
+                                                        </p>
+                                                    </div>
+
+                                                    <!-- Step 3 -->
+                                                    <div class="reveal delay-2 text-center lg:text-left">
+                                                        <div class="relative inline-flex items-center justify-center mb-6">
+                                                            <div class="w-24 h-24 rounded-full glass flex items-center justify-center relative z-10">
+                                                                <i class="fa-solid fa-wand-magic-sparkles text-2xl text-cyan-400"></i>
+                                                            </div>
+                                                        </div>
+                                                        <div class="step-num mb-2">Paso 03</div>
+                                                        <h3 class="text-xl font-medium mb-2">Automatiza el ritmo</h3>
+                                                        <p class="text-sm text-slate-400 leading-relaxed">
+                                                            Define reglas y triggers. Lumen ejecuta, notifica y aprende — tú te enfocas en decidir.
+                                                        </p>
+                                                    </div>
+
+                                                    <!-- Step 4 -->
+                                                    <div class="reveal delay-3 text-center lg:text-left">
+                                                        <div class="relative inline-flex items-center justify-center mb-6">
+                                                            <div class="w-24 h-24 rounded-full glass flex items-center justify-center relative z-10">
+                                                                <i class="fa-solid fa-chart-line text-2xl text-emerald-400"></i>
+                                                            </div>
+                                                        </div>
+                                                        <div class="step-num mb-2" style="color: #10B981;">Paso 04</div>
+                                                        <h3 class="text-xl font-medium mb-2">Observa y mejora</h3>
+                                                        <p class="text-sm text-slate-400 leading-relaxed">
+                                                            Métricas claras, tendencias honestas. Itera con datos, no con corazonadas.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    <!-- TESTIMONIOS -->
+                                    <section class="section relative">
+                                        <div class="ambient-blob" style="width: 400px; height: 400px; background: #22D3EE; opacity: 0.05; bottom: 20%; left: -100px;"></div>
+
+                                        <div class="max-w-7xl mx-auto px-6 lg:px-10">
+                                            <div class="max-w-3xl mb-20">
+                                                <div class="step-num reveal mb-4">04 — Testimonios</div>
+                                                <h2 class="reveal delay-1 text-4xl md:text-5xl font-medium tracking-tight mb-6">
+                                                    Resultados que se sienten<br>desde la primera semana.
+                                                </h2>
+                                            </div>
+
+                                            <div class="grid md:grid-cols-3 gap-6">
+
+                                                <!-- Testimonio 1 -->
+                                                <div class="reveal glass rounded-2xl p-8 flex flex-col">
+                                                    <div class="text-cyan-400/30 text-5xl font-display leading-none mb-4">"</div>
+                                                    <p class="text-slate-300 leading-relaxed mb-8 flex-1">
+                                                        Cambiamos 6 herramientas por Lumen. La primera semana ya sentíamos que recuperábamos nuestro tiempo. Es el primer software que no se siente como software.
+                                                    </p>
+                                                    <div class="flex items-center gap-4 pt-6 border-t border-slate-700/40">
+                                                        <img src="https://picsum.photos/seed/marina/80/80.jpg" alt="Marina" class="w-12 h-12 rounded-full object-cover">
+                                                            <div class="flex-1">
+                                                                <div class="text-sm text-white font-medium">Marina Velasco</div>
+                                                                <div class="text-xs text-slate-500">COO · Northwind Labs</div>
+                                                            </div>
+                                                    </div>
+                                                    <div class="mt-6 pt-6 border-t border-slate-700/40">
+                                                        <div class="text-3xl font-display font-medium grad-accent">-68%</div>
+                                                        <div class="text-xs text-slate-500 mt-1">tiempo de reporting</div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Testimonio 2 -->
+                                                <div class="reveal delay-1 glass rounded-2xl p-8 flex flex-col" style="border-color: rgba(99, 102, 241, 0.2);">
+                                                    <div class="text-indigo-400/30 text-5xl font-display leading-none mb-4">"</div>
+                                                    <p class="text-slate-300 leading-relaxed mb-8 flex-1">
+                                                        Como fundador técnico, valoro el detalle. Lumen tiene la sofisticación que exigiría de mi propio equipo. Y la calma que necesitaba mi empresa.
+                                                    </p>
+                                                    <div class="flex items-center gap-4 pt-6 border-t border-slate-700/40">
+                                                        <img src="https://picsum.photos/seed/diego/80/80.jpg" alt="Diego" class="w-12 h-12 rounded-full object-cover">
+                                                            <div class="flex-1">
+                                                                <div class="text-sm text-white font-medium">Diego Marrero</div>
+                                                                <div class="text-xs text-slate-500">CEO · Caldera</div>
+                                                            </div>
+                                                    </div>
+                                                    <div class="mt-6 pt-6 border-t border-slate-700/40">
+                                                        <div class="text-3xl font-display font-medium grad-accent">+3.4x</div>
+                                                        <div class="text-xs text-slate-500 mt-1">velocidad operativa</div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Testimonio 3 -->
+                                                <div class="reveal delay-2 glass rounded-2xl p-8 flex flex-col">
+                                                    <div class="text-emerald-400/30 text-5xl font-display leading-none mb-4">"</div>
+                                                    <p class="text-slate-300 leading-relaxed mb-8 flex-1">
+                                                        Lumen no impone su lógica. Se adapta a la nuestra. Es la primera vez que un sistema siente que trabaja con nosotros, no contra nosotros.
+                                                    </p>
+                                                    <div class="flex items-center gap-4 pt-6 border-t border-slate-700/40">
+                                                        <img src="https://picsum.photos/seed/aria/80/80.jpg" alt="Aria" class="w-12 h-12 rounded-full object-cover">
+                                                            <div class="flex-1">
+                                                                <div class="text-sm text-white font-medium">Aria Tanaka</div>
+                                                                <div class="text-xs text-slate-500">VP Operations · Vertex</div>
+                                                            </div>
+                                                    </div>
+                                                    <div class="mt-6 pt-6 border-t border-slate-700/40">
+                                                        <div class="text-3xl font-display font-medium grad-accent">$1.2M</div>
+                                                        <div class="text-xs text-slate-500 mt-1">ahorro anual estimado</div>
+                                                    </div>
+                                                </div>
+
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    <!-- INTEGRACIONES -->
+                                    <section class="section relative">
+                                        <div class="max-w-7xl mx-auto px-6 lg:px-10">
+                                            <div class="text-center max-w-2xl mx-auto mb-16">
+                                                <div class="step-num reveal mb-4">05 — Integraciones</div>
+                                                <h2 class="reveal delay-1 text-4xl md:text-5xl font-medium tracking-tight mb-6">
+                                                    Conecta todo lo que ya usas.
+                                                </h2>
+                                                <p class="reveal delay-2 text-slate-400">
+                                                    Más de 200 integraciones nativas. Si no existe, nuestra API la hace posible en horas.
+                                                </p>
+                                            </div>
+
+                                            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                                                <div class="integration-cell reveal interactive">
+                                                    <div class="text-center">
+                                                        <i class="fa-brands fa-slack text-2xl mb-2"></i>
+                                                        <div class="text-xs">Slack</div>
+                                                    </div>
+                                                </div>
+                                                <div class="integration-cell reveal delay-1 interactive">
+                                                    <div class="text-center">
+                                                        <i class="fa-brands fa-github text-2xl mb-2"></i>
+                                                        <div class="text-xs">GitHub</div>
+                                                    </div>
+                                                </div>
+                                                <div class="integration-cell reveal delay-2 interactive">
+                                                    <div class="text-center">
+                                                        <i class="fa-brands fa-figma text-2xl mb-2"></i>
+                                                        <div class="text-xs">Figma</div>
+                                                    </div>
+                                                </div>
+                                                <div class="integration-cell reveal interactive">
+                                                    <div class="text-center">
+                                                        <i class="fa-brands fa-google text-2xl mb-2"></i>
+                                                        <div class="text-xs">Workspace</div>
+                                                    </div>
+                                                </div>
+                                                <div class="integration-cell reveal delay-1 interactive">
+                                                    <div class="text-center">
+                                                        <i class="fa-brands fa-stripe-s text-2xl mb-2"></i>
+                                                        <div class="text-xs">Stripe</div>
+                                                    </div>
+                                                </div>
+                                                <div class="integration-cell reveal delay-2 interactive">
+                                                    <div class="text-center">
+                                                        <i class="fa-brands fa-notion text-2xl mb-2" style="font-size: 22px;"></i>
+                                                        <div class="text-xs">Notion</div>
+                                                    </div>
+                                                </div>
+                                                <div class="integration-cell reveal interactive">
+                                                    <div class="text-center">
+                                                        <i class="fa-brands fa-aws text-2xl mb-2"></i>
+                                                        <div class="text-xs">AWS</div>
+                                                    </div>
+                                                </div>
+                                                <div class="integration-cell reveal delay-1 interactive">
+                                                    <div class="text-center">
+                                                        <i class="fa-brands fa-jira text-2xl mb-2"></i>
+                                                        <div class="text-xs">Jira</div>
+                                                    </div>
+                                                </div>
+                                                <div class="integration-cell reveal delay-2 interactive">
+                                                    <div class="text-center">
+                                                        <i class="fa-brands fa-dropbox text-2xl mb-2"></i>
+                                                        <div class="text-xs">Dropbox</div>
+                                                    </div>
+                                                </div>
+                                                <div class="integration-cell reveal interactive">
+                                                    <div class="text-center">
+                                                        <i class="fa-brands fa-hubspot text-2xl mb-2"></i>
+                                                        <div class="text-xs">HubSpot</div>
+                                                    </div>
+                                                </div>
+                                                <div class="integration-cell reveal delay-1 interactive">
+                                                    <div class="text-center">
+                                                        <i class="fa-brands fa-zoom text-2xl mb-2"></i>
+                                                        <div class="text-xs">Zoom</div>
+                                                    </div>
+                                                </div>
+                                                <div class="integration-cell reveal delay-2 interactive" style="background: rgba(99, 102, 241, 0.06); border-color: rgba(99, 102, 241, 0.3);">
+                                                    <div class="text-center">
+                                                        <i class="fa-solid fa-plus text-xl mb-2 text-indigo-400"></i>
+                                                        <div class="text-xs text-indigo-300">Ver todas</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    <!-- PRECIOS -->
+                                    <section id="precios" class="section relative">
+                                        <div class="ambient-blob" style="width: 500px; height: 500px; background: #6366F1; opacity: 0.07; top: 30%; right: -200px;"></div>
+
+                                        <div class="max-w-7xl mx-auto px-6 lg:px-10">
+                                            <div class="text-center max-w-2xl mx-auto mb-16">
+                                                <div class="step-num reveal mb-4">06 — Precios</div>
+                                                <h2 class="reveal delay-1 text-4xl md:text-5xl font-medium tracking-tight mb-6">
+                                                    Precios honestos.<br>Escala sin sorpresas.
+                                                </h2>
+                                                <p class="reveal delay-2 text-slate-400">
+                                                    Sin costos ocultos. Sin planes con trampa. Cambia o cancela cuando quieras.
+                                                </p>
+                                            </div>
+
+                                            <div class="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+
+                                                <!-- Starter -->
+                                                <div class="pricing-card reveal interactive">
+                                                    <div class="mb-6">
+                                                        <div class="text-sm text-slate-400 mb-2">Starter</div>
+                                                        <div class="flex items-baseline gap-1">
+                                                            <span class="text-4xl font-display font-medium">$0</span>
+                                                            <span class="text-sm text-slate-500">/mes</span>
+                                                        </div>
+                                                        <div class="text-xs text-slate-500 mt-2">Para individuos y proyectos pequeños</div>
+                                                    </div>
+
+                                                    <a href="#" class="block w-full btn-secondary text-center mb-8 interactive">
+                                                        Empezar gratis
+                                                    </a>
+
+                                                    <ul class="space-y-3 text-sm">
+                                                        <li class="flex items-start gap-3 text-slate-300">
+                                                            <i class="fa-solid fa-check text-emerald-400 text-xs mt-1"></i>
+                                                            <span>Hasta 3 usuarios</span>
+                                                        </li>
+                                                        <li class="flex items-start gap-3 text-slate-300">
+                                                            <i class="fa-solid fa-check text-emerald-400 text-xs mt-1"></i>
+                                                            <span>5 integraciones</span>
+                                                        </li>
+                                                        <li class="flex items-start gap-3 text-slate-300">
+                                                            <i class="fa-solid fa-check text-emerald-400 text-xs mt-1"></i>
+                                                            <span>Dashboards ilimitados</span>
+                                                        </li>
+                                                        <li class="flex items-start gap-3 text-slate-300">
+                                                            <i class="fa-solid fa-check text-emerald-400 text-xs mt-1"></i>
+                                                            <span>1GB de almacenamiento</span>
+                                                        </li>
+                                                        <li class="flex items-start gap-3 text-slate-500">
+                                                            <i class="fa-solid fa-minus text-xs mt-1"></i>
+                                                            <span>Soporte por comunidad</span>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+
+                                                <!-- Pro (featured) -->
+                                                <div class="pricing-card featured reveal delay-1 interactive md:-mt-4 md:mb-4 relative">
+                                                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-medium tracking-wider uppercase" style="background: linear-gradient(135deg, #6366F1, #22D3EE); color: white;">
+                                                        Más elegido
+                                                    </div>
+
+                                                    <div class="mb-6">
+                                                        <div class="text-sm text-indigo-300 mb-2">Pro</div>
+                                                        <div class="flex items-baseline gap-1">
+                                                            <span class="text-4xl font-display font-medium">$24</span>
+                                                            <span class="text-sm text-slate-500">/mes por usuario</span>
+                                                        </div>
+                                                        <div class="text-xs text-slate-500 mt-2">Para equipos en crecimiento</div>
+                                                    </div>
+
+                                                    <a href="#" class="block w-full btn-primary text-center mb-8 interactive">
+                                                        Probar 14 días gratis
+                                                    </a>
+
+                                                    <ul class="space-y-3 text-sm">
+                                                        <li class="flex items-start gap-3 text-slate-200">
+                                                            <i class="fa-solid fa-check text-cyan-400 text-xs mt-1"></i>
+                                                            <span>Usuarios ilimitados</span>
+                                                        </li>
+                                                        <li class="flex items-start gap-3 text-slate-200">
+                                                            <i class="fa-solid fa-check text-cyan-400 text-xs mt-1"></i>
+                                                            <span>Integraciones ilimitadas</span>
+                                                        </li>
+                                                        <li class="flex items-start gap-3 text-slate-200">
+                                                            <i class="fa-solid fa-check text-cyan-400 text-xs mt-1"></i>
+                                                            <span>Flujos automatizados avanzados</span>
+                                                        </li>
+                                                        <li class="flex items-start gap-3 text-slate-200">
+                                                            <i class="fa-solid fa-check text-cyan-400 text-xs mt-1"></i>
+                                                            <span>100GB de almacenamiento</span>
+                                                        </li>
+                                                        <li class="flex items-start gap-3 text-slate-200">
+                                                            <i class="fa-solid fa-check text-cyan-400 text-xs mt-1"></i>
+                                                            <span>Soporte prioritario 24/7</span>
+                                                        </li>
+                                                        <li class="flex items-start gap-3 text-slate-200">
+                                                            <i class="fa-solid fa-check text-cyan-400 text-xs mt-1"></i>
+                                                            <span>SSO y roles avanzados</span>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+
+                                                <!-- Enterprise -->
+                                                <div class="pricing-card reveal delay-2 interactive">
+                                                    <div class="mb-6">
+                                                        <div class="text-sm text-slate-400 mb-2">Enterprise</div>
+                                                        <div class="flex items-baseline gap-1">
+                                                            <span class="text-4xl font-display font-medium">A medida</span>
+                                                        </div>
+                                                        <div class="text-xs text-slate-500 mt-2">Para organizaciones grandes</div>
+                                                    </div>
+
+                                                    <a href="#" class="block w-full btn-secondary text-center mb-8 interactive">
+                                                        Hablar con ventas
+                                                    </a>
+
+                                                    <ul class="space-y-3 text-sm">
+                                                        <li class="flex items-start gap-3 text-slate-300">
+                                                            <i class="fa-solid fa-check text-emerald-400 text-xs mt-1"></i>
+                                                            <span>Todo lo de Pro</span>
+                                                        </li>
+                                                        <li class="flex items-start gap-3 text-slate-300">
+                                                            <i class="fa-solid fa-check text-emerald-400 text-xs mt-1"></i>
+                                                            <span>Residencia de datos personalizada</span>
+                                                        </li>
+                                                        <li class="flex items-start gap-3 text-slate-300">
+                                                            <i class="fa-solid fa-check text-emerald-400 text-xs mt-1"></i>
+                                                            <span>SLA 99.99% garantizado</span>
+                                                        </li>
+                                                        <li class="flex items-start gap-3 text-slate-300">
+                                                            <i class="fa-solid fa-check text-emerald-400 text-xs mt-1"></i>
+                                                            <span>Customer Success dedicado</span>
+                                                        </li>
+                                                        <li class="flex items-start gap-3 text-slate-300">
+                                                            <i class="fa-solid fa-check text-emerald-400 text-xs mt-1"></i>
+                                                            <span>Auditorías y compliance avanzado</span>
+                                                        </li>
+                                                        <li class="flex items-start gap-3 text-slate-300">
+                                                            <i class="fa-solid fa-check text-emerald-400 text-xs mt-1"></i>
+                                                            <span>Onboarding personalizado</span>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    <!-- EQUIPO -->
+                                    <section id="equipo" class="section relative">
+                                        <div class="max-w-7xl mx-auto px-6 lg:px-10">
+                                            <div class="max-w-3xl mb-20">
+                                                <div class="step-num reveal mb-4">07 — Sobre nosotros</div>
+                                                <h2 class="reveal delay-1 text-4xl md:text-5xl font-medium tracking-tight mb-6">
+                                                    Personas que entienden<br>el trabajo complejo.
+                                                </h2>
+                                                <p class="reveal delay-2 text-lg text-slate-400">
+                                                    Construimos Lumen porque vivimos el dolor. Después de 15 años en equipos de producto, datos y operaciones, decidimos hacer la herramienta que deseamos haber tenido.
+                                                </p>
+                                            </div>
+
+                                            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+
+                                                <div class="reveal interactive">
+                                                    <div class="relative mb-5 overflow-hidden rounded-xl group">
+                                                        <img src="https://picsum.photos/seed/founder1/400/500.jpg" alt="Founder" class="w-full aspect-[4/5] object-cover transition-transform duration-700 group-hover:scale-105">
+                                                            <div class="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent"></div>
+                                                    </div>
+                                                    <div class="text-base font-medium text-white">Elena Cifuentes</div>
+                                                    <div class="text-xs text-cyan-400 mb-3">Co-fundadora · CEO</div>
+                                                    <p class="text-sm text-slate-400 leading-relaxed">"La simplicidad no es ausencia. Es elección precisa."</p>
+                                                </div>
+
+                                                <div class="reveal delay-1 interactive">
+                                                    <div class="relative mb-5 overflow-hidden rounded-xl group">
+                                                        <img src="https://picsum.photos/seed/founder2/400/500.jpg" alt="Founder" class="w-full aspect-[4/5] object-cover transition-transform duration-700 group-hover:scale-105">
+                                                            <div class="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent"></div>
+                                                    </div>
+                                                    <div class="text-base font-medium text-white">Mateo Olvera</div>
+                                                    <div class="text-xs text-indigo-400 mb-3">Co-fundador · CTO</div>
+                                                    <p class="text-sm text-slate-400 leading-relaxed">"La mejor interfaz es la que se vuelve invisible."</p>
+                                                </div>
+
+                                                <div class="reveal delay-2 interactive">
+                                                    <div class="relative mb-5 overflow-hidden rounded-xl group">
+                                                        <img src="https://picsum.photos/seed/founder3/400/500.jpg" alt="Founder" class="w-full aspect-[4/5] object-cover transition-transform duration-700 group-hover:scale-105">
+                                                            <div class="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent"></div>
+                                                    </div>
+                                                    <div class="text-base font-medium text-white">Nora Beltrán</div>
+                                                    <div class="text-xs text-emerald-400 mb-3">Co-fundadora · Design</div>
+                                                    <p class="text-sm text-slate-400 leading-relaxed">"El silencio también es diseño. Acallar lo que sobra."</p>
+                                                </div>
+
+                                                <div class="reveal delay-3 interactive">
+                                                    <div class="relative mb-5 overflow-hidden rounded-xl group">
+                                                        <img src="https://picsum.photos/seed/founder4/400/500.jpg" alt="Founder" class="w-full aspect-[4/5] object-cover transition-transform duration-700 group-hover:scale-105">
+                                                            <div class="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent"></div>
+                                                    </div>
+                                                    <div class="text-base font-medium text-white">Iván Soler</div>
+                                                    <div class="text-xs text-cyan-400 mb-3">Co-fundador · Engineering</div>
+                                                    <p class="text-sm text-slate-400 leading-relaxed">"Construir sistemas calmos requiere pensar dos veces cada decisión."</p>
+                                                </div>
+
+                                            </div>
+
+                                            <!-- Métricas del equipo -->
+                                            <div class="reveal mt-20 grid grid-cols-2 md:grid-cols-4 gap-8 pt-12 border-t border-slate-700/40">
+                                                <div>
+                                                    <div class="text-3xl md:text-4xl font-display font-medium grad-accent mb-2">12K+</div>
+                                                    <div class="text-xs text-slate-500">equipos activos</div>
+                                                </div>
+                                                <div>
+                                                    <div class="text-3xl md:text-4xl font-display font-medium grad-accent mb-2">99.98%</div>
+                                                    <div class="text-xs text-slate-500">uptime 2024</div>
+                                                </div>
+                                                <div>
+                                                    <div class="text-3xl md:text-4xl font-display font-medium grad-accent mb-2">48</div>
+                                                    <div class="text-xs text-slate-500">personas en el equipo</div>
+                                                </div>
+                                                <div>
+                                                    <div class="text-3xl md:text-4xl font-display font-medium grad-accent mb-2">2019</div>
+                                                    <div class="text-xs text-slate-500">año de fundación</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    <!-- CTA FINAL -->
+                                    <section id="cta" class="section relative overflow-hidden">
+                                        <div class="ambient-blob" style="width: 600px; height: 600px; background: #6366F1; opacity: 0.15; top: 50%; left: 50%; transform: translate(-50%, -50%);"></div>
+                                        <div class="ambient-blob" style="width: 400px; height: 400px; background: #22D3EE; opacity: 0.1; top: 20%; right: 10%;"></div>
+
+                                        <div class="max-w-4xl mx-auto px-6 lg:px-10 text-center relative">
+                                            <!-- Nodes decorativos -->
+                                            <svg class="absolute -top-8 -left-8 w-24 h-24 opacity-30 float-1" viewBox="0 0 100 100">
+                                                <circle cx="50" cy="50" r="3" fill="#22D3EE" />
+                                                <circle cx="20" cy="20" r="2" fill="#6366F1" />
+                                                <circle cx="80" cy="20" r="2" fill="#6366F1" />
+                                                <circle cx="20" cy="80" r="2" fill="#6366F1" />
+                                                <circle cx="80" cy="80" r="2" fill="#6366F1" />
+                                                <line x1="50" y1="50" x2="20" y2="20" stroke="#22D3EE" stroke-width="0.5" class="dash-flow" />
+                                                <line x1="50" y1="50" x2="80" y2="20" stroke="#22D3EE" stroke-width="0.5" class="dash-flow" />
+                                                <line x1="50" y1="50" x2="20" y2="80" stroke="#22D3EE" stroke-width="0.5" class="dash-flow" />
+                                                <line x1="50" y1="50" x2="80" y2="80" stroke="#22D3EE" stroke-width="0.5" class="dash-flow" />
+                                            </svg>
+                                            <svg class="absolute -bottom-8 -right-8 w-24 h-24 opacity-30 float-2" viewBox="0 0 100 100">
+                                                <circle cx="50" cy="50" r="3" fill="#6366F1" />
+                                                <circle cx="20" cy="20" r="2" fill="#22D3EE" />
+                                                <circle cx="80" cy="20" r="2" fill="#22D3EE" />
+                                                <circle cx="20" cy="80" r="2" fill="#22D3EE" />
+                                                <circle cx="80" cy="80" r="2" fill="#22D3EE" />
+                                                <line x1="50" y1="50" x2="20" y2="20" stroke="#6366F1" stroke-width="0.5" class="dash-flow" />
+                                                <line x1="50" y1="50" x2="80" y2="20" stroke="#6366F1" stroke-width="0.5" class="dash-flow" />
+                                                <line x1="50" y1="50" x2="20" y2="80" stroke="#6366F1" stroke-width="0.5" class="dash-flow" />
+                                                <line x1="50" y1="50" x2="80" y2="80" stroke="#6366F1" stroke-width="0.5" class="dash-flow" />
+                                            </svg>
+
+                                            <div class="reveal">
+                                                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass mb-8">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400" style="animation: pulse-soft 2s infinite;"></span>
+                                                    <span class="text-xs text-slate-300 tracking-wide">Disponible hoy · Sin tarjeta</span>
+                                                </div>
+                                            </div>
+
+                                            <h2 class="reveal delay-1 text-4xl md:text-6xl font-medium tracking-tight mb-6 leading-[1.1]">
+                                                El trabajo complejo,<br>
+                                                    <span class="grad-accent">hecho sereno.</span>
+                                            </h2>
+
+                                            <p class="reveal delay-2 text-lg text-slate-400 mb-10 max-w-xl mx-auto">
+                                                Únete a más de 12,000 equipos que recuperaron su calma. Empieza gratis en menos de 5 minutos.
+                                            </p>
+
+                                            <div class="reveal delay-3 flex flex-wrap items-center justify-center gap-4 mb-8">
+                                                <a href="#" class="btn-primary interactive cta-hover">
+                                                    Empezar gratis ahora
+                                                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                                                </a>
+                                                <a href="#" class="btn-secondary interactive cta-hover">
+                                                    <i class="fa-solid fa-calendar text-xs"></i>
+                                                    Agendar demo
+                                                </a>
+                                            </div>
+
+                                            <div class="reveal delay-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-slate-500">
+                                                <div class="flex items-center gap-2">
+                                                    <i class="fa-solid fa-check text-emerald-400"></i>
+                                                    14 días premium incluidos
+                                                </div>
+                                                <div class="flex items-center gap-2">
+                                                    <i class="fa-solid fa-check text-emerald-400"></i>
+                                                    Migración asistida gratis
+                                                </div>
+                                                <div class="flex items-center gap-2">
+                                                    <i class="fa-solid fa-check text-emerald-400"></i>
+                                                    Cancela cuando quieras
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    <!-- FOOTER -->
+                                    <footer class="border-t border-slate-700/40 py-16 relative">
+                                        <div class="max-w-7xl mx-auto px-6 lg:px-10">
+                                            <div class="grid md:grid-cols-12 gap-10 mb-12">
+
+                                                <div class="md:col-span-4">
+                                                    <a href="#" class="flex items-center gap-2.5 mb-5">
+                                                        <div class="logo-mark">
+                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                                                <path d="M12 2L2 7l10 5 10-5-10-5z" stroke="white" stroke-width="2" stroke-linejoin="round" />
+                                                                <path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" stroke-width="2" stroke-linejoin="round" opacity="0.6" />
+                                                            </svg>
+                                                        </div>
+                                                        <span class="font-display font-medium text-lg tracking-tight">Lumen</span>
+                                                    </a>
+                                                    <p class="text-sm text-slate-400 leading-relaxed mb-6 max-w-sm">
+                                                        Software sereno para trabajo complejo. Construimos herramientas que devuelven tiempo, claridad y calma a los equipos.
+                                                    </p>
+
+                                                    <!-- Newsletter -->
+                                                    <div class="mb-6">
+                                                        <div class="text-xs text-slate-500 mb-2">Recibe notas sobre producto, una vez al mes:</div>
+                                                        <form class="flex gap-2" onsubmit="event.preventDefault(); showToast('Gracias. Te avisaremos pronto.');">
+                                                            <input type="email" placeholder="tu@correo.com" required class="flex-1 px-3 py-2 rounded-lg bg-slate-800/40 border border-slate-700/40 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400/50 transition">
+                                                                <button type="submit" class="btn-primary text-sm interactive" style="padding: 8px 16px;">
+                                                                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                                                                </button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+
+                                                <div class="md:col-span-2">
+                                                    <div class="text-xs text-slate-500 uppercase tracking-widest mb-4">Producto</div>
+                                                    <ul class="space-y-2.5 text-sm text-slate-400">
+                                                        <li><a href="#" class="hover:text-white transition interactive">Características</a></li>
+                                                        <li><a href="#" class="hover:text-white transition interactive">Integraciones</a></li>
+                                                        <li><a href="#" class="hover:text-white transition interactive">Precios</a></li>
+                                                        <li><a href="#" class="hover:text-white transition interactive">Cambios</a></li>
+                                                        <li><a href="#" class="hover:text-white transition interactive">Roadmap</a></li>
+                                                    </ul>
+                                                </div>
+
+                                                <div class="md:col-span-2">
+                                                    <div class="text-xs text-slate-500 uppercase tracking-widest mb-4">Empresa</div>
+                                                    <ul class="space-y-2.5 text-sm text-slate-400">
+                                                        <li><a href="#" class="hover:text-white transition interactive">Sobre nosotros</a></li>
+                                                        <li><a href="#" class="hover:text-white transition interactive">Equipo</a></li>
+                                                        <li><a href="#" class="hover:text-white transition interactive">Carreras</a></li>
+                                                        <li><a href="#" class="hover:text-white transition interactive">Blog</a></li>
+                                                        <li><a href="#" class="hover:text-white transition interactive">Prensa</a></li>
+                                                    </ul>
+                                                </div>
+
+                                                <div class="md:col-span-2">
+                                                    <div class="text-xs text-slate-500 uppercase tracking-widest mb-4">Recursos</div>
+                                                    <ul class="space-y-2.5 text-sm text-slate-400">
+                                                        <li><a href="#" class="hover:text-white transition interactive">Documentación</a></li>
+                                                        <li><a href="#" class="hover:text-white transition interactive">API</a></li>
+                                                        <li><a href="#" class="hover:text-white transition interactive">Guías</a></li>
+                                                        <li><a href="#" class="hover:text-white transition interactive">Estado del servicio</a></li>
+                                                        <li><a href="#" class="hover:text-white transition interactive">Comunidad</a></li>
+                                                    </ul>
+                                                </div>
+
+                                                <div class="md:col-span-2">
+                                                    <div class="text-xs text-slate-500 uppercase tracking-widest mb-4">Legal</div>
+                                                    <ul class="space-y-2.5 text-sm text-slate-400">
+                                                        <li><a href="#" class="hover:text-white transition interactive">Privacidad</a></li>
+                                                        <li><a href="#" class="hover:text-white transition interactive">Términos</a></li>
+                                                        <li><a href="#" class="hover:text-white transition interactive">Seguridad</a></li>
+                                                        <li><a href="#" class="hover:text-white transition interactive">GDPR</a></li>
+                                                        <li><a href="#" class="hover:text-white transition interactive">Cookies</a></li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+
+                                            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pt-8 border-t border-slate-700/40">
+                                                <div class="flex items-center gap-4 text-xs text-slate-500">
+                                                    <span>© 2024 Lumen Software, S.L.</span>
+                                                    <span class="hidden md:inline">·</span>
+                                                    <span class="hidden md:inline">Hecho con calma en Madrid</span>
+                                                </div>
+                                                <div class="flex items-center gap-4">
+                                                    <a href="#" class="w-9 h-9 rounded-lg glass flex items-center justify-center text-slate-400 hover:text-cyan-400 transition interactive" aria-label="Twitter">
+                                                        <i class="fa-brands fa-x-twitter text-sm"></i>
+                                                    </a>
+                                                    <a href="#" class="w-9 h-9 rounded-lg glass flex items-center justify-center text-slate-400 hover:text-cyan-400 transition interactive" aria-label="LinkedIn">
+                                                        <i class="fa-brands fa-linkedin-in text-sm"></i>
+                                                    </a>
+                                                    <a href="#" class="w-9 h-9 rounded-lg glass flex items-center justify-center text-slate-400 hover:text-cyan-400 transition interactive" aria-label="GitHub">
+                                                        <i class="fa-brands fa-github text-sm"></i>
+                                                    </a>
+                                                    <a href="#" class="w-9 h-9 rounded-lg glass flex items-center justify-center text-slate-400 hover:text-cyan-400 transition interactive" aria-label="YouTube">
+                                                        <i class="fa-brands fa-youtube text-sm"></i>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </footer>
+
+                                    <!-- Toast -->
+                                    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 px-5 py-3 rounded-xl glass text-sm text-white opacity-0 pointer-events-none transition-all duration-500 z-[100]" style="transform: translate(-50%, 20px);">
+                                        <div class="flex items-center gap-2">
+                                            <i class="fa-solid fa-check-circle text-emerald-400"></i>
+                                            <span id="toastMsg"></span>
+                                        </div>
+                                    </div>
+
+                                    <script>
+  // Cursor personalizado
+                                        const dot = document.getElementById('cursorDot');
+                                        const ring = document.getElementById('cursorRing');
+                                        let mouseX = 0, mouseY = 0, ringX = 0, ringY = 0;
+  
+  document.addEventListener('mousemove', (e) => {
+                                            mouseX = e.clientX;
+                                        mouseY = e.clientY;
+                                        dot.style.transform = `translate(${mouseX}px, ${mouseY}px) translate(-50%, -50%)`;
+  });
+
+                                        function animateRing() {
+                                            ringX += (mouseX - ringX) * 0.15;
+                                        ringY += (mouseY - ringY) * 0.15;
+                                        ring.style.transform = `translate(${ringX}px, ${ringY}px) translate(-50%, -50%)`;
+                                        requestAnimationFrame(animateRing);
+  }
+                                        animateRing();
+
+  // Hover states
+  document.querySelectorAll('.interactive').forEach(el => {
+                                            el.addEventListener('mouseenter', () => ring.classList.add('hover'));
+    el.addEventListener('mouseleave', () => ring.classList.remove('hover'));
+  });
+  document.querySelectorAll('.cta-hover').forEach(el => {
+                                            el.addEventListener('mouseenter', () => ring.classList.add('cta'));
+    el.addEventListener('mouseleave', () => ring.classList.remove('cta'));
+  });
+
+                                        // Scroll progress
+                                        const progress = document.getElementById('scrollProgress');
+  window.addEventListener('scroll', () => {
+    const scrolled = window.scrollY;
+                                        const max = document.documentElement.scrollHeight - window.innerHeight;
+                                        const pct = Math.min(scrolled / max, 1);
+                                        progress.style.transform = `scaleX(${pct})`;
+  });
+
+  // Reveal on scroll
+  const observer = new IntersectionObserver((entries) => {
+                                            entries.forEach(entry => {
+                                                if (entry.isIntersecting) {
+                                                    entry.target.classList.add('visible');
+                                                }
+                                            });
+  }, {threshold: 0.12, rootMargin: '0px 0px -50px 0px' });
+  
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+                                        // Step line progreso
+                                        const stepLine = document.getElementById('stepLine');
+                                        const flujoSection = document.getElementById('flujo');
+                                        if (flujoSection && stepLine) {
+    const flujoObs = new IntersectionObserver((entries) => {
+                                            entries.forEach(entry => {
+                                                if (entry.isIntersecting) {
+                                                    setTimeout(() => { stepLine.style.width = '100%'; }, 300);
+                                                }
+                                            });
+    }, {threshold: 0.3 });
+                                        flujoObs.observe(flujoSection);
+  }
+
+                                        // Toast
+                                        function showToast(msg) {
+    const toast = document.getElementById('toast');
+                                        document.getElementById('toastMsg').textContent = msg;
+                                        toast.style.opacity = '1';
+                                        toast.style.transform = 'translate(-50%, 0)';
+    setTimeout(() => {
+                                            toast.style.opacity = '0';
+                                        toast.style.transform = 'translate(-50%, 20px)';
+    }, 3000);
+  }
+
+  // Smooth scroll para anchors
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                                            anchor.addEventListener('click', (e) => {
+                                                const target = document.querySelector(anchor.getAttribute('href'));
+                                                if (target) {
+                                                    e.preventDefault();
+                                                    const offset = 80;
+                                                    const top = target.getBoundingClientRect().top + window.scrollY - offset;
+                                                    window.scrollTo({ top, behavior: 'smooth' });
+                                                }
+                                            });
+  });
+
+                                        // Parallax sutil en hero mockup
+                                        const heroMockup = document.querySelector('.product-frame');
+                                        if (heroMockup) {
+                                            document.addEventListener('mousemove', (e) => {
+                                                const x = (e.clientX / window.innerWidth - 0.5) * 8;
+                                                const y = (e.clientY / window.innerHeight - 0.5) * 8;
+                                                heroMockup.style.transform = `perspective(1000px) rotateY(${x * 0.3}deg) rotateX(${-y * 0.3}deg)`;
+                                            });
+  }
+                                    </script>
+
+                                </body>
+                            </html>

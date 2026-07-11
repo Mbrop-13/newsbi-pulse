@@ -5848,7 +5848,7 @@ export default async function CasoDeUsoPage({ params }: CasosPageProps) {
   }
 
   return (
-    <div className="bg-white min-h-screen pt-24 pb-20 font-sans text-slate-800 selection:bg-blue-150 selection:text-white select-none">
+    <div className="bg-white h-screen w-screen overflow-y-auto pt-24 pb-20 font-sans text-slate-800 selection:bg-blue-150 selection:text-white select-none fixed inset-0 z-50">
       
       {/* Container header and navigation */}
       <div className="max-w-6xl mx-auto px-6">

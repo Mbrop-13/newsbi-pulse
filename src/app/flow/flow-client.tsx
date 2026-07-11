@@ -9,9 +9,9 @@ import {
   HelpCircle,
   Settings,
   MoreHorizontal,
-  ArrowRight,
+  ArrowUp,
+  Mic,
   ChevronDown,
-  Bot,
   Heart,
   Download,
   Image as ImageIcon,
@@ -581,7 +581,7 @@ export default function FlowClient() {
           )}>
             
             {/* Textarea area */}
-            <div className="flex items-center px-1 bg-transparent relative">
+            <div className="flex items-center px-2 bg-transparent relative">
               <textarea
                 ref={textareaRef}
                 value={prompt}
@@ -600,16 +600,19 @@ export default function FlowClient() {
             </div>
 
             {/* Bottom actions row */}
-            <div className="mt-2 flex items-center justify-between px-1">
+            <div className="mt-1 flex items-center justify-between px-1">
               {/* Left group: Plus and Agent pill */}
               <div className="flex items-center gap-2">
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full transition-all duration-300"
+                  aria-label="Opciones"
                   onClick={() => toast.info("Carga de archivos multimedia (Próximamente)")}
-                  className="w-8 h-8 rounded-full hover:bg-zinc-100 border border-zinc-200/50 hover:text-zinc-900 text-zinc-505 flex items-center justify-center transition-all cursor-pointer active:scale-95 shrink-0"
                 >
-                  <Plus className="w-4 h-4" />
-                </button>
+                  <Plus className={cn("h-5 w-5")} />
+                </Button>
 
                 <button
                   type="button"
@@ -817,19 +820,28 @@ export default function FlowClient() {
                   </AnimatePresence>
                 </div>
 
-                {/* Submit Button */}
-                <button
-                  type="submit"
-                  disabled={!prompt.trim() || loading}
-                  className={cn(
-                    "rounded-full h-8 w-8 transition-opacity flex items-center justify-center shrink-0",
-                    prompt.trim() && !loading
-                      ? "bg-foreground text-background hover:opacity-90 cursor-pointer"
-                      : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-650 border border-zinc-200/40 dark:border-zinc-700/40 cursor-not-allowed"
-                  )}
-                >
-                  <ArrowRight className="w-4.5 h-4.5" />
-                </button>
+                {/* Primary action button (Microphone when empty, Send when has text) */}
+                {prompt.trim() === "" ? (
+                  <Button
+                    type="button"
+                    size="icon"
+                    className="rounded-full h-8 w-8 bg-foreground text-background hover:opacity-90 transition-all cursor-pointer flex items-center justify-center shrink-0"
+                    aria-label="Dictar mensaje"
+                    onClick={() => toast.info("Dictado por voz (Próximamente)")}
+                  >
+                    <Mic className="h-4.5 w-4.5" />
+                  </Button>
+                ) : (
+                  <Button
+                    type="submit"
+                    size="icon"
+                    className="rounded-full h-8 w-8 bg-foreground text-background hover:opacity-90 transition-opacity cursor-pointer flex items-center justify-center shrink-0"
+                    aria-label="Enviar mensaje"
+                    disabled={!prompt.trim() || loading}
+                  >
+                    <ArrowUp className="h-4.5 w-4.5" />
+                  </Button>
+                )}
             </div>
           </div>
         </div>

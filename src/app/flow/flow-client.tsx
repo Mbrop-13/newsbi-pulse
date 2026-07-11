@@ -543,7 +543,7 @@ export default function FlowClient() {
       <div className="w-full max-w-3xl mx-auto px-4 pb-5 absolute bottom-0 left-1/2 -translate-x-1/2 shrink-0 z-20">
         <form onSubmit={handleSubmit} className="relative">
           <div className={cn(
-            "rounded-[28px] p-2 bg-white dark:bg-[#1E1E20] border-[#E4E4E7] dark:border-zinc-800 border",
+            "rounded-xl p-2.5 bg-white dark:bg-[#1E1E20] border-[#DBDBDB] dark:border-[#2e2e2e] border",
             "shadow-[0_10px_40px_rgba(0,0,0,0.04),0_1px_4px_rgba(0,0,0,0.02)] transition-all duration-300 relative group focus-within:border-zinc-300 dark:focus-within:border-zinc-650 focus-within:shadow-[0_12px_45px_rgba(0,0,0,0.08),0_1px_4px_rgba(0,0,0,0.02)]"
           )}>
             
@@ -585,13 +585,12 @@ export default function FlowClient() {
                     setIsAgentActive(next);
                     toast.success(next ? "Modo Agente activado" : "Modo Agente desactivado");
                   }}
-                  className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all duration-200 active:scale-95 cursor-pointer flex items-center gap-1.5 shrink-0 select-none border ${
+                  className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all duration-200 active:scale-95 cursor-pointer flex items-center shrink-0 select-none border ${
                     isAgentActive 
                       ? "bg-[#1890FF]/15 text-[#1890FF] border-[#1890FF]/30" 
                       : "bg-zinc-100 hover:bg-zinc-255 border border-zinc-200/50 text-zinc-505 hover:text-zinc-750"
                   }`}
                 >
-                  <Bot className="w-3.5 h-3.5" />
                   <span>Agente</span>
                 </button>
               </div>

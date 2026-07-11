@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { Sparkles, Brain, Clock, ShieldCheck, ArrowRight, ExternalLink, Globe, Building, Bot, Bell, Folder, BookOpen, ArrowLeft, Heart } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
+import { UseCasePreview } from "@/components/chat/use-case-preview";
 
 interface UseCaseData {
   title: string;
@@ -17,6 +18,8 @@ interface UseCaseData {
   quoteAuthor: string;
   quoteRole: string;
   metrics: { value: string; label: string; sublabel: string }[];
+  demoTitle?: string;
+  demoCode?: string;
 }
 
 const USE_CASE_MAP: Record<string, UseCaseData> = {
@@ -171,6 +174,338 @@ const USE_CASE_MAP: Record<string, UseCaseData> = {
       { value: "-60%", label: "Reducción de Costos", sublabel: "Frente a suscripciones corporativas tradicionales" },
       { value: "1.2k+", label: "Usuarios Simulados", sublabel: "Operando de forma concurrente por período académico" }
     ]
+  },
+  "sitio-web": {
+    title: "Dominar en el boom de la IA: cómo Stillwater Retreat escaló a nivel global en una sola petición",
+    brand: "Caso de Éxito: Sitio Web",
+    desc: "Descubre cómo creamos Stillwater Retreat: un sitio web de bienestar de lujo con galería interactiva y reservas en línea.",
+    gradient: "from-stone-600 to-stone-850",
+    challenge: "Crear una experiencia digital que transmitiera paz, exclusividad y lujo sin requerir semanas de maquetación de código ni interminables ajustes de diseño.",
+    solution: "Maverlang AI generó una estructura HTML interactiva completa, con tipografía refinada, paleta de colores natural y componentes responsivos en un solo paso.",
+    products: ["Diseñador Web IA (Maverlang AI)", "Maverlang 2.5 Pro"],
+    region: "América del Norte",
+    industry: "Turismo y Bienestar",
+    quote: "La IA interpretó el alma de nuestro santuario y lo plasmó en código interactivo impecable de inmediato.",
+    quoteAuthor: "Elena Rostova",
+    quoteRole: "Directora de Experiencia, Stillwater Retreat",
+    metrics: [
+      { value: "2.4s", label: "Carga de página", sublabel: "Optimización extrema del código de salida" },
+      { value: "100%", label: "Responsivo", sublabel: "Ajuste perfecto a pantallas móviles y computadores" },
+      { value: "1 Prompt", label: "Petición Única", sublabel: "Sin revisiones previas ni maquetación manual" }
+    ],
+    demoTitle: "Vista Previa de Stillwater Retreat",
+    demoCode: `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stillwater Retreat</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:wght@200..800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    h1, h2, h3, .serif { font-family: 'Playfair Display', serif; }
+  </style>
+</head>
+<body class="bg-[#FAF9F5] text-stone-850 min-h-screen flex flex-col justify-between">
+  <!-- Nav -->
+  <nav class="border-b border-stone-250/60 px-6 py-4 flex justify-between items-center bg-white/70 backdrop-blur-md sticky top-0 z-50">
+    <span class="text-lg font-bold tracking-widest text-stone-900 serif">STILLWATER</span>
+    <div class="hidden sm:flex gap-6 text-xs font-semibold text-stone-600 uppercase tracking-widest">
+      <a href="#" class="hover:text-stone-900 transition-colors">Habitaciones</a>
+      <a href="#" class="hover:text-stone-900 transition-colors">Retiros</a>
+      <a href="#" class="hover:text-stone-900 transition-colors">Santuario</a>
+    </div>
+    <button class="bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold tracking-wider px-5 py-2.5 rounded-full transition-all">
+      RESERVAR AHORA
+    </button>
+  </nav>
+
+  <!-- Hero -->
+  <main class="max-w-4xl mx-auto px-6 py-16 flex-grow flex flex-col items-center justify-center text-center">
+    <div class="w-12 h-[1px] bg-amber-700/60 mb-6"></div>
+    <h1 class="text-4xl sm:text-6xl font-normal leading-tight text-stone-950 mb-6">
+      Encuentra paz en la <em>naturaleza pura</em>
+    </h1>
+    <p class="text-stone-500 max-w-lg mx-auto text-sm sm:text-base leading-relaxed mb-10">
+      Un santuario de tranquilidad y renovación mental diseñado para reconectar con tus sentidos en medio del bosque milenario.
+    </p>
+
+    <!-- Interactive Cabin Gallery Showcase -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full max-w-2xl my-8">
+      <div class="group relative aspect-video rounded-3xl overflow-hidden shadow-md cursor-pointer">
+        <img src="https://images.unsplash.com/photo-1510798831971-661eb04b3739?q=80&w=800" alt="Cabaña Bosque" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+        <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
+          <span class="text-white text-sm font-bold serif">Cabaña del Río</span>
+        </div>
+      </div>
+      <div class="group relative aspect-video rounded-3xl overflow-hidden shadow-md cursor-pointer">
+        <img src="https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?q=80&w=800" alt="Senderos" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+        <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
+          <span class="text-white text-sm font-bold serif">Senderos Meditativos</span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="border-t border-stone-200/80 py-8 text-center bg-stone-100 text-[10px] uppercase font-bold tracking-widest text-stone-500">
+    © 2026 Stillwater Retreat • Experiencia Demo de Maverlang AI
+  </footer>
+</body>
+</html>`
+  },
+  "aplicacion": {
+    title: "Calculadora de Interés Compuesto: simulación financiera e interactividad en segundos",
+    brand: "Caso de Éxito: Aplicación",
+    desc: "Cómo construimos un simulador de inversiones premium en un único prompt con sliders interactivos y gráficos dinámicos.",
+    gradient: "from-blue-600 to-cyan-500",
+    challenge: "Desarrollar una aplicación interactiva que recalcule intereses, retornos y capitales en tiempo real sin recargar la página y con un diseño financiero moderno.",
+    solution: "Maverlang AI programó el cálculo algorítmico completo y la interfaz responsiva usando lógica Javascript nativa y Tailwind en una sola petición.",
+    products: ["Desarrollador de Apps (Maverlang AI)", "Maverlang 2.5 Pro"],
+    region: "Europa y LatAm",
+    industry: "Fintech y Finanzas",
+    quote: "La velocidad de respuesta interactiva y la exactitud de los cálculos superó con creces lo que nos tomaba días depurar.",
+    quoteAuthor: "Carlos Mendoza",
+    quoteRole: "Product Owner, FinTech Group",
+    metrics: [
+      { value: "0ms", label: "Latencia de Clic", sublabel: "Cálculos matemáticos directos en el cliente" },
+      { value: "100%", label: "Interactividad", sublabel: "Sliders interactivos y gráficos integrados" },
+      { value: "10s", label: "Tiempo de Entrega", sublabel: "El código fue generado por la IA en segundos" }
+    ],
+    demoTitle: "Vista Previa de la Calculadora Financiera",
+    demoCode: `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulador de Interés Compuesto</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;850&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+  </style>
+</head>
+<body class="bg-[#090d16] text-slate-100 min-h-screen p-6 flex flex-col justify-between">
+  <div class="max-w-md mx-auto w-full bg-slate-900/60 border border-slate-800 rounded-3xl p-6 shadow-2xl backdrop-blur-md">
+    <div class="flex items-center gap-2 mb-6">
+      <div class="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500">📈</div>
+      <h3 class="text-sm font-bold text-slate-200">Simulador de Interés</h3>
+    </div>
+
+    <!-- Sliders -->
+    <div class="space-y-5">
+      <div>
+        <div class="flex justify-between text-xs font-semibold text-slate-400 mb-1.5">
+          <span>Capital Inicial</span>
+          <span id="initial-val" class="text-blue-400">$10,000</span>
+        </div>
+        <input type="range" id="initial" min="1000" max="100000" step="1000" value="10000" class="w-full accent-blue-500">
+      </div>
+
+      <div>
+        <div class="flex justify-between text-xs font-semibold text-slate-400 mb-1.5">
+          <span>Retorno Anual</span>
+          <span id="rate-val" class="text-blue-400">8.5%</span>
+        </div>
+        <input type="range" id="rate" min="1" max="25" step="0.5" value="8.5" class="w-full accent-blue-500">
+      </div>
+
+      <div>
+        <div class="flex justify-between text-xs font-semibold text-slate-400 mb-1.5">
+          <span>Plazo (Años)</span>
+          <span id="years-val" class="text-blue-400">10 años</span>
+        </div>
+        <input type="range" id="years" min="1" max="40" step="1" value="10" class="w-full accent-blue-500">
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div class="mt-8 pt-6 border-t border-slate-800 space-y-4">
+      <div class="flex justify-between items-center">
+        <span class="text-xs text-slate-400 font-semibold">Total Acumulado</span>
+        <span id="total-output" class="text-2xl font-black text-emerald-400">$22,610</span>
+      </div>
+      <div class="w-full bg-slate-850 h-3.5 rounded-full overflow-hidden flex border border-slate-800">
+        <div id="bar-principal" class="bg-blue-500 h-full w-[44%]" title="Principal"></div>
+        <div id="bar-intereses" class="bg-emerald-500 h-full w-[56%]" title="Intereses"></div>
+      </div>
+      <div class="flex justify-between text-[10px] text-slate-500 font-bold uppercase">
+        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded bg-blue-500"></span>Principal</span>
+        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded bg-emerald-500"></span>Intereses</span>
+      </div>
+    </div>
+  </div>
+
+  <footer class="text-center text-[9px] text-slate-650 font-bold uppercase mt-6 tracking-widest">
+    Simulador Dinámico • Generado por Maverlang AI
+  </footer>
+
+  <script>
+    const initialInput = document.getElementById('initial');
+    const rateInput = document.getElementById('rate');
+    const yearsInput = document.getElementById('years');
+
+    const initialVal = document.getElementById('initial-val');
+    const rateVal = document.getElementById('rate-val');
+    const yearsVal = document.getElementById('years-val');
+
+    const totalOutput = document.getElementById('total-output');
+    const barPrincipal = document.getElementById('bar-principal');
+    const barIntereses = document.getElementById('bar-intereses');
+
+    function calculate() {
+      const p = parseFloat(initialInput.value);
+      const r = parseFloat(rateInput.value) / 100;
+      const t = parseFloat(yearsInput.value);
+
+      initialVal.textContent = '$' + p.toLocaleString();
+      rateVal.textContent = rateInput.value + '%';
+      yearsVal.textContent = t + ' años';
+
+      const a = p * Math.pow(1 + r, t);
+      const interest = a - p;
+
+      totalOutput.textContent = '$' + Math.round(a).toLocaleString();
+
+      const principalPct = (p / a) * 100;
+      const interestPct = (interest / a) * 100;
+
+      barPrincipal.style.width = principalPct + '%';
+      barIntereses.style.width = interestPct + '%';
+    }
+
+    initialInput.addEventListener('input', calculate);
+    rateInput.addEventListener('input', calculate);
+    yearsInput.addEventListener('input', calculate);
+
+    calculate();
+  </script>
+</body>
+</html>`
+  },
+  "multiplataforma": {
+    title: "Kanban Board + Pomodoro: productividad y flujos complejos en un solo paso",
+    brand: "Caso de Éxito: Multiplataforma",
+    desc: "Cómo diseñamos una herramienta de trabajo colaborativo integrada con contador Pomodoro de alta fidelidad.",
+    gradient: "from-zinc-800 to-zinc-950",
+    challenge: "Integrar dos conceptos de productividad distintos (Tablero ágil y temporizador de enfoque) en un diseño multiplataforma interactivo y visualmente impecable.",
+    solution: "Maverlang AI orquestó la estructura Kanban de arrastre interactivo y el cronómetro de intervalos usando micro-interacciones robustas de Javascript.",
+    products: ["Desarrollador de Apps (Maverlang AI)", "Maverlang 2.5 Pro"],
+    region: "Global",
+    industry: "Herramientas de Productividad",
+    quote: "Es asombroso ver cómo una aplicación que requiere lógica de estado interna tan fluida funciona perfectamente sin errores en una única compilación.",
+    quoteAuthor: "Sandra Becker",
+    quoteRole: "Lead Developer, SaaS Solutions",
+    metrics: [
+      { value: "100%", label: "Funcional", sublabel: "Kanban dinámico y pomodoro activos" },
+      { value: "0", label: "Dependencias", sublabel: "Construido en Vanilla HTML/JS optimizado" },
+      { value: "1 Prompt", label: "Petición Única", sublabel: "Sin reescrituras de código complejas" }
+    ],
+    demoTitle: "Vista Previa de Kanban + Pomodoro",
+    demoCode: `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kanban + Pomodoro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;850&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+  </style>
+</head>
+<body class="bg-[#0b0c10] text-zinc-200 p-6 min-h-screen flex flex-col justify-between">
+  <div class="max-w-2xl mx-auto w-full space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between border-b border-zinc-800 pb-4">
+      <div class="flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
+        <h3 class="text-sm font-bold text-zinc-300">Enfoque Pomodoro</h3>
+      </div>
+      <!-- Pomodoro Timer Box -->
+      <div class="flex items-center gap-3 bg-zinc-900 border border-zinc-800 px-3 py-1.5 rounded-2xl">
+        <span id="pomo-timer" class="font-mono text-sm font-bold text-red-400">25:00</span>
+        <button id="pomo-btn" class="text-[10px] font-black uppercase text-zinc-100 hover:text-red-400 transition-colors">Iniciar</button>
+      </div>
+    </div>
+
+    <!-- Kanban Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="bg-zinc-900/40 border border-zinc-850 rounded-2xl p-4 space-y-3">
+        <div class="flex justify-between items-center border-b border-zinc-850 pb-2">
+          <span class="text-[10px] text-zinc-400 uppercase font-black tracking-wider">Haciendo</span>
+          <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+        </div>
+        <div id="todo-list" class="space-y-2.5">
+          <div class="bg-zinc-900 border border-zinc-800 p-3 rounded-xl flex items-center justify-between text-xs">
+            <span>Maquetar interfaz</span>
+            <button onclick="moveTask(this)" class="text-blue-400 font-bold hover:underline">✓ Terminar</button>
+          </div>
+          <div class="bg-zinc-900 border border-zinc-800 p-3 rounded-xl flex items-center justify-between text-xs">
+            <span>Conectar API</span>
+            <button onclick="moveTask(this)" class="text-blue-400 font-bold hover:underline">✓ Terminar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-zinc-900/40 border border-zinc-850 rounded-2xl p-4 space-y-3">
+        <div class="flex justify-between items-center border-b border-zinc-850 pb-2">
+          <span class="text-[10px] text-zinc-400 uppercase font-black tracking-wider">Completado</span>
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+        </div>
+        <div id="done-list" class="space-y-2.5 min-h-[80px]">
+          <div class="bg-zinc-900 border border-zinc-850/50 p-3 rounded-xl flex items-center justify-between text-xs opacity-50 line-through">
+            <span>Configurar servidor</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="text-center text-[9px] text-zinc-650 font-bold uppercase mt-8 tracking-widest">
+    Kanban Board & Pomodoro • Generado por Maverlang AI
+  </footer>
+
+  <script>
+    // Pomodoro Timer Logic
+    const pomoTimer = document.getElementById('pomo-timer');
+    const pomoBtn = document.getElementById('pomo-btn');
+    let timerInterval = null;
+    let secondsLeft = 1500; // 25 minutes
+
+    pomoBtn.addEventListener('click', () => {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        pomoBtn.textContent = 'Iniciar';
+      } else {
+        pomoBtn.textContent = 'Pausa';
+        timerInterval = setInterval(() => {
+          if (secondsLeft > 0) {
+            secondsLeft--;
+            const mins = Math.floor(secondsLeft / 60);
+            const secs = secondsLeft % 60;
+            pomoTimer.textContent = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+          } else {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            pomoBtn.textContent = 'Iniciar';
+            alert('¡Tiempo de enfoque terminado!');
+          }
+        }, 1000);
+      }
+    });
+
+    // Task movement logic
+    function moveTask(button) {
+      const taskDiv = button.parentElement;
+      button.remove(); // Remove button
+      taskDiv.classList.add('opacity-50', 'line-through', 'border-zinc-850');
+      document.getElementById('done-list').appendChild(taskDiv);
+    }
+  </script>
+</body>
+</html>`
   }
 };
 
@@ -330,6 +665,14 @@ export default async function CasoDeUsoPage({ params }: CasosPageProps) {
                 <span className="text-[11px] text-blue-200 font-semibold">{data.quoteRole}</span>
               </div>
             </blockquote>
+
+            {/* Interactive Demo and Code Visualizer */}
+            {data.demoCode && (
+              <UseCasePreview
+                code={data.demoCode}
+                title={data.demoTitle || "Código de Ejemplo"}
+              />
+            )}
 
           </div>
 

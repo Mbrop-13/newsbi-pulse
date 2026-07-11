@@ -68,12 +68,32 @@ interface CreativeCategory {
   id: string;
   label: string;
   icon: React.ComponentType<any>;
+  imageSrc: string;
+  slug: string;
 }
 
 const CREATIVE_CATEGORIES: CreativeCategory[] = [
-  { id: "sitios", label: "Sitios Web", icon: Globe },
-  { id: "apps", label: "Aplicaciones", icon: Smartphone },
-  { id: "multiplatform", label: "Multiplataforma", icon: Monitor },
+  { 
+    id: "sitios", 
+    label: "Sitios Web", 
+    icon: Globe, 
+    imageSrc: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=600",
+    slug: "sitio-web"
+  },
+  { 
+    id: "apps", 
+    label: "Aplicaciones", 
+    icon: Smartphone, 
+    imageSrc: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?q=80&w=600",
+    slug: "aplicacion"
+  },
+  { 
+    id: "multiplatform", 
+    label: "Multiplataforma", 
+    icon: Monitor, 
+    imageSrc: "https://images.unsplash.com/photo-1531403009284-440f080d1e12?q=80&w=600",
+    slug: "multiplataforma"
+  },
 ];
 
 interface PreviewItem {
@@ -1829,32 +1849,61 @@ function ChatLandingContent() {
                   />
                 </motion.div>
 
-                {/* Categorías y Tarjetas de Previsualización */}
-                <div className="w-full mt-2 sm:mt-3 flex flex-col items-center relative">
-                  {/* Categorías (Pills) - Fixed and Wrapped to prevent clipping */}
+                {/* Categorías (Tarjetas de Imagen Interactivas) */}
+                <div className="w-full mt-2 sm:mt-4 flex flex-col items-center relative">
                   <motion.div
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, ease: "easeOut", delay: 0.2 }}
-                    className="flex flex-wrap items-center justify-center gap-2 w-full max-w-2xl py-2 px-4 mt-1"
+                    className="grid grid-cols-1 sm:grid-cols-3 gap-5 w-full max-w-3xl py-2 px-4 mt-1"
                   >
-                    {CREATIVE_CATEGORIES.map((cat) => (
-                      <CategoryPill key={cat.id} cat={cat} isActive={activeCategory === cat.id} />
-                    ))}
-                  </motion.div>
+                    {CREATIVE_CATEGORIES.map((cat) => {
+                      const CatIcon = cat.icon;
+                      return (
+                        <a
+                          key={cat.id}
+                          href={`/casos-de-uso/${cat.slug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group relative h-36 rounded-2xl overflow-hidden shadow-md border border-zinc-200/40 dark:border-white/5 bg-zinc-950 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 active:scale-98 text-left"
+                        >
+                          {/* Glow background on hover */}
+                          <div className="absolute inset-0 bg-[#1890FF]/15 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 pointer-events-none" />
 
-                  {/* Grid de Previsualización - overlay absoluto que se superpone
-                      hacia abajo sin entrar al flujo, así no desplaza el logo
-                      (mismo principio que el overlay móvil con bottom-full). */}
-                  {activeCategory && (
-                    <div className="absolute top-full left-0 mt-3 w-full max-w-4xl px-2 pb-6 z-20">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
-                        {PREVIEW_ITEMS.filter((item) => item.category === activeCategory).map((item) => (
-                          <PreviewCard key={item.id} item={item} />
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                          {/* Image background */}
+                          <img
+                            src={cat.imageSrc}
+                            alt={cat.label}
+                            className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:scale-105 group-hover:opacity-65 transition-all duration-500 ease-out"
+                          />
+
+                          {/* Overlay gradient */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent z-10" />
+
+                          {/* Content */}
+                          <div className="absolute inset-0 z-20 p-4 flex flex-col justify-between">
+                            {/* Icon container */}
+                            <div className="w-7 h-7 rounded-lg bg-white/10 backdrop-blur-md flex items-center justify-center text-white border border-white/10 shrink-0">
+                              <CatIcon className="w-3.5 h-3.5" />
+                            </div>
+
+                            {/* Title and Action */}
+                            <div className="space-y-0.5">
+                              <span className="text-[8px] font-black uppercase text-[#1890FF] tracking-wider block">
+                                Ver Ejemplo
+                              </span>
+                              <div className="flex items-center justify-between">
+                                <h4 className="text-xs font-bold text-white tracking-tight leading-none">
+                                  {cat.label}
+                                </h4>
+                                <ArrowUpRight className="w-3.5 h-3.5 text-white/50 group-hover:text-white group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+                              </div>
+                            </div>
+                          </div>
+                        </a>
+                      );
+                    })}
+                  </motion.div>
                 </div>
               </div>
 

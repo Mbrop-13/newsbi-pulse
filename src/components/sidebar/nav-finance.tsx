@@ -29,7 +29,7 @@ interface FinanceItem {
 
 export function NavFinance({ items }: { items: FinanceItem[] }) {
   const { isMobile, setOpenMobile } = useSidebar()
-  const [isOpen, setIsOpen] = useState(false) // Closed by default!
+  const [isOpen, setIsOpen] = useState(true) // Open by default, same as Chats!
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const openModal = useAuthModalStore((s) => s.openModal)
 
@@ -38,25 +38,25 @@ export function NavFinance({ items }: { items: FinanceItem[] }) {
   }, [isMobile, setOpenMobile])
 
   return (
-    <SidebarGroup className="pt-0 pb-1">
+    <SidebarGroup className="pt-0">
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <SidebarMenu>
           <SidebarMenuItem>
             <CollapsibleTrigger asChild>
-              <SidebarMenuButton className="w-full justify-between hover:bg-zinc-100 dark:hover:bg-zinc-850/80 transition-all">
-                <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200">Finanzas</span>
+              <SidebarMenuButton className="w-full justify-between">
+                <span>Finanzas</span>
                 <ChevronRight
-                  className={`h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400 transition-transform duration-200 ${
+                  className={`h-4 w-4 transition-transform ${
                     isOpen ? "rotate-90" : ""
                   }`}
                 />
               </SidebarMenuButton>
             </CollapsibleTrigger>
             <CollapsibleContent>
-              <SidebarMenuSub className="border-l border-zinc-100 dark:border-zinc-800/80 ml-3.5 pl-3.5 space-y-0.5 mt-1">
+              <SidebarMenuSub className="border-l-0 pl-0 ml-0 mx-0 px-0 space-y-0.5 mt-1">
                 {items.map((item) => (
                   <SidebarMenuSubItem key={item.title}>
-                    <SidebarMenuSubButton asChild>
+                    <SidebarMenuSubButton asChild className="w-full">
                       <Link
                         href={item.url}
                         onClick={(e) => {
@@ -69,9 +69,9 @@ export function NavFinance({ items }: { items: FinanceItem[] }) {
                           }
                           handleNavigate()
                         }}
-                        className="flex items-center gap-2.5 w-full text-zinc-800 dark:text-zinc-200 hover:text-foreground py-1.5 text-xs font-bold transition-all"
+                        className="flex items-center gap-2.5 w-full py-1.5 transition-all"
                       >
-                        <item.icon className="h-4 w-4 text-zinc-400 dark:text-zinc-500 shrink-0" />
+                        <item.icon className="h-4 w-4 shrink-0 text-muted-foreground" />
                         <span className="truncate">{item.title}</span>
                       </Link>
                     </SidebarMenuSubButton>

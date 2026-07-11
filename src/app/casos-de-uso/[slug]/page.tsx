@@ -5506,6 +5506,13 @@ export default async function CasoDeUsoPage({ params }: CasosPageProps) {
     notFound();
   }
 
+  let deviceType: 'desktop' | 'mobile' | 'multiplatform' = 'desktop';
+  if (slug.includes('multiplataforma')) {
+    deviceType = 'multiplatform';
+  } else if (slug.includes('aplicacion')) {
+    deviceType = 'mobile';
+  }
+
   return (
     <div className="bg-white h-screen w-screen overflow-y-auto pt-24 pb-20 font-sans text-slate-800 selection:bg-blue-150 selection:text-white select-none fixed inset-0 z-50">
       
@@ -5666,6 +5673,7 @@ export default async function CasoDeUsoPage({ params }: CasosPageProps) {
           <UseCasePreview
             code={data.demoCode}
             previewCode={data.demoCodeOverride}
+            deviceType={deviceType}
             title={data.demoTitle || "Código de Ejemplo"}
           />
         )}

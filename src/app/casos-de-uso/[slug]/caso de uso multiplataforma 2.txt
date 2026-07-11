@@ -1,0 +1,288 @@
+prompt:Diseña Circle, una aplicación multiplataforma(iOS, Android, Web y Desktop) de redes sociales privadas para grupos pequeños y cercanos.
+Estrategia multiplataforma:
+
+Experiencia unificada pero optimizada: Mobile para uso diario rápido, Web / Desktop para conversaciones más profundas y organización.
+
+Estilo visual:
+
+Paleta cálida y acogedora: tonos crema, beige, verde salvia y grises suaves.Muy buen Dark Mode.
+Diseño humano, minimalista y premium.
+
+Funcionalidades principales:
+
+Círculos privados(grupos) con invitación segura.
+Espacios dentro de cada círculo: Chat, Feed, Eventos, Galería, Notas compartidas, Metas grupales.
+Mensajes temporales y modo “Sin distracciones”.
+Eventos y planes con RSVPs.
+Actualizaciones de estado significativas.
+
+Adaptación por plataforma:
+
+Mobile: Navegación simple y rápida, ideal para check - ins diarios.
+    Web / Desktop: Mejor experiencia para chats largos, organización de eventos, galería grande y vista de múltiples círculos simultáneamente.
+
+Detalles de interacción:
+
+Sincronización perfecta en todos los dispositivos.
+Soporte completo para arrastrar y soltar en desktop.
+    Modo “Focus” que silencia notificaciones.
+
+Ambiente general: Íntimo, cálido, seguro y profundo.Debe sentirse como un espacio privado premium tanto en el celular como en la computadora.
+
+
+    codigo:<!DOCTYPE html>
+        <html lang="es">
+            <head>
+                <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <title>Circle - Espacio Íntimo</title>
+                        <script src="https://cdn.tailwindcss.com"></script>
+                        <link rel="preconnect" href="https://fonts.googleapis.com">
+                            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                                <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+                                    <style>
+                                        body {font - family: 'DM Sans', sans-serif; }
+                                        .warm-bg {background - color: #1C1B1A; }
+                                        .warm-surface {background - color: #252422; }
+                                        .warm-border {border - color: #323130; }
+                                        .sage-text {color: #A3B18A; }
+                                        .sage-bg {background - color: #A3B18A; }
+                                        .sage-bg-soft {background - color: rgba(163, 177, 138, 0.1); }
+                                        .warm-hover:hover {background - color: #2D2C2A; }
+                                        .custom-scroll::-webkit-scrollbar {width: 4px; }
+                                        .custom-scroll::-webkit-scrollbar-thumb {background: #323130; border-radius: 2px; }
+                                        .fade-in {animation: fadeIn 0.4s ease-out; }
+                                        @keyframes fadeIn {from {opacity: 0; transform: translateY(10px); } to {opacity: 1; transform: translateY(0); } }
+                                        .focus-mode {filter: blur(8px) brightness(0.5); pointer-events: none; transition: all 0.3s ease; }
+                                    </style>
+                                </head>
+                                <body class="warm-bg text-stone-200 antialiased">
+
+                                    <div class="flex h-screen overflow-hidden">
+
+                                        <!-- Columna 1: Círculos -->
+                                        <aside id="leftPanel" class="w-64 warm-surface warm-border-r border-r flex flex-col p-4 transition-all duration-300">
+                                            <div class="flex items-center gap-2 mb-8">
+                                                <div class="w-8 h-8 rounded-full sage-bg flex items-center justify-center text-stone-900 font-bold text-sm">C</div>
+                                                <span class="font-semibold text-lg tracking-tight">Circle</span>
+                                            </div>
+
+                                            <button class="w-full flex items-center justify-center gap-2 sage-bg-soft sage-text py-2.5 rounded-xl text-sm font-medium mb-6 hover:bg-opacity-20 transition-colors">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                                                Nuevo Círculo
+                                            </button>
+
+                                            <p class="text-xs text-stone-500 uppercase tracking-wider px-2 mb-2">Tus Círculos</p>
+                                            <nav class="flex flex-col gap-1 flex-1">
+                                                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl warm-hover transition-colors">
+                                                    <div class="w-8 h-8 rounded-full bg-amber-700/30 flex items-center justify-center text-amber-500 text-xs font-bold">VC</div>
+                                                    <span class="text-sm text-stone-300">Viaje al Campo</span>
+                                                </a>
+                                                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-stone-800/50 transition-colors border border-stone-700/50">
+                                                    <div class="w-8 h-8 rounded-full bg-blue-900/30 flex items-center justify-center text-blue-400 text-xs font-bold">HF</div>
+                                                    <span class="text-sm font-medium text-stone-100">Familia</span>
+                                                    <span class="ml-auto w-2 h-2 rounded-full sage-bg"></span>
+                                                </a>
+                                                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl warm-hover transition-colors">
+                                                    <div class="w-8 h-8 rounded-full bg-purple-900/30 flex items-center justify-center text-purple-400 text-xs font-bold">EA</div>
+                                                    <span class="text-sm text-stone-300">Amigos Íntimos</span>
+                                                </a>
+                                            </nav>
+
+                                            <div class="border-t warm-border pt-4 mt-4 flex items-center gap-3">
+                                                <img src="https://i.pravatar.cc/40?img=5" class="w-9 h-9 rounded-full" alt="User">
+                                                    <div>
+                                                        <p class="text-sm font-medium text-stone-200">Elena</p>
+                                                        <p class="text-xs text-stone-500">🌿 Relajada</p>
+                                                    </div>
+                                            </div>
+                                        </aside>
+
+                                        <!-- Columna 2: Espacio Activo (Chat/Feed) -->
+                                        <main class="flex-1 flex flex-col bg-stone-900/30 relative">
+
+                                            <!-- Header del Espacio -->
+                                            <header class="p-4 border-b warm-border flex items-center justify-between bg-stone-900/50 backdrop-blur-sm z-10">
+                                                <div>
+                                                    <h2 class="font-semibold text-lg">Familia</h2>
+                                                    <p class="text-xs text-stone-500">4 miembros · 2 activos ahora</p>
+                                                </div>
+                                                <div class="flex items-center gap-2">
+                                                    <button class="px-3 py-1.5 text-xs rounded-lg bg-stone-800 text-stone-400 hover:text-stone-100 transition-colors">Feed</button>
+                                                    <button class="px-3 py-1.5 text-xs rounded-lg sage-bg-soft sage-text font-medium">Chat</button>
+                                                    <button class="px-3 py-1.5 text-xs rounded-lg bg-stone-800 text-stone-400 hover:text-stone-100 transition-colors">Galería</button>
+                                                </div>
+                                            </header>
+
+                                            <!-- Contenido del Chat -->
+                                            <div id="chatArea" class="flex-1 overflow-y-auto p-6 space-y-6 custom-scroll">
+
+                                                <!-- Fecha separador -->
+                                                <div class="flex justify-center">
+                                                    <span class="text-xs text-stone-500 bg-stone-800/50 px-3 py-1 rounded-full">Hoy</span>
+                                                </div>
+
+                                                <!-- Mensaje Otro -->
+                                                <div class="flex gap-3 fade-in">
+                                                    <img src="https://i.pravatar.cc/40?img=12" class="w-8 h-8 rounded-full mt-1" alt="User">
+                                                        <div>
+                                                            <div class="flex items-baseline gap-2 mb-1">
+                                                                <span class="text-sm font-semibold">Papá</span>
+                                                                <span class="text-xs text-stone-500">10:30 AM</span>
+                                                            </div>
+                                                            <div class="max-w-md bg-stone-800 px-4 py-3 rounded-2xl rounded-tl-sm text-sm text-stone-200">
+                                                                ¿Qué planes tienen para el fin de semana? Encontré una cabaña hermosa cerca del lago. 🌲
+                                                            </div>
+                                                        </div>
+                                                </div>
+
+                                                <!-- Mensaje Propio -->
+                                                <div class="flex gap-3 justify-end fade-in">
+                                                    <div class="max-w-md">
+                                                        <div class="bg-stone-800 px-4 py-3 rounded-2xl rounded-tr-sm text-sm text-stone-200">
+                                                            ¡Suena increíble! Yo me encargo de la comida. ¿Les parece bien si llevamos a Luna (el perro)?
+                                                        </div>
+                                                        <div class="flex justify-end mt-1">
+                                                            <span class="text-xs text-stone-500">10:32 AM · Leído</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Nota Compartida (Card Especial) -->
+                                                <div class="flex gap-3 fade-in">
+                                                    <div class="w-8 h-8 rounded-full bg-amber-900/30 flex items-center justify-center mt-1">
+                                                        <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                                                    </div>
+                                                    <div class="max-w-md w-full bg-stone-800/50 border warm-border rounded-2xl p-4">
+                                                        <p class="text-xs text-amber-500 font-medium uppercase tracking-wider mb-2">Nota Compartida</p>
+                                                        <h3 class="font-semibold text-stone-100 mb-2">Lista para la cabaña</h3>
+                                                        <ul class="text-sm text-stone-400 space-y-1">
+                                                            <li class="flex items-center gap-2"><input type="checkbox" checked class="rounded bg-stone-900 border-stone-600"> Comida para 3 días</li>
+                                                            <li class="flex items-center gap-2"><input type="checkbox" class="rounded bg-stone-900 border-stone-600"> Ropa de abrigo</li>
+                                                            <li class="flex items-center gap-2"><input type="checkbox" class="rounded bg-stone-900 border-stone-600"> Jabón para Luna</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+
+                                            </div>
+
+                                            <!-- Input del Chat -->
+                                            <div class="p-4 border-t warm-border">
+                                                <div class="flex items-center gap-2 bg-stone-800 rounded-2xl p-2">
+                                                    <button class="p-2 text-stone-500 hover:text-stone-200 transition-colors">
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                                    </button>
+                                                    <input type="text" placeholder="Escribe a tu familia..." class="flex-1 bg-transparent border-0 focus:ring-0 text-sm placeholder-stone-500">
+                                                        <button class="p-2 sage-text hover:bg-stone-700 rounded-xl transition-colors">
+                                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                                                        </button>
+                                                </div>
+                                            </div>
+                                        </main>
+
+                                        <!-- Columna 3: Contexto (Eventos, Notas, Focus) -->
+                                        <aside id="rightPanel" class="w-80 warm-surface warm-border-l border-l flex-col p-6 hidden lg:flex transition-all duration-300">
+
+                                            <!-- Botón Modo Focus -->
+                                            <button id="focusBtn" class="w-full flex items-center justify-center gap-2 bg-stone-800 text-stone-400 py-2.5 rounded-xl text-sm font-medium mb-6 hover:text-stone-100 transition-colors">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                Activar Modo Focus
+                                            </button>
+
+                                            <div class="mb-8">
+                                                <h3 class="text-xs text-stone-500 uppercase tracking-wider mb-3">Próximos Planes</h3>
+                                                <div class="bg-stone-900/50 border warm-border rounded-2xl p-4">
+                                                    <div class="flex justify-between items-start mb-2">
+                                                        <h4 class="font-semibold text-stone-100">Cabaña del Lago</h4>
+                                                        <span class="text-xs sage-text sage-bg-soft px-2 py-0.5 rounded-full">Confirmado</span>
+                                                    </div>
+                                                    <p class="text-xs text-stone-400 mb-3">Sábado 20 May - 10:00 AM</p>
+                                                    <div class="flex items-center justify-between">
+                                                        <div class="flex -space-x-2">
+                                                            <img src="https://i.pravatar.cc/30?img=12" class="w-7 h-7 rounded-full border-2 border-stone-900" alt="U1">
+                                                                <img src="https://i.pravatar.cc/30?img=5" class="w-7 h-7 rounded-full border-2 border-stone-900" alt="U2">
+                                                                    <img src="https://i.pravatar.cc/30?img=23" class="w-7 h-7 rounded-full border-2 border-stone-900" alt="U3">
+                                                                    </div>
+                                                                    <button class="text-xs text-stone-400 hover:text-stone-100">Detalles</button>
+                                                                </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="mb-8">
+                                                        <h3 class="text-xs text-stone-500 uppercase tracking-wider mb-3">Vibras de Hoy</h3>
+                                                        <div class="space-y-3">
+                                                            <div class="flex items-center gap-3">
+                                                                <img src="https://i.pravatar.cc/30?img=12" class="w-7 h-7 rounded-full" alt="U1">
+                                                                    <div class="text-sm">
+                                                                        <span class="text-stone-300">Papá está </span>
+                                                                        <span class="sage-text font-medium">🌿 Relajado</span>
+                                                                    </div>
+                                                            </div>
+                                                            <div class="flex items-center gap-3">
+                                                                <img src="https://i.pravatar.cc/30?img=23" class="w-7 h-7 rounded-full" alt="U3">
+                                                                    <div class="text-sm">
+                                                                        <span class="text-stone-300">Mamá está </span>
+                                                                        <span class="text-amber-500 font-medium">☕ Trabajando</span>
+                                                                    </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div>
+                                                        <h3 class="text-xs text-stone-500 uppercase tracking-wider mb-3">Espacios Rápidos</h3>
+                                                        <div class="grid grid-cols-2 gap-3">
+                                                            <button class="bg-stone-900/50 warm-border border rounded-xl p-3 flex flex-col items-center gap-2 warm-hover transition-colors">
+                                                                <svg class="w-5 h-5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                                                                <span class="text-xs">Galería</span>
+                                                            </button>
+                                                            <button class="bg-stone-900/50 warm-border border rounded-xl p-3 flex flex-col items-center gap-2 warm-hover transition-colors">
+                                                                <svg class="w-5 h-5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                                                                <span class="text-xs">Metas</span>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </aside>
+
+                                            </div>
+
+                                            <!-- Overlay Focus Mode -->
+                                            <div id="focusOverlay" class="hidden fixed inset-0 bg-stone-900/80 backdrop-blur-sm z-50 items-center justify-center">
+                                                <div class="text-center fade-in">
+                                                    <div class="w-16 h-16 rounded-full sage-bg-soft flex items-center justify-center mx-auto mb-4">
+                                                        <svg class="w-8 h-8 sage-text" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                                    </div>
+                                                    <h3 class="text-xl font-semibold text-stone-100 mb-2">Modo Focus Activado</h3>
+                                                    <p class="text-stone-400 text-sm max-w-xs mx-auto">El resto del mundo está silenciado. Estás disfrutando de tiempo de calidad con tu familia.</p>
+                                                    <button id="exitFocusBtn" class="mt-6 px-6 py-2 bg-stone-800 text-stone-300 rounded-xl text-sm font-medium hover:bg-stone-700 transition-colors">Salir del Modo Focus</button>
+                                                </div>
+                                            </div>
+
+                                            <script>
+                                                const focusBtn = document.getElementById('focusBtn');
+                                                const exitFocusBtn = document.getElementById('exitFocusBtn');
+                                                const focusOverlay = document.getElementById('focusOverlay');
+                                                const leftPanel = document.getElementById('leftPanel');
+                                                const rightPanel = document.getElementById('rightPanel');
+                                                const chatArea = document.getElementById('chatArea');
+
+        focusBtn.addEventListener('click', () => {
+                                                    leftPanel.classList.add('focus-mode');
+                                                rightPanel.classList.add('focus-mode');
+                                                chatArea.classList.add('opacity-30', 'transition-opacity');
+                                                focusOverlay.classList.remove('hidden');
+                                                focusOverlay.classList.add('flex');
+        });
+
+        exitFocusBtn.addEventListener('click', () => {
+                                                    leftPanel.classList.remove('focus-mode');
+                                                rightPanel.classList.remove('focus-mode');
+                                                chatArea.classList.remove('opacity-30');
+                                                focusOverlay.classList.add('hidden');
+                                                focusOverlay.classList.remove('flex');
+        });
+
+                                                // Auto-scroll chat
+                                                chatArea.scrollTop = chatArea.scrollHeight;
+                                            </script>
+                                        </body>
+                                    </html>

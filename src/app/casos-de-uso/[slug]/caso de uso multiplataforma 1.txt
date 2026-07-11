@@ -1,0 +1,383 @@
+prompt:Diseña una aplicación multiplataforma completa(iOS, Android, Web y Desktop) llamada SplitWise Pro, la versión premium y más avanzada de una app para dividir gastos y gestionar finanzas compartidas.
+Estrategia multiplataforma:
+
+Diseño consistente pero adaptativo: Mobile - first con excelente experiencia en tablets, web responsive y aplicación desktop completa.
+Código base compartido(Flutter o React Native + Web).
+
+Estilo visual general:
+
+Paleta: Verde esmeralda(#10B981), grises elegantes y azul de confianza.Dark Mode impecable.
+    Tipografía: Inter o Satoshi.
+        Estilo: Minimalista premium, limpio y profesional.
+
+Funcionalidades clave:
+
+División inteligente de gastos(igual, porcentual, por ítems, por consumo).
+Escaneo de tickets con IA(en móvil) y subida manual en web / desktop.
+Grupos ilimitados con balances en tiempo real.
+Gráficos avanzados e interactivos(especialmente potentes en web / desktop).
+Exportación a Excel / PDF.
+Recordatorios automáticos y pagos integrados.
+    Modo “Evento” y “Hogar compartido”.
+
+Estructura adaptada:
+
+Mobile: Navegación inferior simple y rápida.
+    Web / Desktop: Sidebar izquierda + vista completa de dashboards, gráficos grandes y gestión masiva de gastos.
+
+        Interacciones:
+
+Animaciones fluidas en móvil y micro - interacciones elegantes en desktop.
+Atajos de teclado en versión web / desktop.
+Sincronización perfecta en tiempo real entre dispositivos.
+
+Ambiente general: Confianza, claridad extrema y profesionalismo.Debe sentirse premium tanto en el celular como en la computadora.
+
+
+
+    codigo:<!DOCTYPE html>
+        <html lang="es" class="dark">
+            <head>
+                <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <title>SplitWise Pro - Dashboard</title>
+                        <script src="https://cdn.tailwindcss.com"></script>
+                        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+                        <link rel="preconnect" href="https://fonts.googleapis.com">
+                            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+                                    <style>
+                                        body {font - family: 'Inter', sans-serif; }
+                                        .tabular-nums {font - variant - numeric: tabular-nums; }
+                                        ::-webkit-scrollbar {width: 8px; height: 8px; }
+                                        ::-webkit-scrollbar-track {background: transparent; }
+                                        ::-webkit-scrollbar-thumb {background: #3f3f46; border-radius: 4px; }
+                                        ::-webkit-scrollbar-thumb:hover {background: #52525b; }
+                                        .fade-in {animation: fadeIn 0.3s ease-in-out; }
+                                        @keyframes fadeIn {from {opacity: 0; transform: translateY(-10px); } to {opacity: 1; transform: translateY(0); } }
+                                    </style>
+                                </head>
+                                <body class="bg-zinc-950 text-zinc-100 antialiased">
+
+                                    <!-- Layout Principal -->
+                                    <div class="flex h-screen">
+
+                                        <!-- Sidebar -->
+                                        <aside class="hidden md:flex w-64 flex-col bg-zinc-900 border-r border-zinc-800 p-4">
+                                            <div class="flex items-center gap-2 mb-10 px-2">
+                                                <div class="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center font-bold text-zinc-900">S</div>
+                                                <span class="font-bold text-lg tracking-tight">SplitWise<span class="text-emerald-500">Pro</span></span>
+                                            </div>
+                                            <nav class="flex flex-col gap-1 flex-1">
+                                                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-zinc-800 text-emerald-500 font-medium text-sm">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                                                    Dashboard
+                                                </a>
+                                                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 transition-colors text-sm">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                                                    Grupos
+                                                </a>
+                                                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 transition-colors text-sm">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                                                    Actividad
+                                                </a>
+                                                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 transition-colors text-sm">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                                                    Estadísticas
+                                                </a>
+                                            </nav>
+                                            <div class="border-t border-zinc-800 pt-4">
+                                                <div class="flex items-center gap-3 px-2">
+                                                    <img src="https://i.pravatar.cc/40?img=12" class="w-8 h-8 rounded-full" alt="User">
+                                                        <div>
+                                                            <p class="text-sm font-medium">Alex Morgan</p>
+                                                            <p class="text-xs text-zinc-500">Premium</p>
+                                                        </div>
+                                                </div>
+                                            </div>
+                                        </aside>
+
+                                        <!-- Main Content -->
+                                        <main class="flex-1 overflow-y-auto">
+
+                                            <!-- Top Bar -->
+                                            <header class="sticky top-0 bg-zinc-950/80 backdrop-blur-md z-10 border-b border-zinc-800 p-4 flex items-center justify-between">
+                                                <div class="flex-1 max-w-md">
+                                                    <div class="relative">
+                                                        <svg class="w-5 h-5 text-zinc-500 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                                        <input type="text" placeholder="Buscar gastos o grupos... (Ctrl + K)" class="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-emerald-500 transition-colors">
+                                                    </div>
+                                                </div>
+                                                <div class="flex items-center gap-3 ml-4">
+                                                    <button class="p-2 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 transition-colors relative">
+                                                        <svg class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                                                        <span class="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full"></span>
+                                                    </button>
+                                                    <button onclick="openModal()" class="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-semibold px-4 py-2 rounded-lg transition-colors text-sm">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                                        Añadir Gasto
+                                                    </button>
+                                                </div>
+                                            </header>
+
+                                            <!-- Dashboard Content -->
+                                            <div class="p-6 space-y-6">
+
+                                                <!-- Balance Summary Cards -->
+                                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                    <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl shadow-lg">
+                                                        <p class="text-sm text-zinc-400 mb-1">Balance Total</p>
+                                                        <h3 class="text-3xl font-bold text-emerald-500 tabular-nums">+$1,250.<span class="text-xl">50</span></h3>
+                                                        <div class="mt-4 flex items-center gap-2 text-xs text-zinc-500">
+                                                            <span class="flex items-center gap-1 text-emerald-500"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg> 12% este mes</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl shadow-lg">
+                                                        <p class="text-sm text-zinc-400 mb-1">Te Deben</p>
+                                                        <h3 class="text-3xl font-bold text-zinc-100 tabular-nums">$1,840.<span class="text-xl">00</span></h3>
+                                                        <div class="mt-4 flex items-center gap-2 text-xs text-zinc-500">
+                                                            <span>De 3 personas</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl shadow-lg">
+                                                        <p class="text-sm text-zinc-400 mb-1">Tú Debes</p>
+                                                        <h3 class="text-3xl font-bold text-red-500 tabular-nums">$589.<span class="text-xl">50</span></h3>
+                                                        <div class="mt-4 flex items-center gap-2 text-xs text-zinc-500">
+                                                            <span>A 2 personas</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Charts & Recent Activity -->
+                                                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                                                    <!-- Chart Container -->
+                                                    <div class="lg:col-span-2 bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-lg">
+                                                        <div class="flex justify-between items-center mb-6">
+                                                            <h2 class="text-lg font-semibold">Gastos por Categoría</h2>
+                                                            <select class="bg-zinc-800 border border-zinc-700 text-zinc-300 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-emerald-500">
+                                                                <option>Últimos 30 días</option>
+                                                                <option>Este año</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="h-64 w-full">
+                                                            <canvas id="spendingChart"></canvas>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Debt Simplification -->
+                                                    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-lg">
+                                                        <h2 class="text-lg font-semibold mb-4">Saldar Deudas</h2>
+                                                        <div class="space-y-4">
+                                                            <div class="flex items-center justify-between p-3 bg-zinc-800/50 rounded-xl">
+                                                                <div class="flex items-center gap-3">
+                                                                    <img src="https://i.pravatar.cc/40?img=5" class="w-8 h-8 rounded-full" alt="User">
+                                                                        <span class="text-sm text-zinc-400">Te paga <span class="text-zinc-100 font-medium">Carlos</span></span>
+                                                                </div>
+                                                                <span class="text-emerald-500 font-semibold text-sm tabular-nums">$320.00</span>
+                                                            </div>
+                                                            <div class="flex items-center justify-between p-3 bg-zinc-800/50 rounded-xl">
+                                                                <div class="flex items-center gap-3">
+                                                                    <img src="https://i.pravatar.cc/40?img=23" class="w-8 h-8 rounded-full" alt="User">
+                                                                        <span class="text-sm text-zinc-400">Le pagas a <span class="text-zinc-100 font-medium">Sofía</span></span>
+                                                                </div>
+                                                                <span class="text-red-500 font-semibold text-sm tabular-nums">$150.50</span>
+                                                            </div>
+                                                            <div class="flex items-center justify-between p-3 bg-zinc-800/50 rounded-xl">
+                                                                <div class="flex items-center gap-3">
+                                                                    <img src="https://i.pravatar.cc/40?img=15" class="w-8 h-8 rounded-full" alt="User">
+                                                                        <span class="text-sm text-zinc-400">Te paga <span class="text-zinc-100 font-medium">Juan</span></span>
+                                                                </div>
+                                                                <span class="text-emerald-500 font-semibold text-sm tabular-nums">$45.00</span>
+                                                            </div>
+                                                        </div>
+                                                        <button class="w-full mt-6 py-2.5 border border-emerald-500 text-emerald-500 rounded-lg text-sm font-medium hover:bg-emerald-500 hover:text-zinc-950 transition-colors">Saldar Todo</button>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Recent Expenses Table -->
+                                                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-lg overflow-hidden">
+                                                    <div class="p-6 border-b border-zinc-800 flex justify-between items-center">
+                                                        <h2 class="text-lg font-semibold">Gastos Recientes</h2>
+                                                        <button class="text-sm text-zinc-400 hover:text-emerald-500 flex items-center gap-2">
+                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                                            Exportar Excel
+                                                        </button>
+                                                    </div>
+                                                    <table class="w-full text-sm text-left">
+                                                        <thead class="bg-zinc-800/50 text-zinc-500 uppercase text-xs">
+                                                            <tr>
+                                                                <th class="px-6 py-3 font-medium">Fecha</th>
+                                                                <th class="px-6 py-3 font-medium">Descripción</th>
+                                                                <th class="px-6 py-3 font-medium">Grupo</th>
+                                                                <th class="px-6 py-3 font-medium">Pagado por</th>
+                                                                <th class="px-6 py-3 font-medium text-right">Monto</th>
+                                                                <th class="px-6 py-3 font-medium text-right">Tu parte</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody class="divide-y divide-zinc-800">
+                                                            <tr class="hover:bg-zinc-800/30 transition-colors">
+                                                                <td class="px-6 py-4 text-zinc-400">12 May</td>
+                                                                <td class="px-6 py-4 font-medium text-zinc-100">Cena Equipo</td>
+                                                                <td class="px-6 py-4 text-zinc-400">Trabajo</td>
+                                                                <td class="px-6 py-4 text-zinc-400">Tú</td>
+                                                                <td class="px-6 py-4 text-right tabular-nums font-medium text-zinc-100">$120.00</td>
+                                                                <td class="px-6 py-4 text-right tabular-nums text-emerald-500">+$80.00</td>
+                                                            </tr>
+                                                            <tr class="hover:bg-zinc-800/30 transition-colors">
+                                                                <td class="px-6 py-4 text-zinc-400">11 May</td>
+                                                                <td class="px-6 py-4 font-medium text-zinc-100 flex items-center gap-2">
+                                                                    <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                                                    Renta Mayo
+                                                                </td>
+                                                                <td class="px-6 py-4 text-zinc-400">Hogar</td>
+                                                                <td class="px-6 py-4 text-zinc-400">Carlos</td>
+                                                                <td class="px-6 py-4 text-right tabular-nums font-medium text-zinc-100">$1,500.00</td>
+                                                                <td class="px-6 py-4 text-right tabular-nums text-red-500">-$750.00</td>
+                                                            </tr>
+                                                            <tr class="hover:bg-zinc-800/30 transition-colors">
+                                                                <td class="px-6 py-4 text-zinc-400">10 May</td>
+                                                                <td class="px-6 py-4 font-medium text-zinc-100">Tickets Cine</td>
+                                                                <td class="px-6 py-4 text-zinc-400">Amigos</td>
+                                                                <td class="px-6 py-4 text-zinc-400">Sofía</td>
+                                                                <td class="px-6 py-4 text-right tabular-nums font-medium text-zinc-100">$45.00</td>
+                                                                <td class="px-6 py-4 text-right tabular-nums text-red-500">-$15.00</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+
+                                            </div>
+                                        </main>
+                                    </div>
+
+                                    <!-- Modal: Add Expense -->
+                                    <div id="expenseModal" class="hidden fixed inset-0 bg-zinc-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                                        <div class="bg-zinc-900 border border-zinc-800 w-full max-w-lg rounded-2xl shadow-2xl fade-in">
+                                            <div class="p-6 border-b border-zinc-800 flex justify-between items-center">
+                                                <h2 class="text-xl font-bold">Añadir Nuevo Gasto</h2>
+                                                <button onclick="closeModal()" class="text-zinc-500 hover:text-zinc-100">
+                                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                                </button>
+                                            </div>
+                                            <div class="p-6 space-y-5">
+                                                <div class="flex items-center gap-4">
+                                                    <div class="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-500">
+                                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                                                    </div>
+                                                    <input type="text" placeholder="¿En qué gastaste?" class="flex-1 bg-transparent border-0 border-b border-zinc-700 focus:ring-0 focus:border-emerald-500 text-xl font-medium py-2 placeholder-zinc-600">
+                                                </div>
+                                                <div>
+                                                    <p class="text-xs text-zinc-500 mb-1 uppercase tracking-wider">Monto Total</p>
+                                                    <div class="relative">
+                                                        <span class="absolute left-3 top-2 text-2xl font-bold text-zinc-500">$</span>
+                                                        <input type="text" value="0.00" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl pl-8 pr-4 py-3 text-2xl font-bold tabular-nums focus:outline-none focus:border-emerald-500">
+                                                    </div>
+                                                </div>
+
+                                                <!-- Smart Split Tabs -->
+                                                <div>
+                                                    <div class="flex border-b border-zinc-800 mb-4">
+                                                        <button class="px-4 py-2 text-sm font-medium text-emerald-500 border-b-2 border-emerald-500">Dividir Igual</button>
+                                                        <button class="px-4 py-2 text-sm font-medium text-zinc-500 hover:text-zinc-100">Porcentual</button>
+                                                        <button class="px-4 py-2 text-sm font-medium text-zinc-500 hover:text-zinc-100">Por Ítems</button>
+                                                    </div>
+                                                    <div class="space-y-3 max-h-48 overflow-y-auto pr-2">
+                                                        <div class="flex items-center justify-between p-2 hover:bg-zinc-800 rounded-lg">
+                                                            <div class="flex items-center gap-3">
+                                                                <input type="checkbox" checked class="w-4 h-4 rounded bg-zinc-700 border-zinc-600 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0">
+                                                                    <img src="https://i.pravatar.cc/30?img=12" class="w-8 h-8 rounded-full" alt="User">
+                                                                        <span class="text-sm">Tú</span>
+                                                                    </div>
+                                                                    <span class="text-sm font-semibold tabular-nums text-zinc-400">$0.00</span>
+                                                            </div>
+                                                            <div class="flex items-center justify-between p-2 hover:bg-zinc-800 rounded-lg">
+                                                                <div class="flex items-center gap-3">
+                                                                    <input type="checkbox" checked class="w-4 h-4 rounded bg-zinc-700 border-zinc-600 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0">
+                                                                        <img src="https://i.pravatar.cc/30?img=5" class="w-8 h-8 rounded-full" alt="User">
+                                                                            <span class="text-sm">Carlos</span>
+                                                                        </div>
+                                                                        <span class="text-sm font-semibold tabular-nums text-zinc-400">$0.00</span>
+                                                                </div>
+                                                                <div class="flex items-center justify-between p-2 hover:bg-zinc-800 rounded-lg">
+                                                                    <div class="flex items-center gap-3">
+                                                                        <input type="checkbox" checked class="w-4 h-4 rounded bg-zinc-700 border-zinc-600 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0">
+                                                                            <img src="https://i.pravatar.cc/30?img=23" class="w-8 h-8 rounded-full" alt="User">
+                                                                                <span class="text-sm">Sofía</span>
+                                                                            </div>
+                                                                            <span class="text-sm font-semibold tabular-nums text-zinc-400">$0.00</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="p-6 border-t border-zinc-800 flex gap-3">
+                                                            <button onclick="closeModal()" class="flex-1 py-2.5 border border-zinc-700 text-zinc-300 rounded-xl font-medium hover:bg-zinc-800 transition-colors">Cancelar</button>
+                                                            <button onclick="closeModal()" class="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-zinc-950 rounded-xl font-semibold transition-colors">Guardar Gasto</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <script>
+        // Modal Logic
+                                                    function openModal() {
+                                                        document.getElementById('expenseModal').classList.remove('hidden');
+        }
+                                                    function closeModal() {
+                                                        document.getElementById('expenseModal').classList.add('hidden');
+        }
+
+                                                    // Chart.js Configuration
+                                                    const ctx = document.getElementById('spendingChart').getContext('2d');
+                                                    const spendingChart = new Chart(ctx, {
+                                                        type: 'doughnut',
+                                                    data: {
+                                                        labels: ['Hogar', 'Comida', 'Transporte', 'Ocio', 'Otros'],
+                                                    datasets: [{
+                                                        data: [1500, 320, 150, 120, 80],
+                                                    backgroundColor: [
+                                                    '#10B981', // Esmeralda
+                                                    '#3B82F6', // Azul
+                                                    '#F59E0B', // Ámbar
+                                                    '#8B5CF6', // Violeta
+                                                    '#EF4444'  // Rojo
+                                                    ],
+                                                    borderWidth: 0,
+                                                    hoverOffset: 8
+                }]
+            },
+                                                    options: {
+                                                        responsive: true,
+                                                    maintainAspectRatio: false,
+                                                    cutout: '70%',
+                                                    plugins: {
+                                                        legend: {
+                                                        position: 'bottom',
+                                                    labels: {
+                                                        color: '#A1A1AA',
+                                                    usePointStyle: true,
+                                                    pointStyle: 'circle',
+                                                    padding: 20,
+                                                    font: {
+                                                        family: 'Inter',
+                                                    size: 12
+                            }
+                        }
+                    },
+                                                    tooltip: {
+                                                        backgroundColor: '#18181B',
+                                                    titleColor: '#FAFAFA',
+                                                    bodyColor: '#A1A1AA',
+                                                    borderColor: '#3F3F46',
+                                                    borderWidth: 1,
+                                                    padding: 12,
+                                                    boxPadding: 4,
+                                                    cornerRadius: 8,
+                                                    titleFont: {family: 'Inter', weight: 'bold' },
+                                                    bodyFont: {family: 'Inter' }
+                    }
+                }
+            }
+        });
+                                                </script>
+                                            </body>
+                                        </html>

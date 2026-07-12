@@ -120,9 +120,7 @@ interface PreviewItem {
   imageSrc: string;
   slug: string;
   prompt: string;
-}
-
-const PREVIEW_ITEMS: PreviewItem[] = [
+}const PREVIEW_ITEMS: PreviewItem[] = [
   // sitios
   {
     id: "vestra",
@@ -140,7 +138,7 @@ const PREVIEW_ITEMS: PreviewItem[] = [
     desc: "Software de productividad y gestión de proyectos con un enfoque de diseño limpio y calmado.",
     imageSrc: "https://mail.programbi.com/uploads/Captura-de-pantalla-2026-07-11-071908.png",
     slug: "sitio-web-2",
-    prompt: `Diseña una página de inicio de producto SaaS para una herramienta de gestión de proyectos y comunicación de equipos llamada 'Lumen'...`
+    prompt: `Diseña una página de inicio para una empresa boutique de software(SaaS) que transmita claridad, sofisticación técnica y confianza serena: el antídoto a las interfaces caóticas, sobrecargadas y frías del software empresarial tradicional.`
   },
   {
     id: "nocturne",
@@ -149,7 +147,7 @@ const PREVIEW_ITEMS: PreviewItem[] = [
     desc: "Plataforma de e-commerce de videojuegos con estética cinematográfica brutalista oscura.",
     imageSrc: "https://mail.programbi.com/uploads/Captura-de-pantalla-2026-07-11-071939.png",
     slug: "sitio-web-3",
-    prompt: `Diseña una página de inicio para un sitio de comercio electrónico premium de videojuegos boutique llamado 'NOCTURNE'...`
+    prompt: `Diseña una página de inicio para una tienda boutique de videojuegos premium que transmita emoción controlada, sofisticación y calidad cinematográfica: el antídoto a las tiendas caóticas, llenas de ofertas agresivas y diseño infantil.`
   },
   // apps
   {
@@ -168,7 +166,7 @@ const PREVIEW_ITEMS: PreviewItem[] = [
     desc: "Aplicación móvil de e-commerce vertical con catálogo interactivo y perfil de vendedor.",
     imageSrc: "https://mail.programbi.com/uploads/Captura-de-pantalla-2026-07-12-035436.png",
     slug: "aplicacion-2",
-    prompt: `Diseña una aplicación móvil de comercio electrónico estilo Mercado Libre, moderna, rápida y altamente profesional, optimizada exclusivamente para celulares...`
+    prompt: `Diseña una aplicación móvil de comercio electrónico estilo Mercado Libre, moderna, rápida y altamente profesional, optimizada exclusivamente para celulares(Mobile First - Portrait).`
   },
   {
     id: "clarity-invest",
@@ -177,7 +175,7 @@ const PREVIEW_ITEMS: PreviewItem[] = [
     desc: "Aplicación financiera para celulares con simulación de portafolios e interés compuesto.",
     imageSrc: "https://mail.programbi.com/uploads/Captura-de-pantalla-2026-07-12-035517.png",
     slug: "aplicacion-3",
-    prompt: `Diseña una aplicación móvil de finanzas personales e inversión llamada 'Clarity Invest', optimizada para celulares...`
+    prompt: `Crea una aplicación para celulares financiera premium para invertir en acciones, fondos indexados y ETFs, que transmita confianza, claridad, profesionalismo y sofisticación accesible. El antídoto a las apps financieras confusas, sobrecargadas de información y poco intuitivas.`
   },
   // multiplatform
   {
@@ -187,7 +185,7 @@ const PREVIEW_ITEMS: PreviewItem[] = [
     desc: "Panel web interactivo para control de gastos grupales y división automática de cuentas.",
     imageSrc: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=600",
     slug: "multiplataforma-1",
-    prompt: `Crea una aplicación interactiva estilo SplitWise para control de gastos grupales y división de cuentas.`
+    prompt: `Diseña una aplicación multiplataforma completa(iOS, Android, Web y Desktop) llamada SplitWise Pro, la versión premium y más avanzada de una app para dividir gastos y gestionar finanzas compartidas.`
   },
   {
     id: "circle",
@@ -196,7 +194,7 @@ const PREVIEW_ITEMS: PreviewItem[] = [
     desc: "Plataforma privada y segura para círculos familiares y sociales cercanos.",
     imageSrc: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=600",
     slug: "multiplataforma-2",
-    prompt: `Crea una aplicación interactiva de red social privada y familiar llamada 'Circle' con diseño cálido y moderno.`
+    prompt: `Diseña Circle, una aplicación multiplataforma(iOS, Android, Web y Desktop) de redes sociales privadas para grupos pequeños y cercanos.`
   },
   {
     id: "mentormatch",
@@ -205,9 +203,10 @@ const PREVIEW_ITEMS: PreviewItem[] = [
     desc: "Portal multiplataforma de agendamiento y tutoría impulsada por mentores virtuales.",
     imageSrc: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=600",
     slug: "multiplataforma-3",
-    prompt: `Crea una plataforma interactiva de mentoría y tutorías llamada 'MentorMatch'.`
+    prompt: `Diseña una plataforma de mentoría profesional inteligente interactiva llamada MentorMatch que incluya un algoritmo visual de match (96% de compatibilidad), dashboard de objetivos de progreso semanal y agendamiento interactivo de citas.`
   }
 ];
+
 
 function MockupPreview({ type }: { type: string }) {
   switch (type) {
@@ -1621,7 +1620,7 @@ function ChatLandingContent() {
                 className="w-full py-1.5 rounded-lg border border-white/20 hover:bg-white/10 text-white text-[9px] font-bold transition-all duration-200 flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
               >
                 <Copy className="w-2.5 h-2.5" />
-                Copiar
+                Prompt
               </button>
               <button
                 onClick={(e) => {
@@ -1703,7 +1702,7 @@ function ChatLandingContent() {
               className="flex-1 py-1.5 rounded-lg border border-white/20 hover:bg-white/10 text-white text-[10px] font-bold transition-all duration-200 flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
             >
               <Copy className="w-3 h-3" />
-              Copiar
+              Prompt
             </button>
             <button
               onClick={(e) => {

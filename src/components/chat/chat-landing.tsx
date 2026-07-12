@@ -1558,116 +1558,172 @@ function ChatLandingContent() {
   };
 
   // Reusable preview card with mobile-optimized overlay visibility
-  const PreviewCard = ({ item, isMobile: mobile }: { item: PreviewItem; isMobile?: boolean }) => (
-    <div
-      className={cn(
-        "group relative rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800/85 bg-zinc-950 hover:border-[#1890FF]/40 hover:dark:border-[#1890FF]/40 shadow-sm hover:shadow-md transition-all duration-350 cursor-pointer select-none",
-        mobile ? "w-[280px] shrink-0 h-[160px] snap-start" : "h-[155px]"
-      )}
-    >
-      {/* Background Image of the example - styled as mockup */}
-      {item.category === "apps" ? (
-        <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 to-zinc-950 flex items-center justify-center p-2.5">
-          <div className="relative aspect-[9/16] h-[135px] rounded-[16px] border-[3px] border-zinc-800 shadow-xl overflow-hidden bg-black">
-            {/* Camera notch */}
-            <div className="absolute top-1 left-1/2 -translate-x-1/2 w-8 h-2 bg-zinc-800 rounded-full z-20" />
-            <img
-              src={item.imageSrc}
-              alt={item.title}
-              className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500 ease-out"
-            />
-          </div>
-        </div>
-      ) : item.category === "sitios" ? (
-        <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 to-zinc-950 flex items-center justify-center p-2.5">
-          <div className="relative aspect-[16/10] h-[105px] rounded-lg border-2 border-zinc-800 shadow-xl overflow-hidden bg-black flex flex-col">
-            {/* Browser Header dots */}
-            <div className="w-full h-3 bg-zinc-900 border-b border-zinc-800/80 flex items-center gap-0.5 px-1.5 shrink-0">
-              <span className="w-1 h-1 rounded-full bg-red-500/80" />
-              <span className="w-1 h-1 rounded-full bg-yellow-500/80" />
-              <span className="w-1 h-1 rounded-full bg-green-500/80" />
+  const PreviewCard = ({ item, isMobile: mobile }: { item: PreviewItem; isMobile?: boolean }) => {
+    const isApp = item.category === "apps";
+
+    if (isApp) {
+      return (
+        <div
+          className={cn(
+            "group relative bg-zinc-950 overflow-hidden border-[5px] border-zinc-800 dark:border-zinc-800/90 shadow-lg hover:shadow-xl transition-all duration-350 cursor-pointer select-none",
+            mobile 
+              ? "w-[140px] h-[250px] shrink-0 rounded-[24px] border-[4px] snap-start" 
+              : "w-[170px] h-[300px] mx-auto rounded-[28px]"
+          )}
+        >
+          {/* Background Image of the app (full bleed) */}
+          <img
+            src={item.imageSrc}
+            alt={item.title}
+            className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:scale-103 transition-transform duration-500 ease-out"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/35 to-transparent z-10" />
+
+          {/* Interactive Hover/Active Overlay */}
+          <div
+            className={cn(
+              "absolute inset-0 bg-zinc-950/95 transition-all duration-300 p-3 flex flex-col justify-between shadow-md z-30",
+              mobile
+                ? "opacity-100 translate-y-0 pointer-events-auto"
+                : "opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto"
+            )}
+          >
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <h3 className="text-[10px] font-bold text-white tracking-tight leading-tight line-clamp-2">
+                  {item.title}
+                </h3>
+              </div>
+              <p className="text-[8.5px] text-zinc-300 leading-snug line-clamp-4">
+                {item.desc}
+              </p>
             </div>
-            <img
-              src={item.imageSrc}
-              alt={item.title}
-              className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500 ease-out"
-            />
+
+            {/* Vertically Stacked Buttons to fit phone layout */}
+            <div className="flex flex-col gap-1.5 mt-auto w-full">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setInput(item.prompt);
+                  setTimeout(() => {
+                    const textarea = document.getElementById("chat-input") as HTMLTextAreaElement | null;
+                    if (textarea) {
+                      textarea.focus();
+                      const len = item.prompt.length;
+                      textarea.setSelectionRange(len, len);
+                    }
+                  }, 50);
+                  toast.success("Prompt copiado al chat", {
+                    description: "Puedes editar o enviar el mensaje directamente.",
+                    duration: 3000,
+                  });
+                }}
+                className="w-full py-1.5 rounded-lg border border-white/20 hover:bg-white/10 text-white text-[9px] font-bold transition-all duration-200 flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
+              >
+                <Copy className="w-2.5 h-2.5" />
+                Copiar
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  window.open(`/casos-de-uso/${item.slug}`, '_blank', 'noopener,noreferrer');
+                  toast.success("Abriendo demo...", {
+                    description: `Cargando el visor premium para ${item.title}`,
+                    duration: 3000,
+                  });
+                }}
+                className="w-full py-1.5 rounded-lg bg-[#1890FF] hover:bg-[#1890FF]/85 text-white text-[9px] font-bold transition-all duration-200 flex items-center justify-center gap-1 active:scale-95 cursor-pointer shadow-xs"
+              >
+                <Eye className="w-2.5 h-2.5" />
+                Ver Caso
+              </button>
+            </div>
           </div>
         </div>
-      ) : (
+      );
+    }
+
+    // Default horizontal layout for Websites and Multiplatform
+    return (
+      <div
+        className={cn(
+          "group relative rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800/85 bg-zinc-950 hover:border-[#1890FF]/40 hover:dark:border-[#1890FF]/40 shadow-sm hover:shadow-md transition-all duration-350 cursor-pointer select-none",
+          mobile ? "w-[280px] shrink-0 h-[160px] snap-start" : "h-[155px]"
+        )}
+      >
         <img
           src={item.imageSrc}
           alt={item.title}
           className="absolute inset-0 w-full h-full object-cover opacity-75 group-hover:scale-103 transition-transform duration-500 ease-out"
         />
-      )}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/35 to-transparent z-10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/35 to-transparent z-10" />
 
-      {/* Interactive Hover/Active Overlay with Title, Desc and Action Buttons */}
-      <div
-        className={cn(
-          "absolute inset-0 bg-zinc-950/90 dark:bg-zinc-950/95 border border-zinc-200/40 dark:border-white/10 transition-all duration-300 p-4 flex flex-col justify-between shadow-md z-30",
-          mobile
-            ? "opacity-100 translate-y-0 pointer-events-auto"
-            : "opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto"
-        )}
-      >
-        <div className="space-y-1">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold text-white tracking-tight">
-              {item.title}
-            </h3>
-            <span className="text-[7px] font-extrabold text-[#1890FF] bg-[#1890FF]/15 border border-[#1890FF]/30 px-1 py-0.5 rounded tracking-wide uppercase shrink-0">
-              BUILD
-            </span>
+        {/* Interactive Hover/Active Overlay */}
+        <div
+          className={cn(
+            "absolute inset-0 bg-zinc-950/90 dark:bg-zinc-950/95 border border-zinc-200/40 dark:border-white/10 transition-all duration-300 p-4 flex flex-col justify-between shadow-md z-30",
+            mobile
+              ? "opacity-100 translate-y-0 pointer-events-auto"
+              : "opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto"
+          )}
+        >
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold text-white tracking-tight">
+                {item.title}
+              </h3>
+              <span className="text-[7px] font-extrabold text-[#1890FF] bg-[#1890FF]/15 border border-[#1890FF]/30 px-1 py-0.5 rounded tracking-wide uppercase shrink-0">
+                BUILD
+              </span>
+            </div>
+            <p className="text-[10px] text-zinc-300 leading-normal line-clamp-3">
+              {item.desc}
+            </p>
           </div>
-          <p className="text-[10px] text-zinc-300 leading-normal line-clamp-3">
-            {item.desc}
-          </p>
-        </div>
 
-        {/* Buttons inside overlay */}
-        <div className="flex gap-2 mt-auto">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setInput(item.prompt);
-              setTimeout(() => {
-                const textarea = document.getElementById("chat-input") as HTMLTextAreaElement | null;
-                if (textarea) {
-                  textarea.focus();
-                  const len = item.prompt.length;
-                  textarea.setSelectionRange(len, len);
-                }
-              }, 50);
-              toast.success("Prompt copiado al chat", {
-                description: "Puedes editar o enviar el mensaje directamente.",
-                duration: 3000,
-              });
-            }}
-            className="flex-1 py-1.5 rounded-lg border border-white/20 hover:bg-white/10 text-white text-[10px] font-bold transition-all duration-200 flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
-          >
-            <Copy className="w-3 h-3" />
-            Copiar
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              window.open(`/casos-de-uso/${item.slug}`, '_blank', 'noopener,noreferrer');
-              toast.success("Abriendo demo...", {
-                description: `Cargando el visor premium para ${item.title}`,
-                duration: 3000,
-              });
-            }}
-            className="flex-1 py-1.5 rounded-lg bg-[#1890FF] hover:bg-[#1890FF]/85 text-white text-[10px] font-bold transition-all duration-200 flex items-center justify-center gap-1 active:scale-95 cursor-pointer shadow-xs"
-          >
-            <Eye className="w-3 h-3" />
-            Ver
-          </button>
+          {/* Buttons inside overlay */}
+          <div className="flex gap-2 mt-auto">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setInput(item.prompt);
+                setTimeout(() => {
+                  const textarea = document.getElementById("chat-input") as HTMLTextAreaElement | null;
+                  if (textarea) {
+                    textarea.focus();
+                    const len = item.prompt.length;
+                    textarea.setSelectionRange(len, len);
+                  }
+                }, 50);
+                toast.success("Prompt copiado al chat", {
+                  description: "Puedes editar o enviar el mensaje directamente.",
+                  duration: 3000,
+                });
+              }}
+              className="flex-1 py-1.5 rounded-lg border border-white/20 hover:bg-white/10 text-white text-[10px] font-bold transition-all duration-200 flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
+            >
+              <Copy className="w-3 h-3" />
+              Copiar
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                window.open(`/casos-de-uso/${item.slug}`, '_blank', 'noopener,noreferrer');
+                toast.success("Abriendo demo...", {
+                  description: `Cargando el visor premium para ${item.title}`,
+                  duration: 3000,
+                });
+              }}
+              className="flex-1 py-1.5 rounded-lg bg-[#1890FF] hover:bg-[#1890FF]/85 text-white text-[10px] font-bold transition-all duration-200 flex items-center justify-center gap-1 active:scale-95 cursor-pointer shadow-xs"
+            >
+              <Eye className="w-3 h-3" />
+              Ver
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // ── Render ──
   const chatContent = (

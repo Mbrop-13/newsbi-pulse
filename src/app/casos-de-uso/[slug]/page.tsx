@@ -6459,30 +6459,724 @@ Pieza en Hold.
 Puntuación actual, nivel y líneas completadas.
 Botones grandes y fáciles de tocar: Pause, Hold, Rotación alternativa.
 
-Fondo dinámico que cambia sutilmente según el nivel o combo.
-                return;
+Fondo dinámico que cambia sutilmente según el nivel o combo.`,
+    demoCode: `<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NEXUS Blocks - Premium Tetris</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Courier New', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        if (window.self !== window.top) {
+            document.documentElement.classList.add('in-iframe');
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #030303;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #fff;
+            overflow: hidden;
+        }
+        
+        .orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .phone-frame {
+            width: 100%;
+            max-width: 390px;
+            height: 95vh;
+            max-height: 844px;
+            border-radius: 40px;
+            border: 8px solid #1a1a1a;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            background-color: #07090e;
+        }
+
+        /* Responsive board */
+        #board {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            grid-template-rows: repeat(20, 1fr);
+            background: rgba(10, 15, 30, 0.6);
+            border: 2px solid rgba(0, 240, 255, 0.25);
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.05);
+            position: relative;
+        }
+
+        .cell {
+            border: 1px solid rgba(255, 255, 255, 0.02);
+            border-radius: 1px;
+        }
+
+        .block {
+            border-radius: 4px;
+            box-shadow: inset 2px 2px 0 rgba(255, 255, 255, 0.35), inset -2px -2px 0 rgba(0, 0, 0, 0.3);
+            animation: land 0.12s ease-out;
+        }
+
+        .ghost {
+            border-radius: 4px;
+            border: 1.5px dashed currentColor;
+            opacity: 0.25;
+            background: transparent !important;
+        }
+
+        .clearing {
+            animation: clearFlash 0.25s ease-out forwards;
+        }
+
+        @keyframes clearFlash {
+            0% { background: #fff !important; box-shadow: 0 0 15px #fff; }
+            100% { background: transparent !important; transform: scale(0); }
+        }
+
+        @keyframes land {
+            0% { transform: scale(1.06); }
+            100% { transform: scale(1); }
+        }
+
+        /* Ocultar barra de desplazamiento */
+        ::-webkit-scrollbar { display: none; }
+
+        /* Adaptabilidad dentro de iframes */
+        .in-iframe body {
+            background-color: transparent !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        .in-iframe .phone-frame {
+            width: 100% !important;
+            max-width: 100% !important;
+            height: 100vh !important;
+            max-height: 100vh !important;
+            border: none !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="phone-frame">
+        <!-- Status Bar Falso -->
+        <div class="flex justify-between items-center px-8 pt-3 pb-1 text-sm font-semibold z-50 text-slate-400">
+            <span>9:41</span>
+            <div class="flex items-center gap-1">
+                <i data-lucide="signal" class="w-4 h-4"></i>
+                <i data-lucide="wifi" class="w-4 h-4"></i>
+                <i data-lucide="battery-full" class="w-6 h-6"></i>
+            </div>
+        </div>
+
+        <!-- Pantalla de Inicio -->
+        <div id="screen-start" class="absolute inset-0 bg-[#07090e]/95 z-50 flex flex-col items-center justify-center p-6 text-center">
+            <div class="w-20 h-20 rounded-3xl bg-blue-600/10 border-2 border-blue-500/30 flex items-center justify-center mb-6 shadow-lg shadow-blue-500/10">
+                <i data-lucide="gamepad-2" class="w-10 h-10 text-blue-400"></i>
+            </div>
+            <h1 class="orbitron text-3xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500 mb-2">NEXUS BLOCKS</h1>
+            <p class="text-xs text-slate-400 max-w-xs leading-relaxed mb-8">Disfruta de una experiencia arcade futurista con físicas mejoradas y audio sintetizado en tiempo real.</p>
+            <button id="btn-start" class="orbitron px-8 py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-lg shadow-blue-600/30 active:scale-95 transition-all text-sm tracking-widest">
+                INICIAR JUEGO
+            </button>
+        </div>
+
+        <!-- Pantalla de Game Over -->
+        <div id="screen-gameover" class="absolute inset-0 bg-[#07090e]/95 z-50 flex flex-col items-center justify-center p-6 text-center hidden">
+            <div class="w-16 h-16 rounded-full bg-red-500/10 border-2 border-red-500/30 flex items-center justify-center mb-4">
+                <i data-lucide="skull" class="w-8 h-8 text-red-500"></i>
+            </div>
+            <h2 class="orbitron text-2xl font-black text-red-500 mb-1">FIN DE JUEGO</h2>
+            <p class="text-slate-400 text-sm mb-6">Puntuación Final</p>
+            <div id="final-score" class="orbitron text-5xl font-black text-white tracking-tight mb-8">0</div>
+            <button id="btn-restart" class="orbitron px-8 py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-lg shadow-blue-600/30 active:scale-95 transition-all text-sm tracking-widest">
+                JUGAR DE NUEVO
+            </button>
+        </div>
+
+        <!-- Pantalla de Pausa -->
+        <div id="screen-pause" class="absolute inset-0 bg-[#07090e]/95 z-50 flex flex-col items-center justify-center p-6 text-center hidden">
+            <div class="w-16 h-16 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center mb-6">
+                <i data-lucide="pause" class="w-8 h-8 text-blue-400"></i>
+            </div>
+            <h2 class="orbitron text-2xl font-black text-white tracking-wider mb-8">JUEGO EN PAUSA</h2>
+            <button id="btn-resume" class="orbitron px-8 py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-lg shadow-blue-600/30 active:scale-95 transition-all text-sm tracking-widest">
+                REANUDAR
+            </button>
+        </div>
+
+        <!-- Cabecera de Juego (HUD) -->
+        <header class="px-5 pt-3 pb-2 flex justify-between items-center z-10">
+            <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded-lg bg-blue-600/15 border border-blue-500/30 flex items-center justify-center">
+                    <span class="text-[9px] font-black text-blue-400">N</span>
+                </div>
+                <span class="orbitron text-xs font-black tracking-wider text-slate-300">NEXUS BLOCKS</span>
+            </div>
+            <!-- Botón de Pausa -->
+            <button id="btn-pause" class="p-2 rounded-xl bg-slate-800/60 border border-slate-700/50 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors">
+                <i data-lucide="pause" class="w-4 h-4"></i>
+            </button>
+        </header>
+
+        <!-- Área Principal de Juego -->
+        <div class="flex-1 flex px-4 items-center justify-center gap-3 select-none">
+            <!-- Columna Izquierda: Hold -->
+            <div class="flex flex-col gap-4 items-center">
+                <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-2 text-center w-14 shadow-md">
+                    <div class="text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Hold</div>
+                    <div class="w-10 h-10 grid grid-cols-4 gap-0.5 mx-auto" id="hold-grid"></div>
+                </div>
+            </div>
+
+            <!-- Centro: Tablero de Juego (10x20) -->
+            <div id="board" class="w-[200px] h-[400px]"></div>
+
+            <!-- Columna Derecha: Estadísticas y Siguiente -->
+            <div class="flex flex-col gap-4 items-center">
+                <!-- Next -->
+                <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-2 text-center w-14 shadow-md">
+                    <div class="text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Next</div>
+                    <div class="w-10 h-10 grid grid-cols-4 gap-0.5 mx-auto" id="next-grid"></div>
+                </div>
+                
+                <!-- Stats -->
+                <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-2 text-center w-14 shadow-md space-y-3">
+                    <div>
+                        <div class="text-[7px] font-bold text-slate-500 uppercase tracking-widest">Score</div>
+                        <div id="score" class="orbitron text-xs font-bold text-blue-400 mt-0.5">0</div>
+                    </div>
+                    <div>
+                        <div class="text-[7px] font-bold text-slate-500 uppercase tracking-widest">Lvl</div>
+                        <div id="level" class="orbitron text-xs font-bold text-indigo-400 mt-0.5">1</div>
+                    </div>
+                    <div>
+                        <div class="text-[7px] font-bold text-slate-500 uppercase tracking-widest">Lines</div>
+                        <div id="lines" class="orbitron text-xs font-bold text-emerald-400 mt-0.5">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controles virtuales -->
+        <div class="px-5 pb-6 pt-2 shrink-0 grid grid-cols-12 gap-3 z-30 select-none">
+            <!-- Izquierda: Direccional Pad -->
+            <div class="col-span-6 grid grid-cols-3 gap-2">
+                <div></div>
+                <button id="btn-hard-drop" class="w-11 h-11 rounded-xl bg-slate-800 border border-slate-700/80 flex items-center justify-center text-slate-300 active:bg-blue-600 active:text-white active:scale-90 transition-all shadow-md">
+                    <i data-lucide="chevrons-up" class="w-5 h-5"></i>
+                </button>
+                <div></div>
+                
+                <button id="btn-left" class="w-11 h-11 rounded-xl bg-slate-800 border border-slate-700/80 flex items-center justify-center text-slate-300 active:bg-blue-600 active:text-white active:scale-90 transition-all shadow-md">
+                    <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                </button>
+                <button id="btn-soft-drop" class="w-11 h-11 rounded-xl bg-slate-800 border border-slate-700/80 flex items-center justify-center text-slate-300 active:bg-blue-600 active:text-white active:scale-90 transition-all shadow-md">
+                    <i data-lucide="chevron-down" class="w-5 h-5"></i>
+                </button>
+                <button id="btn-right" class="w-11 h-11 rounded-xl bg-slate-800 border border-slate-700/80 flex items-center justify-center text-slate-300 active:bg-blue-600 active:text-white active:scale-90 transition-all shadow-md">
+                    <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <!-- Derecha: Acciones de Rotar y Guardar -->
+            <div class="col-span-6 flex items-center justify-end gap-3 pr-2">
+                <button id="btn-hold" class="w-12 h-12 rounded-full bg-amber-600/10 border border-amber-500/50 flex flex-col items-center justify-center text-amber-400 active:bg-amber-600 active:text-white active:scale-90 transition-all shadow-md shadow-amber-500/5">
+                    <span class="text-[7px] font-black tracking-wider uppercase">Hold</span>
+                    <i data-lucide="repeat" class="w-3.5 h-3.5"></i>
+                </button>
+                <button id="btn-rotate" class="w-14 h-14 rounded-full bg-blue-600/10 border border-blue-500/50 flex flex-col items-center justify-center text-blue-400 active:bg-blue-600 active:text-white active:scale-90 transition-all shadow-md shadow-blue-500/5">
+                    <span class="text-[8px] font-black tracking-wider uppercase">Rotar</span>
+                    <i data-lucide="rotate-cw" class="w-4.5 h-4.5"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        const COLS = 10, ROWS = 20;
+        let board = Array.from({length: ROWS}, () => Array(COLS).fill(0));
+        
+        const COLORS = { 
+            I: '#00F0FF', 
+            O: '#FFE600', 
+            T: '#A300FF', 
+            S: '#00FF66', 
+            Z: '#FF0055', 
+            L: '#FF7F00', 
+            J: '#0066FF' 
+        };
+        const SHAPES = {
+            I: [[1,1,1,1]], 
+            O: [[1,1],[1,1]], 
+            T: [[0,1,0],[1,1,1]],
+            S: [[0,1,1],[1,1,0]], 
+            Z: [[1,1,0],[0,1,1]], 
+            L: [[0,0,1],[1,1,1]], 
+            J: [[1,0,0],[1,1,1]]
+        };
+        const TYPES = Object.keys(SHAPES);
+        
+        let current = null, next = null, hold = null, canHold = true;
+        let score = 0, lines = 0, level = 1, dropInterval = 1000;
+        let dropTimer = 0, lastTime = 0;
+        let gameActive = false;
+        let isPaused = false;
+
+        const boardEl = document.getElementById('board');
+        const nextGridEl = document.getElementById('next-grid');
+        const holdGridEl = document.getElementById('hold-grid');
+
+        let audioCtx = null;
+        function playSound(type) {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const osc = audioCtx.createOscillator();
+                const gainCtx = audioCtx.createGain();
+                osc.connect(gainCtx);
+                gainCtx.connect(audioCtx.destination);
+                
+                if (type === 'move') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(140, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.04);
+                    gainCtx.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                    gainCtx.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.04);
+                } else if (type === 'rotate') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(320, audioCtx.currentTime + 0.06);
+                    gainCtx.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                    gainCtx.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.06);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.06);
+                } else if (type === 'drop') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(80, audioCtx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(40, audioCtx.currentTime + 0.08);
+                    gainCtx.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                    gainCtx.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.08);
+                } else if (type === 'clear') {
+                    const now = audioCtx.currentTime;
+                    const freqs = [523.25, 659.25, 783.99, 1046.50];
+                    freqs.forEach((f, idx) => {
+                        const o = audioCtx.createOscillator();
+                        const g = audioCtx.createGain();
+                        o.connect(g);
+                        g.connect(audioCtx.destination);
+                        o.type = 'sine';
+                        o.frequency.setValueAtTime(f, now + idx * 0.04);
+                        g.gain.setValueAtTime(0.08, now + idx * 0.04);
+                        g.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.04 + 0.12);
+                        o.start(now + idx * 0.04);
+                        o.stop(now + idx * 0.04 + 0.12);
+                    });
+                } else if (type === 'gameover') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(140, audioCtx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(60, audioCtx.currentTime + 0.45);
+                    gainCtx.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                    gainCtx.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.45);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.45);
+                }
+            } catch (e) {
+                console.error("Web Audio API not supported or blocked", e);
+            }
+        }
+
+        function initBoard() {
+            boardEl.innerHTML = '';
+            for(let r=0; r<ROWS; r++){
+                for(let c=0; c<COLS; c++){
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.r = r; cell.dataset.c = c;
+                    boardEl.appendChild(cell);
+                }
+            }
+        }
+
+        function newPiece() {
+            const type = TYPES[Math.floor(Math.random() * TYPES.length)];
+            return { type, shape: SHAPES[type], color: COLORS[type], x: 3, y: 0 };
+        }
+
+        function draw() {
+            document.querySelectorAll('.cell').forEach(c => {
+                c.className = 'cell';
+                c.style.background = '';
+                c.style.boxShadow = '';
+                c.style.borderColor = '';
+            });
+
+            for(let r=0; r<ROWS; r++){
+                for(let c=0; c<COLS; c++){
+                    if(board[r][c]) {
+                        const cell = boardEl.children[r*COLS + c];
+                        if (cell) {
+                            cell.className = 'cell block';
+                            cell.style.background = board[r][c];
+                            cell.style.boxShadow = '0 0 8px ' + board[r][c];
+                            cell.style.borderColor = board[r][c];
+                        }
+                    }
+                }
             }
 
-            // Swipes
-            if(Math.abs(dx) > Math.abs(dy)) {
-                if(dx < -20) { if(!collide(current, -1, 0)) current.x--; }
-                else if(dx > 20) { if(!collide(current, 1, 0)) current.x++; }
+            if(current) {
+                let ghostY = current.y;
+                while(!collide(current, 0, ghostY - current.y + 1)) ghostY++;
+                
+                current.shape.forEach((row, r) => {
+                    row.forEach((val, c) => {
+                        if(val) {
+                            const x = current.x + c, y = ghostY + r;
+                            if(y >=0) {
+                                const cell = boardEl.children[y*COLS + x];
+                                if (cell) {
+                                    cell.className = 'cell ghost';
+                                    cell.style.color = current.color;
+                                }
+                            }
+                        }
+                    });
+                });
+
+                current.shape.forEach((row, r) => {
+                    row.forEach((val, c) => {
+                        if(val) {
+                            const x = current.x + c, y = current.y + r;
+                            if(y >=0) {
+                                const cell = boardEl.children[y*COLS + x];
+                                if (cell) {
+                                    cell.className = 'cell block';
+                                    cell.style.background = current.color;
+                                    cell.style.boxShadow = '0 0 10px ' + current.color + ', inset 0 0 4px rgba(255,255,255,0.4)';
+                                    cell.style.borderColor = current.color;
+                                }
+                            }
+                        }
+                    });
+                });
+            }
+            updateSidePanels();
+        }
+
+        function updateSidePanels() {
+            drawMiniGrid(nextGridEl, next);
+            drawMiniGrid(holdGridEl, hold);
+        }
+
+        function drawMiniGrid(el, piece) {
+            el.innerHTML = '';
+            for(let i=0; i<16; i++) {
+                const div = document.createElement('div');
+                div.className = 'mini-cell bg-slate-900 border border-slate-950/20';
+                el.appendChild(div);
+            }
+            if(piece) {
+                let startX = 1;
+                let startY = 1;
+                if (piece.type === 'I') { startX = 0; startY = 1; }
+                else if (piece.type === 'O') { startX = 1; startY = 1; }
+                
+                piece.shape.forEach((row, r) => {
+                    row.forEach((val, c) => {
+                        if(val) {
+                            const gridY = startY + r;
+                            const gridX = startX + c;
+                            if (gridY >= 0 && gridY < 4 && gridX >= 0 && gridX < 4) {
+                                const idx = gridY*4 + gridX;
+                                if (el.children[idx]) {
+                                    el.children[idx].classList.add('active');
+                                    el.children[idx].style.background = piece.color;
+                                    el.children[idx].style.boxShadow = '0 0 8px ' + piece.color;
+                                }
+                            }
+                        }
+                    });
+                });
+            }
+        }
+
+        function collide(piece, dx, dy, shape = piece.shape) {
+            for(let r=0; r<shape.length; r++){
+                for(let c=0; c<shape[r].length; c++){
+                    if(shape[r][c]) {
+                        const x = piece.x + c + dx;
+                        const y = piece.y + r + dy;
+                        if(x < 0 || x >= COLS || y >= ROWS) return true;
+                        if(y >= 0 && board[y][x]) return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        // Merge piece into board
+        function merge() {
+            current.shape.forEach((row, r) => {
+                row.forEach((val, c) => {
+                    if(val) board[current.y + r][current.x + c] = current.color;
+                });
+            });
+            canHold = true;
+        }
+
+        function rotate() {
+            const shape = current.shape;
+            const N = shape.length;
+            const M = shape[0].length;
+            const newShape = Array.from({length: M}, () => Array(N).fill(0));
+            for(let r=0; r<N; r++) {
+                for(let c=0; c<M; c++) {
+                    newShape[c][N-1-r] = shape[r][c];
+                }
+            }
+            
+            const kicks = [0, -1, 1, -2, 2];
+            for (let dx of kicks) {
+                if (!collide(current, dx, 0, newShape)) {
+                    current.x += dx;
+                    current.shape = newShape;
+                    playSound('rotate');
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function clearLines() {
+            let cleared = [];
+            for(let r = ROWS - 1; r >= 0; r--) {
+                if(board[r].every(cell => cell !== 0)) {
+                    cleared.push(r);
+                }
+            }
+
+            if(cleared.length > 0) {
+                cleared.forEach(r => {
+                    for(let c=0; c<COLS; c++) {
+                        const cell = boardEl.children[r*COLS + c];
+                        if (cell) cell.classList.add('clearing');
+                    }
+                });
+
+                playSound('clear');
+
+                setTimeout(() => {
+                    cleared.forEach(r => {
+                        board.splice(r, 1);
+                        board.unshift(Array(COLS).fill(0));
+                    });
+                    
+                    const points = [0, 100, 300, 500, 800];
+                    score += points[cleared.length] * level;
+                    lines += cleared.length;
+                    level = Math.floor(lines / 10) + 1;
+                    dropInterval = Math.max(80, 1000 - (level - 1) * 100);
+                    
+                    document.getElementById('score').textContent = score;
+                    document.getElementById('lines').textContent = lines;
+                    document.getElementById('level').textContent = level;
+                    draw();
+                }, 250);
+            }
+        }
+
+        function drop(isSoft = false) {
+            if(!collide(current, 0, 1)) {
+                current.y++;
+                if(isSoft) {
+                    score += 1;
+                    document.getElementById('score').textContent = score;
+                }
             } else {
-                if(dy > 40) drop(true); // Soft Drop
-                else if(dy < -40) hardDrop(); // Hard Drop
+                lockPiece();
+            }
+        }
+
+        function hardDrop() {
+            let dropDist = 0;
+            while(!collide(current, 0, 1)) { 
+                current.y++; 
+                dropDist++; 
+            }
+            score += dropDist * 2;
+            document.getElementById('score').textContent = score;
+            playSound('drop');
+            lockPiece();
+        }
+
+        function lockPiece() {
+            merge();
+            clearLines();
+            current = next;
+            next = newPiece();
+            if(collide(current, 0, 0)) {
+                playSound('gameover');
+                document.getElementById('final-score').textContent = score;
+                document.getElementById('screen-gameover').classList.remove('hidden');
+                gameActive = false;
             }
             draw();
-        }, { passive: false });
+        }
 
-        // Inicialización
-        initBoard();
-        current = newPiece();
-        next = newPiece();
-        draw();
-        update();
+        function holdPiece() {
+            if(!canHold) return;
+            playSound('rotate');
+            if(hold) {
+                let temp = hold.type;
+                hold = { type: current.type, shape: SHAPES[current.type], color: COLORS[current.type] };
+                current = { type: temp, shape: SHAPES[temp], color: COLORS[temp], x: 3, y: 0 };
+            } else {
+                hold = { type: current.type, shape: SHAPES[current.type], color: COLORS[current.type] };
+                current = next;
+                next = newPiece();
+            }
+            canHold = false;
+            draw();
+        }
+
+        function update(time = 0) {
+            if(!gameActive || isPaused) return;
+            const deltaTime = time - lastTime;
+            lastTime = time;
+            dropTimer += deltaTime;
+
+            if(dropTimer > dropInterval) {
+                drop();
+                dropTimer = 0;
+                draw();
+            }
+            requestAnimationFrame(update);
+        }
+
+        function bindBtn(id, action) {
+            const btn = document.getElementById(id);
+            if (!btn) return;
+            btn.addEventListener('touchstart', e => {
+                e.preventDefault();
+                if (gameActive && !isPaused) action();
+            }, { passive: false });
+            btn.addEventListener('click', e => {
+                e.preventDefault();
+                if (gameActive && !isPaused) action();
+            });
+        }
+
+        bindBtn('btn-left', () => { if(!collide(current, -1, 0)) { current.x--; playSound('move'); draw(); } });
+        bindBtn('btn-right', () => { if(!collide(current, 1, 0)) { current.x++; playSound('move'); draw(); } });
+        bindBtn('btn-soft-drop', () => { drop(true); draw(); });
+        bindBtn('btn-hard-drop', () => { hardDrop(); draw(); });
+        bindBtn('btn-rotate', () => { rotate(); draw(); });
+        bindBtn('btn-hold', () => { holdPiece(); draw(); });
+
+        document.getElementById('btn-pause').addEventListener('click', () => {
+            if (!gameActive) return;
+            isPaused = true;
+            document.getElementById('screen-pause').classList.remove('hidden');
+        });
+        document.getElementById('btn-resume').addEventListener('click', () => {
+            isPaused = false;
+            document.getElementById('screen-pause').classList.add('hidden');
+            lastTime = performance.now();
+            requestAnimationFrame(update);
+        });
+
+        function startGame() {
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+            } catch(e){}
+
+            document.getElementById('screen-start').classList.add('hidden');
+            document.getElementById('screen-gameover').classList.add('hidden');
+            document.getElementById('screen-pause').classList.add('hidden');
+            
+            board = Array.from({length: ROWS}, () => Array(COLS).fill(0));
+            score = 0;
+            lines = 0;
+            level = 1;
+            dropInterval = 1000;
+            gameActive = true;
+            isPaused = false;
+            canHold = true;
+            hold = null;
+            
+            document.getElementById('score').textContent = score;
+            document.getElementById('lines').textContent = lines;
+            document.getElementById('level').textContent = level;
+            
+            initBoard();
+            current = newPiece();
+            next = newPiece();
+            draw();
+            
+            lastTime = performance.now();
+            requestAnimationFrame(update);
+        }
+
+        document.getElementById('btn-start').addEventListener('click', startGame);
+        document.getElementById('btn-restart').addEventListener('click', startGame);
+
+        window.addEventListener('keydown', e => {
+            if (!gameActive || isPaused) return;
+            if (e.key === 'ArrowLeft') {
+                if(!collide(current, -1, 0)) { current.x--; playSound('move'); draw(); }
+            } else if (e.key === 'ArrowRight') {
+                if(!collide(current, 1, 0)) { current.x++; playSound('move'); draw(); }
+            } else if (e.key === 'ArrowDown') {
+                drop(true); draw();
+            } else if (e.key === 'ArrowUp') {
+                rotate(); draw();
+            } else if (e.key === ' ') {
+                hardDrop(); draw();
+            } else if (e.key === 'c' || e.key === 'C' || e.key === 'Shift') {
+                holdPiece(); draw();
+            }
+        });
     </script>
 </body>
-</html>`
+</html>
+`
   },
   "aplicacion-2": {
     title: `Agora — E-commerce Móvil de Próxima Generación`,

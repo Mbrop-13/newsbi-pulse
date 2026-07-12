@@ -157,7 +157,7 @@ const PREVIEW_ITEMS: PreviewItem[] = [
     category: "apps",
     title: "NEXUS Blocks — Tetris Arcade",
     desc: "Juego móvil de Tetris moderno y pulido, con físicas SRS y animaciones glow optimizadas.",
-    imageSrc: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=600",
+    imageSrc: "https://mail.programbi.com/uploads/Captura-de-pantalla-2026-07-12-032246.png",
     slug: "aplicacion-1",
     prompt: `Diseña un juego móvil estilo Tetris moderno, adictivo y altamente pulido, optimizado para teléfonos (portrait), con mecánicas clásicas mejoradas y una experiencia visual premium.`
   },
@@ -166,7 +166,7 @@ const PREVIEW_ITEMS: PreviewItem[] = [
     category: "apps",
     title: "Agora — Marketplace Móvil",
     desc: "Aplicación móvil de e-commerce vertical con catálogo interactivo y perfil de vendedor.",
-    imageSrc: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?q=80&w=600",
+    imageSrc: "https://mail.programbi.com/uploads/Captura-de-pantalla-2026-07-12-035436.png",
     slug: "aplicacion-2",
     prompt: `Diseña una aplicación móvil de comercio electrónico estilo Mercado Libre, moderna, rápida y altamente profesional, optimizada exclusivamente para celulares...`
   },
@@ -175,7 +175,7 @@ const PREVIEW_ITEMS: PreviewItem[] = [
     category: "apps",
     title: "Clarity Invest — Finanzas",
     desc: "Aplicación financiera para celulares con simulación de portafolios e interés compuesto.",
-    imageSrc: "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?q=80&w=600",
+    imageSrc: "https://mail.programbi.com/uploads/Captura-de-pantalla-2026-07-12-035517.png",
     slug: "aplicacion-3",
     prompt: `Diseña una aplicación móvil de finanzas personales e inversión llamada 'Clarity Invest', optimizada para celulares...`
   },
@@ -1565,12 +1565,42 @@ function ChatLandingContent() {
         mobile ? "w-[280px] shrink-0 h-[160px] snap-start" : "h-[155px]"
       )}
     >
-      {/* Background Image of the example */}
-      <img
-        src={item.imageSrc}
-        alt={item.title}
-        className="absolute inset-0 w-full h-full object-cover opacity-75 group-hover:scale-103 transition-transform duration-500 ease-out"
-      />
+      {/* Background Image of the example - styled as mockup */}
+      {item.category === "apps" ? (
+        <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 to-zinc-950 flex items-center justify-center p-2.5">
+          <div className="relative aspect-[9/16] h-[135px] rounded-[16px] border-[3px] border-zinc-800 shadow-xl overflow-hidden bg-black">
+            {/* Camera notch */}
+            <div className="absolute top-1 left-1/2 -translate-x-1/2 w-8 h-2 bg-zinc-800 rounded-full z-20" />
+            <img
+              src={item.imageSrc}
+              alt={item.title}
+              className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500 ease-out"
+            />
+          </div>
+        </div>
+      ) : item.category === "sitios" ? (
+        <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 to-zinc-950 flex items-center justify-center p-2.5">
+          <div className="relative aspect-[16/10] h-[105px] rounded-lg border-2 border-zinc-800 shadow-xl overflow-hidden bg-black flex flex-col">
+            {/* Browser Header dots */}
+            <div className="w-full h-3 bg-zinc-900 border-b border-zinc-800/80 flex items-center gap-0.5 px-1.5 shrink-0">
+              <span className="w-1 h-1 rounded-full bg-red-500/80" />
+              <span className="w-1 h-1 rounded-full bg-yellow-500/80" />
+              <span className="w-1 h-1 rounded-full bg-green-500/80" />
+            </div>
+            <img
+              src={item.imageSrc}
+              alt={item.title}
+              className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500 ease-out"
+            />
+          </div>
+        </div>
+      ) : (
+        <img
+          src={item.imageSrc}
+          alt={item.title}
+          className="absolute inset-0 w-full h-full object-cover opacity-75 group-hover:scale-103 transition-transform duration-500 ease-out"
+        />
+      )}
       <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/35 to-transparent z-10" />
 
       {/* Interactive Hover/Active Overlay with Title, Desc and Action Buttons */}

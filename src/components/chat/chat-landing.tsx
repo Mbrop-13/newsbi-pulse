@@ -1566,17 +1566,17 @@ function ChatLandingContent() {
           className={cn(
             "group relative bg-zinc-950 overflow-hidden border-[4px] border-zinc-800 dark:border-zinc-800/90 shadow-lg hover:shadow-xl transition-all duration-350 cursor-pointer select-none",
             mobile 
-              ? "w-[90px] h-[160px] shrink-0 rounded-[18px] border-[3.5px] snap-start" 
-              : "w-[96px] h-[170px] mx-auto rounded-[22px]"
+              ? "w-[110px] h-[195px] shrink-0 rounded-[20px] border-[3.5px] snap-start" 
+              : "w-[124px] h-[220px] mx-auto rounded-[24px]"
           )}
         >
           {/* Background Image of the app (full bleed) */}
           <img
             src={item.imageSrc}
             alt={item.title}
-            className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:scale-103 transition-transform duration-500 ease-out"
+            className="absolute inset-0 w-full h-full object-cover opacity-95 group-hover:scale-103 transition-transform duration-500 ease-out"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/35 to-transparent z-10" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent z-10" />
 
           {/* Interactive Hover/Active Overlay */}
           <div
@@ -1653,9 +1653,9 @@ function ChatLandingContent() {
         <img
           src={item.imageSrc}
           alt={item.title}
-          className="absolute inset-0 w-full h-full object-cover opacity-75 group-hover:scale-103 transition-transform duration-500 ease-out"
+          className="absolute inset-0 w-full h-full object-cover opacity-88 group-hover:scale-103 transition-transform duration-500 ease-out"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/35 to-transparent z-10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent z-10" />
 
         {/* Interactive Hover/Active Overlay */}
         <div

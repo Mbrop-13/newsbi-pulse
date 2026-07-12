@@ -183,7 +183,7 @@ interface PreviewItem {
     category: "multiplatform",
     title: "SplitWise Pro — Gastos",
     desc: "Panel web interactivo para control de gastos grupales y división automática de cuentas.",
-    imageSrc: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=600",
+    imageSrc: "https://mail.programbi.com/uploads/Captura-de-pantalla-2026-07-12-045548.png",
     slug: "multiplataforma-1",
     prompt: `Diseña una aplicación multiplataforma completa(iOS, Android, Web y Desktop) llamada SplitWise Pro, la versión premium y más avanzada de una app para dividir gastos y gestionar finanzas compartidas.`
   },
@@ -192,7 +192,7 @@ interface PreviewItem {
     category: "multiplatform",
     title: "Circle — Red Familiar",
     desc: "Plataforma privada y segura para círculos familiares y sociales cercanos.",
-    imageSrc: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=600",
+    imageSrc: "https://mail.programbi.com/uploads/Captura-de-pantalla-2026-07-12-045604.png",
     slug: "multiplataforma-2",
     prompt: `Diseña Circle, una aplicación multiplataforma(iOS, Android, Web y Desktop) de redes sociales privadas para grupos pequeños y cercanos.`
   },
@@ -201,7 +201,7 @@ interface PreviewItem {
     category: "multiplatform",
     title: "MentorMatch — Mentoría IA",
     desc: "Portal multiplataforma de agendamiento y tutoría impulsada por mentores virtuales.",
-    imageSrc: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=600",
+    imageSrc: "https://mail.programbi.com/uploads/Captura-de-pantalla-2026-07-12-052712.png",
     slug: "multiplataforma-3",
     prompt: `Diseña una plataforma de mentoría profesional inteligente interactiva llamada MentorMatch que incluya un algoritmo visual de match (96% de compatibilidad), dashboard de objetivos de progreso semanal y agendamiento interactivo de citas.`
   }
@@ -1564,10 +1564,10 @@ function ChatLandingContent() {
       return (
         <div
           className={cn(
-            "group relative bg-zinc-950 overflow-hidden border-[5px] border-zinc-800 dark:border-zinc-800/90 shadow-lg hover:shadow-xl transition-all duration-350 cursor-pointer select-none",
+            "group relative bg-zinc-950 overflow-hidden border-[4px] border-zinc-800 dark:border-zinc-800/90 shadow-lg hover:shadow-xl transition-all duration-350 cursor-pointer select-none",
             mobile 
-              ? "w-[140px] h-[250px] shrink-0 rounded-[24px] border-[4px] snap-start" 
-              : "w-[170px] h-[300px] mx-auto rounded-[28px]"
+              ? "w-[90px] h-[160px] shrink-0 rounded-[18px] border-[3.5px] snap-start" 
+              : "w-[96px] h-[170px] mx-auto rounded-[22px]"
           )}
         >
           {/* Background Image of the app (full bleed) */}
@@ -1581,7 +1581,7 @@ function ChatLandingContent() {
           {/* Interactive Hover/Active Overlay */}
           <div
             className={cn(
-              "absolute inset-0 bg-zinc-950/95 transition-all duration-300 p-3 flex flex-col justify-between shadow-md z-30",
+              "absolute inset-0 bg-zinc-950/95 transition-all duration-300 p-2 flex flex-col justify-between shadow-md z-30",
               mobile
                 ? "opacity-100 translate-y-0 pointer-events-auto"
                 : "opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto"
@@ -1589,17 +1589,17 @@ function ChatLandingContent() {
           >
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <h3 className="text-[10px] font-bold text-white tracking-tight leading-tight line-clamp-2">
+                <h3 className="text-[9.5px] font-bold text-white tracking-tight leading-tight line-clamp-2">
                   {item.title}
                 </h3>
               </div>
-              <p className="text-[8.5px] text-zinc-300 leading-snug line-clamp-4">
+              <p className="text-[8px] text-zinc-300 leading-normal line-clamp-4">
                 {item.desc}
               </p>
             </div>
 
             {/* Vertically Stacked Buttons to fit phone layout */}
-            <div className="flex flex-col gap-1.5 mt-auto w-full">
+            <div className="flex flex-col gap-1 mt-auto w-full">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -1617,7 +1617,7 @@ function ChatLandingContent() {
                     duration: 3000,
                   });
                 }}
-                className="w-full py-1.5 rounded-lg border border-white/20 hover:bg-white/10 text-white text-[9px] font-bold transition-all duration-200 flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
+                className="w-full py-1 rounded-lg border border-white/20 hover:bg-white/10 text-white text-[8.5px] font-bold transition-all duration-200 flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
               >
                 <Copy className="w-2.5 h-2.5" />
                 Prompt
@@ -1631,7 +1631,7 @@ function ChatLandingContent() {
                     duration: 3000,
                   });
                 }}
-                className="w-full py-1.5 rounded-lg bg-[#1890FF] hover:bg-[#1890FF]/85 text-white text-[9px] font-bold transition-all duration-200 flex items-center justify-center gap-1 active:scale-95 cursor-pointer shadow-xs"
+                className="w-full py-1 rounded-lg bg-[#1890FF] hover:bg-[#1890FF]/85 text-white text-[8.5px] font-bold transition-all duration-200 flex items-center justify-center gap-1 active:scale-95 cursor-pointer shadow-xs"
               >
                 <Eye className="w-2.5 h-2.5" />
                 Ver Caso

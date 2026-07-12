@@ -7872,202 +7872,572 @@ const styles = StyleSheet.create({
   },
 });`,
     demoCodeOverride: `<!DOCTYPE html>
-<html lang="es" x-data="clarityApp()" :class="{ 'dark': true }">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Clarity Invest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clarity Invest - Premium</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
-                    fontFamily: { sans: ['Inter', 'sans-serif'] },
-                    colors: {
-                        'clarity-bg': '#0F172A',
-                        'clarity-surface': '#1E293B',
-                        'clarity-border': '#334155',
-                        'clarity-gain': '#10B981',
-                        'clarity-loss': '#F43F5E',
-                        'clarity-accent': '#3B82F6',
-                    }
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
                 }
             }
         }
     </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        if (window.self !== window.top) {
+            document.documentElement.classList.add('in-iframe');
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        :root {
+            --gain-green: #10B981;
+            --loss-red: #F43F5E;
+            --accent-blue: #3B82F6;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000000; /* Fondo fuera del teléfono */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            transition: background-color 0.3s ease;
+        }
+
+        .phone-frame {
+            width: 100%;
+            max-width: 390px;
+            height: 95vh;
+            max-height: 844px;
+            border-radius: 40px;
+            border: 8px solid #1a1a1a;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            background-color: #F8FAFC; /* MODO CLARO POR DEFECTO */
+        }
+
+        .dark .phone-frame {
+            background-color: #0F172A; /* MODO OSCURO */
+        }
+
+        /* Scrollbar Oculto */
+        .content-scroll::-webkit-scrollbar { display: none; }
+        .content-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Animaciones */
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .stagger-1 { animation: slideUp 0.4s ease-out 0.1s backwards; }
+        .stagger-2 { animation: slideUp 0.4s ease-out 0.2s backwards; }
+        .stagger-3 { animation: slideUp 0.4s ease-out 0.3s backwards; }
+        .stagger-4 { animation: slideUp 0.4s ease-out 0.4s backwards; }
+        
+        .screen { display: none; animation: fadeIn 0.3s ease-out; }
+        .screen.active { display: flex; flex-direction: column; flex: 1; }
+
+        /* Glassmorphism Nav */
+        .glass-nav {
+            background: rgba(248, 250, 252, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(226, 232, 240, 0.8);
+        }
+        .dark .glass-nav {
+            background: rgba(15, 23, 42, 0.75);
+            border-top: 1px solid rgba(51, 65, 85, 0.5);
+        }
+
+        /* Componentes de UI */
+        .card {
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        .dark .card {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+        }
+
+        .bottom-sheet {
+            transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+        }
+        .bottom-sheet.hidden-sheet {
+            transform: translateY(100%);
+        }
+
+        /* Adaptabilidad dentro de iframes (previsualizador de la plataforma) */
+        .in-iframe body {
+            background-color: transparent !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            height: 100vh !important;
+            min-height: 100vh !important;
+            display: block !important;
+        }
+        .in-iframe .phone-frame {
+            width: 100% !important;
+            max-width: 100% !important;
+            height: 100vh !important;
+            max-height: 100vh !important;
+            border: none !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+        }
     </style>
 </head>
-<body class="bg-[#0b0f19] flex justify-center text-white">
+<body>
 
-    <!-- Mobile Device Frame -->
-    <div class="relative w-full max-w-md h-screen bg-[#0F172A] shadow-2xl flex flex-col overflow-hidden border-x border-[#334155]">
-        
-        <!-- Header -->
-        <header class="px-5 pt-5 pb-3 bg-[#0F172A] z-20 flex items-center justify-between">
-            <div>
-                <span class="text-xs text-slate-400 font-medium">Buenos días</span>
-                <h2 class="text-xl font-bold text-white mt-0.5">Carlos Méndez</h2>
+    <div class="phone-frame">
+        <!-- Status Bar Falso -->
+        <div class="flex justify-between items-center px-8 pt-3 pb-1 text-sm font-semibold z-50 text-slate-900 dark:text-white">
+            <span>9:41</span>
+            <div class="flex items-center gap-1">
+                <i data-lucide="signal" class="w-4 h-4"></i>
+                <i data-lucide="wifi" class="w-4 h-4"></i>
+                <i data-lucide="battery-full" class="w-6 h-6"></i>
             </div>
-            <div class="w-11 h-11 bg-[#1E293B] rounded-full flex items-center justify-center border border-[#334155] cursor-pointer hover:border-blue-400 transition-colors">
-                <span class="text-sm font-bold text-white">CM</span>
-            </div>
-        </header>
+        </div>
 
-        <!-- Main Content Area -->
-        <main class="flex-1 overflow-y-auto pb-20 px-5 no-scrollbar space-y-6">
-            
-            <!-- Hero Card: Portfolio Value -->
-            <div class="bg-[#1E293B] rounded-3xl p-5 border border-[#334155] shadow-md">
-                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Valor total del portafolio</span>
-                <h1 class="text-3xl font-extrabold text-white mt-1.5 tracking-tight">$154,320.50</h1>
-                
-                <div class="flex items-center gap-1.5 mt-1">
-                    <span class="text-sm font-bold text-[#10B981]">+$1,240.00 (+0.81%)</span>
-                    <span class="text-xs text-slate-400 font-semibold">Hoy</span>
+        <!-- ========================================== -->
+        <!-- PANTALLA 1: INICIO (DASHBOARD)             -->
+        <!-- ========================================== -->
+        <div id="screen-home" class="screen active flex-1 overflow-y-auto content-scroll pb-24">
+            <!-- Header -->
+            <header class="flex justify-between items-center px-6 pt-4 pb-2 stagger-1">
+                <div>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Buenos días</p>
+                    <h1 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Carlos Méndez</h1>
                 </div>
+                <div class="flex items-center gap-3">
+                    <!-- Theme Toggle -->
+                    <button onclick="toggleTheme()" class="p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white">
+                        <i data-lucide="moon" class="w-5 h-5 dark:hidden"></i>
+                        <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i>
+                    </button>
+                    <div class="w-11 h-11 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center border border-slate-300 dark:border-slate-600">
+                        <span class="font-bold text-slate-600 dark:text-slate-300">CM</span>
+                    </div>
+                </div>
+            </header>
 
-                <!-- Interactive SVG Chart -->
-                <div class="h-44 mt-6 flex items-center justify-center relative">
-                    <!-- Dynamic chart rendering based on Alpines selected range -->
-                    <svg viewBox="0 0 340 160" class="w-full h-full">
-                        <defs>
-                            <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stop-color="#3B82F6" stop-opacity="0.35" />
-                                <stop offset="100%" stop-color="#3B82F6" stop-opacity="0.0" />
-                            </linearGradient>
-                        </defs>
-                        <!-- Area Fill -->
-                        <path :d="getCurrentChartArea()" fill="url(#chartGrad)" class="transition-all duration-500 ease-in-out" />
-                        <!-- Line -->
-                        <path :d="getCurrentChartLine()" fill="none" stroke="#3B82F6" stroke-width="3" stroke-linecap="round" class="transition-all duration-500 ease-in-out" />
+            <!-- Hero Balance Card -->
+            <section class="px-6 mt-4 stagger-2">
+                <div class="card rounded-3xl p-6">
+                    <p class="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">Valor total del portafolio</p>
+                    <h2 class="text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-2">$154,320.50</h2>
+                    <div class="flex items-center gap-2 mb-6">
+                        <div class="flex items-center gap-1 bg-emerald-500/15 px-2 py-1 rounded-lg">
+                            <i data-lucide="trending-up" class="w-4 h-4 text-emerald-500"></i>
+                            <span class="text-emerald-500 text-sm font-bold">+0.81%</span>
+                        </div>
+                        <span class="text-slate-500 dark:text-slate-400 text-sm">+$1,240.00 hoy</span>
+                    </div>
+
+                    <!-- Gráfico SVG Premium -->
+                    <div class="relative h-40 w-full mb-4">
+                        <svg viewBox="0 0 300 100" preserveAspectRatio="none" class="w-full h-full overflow-visible">
+                            <defs>
+                                <linearGradient id="grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:0.4" />
+                                    <stop offset="100%" style="stop-color:#3B82F6;stop-opacity:0" />
+                                </linearGradient>
+                            </defs>
+                            <path d="M0,80 C30,70 50,85 80,60 C110,35 140,50 170,40 C200,30 230,10 300,20 L300,100 L0,100 Z" fill="url(#grad)" />
+                            <path d="M0,80 C30,70 50,85 80,60 C110,35 140,50 170,40 C200,30 230,10 300,20" fill="none" stroke="#3B82F6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                            <circle cx="300" cy="20" r="4" fill="#3B82F6" />
+                            <circle cx="300" cy="20" r="8" fill="#3B82F6" opacity="0.3" />
+                        </svg>
+                    </div>
+
+                    <!-- Time Toggles -->
+                    <div class="flex justify-between bg-slate-100 dark:bg-slate-900/50 rounded-xl p-1">
+                        <button class="flex-1 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">1D</button>
+                        <button class="flex-1 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">7D</button>
+                        <button class="flex-1 py-2 text-xs font-bold text-white bg-blue-600 rounded-lg shadow-lg transition-transform active:scale-95">1M</button>
+                        <button class="flex-1 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">3M</button>
+                        <button class="flex-1 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">1A</button>
+                        <button class="flex-1 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">MAX</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Quick Actions -->
+            <section class="px-6 mt-6 grid grid-cols-4 gap-4 stagger-3">
+                <button class="flex flex-col items-center gap-2 active:scale-95 transition-transform">
+                    <div class="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center border border-slate-200 dark:border-slate-700">
+                        <i data-lucide="arrow-down-left" class="w-5 h-5 text-blue-600 dark:text-blue-400"></i>
+                    </div>
+                    <span class="text-xs text-slate-700 dark:text-slate-300 font-medium">Depositar</span>
+                </button>
+                <button class="flex flex-col items-center gap-2 active:scale-95 transition-transform">
+                    <div class="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center border border-slate-200 dark:border-slate-700">
+                        <i data-lucide="arrow-up-right" class="w-5 h-5 text-slate-600 dark:text-slate-300"></i>
+                    </div>
+                    <span class="text-xs text-slate-700 dark:text-slate-300 font-medium">Retirar</span>
+                </button>
+                <button class="flex flex-col items-center gap-2 active:scale-95 transition-transform">
+                    <div class="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center border border-slate-200 dark:border-slate-700">
+                        <i data-lucide="swap" class="w-5 h-5 text-slate-600 dark:text-slate-300"></i>
+                    </div>
+                    <span class="text-xs text-slate-700 dark:text-slate-300 font-medium">Transferir</span>
+                </button>
+                <button class="flex flex-col items-center gap-2 active:scale-95 transition-transform">
+                    <div class="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center border border-slate-200 dark:border-slate-700">
+                        <i data-lucide="scan-line" class="w-5 h-5 text-slate-600 dark:text-slate-300"></i>
+                    </div>
+                    <span class="text-xs text-slate-700 dark:text-slate-300 font-medium">Escanear</span>
+                </button>
+            </section>
+
+            <!-- Portfolio Allocation (Donut Chart) -->
+            <section class="px-6 mt-8 stagger-4">
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-3">Distribución</h3>
+                <div class="card rounded-2xl p-5 flex items-center gap-6">
+                    <div class="relative w-24 h-24 flex-shrink-0">
+                        <svg viewBox="0 0 36 36" class="w-full h-full transform -rotate-90">
+                            <circle cx="18" cy="18" r="15.91549" fill="none" stroke="#E2E8F0" stroke-width="4" class="dark:stroke-slate-700"></circle>
+                            <circle cx="18" cy="18" r="15.91549" fill="none" stroke="#3B82F6" stroke-width="4" stroke-dasharray="60 40" stroke-dashoffset="0" stroke-linecap="round"></circle>
+                            <circle cx="18" cy="18" r="15.91549" fill="none" stroke="#10B981" stroke-width="4" stroke-dasharray="30 70" stroke-dashoffset="-60" stroke-linecap="round"></circle>
+                            <circle cx="18" cy="18" r="15.91549" fill="none" stroke="#F43F5E" stroke-width="4" stroke-dasharray="10 90" stroke-dashoffset="-90" stroke-linecap="round"></circle>
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center flex-col">
+                            <span class="text-xs text-slate-500 dark:text-slate-400">Total</span>
+                            <span class="text-sm font-bold text-slate-900 dark:text-white">$154K</span>
+                        </div>
+                    </div>
+                    <div class="flex-1 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-blue-600"></div><span class="text-sm text-slate-600 dark:text-slate-300">Acciones</span></div>
+                            <span class="text-sm font-bold text-slate-900 dark:text-white">60%</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-emerald-500"></div><span class="text-sm text-slate-600 dark:text-slate-300">ETFs</span></div>
+                            <span class="text-sm font-bold text-slate-900 dark:text-white">30%</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-rose-500"></div><span class="text-sm text-slate-600 dark:text-slate-300">Efectivo</span></div>
+                            <span class="text-sm font-bold text-slate-900 dark:text-white">10%</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Market Indices -->
+            <section class="mt-8 stagger-4">
+                <div class="flex justify-between items-center px-6 mb-3">
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Mercados Hoy</h3>
+                    <button class="text-blue-600 dark:text-blue-400 text-sm font-semibold">Ver todo</button>
+                </div>
+                <div class="flex gap-3 overflow-x-auto content-scroll px-6 pb-2">
+                    <div class="min-w-[160px] card p-4 rounded-2xl">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">S&P 500</span>
+                            <span class="text-xs font-bold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded">+0.54%</span>
+                        </div>
+                        <h4 class="text-xl font-bold text-slate-900 dark:text-white mb-2">5,150.42</h4>
+                        <svg viewBox="0 0 100 30" class="w-full h-8"><path d="M0,20 Q25,25 50,15 T100,5" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" /></svg>
+                    </div>
+                    <div class="min-w-[160px] card p-4 rounded-2xl">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">Nasdaq</span>
+                            <span class="text-xs font-bold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded">+0.72%</span>
+                        </div>
+                        <h4 class="text-xl font-bold text-slate-900 dark:text-white mb-2">16,103.1</h4>
+                        <svg viewBox="0 0 100 30" class="w-full h-8"><path d="M0,25 Q20,20 40,22 T100,2" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" /></svg>
+                    </div>
+                    <div class="min-w-[160px] card p-4 rounded-2xl">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">Merval</span>
+                            <span class="text-xs font-bold text-rose-600 bg-rose-500/10 px-2 py-0.5 rounded">-0.23%</span>
+                        </div>
+                        <h4 class="text-xl font-bold text-slate-900 dark:text-white mb-2">1,432K</h4>
+                        <svg viewBox="0 0 100 30" class="w-full h-8"><path d="M0,5 Q30,15 50,10 T100,25" fill="none" stroke="#F43F5E" stroke-width="2" stroke-linecap="round" /></svg>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- PANTALLA 2: EXPLORAR (MERCADO)             -->
+        <!-- ========================================== -->
+        <div id="screen-explore" class="screen flex-1 overflow-y-auto content-scroll pb-24">
+            <header class="px-6 pt-4 pb-4 stagger-1">
+                <h1 class="text-3xl font-bold text-slate-900 dark:text-white tracking-tight mb-4">Explorar</h1>
+                <div class="relative">
+                    <i data-lucide="search" class="w-5 h-5 absolute left-4 top-3.5 text-slate-400"></i>
+                    <input type="text" placeholder="Buscar acciones, ETFs, fondos..." class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl py-3 pl-12 pr-4 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </header>
+
+            <!-- Tabs de Categoría -->
+            <div class="flex gap-2 px-6 mb-4 overflow-x-auto content-scroll">
+                <button class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-full whitespace-nowrap">Todo</button>
+                <button class="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-medium rounded-full whitespace-nowrap">Acciones</button>
+                <button class="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-medium rounded-full whitespace-nowrap">ETFs</button>
+                <button class="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-medium rounded-full whitespace-nowrap">Fondos</button>
+                <button class="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-medium rounded-full whitespace-nowrap">Índices</button>
+            </div>
+
+            <!-- Lista de Activos -->
+            <div class="px-6 space-y-2 stagger-2">
+                <div onclick="openAssetDetail('Apple Inc.', 'AAPL', '$172.40', '+1.20%', true)" class="flex items-center justify-between p-3 card rounded-2xl active:scale-98 transition-transform cursor-pointer">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center font-bold text-slate-700 dark:text-white text-sm">A</div>
+                        <div>
+                            <h4 class="font-bold text-slate-900 dark:text-white text-sm">Apple Inc.</h4>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">NASDAQ: AAPL</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <svg viewBox="0 0 50 20" class="w-12 h-5"><path d="M0,15 Q10,5 25,10 T50,2" fill="none" stroke="#10B981" stroke-width="1.5" /></svg>
+                        <div class="text-right">
+                            <p class="font-bold text-slate-900 dark:text-white text-sm">$172.40</p>
+                            <p class="text-xs font-bold text-emerald-500">+1.20%</p>
+                        </div>
+                    </div>
+                </div>
+                <div onclick="openAssetDetail('Microsoft', 'MSFT', '$408.59', '+0.80%', true)" class="flex items-center justify-between p-3 card rounded-2xl active:scale-98 transition-transform cursor-pointer">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center font-bold text-slate-700 dark:text-white text-sm">M</div>
+                        <div>
+                            <h4 class="font-bold text-slate-900 dark:text-white text-sm">Microsoft Corp.</h4>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">NASDAQ: MSFT</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <svg viewBox="0 0 50 20" class="w-12 h-5"><path d="M0,10 Q15,15 25,8 T50,5" fill="none" stroke="#10B981" stroke-width="1.5" /></svg>
+                        <div class="text-right">
+                            <p class="font-bold text-slate-900 dark:text-white text-sm">$408.59</p>
+                            <p class="text-xs font-bold text-emerald-500">+0.80%</p>
+                        </div>
+                    </div>
+                </div>
+                <div onclick="openAssetDetail('Tesla', 'TSLA', '$178.22', '-1.50%', false)" class="flex items-center justify-between p-3 card rounded-2xl active:scale-98 transition-transform cursor-pointer">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center font-bold text-slate-700 dark:text-white text-sm">T</div>
+                        <div>
+                            <h4 class="font-bold text-slate-900 dark:text-white text-sm">Tesla Inc.</h4>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">NASDAQ: TSLA</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <svg viewBox="0 0 50 20" class="w-12 h-5"><path d="M0,5 Q10,15 25,12 T50,18" fill="none" stroke="#F43F5E" stroke-width="1.5" /></svg>
+                        <div class="text-right">
+                            <p class="font-bold text-slate-900 dark:text-white text-sm">$178.22</p>
+                            <p class="text-xs font-bold text-rose-500">-1.50%</p>
+                        </div>
+                    </div>
+                </div>
+                <div onclick="openAssetDetail('S&P 500 ETF', 'VOO', '$465.80', '+0.40%', true)" class="flex items-center justify-between p-3 card rounded-2xl active:scale-98 transition-transform cursor-pointer">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center font-bold text-slate-700 dark:text-white text-sm">V</div>
+                        <div>
+                            <h4 class="font-bold text-slate-900 dark:text-white text-sm">S&P 500 ETF</h4>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">NYSE: VOO</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <svg viewBox="0 0 50 20" class="w-12 h-5"><path d="M0,15 Q20,10 30,8 T50,4" fill="none" stroke="#10B981" stroke-width="1.5" /></svg>
+                        <div class="text-right">
+                            <p class="font-bold text-slate-900 dark:text-white text-sm">$465.80</p>
+                            <p class="text-xs font-bold text-emerald-500">+0.40%</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- PANTALLA 3: DETALLE DE ACTIVO (INVERTIR)   -->
+        <!-- ========================================== -->
+        <div id="screen-detail" class="screen flex-1 overflow-y-auto content-scroll pb-24">
+            <header class="flex items-center justify-between px-6 pt-4 pb-2">
+                <button onclick="changeScreen('explore')" class="p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </button>
+                <div class="text-center">
+                    <h2 id="detail-name" class="font-bold text-slate-900 dark:text-white">Apple Inc.</h2>
+                    <p id="detail-ticker" class="text-xs text-slate-500 dark:text-slate-400">NASDAQ: AAPL</p>
+                </div>
+                <button class="p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white">
+                    <i data-lucide="star" class="w-5 h-5"></i>
+                </button>
+            </header>
+
+            <section class="px-6 mt-4">
+                <div class="flex items-end gap-2 mb-1">
+                    <h2 id="detail-price" class="text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">$172.40</h2>
+                    <span id="detail-change" class="text-lg font-bold text-emerald-500 mb-1">+1.20%</span>
+                </div>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">Cierre anterior: $170.35</p>
+
+                <!-- Gráfico de Velas Japonesas (Simulado) -->
+                <div class="relative h-48 w-full mb-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-2">
+                    <svg viewBox="0 0 300 150" class="w-full h-full overflow-visible">
+                        <line x1="0" y1="30" x2="300" y2="30" stroke="#E2E8F0" stroke-width="1" stroke-dasharray="4" class="dark:stroke-slate-700"></line>
+                        <line x1="0" y1="75" x2="300" y2="75" stroke="#E2E8F0" stroke-width="1" stroke-dasharray="4" class="dark:stroke-slate-700"></line>
+                        <line x1="0" y1="120" x2="300" y2="120" stroke="#E2E8F0" stroke-width="1" stroke-dasharray="4" class="dark:stroke-slate-700"></line>
+                        
+                        <g stroke="#10B981" fill="#10B981">
+                            <line x1="20" y1="90" x2="20" y2="110" stroke-width="2" /><rect x="15" y="95" width="10" height="10" />
+                            <line x1="50" y1="80" x2="50" y2="105" stroke-width="2" /><rect x="45" y="85" width="10" height="15" />
+                            <line x1="80" y1="70" x2="80" y2="95" stroke-width="2" /><rect x="75" y="75" width="10" height="15" />
+                            <line x1="140" y1="50" x2="140" y2="80" stroke-width="2" /><rect x="135" y="55" width="10" height="20" />
+                            <line x1="170" y1="40" x2="170" y2="65" stroke-width="2" /><rect x="165" y="45" width="10" height="15" />
+                            <line x1="200" y1="30" x2="200" y2="55" stroke-width="2" /><rect x="195" y="35" width="10" height="15" />
+                            <line x1="260" y1="20" x2="260" y2="45" stroke-width="2" /><rect x="255" y="25" width="10" height="15" />
+                        </g>
+                        <g stroke="#F43F5E" fill="#F43F5E">
+                            <line x1="110" y1="60" x2="110" y2="90" stroke-width="2" /><rect x="105" y="65" width="10" height="20" />
+                            <line x1="230" y1="25" x2="230" y2="50" stroke-width="2" /><rect x="225" y="30" width="10" height="15" />
+                        </g>
                     </svg>
                 </div>
 
-                <!-- Time range toggles -->
-                <div class="flex justify-between mt-5 bg-[#0F172A] rounded-xl p-1">
-                    <template x-for="range in ranges" :key="range">
-                        <button 
-                            @click="activeRange = range" 
-                            :class="activeRange === range ? 'bg-[#1E293B] text-white shadow' : 'text-slate-400 hover:text-white'"
-                            class="flex-1 text-center py-2 rounded-lg text-xs font-bold transition-all"
-                            x-text="range"
-                        ></button>
-                    </template>
+                <!-- Time Toggles -->
+                <div class="flex justify-between bg-slate-100 dark:bg-slate-800 rounded-xl p-1 mb-6">
+                    <button class="flex-1 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 rounded-lg">1D</button>
+                    <button class="flex-1 py-2 text-xs font-bold text-white bg-blue-600 rounded-lg">1S</button>
+                    <button class="flex-1 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 rounded-lg">1M</button>
+                    <button class="flex-1 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 rounded-lg">3M</button>
+                    <button class="flex-1 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 rounded-lg">1A</button>
+                    <button class="flex-1 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 rounded-lg">MAX</button>
                 </div>
-            </div>
 
-            <!-- Market Indices -->
-            <div class="space-y-3">
-                <h3 class="text-base font-bold text-white">Índices del Mercado</h3>
-                <div class="flex gap-3 overflow-x-auto no-scrollbar pb-1">
-                    <template x-for="idx in indices" :key="idx.name">
-                        <div class="bg-[#1E293B] border border-[#334155] rounded-2xl p-4 min-w-[130px] flex flex-col justify-between shadow-sm">
-                            <div>
-                                <span class="text-xs font-semibold text-slate-400" x-text="idx.name"></span>
-                                <h4 class="text-base font-extrabold mt-1 text-white" x-text="idx.value"></h4>
-                            </div>
-                            <span 
-                                :class="idx.isPositive ? 'text-[#10B981]' : 'text-[#F43F5E]'" 
-                                class="text-[10px] font-bold mt-2" 
-                                x-text="idx.change"
-                            ></span>
-                        </div>
-                    </template>
+                <!-- Fundamentales -->
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-3">Fundamentales</h3>
+                <div class="grid grid-cols-2 gap-3 mb-6">
+                    <div class="card p-4 rounded-2xl">
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mb-1">Cap. de Mercado</p>
+                        <p class="text-base font-bold text-slate-900 dark:text-white">2.68T</p>
+                    </div>
+                    <div class="card p-4 rounded-2xl">
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mb-1">Ratio P/E</p>
+                        <p class="text-base font-bold text-slate-900 dark:text-white">28.45</p>
+                    </div>
+                    <div class="card p-4 rounded-2xl">
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mb-1">Dividendo</p>
+                        <p class="text-base font-bold text-slate-900 dark:text-white">0.52%</p>
+                    </div>
+                    <div class="card p-4 rounded-2xl">
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mb-1">Volumen</p>
+                        <p class="text-base font-bold text-slate-900 dark:text-white">54.2M</p>
+                    </div>
                 </div>
-            </div>
+            </section>
+        </div>
 
-            <!-- Opportunities list -->
-            <div class="space-y-3">
-                <h3 class="text-base font-bold text-white">Oportunidades Destacadas</h3>
-                <div class="bg-[#1E293B] border border-[#334155] rounded-2xl p-2 divide-y divide-[#334155]/40 shadow-sm">
-                    <template x-for="opp in opportunities" :key="opp.ticker">
-                        <div class="flex items-center justify-between p-3 cursor-pointer hover:bg-slate-800/40 rounded-xl transition-all">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                                    <span class="text-[#3B82F6] font-bold text-base" x-text="opp.ticker[0]"></span>
-                                </div>
-                                <div>
-                                    <h4 class="text-sm font-bold text-white" x-text="opp.name"></h4>
-                                    <span class="text-xs text-slate-400" x-text="opp.ticker"></span>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <span class="text-sm font-bold text-white" x-text="opp.price"></span>
-                                <p :class="opp.isPositive ? 'text-[#10B981]' : 'text-[#F43F5E]'" class="text-xs font-bold" x-text="opp.change"></p>
-                            </div>
-                        </div>
-                    </template>
+        <!-- ========================================== -->
+        <!-- NAVEGACIÓN INFERIOR                         -->
+        <!-- ========================================== -->
+        <nav class="glass-nav absolute bottom-0 w-full px-6 py-3 flex justify-between items-center z-40">
+            <button onclick="changeScreen('home')" id="nav-home" class="flex flex-col items-center gap-1 w-16 transition-colors">
+                <i data-lucide="home" class="w-6 h-6 text-blue-600 dark:text-blue-400"></i>
+                <span class="text-[10px] font-bold text-blue-600 dark:text-blue-400">Inicio</span>
+            </button>
+            <button onclick="changeScreen('explore')" id="nav-explore" class="flex flex-col items-center gap-1 w-16 transition-colors">
+                <i data-lucide="compass" class="w-6 h-6 text-slate-400"></i>
+                <span class="text-[10px] font-medium text-slate-400">Explorar</span>
+            </button>
+            <button id="nav-portfolio" class="flex flex-col items-center gap-1 w-16 transition-colors">
+                <i data-lucide="briefcase" class="w-6 h-6 text-slate-400"></i>
+                <span class="text-[10px] font-medium text-slate-400">Portafolio</span>
+            </button>
+            <button onclick="openBuySheet()" id="nav-invest" class="flex flex-col items-center gap-1 w-16 transition-colors">
+                <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center -mt-3 shadow-lg shadow-blue-600/30 active:scale-95 transition-transform">
+                    <i data-lucide="plus" class="w-6 h-6 text-white"></i>
                 </div>
-            </div>
-
-        </main>
-
-        <!-- Bottom Navigation Bar -->
-        <nav class="absolute bottom-0 left-0 right-0 bg-[#0F172A] border-t border-[#334155] flex justify-around items-center h-16 z-20">
-            <button class="flex flex-col items-center justify-center gap-0.5 w-full h-full text-[#3B82F6]">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>
-                <span class="text-[9px] font-semibold">Inicio</span>
             </button>
-            <button class="flex flex-col items-center justify-center gap-0.5 w-full h-full text-slate-400 hover:text-white">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
-                <span class="text-[9px] font-semibold">Mercado</span>
-            </button>
-            <button class="flex flex-col items-center justify-center gap-0.5 w-full h-full text-slate-400 hover:text-white">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6a7.5 7.5 0 107.5 7.5h-7.5V6z" /><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0013.5 3v7.5z" /></svg>
-                <span class="text-[9px] font-semibold">Portafolio</span>
-            </button>
-            <button class="flex flex-col items-center justify-center gap-0.5 w-full h-full text-slate-400 hover:text-white">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v12m-3-3l3 3m0 0l3-3m-3-12V3" /></svg>
-                <span class="text-[9px] font-semibold">Invertir</span>
-            </button>
-            <button class="flex flex-col items-center justify-center gap-0.5 w-full h-full text-slate-400 hover:text-white">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
-                <span class="text-[9px] font-semibold">Perfil</span>
+            <button id="nav-profile" class="flex flex-col items-center gap-1 w-16 transition-colors">
+                <i data-lucide="user" class="w-6 h-6 text-slate-400"></i>
+                <span class="text-[10px] font-medium text-slate-400">Perfil</span>
             </button>
         </nav>
+
+        <!-- ========================================== -->
+        <!-- MODAL: FLUJO DE COMPRA (BOTTOM SHEET)      -->
+        <!-- ========================================== -->
+        <div id="overlay" class="absolute inset-0 bg-black/50 z-50 hidden" onclick="closeBuySheet()"></div>
+        <div id="buy-sheet" class="bottom-sheet absolute bottom-0 w-full z-50 rounded-t-3xl bg-white dark:bg-slate-800 p-6 hidden-sheet max-h-[80%] overflow-y-auto content-scroll">
+            <div class="w-12 h-1 bg-slate-300 dark:bg-slate-600 rounded-full mx-auto mb-6"></div>
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-slate-900 dark:text-white">Comprar AAPL</h3>
+                <button onclick="closeBuySheet()" class="p-2 rounded-full bg-slate-100 dark:bg-slate-700"><i data-lucide="x" class="w-5 h-5 text-slate-900 dark:text-white"></i></button>
+            </div>
+
+            <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">Cantidad a invertir</p>
+            <div class="relative mb-4">
+                <span class="absolute left-4 top-3.5 text-2xl font-bold text-slate-400">$</span>
+                <input type="number" value="1000" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl py-3 pl-10 pr-4 text-2xl font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <div class="flex gap-2 mb-6">
+                <button class="flex-1 py-2 bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-white text-sm font-semibold rounded-xl">$100</button>
+                <button class="flex-1 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl">$1,000</button>
+                <button class="flex-1 py-2 bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-white text-sm font-semibold rounded-xl">$5,000</button>
+                <button class="flex-1 py-2 bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-white text-sm font-semibold rounded-xl">Max</button>
+            </div>
+
+            <div class="space-y-2 mb-6 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl">
+                <div class="flex justify-between text-sm">
+                    <span class="text-slate-500 dark:text-slate-400">Precio estimado</span>
+                    <span class="font-semibold text-slate-900 dark:text-white">$172.40</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-slate-500 dark:text-slate-400">Acciones a recibir</span>
+                    <span class="font-semibold text-slate-900 dark:text-white">5.794</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-slate-500 dark:text-slate-400">Comisión</span>
+                    <span class="font-semibold text-emerald-500">$0.00</span>
+                </div>
+            </div>
+
+            <button onclick="confirmPurchase()" class="w-full py-4 bg-blue-600 text-white font-bold rounded-2xl shadow-lg shadow-blue-600/30 active:scale-98 transition-transform flex items-center justify-center gap-2">
+                <i data-lucide="check-circle" class="w-5 h-5"></i>
+                Confirmar Compra
+            </button>
+        </div>
+
+        <!-- Modal de Éxito -->
+        <div id="success-modal" class="absolute inset-0 z-[60] bg-black/70 hidden flex items-center justify-center">
+            <div class="bg-white dark:bg-slate-800 w-3/4 p-8 rounded-3xl flex flex-col items-center gap-4" style="animation: scaleIn 0.3s ease-out;">
+                <div class="w-16 h-16 rounded-full bg-emerald-500 flex items-center justify-center">
+                    <i data-lucide="check" class="w-10 h-10 text-white" stroke-width="3"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-900 dark:text-white text-center">¡Compra Exitosa!</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400 text-center">Has añadido 5.79 acciones de AAPL a tu portafolio.</p>
+                <button onclick="closeSuccess()" class="mt-4 px-8 py-3 bg-blue-600 text-white font-semibold rounded-xl">Listo</button>
+            </div>
+        </div>
+
     </div>
 
     <script>
-        function clarityApp() {
-            return {
-                activeRange: '1M',
-                ranges: ['1D', '7D', '1M', '3M', '1A', 'MAX'],
-                indices: [
-                    { name: 'S&P 500', value: '5,150.42', change: '+0.54%', isPositive: true },
-                    { name: 'Nasdaq', value: '16,103.01', change: '+0.72%', isPositive: true },
-                    { name: 'Merval', value: '1,432,105.20', change: '-0.23%', isPositive: false }
-                ],
-                opportunities: [
-                    { ticker: 'AAPL', name: 'Apple Inc.', price: '$172.40', change: '+1.2%', isPositive: true },
-                    { ticker: 'MSFT', name: 'Microsoft Corp.', price: '$408.59', change: '+0.8%', isPositive: true },
-                    { ticker: 'VOO', name: 'S&P 500 ETF', price: '$465.80', change: '+0.4%', isPositive: true }
-                ],
-                charts: {
-                    '1D': {
-                        line: 'M0,130 C40,110 80,120 120,95 C160,80 200,90 240,65 C280,60 320,55 360,50',
-                        area: 'M0,130 C40,110 80,120 120,95 C160,80 200,90 240,65 C280,60 320,55 360,50 L360,160 L0,160 Z'
-                    },
-                    '7D': {
-                        line: 'M0,140 C40,130 80,110 120,115 C160,90 200,100 240,75 C280,50 320,70 360,60',
-                        area: 'M0,140 C40,130 80,110 120,115 C160,90 200,100 240,75 C280,50 320,70 360,60 L360,160 L0,160 Z'
-                    },
-                    '1M': {
-                        line: 'M0,150 C40,120 80,140 120,100 C160,60 200,90 240,70 C280,50 320,80 360,40',
-                        area: 'M0,150 C40,120 80,140 120,100 C160,60 200,90 240,70 C280,50 320,80 360,40 L360,160 L0,160 Z'
-                    },
-                    '3M': {
-                        line: 'M0,120 C40,130 80,100 120,90 C160,105 200,60 240,50 C280,30 320,40 360,30',
-                        area: 'M0,120 C40,130 80,100 120,90 C160,105 200,60 240,50 C280,30 320,40 360,30 L360,160 L0,160 Z'
-                    },
                     '1A': {
                         line: 'M0,100 C40,110 80,90 120,75 C160,60 200,45 240,50 C280,35 320,25 360,20',
                         area: 'M0,100 C40,110 80,90 120,75 C160,60 200,45 240,50 C280,35 320,25 360,20 L360,160 L0,160 Z'

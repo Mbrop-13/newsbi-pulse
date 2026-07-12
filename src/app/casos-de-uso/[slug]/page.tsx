@@ -4081,261 +4081,420 @@ Soporte completo para arrastrar y soltar en desktop.
 
 Ambiente general: Íntimo, cálido, seguro y profundo.Debe sentirse como un espacio privado premium tanto en el celular como en la computadora.`,
     demoCode: `<!DOCTYPE html>
-        <html lang="es">
-            <head>
-                <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                        <title>Circle - Espacio Íntimo</title>
-                        <script src="https://cdn.tailwindcss.com"></script>
-                        <link rel="preconnect" href="https://fonts.googleapis.com">
-                            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-                                <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
-                                    <style>
-                                        body {font - family: 'DM Sans', sans-serif; }
-                                        .warm-bg {background - color: #1C1B1A; }
-                                        .warm-surface {background - color: #252422; }
-                                        .warm-border {border - color: #323130; }
-                                        .sage-text {color: #A3B18A; }
-                                        .sage-bg {background - color: #A3B18A; }
-                                        .sage-bg-soft {background - color: rgba(163, 177, 138, 0.1); }
-                                        .warm-hover:hover {background - color: #2D2C2A; }
-                                        .custom-scroll::-webkit-scrollbar {width: 4px; }
-                                        .custom-scroll::-webkit-scrollbar-thumb {background: #323130; border-radius: 2px; }
-                                        .fade-in {animation: fadeIn 0.4s ease-out; }
-                                        @keyframes fadeIn {from {opacity: 0; transform: translateY(10px); } to {opacity: 1; transform: translateY(0); } }
-                                        .focus-mode {filter: blur(8px) brightness(0.5); pointer-events: none; transition: all 0.3s ease; }
-                                    </style>
-                                </head>
-                                <body class="warm-bg text-stone-200 antialiased">
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Circle - Intimate Spaces</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .font-serif { font-family: 'Fraunces', serif; }
+        
+        /* Paleta Espresso & Sage (Warm Dark Mode) */
+        .bg-espresso { background-color: #1A1917; }
+        .bg-surface { background-color: #24221F; }
+        .bg-surface-hover:hover { background-color: #2C2A26; }
+        .border-warm { border-color: #332F2A; }
+        .text-sage { color: #A3B18A; }
+        .bg-sage { background-color: #A3B18A; }
+        .bg-sage-soft { background-color: rgba(163, 177, 138, 0.15); }
+        .border-sage { border-color: rgba(163, 177, 138, 0.3); }
+        .glass-warm { background: rgba(26, 25, 23, 0.75); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+        
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-thumb { background: #332F2A; border-radius: 2px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .scale-in { animation: scaleIn 0.2s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+        @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 
-                                    <div class="flex h-screen overflow-hidden">
+        .focus-blur { filter: blur(12px) brightness(0.4); pointer-events: none; transition: all 0.4s ease; }
+        
+        /* Efecto de arrastrar y soltar (Desktop) */
+        .drop-zone { transition: all 0.3s ease; border: 2px dashed transparent; }
+        .drop-zone.active { border-color: #A3B18A; background-color: rgba(163, 177, 138, 0.05); transform: scale(1.02); }
+    </style>
+</head>
+<body class="bg-espresso text-stone-200 antialiased pb-24 lg:pb-0">
 
-                                        <!-- Columna 1: Círculos -->
-                                        <aside id="leftPanel" class="w-64 warm-surface warm-border-r border-r flex flex-col p-4 transition-all duration-300">
-                                            <div class="flex items-center gap-2 mb-8">
-                                                <div class="w-8 h-8 rounded-full sage-bg flex items-center justify-center text-stone-900 font-bold text-sm">C</div>
-                                                <span class="font-semibold text-lg tracking-tight">Circle</span>
-                                            </div>
+    <!-- Layout Principal -->
+    <div id="appLayout" class="flex h-screen overflow-hidden">
 
-                                            <button class="w-full flex items-center justify-center gap-2 sage-bg-soft sage-text py-2.5 rounded-xl text-sm font-medium mb-6 hover:bg-opacity-20 transition-colors">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                                                Nuevo Círculo
-                                            </button>
+        <!-- ======================================= -->
+        <!-- COLUMNA 1: Lista de Círculos (Desktop)  -->
+        <!-- ======================================= -->
+        <aside class="w-64 bg-surface border-r border-warm flex-col p-4 hidden lg:flex transition-all duration-300">
+            <div class="flex items-center gap-2 mb-8 px-2">
+                <div class="w-9 h-9 rounded-full bg-sage flex items-center justify-center text-stone-900 font-bold text-lg font-serif">C</div>
+                <span class="font-bold text-lg tracking-tight font-serif">Circle</span>
+            </div>
+            
+            <button class="w-full flex items-center justify-center gap-2 bg-sage-soft text-sage py-2.5 rounded-xl text-sm font-medium mb-6 hover:bg-opacity-20 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                Nuevo Círculo
+            </button>
 
-                                            <p class="text-xs text-stone-500 uppercase tracking-wider px-2 mb-2">Tus Círculos</p>
-                                            <nav class="flex flex-col gap-1 flex-1">
-                                                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl warm-hover transition-colors">
-                                                    <div class="w-8 h-8 rounded-full bg-amber-700/30 flex items-center justify-center text-amber-500 text-xs font-bold">VC</div>
-                                                    <span class="text-sm text-stone-300">Viaje al Campo</span>
-                                                </a>
-                                                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-stone-800/50 transition-colors border border-stone-700/50">
-                                                    <div class="w-8 h-8 rounded-full bg-blue-900/30 flex items-center justify-center text-blue-400 text-xs font-bold">HF</div>
-                                                    <span class="text-sm font-medium text-stone-100">Familia</span>
-                                                    <span class="ml-auto w-2 h-2 rounded-full sage-bg"></span>
-                                                </a>
-                                                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl warm-hover transition-colors">
-                                                    <div class="w-8 h-8 rounded-full bg-purple-900/30 flex items-center justify-center text-purple-400 text-xs font-bold">EA</div>
-                                                    <span class="text-sm text-stone-300">Amigos Íntimos</span>
-                                                </a>
-                                            </nav>
+            <p class="text-xs text-stone-500 uppercase tracking-wider px-2 mb-2 font-medium">Tus Espacios</p>
+            <nav class="flex flex-col gap-1 flex-1 overflow-y-auto no-scrollbar">
+                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-surface-hover transition-colors">
+                    <div class="w-8 h-8 rounded-full bg-amber-700/30 flex items-center justify-center text-amber-500 text-xs font-bold">VC</div>
+                    <span class="text-sm text-stone-300">Viaje al Campo</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-stone-800/40 border border-warm transition-colors">
+                    <div class="w-8 h-8 rounded-full bg-blue-900/30 flex items-center justify-center text-blue-400 text-xs font-bold">HF</div>
+                    <span class="text-sm font-semibold text-stone-100">Familia</span>
+                    <span class="ml-auto w-2 h-2 rounded-full bg-sage"></span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-surface-hover transition-colors">
+                    <div class="w-8 h-8 rounded-full bg-purple-900/30 flex items-center justify-center text-purple-400 text-xs font-bold">EA</div>
+                    <span class="text-sm text-stone-300">Amigos Íntimos</span>
+                </a>
+            </nav>
 
-                                            <div class="border-t warm-border pt-4 mt-4 flex items-center gap-3">
-                                                <img src="https://i.pravatar.cc/40?img=5" class="w-9 h-9 rounded-full" alt="User">
-                                                    <div>
-                                                        <p class="text-sm font-medium text-stone-200">Elena</p>
-                                                        <p class="text-xs text-stone-500">🌿 Relajada</p>
-                                                    </div>
-                                            </div>
-                                        </aside>
+            <div class="border-t border-warm pt-4 mt-4 flex items-center gap-3">
+                <img src="https://i.pravatar.cc/40?img=5" class="w-9 h-9 rounded-full" alt="User">
+                <div>
+                    <p class="text-sm font-medium text-stone-200">Elena</p>
+                    <p class="text-xs text-stone-500 flex items-center gap-1"><span class="w-1.5 h-1.5 bg-sage rounded-full"></span> 🌿 Relajada</p>
+                </div>
+            </div>
+        </aside>
 
-                                        <!-- Columna 2: Espacio Activo (Chat/Feed) -->
-                                        <main class="flex-1 flex flex-col bg-stone-900/30 relative">
+        <!-- ======================================= -->
+        <!-- COLUMNA 2: Espacio Activo (Feed/Chat)   -->
+        <!-- ======================================= -->
+        <main class="flex-1 flex flex-col bg-espresso relative">
+            
+            <!-- Header Desktop -->
+            <header class="hidden lg:flex p-6 border-b border-warm items-center justify-between glass-warm z-10">
+                <div>
+                    <h2 class="font-serif text-2xl font-medium tracking-tight">Familia</h2>
+                    <p class="text-xs text-stone-500">4 miembros · 2 activos ahora</p>
+                </div>
+                <!-- Tabs Desktop -->
+                <div class="flex items-center gap-1 bg-surface p-1 rounded-xl border border-warm">
+                    <button onclick="switchTab('feed')" id="tab-feed" class="px-4 py-1.5 text-xs rounded-lg text-sage bg-sage-soft font-medium">Feed</button>
+                    <button onclick="switchTab('chat')" id="tab-chat" class="px-4 py-1.5 text-xs rounded-lg text-stone-400 hover:text-stone-100">Chat</button>
+                    <button onclick="switchTab('events')" id="tab-events" class="px-4 py-1.5 text-xs rounded-lg text-stone-400 hover:text-stone-100">Eventos</button>
+                </div>
+            </header>
 
-                                            <!-- Header del Espacio -->
-                                            <header class="p-4 border-b warm-border flex items-center justify-between bg-stone-900/50 backdrop-blur-sm z-10">
-                                                <div>
-                                                    <h2 class="font-semibold text-lg">Familia</h2>
-                                                    <p class="text-xs text-stone-500">4 miembros · 2 activos ahora</p>
-                                                </div>
-                                                <div class="flex items-center gap-2">
-                                                    <button class="px-3 py-1.5 text-xs rounded-lg bg-stone-800 text-stone-400 hover:text-stone-100 transition-colors">Feed</button>
-                                                    <button class="px-3 py-1.5 text-xs rounded-lg sage-bg-soft sage-text font-medium">Chat</button>
-                                                    <button class="px-3 py-1.5 text-xs rounded-lg bg-stone-800 text-stone-400 hover:text-stone-100 transition-colors">Galería</button>
-                                                </div>
-                                            </header>
+            <!-- Header Mobile -->
+            <header class="lg:hidden glass-warm border-b border-warm p-4 flex items-center justify-between sticky top-0 z-20">
+                <div class="flex items-center gap-2">
+                    <div class="w-9 h-9 rounded-full bg-blue-900/30 flex items-center justify-center text-blue-400 text-xs font-bold border border-sage">HF</div>
+                    <div>
+                        <h2 class="font-semibold text-sm leading-tight">Familia</h2>
+                        <p class="text-[10px] text-stone-500">2 activos ahora</p>
+                    </div>
+                </div>
+                <button onclick="toggleFocus()" class="p-2 text-stone-400 hover:text-stone-100">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </button>
+            </header>
 
-                                            <!-- Contenido del Chat -->
-                                            <div id="chatArea" class="flex-1 overflow-y-auto p-6 space-y-6 custom-scroll">
+            <!-- Vibes Row (Mobile & Desktop) -->
+            <div class="flex gap-4 overflow-x-auto no-scrollbar p-4 border-b border-warm bg-surface/30">
+                <div class="flex flex-col items-center gap-1 w-16 flex-shrink-0">
+                    <div class="w-14 h-14 rounded-full bg-surface border-2 border-dashed border-warm flex items-center justify-center text-stone-500 hover:border-sage hover:text-sage cursor-pointer transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                    </div>
+                    <span class="text-[10px] text-stone-500">Tu Vibe</span>
+                </div>
+                <div class="flex flex-col items-center gap-1 w-16 flex-shrink-0">
+                    <div class="w-14 h-14 rounded-full bg-sage-soft border-2 border-sage flex items-center justify-center text-xl">🌿</div>
+                    <span class="text-[10px] text-stone-300 truncate w-full text-center">Papá</span>
+                </div>
+                <div class="flex flex-col items-center gap-1 w-16 flex-shrink-0">
+                    <div class="w-14 h-14 rounded-full bg-amber-900/20 border-2 border-amber-700/30 flex items-center justify-center text-xl">☕</div>
+                    <span class="text-[10px] text-stone-300 truncate w-full text-center">Mamá</span>
+                </div>
+                <div class="flex flex-col items-center gap-1 w-16 flex-shrink-0">
+                    <div class="w-14 h-14 rounded-full bg-stone-800 border-2 border-warm flex items-center justify-center text-xl">📚</div>
+                    <span class="text-[10px] text-stone-300 truncate w-full text-center">Hermano</span>
+                </div>
+            </div>
 
-                                                <!-- Fecha separador -->
-                                                <div class="flex justify-center">
-                                                    <span class="text-xs text-stone-500 bg-stone-800/50 px-3 py-1 rounded-full">Hoy</span>
-                                                </div>
+            <!-- Contenido Dinámico (Feed/Chat) -->
+            <div id="contentArea" class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
+                
+                <!-- Vista: Feed -->
+                <div id="view-feed" class="max-w-2xl mx-auto space-y-6">
+                    <!-- Post 1: Foto Grande -->
+                    <div class="bg-surface border border-warm rounded-2xl overflow-hidden fade-in">
+                        <div class="flex items-center gap-3 p-4">
+                            <img src="https://i.pravatar.cc/40?img=12" class="w-8 h-8 rounded-full" alt="User">
+                            <div>
+                                <p class="text-sm font-semibold">Papá</p>
+                                <p class="text-xs text-stone-500">Hace 2 horas · 🌲 Excursión</p>
+                            </div>
+                        </div>
+                        <img src="https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" class="w-full h-64 object-cover" alt="Cabin">
+                        <div class="p-4">
+                            <p class="text-sm text-stone-300 mb-3">¡Encontré la cabaña! ¿Qué les parece para el fin de semana?</p>
+                            <div class="flex items-center gap-4 text-stone-400 text-xs">
+                                <button class="flex items-center gap-1.5 hover:text-sage transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg> 3</button>
+                                <button class="flex items-center gap-1.5 hover:text-sage transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg> 2</button>
+                            </div>
+                        </div>
+                    </div>
 
-                                                <!-- Mensaje Otro -->
-                                                <div class="flex gap-3 fade-in">
-                                                    <img src="https://i.pravatar.cc/40?img=12" class="w-8 h-8 rounded-full mt-1" alt="User">
-                                                        <div>
-                                                            <div class="flex items-baseline gap-2 mb-1">
-                                                                <span class="text-sm font-semibold">Papá</span>
-                                                                <span class="text-xs text-stone-500">10:30 AM</span>
-                                                            </div>
-                                                            <div class="max-w-md bg-stone-800 px-4 py-3 rounded-2xl rounded-tl-sm text-sm text-stone-200">
-                                                                ¿Qué planes tienen para el fin de semana? Encontré una cabaña hermosa cerca del lago. 🌲
-                                                            </div>
-                                                        </div>
-                                                </div>
+                    <!-- Post 2: Nota Larga (Serif) -->
+                    <div class="bg-surface border border-warm rounded-2xl p-6 fade-in">
+                        <div class="flex items-center gap-3 mb-4">
+                            <img src="https://i.pravatar.cc/40?img=23" class="w-8 h-8 rounded-full" alt="User">
+                            <div>
+                                <p class="text-sm font-semibold">Mamá</p>
+                                <p class="text-xs text-stone-500">Ayer · ✍️ Reflexión</p>
+                            </div>
+                        </div>
+                        <h3 class="font-serif text-xl mb-2 text-stone-100">Sobre nuestro tiempo juntos</h3>
+                        <p class="text-sm text-stone-400 leading-relaxed mb-4">Me alegra mucho ver cómo nos estamos organizando. Siento que últimamente estamos más conectados, a pesar de los horarios. Gracias por hacer el esfuerzo.</p>
+                        <div class="flex items-center gap-4 text-stone-400 text-xs">
+                            <button class="flex items-center gap-1.5 hover:text-sage transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg> 4</button>
+                        </div>
+                    </div>
+                </div>
 
-                                                <!-- Mensaje Propio -->
-                                                <div class="flex gap-3 justify-end fade-in">
-                                                    <div class="max-w-md">
-                                                        <div class="bg-stone-800 px-4 py-3 rounded-2xl rounded-tr-sm text-sm text-stone-200">
-                                                            ¡Suena increíble! Yo me encargo de la comida. ¿Les parece bien si llevamos a Luna (el perro)?
-                                                        </div>
-                                                        <div class="flex justify-end mt-1">
-                                                            <span class="text-xs text-stone-500">10:32 AM · Leído</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
+                <!-- Vista: Chat (Oculta por defecto) -->
+                <div id="view-chat" class="hidden max-w-2xl mx-auto space-y-6">
+                    <div class="flex gap-3 fade-in">
+                        <img src="https://i.pravatar.cc/40?img=12" class="w-8 h-8 rounded-full mt-1" alt="User">
+                        <div>
+                            <div class="bg-surface px-4 py-3 rounded-2xl rounded-tl-sm text-sm text-stone-200 max-w-md">
+                                ¿Qué planes tienen para el fin de semana?
+                            </div>
+                            <span class="text-[10px] text-stone-500 mt-1 ml-2 block">Papá · 10:30 AM</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-3 justify-end fade-in">
+                        <div class="max-w-md">
+                            <div class="bg-sage-soft border border-sage px-4 py-3 rounded-2xl rounded-tr-sm text-sm text-stone-100">
+                                ¡Yo me encargo de la comida!
+                            </div>
+                            <span class="text-[10px] text-stone-500 mt-1 mr-2 block text-right">10:32 AM · Leído</span>
+                        </div>
+                    </div>
+                </div>
 
-                                                <!-- Nota Compartida (Card Especial) -->
-                                                <div class="flex gap-3 fade-in">
-                                                    <div class="w-8 h-8 rounded-full bg-amber-900/30 flex items-center justify-center mt-1">
-                                                        <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
-                                                    </div>
-                                                    <div class="max-w-md w-full bg-stone-800/50 border warm-border rounded-2xl p-4">
-                                                        <p class="text-xs text-amber-500 font-medium uppercase tracking-wider mb-2">Nota Compartida</p>
-                                                        <h3 class="font-semibold text-stone-100 mb-2">Lista para la cabaña</h3>
-                                                        <ul class="text-sm text-stone-400 space-y-1">
-                                                            <li class="flex items-center gap-2"><input type="checkbox" checked class="rounded bg-stone-900 border-stone-600"> Comida para 3 días</li>
-                                                            <li class="flex items-center gap-2"><input type="checkbox" class="rounded bg-stone-900 border-stone-600"> Ropa de abrigo</li>
-                                                            <li class="flex items-center gap-2"><input type="checkbox" class="rounded bg-stone-900 border-stone-600"> Jabón para Luna</li>
-                                                        </ul>
-                                                    </div>
-                                                </div>
+            </div>
 
-                                            </div>
+            <!-- Drop Zone (Desktop) -->
+            <div id="dropZone" class="drop-zone absolute bottom-4 right-4 w-64 p-4 bg-surface/80 backdrop-blur-md border border-warm rounded-2xl hidden lg:flex flex-col items-center justify-center text-center cursor-pointer hover:bg-surface">
+                <svg class="w-8 h-8 text-stone-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                <p class="text-xs text-stone-400">Arrastra fotos aquí para compartirlas en el Feed</p>
+            </div>
+        </main>
 
-                                            <!-- Input del Chat -->
-                                            <div class="p-4 border-t warm-border">
-                                                <div class="flex items-center gap-2 bg-stone-800 rounded-2xl p-2">
-                                                    <button class="p-2 text-stone-500 hover:text-stone-200 transition-colors">
-                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                                    </button>
-                                                    <input type="text" placeholder="Escribe a tu familia..." class="flex-1 bg-transparent border-0 focus:ring-0 text-sm placeholder-stone-500">
-                                                        <button class="p-2 sage-text hover:bg-stone-700 rounded-xl transition-colors">
-                                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
-                                                        </button>
-                                                </div>
-                                            </div>
-                                        </main>
+        <!-- ======================================= -->
+        <!-- COLUMNA 3: Contexto (Solo Desktop)      -->
+        <!-- ======================================= -->
+        <aside class="w-80 bg-surface border-l border-warm flex-col p-6 hidden lg:flex overflow-y-auto">
+            
+            <button onclick="toggleFocus()" class="w-full flex items-center justify-center gap-2 bg-stone-800/50 text-stone-400 py-2.5 rounded-xl text-sm font-medium mb-6 hover:text-stone-100 transition-colors border border-warm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Activar Modo Focus
+            </button>
 
-                                        <!-- Columna 3: Contexto (Eventos, Notas, Focus) -->
-                                        <aside id="rightPanel" class="w-80 warm-surface warm-border-l border-l flex-col p-6 hidden lg:flex transition-all duration-300">
+            <!-- Eventos -->
+            <div class="mb-8">
+                <h3 class="text-xs text-stone-500 uppercase tracking-wider mb-3 font-medium">Próximos Planes</h3>
+                <div class="bg-espresso border border-warm rounded-2xl p-4 hover:border-sage transition-colors cursor-pointer">
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="font-serif text-lg text-stone-100">Cabaña del Lago</h4>
+                        <span class="text-[10px] text-sage bg-sage-soft px-2 py-0.5 rounded-full">Sábado</span>
+                    </div>
+                    <p class="text-xs text-stone-400 mb-4">20 May - 10:00 AM</p>
+                    <div class="flex items-center justify-between">
+                        <div class="flex -space-x-2">
+                            <img src="https://i.pravatar.cc/30?img=12" class="w-7 h-7 rounded-full border-2 border-espresso" alt="U1">
+                            <img src="https://i.pravatar.cc/30?img=5" class="w-7 h-7 rounded-full border-2 border-espresso" alt="U2">
+                            <div class="w-7 h-7 rounded-full border-2 border-espresso bg-stone-700 flex items-center justify-center text-[10px] text-stone-300">+2</div>
+                        </div>
+                        <button class="text-xs text-sage hover:underline">RSVP</button>
+                    </div>
+                </div>
+            </div>
 
-                                            <!-- Botón Modo Focus -->
-                                            <button id="focusBtn" class="w-full flex items-center justify-center gap-2 bg-stone-800 text-stone-400 py-2.5 rounded-xl text-sm font-medium mb-6 hover:text-stone-100 transition-colors">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                                Activar Modo Focus
-                                            </button>
+            <!-- Notas Compartidas -->
+            <div class="mb-8">
+                <h3 class="text-xs text-stone-500 uppercase tracking-wider mb-3 font-medium">Notas Compartidas</h3>
+                <div class="space-y-2">
+                    <div class="bg-espresso border border-warm rounded-xl p-3 flex items-center gap-3 hover:bg-surface-hover cursor-pointer">
+                        <svg class="w-5 h-5 text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                        <div>
+                            <p class="text-sm text-stone-200 font-medium">Lista para la cabaña</p>
+                            <p class="text-[10px] text-stone-500">Editada hace 5 min</p>
+                        </div>
+                    </div>
+                    <div class="bg-espresso border border-warm rounded-xl p-3 flex items-center gap-3 hover:bg-surface-hover cursor-pointer">
+                        <svg class="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                        <div>
+                            <p class="text-sm text-stone-200 font-medium">Presupuesto Vacaciones</p>
+                            <p class="text-[10px] text-stone-500">Editada ayer</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
 
-                                            <div class="mb-8">
-                                                <h3 class="text-xs text-stone-500 uppercase tracking-wider mb-3">Próximos Planes</h3>
-                                                <div class="bg-stone-900/50 border warm-border rounded-2xl p-4">
-                                                    <div class="flex justify-between items-start mb-2">
-                                                        <h4 class="font-semibold text-stone-100">Cabaña del Lago</h4>
-                                                        <span class="text-xs sage-text sage-bg-soft px-2 py-0.5 rounded-full">Confirmado</span>
-                                                    </div>
-                                                    <p class="text-xs text-stone-400 mb-3">Sábado 20 May - 10:00 AM</p>
-                                                    <div class="flex items-center justify-between">
-                                                        <div class="flex -space-x-2">
-                                                            <img src="https://i.pravatar.cc/30?img=12" class="w-7 h-7 rounded-full border-2 border-stone-900" alt="U1">
-                                                                <img src="https://i.pravatar.cc/30?img=5" class="w-7 h-7 rounded-full border-2 border-stone-900" alt="U2">
-                                                                    <img src="https://i.pravatar.cc/30?img=23" class="w-7 h-7 rounded-full border-2 border-stone-900" alt="U3">
-                                                                    </div>
-                                                                    <button class="text-xs text-stone-400 hover:text-stone-100">Detalles</button>
-                                                                </div>
-                                                        </div>
-                                                    </div>
+    <!-- ======================================= -->
+    <!-- BOTTOM NAV (Mobile)                      -->
+    <!-- ======================================= -->
+    <nav class="lg:hidden fixed bottom-0 left-0 right-0 z-30 px-4 pb-4 pt-2">
+        <div class="glass-warm border border-warm rounded-3xl shadow-2xl flex items-center justify-around relative h-16">
+            <!-- Inicio / Feed -->
+            <button onclick="switchTab('feed')" class="flex flex-col items-center justify-center w-16 h-14 text-sage scale-in">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+            </button>
+            <!-- Chat -->
+            <button onclick="switchTab('chat')" class="flex flex-col items-center justify-center w-16 h-14 text-stone-500 hover:text-stone-100 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+            </button>
+            
+            <!-- Botón Central Flotante -->
+            <div class="absolute -top-6 left-1/2 transform -translate-x-1/2">
+                <button onclick="toggleQuickActions()" id="quickBtn" class="w-16 h-16 bg-sage rounded-full flex items-center justify-center shadow-lg shadow-black/40 border-4 border-espresso active:scale-90 transition-transform">
+                    <svg id="quickIcon" class="w-7 h-7 text-stone-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                </button>
+            </div>
+            <div class="w-16"></div> <!-- Espaciador -->
+            
+            <!-- Eventos -->
+            <button class="flex flex-col items-center justify-center w-16 h-14 text-stone-500 hover:text-stone-100 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            </button>
+            <!-- Espacios -->
+            <button class="flex flex-col items-center justify-center w-16 h-14 text-stone-500 hover:text-stone-100 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+            </button>
+        </div>
+        
+        <!-- Quick Actions Expandidas (Mobile) -->
+        <div id="quickActions" class="hidden absolute bottom-24 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-3 fade-in">
+            <button class="flex items-center gap-2 bg-surface border border-warm px-4 py-2 rounded-full shadow-lg text-sm text-stone-200 hover:bg-surface-hover">
+                <span>📸</span> Foto
+            </button>
+            <button class="flex items-center gap-2 bg-surface border border-warm px-4 py-2 rounded-full shadow-lg text-sm text-stone-200 hover:bg-surface-hover">
+                <span>✍️</span> Nota
+            </button>
+            <button class="flex items-center gap-2 bg-surface border border-warm px-4 py-2 rounded-full shadow-lg text-sm text-stone-200 hover:bg-surface-hover">
+                <span>🎉</span> Evento
+            </button>
+        </div>
+    </nav>
 
-                                                    <div class="mb-8">
-                                                        <h3 class="text-xs text-stone-500 uppercase tracking-wider mb-3">Vibras de Hoy</h3>
-                                                        <div class="space-y-3">
-                                                            <div class="flex items-center gap-3">
-                                                                <img src="https://i.pravatar.cc/30?img=12" class="w-7 h-7 rounded-full" alt="U1">
-                                                                    <div class="text-sm">
-                                                                        <span class="text-stone-300">Papá está </span>
-                                                                        <span class="sage-text font-medium">🌿 Relajado</span>
-                                                                    </div>
-                                                            </div>
-                                                            <div class="flex items-center gap-3">
-                                                                <img src="https://i.pravatar.cc/30?img=23" class="w-7 h-7 rounded-full" alt="U3">
-                                                                    <div class="text-sm">
-                                                                        <span class="text-stone-300">Mamá está </span>
-                                                                        <span class="text-amber-500 font-medium">☕ Trabajando</span>
-                                                                    </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
+    <!-- Focus Mode Overlay -->
+    <div id="focusOverlay" class="hidden fixed inset-0 bg-espresso/95 backdrop-blur-lg z-50 flex-col items-center justify-center p-6 text-center">
+        <div class="fade-in">
+            <div class="w-24 h-24 rounded-full bg-sage-soft flex items-center justify-center mx-auto mb-8 border border-sage">
+                <svg class="w-12 h-12 text-sage" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+            </div>
+            <h3 class="font-serif text-3xl text-stone-100 mb-3">Modo Focus Activado</h3>
+            <p class="text-stone-400 text-sm max-w-xs mx-auto mb-8 leading-relaxed">El resto del mundo está silenciado. Estás disfrutando de tiempo de calidad con tu familia.</p>
+            <button onclick="toggleFocus()" class="px-8 py-3 bg-surface text-stone-300 rounded-xl text-sm font-medium hover:bg-stone-800 transition-colors border border-warm">Salir del Modo Focus</button>
+        </div>
+    </div>
 
-                                                    <div>
-                                                        <h3 class="text-xs text-stone-500 uppercase tracking-wider mb-3">Espacios Rápidos</h3>
-                                                        <div class="grid grid-cols-2 gap-3">
-                                                            <button class="bg-stone-900/50 warm-border border rounded-xl p-3 flex flex-col items-center gap-2 warm-hover transition-colors">
-                                                                <svg class="w-5 h-5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
-                                                                <span class="text-xs">Galería</span>
-                                                            </button>
-                                                            <button class="bg-stone-900/50 warm-border border rounded-xl p-3 flex flex-col items-center gap-2 warm-hover transition-colors">
-                                                                <svg class="w-5 h-5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
-                                                                <span class="text-xs">Metas</span>
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </aside>
+    <script>
+        // Cambio de pestañas (Feed/Chat)
+        function switchTab(tab) {
+            const feed = document.getElementById('view-feed');
+            const chat = document.getElementById('view-chat');
+            const tabFeed = document.getElementById('tab-feed');
+            const tabChat = document.getElementById('tab-chat');
+            
+            // Reset
+            feed.classList.add('hidden');
+            chat.classList.add('hidden');
+            
+            // Desktop tabs reset
+            if(tabFeed) {
+                tabFeed.classList.remove('text-sage', 'bg-sage-soft', 'font-medium');
+                tabFeed.classList.add('text-stone-400', 'hover:text-stone-100');
+            }
+            if(tabChat) {
+                tabChat.classList.remove('text-sage', 'bg-sage-soft', 'font-medium');
+                tabChat.classList.add('text-stone-400', 'hover:text-stone-100');
+            }
+            
+            // Apply
+            if (tab === 'feed') {
+                feed.classList.remove('hidden');
+                if(tabFeed) {
+                    tabFeed.classList.add('text-sage', 'bg-sage-soft', 'font-medium');
+                    tabFeed.classList.remove('text-stone-400', 'hover:text-stone-100');
+                }
+            } else {
+                chat.classList.remove('hidden');
+                if(tabChat) {
+                    tabChat.classList.add('text-sage', 'bg-sage-soft', 'font-medium');
+                    tabChat.classList.remove('text-stone-400', 'hover:text-stone-100');
+                }
+            }
+        }
 
-                                            </div>
+        // Toggle Quick Actions (Mobile)
+        function toggleQuickActions() {
+            const actions = document.getElementById('quickActions');
+            const icon = document.getElementById('quickIcon');
+            if (actions.classList.contains('hidden')) {
+                actions.classList.remove('hidden');
+                actions.classList.add('flex');
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />'; // X icon
+            } else {
+                actions.classList.add('hidden');
+                actions.classList.remove('flex');
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />'; // Plus icon
+            }
+        }
 
-                                            <!-- Overlay Focus Mode -->
-                                            <div id="focusOverlay" class="hidden fixed inset-0 bg-stone-900/80 backdrop-blur-sm z-50 items-center justify-center">
-                                                <div class="text-center fade-in">
-                                                    <div class="w-16 h-16 rounded-full sage-bg-soft flex items-center justify-center mx-auto mb-4">
-                                                        <svg class="w-8 h-8 sage-text" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                                                    </div>
-                                                    <h3 class="text-xl font-semibold text-stone-100 mb-2">Modo Focus Activado</h3>
-                                                    <p class="text-stone-400 text-sm max-w-xs mx-auto">El resto del mundo está silenciado. Estás disfrutando de tiempo de calidad con tu familia.</p>
-                                                    <button id="exitFocusBtn" class="mt-6 px-6 py-2 bg-stone-800 text-stone-300 rounded-xl text-sm font-medium hover:bg-stone-700 transition-colors">Salir del Modo Focus</button>
-                                                </div>
-                                            </div>
+        // Focus Mode
+        const focusOverlay = document.getElementById('focusOverlay');
+        const appLayout = document.getElementById('appLayout');
 
-                                            <script>
-                                                const focusBtn = document.getElementById('focusBtn');
-                                                const exitFocusBtn = document.getElementById('exitFocusBtn');
-                                                const focusOverlay = document.getElementById('focusOverlay');
-                                                const leftPanel = document.getElementById('leftPanel');
-                                                const rightPanel = document.getElementById('rightPanel');
-                                                const chatArea = document.getElementById('chatArea');
+        function toggleFocus() {
+            if (focusOverlay.classList.contains('flex')) {
+                appLayout.classList.remove('focus-blur');
+                focusOverlay.classList.add('hidden');
+                focusOverlay.classList.remove('flex');
+            } else {
+                appLayout.classList.add('focus-blur');
+                focusOverlay.classList.remove('hidden');
+                focusOverlay.classList.add('flex');
+            }
+        }
 
-        focusBtn.addEventListener('click', () => {
-                                                    leftPanel.classList.add('focus-mode');
-                                                rightPanel.classList.add('focus-mode');
-                                                chatArea.classList.add('opacity-30', 'transition-opacity');
-                                                focusOverlay.classList.remove('hidden');
-                                                focusOverlay.classList.add('flex');
-        });
-
-        exitFocusBtn.addEventListener('click', () => {
-                                                    leftPanel.classList.remove('focus-mode');
-                                                rightPanel.classList.remove('focus-mode');
-                                                chatArea.classList.remove('opacity-30');
-                                                focusOverlay.classList.add('hidden');
-                                                focusOverlay.classList.remove('flex');
-        });
-
-                                                // Auto-scroll chat
-                                                chatArea.scrollTop = chatArea.scrollHeight;
-                                            </script>
-                                        </body>
-                                    </html>`
+        // Drag & Drop Simulation (Desktop)
+        const dropZone = document.getElementById('dropZone');
+        if(dropZone) {
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('active');
+            });
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('active');
+            });
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('active');
+                alert('Foto subida al Feed (Simulado)');
+            });
+        }
+    </script>
+</body>
+</html>
+`
   },
   "multiplataforma-3": {
     title: `MentorMatch — Plataforma de Mentoría Inteligente`,
@@ -4352,8 +4511,220 @@ Ambiente general: Íntimo, cálido, seguro y profundo.Debe sentirse como un espa
     quoteRole: `Product Director, MentorMatch`,
     metrics: [{"value":"96%","label":"Match Máximo","sublabel":"Compatibilidad algorítmica de valores"},{"value":"75%","label":"Progreso Semanal","sublabel":"Cumplimiento de metas de aprendizaje"},{"value":"25%+","label":"Retención","sublabel":"Frente a mentorías tradicionales"}],
     demoTitle: `MentorMatch — Plataforma de Mentoría Inteligente`,
-    demoPrompt: ``,
-    demoCode: ``
+    demoPrompt: `Diseña una plataforma de mentoría profesional inteligente interactiva llamada MentorMatch que incluya un algoritmo visual de match (96% de compatibilidad), dashboard de objetivos de progreso semanal y agendamiento interactivo de citas.`,
+    demoCode: `<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MentorMatch - AI Mentoring</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .glow-emerald { box-shadow: 0 0 20px rgba(16, 185, 129, 0.2); }
+        .glow-indigo { box-shadow: 0 0 20px rgba(99, 102, 241, 0.25); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-[#0b0f19] text-slate-100 min-h-screen flex flex-col antialiased">
+    <!-- Navbar -->
+    <header class="glass sticky top-0 z-30 px-6 py-4 flex items-center justify-between border-b border-slate-800">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center text-slate-900 font-extrabold text-lg shadow-lg shadow-emerald-500/20">M</div>
+            <span class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-emerald-400 to-indigo-400 bg-clip-text text-transparent">MentorMatch</span>
+        </div>
+        <div class="flex items-center gap-4">
+            <span class="text-xs font-semibold text-slate-400 flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Match Activo: 96%</span>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Col 1: Match Algorithm (left) -->
+        <section class="lg:col-span-4 flex flex-col gap-6">
+            <div class="glass p-6 rounded-2xl flex flex-col justify-between h-full min-h-[300px]">
+                <div>
+                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Algoritmo de Compatibilidad</h3>
+                    <h2 class="text-2xl font-extrabold text-white mb-4">Mentor Recomendado</h2>
+                    
+                    <!-- Circular compatibility gauge -->
+                    <div class="relative w-36 h-36 mx-auto flex items-center justify-center my-6">
+                        <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="40" stroke="rgba(255,255,255,0.03)" stroke-width="8" fill="transparent" />
+                            <circle cx="50" cy="50" r="40" stroke="#10b981" stroke-width="8" stroke-dasharray="251.2" stroke-dashoffset="10.05" stroke-linecap="round" fill="transparent" class="glow-emerald" />
+                        </svg>
+                        <div class="absolute text-center">
+                            <span class="text-3xl font-extrabold text-white">96%</span>
+                            <p class="text-[9px] font-bold text-emerald-400 uppercase tracking-widest mt-0.5">Compatibilidad</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                        <img src="https://i.pravatar.cc/100?img=60" class="w-12 h-12 rounded-xl object-cover" alt="Mentor">
+                        <div class="flex-1">
+                            <h4 class="text-sm font-bold text-white">Alex Riveiro</h4>
+                            <p class="text-xs text-slate-400">Director de Producto & Mentor Tech</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-1.5 pt-2">
+                        <span class="text-[10px] font-bold px-2 py-0.5 bg-indigo-500/10 text-indigo-400 rounded-md border border-indigo-500/20">Producto SaaS</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-md border border-emerald-500/20">Liderazgo</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 bg-amber-500/10 text-amber-400 rounded-md border border-amber-500/20">Valores Clave</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Col 2: Progress Weekly Dashboard (center) -->
+        <section class="lg:col-span-5 flex flex-col gap-6">
+            <div class="glass p-6 rounded-2xl flex-1 flex flex-col">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-0.5">Objetivos de Progreso</h3>
+                        <h2 class="text-xl font-extrabold text-white">Metas de Aprendizaje Semanal</h2>
+                    </div>
+                    <div class="text-right">
+                        <span id="progressPercent" class="text-lg font-extrabold text-emerald-400">33%</span>
+                        <p class="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Cumplido</p>
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="w-full h-2 bg-slate-800 rounded-full mb-6 overflow-hidden">
+                    <div id="progressBar" class="h-full bg-gradient-to-r from-emerald-500 to-indigo-500 rounded-full transition-all duration-500" style="width: 33%"></div>
+                </div>
+
+                <!-- Checklist -->
+                <div class="flex-1 space-y-3">
+                    <label class="flex items-start gap-3 bg-slate-900/35 p-3.5 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer group">
+                        <input type="checkbox" checked onclick="updateProgress(this)" class="mt-1 rounded border-slate-700 text-emerald-500 focus:ring-emerald-500/40 w-4 h-4 bg-slate-950">
+                        <div>
+                            <span class="text-sm font-semibold text-slate-200 group-hover:text-white transition-colors">Revisar arquitectura inicial del MVP</span>
+                            <p class="text-xs text-slate-500 mt-0.5">Discutido en la última sesión con Alex</p>
+                        </div>
+                    </label>
+                    <label class="flex items-start gap-3 bg-slate-900/35 p-3.5 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer group">
+                        <input type="checkbox" onclick="updateProgress(this)" class="mt-1 rounded border-slate-700 text-emerald-500 focus:ring-emerald-500/40 w-4 h-4 bg-slate-950">
+                        <div>
+                            <span class="text-sm font-semibold text-slate-200 group-hover:text-white transition-colors">Completar modelo de BD relacional</span>
+                            <p class="text-xs text-slate-500 mt-0.5">Definir entidades principales y relaciones</p>
+                        </div>
+                    </label>
+                    <label class="flex items-start gap-3 bg-slate-900/35 p-3.5 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer group">
+                        <input type="checkbox" onclick="updateProgress(this)" class="mt-1 rounded border-slate-700 text-emerald-500 focus:ring-emerald-500/40 w-4 h-4 bg-slate-950">
+                        <div>
+                            <span class="text-sm font-semibold text-slate-200 group-hover:text-white transition-colors">Agendar llamada de seguimiento (RSVP)</span>
+                            <p class="text-xs text-slate-500 mt-0.5">Revisión final de metas semanales</p>
+                        </div>
+                    </label>
+                </div>
+            </div>
+        </section>
+
+        <!-- Col 3: Interactive Scheduler (right) -->
+        <section class="lg:col-span-3 flex flex-col gap-6">
+            <div class="glass p-6 rounded-2xl flex-1 flex flex-col justify-between">
+                <div>
+                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Agendamiento</h3>
+                    <h2 class="text-xl font-extrabold text-white mb-4">Próxima Sesión</h2>
+                    
+                    <div class="space-y-2 mt-4">
+                        <p class="text-xs text-slate-400 font-semibold mb-2">Selecciona un horario:</p>
+                        <button onclick="selectSlot(this)" class="w-full text-left py-2.5 px-4 bg-slate-900/50 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs font-semibold text-slate-300 hover:text-white transition-all flex justify-between items-center">
+                            <span>Lunes, 14:00 - 15:00</span>
+                            <span class="text-[10px] text-emerald-400 font-bold bg-emerald-400/10 px-2 py-0.5 rounded-full">Libre</span>
+                        </button>
+                        <button onclick="selectSlot(this)" class="w-full text-left py-2.5 px-4 bg-slate-900/50 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs font-semibold text-slate-300 hover:text-white transition-all flex justify-between items-center">
+                            <span>Miércoles, 16:30 - 17:30</span>
+                            <span class="text-[10px] text-emerald-400 font-bold bg-emerald-400/10 px-2 py-0.5 rounded-full">Libre</span>
+                        </button>
+                        <button onclick="selectSlot(this)" class="w-full text-left py-2.5 px-4 bg-slate-900/50 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs font-semibold text-slate-300 hover:text-white transition-all flex justify-between items-center">
+                            <span>Viernes, 10:00 - 11:00</span>
+                            <span class="text-[10px] text-emerald-400 font-bold bg-emerald-400/10 px-2 py-0.5 rounded-full">Libre</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="pt-6">
+                    <button onclick="scheduleSession()" id="scheduleBtn" disabled class="w-full py-3 rounded-xl bg-slate-800 text-slate-500 font-extrabold text-sm transition-all cursor-not-allowed">Selecciona un horario</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Audio & Alert Script -->
+    <script>
+        let selectedTime = null;
+        let audioCtx = null;
+
+        function playSound() {
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+                osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15); // A5
+                
+                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.55);
+            } catch (e) {}
+        }
+
+        function updateProgress() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            const checked = Array.from(checkboxes).filter(c => c.checked).length;
+            const pct = Math.round((checked / checkboxes.length) * 100);
+            
+            document.getElementById('progressPercent').textContent = pct + '%';
+            document.getElementById('progressBar').style.width = pct + '%';
+        }
+
+        function selectSlot(btn) {
+            // Reset others
+            const buttons = btn.parentElement.querySelectorAll('button');
+            buttons.forEach(b => {
+                b.classList.remove('border-emerald-500', 'bg-emerald-500/10', 'text-white');
+                b.classList.add('border-slate-800', 'bg-slate-900/50', 'text-slate-300');
+            });
+            
+            btn.classList.remove('border-slate-800', 'bg-slate-900/50', 'text-slate-300');
+            btn.classList.add('border-emerald-500', 'bg-emerald-500/10', 'text-white');
+            
+            selectedTime = btn.querySelector('span').textContent;
+            
+            const mainBtn = document.getElementById('scheduleBtn');
+            mainBtn.disabled = false;
+            mainBtn.classList.remove('bg-slate-800', 'text-slate-500', 'cursor-not-allowed');
+            mainBtn.classList.add('bg-emerald-500', 'text-slate-900', 'hover:bg-emerald-400', 'glow-emerald');
+            mainBtn.textContent = 'Confirmar Cita';
+        }
+
+        function scheduleSession() {
+            if (!selectedTime) return;
+            playSound();
+            alert('¡Cita Confirmada con éxito para ' + selectedTime + '!');
+        }
+    </script>
+</body>
+</html>
+`
   },
     "sitio-web-3": {
     title: `NOCTURNE — Boutique Cinematográfica de Videojuegos Premium`,

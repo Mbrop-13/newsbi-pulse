@@ -7,76 +7,85 @@ import { motion } from "framer-motion";
 
 const USE_CASES = [
   {
-    slug: "auditoria-corporativa",
-    category: "AUDITORÍA DE INVERSIONES",
-    title: "Auditoría de Inversiones Corporativas con Agentes IA",
-    desc: "Cómo un Gestor de Fondos o Administrador de Activos podría ocupar Maverlang para auditar transacciones en tiempo real con agentes de IA.",
-    image: "https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&w=600&q=80",
-    badge: "AI Multi-Agente + Supabase",
-    cta: "Lee la historia de auditoría"
+    slug: "sitio-web-1",
+    category: "SITIO WEB",
+    title: "Vestra — Plataforma de Inversión Social",
+    desc: "Landing page premium para trading de acciones y criptomonedas, con gráficos interactivos y animaciones fluidas.",
+    image: "https://mail.programbi.com/uploads/Captura-de-pantalla-2026-07-11-071843.png",
+    badge: "Web First + Tailwind",
+    cta: "Ver ejemplo web"
   },
   {
-    slug: "deteccion-de-sesgos",
-    category: "ANÁLISIS DE PRENSA",
-    title: "Detección y Purificación de Sesgos Informativos",
-    desc: "Cómo un Analista Financiero podría ocupar Maverlang para purificar noticias y eliminar sesgo macroeconómico de forma inmediata.",
-    image: "https://images.unsplash.com/photo-1542831371-29b0f74f9713?auto=format&fit=crop&w=600&q=80",
-    badge: "Python + LLMs",
-    cta: "Lee la historia de purificación"
+    slug: "sitio-web-2",
+    category: "SITIO WEB",
+    title: "Lumen — Agencia de Marketing Creativa",
+    desc: "Sitio web corporativo moderno para agencias, con efectos de glassmorphism y transiciones suaves.",
+    image: "https://mail.programbi.com/uploads/Captura-de-pantalla-2026-07-11-071908.png",
+    badge: "Next.js + Framer Motion",
+    cta: "Ver ejemplo web"
   },
   {
-    slug: "seguimiento-automatizado",
-    category: "WEALTH MANAGEMENT",
-    title: "Monitoreo Automatizado de Portafolios",
-    desc: "Cómo un Asesor Patrimonial o Inversor podría ocupar Maverlang para recibir alertas inteligentes vinculadas a sus activos en cartera.",
-    image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80",
-    badge: "Upstash + Cron",
-    cta: "Lee la historia de monitoreo"
+    slug: "sitio-web-3",
+    category: "SITIO WEB",
+    title: "Nocturne — Landing Page de Club Nocturno",
+    desc: "Página web premium con temática oscura y luces de neón dinámicas, ideal para eventos de entretenimiento.",
+    image: "https://mail.programbi.com/uploads/Captura-de-pantalla-2026-07-11-071939.png",
+    badge: "Tailwind + Neon Glow",
+    cta: "Ver ejemplo web"
   },
   {
-    slug: "prediccion-banco-central",
-    category: "ANALÍTICA PREDICTIVA",
-    title: "Predicción de Variaciones de Tasas del Banco Central",
-    desc: "Cómo una Firma de Corretaje podría ocupar Maverlang para anticipar de manera analítica decisiones de tasas swap del Banco Central.",
-    image: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=600&q=80",
-    badge: "Next.js + Azure",
-    cta: "Lee la historia de predicción"
+    slug: "aplicacion-1",
+    category: "APLICACIÓN MÓVIL",
+    title: "NEXUS Blocks — Tetris Arcade",
+    desc: "Juego móvil de Tetris moderno y pulido, con físicas clásicas mejoradas, controles táctiles y sintetizador de sonido.",
+    image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80",
+    badge: "HTML5 + Web Audio API",
+    cta: "Jugar demo móvil"
   },
   {
-    slug: "analisis-sentimiento-cripto",
-    category: "CRIPTO & SOCIAL",
-    title: "Medición de Sentimiento Real de Criptoactivos",
-    desc: "Cómo un Inversor de Activos Digitales podría ocupar Maverlang para filtrar campañas artificiales de bots y medir el sentimiento social real.",
-    image: "https://images.unsplash.com/photo-1642104704074-907c0698cbd9?auto=format&fit=crop&w=600&q=80",
-    badge: "Azure + OpenAI",
-    cta: "Lee la historia de criptoactivos"
+    slug: "aplicacion-2",
+    category: "APLICACIÓN MÓVIL",
+    title: "Agora — E-commerce Móvil de Próxima Generación",
+    desc: "Aplicación móvil de comercio electrónico con grid de productos de dos columnas y flujo de checkout optimizado.",
+    image: "https://images.unsplash.com/photo-1472851294608-062f824d296e?auto=format&fit=crop&w=600&q=80",
+    badge: "Alpine.js + Tailwind",
+    cta: "Probar demo e-commerce"
   },
   {
-    slug: "regulacion-fiscal",
-    category: "COMPLIANCE LEGAL",
-    title: "Auditoría Regulatoria y Fiscal de Boletines Oficiales",
-    desc: "Cómo un Estudio Jurídico o Tributario podría ocupar Maverlang para monitorizar decretos en boletines oficiales en busca de riesgos.",
-    image: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=600&q=80",
-    badge: "Supabase + RLS",
-    cta: "Lee la historia de compliance"
+    slug: "aplicacion-3",
+    category: "APLICACIÓN MÓVIL",
+    title: "Clarity Invest — Mobile Wallet",
+    desc: "Dashboard financiero para dispositivos móviles, con carrusel de inversiones y flujos de compra interactivos.",
+    image: "https://images.unsplash.com/photo-1616077168079-7e09a677fb2c?auto=format&fit=crop&w=600&q=80",
+    badge: "React Native + Charts",
+    cta: "Probar demo financiera"
   },
   {
-    slug: "cadena-suministro",
-    category: "LOGÍSTICA GLOBAL",
-    title: "Resiliencia Geopolítica de Cadenas de Suministro",
-    desc: "Cómo un Gestor de Operaciones Logísticas podría ocupar Maverlang para predecir cierres portuarios debido a eventos geopolíticos.",
-    image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=600&q=80",
-    badge: "Capacitor + React",
-    cta: "Lee la historia de logística"
+    slug: "multiplataforma-1",
+    category: "MULTIPLATAFORMA",
+    title: "SplitWise Pro — Finanzas Compartidas",
+    desc: "Aplicación adaptativa para dividir gastos y presupuestos en móviles y de escritorio de forma sincronizada.",
+    image: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80",
+    badge: "Multiplatform + Realtime",
+    cta: "Ver ejemplo multiplataforma"
   },
   {
-    slug: "educacion-financiera",
-    category: "ACADEMIA & FINANZAS",
-    title: "Simulación Académica en Laboratorios Financieros",
-    desc: "Cómo una Universidad o Academia podría ocupar Maverlang como herramienta interactiva para que estudiantes auditen mercados.",
-    image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=600&q=80",
-    badge: "MercadoPago + Node",
-    cta: "Lee la historia de academia"
+    slug: "multiplataforma-2",
+    category: "MULTIPLATAFORMA",
+    title: "Circle — Red Social Familiar",
+    desc: "Red social privada para compartir fotos, chats e hitos familiares en todos tus dispositivos.",
+    image: "https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=600&q=80",
+    badge: "Flutter + Firebase",
+    cta: "Ver ejemplo multiplataforma"
+  },
+  {
+    slug: "multiplataforma-3",
+    category: "MULTIPLATAFORMA",
+    title: "MentorMatch — Plataforma de Mentoría",
+    desc: "Conecta mentores y aprendices con emparejamiento inteligente basado en IA y videollamadas integradas.",
+    image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80",
+    badge: "React + Node.js",
+    cta: "Ver ejemplo multiplataforma"
   }
 ];
 

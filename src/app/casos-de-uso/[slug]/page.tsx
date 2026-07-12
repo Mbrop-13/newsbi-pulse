@@ -28,44 +28,6 @@ interface UseCaseData {
 }
 
 const USE_CASE_MAP: Record<string, UseCaseData> = {
-  "auditoria-corporativa": {
-    title: "Análisis logístico geopolítico con Maverlang AI",
-    brand: "Caso de Éxito: Auditoría",
-    desc: "Cómo un líder de logística global utilizó Maverlang AI para predecir cuellos de botella y desviar rutas en tiempo real.",
-    gradient: "from-[#1890FF] to-blue-800",
-    challenge: "Monitorear múltiples variables geopolíticas y logísticas de ejemplo sin saturar los analistas.",
-    solution: "La IA escaneó flujos internacionales de forma autónoma en una simulación de ejemplo.",
-    products: ["Asistente de IA (Maverlang AI)", "Análisis Logístico", "Maverlang 2.5 Flash"],
-    region: "Global (Ejemplo)",
-    industry: "Logística y Transporte (Ejemplo)",
-    quote: "Este ejemplo ilustra cómo el escaneo geopolítico constante de la IA previene pérdidas operativas sustanciales.",
-    quoteAuthor: "Ejemplo de Aplicación",
-    quoteRole: "Rol de referencia: Gestor Logístico",
-    metrics: [
-      { value: "0", label: "Retrasos Críticos", sublabel: "Gracias al desvío anticipado" },
-      { value: "100%", label: "Rutas Monitoreadas", sublabel: "Seguimiento global de puertos" },
-      { value: "3h+", label: "Ventaja Informativa", sublabel: "Tiempo de preaviso promedio" }
-    ]
-  },
-  "educacion-financiera": {
-    title: "Ejemplo de Uso: Simulación y Educación en Laboratorios Académicos",
-    brand: "Ejemplo de Uso: Educación",
-    desc: "Guía ilustrativa sobre cómo facultades de economía integran herramientas de análisis con IA.",
-    gradient: "from-purple-600 to-pink-500",
-    challenge: "Una universidad desea capacitar a sus alumnos con herramientas modernas de análisis.",
-    solution: "Al incorporar Maverlang AI en las aulas, los estudiantes acceden a una plataforma moderna.",
-    products: ["Asistente de IA (Maverlang AI)", "Análisis de Portafolio", "Feed de Noticias", "Maverlang 2.5 Flash"],
-    region: "Global (Ejemplo)",
-    industry: "Educación y Academia (Ejemplo)",
-    quote: "Este ejemplo demuestra la utilidad de una interfaz intuitiva con explicaciones didácticas de IA.",
-    quoteAuthor: "Ejemplo de Aplicación",
-    quoteRole: "Rol de referencia: Docente Universitario",
-    metrics: [
-      { value: "100%", label: "Adopción Estudiantil", sublabel: "Uso integrado en talleres" },
-      { value: "-60%", label: "Reducción de Costos", sublabel: "Frente a suscripciones tradicionales" },
-      { value: "1.2k+", label: "Usuarios Simulados", sublabel: "Operando de forma concurrente" }
-    ]
-  },
   "sitio-web-1": {
     title: `Vestra — Plataforma de Inversión Social`,
     brand: `Caso de Éxito: Sitio Web`,
@@ -7993,7 +7955,7 @@ const styles = StyleSheet.create({
 </body>
 </html>`
   }
-};;;
+};
 
 interface CasosPageProps {
   params: Promise<{ slug: string }>;
@@ -8031,7 +7993,7 @@ export default async function CasoDeUsoPage({ params }: CasosPageProps) {
             <span className="text-slate-300 font-normal">/</span>
             <span className="text-slate-400">Casos de Uso</span>
             <span className="text-slate-300 font-normal">/</span>
-            <span className="text-slate-500 font-bold">{data.brand}</span>
+            <span className="text-slate-500 font-bold">Caso de Uso</span>
           </div>
 
           {/* Right Links */}
@@ -8046,10 +8008,7 @@ export default async function CasoDeUsoPage({ params }: CasosPageProps) {
           
           {/* Left Content Column (H1 + Muted paragraph) */}
           <div className="lg:col-span-8">
-            {/* Brand indicator */}
-            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r ${data.gradient} text-white text-[10px] font-black uppercase tracking-wider mb-6 shadow-sm`}>
-              {data.brand}
-            </div>
+
 
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-slate-950 tracking-tight leading-[1.05] mb-6">
               {data.title}

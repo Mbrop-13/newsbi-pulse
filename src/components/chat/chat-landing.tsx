@@ -129,7 +129,7 @@ const PREVIEW_ITEMS: PreviewItem[] = [
     category: "sitios",
     title: "Vestra — Inversión Social",
     desc: "Landing page de trading social con gráficos dinámicos de velas y panel de copy-trading.",
-    imageSrc: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?q=80&w=600",
+    imageSrc: "https://mail.programbi.com/uploads/Captura-de-pantalla-2026-07-11-071843.png",
     slug: "sitio-web-1",
     prompt: `Diseña una página de inicio para una plataforma de inversión social y trading de acciones que transmite confianza, transparencia y empoderamiento financiero: el antídoto a las aplicaciones de trading caóticas, opacas e intimidantes.`
   },
@@ -138,7 +138,7 @@ const PREVIEW_ITEMS: PreviewItem[] = [
     category: "sitios",
     title: "Lumen — SaaS Productividad",
     desc: "Software de productividad y gestión de proyectos con un enfoque de diseño limpio y calmado.",
-    imageSrc: "https://images.unsplash.com/photo-1531403009284-440f080d1e12?q=80&w=600",
+    imageSrc: "https://mail.programbi.com/uploads/Captura-de-pantalla-2026-07-11-071908.png",
     slug: "sitio-web-2",
     prompt: `Diseña una página de inicio de producto SaaS para una herramienta de gestión de proyectos y comunicación de equipos llamada 'Lumen'...`
   },
@@ -147,7 +147,7 @@ const PREVIEW_ITEMS: PreviewItem[] = [
     category: "sitios",
     title: "Nocturne — Boutique Gaming",
     desc: "Plataforma de e-commerce de videojuegos con estética cinematográfica brutalista oscura.",
-    imageSrc: "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=600",
+    imageSrc: "https://mail.programbi.com/uploads/Captura-de-pantalla-2026-07-11-071939.png",
     slug: "sitio-web-3",
     prompt: `Diseña una página de inicio para un sitio de comercio electrónico premium de videojuegos boutique llamado 'NOCTURNE'...`
   },

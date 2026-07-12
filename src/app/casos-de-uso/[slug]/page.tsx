@@ -4517,209 +4517,746 @@ Ambiente general: Íntimo, cálido, seguro y profundo.Debe sentirse como un espa
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MentorMatch - AI Mentoring</title>
+    <title>MentorMatch - Premium Mentoring Platform</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
-        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
-        .glow-emerald { box-shadow: 0 0 20px rgba(16, 185, 129, 0.2); }
-        .glow-indigo { box-shadow: 0 0 20px rgba(99, 102, 241, 0.25); }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        :root {
+            --primary: #1E3A8A;
+            --primary-light: #3B82F6;
+            --accent: #10B981;
+            --accent-light: #34D399;
+            --bg: #F8FAFC;
+            --surface: #FFFFFF;
+            --text-main: #0F172A;
+            --text-muted: #64748B;
+            --border: #E2E8F0;
+        }
+        * { -webkit-font-smoothing: antialiased; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text-main); overflow: hidden; }
+        
+        /* Scrollbar Premium */
+        .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Sombras y Elevación */
+        .card-shadow { box-shadow: 0 4px 20px -2px rgba(30, 58, 138, 0.06); }
+        .card-shadow-hover { transition: all 0.3s ease; }
+        .card-shadow-hover:hover { box-shadow: 0 12px 30px -5px rgba(30, 58, 138, 0.12); transform: translateY(-3px); }
+        .soft-shadow { box-shadow: 0 2px 10px -2px rgba(0,0,0,0.05); }
+
+        /* Transiciones de Vista */
+        .view { display: none; opacity: 0; transition: opacity 0.3s ease; }
+        .view.active { display: block; opacity: 1; }
+        .fade-in-up { animation: fadeInUp 0.4s ease-out; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Navegación */
+        .nav-item { transition: all 0.2s ease; }
+        .nav-item.active { background-color: rgba(30, 58, 138, 0.08); color: var(--primary); }
+        .nav-item.active svg { color: var(--primary); }
+
+        /* Modal Animations */
+        .modal-overlay { opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-content { transform: scale(0.95) translateY(10px); opacity: 0; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        .modal-overlay.active .modal-content { transform: scale(1) translateY(0); opacity: 1; }
+
+        /* Toast Notifications */
+        .toast { transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        .toast.show { transform: translateX(0); }
+
+        /* Live Session Animations */
+        .pulse-red { animation: pulseRed 2s infinite; }
+        @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+
+        /* Gradient Text */
+        .gradient-text { background: linear-gradient(135deg, #1E3A8A 0%, #10B981 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     </style>
 </head>
-<body class="bg-[#0b0f19] text-slate-100 min-h-screen flex flex-col antialiased">
-    <!-- Navbar -->
-    <header class="glass sticky top-0 z-30 px-6 py-4 flex items-center justify-between border-b border-slate-800">
-        <div class="flex items-center gap-2">
-            <div class="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center text-slate-900 font-extrabold text-lg shadow-lg shadow-emerald-500/20">M</div>
-            <span class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-emerald-400 to-indigo-400 bg-clip-text text-transparent">MentorMatch</span>
-        </div>
-        <div class="flex items-center gap-4">
-            <span class="text-xs font-semibold text-slate-400 flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Match Activo: 96%</span>
-        </div>
-    </header>
+<body>
 
-    <!-- Main Container -->
-    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <!-- Col 1: Match Algorithm (left) -->
-        <section class="lg:col-span-4 flex flex-col gap-6">
-            <div class="glass p-6 rounded-2xl flex flex-col justify-between h-full min-h-[300px]">
-                <div>
-                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Algoritmo de Compatibilidad</h3>
-                    <h2 class="text-2xl font-extrabold text-white mb-4">Mentor Recomendado</h2>
-                    
-                    <!-- Circular compatibility gauge -->
-                    <div class="relative w-36 h-36 mx-auto flex items-center justify-center my-6">
-                        <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                            <circle cx="50" cy="50" r="40" stroke="rgba(255,255,255,0.03)" stroke-width="8" fill="transparent" />
-                            <circle cx="50" cy="50" r="40" stroke="#10b981" stroke-width="8" stroke-dasharray="251.2" stroke-dashoffset="10.05" stroke-linecap="round" fill="transparent" class="glow-emerald" />
-                        </svg>
-                        <div class="absolute text-center">
-                            <span class="text-3xl font-extrabold text-white">96%</span>
-                            <p class="text-[9px] font-bold text-emerald-400 uppercase tracking-widest mt-0.5">Compatibilidad</p>
+    <!-- ESTRUCTURA PRINCIPAL -->
+    <div class="flex h-screen w-screen">
+        
+        <!-- SIDEBAR -->
+        <aside class="w-64 bg-white border-r border-slate-100 flex flex-col justify-between p-5 flex-shrink-0 z-20">
+            <div>
+                <div class="flex items-center gap-2 mb-10 px-2">
+                    <div class="w-10 h-10 bg-[#1E3A8A] rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-md shadow-blue-200">M</div>
+                    <h1 class="text-xl font-bold tracking-tight text-slate-800">MentorMatch</h1>
+                </div>
+                <nav class="flex flex-col gap-1">
+                    <button onclick="switchView('home')" data-view="home" class="nav-item active flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:bg-slate-50 font-medium text-sm">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                        Inicio
+                    </button>
+                    <button onclick="switchView('discover')" data-view="discover" class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:bg-slate-50 font-medium text-sm">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        Descubrir Mentores
+                    </button>
+                    <button onclick="switchView('sessions')" data-view="sessions" class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:bg-slate-50 font-medium text-sm">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        Sesiones
+                    </button>
+                    <button onclick="switchView('progress')" data-view="progress" class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:bg-slate-50 font-medium text-sm">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                        Progreso
+                    </button>
+                </nav>
+            </div>
+            <div class="relative bg-gradient-to-br from-[#1E3A8A] to-[#3B82F6] rounded-2xl p-5 text-white overflow-hidden">
+                <div class="absolute -right-6 -top-6 w-24 h-24 bg-white/10 rounded-full"></div>
+                <div class="absolute -right-2 top-10 w-12 h-12 bg-[#10B981]/30 rounded-full blur-md"></div>
+                <h4 class="font-bold text-sm mb-1 relative z-10">MentorMatch Plus</h4>
+                <p class="text-xs text-blue-100 mb-4 relative z-10">Mentorías ilimitadas y análisis avanzado.</p>
+                <button class="w-full bg-white text-[#1E3A8A] text-xs font-bold py-2 rounded-lg hover:bg-slate-100 transition-colors relative z-10">Mejorar Plan</button>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="flex-1 flex flex-col overflow-hidden relative">
+            
+            <!-- TOP BAR -->
+            <header class="h-20 bg-white border-b border-slate-100 flex items-center justify-between px-10 py-4 z-10 flex-shrink-0">
+                <div class="relative w-96">
+                    <svg class="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    <input type="text" placeholder="Buscar mentores, habilidades o industrias..." class="w-full bg-slate-50 border border-transparent focus:border-[#1E3A8A] focus:bg-white focus:ring-2 focus:ring-blue-100 rounded-xl py-2.5 pl-12 pr-4 text-sm outline-none transition-all">
+                </div>
+                <div class="flex items-center gap-6">
+                    <button class="relative p-2 rounded-lg hover:bg-slate-50 transition-colors" onclick="showToast('Tienes 3 nuevas notificaciones', 'info')">
+                        <svg class="w-6 h-6 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                        <span class="absolute top-1 right-1 w-2.5 h-2.5 bg-[#10B981] rounded-full"></span>
+                    </button>
+                    <div class="flex items-center gap-3 cursor-pointer hover:bg-slate-50 py-2 px-3 rounded-xl transition-colors">
+                        <img src="https://i.pravatar.cc/150?img=12" alt="User" class="w-10 h-10 rounded-full border-2 border-white shadow-sm object-cover">
+                        <div>
+                            <p class="text-sm font-semibold text-slate-800">Alex Riveiro</p>
+                            <p class="text-xs text-slate-400">Aprendiz Plus</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- VIEWS CONTAINER -->
+            <div class="flex-1 overflow-y-auto custom-scroll">
+                
+                <!-- VIEW: HOME -->
+                <div id="view-home" class="view active p-10 fade-in-up">
+                    <div class="flex justify-between items-end mb-10">
+                        <div>
+                            <h2 class="text-4xl font-extrabold tracking-tight text-slate-800">Buenos días, Alex</h2>
+                            <p class="text-slate-500 mt-1">Tu próxima sesión está cerca. Hemos encontrado 3 nuevos matches perfectos.</p>
+                        </div>
+                        <div class="flex items-center gap-4 bg-white p-4 rounded-xl card-shadow border border-slate-50">
+                            <div class="relative w-12 h-12">
+                                <svg class="w-12 h-12 transform -rotate-90" viewBox="0 0 36 36">
+                                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 0 0 31.831 a 15.9155 15.9155 0 0 0 0 -31.831" fill="none" stroke="#E2E8F0" stroke-width="3" />
+                                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 0 0 31.831 a 15.9155 15.9155 0 0 0 0 -31.831" fill="none" stroke="#10B981" stroke-width="3" stroke-dasharray="75, 100" stroke-linecap="round" />
+                                </svg>
+                                <span class="absolute inset-0 flex items-center justify-center text-xs font-bold text-slate-700">75%</span>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-400 font-medium">Progreso Semanal</p>
+                                <p class="text-sm font-bold text-slate-800">3 de 4 objetivos</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Upcoming Session Banner -->
+                    <div class="bg-gradient-to-r from-[#1E3A8A] to-[#294ea3] rounded-3xl p-8 mb-10 flex justify-between items-center text-white relative overflow-hidden card-shadow">
+                        <div class="absolute right-0 top-0 opacity-20 w-full h-full">
+                            <svg width="100%" height="100%" viewBox="0 0 200 150" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMaxYMid slice">
+                                <circle cx="180" cy="20" r="80" fill="white"/>
+                                <circle cx="140" cy="180" r="60" fill="white"/>
+                            </svg>
+                        </div>
+                        <div class="relative z-10">
+                            <span class="text-xs font-semibold text-blue-200 uppercase tracking-widest">Próxima Sesión</span>
+                            <h3 class="text-3xl font-bold mt-2">Estrategia de Producto con Elena Rojas</h3>
+                            <div class="flex items-center gap-4 mt-3 text-blue-100 text-sm">
+                                <span class="flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Hoy, 15:00 - 16:00 hs</span>
+                                <span class="flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg> Videollamada</span>
+                            </div>
+                        </div>
+                        <button onclick="joinSession()" class="bg-[#10B981] hover:bg-emerald-400 px-8 py-4 rounded-xl font-semibold text-sm shadow-lg flex items-center gap-2 relative z-10 transition-transform hover:scale-105">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            Unirse a la Sala
+                        </button>
+                    </div>
+
+                    <!-- Matches Recomendados -->
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-slate-800">Matches Recomendados</h3>
+                        <button onclick="switchView('discover')" class="text-sm font-semibold text-[#1E3A8A] hover:text-blue-700">Ver todos</button>
+                    </div>
+                    <div class="grid grid-cols-3 gap-6 mb-10">
+                        <div class="bg-white rounded-2xl p-6 border border-slate-100 card-shadow card-shadow-hover cursor-pointer" onclick="openMentorModal('Elena Rojas', 'VP Product @ TechCorp', 'https://i.pravatar.cc/150?img=47', 96)">
+                            <div class="flex justify-between items-start mb-4">
+                                <img src="https://i.pravatar.cc/150?img=47" class="w-16 h-16 rounded-full object-cover border-2 border-emerald-50" alt="Mentor">
+                                <div class="flex flex-col items-center justify-center bg-emerald-50 text-[#10B981] px-3 py-1.5 rounded-lg">
+                                    <span class="text-[10px] font-bold uppercase">Match</span>
+                                    <span class="text-lg font-extrabold leading-none">96%</span>
+                                </div>
+                            </div>
+                            <h4 class="font-bold text-slate-800">Elena Rojas</h4>
+                            <p class="text-sm text-slate-500 mb-4">VP Product @ TechCorp</p>
+                            <div class="flex flex-wrap gap-2 mb-4">
+                                <span class="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md">Estrategia</span>
+                                <span class="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md">Liderazgo</span>
+                            </div>
+                            <div class="border-t border-slate-50 pt-4 flex justify-between items-center">
+                                <span class="text-xs font-bold text-slate-600">$80/sesión</span>
+                                <button class="text-xs font-bold text-white bg-[#1E3A8A] px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors">Ver Perfil</button>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white rounded-2xl p-6 border border-slate-100 card-shadow card-shadow-hover cursor-pointer" onclick="openMentorModal('Javier Méndez', 'Senior Dev @ Google', 'https://i.pravatar.cc/150?img=33', 91)">
+                            <div class="flex justify-between items-start mb-4">
+                                <img src="https://i.pravatar.cc/150?img=33" class="w-16 h-16 rounded-full object-cover border-2 border-emerald-50" alt="Mentor">
+                                <div class="flex flex-col items-center justify-center bg-emerald-50 text-[#10B981] px-3 py-1.5 rounded-lg">
+                                    <span class="text-[10px] font-bold uppercase">Match</span>
+                                    <span class="text-lg font-extrabold leading-none">91%</span>
+                                </div>
+                            </div>
+                            <h4 class="font-bold text-slate-800">Javier Méndez</h4>
+                            <p class="text-sm text-slate-500 mb-4">Senior Dev @ Google</p>
+                            <div class="flex flex-wrap gap-2 mb-4">
+                                <span class="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md">Arquitectura</span>
+                                <span class="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md">Carrera</span>
+                            </div>
+                            <div class="border-t border-slate-50 pt-4 flex justify-between items-center">
+                                <span class="text-xs font-bold text-slate-600">$120/sesión</span>
+                                <button class="text-xs font-bold text-white bg-[#1E3A8A] px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors">Ver Perfil</button>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-2xl p-6 border border-slate-100 card-shadow card-shadow-hover cursor-pointer" onclick="openMentorModal('Sofía Castro', 'Founder @ InnovaLab', 'https://i.pravatar.cc/150?img=23', 88)">
+                            <div class="flex justify-between items-start mb-4">
+                                <img src="https://i.pravatar.cc/150?img=23" class="w-16 h-16 rounded-full object-cover border-2 border-emerald-50" alt="Mentor">
+                                <div class="flex flex-col items-center justify-center bg-emerald-50 text-[#10B981] px-3 py-1.5 rounded-lg">
+                                    <span class="text-[10px] font-bold uppercase">Match</span>
+                                    <span class="text-lg font-extrabold leading-none">88%</span>
+                                </div>
+                            </div>
+                            <h4 class="font-bold text-slate-800">Sofía Castro</h4>
+                            <p class="text-sm text-slate-500 mb-4">Founder @ InnovaLab</p>
+                            <div class="flex flex-wrap gap-2 mb-4">
+                                <span class="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md">Startups</span>
+                                <span class="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md">Finanzas</span>
+                            </div>
+                            <div class="border-t border-slate-50 pt-4 flex justify-between items-center">
+                                <span class="text-xs font-bold text-slate-600">$90/sesión</span>
+                                <button class="text-xs font-bold text-white bg-[#1E3A8A] px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors">Ver Perfil</button>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="space-y-4">
-                    <div class="flex items-center gap-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
-                        <img src="https://i.pravatar.cc/100?img=60" class="w-12 h-12 rounded-xl object-cover" alt="Mentor">
-                        <div class="flex-1">
-                            <h4 class="text-sm font-bold text-white">Alex Riveiro</h4>
-                            <p class="text-xs text-slate-400">Director de Producto & Mentor Tech</p>
+                <!-- VIEW: DISCOVER -->
+                <div id="view-discover" class="view p-10">
+                    <h2 class="text-4xl font-extrabold tracking-tight text-slate-800 mb-2">Descubrir Mentores</h2>
+                    <p class="text-slate-500 mb-8">Filtramos los mejores perfiles según tu test inicial y actividad reciente.</p>
+
+                    <div class="flex gap-3 mb-8 overflow-x-auto custom-scroll pb-2">
+                        <button class="px-5 py-2 bg-[#1E3A8A] text-white text-sm font-medium rounded-xl whitespace-nowrap shadow-sm">Todos</button>
+                        <button class="px-5 py-2 bg-white border border-slate-200 text-slate-600 text-sm font-medium rounded-xl hover:bg-slate-50 whitespace-nowrap transition-colors">Producto</button>
+                        <button class="px-5 py-2 bg-white border border-slate-200 text-slate-600 text-sm font-medium rounded-xl hover:bg-slate-50 whitespace-nowrap transition-colors">Ingeniería</button>
+                        <button class="px-5 py-2 bg-white border border-slate-200 text-slate-600 text-sm font-medium rounded-xl hover:bg-slate-50 whitespace-nowrap transition-colors">Liderazgo</button>
+                        <button class="px-5 py-2 bg-white border border-slate-200 text-slate-600 text-sm font-medium rounded-xl hover:bg-slate-50 whitespace-nowrap transition-colors">Startups</button>
+                        <button class="px-5 py-2 bg-white border border-slate-200 text-slate-600 text-sm font-medium rounded-xl hover:bg-slate-50 whitespace-nowrap transition-colors">Diseño UX</button>
+                        <button class="px-5 py-2 bg-white border border-slate-200 text-slate-600 text-sm font-medium rounded-xl hover:bg-slate-50 whitespace-nowrap transition-colors">Marketing</button>
+                    </div>
+
+                    <div class="grid grid-cols-4 gap-6">
+                        <!-- Cards iguales a las de home pero más variadas -->
+                        <div class="bg-white rounded-2xl p-6 border border-slate-100 card-shadow card-shadow-hover cursor-pointer" onclick="openMentorModal('Roberto Díaz', 'CTO @ Fintech Global', 'https://i.pravatar.cc/150?img=5', 98)">
+                            <div class="flex justify-between items-start mb-4">
+                                <img src="https://i.pravatar.cc/150?img=5" class="w-20 h-20 rounded-full object-cover border-4 border-emerald-50" alt="Mentor">
+                                <div class="text-right">
+                                    <span class="text-xs font-bold text-[#10B981] block">98% Match</span>
+                                    <span class="text-xs text-amber-500 font-medium flex items-center gap-1 mt-1"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg> 4.9</span>
+                                </div>
+                            </div>
+                            <h4 class="font-bold text-slate-800">Roberto Díaz</h4>
+                            <p class="text-sm text-slate-500 mb-2">CTO @ Fintech Global</p>
+                            <p class="text-xs text-slate-400 mb-4 leading-relaxed">Especialista en escalar equipos de ingeniería y arquitectura cloud.</p>
+                            <div class="flex justify-between items-center border-t border-slate-50 pt-4">
+                                <span class="text-xs font-bold text-slate-600">$80/sesión</span>
+                                <button class="text-xs font-bold text-[#1E3A8A] bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors">Agendar</button>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-2xl p-6 border border-slate-100 card-shadow card-shadow-hover cursor-pointer" onclick="openMentorModal('Laura Giménez', 'Head of Design @ UIPro', 'https://i.pravatar.cc/150?img=44', 93)">
+                            <div class="flex justify-between items-start mb-4">
+                                <img src="https://i.pravatar.cc/150?img=44" class="w-20 h-20 rounded-full object-cover border-4 border-emerald-50" alt="Mentor">
+                                <div class="text-right">
+                                    <span class="text-xs font-bold text-[#10B981] block">93% Match</span>
+                                    <span class="text-xs text-amber-500 font-medium flex items-center gap-1 mt-1"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg> 5.0</span>
+                                </div>
+                            </div>
+                            <h4 class="font-bold text-slate-800">Laura Giménez</h4>
+                            <p class="text-sm text-slate-500 mb-2">Head of Design @ UIPro</p>
+                            <p class="text-xs text-slate-400 mb-4 leading-relaxed">Diseño centrado en el usuario y liderazgo de equipos creativos.</p>
+                            <div class="flex justify-between items-center border-t border-slate-50 pt-4">
+                                <span class="text-xs font-bold text-slate-600">$60/sesión</span>
+                                <button class="text-xs font-bold text-[#1E3A8A] bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors">Agendar</button>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white rounded-2xl p-6 border border-slate-100 card-shadow card-shadow-hover cursor-pointer" onclick="openMentorModal('Marcos Vidal', 'Marketing Director', 'https://i.pravatar.cc/150?img=13', 85)">
+                            <div class="flex justify-between items-start mb-4">
+                                <img src="https://i.pravatar.cc/150?img=13" class="w-20 h-20 rounded-full object-cover border-4 border-emerald-50" alt="Mentor">
+                                <div class="text-right">
+                                    <span class="text-xs font-bold text-[#10B981] block">85% Match</span>
+                                    <span class="text-xs text-amber-500 font-medium flex items-center gap-1 mt-1"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg> 4.7</span>
+                                </div>
+                            </div>
+                            <h4 class="font-bold text-slate-800">Marcos Vidal</h4>
+                            <p class="text-sm text-slate-500 mb-2">CMO @ GlobalAds</p>
+                            <p class="text-xs text-slate-400 mb-4 leading-relaxed">Estrategia de crecimiento y adquisición de usuarios.</p>
+                            <div class="flex justify-between items-center border-t border-slate-50 pt-4">
+                                <span class="text-xs font-bold text-slate-600">$50/sesión</span>
+                                <button class="text-xs font-bold text-[#1E3A8A] bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors">Agendar</button>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-2xl p-6 border border-slate-100 card-shadow card-shadow-hover cursor-pointer" onclick="openMentorModal('Carolina Pérez', 'HR Lead @ Innovate', 'https://i.pravatar.cc/150?img=32', 82)">
+                            <div class="flex justify-between items-start mb-4">
+                                <img src="https://i.pravatar.cc/150?img=32" class="w-20 h-20 rounded-full object-cover border-4 border-emerald-50" alt="Mentor">
+                                <div class="text-right">
+                                    <span class="text-xs font-bold text-[#10B981] block">82% Match</span>
+                                    <span class="text-xs text-amber-500 font-medium flex items-center gap-1 mt-1"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg> 4.8</span>
+                                </div>
+                            </div>
+                            <h4 class="font-bold text-slate-800">Carolina Pérez</h4>
+                            <p class="text-sm text-slate-500 mb-2">HR Lead @ Innovate</p>
+                            <p class="text-xs text-slate-400 mb-4 leading-relaxed">Desarrollo de cultura organizacional y talento.</p>
+                            <div class="flex justify-between items-center border-t border-slate-50 pt-4">
+                                <span class="text-xs font-bold text-slate-600">$45/sesión</span>
+                                <button class="text-xs font-bold text-[#1E3A8A] bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors">Agendar</button>
+                            </div>
                         </div>
                     </div>
-                    <div class="flex flex-wrap gap-1.5 pt-2">
-                        <span class="text-[10px] font-bold px-2 py-0.5 bg-indigo-500/10 text-indigo-400 rounded-md border border-indigo-500/20">Producto SaaS</span>
-                        <span class="text-[10px] font-bold px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-md border border-emerald-500/20">Liderazgo</span>
-                        <span class="text-[10px] font-bold px-2 py-0.5 bg-amber-500/10 text-amber-400 rounded-md border border-amber-500/20">Valores Clave</span>
+                </div>
+
+                <!-- VIEW: SESSIONS -->
+                <div id="view-sessions" class="view p-10">
+                    <h2 class="text-4xl font-extrabold tracking-tight text-slate-800 mb-2">Sesiones</h2>
+                    <p class="text-slate-500 mb-8">Gestiona tus próximas reuniones y revisa tu historial.</p>
+
+                    <div class="bg-white rounded-2xl border border-slate-100 card-shadow overflow-hidden mb-10">
+                        <div class="p-6 border-b border-slate-100">
+                            <h3 class="font-bold text-slate-800">Próximas Sesiones</h3>
+                        </div>
+                        <div class="divide-y divide-slate-50">
+                            <div class="p-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-12 h-12 rounded-xl bg-blue-50 flex flex-col items-center justify-center text-[#1E3A8A]">
+                                        <span class="text-[10px] font-bold uppercase">Hoy</span>
+                                        <span class="text-md font-extrabold leading-none">15:00</span>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-slate-800">Estrategia de Producto</h4>
+                                        <p class="text-sm text-slate-500">Con Elena Rojas · 60 minutos</p>
+                                    </div>
+                                </div>
+                                <button onclick="joinSession()" class="text-sm font-bold text-white bg-[#10B981] px-4 py-2 rounded-lg hover:bg-emerald-600 transition-colors">Unirse</button>
+                            </div>
+                            <div class="p-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-12 h-12 rounded-xl bg-slate-100 flex flex-col items-center justify-center text-slate-600">
+                                        <span class="text-[10px] font-bold uppercase">Jue</span>
+                                        <span class="text-md font-extrabold leading-none">10:30</span>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-slate-800">Revisión de Código</h4>
+                                        <p class="text-sm text-slate-500">Con Javier Méndez · 45 minutos</p>
+                                    </div>
+                                </div>
+                                <button class="text-sm font-bold text-[#1E3A8A] border border-slate-200 px-4 py-2 rounded-lg hover:bg-slate-100 transition-colors">Preparar</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl border border-slate-100 card-shadow overflow-hidden">
+                        <div class="p-6 border-b border-slate-100">
+                            <h3 class="font-bold text-slate-800">Historial Reciente</h3>
+                        </div>
+                        <div class="divide-y divide-slate-50">
+                            <div class="p-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-12 h-12 rounded-xl bg-slate-100 flex flex-col items-center justify-center text-slate-500">
+                                        <span class="text-[10px] font-bold uppercase">Ayer</span>
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-slate-800">Liderazgo y Gestión de Equipos</h4>
+                                        <p class="text-sm text-slate-500">Con Sofía Castro · 60 minutos</p>
+                                    </div>
+                                </div>
+                                <button class="text-sm font-semibold text-[#1E3A8A] hover:underline">Ver Notas</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW: PROGRESS -->
+                <div id="view-progress" class="view p-10">
+                    <h2 class="text-4xl font-extrabold tracking-tight text-slate-800 mb-2">Tu Progreso</h2>
+                    <p class="text-slate-500 mb-8">Analiza tu evolución y gestiona tus objetivos.</p>
+
+                    <div class="grid grid-cols-3 gap-6 mb-8">
+                        <div class="col-span-2 bg-white rounded-2xl p-6 border border-slate-100 card-shadow">
+                            <h3 class="font-bold text-slate-800 mb-4">Evolución de Habilidades</h3>
+                            <div style="height: 300px;">
+                                <canvas id="skillsChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-2xl p-6 border border-slate-100 card-shadow flex flex-col justify-between">
+                            <div>
+                                <h3 class="font-bold text-slate-800 mb-4">Resumen</h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <p class="text-sm text-slate-500">Sesiones completadas</p>
+                                        <p class="text-3xl font-extrabold text-[#1E3A8A]">12</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-slate-500">Horas de mentoría</p>
+                                        <p class="text-3xl font-extrabold text-[#10B981]">9.5 hrs</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-slate-500">Objetivos logrados</p>
+                                        <p class="text-3xl font-extrabold text-slate-800">4/6</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl border border-slate-100 card-shadow p-6">
+                        <h3 class="font-bold text-slate-800 mb-6">Objetivos del Trimestre</h3>
+                        <div class="space-y-6">
+                            <div>
+                                <div class="flex justify-between text-sm mb-2">
+                                    <span class="font-semibold text-slate-700">Definir Roadmap Q3</span>
+                                    <span class="font-bold text-[#10B981]">100% Completado</span>
+                                </div>
+                                <div class="w-full bg-slate-100 rounded-full h-2.5">
+                                    <div class="bg-[#10B981] h-2.5 rounded-full" style="width: 100%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-sm mb-2">
+                                    <span class="font-semibold text-slate-700">Mejorar habilidades de negociación</span>
+                                    <span class="font-bold text-slate-500">60% En progreso</span>
+                                </div>
+                                <div class="w-full bg-slate-100 rounded-full h-2.5">
+                                    <div class="bg-[#1E3A8A] h-2.5 rounded-full" style="width: 60%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-sm mb-2">
+                                    <span class="font-semibold text-slate-700">Aprender arquitectura de microservicios</span>
+                                    <span class="font-bold text-slate-500">25% En progreso</span>
+                                </div>
+                                <div class="w-full bg-slate-100 rounded-full h-2.5">
+                                    <div class="bg-[#1E3A8A] h-2.5 rounded-full" style="width: 25%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL: MENTOR PROFILE -->
+    <div id="mentorModal" class="modal-overlay fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-10">
+        <div class="modal-content bg-white w-full max-w-4xl h-[85vh] rounded-3xl flex overflow-hidden relative">
+            <button onclick="closeMentorModal()" class="absolute top-6 right-6 z-10 p-2 bg-white/80 rounded-full hover:bg-white transition-colors">
+                <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            
+            <div class="w-1/3 bg-slate-100 p-8 overflow-y-auto custom-scroll">
+                <img id="modalImg" src="" class="w-32 h-32 rounded-full object-cover border-4 border-white shadow-md mb-6 mx-auto">
+                <div class="text-center">
+                    <span id="modalMatch" class="inline-block bg-emerald-50 text-[#10B981] text-xs font-bold px-3 py-1 rounded-full mb-3"></span>
+                    <h3 id="modalName" class="text-2xl font-bold text-slate-800"></h3>
+                    <p id="modalRole" class="text-slate-500 mb-6"></p>
+                    
+                    <div class="flex justify-center gap-2 mb-6">
+                        <span class="text-xs bg-white border border-slate-200 text-slate-600 px-2 py-1 rounded-md">Liderazgo</span>
+                        <span class="text-xs bg-white border border-slate-200 text-slate-600 px-2 py-1 rounded-md">Estrategia</span>
+                    </div>
+
+                    <div class="bg-white rounded-xl p-4 border border-slate-100 text-left">
+                        <h4 class="text-sm font-bold text-slate-800 mb-2">Mi filosofía</h4>
+                        <p class="text-xs text-slate-500 leading-relaxed">"Creo en el aprendizaje continuo y la empatía. Mi objetivo es ayudarte a encontrar tu propio camino, no darte las respuestas."</p>
                     </div>
                 </div>
             </div>
-        </section>
 
-        <!-- Col 2: Progress Weekly Dashboard (center) -->
-        <section class="lg:col-span-5 flex flex-col gap-6">
-            <div class="glass p-6 rounded-2xl flex-1 flex flex-col">
-                <div class="flex justify-between items-center mb-6">
+            <div class="w-2/3 p-10 overflow-y-auto custom-scroll">
+                <h4 class="text-lg font-bold text-slate-800 mb-4">Disponibilidad</h4>
+                <div class="grid grid-cols-4 gap-3 mb-8" id="timeSlots">
+                    <!-- Generado por JS -->
+                </div>
+
+                <h4 class="text-lg font-bold text-slate-800 mb-4">Próximos pasos</h4>
+                <div class="bg-slate-50 rounded-xl p-4 mb-8">
+                    <p class="text-sm text-slate-600">Al agendar, recibirás un correo con el link de la videollamada y una encuesta rápida para que el mentor prepare la sesión.</p>
+                </div>
+
+                <button onclick="confirmSchedule()" class="w-full bg-[#10B981] hover:bg-emerald-600 text-white font-bold py-4 rounded-xl transition-colors shadow-md shadow-emerald-100">
+                    Confirmar Sesión - $80 USD
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LIVE SESSION OVERLAY -->
+    <div id="liveSession" class="fixed inset-0 bg-slate-900 z-50 hidden flex-col">
+        <!-- Top Bar -->
+        <div class="h-16 flex items-center justify-between px-8 bg-slate-800 text-white">
+            <div class="flex items-center gap-3">
+                <div class="w-3 h-3 bg-red-500 rounded-full pulse-red"></div>
+                <span class="font-semibold text-sm">Grabando</span>
+                <span class="text-slate-400 mx-3">|</span>
+                <span class="text-slate-300 text-sm">Sesión con Elena Rojas</span>
+            </div>
+            <div id="sessionTimer" class="text-lg font-mono tracking-wider text-white">00:00:00</div>
+        </div>
+
+        <!-- Main Area -->
+        <div class="flex-1 flex p-6 gap-6 overflow-hidden">
+            <!-- Video Area -->
+            <div class="flex-1 flex flex-col gap-4">
+                <div class="flex-1 bg-slate-950 rounded-2xl overflow-hidden relative flex items-center justify-center">
+                    <img src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?q=80&w=1000&auto=format&fit=crop" class="w-full h-full object-cover opacity-90" alt="Mentor Video">
+                    <div class="absolute bottom-4 left-4 bg-slate-900/70 px-3 py-1 rounded-lg text-white text-sm font-medium">Elena Rojas (Mentora)</div>
+                </div>
+                <div class="h-32 bg-slate-950 rounded-2xl overflow-hidden relative flex items-center justify-center border-2 border-[#10B981]">
+                    <img src="https://i.pravatar.cc/150?img=12" class="h-full w-full object-cover" alt="User Video">
+                    <div class="absolute bottom-2 left-2 bg-slate-900/70 px-2 py-1 rounded-md text-white text-xs">Tú</div>
+                </div>
+                <!-- Controls -->
+                <div class="h-16 bg-slate-800 rounded-2xl flex items-center justify-center gap-4">
+                    <button class="p-3 bg-slate-700 hover:bg-slate-600 rounded-full text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                    </button>
+                    <button class="p-3 bg-slate-700 hover:bg-slate-600 rounded-full text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                    </button>
+                    <button onclick="endSession()" class="p-3 bg-red-500 hover:bg-red-600 rounded-full text-white transition-colors ml-4">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M5 3a2 2 0 00-2 2v1c0 8.284 6.716 15 15 15h1a2 2 0 002-2v-3.28a1 1 0 00-.684-.948l-4.493-1.498a1 1 0 00-1.21.502l-1.13 2.257a11.042 11.042 0 01-5.516-5.517l2.257-1.128a1 1 0 00.502-1.21L8.101 5.5A1 1 0 007.16 4.82H5z"></path></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Side Panel (Notes & Agenda) -->
+            <div class="w-96 bg-slate-800 rounded-2xl flex flex-col overflow-hidden">
+                <div class="flex border-b border-slate-700">
+                    <button class="flex-1 py-4 text-white font-semibold text-sm bg-slate-800 border-b-2 border-[#10B981]">Agenda</button>
+                    <button class="flex-1 py-4 text-slate-400 font-semibold text-sm hover:bg-slate-700/50 transition-colors">Notas</button>
+                </div>
+                <div class="flex-1 p-6 overflow-y-auto custom-scroll">
+                    <div class="mb-6">
+                        <h4 class="text-white text-sm font-bold mb-3">Objetivos de hoy</h4>
+                        <ul class="space-y-3 text-slate-300 text-sm">
+                            <li class="flex items-start gap-2">
+                                <svg class="w-4 h-4 text-[#10B981] mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                <span class="line-through opacity-70">Revisar propuesta de valor actual</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <div class="w-4 h-4 border-2 border-slate-500 rounded-sm mt-0.5 flex-shrink-0"></div>
+                                <span>Discutir el nuevo flujo de onboarding</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <div class="w-4 h-4 border-2 border-slate-500 rounded-sm mt-0.5 flex-shrink-0"></div>
+                                <span>Definir métricas clave (KPIs) para Q3</span>
+                            </li>
+                        </ul>
+                    </div>
                     <div>
-                        <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-0.5">Objetivos de Progreso</h3>
-                        <h2 class="text-xl font-extrabold text-white">Metas de Aprendizaje Semanal</h2>
+                        <h4 class="text-white text-sm font-bold mb-3">Notas compartidas</h4>
+                        <textarea class="w-full h-48 bg-slate-900/50 text-slate-200 rounded-xl p-4 text-sm outline-none resize-none border border-slate-700 focus:border-[#10B981] transition-colors custom-scroll" placeholder="Escribe aquí tus notas..."></textarea>
                     </div>
-                    <div class="text-right">
-                        <span id="progressPercent" class="text-lg font-extrabold text-emerald-400">33%</span>
-                        <p class="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Cumplido</p>
-                    </div>
-                </div>
-
-                <!-- Progress Bar -->
-                <div class="w-full h-2 bg-slate-800 rounded-full mb-6 overflow-hidden">
-                    <div id="progressBar" class="h-full bg-gradient-to-r from-emerald-500 to-indigo-500 rounded-full transition-all duration-500" style="width: 33%"></div>
-                </div>
-
-                <!-- Checklist -->
-                <div class="flex-1 space-y-3">
-                    <label class="flex items-start gap-3 bg-slate-900/35 p-3.5 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer group">
-                        <input type="checkbox" checked onclick="updateProgress(this)" class="mt-1 rounded border-slate-700 text-emerald-500 focus:ring-emerald-500/40 w-4 h-4 bg-slate-950">
-                        <div>
-                            <span class="text-sm font-semibold text-slate-200 group-hover:text-white transition-colors">Revisar arquitectura inicial del MVP</span>
-                            <p class="text-xs text-slate-500 mt-0.5">Discutido en la última sesión con Alex</p>
-                        </div>
-                    </label>
-                    <label class="flex items-start gap-3 bg-slate-900/35 p-3.5 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer group">
-                        <input type="checkbox" onclick="updateProgress(this)" class="mt-1 rounded border-slate-700 text-emerald-500 focus:ring-emerald-500/40 w-4 h-4 bg-slate-950">
-                        <div>
-                            <span class="text-sm font-semibold text-slate-200 group-hover:text-white transition-colors">Completar modelo de BD relacional</span>
-                            <p class="text-xs text-slate-500 mt-0.5">Definir entidades principales y relaciones</p>
-                        </div>
-                    </label>
-                    <label class="flex items-start gap-3 bg-slate-900/35 p-3.5 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer group">
-                        <input type="checkbox" onclick="updateProgress(this)" class="mt-1 rounded border-slate-700 text-emerald-500 focus:ring-emerald-500/40 w-4 h-4 bg-slate-950">
-                        <div>
-                            <span class="text-sm font-semibold text-slate-200 group-hover:text-white transition-colors">Agendar llamada de seguimiento (RSVP)</span>
-                            <p class="text-xs text-slate-500 mt-0.5">Revisión final de metas semanales</p>
-                        </div>
-                    </label>
                 </div>
             </div>
-        </section>
+        </div>
+    </div>
 
-        <!-- Col 3: Interactive Scheduler (right) -->
-        <section class="lg:col-span-3 flex flex-col gap-6">
-            <div class="glass p-6 rounded-2xl flex-1 flex flex-col justify-between">
-                <div>
-                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Agendamiento</h3>
-                    <h2 class="text-xl font-extrabold text-white mb-4">Próxima Sesión</h2>
-                    
-                    <div class="space-y-2 mt-4">
-                        <p class="text-xs text-slate-400 font-semibold mb-2">Selecciona un horario:</p>
-                        <button onclick="selectSlot(this)" class="w-full text-left py-2.5 px-4 bg-slate-900/50 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs font-semibold text-slate-300 hover:text-white transition-all flex justify-between items-center">
-                            <span>Lunes, 14:00 - 15:00</span>
-                            <span class="text-[10px] text-emerald-400 font-bold bg-emerald-400/10 px-2 py-0.5 rounded-full">Libre</span>
-                        </button>
-                        <button onclick="selectSlot(this)" class="w-full text-left py-2.5 px-4 bg-slate-900/50 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs font-semibold text-slate-300 hover:text-white transition-all flex justify-between items-center">
-                            <span>Miércoles, 16:30 - 17:30</span>
-                            <span class="text-[10px] text-emerald-400 font-bold bg-emerald-400/10 px-2 py-0.5 rounded-full">Libre</span>
-                        </button>
-                        <button onclick="selectSlot(this)" class="w-full text-left py-2.5 px-4 bg-slate-900/50 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs font-semibold text-slate-300 hover:text-white transition-all flex justify-between items-center">
-                            <span>Viernes, 10:00 - 11:00</span>
-                            <span class="text-[10px] text-emerald-400 font-bold bg-emerald-400/10 px-2 py-0.5 rounded-full">Libre</span>
-                        </button>
-                    </div>
-                </div>
+    <!-- TOAST CONTAINER -->
+    <div id="toastContainer" class="fixed top-10 right-10 z-[100] space-y-4"></div>
 
-                <div class="pt-6">
-                    <button onclick="scheduleSession()" id="scheduleBtn" disabled class="w-full py-3 rounded-xl bg-slate-800 text-slate-500 font-extrabold text-sm transition-all cursor-not-allowed">Selecciona un horario</button>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <!-- Audio & Alert Script -->
     <script>
-        let selectedTime = null;
-        let audioCtx = null;
-
-        function playSound() {
-            try {
-                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                if (audioCtx.state === 'suspended') audioCtx.resume();
-                
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
-                osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15); // A5
-                
-                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
-                
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.55);
-            } catch (e) {}
-        }
-
-        function updateProgress() {
-            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-            const checked = Array.from(checkboxes).filter(c => c.checked).length;
-            const pct = Math.round((checked / checkboxes.length) * 100);
+        // --- NAVEGACIÓN SPA ---
+        function switchView(viewName) {
+            document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+            document.getElementById(\`view-\${viewName}\`).classList.add('active');
+            document.getElementById(\`view-\${viewName}\`).classList.add('fade-in-up');
             
-            document.getElementById('progressPercent').textContent = pct + '%';
-            document.getElementById('progressBar').style.width = pct + '%';
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            document.querySelector(\`[data-view="\${viewName}"]\`).classList.add('active');
+
+            // Cargar chart si es vista de progreso
+            if(viewName === 'progress') {
+                setTimeout(initChart, 100);
+            }
         }
 
-        function selectSlot(btn) {
-            // Reset others
-            const buttons = btn.parentElement.querySelectorAll('button');
-            buttons.forEach(b => {
-                b.classList.remove('border-emerald-500', 'bg-emerald-500/10', 'text-white');
-                b.classList.add('border-slate-800', 'bg-slate-900/50', 'text-slate-300');
+        // --- MODAL DE MENTOR ---
+        function openMentorModal(name, role, img, match) {
+            document.getElementById('modalName').innerText = name;
+            document.getElementById('modalRole').innerText = role;
+            document.getElementById('modalImg').src = img;
+            document.getElementById('modalMatch').innerText = \`\${match}% Match Perfecto\`;
+            
+            // Generar horas mock
+            const slots = ['09:00', '10:30', '13:00', '14:30', '16:00', '17:30'];
+            let slotsHtml = '';
+            slots.forEach(slot => {
+                slotsHtml += \`
+                    <button onclick="selectTimeSlot(this)" class="slot-btn py-3 border border-slate-200 hover:border-[#1E3A8A] hover:bg-blue-50/30 rounded-xl text-sm font-medium transition-colors text-center text-slate-700">
+                        \${slot}
+                    </button>
+                \`;
             });
-            
-            btn.classList.remove('border-slate-800', 'bg-slate-900/50', 'text-slate-300');
-            btn.classList.add('border-emerald-500', 'bg-emerald-500/10', 'text-white');
-            
-            selectedTime = btn.querySelector('span').textContent;
-            
-            const mainBtn = document.getElementById('scheduleBtn');
-            mainBtn.disabled = false;
-            mainBtn.classList.remove('bg-slate-800', 'text-slate-500', 'cursor-not-allowed');
-            mainBtn.classList.add('bg-emerald-500', 'text-slate-900', 'hover:bg-emerald-400', 'glow-emerald');
-            mainBtn.textContent = 'Confirmar Cita';
+            document.getElementById('timeSlots').innerHTML = slotsHtml;
+
+            const modal = document.getElementById('mentorModal');
+            modal.classList.add('active');
         }
 
-        function scheduleSession() {
-            if (!selectedTime) return;
-            playSound();
-            alert('¡Cita Confirmada con éxito para ' + selectedTime + '!');
+        function closeMentorModal() {
+            const modal = document.getElementById('mentorModal');
+            modal.classList.remove('active');
+            selectedSlot = null;
+        }
+
+        let selectedSlot = null;
+        function selectTimeSlot(btn) {
+            document.querySelectorAll('.slot-btn').forEach(el => el.classList.remove('bg-blue-50', 'border-[#1E3A8A]', 'text-[#1E3A8A]'));
+            btn.classList.add('bg-blue-50', 'border-[#1E3A8A]', 'text-[#1E3A8A]');
+            selectedSlot = btn.innerText;
+        }
+
+        function confirmSchedule() {
+            if(!selectedSlot) {
+                showToast('Por favor, selecciona una hora para la sesión', 'warning');
+                return;
+            }
+            closeMentorModal();
+            showToast('¡Sesión agendada con éxito!', 'success');
+        }
+
+        // --- TOAST NOTIFICATIONS ---
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            let bg = 'bg-white';
+            let border = 'border-slate-100';
+            let icon = '';
+            
+            if(type === 'success') {
+                icon = '<svg class="w-5 h-5 text-[#10B981]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+            } else if(type === 'warning') {
+                icon = '<svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>';
+            } else {
+                icon = '<svg class="w-5 h-5 text-[#3B82F6]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.25 11.25l.041-.02a.75.75 0 111.063.852l-.708 2.836a.75.75 0 001.063.852l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"></path></svg>';
+            }
+
+            toast.className = \`toast flex items-center gap-3 p-4 rounded-xl border \${border} \${bg} soft-shadow w-80 text-sm text-slate-700\`;
+            toast.innerHTML = \`\${icon}<span>\${message}</span>\`;
+            
+            container.appendChild(toast);
+            
+            // Forzar reflow para animación
+            toast.offsetHeight;
+            toast.classList.add('show');
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 400);
+            }, 3000);
+        }
+
+        // --- VIDEOCALL LIVE SESSION ---
+        let sessionInterval;
+        function joinSession() {
+            document.getElementById('liveSession').classList.remove('hidden');
+            document.getElementById('liveSession').classList.add('flex');
+            
+            let seconds = 0;
+            const timerEl = document.getElementById('sessionTimer');
+            
+            sessionInterval = setInterval(() => {
+                seconds++;
+                let hrs = Math.floor(seconds / 3600).toString().padStart(2, '0');
+                let mins = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+                let secs = (seconds % 60).toString().padStart(2, '0');
+                timerEl.innerText = \`\${hrs}:\${mins}:\${secs}\`;
+            }, 1000);
+        }
+
+        function endSession() {
+            clearInterval(sessionInterval);
+            document.getElementById('liveSession').classList.add('hidden');
+            document.getElementById('liveSession').classList.remove('flex');
+            showToast('Sesión guardada en el historial', 'success');
+        }
+
+        // --- CHART JS ---
+        let chartInstance = null;
+        function initChart() {
+            const ctx = document.getElementById('skillsChart').getContext('2d');
+            if(chartInstance) chartInstance.destroy();
+            
+            chartInstance = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Estrategia', 'Liderazgo', 'Arquitectura', 'Diseño UX', 'Finanzas', 'Negociación'],
+                    datasets: [{
+                        label: 'Tus Habilidades',
+                        data: [75, 60, 45, 80, 50, 65],
+                        backgroundColor: 'rgba(30, 58, 138, 0.2)',
+                        borderColor: '#1E3A8A',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#1E3A8A'
+                    }, {
+                        label: 'Objetivo Q3',
+                        data: [90, 80, 70, 90, 70, 80],
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderColor: '#10B981',
+                        borderWidth: 1.5,
+                        pointBackgroundColor: '#10B981',
+                        borderDash: [5, 5]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { color: '#f1f5f9' },
+                            grid: { color: '#f1f5f9' },
+                            pointLabels: { font: { family: 'Inter', size: 11, weight: '600' } },
+                            ticks: { display: false }
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'bottom', labels: { font: { family: 'Inter', size: 12 } } }
+                    }
+                }
+            });
         }
     </script>
 </body>

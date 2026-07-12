@@ -7260,7 +7260,7 @@ Iconografía consistente y moderna.
 Accesibilidad alta(buenos contrastes y tamaños de toque).
 Optimizado para uso con una sola mano.`,
     demoCode: `<!DOCTYPE html>
-<html lang="es" x-data="agoraApp()" :class="{ 'dark': darkMode }">
+<html lang="es" x-data="agoraApp()">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -7269,10 +7269,9 @@ Optimizado para uso con una sola mano.`,
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
-            darkMode: 'class',
             theme: {
                 extend: {
                     fontFamily: { sans: ['Inter', 'sans-serif'] },
@@ -7286,95 +7285,118 @@ Optimizado para uso con una sola mano.`,
         }
     </script>
     <style>
-        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; background-color: #e5e7eb; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .snap-x-mandatory { scroll-snap-type: x mandatory; }
         .snap-start { scroll-snap-align: start; }
         [x-cloak] { display: none !important; }
-        .vibrate { animation: vibrate 0.2s; }
-        @keyframes vibrate { 0% { transform: scale(1); } 50% { transform: scale(0.95); } 100% { transform: scale(1); } }
+        .card-shadow { box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+        .toast-enter { opacity: 0; transform: translateY(20px); }
+        .toast-enter-active { transition: all 0.3s ease; opacity: 1; transform: translateY(0); }
     </style>
 </head>
-<body class="bg-gray-100 dark:bg-zinc-900 flex justify-center text-zinc-900 dark:text-zinc-100">
+<body class="flex justify-center text-zinc-900">
 
     <!-- Mobile Container -->
-    <div class="relative w-full max-w-md h-screen bg-white dark:bg-zinc-950 shadow-2xl flex flex-col overflow-hidden border-x border-gray-200 dark:border-zinc-800">
+    <div class="relative w-full max-w-md h-screen bg-gray-50 shadow-2xl flex flex-col overflow-hidden">
         
         <!-- Header -->
-        <header class="px-4 pt-4 pb-2 bg-white dark:bg-zinc-950 z-20 sticky top-0 border-b border-gray-100 dark:border-zinc-800" x-show="activeTab !== 'product'">
+        <header class="px-4 pt-4 pb-3 bg-white z-20 sticky top-0 border-b border-gray-100" x-show="activeTab !== 'product'">
             <div class="flex items-center justify-between mb-3">
                 <div class="flex items-center gap-1 text-sm font-medium">
                     <svg class="w-4 h-4 text-agora-yellow" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path></svg>
-                    <span>Enviar a</span>
+                    <span class="text-zinc-500">Enviar a</span>
                     <span class="font-bold">Bogotá 110111</span>
                 </div>
-                <div class="flex items-center gap-3">
-                    <button @click="darkMode = !darkMode" class="text-zinc-600 dark:text-zinc-300">
-                        <svg x-show="!darkMode" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" /></svg>
-                        <svg x-show="darkMode" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" /></svg>
-                    </button>
-                    <div class="relative">
-                        <svg class="w-6 h-6 text-zinc-600 dark:text-zinc-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" /></svg>
-                        <span x-show="cart.length > 0" class="absolute -top-1 -right-1 bg-agora-blue text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center" x-text="cart.length"></span>
-                    </div>
+                <div class="relative">
+                    <svg class="w-6 h-6 text-zinc-600" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" /></svg>
+                    <span x-show="cart.length > 0" class="absolute -top-1 -right-1 bg-agora-blue text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center" x-text="cart.length"></span>
                 </div>
             </div>
             <div class="relative">
-                <input type="text" placeholder="Buscar en Agora..." class="w-full bg-gray-100 dark:bg-zinc-800 rounded-xl py-3 pl-10 pr-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-agora-yellow">
+                <input type="text" placeholder="Buscar productos, marcas y más..." class="w-full bg-gray-100 rounded-xl py-3 pl-10 pr-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-agora-yellow focus:bg-white transition-all">
                 <svg class="w-5 h-5 text-zinc-400 absolute left-3 top-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
             </div>
         </header>
 
         <!-- Main Content Area -->
-        <main class="flex-1 overflow-y-auto pb-20 no-scrollbar" x-show="activeTab !== 'product'">
+        <main class="flex-1 overflow-y-auto pb-24 no-scrollbar bg-gray-50" x-show="activeTab !== 'product'">
             
             <!-- HOME TAB -->
-            <div x-show="activeTab === 'home'" class="space-y-6 pt-4">
+            <div x-show="activeTab === 'home'" class="pt-4">
                 <!-- Banners -->
-                <div class="flex gap-4 overflow-x-auto no-scrollbar snap-x-mandatory px-4">
-                    <div class="min-w-[85%] h-32 bg-gradient-to-r from-agora-yellow to-yellow-500 rounded-2xl p-4 flex flex-col justify-center snap-start">
-                        <h3 class="font-extrabold text-xl text-zinc-900">Hasta 40% OFF</h3>
-                        <p class="text-zinc-800 text-sm font-medium">En tecnología seleccionada</p>
-                        <button class="mt-2 bg-zinc-900 text-white text-xs font-bold py-1.5 px-4 rounded-lg w-fit">Ver ofertas</button>
+                <div class="flex gap-3 overflow-x-auto no-scrollbar snap-x-mandatory px-4 pb-2">
+                    <div class="min-w-[85%] h-36 bg-gradient-to-r from-agora-yellow to-amber-400 rounded-2xl p-4 flex flex-col justify-center snap-start shadow-sm relative overflow-hidden">
+                        <div class="absolute right-0 top-0 w-24 h-24 bg-white/20 rounded-full -mr-8 -mt-8"></div>
+                        <h3 class="font-extrabold text-xl text-zinc-900 z-10">Hasta 40% OFF</h3>
+                        <p class="text-zinc-800 text-sm font-medium z-10 mb-2">En tecnología seleccionada</p>
+                        <button class="bg-zinc-900 text-white text-xs font-bold py-1.5 px-4 rounded-lg w-fit z-10">Ver ofertas</button>
                     </div>
-                    <div class="min-w-[85%] h-32 bg-gradient-to-r from-zinc-800 to-zinc-900 rounded-2xl p-4 flex flex-col justify-center snap-start">
-                        <h3 class="font-extrabold text-xl text-agora-yellow">Envío Gratis</h3>
-                        <p class="text-zinc-300 text-sm font-medium">En tu primera compra</p>
+                    <div class="min-w-[85%] h-36 bg-gradient-to-r from-zinc-800 to-zinc-900 rounded-2xl p-4 flex flex-col justify-center snap-start shadow-sm relative overflow-hidden">
+                        <div class="absolute right-0 bottom-0 w-32 h-32 bg-agora-yellow/10 rounded-full -mr-10 -mb-10"></div>
+                        <h3 class="font-extrabold text-xl text-white z-10">Mercado Envíos</h3>
+                        <p class="text-zinc-300 text-sm font-medium z-10 mb-2">Envío gratis en tu primera compra</p>
+                        <button class="bg-white text-zinc-900 text-xs font-bold py-1.5 px-4 rounded-lg w-fit z-10">Saber más</button>
                     </div>
                 </div>
 
                 <!-- Categories -->
-                <div class="px-4">
-                    <h2 class="text-lg font-bold mb-3">Categorías</h2>
-                    <div class="flex justify-between gap-2">
-                        <template x-for="cat in categories" :key="cat.name">
-                            <div class="flex flex-col items-center gap-1 w-1/4">
-                                <div class="w-14 h-14 bg-gray-100 dark:bg-zinc-800 rounded-2xl flex items-center justify-center text-2xl" x-html="cat.icon"></div>
-                                <span class="text-xs text-center font-medium" x-text="cat.name"></span>
+                <div class="px-4 mt-6">
+                    <div class="grid grid-cols-4 gap-2 text-center">
+                        <div class="flex flex-col items-center gap-1.5 cursor-pointer active:scale-90 transition-transform">
+                            <div class="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-gray-100">
+                                <svg class="w-7 h-7 text-zinc-700" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" /></svg>
                             </div>
-                        </template>
+                            <span class="text-[11px] font-medium text-zinc-600">Tecnología</span>
+                        </div>
+                        <div class="flex flex-col items-center gap-1.5 cursor-pointer active:scale-90 transition-transform">
+                            <div class="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-gray-100">
+                                <svg class="w-7 h-7 text-zinc-700" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>
+                            </div>
+                            <span class="text-[11px] font-medium text-zinc-600">Hogar</span>
+                        </div>
+                        <div class="flex flex-col items-center gap-1.5 cursor-pointer active:scale-90 transition-transform">
+                            <div class="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-gray-100">
+                                <svg class="w-7 h-7 text-zinc-700" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.099 3.75A9.66 9.66 0 0112 3c5.523 0 10 4.477 10 10 0 5.523-4.477 10-10 10-5.522 0-10-4.477-10-10 0-1.39.29-2.715.81-3.883a17.968 17.968 0 0111.535 11.535" /></svg>
+                            </div>
+                            <span class="text-[11px] font-medium text-zinc-600">Moda</span>
+                        </div>
+                        <div class="flex flex-col items-center gap-1.5 cursor-pointer active:scale-90 transition-transform">
+                            <div class="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-gray-100">
+                                <svg class="w-7 h-7 text-zinc-700" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-6m6 0V9.75m-6 9v-9m6 0V5.25c0-.621-.504-1.125-1.125-1.125H10.5c-.621 0-1.125.504-1.125 1.125V9.75" /></svg>
+                            </div>
+                            <span class="text-[11px] font-medium text-zinc-600">Vehículos</span>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Offers Grid -->
-                <div class="px-4">
-                    <div class="flex justify-between items-center mb-3">
-                        <h2 class="text-lg font-bold">Ofertas del día</h2>
-                        <span class="text-agora-blue text-sm font-semibold">Ver todas</span>
+                <div class="px-4 mt-8">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-bold tracking-tight">Ofertas del día</h2>
+                        <span class="text-agora-blue text-sm font-semibold flex items-center gap-1">
+                            Ver todas
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+                        </span>
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-2 gap-3">
                         <template x-for="(product, index) in products" :key="index">
-                            <div @click="openProduct(product)" class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-gray-100 dark:border-zinc-800 overflow-hidden active:scale-95 transition-transform cursor-pointer">
-                                <div class="aspect-square bg-gray-50 dark:bg-zinc-800 relative">
+                            <div @click="openProduct(product)" class="bg-white rounded-xl card-shadow border border-gray-100 overflow-hidden active:scale-[0.97] transition-transform cursor-pointer">
+                                <div class="aspect-square bg-gray-100 relative">
                                     <img :src="product.img" :alt="product.name" class="w-full h-full object-cover" loading="lazy">
-                                    <span class="absolute top-2 left-2 bg-agora-green text-white text-[10px] font-bold px-2 py-0.5 rounded-full">Envío Gratis</span>
+                                    <span class="absolute top-2 left-2 bg-agora-green text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm">Envío Gratis</span>
                                 </div>
-                                <div class="p-2">
-                                    <p class="text-xs text-zinc-500 dark:text-zinc-400 line-through" x-text="product.oldPrice"></p>
-                                    <p class="text-lg font-bold text-zinc-900 dark:text-white" x-text="formatPrice(product.price)"></p>
-                                    <p class="text-xs text-agora-green font-semibold" x-text="product.discount + '% OFF'"></p>
-                                    <p class="text-xs text-zinc-600 dark:text-zinc-400 mt-1 truncate" x-text="product.name"></p>
+                                <div class="p-2.5">
+                                    <p class="text-lg font-extrabold text-zinc-900 leading-tight" x-text="formatPrice(product.price)"></p>
+                                    <p class="text-[11px] text-zinc-500 line-through leading-tight" x-text="product.oldPrice"></p>
+                                    <p class="text-[11px] text-agora-green font-bold leading-tight mb-1" x-text="product.discount + '% OFF'"></p>
+                                    <p class="text-[11px] text-zinc-400 leading-tight">en 12x sin interés</p>
+                                    <p class="text-xs text-zinc-700 mt-1 truncate font-medium" x-text="product.name"></p>
+                                    <div class="flex items-center gap-0.5 mt-1">
+                                        <svg class="w-3 h-3 text-agora-yellow" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                                        <span class="text-[11px] font-semibold text-zinc-500" x-text="product.rating + ' (' + product.sales + ')'"></span>
+                                    </div>
                                 </div>
                             </div>
                         </template>
@@ -7383,178 +7405,251 @@ Optimizado para uso con una sola mano.`,
             </div>
 
             <!-- CATEGORIES TAB -->
-            <div x-show="activeTab === 'categories'" class="p-4 space-y-6">
-                <h2 class="text-2xl font-extrabold">Categorías</h2>
-                <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-                    <button @click="filterFreeShipping = !filterFreeShipping" :class="filterFreeShipping ? 'bg-agora-green text-white' : 'bg-gray-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300'" class="text-xs font-bold px-4 py-2 rounded-full whitespace-nowrap">Solo Envío Gratis</button>
-                    <button @click="filterNew = !filterNew" :class="filterNew ? 'bg-agora-blue text-white' : 'bg-gray-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300'" class="text-xs font-bold px-4 py-2 rounded-full whitespace-nowrap">Solo Nuevos</button>
+            <div x-show="activeTab === 'categories'" class="p-4">
+                <h2 class="text-2xl font-extrabold mb-4 tracking-tight">Categorías</h2>
+                <div class="flex gap-2 overflow-x-auto no-scrollbar pb-3 mb-2">
+                    <button class="bg-zinc-900 text-white text-xs font-bold px-4 py-2 rounded-full whitespace-nowrap active:scale-95 transition-transform">Todas</button>
+                    <button @click="filterFreeShipping = !filterFreeShipping" :class="filterFreeShipping ? 'bg-agora-green text-white' : 'bg-white text-zinc-600 border border-gray-200'" class="text-xs font-bold px-4 py-2 rounded-full whitespace-nowrap active:scale-95 transition-transform">Solo Envío Gratis</button>
+                    <button @click="filterNew = !filterNew" :class="filterNew ? 'bg-agora-blue text-white' : 'bg-white text-zinc-600 border border-gray-200'" class="text-xs font-bold px-4 py-2 rounded-full whitespace-nowrap active:scale-95 transition-transform">Solo Nuevos</button>
                 </div>
-                <div class="space-y-3">
-                    <template x-for="cat in categories" :key="cat.name">
-                        <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-zinc-900 rounded-xl border border-gray-100 dark:border-zinc-800 cursor-pointer active:bg-gray-100">
-                            <div class="flex items-center gap-3">
-                                <span class="text-2xl" x-html="cat.icon"></span>
-                                <span class="font-semibold" x-text="cat.name"></span>
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100 cursor-pointer active:bg-gray-100 transition-colors">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                                <svg class="w-6 h-6 text-zinc-700" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" /></svg>
                             </div>
-                            <svg class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+                            <span class="font-semibold text-sm">Tecnología</span>
                         </div>
-                    </template>
+                        <svg class="w-5 h-5 text-zinc-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+                    </div>
+                    <div class="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100 cursor-pointer active:bg-gray-100 transition-colors">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                                <svg class="w-6 h-6 text-zinc-700" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>
+                            </div>
+                            <span class="font-semibold text-sm">Hogar y Muebles</span>
+                        </div>
+                        <svg class="w-5 h-5 text-zinc-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+                    </div>
+                    <div class="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100 cursor-pointer active:bg-gray-100 transition-colors">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                                <svg class="w-6 h-6 text-zinc-700" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.099 3.75A9.66 9.66 0 0112 3c5.523 0 10 4.477 10 10 0 5.523-4.477 10-10 10-5.522 0-10-4.477-10-10 0-1.39.29-2.715.81-3.883a17.968 17.968 0 0111.535 11.535" /></svg>
+                            </div>
+                            <span class="font-semibold text-sm">Moda</span>
+                        </div>
+                        <svg class="w-5 h-5 text-zinc-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+                    </div>
                 </div>
             </div>
 
             <!-- SELL TAB -->
-            <div x-show="activeTab === 'sell'" class="p-4 space-y-4">
-                <h2 class="text-2xl font-extrabold">Vender producto</h2>
-                <div class="border-2 border-dashed border-gray-300 dark:border-zinc-700 rounded-xl p-8 text-center">
-                    <svg class="w-12 h-12 mx-auto text-zinc-400 mb-2" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
-                    <p class="font-semibold">Subir fotos</p>
-                    <p class="text-xs text-zinc-500">Arrastra o toca para subir (Máx 10)</p>
+            <div x-show="activeTab === 'sell'" class="p-4">
+                <h2 class="text-2xl font-extrabold mb-4 tracking-tight">Vender producto</h2>
+                <div class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center mb-4 bg-white">
+                    <div class="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <svg class="w-8 h-8 text-zinc-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
+                    </div>
+                    <p class="font-semibold text-sm">Arrastra o toca para subir fotos</p>
+                    <p class="text-xs text-zinc-400 mt-1">Máximo 10 fotos. Formato JPG o PNG.</p>
                 </div>
-                <div class="space-y-3">
+                <div class="space-y-4 bg-white p-4 rounded-xl border border-gray-100">
                     <div>
-                        <label class="text-sm font-bold text-zinc-600 dark:text-zinc-400">Título</label>
-                        <input type="text" placeholder="Ej: iPhone 13 128GB" class="w-full mt-1 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl py-3 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-agora-yellow">
+                        <label class="text-xs font-bold text-zinc-500 uppercase tracking-wide">Título</label>
+                        <input type="text" placeholder="Ej: iPhone 13 128GB" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-lg py-2.5 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-agora-yellow">
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="text-sm font-bold text-zinc-600 dark:text-zinc-400">Precio</label>
-                            <input type="text" placeholder="$ 1,000,000" class="w-full mt-1 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl py-3 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-agora-yellow">
+                            <label class="text-xs font-bold text-zinc-500 uppercase tracking-wide">Precio</label>
+                            <input type="text" placeholder="$ 1,000,000" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-lg py-2.5 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-agora-yellow">
                         </div>
                         <div>
-                            <label class="text-sm font-bold text-zinc-600 dark:text-zinc-400">Condición</label>
-                            <select class="w-full mt-1 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl py-3 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-agora-yellow">
+                            <label class="text-xs font-bold text-zinc-500 uppercase tracking-wide">Condición</label>
+                            <select class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-lg py-2.5 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-agora-yellow">
                                 <option>Nuevo</option>
                                 <option>Usado</option>
                             </select>
                         </div>
                     </div>
                 </div>
-                <button @click="haptic()" class="w-full bg-agora-yellow text-zinc-900 font-extrabold py-4 rounded-xl text-lg shadow-lg shadow-agora-yellow/30 active:scale-95 transition-transform">Publicar</button>
+                <button @click="haptic(); showToast('Producto publicado con éxito')" class="w-full mt-6 bg-agora-yellow text-zinc-900 font-extrabold py-3.5 rounded-xl text-base shadow-md shadow-agora-yellow/40 active:scale-[0.98] transition-transform">Publicar</button>
             </div>
 
-            <!--CART TAB-->
-    <div x-show="activeTab === 'cart'" class="p-4 space-y-4">
-        <h2 class="text-2xl font-extrabold">Mi Carrito (<span x-text="cart.length"></span>)</h2>
-        <template x-if="cart.length === 0">
-            <div class="text-center py-20">
-                <p class="text-zinc-500 mb-4">Tu carrito está vacío</p>
-                <button @click="activeTab='home'" class="text-agora-blue font-bold">Explorar productos</button>
-    </div>
+            <!-- CART TAB -->
+            <div x-show="activeTab === 'cart'" class="p-4 pt-0">
+                <h2 class="text-2xl font-extrabold mb-4 pt-4 tracking-tight">Mi Carrito (<span x-text="cart.length"></span>)</h2>
+                <template x-if="cart.length === 0">
+                    <div class="text-center py-24 flex flex-col items-center">
+                        <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                            <svg class="w-10 h-10 text-zinc-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" /></svg>
+                        </div>
+                        <p class="text-zinc-500 mb-4 font-medium">Tu carrito está vacío</p>
+                        <button @click="activeTab='home'" class="text-agora-blue font-bold bg-agora-blue/10 py-2 px-6 rounded-full text-sm">Explorar productos</button>
+                    </div>
                 </template>
-    <template x-for="(item, index) in cart" : key="index">
-        <div class="flex gap-3 bg-white dark:bg-zinc-900 p-3 rounded-xl border border-gray-100 dark:border-zinc-800">
-            <img:src="item.img" class="w-20 h-20 rounded-lg object-cover" alt="">
-            <div class="flex-1">
-                <p class="text-sm font-medium truncate" x-text="item.name"></p>
-                <p class="text-lg font-bold" x-text="formatPrice(item.price)"></p>
-                <button @click="cart.splice(index, 1)" class="text-xs text-red-500 font-semibold mt-1">Eliminar</button>
-        </div>
-    </div>
-                </template>
-    <div x-show="cart.length > 0" class="absolute bottom-20 left-0 right-0 p-4 bg-white dark:bg-zinc-950 border-t border-gray-100 dark:border-zinc-800">
-        <div class="flex justify-between mb-3">
-            <span class="font-medium text-zinc-500">Total</span>
-            <span class="text-2xl font-extrabold" x-text="formatPrice(totalCart())"></span>
-        </div>
-        <button @click="haptic()" class="w-full bg-agora-yellow text-zinc-900 font-extrabold py-4 rounded-xl text-lg shadow-lg active:scale-95 transition-transform">Continuar compra</button>
+                <div class="space-y-3">
+                    <template x-for="(item, index) in cart" :key="index">
+                        <div class="flex gap-3 bg-white p-3 rounded-xl border border-gray-100">
+                            <img :src="item.img" class="w-20 h-20 rounded-lg object-cover" alt="">
+                            <div class="flex-1 flex flex-col justify-center">
+                                <p class="text-sm font-medium truncate" x-text="item.name"></p>
+                                <p class="text-lg font-bold mt-1" x-text="formatPrice(item.price)"></p>
+                                <button @click="cart.splice(index, 1)" class="text-xs text-zinc-400 font-semibold mt-1 flex items-center gap-1 w-fit">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                                    Eliminar
+                                </button>
+                            </div>
+                        </div>
+                    </template>
                 </div>
             </div>
 
-            < !--PROFILE TAB-- >
-    <div x-show="activeTab === 'profile'" class="p-4">
-        <div class="flex flex-col items-center mb-6">
-            <div class="w-24 h-24 bg-agora-yellow rounded-full flex items-center justify-center text-4xl font-extrabold text-zinc-900 mb-3">J</div>
-            <h2 class="text-xl font-bold">Juan Pérez</h2>
-            <p class="text-sm text-agora-green font-semibold flex items-center gap-1">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 1l2.928 5.934 6.55.95-4.739 4.62L15.856 19 10 15.934 4.144 19l1.117-5.496L.522 7.884l6.55-.95L10 1z" clip-rule="evenodd"></path></svg>
-                Comprador Oro
-            </p>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-            <div class="bg-gray-50 dark:bg-zinc-900 p-4 rounded-xl text-center cursor-pointer active:scale-95 transition-transform">
-                <svg class="w-8 h-8 mx-auto mb-2 text-zinc-700 dark:text-zinc-200" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>
-                <span class="font-semibold text-sm">Mis Compras</span>
+            <!-- PROFILE TAB -->
+            <div x-show="activeTab === 'profile'" class="p-4">
+                <div class="flex flex-col items-center mb-6 mt-4">
+                    <div class="w-24 h-24 bg-gradient-to-br from-agora-yellow to-amber-300 rounded-full flex items-center justify-center text-4xl font-extrabold text-zinc-900 mb-3 shadow-lg shadow-agora-yellow/30 border-4 border-white">J</div>
+                    <h2 class="text-xl font-bold">Juan Pérez</h2>
+                    <p class="text-sm text-agora-green font-semibold flex items-center gap-1 mt-1">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 1l2.928 5.934 6.55.95-4.739 4.62L15.856 19 10 15.934 4.144 19l1.117-5.496L.522 7.884l6.55-.95L10 1z" clip-rule="evenodd"></path></svg>
+                        Comprador Oro
+                    </p>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-white p-4 rounded-xl text-center cursor-pointer active:scale-95 transition-transform border border-gray-100 shadow-sm">
+                        <div class="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-2">
+                            <svg class="w-6 h-6 text-agora-blue" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>
+                        </div>
+                        <span class="font-semibold text-sm text-zinc-700">Mis Compras</span>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl text-center cursor-pointer active:scale-95 transition-transform border border-gray-100 shadow-sm">
+                        <div class="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-2">
+                            <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" /></svg>
+                        </div>
+                        <span class="font-semibold text-sm text-zinc-700">Favoritos</span>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl text-center cursor-pointer active:scale-95 transition-transform border border-gray-100 shadow-sm">
+                        <div class="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-2">
+                            <svg class="w-6 h-6 text-agora-green" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" /></svg>
+                        </div>
+                        <span class="font-semibold text-sm text-zinc-700">Mensajes</span>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl text-center cursor-pointer active:scale-95 transition-transform border border-gray-100 shadow-sm">
+                        <div class="w-12 h-12 bg-yellow-50 rounded-full flex items-center justify-center mx-auto mb-2">
+                            <svg class="w-6 h-6 text-agora-yellow" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                        </div>
+                        <span class="font-semibold text-sm text-zinc-700">Ajustes</span>
+                    </div>
+                </div>
             </div>
-            <div class="bg-gray-50 dark:bg-zinc-900 p-4 rounded-xl text-center cursor-pointer active:scale-95 transition-transform">
-                <svg class="w-8 h-8 mx-auto mb-2 text-zinc-700 dark:text-zinc-200" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" /></svg>
-                <span class="font-semibold text-sm">Favoritos</span>
-            </div>
-        </div>
-    </div>
 
         </main>
 
-        < !--Product Detail Overlay-- >
-    <div x-show="activeTab === 'product'" x-transition.opacity class="absolute inset-0 bg-white dark:bg-zinc-950 z-30 flex flex-col overflow-y-auto no-scrollbar" x-cloak>
-        <div class="relative">
-            <img:src="selectedProduct.img" class="w-full h-96 object-cover" alt="Product">
-            <button @click="activeTab='home'" class="absolute top-4 left-4 bg-white dark:bg-zinc-800 p-2 rounded-full shadow-lg active:scale-90 transition-transform">
-            <svg class="w-6 h-6 text-zinc-900 dark:text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
-        </button>
-        <button @click="haptic()" class="absolute top-4 right-4 bg-white dark:bg-zinc-800 p-2 rounded-full shadow-lg active:scale-90 transition-transform">
-        <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" /></svg>
-    </button>
+        <!-- Product Detail Overlay -->
+        <div x-show="activeTab === 'product'" x-transition.opacity class="absolute inset-0 bg-white z-30 flex flex-col overflow-y-auto no-scrollbar" x-cloak>
+            <div class="relative bg-gray-100">
+                <img :src="selectedProduct.img" class="w-full h-96 object-cover" alt="Product">
+                <div class="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5">
+                    <span class="w-1.5 h-1.5 bg-zinc-900/50 rounded-full"></span>
+                    <span class="w-1.5 h-1.5 bg-zinc-900/20 rounded-full"></span>
+                    <span class="w-1.5 h-1.5 bg-zinc-900/20 rounded-full"></span>
+                </div>
+                <button @click="activeTab='home'" class="absolute top-4 left-4 bg-white p-2 rounded-full shadow-md active:scale-90 transition-transform">
+                    <svg class="w-6 h-6 text-zinc-900" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                </button>
+                <button @click="haptic(); showToast('Agregado a Favoritos')" class="absolute top-4 right-4 bg-white p-2 rounded-full shadow-md active:scale-90 transition-transform">
+                    <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" /></svg>
+                </button>
             </div>
             <div class="p-4 flex-1">
                 <div class="flex items-center gap-2 mb-2">
-                    <p class="text-sm text-zinc-500 line-through" x-text="selectedProduct.oldPrice"></p>
+                    <p class="text-sm text-zinc-400 line-through" x-text="selectedProduct.oldPrice"></p>
                     <p class="text-sm text-agora-green font-bold" x-text="selectedProduct.discount + '% OFF'"></p>
                 </div>
-                <h1 class="text-2xl font-extrabold mb-2" x-text="selectedProduct.name"></h1>
-                <p class="text-3xl font-extrabold text-zinc-900 dark:text-white mb-4" x-text="formatPrice(selectedProduct.price)"></p>
+                <h1 class="text-xl font-bold mb-2 text-zinc-800 leading-snug" x-text="selectedProduct.name"></h1>
+                <p class="text-3xl font-extrabold text-zinc-900 mb-1" x-text="formatPrice(selectedProduct.price)"></p>
+                <p class="text-sm text-zinc-500 mb-4">en 12x <span class="font-semibold" x-text="formatPrice(Math.round(selectedProduct.price / 12))"></span> sin interés</p>
                 
-                <div class="flex items-center gap-2 mb-4 text-sm">
-                    <svg class="w-5 h-5 text-agora-green" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path></svg>
-                    <span class="font-semibold text-agora-green">Envío Gratis</span>
-                    <span class="text-zinc-500">· Llega mañana</span>
+                <div class="flex items-center gap-2 mb-4 bg-agora-green/10 text-agora-green p-3 rounded-xl border border-agora-green/20">
+                    <svg class="w-6 h-6 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path></svg>
+                    <div>
+                        <p class="font-bold text-sm">Llega gratis mañana</p>
+                        <p class="text-xs text-agora-green/80">Comprando antes de las 4pm</p>
+                    </div>
                 </div>
 
-                <div class="border-t border-gray-100 dark:border-zinc-800 py-4 mb-4">
-                    <h3 class="font-bold mb-2">Descripción</h3>
-                    <p class="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed">Producto en excelente estado. Incluye caja original y todos sus accesorios. Sujeto a disponibilidad. Garantía de 3 meses directamente con el vendedor.</p>
+                <div class="border-t border-gray-100 py-4 mb-4">
+                    <h3 class="font-bold text-zinc-800 mb-2">Características principales</h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between border-b border-gray-50 pb-2">
+                            <span class="text-zinc-500">Condición</span>
+                            <span class="font-medium">Nuevo</span>
+                        </div>
+                        <div class="flex justify-between border-b border-gray-50 pb-2">
+                            <span class="text-zinc-500">Garantía</span>
+                            <span class="font-medium">3 meses</span>
+                        </div>
+                        <div class="flex justify-between border-b border-gray-50 pb-2">
+                            <span class="text-zinc-500">Marca</span>
+                            <span class="font-medium">Apple</span>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="flex items-center gap-3 bg-gray-50 dark:bg-zinc-900 p-3 rounded-xl">
-                    <div class="w-12 h-12 bg-agora-blue rounded-full flex items-center justify-center text-white font-bold">T</div>
+                <div class="border-t border-gray-100 py-4 mb-4">
+                    <h3 class="font-bold text-zinc-800 mb-2">Descripción</h3>
+                    <p class="text-sm text-zinc-600 leading-relaxed">Producto en excelente estado. Incluye caja original y todos sus accesorios. Sujeto a disponibilidad. Para más información no dudes en contactar al vendedor.</p>
+                </div>
+
+                <div class="flex items-center gap-3 bg-gray-50 p-3 rounded-xl mb-4">
+                    <div class="w-12 h-12 bg-agora-blue rounded-full flex items-center justify-center text-white font-bold text-lg">T</div>
                     <div class="flex-1">
                         <p class="font-bold text-sm">TechStore Oficial</p>
-                        <p class="text-xs text-agora-green flex items-center gap-1">
+                        <p class="text-xs text-agora-green flex items-center gap-1 font-medium">
                             <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
                             Mercado Líder Platinum
                         </p>
                     </div>
-                    <button class="text-agora-blue text-sm font-bold">Ver tienda</button>
+                    <button class="text-agora-blue text-xs font-bold border border-agora-blue/20 py-1.5 px-3 rounded-full">Ver tienda</button>
                 </div>
             </div>
 
-            <!--Sticky Bottom Actions-->
-            <div class="sticky bottom-0 bg-white dark:bg-zinc-950 p-4 border-t border-gray-100 dark:border-zinc-800 flex gap-3">
-                <button @click="addToCart(selectedProduct)" class="flex-1 border-2 border-zinc-900 dark:border-white text-zinc-900 dark:text-white font-bold py-3 rounded-xl active:scale-95 transition-transform">Agregar</button>
-                <button @click="addToCart(selectedProduct); activeTab='cart'" class="flex-[2] bg-agora-yellow text-zinc-900 font-extrabold py-3 rounded-xl shadow-lg active:scale-95 transition-transform" > Comprar ahora</button>
+            <!-- Sticky Bottom Actions -->
+            <div class="sticky bottom-0 bg-white p-4 border-t border-gray-100 flex gap-3 shadow-[0_-4px_15px_rgba(0,0,0,0.05)]">
+                <button @click="addToCart(selectedProduct); showToast('Agregado al carrito')" class="flex-1 border-2 border-zinc-900 text-zinc-900 font-bold py-3 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" /></svg>
+                </button>
+                <button @click="addToCart(selectedProduct); activeTab='cart'" class="flex-[2] bg-agora-yellow text-zinc-900 font-extrabold py-3 rounded-xl shadow-md shadow-agora-yellow/40 active:scale-95 transition-transform">Comprar ahora</button>
             </div>
         </div>
 
-        < !--Bottom Navigation-- >
-        <nav x-show="activeTab !== 'product'" class="absolute bottom-0 left-0 right-0 bg-white dark:bg-zinc-950 border-t border-gray-100 dark:border-zinc-800 flex justify-around items-center h-16 z-20 pb-safe">
-            <button @click="activeTab='home'" :class="activeTab === 'home' ? 'text-zinc-900 dark:text-white' : 'text-zinc-400'" class="flex flex-col items-center justify-center gap-0.5 w-full h-full active:scale-90 transition-transform">
+        <!-- Toast Notification -->
+        <div x-show="toastVisible" x-transition:enter="toast-enter" x-transition:enter-end="toast-enter-active" x-transition:leave="transition ease-in duration-200" x-transition:leave-end="opacity-0" class="absolute bottom-24 left-1/2 -translate-x-1/2 bg-zinc-900 text-white text-sm font-medium px-5 py-3 rounded-full shadow-lg z-50 flex items-center gap-2" x-cloak>
+            <svg class="w-5 h-5 text-agora-green" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <span x-text="toastMessage"></span>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <nav x-show="activeTab !== 'product'" class="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex justify-around items-center h-16 z-20 pb-safe">
+            <button @click="activeTab='home'" :class="activeTab === 'home' ? 'text-agora-blue' : 'text-zinc-400'" class="flex flex-col items-center justify-center gap-0.5 w-full h-full active:scale-90 transition-transform">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>
                 <span class="text-[10px] font-semibold">Inicio</span>
             </button>
-            <button @click="activeTab='categories'" : class="activeTab === 'categories' ? 'text-zinc-900 dark:text-white' : 'text-zinc-400'" class="flex flex-col items-center justify-center gap-0.5 w-full h-full active:scale-90 transition-transform" >
+            <button @click="activeTab='categories'" :class="activeTab === 'categories' ? 'text-agora-blue' : 'text-zinc-400'" class="flex flex-col items-center justify-center gap-0.5 w-full h-full active:scale-90 transition-transform">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>
                 <span class="text-[10px] font-semibold">Categorías</span>
             </button>
-    <button @click="activeTab='sell'" class="flex flex-col items-center justify-center gap-0.5 w-full h-full active:scale-90 transition-transform" >
-                <div class="w-10 h-10 bg-agora-yellow rounded-xl flex items-center justify-center shadow-lg shadow-agora-yellow/30 -mt-4 border-4 border-white dark:border-zinc-950">
+            <button @click="activeTab='sell'" class="flex flex-col items-center justify-center gap-0.5 w-full h-full active:scale-90 transition-transform">
+                <div class="w-10 h-10 bg-agora-yellow rounded-xl flex items-center justify-center shadow-md shadow-agora-yellow/40 -mt-6 border-4 border-white">
                     <svg class="w-5 h-5 text-zinc-900" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
                 </div>
-                <span class="text-[10px] font-semibold text-zinc-900 dark:text-white">Vender</span>
+                <span class="text-[10px] font-semibold text-agora-blue mt-1">Vender</span>
             </button>
-    <button @click="activeTab='cart'" : class="activeTab === 'cart' ? 'text-zinc-900 dark:text-white' : 'text-zinc-400'" class="flex flex-col items-center justify-center gap-0.5 w-full h-full active:scale-90 transition-transform relative" >
+            <button @click="activeTab='cart'" :class="activeTab === 'cart' ? 'text-agora-blue' : 'text-zinc-400'" class="flex flex-col items-center justify-center gap-0.5 w-full h-full active:scale-90 transition-transform relative">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" /></svg>
+                <span x-show="cart.length > 0" class="absolute top-1 right-6 bg-agora-blue text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center" x-text="cart.length"></span>
                 <span class="text-[10px] font-semibold">Carrito</span>
             </button>
-    <button @click="activeTab='profile'" : class="activeTab === 'profile' ? 'text-zinc-900 dark:text-white' : 'text-zinc-400'" class="flex flex-col items-center justify-center gap-0.5 w-full h-full active:scale-90 transition-transform" >
+            <button @click="activeTab='profile'" :class="activeTab === 'profile' ? 'text-agora-blue' : 'text-zinc-400'" class="flex flex-col items-center justify-center gap-0.5 w-full h-full active:scale-90 transition-transform">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
                 <span class="text-[10px] font-semibold">Perfil</span>
             </button>
@@ -7565,49 +7660,53 @@ Optimizado para uso con una sola mano.`,
     <script>
         function agoraApp() {
             return {
-            darkMode: false, // Inicia en Modo Claro por defecto
-        activeTab: 'home',
-        filterFreeShipping: false,
-        filterNew: false,
-        cart: [],
-        selectedProduct: { },
-        haptic() {
+                activeTab: 'home',
+                filterFreeShipping: false,
+                filterNew: false,
+                cart: [],
+                selectedProduct: {},
+                toastVisible: false,
+                toastMessage: '',
+                toastTimer: null,
+                
+                haptic() {
                     if (navigator.vibrate) navigator.vibrate(10);
                 },
-        formatPrice(num) {
+                showToast(message) {
+                    this.toastMessage = message;
+                    this.toastVisible = true;
+                    clearTimeout(this.toastTimer);
+                    this.toastTimer = setTimeout(() => {
+                        this.toastVisible = false;
+                    }, 2000);
+                },
+                formatPrice(num) {
+                    if (!num) return '';
                     return '$' + num.toLocaleString('es-CO');
                 },
-        openProduct(product) {
-            this.selectedProduct = product;
-        this.activeTab = 'product';
-        document.querySelector('main').scrollTop = 0;
+                openProduct(product) {
+                    this.selectedProduct = product;
+                    this.activeTab = 'product';
+                    document.querySelector('main').scrollTop = 0;
                 },
-        addToCart(product) {
-            this.cart.push(product);
-        this.haptic();
+                addToCart(product) {
+                    this.cart.push(product);
+                    this.haptic();
                 },
-        totalCart() {
-                    return this.cart.reduce((sum, item) => sum + item.price, 0);
-                },
-        categories: [
-        {name: 'Tecnología', icon: '📱' },
-        {name: 'Hogar', icon: '🛋️' },
-        {name: 'Moda', icon: '👗' },
-        {name: 'Vehículos', icon: '🚗' }
-        ],
-        products: [
-        {name: 'iPhone 13 128GB', price: 2400000, oldPrice: '$3.000.000', discount: 20, img: 'https://images.unsplash.com/photo-1632661674596-df8be070a5c5?w=500&q=80' },
-        {name: 'Audífonos Sony WH', price: 890000, oldPrice: '$1.200.000', discount: 25, img: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=500&q=80' },
-        {name: 'Apple Watch Series 8', price: 1590000, oldPrice: '$1.900.000', discount: 15, img: 'https://images.unsplash.com/photo-1551816230-ef5deaed4a26?w=500&q=80' },
-        {name: 'Cámara GoPro Hero 11', price: 1750000, oldPrice: '$2.100.000', discount: 16, img: 'https://images.unsplash.com/photo-1525385133512-2f3bdd039054?w=500&q=80' },
-        {name: 'MacBook Air M2', price: 4990000, oldPrice: '$5.800.000', discount: 14, img: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=500&q=80' },
-        {name: 'Silla Gamer Reclinable', price: 650000, oldPrice: '$950.000', discount: 31, img: 'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=500&q=80' }
-        ]
+                products: [
+                    { name: 'iPhone 13 128GB', price: 2400000, oldPrice: '$3.000.000', discount: 20, rating: 4.9, sales: '1.2k', img: 'https://images.unsplash.com/photo-1632661674596-df8be070a5c5?w=500&q=80' },
+                    { name: 'Audífonos Sony WH-1000', price: 890000, oldPrice: '$1.200.000', discount: 25, rating: 4.8, sales: '850', img: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=500&q=80' },
+                    { name: 'Apple Watch Series 8', price: 1590000, oldPrice: '$1.900.000', discount: 15, rating: 4.7, sales: '530', img: 'https://images.unsplash.com/photo-1551816230-ef5deaed4a26?w=500&q=80' },
+                    { name: 'Cámara GoPro Hero 11', price: 1750000, oldPrice: '$2.100.000', discount: 16, rating: 4.9, sales: '320', img: 'https://images.unsplash.com/photo-1525385133512-2f3bdd039054?w=500&q=80' },
+                    { name: 'MacBook Air M2 13"', price: 4990000, oldPrice: '$5.800.000', discount: 14, rating: 5.0, sales: '120', img: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=500&q=80' },
+                    { name: 'Silla Gamer Reclinable', price: 650000, oldPrice: '$950.000', discount: 31, rating: 4.6, sales: '2.1k', img: 'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=500&q=80' }
+                ]
             }
         }
     </script>
 </body>
-</html>`
+</html>
+`
   },
   "aplicacion-3": {
     title: `Clarity Invest — Inversiones Financieras Simplificadas`,

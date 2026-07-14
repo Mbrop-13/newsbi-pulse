@@ -1132,6 +1132,7 @@ function ChatLandingContent() {
       wbStore.loadFromCloud(currentChatId)
     } else {
       wbStore.resetProject()
+      useWebBuilderStore.setState({ isWebBuilderMode: false })
     }
   }, [currentChatId, isStoreHydrated])
 
@@ -1558,11 +1559,17 @@ function ChatLandingContent() {
 
   // Reusable preview card with mobile-optimized overlay visibility
   const PreviewCard = ({ item, isMobile: mobile }: { item: PreviewItem; isMobile?: boolean }) => {
+    const [showMobileOverlay, setShowMobileOverlay] = useState(false);
     const isApp = item.category === "apps";
 
     if (isApp) {
       return (
         <div
+          onClick={() => {
+            if (mobile) {
+              setShowMobileOverlay(prev => !prev);
+            }
+          }}
           className={cn(
             "group relative bg-zinc-950 overflow-hidden border-[4px] border-zinc-800 dark:border-zinc-800/90 shadow-lg hover:shadow-xl transition-all duration-350 cursor-pointer select-none",
             mobile 
@@ -1583,7 +1590,7 @@ function ChatLandingContent() {
             className={cn(
               "absolute inset-0 bg-zinc-950/95 transition-all duration-300 p-2 flex flex-col justify-between shadow-md z-30",
               mobile
-                ? "opacity-100 translate-y-0 pointer-events-auto"
+                ? (showMobileOverlay ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 translate-y-2 pointer-events-none")
                 : "opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto"
             )}
           >
@@ -1645,6 +1652,11 @@ function ChatLandingContent() {
     // Default horizontal layout for Websites and Multiplatform
     return (
       <div
+        onClick={() => {
+          if (mobile) {
+            setShowMobileOverlay(prev => !prev);
+          }
+        }}
         className={cn(
           "group relative rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800/85 bg-zinc-950 hover:border-[#1890FF]/40 hover:dark:border-[#1890FF]/40 shadow-sm hover:shadow-md transition-all duration-350 cursor-pointer select-none",
           mobile ? "w-[280px] shrink-0 h-[160px] snap-start" : "h-[155px]"
@@ -1662,7 +1674,7 @@ function ChatLandingContent() {
           className={cn(
             "absolute inset-0 bg-zinc-950/90 dark:bg-zinc-950/95 border border-zinc-200/40 dark:border-white/10 transition-all duration-300 p-4 flex flex-col justify-between shadow-md z-30",
             mobile
-              ? "opacity-100 translate-y-0 pointer-events-auto"
+              ? (showMobileOverlay ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 translate-y-2 pointer-events-none")
               : "opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto"
           )}
         >

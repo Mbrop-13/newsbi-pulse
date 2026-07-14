@@ -243,7 +243,7 @@ export function ChatMessages({
             exit={{ opacity: 0, scale: 0.8 }}
             onClick={() => scrollToBottom()}
             className={cn(
-              "absolute bottom-6 z-50 w-10 h-10 bg-black dark:bg-white hover:bg-black/90 dark:hover:bg-white/90 text-white dark:text-black rounded-full shadow-lg flex items-center justify-center transition-all cursor-pointer border border-black/10 dark:border-white/10 active:scale-95",
+              "absolute bottom-24 md:bottom-6 z-50 w-10 h-10 bg-black dark:bg-white hover:bg-black/90 dark:hover:bg-white/90 text-white dark:text-black rounded-full shadow-lg flex items-center justify-center transition-all cursor-pointer border border-black/10 dark:border-white/10 active:scale-95",
               isWebBuilderMode ? "right-6" : "right-6 md:right-12"
             )}
             title="Ir al final"

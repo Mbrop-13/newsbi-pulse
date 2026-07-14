@@ -811,42 +811,93 @@ export function ChatInput({
                 <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [scrollbar-width:none] select-none flex-nowrap pr-2 max-w-[calc(100vw-180px)] sm:max-w-none">
                   {!isStreaming && (
                     <>
-                      {!isWebBuilderMode && (
-                        <WebBuilderPill onActivate={() => { setCodeInterpreter(false); setBrowser(false); useCanvasStore.getState().setOpen(false); }} />
-                      )}
-                      {(!isWebBuilderMode || messages.length === 0) && (
-                        <>
+                      {isMobile && isNewChat ? (
+                        // Mobile new chat layout: if one is active, only show that one. Otherwise show all.
+                        isWebBuilderMode ? (
+                          <WebBuilderPill onActivate={() => { setCodeInterpreter(false); setBrowser(false); useCanvasStore.getState().setOpen(false); }} />
+                        ) : codeInterpreter ? (
                           <Pill
                             active={codeInterpreter}
                             onClick={() => {
-                              const next = !codeInterpreter;
-                              setCodeInterpreter(next);
-                              if (next) {
-                                setWebBuilderMode(false);
-                                setBrowser(false);
-                                // No abrir el canvas aquí: se mostrará a la
-                                // derecha recién cuando la IA empiece a responder
-                                // (cuando llegue el primer archivo/contenido).
-                              } else {
-                                useCanvasStore.getState().setOpen(false);
-                              }
+                              setCodeInterpreter(false);
+                              useCanvasStore.getState().setOpen(false);
                             }}
                             icon={<Code2 className="h-4 w-4" />}
                             label="Canvas"
                           />
+                        ) : browser ? (
                           <Pill
                             active={browser}
                             onClick={() => {
-                              const next = !browser;
-                              setBrowser(next);
-                              if (next) {
-                                setWebBuilderMode(false);
-                                setCodeInterpreter(false);
-                              }
+                              setBrowser(false);
                             }}
                             icon={<Chrome className="h-4 w-4" />}
                             label="Navegador virtual"
                           />
+                        ) : (
+                          // None is active: show all options
+                          <>
+                            <WebBuilderPill onActivate={() => { setCodeInterpreter(false); setBrowser(false); useCanvasStore.getState().setOpen(false); }} />
+                            <Pill
+                              active={codeInterpreter}
+                              onClick={() => {
+                                setCodeInterpreter(true);
+                                setWebBuilderMode(false);
+                                setBrowser(false);
+                              }}
+                              icon={<Code2 className="h-4 w-4" />}
+                              label="Canvas"
+                            />
+                            <Pill
+                              active={browser}
+                              onClick={() => {
+                                setBrowser(true);
+                                setWebBuilderMode(false);
+                                setCodeInterpreter(false);
+                              }}
+                              icon={<Chrome className="h-4 w-4" />}
+                              label="Navegador virtual"
+                            />
+                          </>
+                        )
+                      ) : (
+                        // Desktop/default layout
+                        <>
+                          {!isWebBuilderMode && (
+                            <WebBuilderPill onActivate={() => { setCodeInterpreter(false); setBrowser(false); useCanvasStore.getState().setOpen(false); }} />
+                          )}
+                          {(!isWebBuilderMode || messages.length === 0) && (
+                            <>
+                              <Pill
+                                active={codeInterpreter}
+                                onClick={() => {
+                                  const next = !codeInterpreter;
+                                  setCodeInterpreter(next);
+                                  if (next) {
+                                    setWebBuilderMode(false);
+                                    setBrowser(false);
+                                  } else {
+                                    useCanvasStore.getState().setOpen(false);
+                                  }
+                                }}
+                                icon={<Code2 className="h-4 w-4" />}
+                                label="Canvas"
+                              />
+                              <Pill
+                                active={browser}
+                                onClick={() => {
+                                  const next = !browser;
+                                  setBrowser(next);
+                                  if (next) {
+                                    setWebBuilderMode(false);
+                                    setCodeInterpreter(false);
+                                  }
+                                }}
+                                icon={<Chrome className="h-4 w-4" />}
+                                label="Navegador virtual"
+                              />
+                            </>
+                          )}
                         </>
                       )}
                     </>

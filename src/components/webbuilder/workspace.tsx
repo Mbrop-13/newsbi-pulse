@@ -9,14 +9,14 @@ import { PreviewPanel } from "./preview-panel";
 import { CommandPalette } from "./command-palette";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/ui/sidebar";
-import { Home } from "lucide-react";
+import { Home, Menu } from "lucide-react";
 
 interface WebBuilderWorkspaceProps {
   chatPanel: React.ReactNode;
 }
 
 export function WebBuilderWorkspace({ chatPanel }: WebBuilderWorkspaceProps) {
-  const { isMobile } = useSidebar();
+  const { isMobile, setOpenMobile } = useSidebar();
   const router = useRouter();
   const { isSplitView, setSplitView, setWebBuilderMode } = useWebBuilderStore();
   const clearMessages = useAIChatStore((s) => s.clearMessages);
@@ -147,6 +147,17 @@ export function WebBuilderWorkspace({ chatPanel }: WebBuilderWorkspaceProps) {
 
         {/* Mobile Content */}
         <div className="flex-1 min-h-0 relative">
+          {mobileTab === "chat" && (
+            <button
+              type="button"
+              onClick={() => setOpenMobile(true)}
+              className="absolute top-3 left-4 h-9 w-9 rounded-full shadow-md border border-border/45 backdrop-blur-md bg-background/80 text-muted-foreground hover:text-foreground z-40 flex items-center justify-center cursor-pointer active:scale-95 transition-all"
+              aria-label="Abrir menú"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+          )}
+
           <AnimatePresence mode="wait">
             {mobileTab === "chat" ? (
               <motion.div

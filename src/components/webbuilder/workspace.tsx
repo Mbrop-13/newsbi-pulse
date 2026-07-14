@@ -16,7 +16,7 @@ interface WebBuilderWorkspaceProps {
 }
 
 export function WebBuilderWorkspace({ chatPanel }: WebBuilderWorkspaceProps) {
-  const { isMobile, setOpenMobile } = useSidebar();
+  const { isMobile, toggleSidebar, setOpen, setOpenMobile } = useSidebar();
   const router = useRouter();
   const { isSplitView, setSplitView, setWebBuilderMode } = useWebBuilderStore();
   const clearMessages = useAIChatStore((s) => s.clearMessages);
@@ -40,6 +40,15 @@ export function WebBuilderWorkspace({ chatPanel }: WebBuilderWorkspaceProps) {
 
     return () => clearTimeout(timeout);
   }, [files, isAiResponding, activeProjectId, syncToCloud]);
+
+  // Collapse sidebar when build workspace mounts/becomes active
+  useEffect(() => {
+    if (isMobile) {
+      setOpenMobile(false);
+    } else {
+      setOpen(false);
+    }
+  }, [isMobile, setOpen, setOpenMobile]);
 
   const [chatPercent, setChatPercent] = useState(34); // Compact chat (34%) by default
   const [isDragging, setIsDragging] = useState(false);
@@ -150,7 +159,7 @@ export function WebBuilderWorkspace({ chatPanel }: WebBuilderWorkspaceProps) {
           {mobileTab === "chat" && (
             <button
               type="button"
-              onClick={() => setOpenMobile(true)}
+              onClick={toggleSidebar}
               className="absolute top-3 left-4 h-9 w-9 rounded-full shadow-md border border-border/45 backdrop-blur-md bg-background/80 text-muted-foreground hover:text-foreground z-40 flex items-center justify-center cursor-pointer active:scale-95 transition-all"
               aria-label="Abrir menú"
             >
@@ -194,13 +203,13 @@ export function WebBuilderWorkspace({ chatPanel }: WebBuilderWorkspaceProps) {
         className="h-full flex flex-col relative overflow-hidden bg-transparent shrink-0 rounded-2xl"
         style={{ width: isSplitView ? `${chatPercent}%` : "100%" }}
       >
-        {/* Floating back button */}
+        {/* Floating toggle sidebar button */}
         <button
-          onClick={handleBackToHome}
+          onClick={toggleSidebar}
           className="absolute top-4 left-4 z-50 flex items-center justify-center w-9 h-9 rounded-full bg-background/80 hover:bg-background/95 border border-border/50 text-muted-foreground hover:text-foreground shadow-md backdrop-blur-md transition-all active:scale-95 cursor-pointer"
-          title="Volver al inicio"
+          title="Alternar barra lateral"
         >
-          <Home className="w-4 h-4" />
+          <Menu className="w-4.5 h-4.5" />
         </button>
 
         {chatPanel}

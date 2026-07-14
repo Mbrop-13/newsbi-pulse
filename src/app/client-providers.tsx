@@ -216,7 +216,7 @@ export function ClientLayoutProviders({
           >
             {isSidebarPage ? (
               <SidebarProvider>
-                {!showBuilderWorkspace && pathname !== "/suscripcion" && pathname !== "/referidos" && <AppSidebar />}
+                {pathname !== "/suscripcion" && pathname !== "/referidos" && <AppSidebar />}
                 <SidebarInset className={cn((isFixedLayout || isAiPage) && "h-[100dvh] overflow-hidden bg-background")}>
                   {isMobile && !isFixedLayout && pathname !== "/suscripcion" && pathname !== "/referidos" && <MobileMenuButton />}
                   <div className={cn(

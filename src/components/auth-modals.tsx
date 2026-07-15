@@ -898,7 +898,10 @@ export function AuthModals({
                   {/* Terms */}
                   <p className="text-[10px] text-muted-foreground/60 text-center mt-4 leading-relaxed">
                     Al continuar, aceptas los{" "}
-                    <span className="underline cursor-pointer">Términos</span> y la{" "}
+                    <Link href="/terminos" onClick={onClose} className="underline cursor-pointer hover:text-foreground transition-colors">
+                      Términos
+                    </Link>{" "}
+                    y la{" "}
                     <Link href="/privacidad" onClick={onClose} className="underline cursor-pointer hover:text-foreground transition-colors">
                       Política de Privacidad
                     </Link>

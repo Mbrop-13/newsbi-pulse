@@ -230,10 +230,14 @@ export function ClientLayoutProviders({
                 </SidebarInset>
               </SidebarProvider>
             ) : (
-              children
+              <div className="flex flex-col min-h-full w-full">
+                <div className="flex-1">
+                  {children}
+                </div>
+                {mounted && (!isFullscreenPage || showMobileNavOnSidebar) && !isAdminPage && !isLandingPage && !isSharePage && <Footer />}
+              </div>
             )}
           </main>
-          {mounted && (!isFullscreenPage || showMobileNavOnSidebar) && !isAdminPage && !isLandingPage && !isSharePage && <Footer />}
           {mounted && (!isFullscreenPage || showMobileNavOnSidebar) && !isAdminPage && !isLandingPage && !isSharePage && <MobileBottomNav />}
           <ServiceWorkerRegistration />
           <CapacitorInit />

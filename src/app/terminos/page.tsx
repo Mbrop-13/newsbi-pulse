@@ -439,21 +439,8 @@ export default function TerminosPage() {
               </div>
             </div>
 
-            {/* Bottom Footer Section */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4 }}
-              className="pt-10 border-t border-zinc-200/50 dark:border-zinc-850 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-450 dark:text-zinc-500 font-semibold"
-            >
-              <p>© {new Date().getFullYear()} Maverlang. Todos los derechos reservados.</p>
-              <div className="flex gap-4">
-                <Link href="/privacidad" className="hover:text-[#1890FF] hover:underline transition-colors">Política de Privacidad</Link>
-                <span>•</span>
-                <a href="mailto:soporte@maverlang.cl" className="hover:text-[#1890FF] hover:underline transition-colors">Soporte Técnico</a>
-              </div>
-            </motion.div>
+            {/* Bottom Spacer */}
+            <div className="h-10" />
 
           </div>
 

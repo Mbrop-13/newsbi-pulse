@@ -39,6 +39,9 @@ import { cn } from "@/lib/utils";
 import { useAIChatStore, type SavedChat, type ChatMessage } from "@/lib/stores/ai-chat-store";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useSidebar } from "@/components/ui/sidebar";
+import { useSubscriptionStore } from "@/lib/stores/subscription-store";
+import { getPlanConfig } from "@/lib/plan-limits";
+import { UpgradeModal } from "@/components/upgrade-modal";
 
 const ADVANCED_TOOLS = [
   { id: 'chart_bar', label: 'Gráfico de Barras', icon: BarChart3, category: 'Gráficos' },
@@ -88,44 +91,7 @@ interface WorkspaceItem {
 }
 
 // Initial waves pattern images to display exactly like the mockup screenshot
-const INITIAL_ITEMS: WorkspaceItem[] = [
-  {
-    id: "wave-1",
-    prompt: "olas azules japonesas fondo blanco estilo minimalista ukiyo-e",
-    imageUrl: "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?q=80&w=800",
-    status: "completed",
-    progress: 100,
-    aspectRatio: "3:4",
-    modelName: "Nano Banana Pro",
-  },
-  {
-    id: "wave-2",
-    prompt: "ondas fluidas marinas trazadas a mano diseño limpio azul",
-    imageUrl: "https://images.unsplash.com/photo-1502691876148-a84978e59fa8?q=80&w=800",
-    status: "completed",
-    progress: 100,
-    aspectRatio: "16:9",
-    modelName: "Nano Banana Pro",
-  },
-  {
-    id: "wave-3",
-    prompt: "olas japonesas tradicionales en azul marino y blanco",
-    imageUrl: "https://images.unsplash.com/photo-1541701494587-cb58502866ab?q=80&w=800",
-    status: "completed",
-    progress: 100,
-    aspectRatio: "4:3",
-    modelName: "Nano Banana Pro",
-  },
-  {
-    id: "wave-4",
-    prompt: "olas azules fondo blanco profesional alta costura textil",
-    imageUrl: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=800",
-    status: "completed",
-    progress: 100,
-    aspectRatio: "1:1",
-    modelName: "Nano Banana Pro",
-  },
-];
+const INITIAL_ITEMS: WorkspaceItem[] = [];
 
 // Curated library of premium unsplash patterns/textures to display on new image generation
 const CURATED_PATTERNS = [
@@ -144,6 +110,12 @@ export default function FlowClient() {
   const [prompt, setPrompt] = useState("");
   const [isAgentActive, setIsAgentActive] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Selector states matching the screenshot design
   const [generationType, setGenerationType] = useState<"imagen" | "video">("imagen");
@@ -384,6 +356,17 @@ export default function FlowClient() {
     if (!prompt.trim() || loading) return;
 
     const userPrompt = prompt.trim();
+    
+    // Check credits limit
+    const limit = getPlanConfig(userTier).imageCreditsPerMonth;
+    const used = useSubscriptionStore.getState().monthlyImageCreditsUsed || 0;
+    const remaining = Math.max(0, limit - used);
+
+    if (remaining < totalCost) {
+      setShowUpgradeModal(true);
+      return;
+    }
+
     setPrompt("");
     setLoading(true);
     generatingRef.current = true;
@@ -419,11 +402,11 @@ export default function FlowClient() {
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Error al generar la respuesta.");
+        throw new Error("Lo sentimos, estamos teniendo dificultades en este momento.");
       }
 
       toast.success("Imágenes generadas correctamente.");
+      useSubscriptionStore.getState().incrementImageCreditsUsed(totalCost);
 
       // Choose or create Flow chat ID
       const activeChatId = useAIChatStore.getState().currentChatId;
@@ -514,7 +497,7 @@ export default function FlowClient() {
 
     } catch (err: any) {
       console.error("[FLOW-CLIENT] Error:", err);
-      toast.error(err.message || "Error al comunicarse con la IA.");
+      toast.error("Lo sentimos, estamos teniendo dificultades en este momento. Por favor, inténtalo de nuevo.");
       // Cancel the loading items
       setItems((prevItems) => prevItems.filter(item => !newItems.some(ni => ni.id === item.id)));
     } finally {
@@ -610,108 +593,149 @@ export default function FlowClient() {
 
 
 
-      {/* Main Workspace Body: Premium Masonry Grid */}
-      <main className="flex-1 p-6 relative z-10 overflow-y-auto hidden-scrollbar pb-32">
-        <div className="max-w-7xl mx-auto columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4">
-          <AnimatePresence initial={false}>
-            {items.map((item) => (
-              <motion.div
-                key={item.id}
-                initial={{ opacity: 0, scale: 0.92, y: 15 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.92, y: 15 }}
-                transition={{ duration: 0.35 }}
-                className="relative overflow-hidden rounded-[24px] border border-zinc-200/60 bg-white transition-all duration-300 hover:shadow-xl hover:border-zinc-300 break-inside-avoid group cursor-pointer"
-              >
-                {/* Aspect ratio frame wrapper */}
-                <div className={cn("w-full relative overflow-hidden", getAspectRatioClass(item.aspectRatio))}>
-                  {item.status === "generating" ? (
-                    // Aesthetic Loading state (Light mode styled)
-                    <div className="absolute inset-0 bg-gradient-to-br from-zinc-100 via-zinc-50/50 to-zinc-150/40 flex flex-col justify-between p-4.5 select-none overflow-hidden">
-                      {/* Pulse Shimmer overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-shimmer" />
+      {/* Main Workspace Body: Premium Masonry Grid / Empty State */}
+      <main className="flex-1 p-6 relative z-10 overflow-y-auto hidden-scrollbar pb-32 flex flex-col justify-center">
+        {items.length === 0 ? (
+          <div className="max-w-md mx-auto w-full px-4 py-8">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white/70 dark:bg-zinc-905/70 backdrop-blur-xl border border-zinc-200/50 dark:border-zinc-800 p-8 rounded-3xl shadow-xl flex flex-col items-center text-center"
+            >
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#1890FF] to-blue-600 flex items-center justify-center text-white mb-6 shadow-lg shadow-[#1890FF]/25">
+                <ImageIcon className="w-8 h-8" />
+              </div>
+              <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-50 mb-2">Maverlang Flow</h2>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
+                Crea imágenes y multimedia de alta calidad utilizando inteligencia artificial. Escribe una descripción abajo para empezar.
+              </p>
+              <div className="w-full flex flex-col gap-2.5">
+                <div className="text-[11px] font-black uppercase tracking-wider text-zinc-400 dark:text-zinc-500 text-left">Ejemplos de prompts</div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPrompt("Olas japonesas tradicionales en azul marino y blanco estilo minimalista ukiyo-e");
+                    if (textareaRef.current) textareaRef.current.focus();
+                  }}
+                  className="w-full text-left px-4 py-2.5 rounded-xl border border-zinc-200/80 hover:border-zinc-300 dark:border-zinc-800 dark:hover:border-zinc-700 bg-zinc-50/50 hover:bg-zinc-50 dark:bg-zinc-900/50 hover:dark:bg-zinc-900 text-xs text-zinc-650 dark:text-zinc-300 font-semibold transition-all cursor-pointer"
+                >
+                  🌊 Olas japonesas tradicionales en azul marino...
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPrompt("Retrato digital detallado de un gato astronauta flotando en el espacio exterior");
+                    if (textareaRef.current) textareaRef.current.focus();
+                  }}
+                  className="w-full text-left px-4 py-2.5 rounded-xl border border-zinc-200/80 hover:border-zinc-300 dark:border-zinc-800 dark:hover:border-zinc-700 bg-zinc-50/50 hover:bg-zinc-50 dark:bg-zinc-900/50 hover:dark:bg-zinc-900 text-xs text-zinc-650 dark:text-zinc-300 font-semibold transition-all cursor-pointer"
+                >
+                  🐱 Retrato detallado de un gato astronauta...
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        ) : (
+          <div className="max-w-7xl mx-auto columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4 w-full">
+            <AnimatePresence initial={false}>
+              {items.map((item) => (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, scale: 0.92, y: 15 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.92, y: 15 }}
+                  transition={{ duration: 0.35 }}
+                  className="relative overflow-hidden rounded-[24px] border border-zinc-200/60 bg-white transition-all duration-300 hover:shadow-xl hover:border-zinc-300 break-inside-avoid group cursor-pointer"
+                >
+                  {/* Aspect ratio frame wrapper */}
+                  <div className={cn("w-full relative overflow-hidden", getAspectRatioClass(item.aspectRatio))}>
+                    {item.status === "generating" ? (
+                      // Aesthetic Loading state (Light mode styled)
+                      <div className="absolute inset-0 bg-gradient-to-br from-zinc-100 via-zinc-50/50 to-zinc-150/40 flex flex-col justify-between p-4.5 select-none overflow-hidden">
+                        {/* Pulse Shimmer overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-shimmer" />
 
-                      {/* Header row in loading card */}
-                      <div className="flex items-center justify-between w-full z-10">
-                        <div className="p-2 rounded-xl bg-white/80 border border-zinc-200/50 text-zinc-500 shadow-sm">
-                          <ImageIcon className="w-4 h-4 animate-pulse text-[#1890FF]" />
-                        </div>
-                        <span className="text-[10px] font-black text-zinc-600 bg-white/90 border border-zinc-200/40 px-2 py-0.5 rounded-lg shadow-xs">
-                          {item.progress}%
-                        </span>
-                      </div>
-
-                      {/* Dynamic base progress bar at bottom of card */}
-                      <div className="w-full z-10">
-                        <div className="h-1.5 w-full bg-zinc-200 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-gradient-to-r from-[#1890FF] to-blue-500 transition-all duration-300 rounded-full"
-                            style={{ width: `${item.progress}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    // Completed image state with interactive hover controls
-                    <>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={item.imageUrl}
-                        alt={item.prompt}
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-103"
-                        loading="lazy"
-                      />
-
-                      {/* Floating actions and prompt details shown on hover */}
-                      <div className="absolute inset-0 bg-black/35 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-between p-4 z-10">
-                        {/* Top: Premium action buttons */}
-                        <div className="flex justify-end gap-1.5">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toast.success("Añadido a favoritos");
-                            }}
-                            className="p-2 rounded-xl bg-white/90 hover:bg-white text-zinc-700 hover:text-red-500 hover:scale-105 border border-zinc-200/50 transition-all cursor-pointer shadow-sm"
-                          >
-                            <Heart className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toast.success("Descarga iniciada");
-                            }}
-                            className="p-2 rounded-xl bg-white/90 hover:bg-white text-zinc-700 hover:text-[#1890FF] hover:scale-105 border border-zinc-200/50 transition-all cursor-pointer shadow-sm"
-                          >
-                            <Download className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toast.info(`Creado con: ${item.modelName}`);
-                            }}
-                            className="p-2 rounded-xl bg-white/90 hover:bg-white text-zinc-700 hover:text-zinc-900 hover:scale-105 border border-zinc-200/50 transition-all cursor-pointer shadow-sm"
-                          >
-                            <MoreHorizontal className="w-3.5 h-3.5" />
-                          </button>
+                        {/* Header row in loading card */}
+                        <div className="flex items-center justify-between w-full z-10">
+                          <div className="p-2 rounded-xl bg-white/80 border border-zinc-200/50 text-zinc-500 shadow-sm">
+                            <ImageIcon className="w-4 h-4 animate-pulse text-[#1890FF]" />
+                          </div>
+                          <span className="text-[10px] font-black text-zinc-600 bg-white/90 border border-zinc-200/40 px-2 py-0.5 rounded-lg shadow-xs">
+                            {item.progress}%
+                          </span>
                         </div>
 
-                        {/* Bottom: Prompt text caption */}
-                        <div className="bg-white/90 border border-zinc-200/60 rounded-xl p-2.5 max-w-full shadow-sm">
-                          <p className="text-[10px] font-bold text-zinc-800 leading-snug truncate">
-                            {item.prompt}
-                          </p>
+                        {/* Dynamic base progress bar at bottom of card */}
+                        <div className="w-full z-10">
+                          <div className="h-1.5 w-full bg-zinc-200 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-gradient-to-r from-[#1890FF] to-blue-500 transition-all duration-300 rounded-full"
+                              style={{ width: `${item.progress}%` }}
+                            />
+                          </div>
                         </div>
                       </div>
-                    </>
-                  )}
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
+                    ) : (
+                      // Completed image state with interactive hover controls
+                      <>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={item.imageUrl}
+                          alt={item.prompt}
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-103"
+                          loading="lazy"
+                        />
+
+                        {/* Floating actions and prompt details shown on hover */}
+                        <div className="absolute inset-0 bg-black/35 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-between p-4 z-10">
+                          {/* Top: Premium action buttons */}
+                          <div className="flex justify-end gap-1.5">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toast.success("Añadido a favoritos");
+                              }}
+                              className="p-2 rounded-xl bg-white/90 hover:bg-white text-zinc-700 hover:text-red-500 hover:scale-105 border border-zinc-200/50 transition-all cursor-pointer shadow-sm"
+                            >
+                              <Heart className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toast.success("Descarga iniciada");
+                              }}
+                              className="p-2 rounded-xl bg-white/90 hover:bg-white text-zinc-700 hover:text-[#1890FF] hover:scale-105 border border-zinc-200/50 transition-all cursor-pointer shadow-sm"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toast.info(`Creado con: ${item.modelName}`);
+                              }}
+                              className="p-2 rounded-xl bg-white/90 hover:bg-white text-zinc-700 hover:text-zinc-900 hover:scale-105 border border-zinc-200/50 transition-all cursor-pointer shadow-sm"
+                            >
+                              <MoreHorizontal className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
+                          {/* Bottom: Prompt text caption */}
+                          <div className="bg-white/90 border border-zinc-200/60 rounded-xl p-2.5 max-w-full shadow-sm">
+                            <p className="text-[10px] font-bold text-zinc-800 leading-snug truncate">
+                              {item.prompt}
+                            </p>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
       </main>
 
       {/* Floating Prompt Chat Panel at the bottom (Light Mode styled matching normal ChatInput exactly) */}
@@ -1163,9 +1187,12 @@ export default function FlowClient() {
                           </div>
 
                           {/* 5. Points cost indicator */}
-                          <div className="text-center py-0.5 border-t border-zinc-100 dark:border-zinc-800/65 pt-2">
-                            <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-semibold leading-none">
-                              La generación consumirá <span className="underline decoration-1 underline-offset-4 font-bold text-zinc-850 dark:text-zinc-100">{totalCost} puntos</span>
+                          <div className="text-center py-0.5 border-t border-zinc-100 dark:border-zinc-800/65 pt-2 flex flex-col gap-1">
+                            <p className="text-[10px] text-zinc-550 dark:text-zinc-450 font-semibold leading-none">
+                              La generación consumirá <span className="underline decoration-1 underline-offset-4 font-bold text-zinc-800 dark:text-zinc-100">{totalCost} puntos</span>
+                            </p>
+                            <p className="text-[9px] text-zinc-450 dark:text-zinc-500 leading-none">
+                              Disponibles: <span className="font-bold">{Math.max(0, getPlanConfig(userTier).imageCreditsPerMonth - (mounted ? (useSubscriptionStore.getState().monthlyImageCreditsUsed || 0) : 0))}</span> / {getPlanConfig(userTier).imageCreditsPerMonth} puntos
                             </p>
                           </div>
 
@@ -1241,6 +1268,17 @@ export default function FlowClient() {
           />
         </form>
       </div>
+
+      {/* Upgrade modal for credit limits */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        feature="image_credits"
+        usage={{
+          used: mounted ? (useSubscriptionStore.getState().monthlyImageCreditsUsed || 0) : 0,
+          limit: getPlanConfig(userTier).imageCreditsPerMonth,
+        }}
+      />
     </div>
   );
 }

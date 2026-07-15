@@ -34,7 +34,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error("[FLOW-API] Error:", error);
     return NextResponse.json(
-      { error: error.message || "Error al comunicarse con la inteligencia artificial de OpenRouter." },
+      { error: "Lo sentimos, estamos teniendo dificultades en este momento. Por favor, inténtelo de nuevo más tarde." },
       { status: 500 }
     );
   }

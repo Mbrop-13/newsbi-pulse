@@ -37,6 +37,11 @@ const FEATURE_MESSAGES: Record<string, { title: string; message: string; icon: R
     message: "Has alcanzado el máximo de activos en tu portafolio.",
     icon: <Crown className="w-6 h-6" />,
   },
+  image_credits: {
+    title: "Límite de créditos de imagen",
+    message: "Has alcanzado el límite de créditos de imagen para tu plan en Flow. Actualiza tu suscripción para seguir creando.",
+    icon: <Sparkles className="w-6 h-6" />,
+  },
 };
 
 const TIER_BENEFITS: Record<PlanTier, string[]> = {

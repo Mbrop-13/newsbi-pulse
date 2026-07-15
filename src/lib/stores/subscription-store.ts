@@ -12,14 +12,16 @@ export interface SubscriptionState {
   monthlyTtsAudios: number;
   dailyTtsAudios: number;
   lifetimeAiMessages: number;
+  monthlyImageCreditsUsed?: number;
   
   // Actions
   setTier: (tier: PlanTier) => void;
   setStatus: (status: SubscriptionState["status"]) => void;
   setPeriodEnd: (date: string | null) => void;
-  setUsage: (usage: Partial<Pick<SubscriptionState, "monthlyAiMessages" | "monthlyTtsAudios" | "dailyTtsAudios" | "lifetimeAiMessages">>) => void;
+  setUsage: (usage: Partial<Pick<SubscriptionState, "monthlyAiMessages" | "monthlyTtsAudios" | "dailyTtsAudios" | "lifetimeAiMessages" | "monthlyImageCreditsUsed">>) => void;
   incrementAiMessages: () => void;
   incrementTtsAudios: () => void;
+  incrementImageCreditsUsed: (credits: number) => void;
   
   // Helpers
   getPlanConfig: () => PlanConfig;
@@ -40,6 +42,7 @@ export const useSubscriptionStore = create<SubscriptionState>()(
       monthlyTtsAudios: 0,
       dailyTtsAudios: 0,
       lifetimeAiMessages: 0,
+      monthlyImageCreditsUsed: 0,
       
       setTier: (tier) => set({ tier }),
       setStatus: (status) => set({ status }),
@@ -55,6 +58,10 @@ export const useSubscriptionStore = create<SubscriptionState>()(
       incrementTtsAudios: () => set((s) => ({
         monthlyTtsAudios: s.monthlyTtsAudios + 1,
         dailyTtsAudios: s.dailyTtsAudios + 1,
+      })),
+      
+      incrementImageCreditsUsed: (credits) => set((s) => ({
+        monthlyImageCreditsUsed: (s.monthlyImageCreditsUsed || 0) + credits,
       })),
       
       getPlanConfig: () => getPlanConfig(get().tier),
@@ -117,6 +124,7 @@ export const useSubscriptionStore = create<SubscriptionState>()(
         tier: state.tier,
         status: state.status,
         periodEnd: state.periodEnd,
+        monthlyImageCreditsUsed: state.monthlyImageCreditsUsed,
       }),
     }
   )

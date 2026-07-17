@@ -596,43 +596,75 @@ export default function FlowClient() {
       {/* Main Workspace Body: Premium Masonry Grid / Empty State */}
       <main className="flex-1 p-6 relative z-10 overflow-y-auto hidden-scrollbar pb-32 flex flex-col justify-center">
         {items.length === 0 ? (
-          <div className="max-w-md mx-auto w-full px-4 py-8">
+          <div className="flex flex-col items-center justify-center text-center px-6 -mt-16 md:-mt-24 select-none">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="bg-white/70 dark:bg-zinc-905/70 backdrop-blur-xl border border-zinc-200/50 dark:border-zinc-800 p-8 rounded-3xl shadow-xl flex flex-col items-center text-center"
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+              className="relative flex flex-col items-center"
             >
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#1890FF] to-blue-600 flex items-center justify-center text-white mb-6 shadow-lg shadow-[#1890FF]/25">
-                <ImageIcon className="w-8 h-8" />
-              </div>
-              <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-50 mb-2">Maverlang Flow</h2>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
-                Crea imágenes y multimedia de alta calidad utilizando inteligencia artificial. Escribe una descripción abajo para empezar.
-              </p>
-              <div className="w-full flex flex-col gap-2.5">
-                <div className="text-[11px] font-black uppercase tracking-wider text-zinc-400 dark:text-zinc-500 text-left">Ejemplos de prompts</div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPrompt("Olas japonesas tradicionales en azul marino y blanco estilo minimalista ukiyo-e");
-                    if (textareaRef.current) textareaRef.current.focus();
-                  }}
-                  className="w-full text-left px-4 py-2.5 rounded-xl border border-zinc-200/80 hover:border-zinc-300 dark:border-zinc-800 dark:hover:border-zinc-700 bg-zinc-50/50 hover:bg-zinc-50 dark:bg-zinc-900/50 hover:dark:bg-zinc-900 text-xs text-zinc-650 dark:text-zinc-300 font-semibold transition-all cursor-pointer"
-                >
-                  🌊 Olas japonesas tradicionales en azul marino...
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPrompt("Retrato digital detallado de un gato astronauta flotando en el espacio exterior");
-                    if (textareaRef.current) textareaRef.current.focus();
-                  }}
-                  className="w-full text-left px-4 py-2.5 rounded-xl border border-zinc-200/80 hover:border-zinc-300 dark:border-zinc-800 dark:hover:border-zinc-700 bg-zinc-50/50 hover:bg-zinc-50 dark:bg-zinc-900/50 hover:dark:bg-zinc-900 text-xs text-zinc-650 dark:text-zinc-300 font-semibold transition-all cursor-pointer"
-                >
-                  🐱 Retrato detallado de un gato astronauta...
-                </button>
-              </div>
+              {/* Soft ambient glow behind the headline */}
+              <div
+                aria-hidden
+                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] h-[120px] md:w-[360px] md:h-[140px] rounded-full pointer-events-none"
+                style={{
+                  background:
+                    "radial-gradient(ellipse at center, rgba(24,144,255,0.14) 0%, rgba(24,144,255,0.04) 45%, transparent 70%)",
+                  filter: "blur(18px)",
+                  animation: "flow-glow-breathe 4.5s ease-in-out infinite",
+                }}
+              />
+
+              <h2 className="relative text-[2rem] sm:text-4xl md:text-[2.75rem] font-black tracking-tight leading-[1.1] text-zinc-900 dark:text-white">
+                <span className="inline-block">
+                  {"Empieza a crear".split("").map((char, i) => (
+                    <motion.span
+                      key={`${char}-${i}`}
+                      initial={{ opacity: 0, y: 14 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{
+                        duration: 0.45,
+                        delay: 0.08 + i * 0.035,
+                        ease: [0.22, 1, 0.36, 1],
+                      }}
+                      className="inline-block"
+                      style={{ whiteSpace: char === " " ? "pre" : undefined }}
+                    >
+                      {char === " " ? "\u00A0" : char}
+                    </motion.span>
+                  ))}
+                </span>
+              </h2>
+
+              <motion.p
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.55, delay: 0.55, ease: "easeOut" }}
+                className="relative mt-3.5 text-sm md:text-[15px] font-medium tracking-wide text-zinc-400 dark:text-zinc-500"
+              >
+                Describe lo que imaginas y dale vida
+              </motion.p>
+
+              {/* Subtle breathing underline accent */}
+              <motion.div
+                initial={{ scaleX: 0, opacity: 0 }}
+                animate={{ scaleX: 1, opacity: 1 }}
+                transition={{ duration: 0.7, delay: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                className="relative mt-5 h-px w-16 origin-center rounded-full bg-gradient-to-r from-transparent via-[#1890FF]/70 to-transparent"
+                style={{ animation: "flow-line-pulse 3.2s ease-in-out infinite" }}
+              />
             </motion.div>
+
+            <style>{`
+              @keyframes flow-glow-breathe {
+                0%, 100% { opacity: 0.55; transform: translate(-50%, -50%) scale(1); }
+                50% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
+              }
+              @keyframes flow-line-pulse {
+                0%, 100% { opacity: 0.45; }
+                50% { opacity: 1; }
+              }
+            `}</style>
           </div>
         ) : (
           <div className="max-w-7xl mx-auto columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4 w-full">

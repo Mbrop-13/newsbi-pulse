@@ -1,0 +1,211 @@
+prompt:Crea una aplicación para celulares financiera premium para invertir en acciones, fondos indexados y ETFs, que transmita confianza, claridad, profesionalismo y sofisticación accesible. El antídoto a las apps financieras confusas, sobrecargadas de información y poco intuitivas.
+Nombre sugerido: “Clarity Invest”, “Aether Capital” o “Lumen Finance”.
+Estrategia visual y estilo:
+
+Paleta de colores:
+Primarios: Azul profundo profesional (#0F172A), blanco puro y gris neutro elegante.
+Acentos: Verde esmeralda positivo (#10B981) para ganancias, rojo sutil para pérdidas, y azul brillante para acciones destacadas.
+
+Tipografía: Sans-serif moderna y altamente legible (Inter o Satoshi). Títulos en peso 600-700, textos claros con excelente jerarquía.
+Estilo general: Diseño minimalista premium, mucho espacio negativo, gráficos limpios y elegantes. Dark mode y Light mode impecables.
+Visuales: Gráficos de líneas suaves y modernos, velas japonesas claras, iconografía simple y consistente. Fotografías sutiles de mercados financieros abstractos o arquitectónicos.
+
+Estructura principal de la App (Mobile First):
+
+Home / Dashboard (pantalla principal):
+Resumen de portafolio con valor total, ganancia/pérdida diaria y general (con porcentaje grande y claro).
+Gráfico interactivo del rendimiento del portafolio (1D, 7D, 1M, 3M, 1A, MAX).
+Tarjetas rápidas: Acciones en tendencia, Fondos recomendados, Índices principales (S&P 500, Nasdaq, Merval, etc.).
+
+Explorar / Mercado:
+Buscador inteligente destacado en la parte superior.
+Secciones: Acciones, Fondos Indexados, ETFs, Índices.
+Filtros claros por sector, rendimiento, capitalización, dividendo, etc.
+Lista de activos con precio, variación % y gráfico mini.
+
+Portafolio:
+Vista detallada de todas las inversiones.
+Distribución por asset class (gráfico de torta elegante).
+Rendimiento por activo con opción de ver histórico.
+
+Invertir:
+Flujo de compra extremadamente sencillo y claro (máximo 3 pasos).
+Vista detallada de cada activo con información fundamental, noticias relevantes y análisis técnico.
+
+Aprender / Academia:
+Contenido educativo breve y visual (cursos cortos, glosario, guías).
+
+Perfil y Ajustes:
+Datos personales, verificación de identidad, preferencias de riesgo, historial de transacciones.
+
+
+Detalles de interacción y experiencia:
+
+Navegación inferior clara con 5 pestañas: Inicio, Explorar, Portafolio, Invertir, Perfil.
+Todos los números y gráficos son interactivos (tap para más detalle).
+Transiciones suaves y elegantes entre pantallas.
+Feedback visual claro al comprar/vender (animación de confirmación).
+Gráficos que se actualizan en tiempo real con animaciones suaves.
+Modo oscuro por defecto con opción de cambio.
+Notificaciones inteligentes y no invasivas (solo movimientos importantes o alertas configuradas).
+Onboarding inicial muy claro y educativo para nuevos inversores.
+
+Ambiente general:
+Profesional, confiable, transparente, moderno y calmado. La app debe transmitir seguridad financiera y empoderamiento: “Invertir de forma inteligente es más sencillo y claro de lo que pensabas”. Cada pantalla debe sentirse premium, organizada y fácil de entender incluso para inversores principiantes.
+Requisitos adicionales:
+
+Alta legibilidad en todos los tamaños de letra.
+Accesibilidad excelente (contrastes altos, soporte para VoiceOver).
+Sensación de velocidad y fluidez.
+Enfoque en datos claros y acciones accionables.
+
+
+codigo:import React, { useState } from 'react';
+import { 
+  StyleSheet, 
+  Text, 
+  View, 
+  ScrollView, 
+  TouchableOpacity, 
+  Dimensions,
+  SafeAreaView
+} from 'react-native';
+import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
+
+const { width } = Dimensions.get('window');
+
+// --- Sistema de Diseño (Design System) ---
+const COLORS = {
+  background: '#0F172A', // Azul profundo
+  surface: '#1E293B',    // Superficies/Tarjetas
+  border: '#334155',     // Bordes sutiles
+  textPrimary: '#FFFFFF',
+  textSecondary: '#94A3B8', // Gris elegante
+  gain: '#10B981',       // Verde esmeralda
+  loss: '#F43F5E',       // Rojo sutil
+  accent: '#3B82F6',     // Azul brillante CTA
+};
+
+// --- Datos Mockups ---
+const portfolioData = {
+  totalBalance: '$154,320.50',
+  dailyChange: '+$1,240.00',
+  dailyChangePercent: '+0.81%',
+  isPositive: true,
+};
+
+const timeRanges = ['1D', '7D', '1M', '3M', '1A', 'MAX'];
+
+const marketIndices = [
+  { name: 'S&P 500', value: '5,150.42', change: '+0.54%', isPositive: true },
+  { name: 'Nasdaq', value: '16,103.01', change: '+0.72%', isPositive: true },
+  { name: 'Merval', value: '1,432,105.20', change: '-0.23%', isPositive: false },
+];
+
+const opportunities = [
+  { ticker: 'AAPL', name: 'Apple Inc.', price: '$172.40', change: '+1.2%', isPositive: true },
+  { ticker: 'MSFT', name: 'Microsoft Corp.', price: '$408.59', change: '+0.8%', isPositive: true },
+  { ticker: 'VOO', name: 'S&P 500 ETF', price: '$465.80', change: '+0.4%', isPositive: true },
+];
+
+// --- Componente de Gráfico SVG Personalizado ---
+const PortfolioChart = () => {
+  // Genera una curva suave (Bezier) simulando el rendimiento del portafolio
+  const chartWidth = width - 40; // Padding de 20 a cada lado
+  const chartHeight = 200;
+  const pathD = "M0,150 C40,120 80,140 120,100 C160,60 200,90 240,70 C280,50 320,80 360,40";
+  const fillD = `${pathD} L${chartWidth},${chartHeight} L0,${chartHeight} Z`;
+
+  return (
+    <View style={styles.chartContainer}>
+      <Svg width={chartWidth} height={chartHeight}>
+        <Defs>
+          <LinearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={COLORS.accent} stopOpacity="0.3" />
+            <Stop offset="1" stopColor={COLORS.accent} stopOpacity="0" />
+          </LinearGradient>
+        </Defs>
+        {/* Área de relleno bajo la línea */}
+        <Path d={fillD} fill="url(#grad)" />
+        {/* Línea principal del gráfico */}
+        <Path d={pathD} fill="none" stroke={COLORS.accent} strokeWidth="3" strokeLinecap="round" />
+      </Svg>
+    </View>
+  );
+};
+
+// --- Componentes de UI ---
+const Card = ({ children, style }) => (
+  <View style={[styles.card, style]}>{children}</View>
+);
+
+const MarketCard = ({ item }) => (
+  <View style={styles.marketCard}>
+    <View>
+      <Text style={styles.marketName}>{item.name}</Text>
+      <Text style={styles.marketValue}>{item.value}</Text>
+    </View>
+    <View style={[styles.badge, { backgroundColor: item.isPositive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(244, 63, 94, 0.15)' }]}>
+      <Text style={[styles.badgeText, { color: item.isPositive ? COLORS.gain : COLORS.loss }]}>
+        {item.change}
+      </Text>
+    </View>
+  </View>
+);
+
+const OpportunityItem = ({ item }) => (
+  <View style={styles.opportunityRow}>
+    <View style={styles.assetIcon}>
+      <Text style={styles.assetIconText}>{item.ticker.charAt(0)}</Text>
+    </View>
+    <View style={{ flex: 1, marginLeft: 12 }}>
+      <Text style={styles.assetName}>{item.name}</Text>
+      <Text style={styles.assetTicker}>{item.ticker}</Text>
+    </View>
+    <View style={{ alignItems: 'flex-end' }}>
+      <Text style={styles.assetPrice}>{item.price}</Text>
+      <Text style={[styles.assetChange, { color: item.isPositive ? COLORS.gain : COLORS.loss }]}>
+        {item.change}
+      </Text>
+    </View>
+  </View>
+);
+
+// --- Pantalla Principal: Dashboard ---
+export default function App() {
+  const [activeRange, setActiveRange] = useState('1M');
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        
+        {/* Header */}
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.greeting}>Buenos días</Text>
+            <Text style={styles.userName}>Carlos Méndez</Text>
+          </View>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>CM</Text>
+          </View>
+        </View>
+
+        {/* Hero Card: Balance Total */}
+        <Card style={styles.heroCard}>
+          <Text style={styles.heroLabel}>Valor total del portafolio</Text>
+          <Text style={styles.heroBalance}>{portfolioData.totalBalance}</Text>
+          <View style={styles.heroChangeContainer}>
+            <Text style={[styles.heroChange, { color: COLORS.gain }]}>
+              {portfolioData.dailyChange} ({portfolioData.dailyChangePercent})
+            </Text>
+            <Text style={styles.heroTimeLabel}>Hoy</Text>
+          </View>
+
+          {/* Gráfico Interactivo */}
+          <PortfolioChart />
+
+          {/* Time Toggles */}
+          <View style={styles.timeTogglesContainer}>
+            {timeRanges.map((range) => (
+              <TouchableOpacity
+                key={range}

@@ -28,19 +28,6 @@ import {
 
 // ── Helpers ──
 
-function getProjectTypeLabel(type: string): string {
-  switch (type) {
-    case "web":
-      return "Web";
-    case "app":
-      return "App";
-    case "multiplatform":
-      return "Multiplataforma ∞";
-    default:
-      return type;
-  }
-}
-
 function formatRelativeDate(dateStr: string): string {
   const date = new Date(dateStr);
   const now = new Date();
@@ -69,52 +56,34 @@ function ProjectMockupPreview({ project }: { project: Project }) {
 
   return (
     <div
-      className="w-full h-full p-2.5 flex flex-col justify-between font-sans text-[8px] select-none overflow-hidden relative"
+      className="w-full h-full p-3 flex flex-col justify-between font-sans text-[8px] select-none overflow-hidden relative"
       style={{ backgroundColor: bg }}
     >
       <div
-        className="absolute inset-0 opacity-20 pointer-events-none blur-2xl"
+        className="absolute inset-0 opacity-25 pointer-events-none blur-2xl"
         style={{
-          background: `radial-gradient(circle at 60% 40%, ${primary}, ${secondary} 50%, transparent 100%)`,
+          background: `radial-gradient(circle at 50% 40%, ${primary}, ${secondary} 50%, transparent 100%)`,
         }}
       />
       <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#fff_1px,transparent_1px)] bg-[size:10px_10px] pointer-events-none" />
 
-      <div className="flex justify-between items-center border-b border-white/10 pb-1.5 z-10 shrink-0">
-        <div className="flex gap-1">
-          <div className="w-1.5 h-1.5 rounded-full bg-red-500/60" />
-          <div className="w-1.5 h-1.5 rounded-full bg-yellow-500/60" />
-          <div className="w-1.5 h-1.5 rounded-full bg-green-500/60" />
-        </div>
-        <div className="w-24 h-3 rounded bg-white/5 border border-white/10 flex items-center justify-center text-[5px] text-white/30 font-mono tracking-tight px-1 truncate">
-          {project.name.toLowerCase().replace(/\s+/g, "-")}.maverlang.cl
-        </div>
-        <div className="w-3.5 h-3 rounded bg-white/10" />
-      </div>
-
-      <div className="flex-1 flex gap-2 mt-2 items-stretch z-10 min-h-0">
-        <div className="w-7 bg-white/5 border border-white/10 rounded p-1 flex flex-col gap-1.5 shrink-0">
-          <div className="h-1.5 rounded w-full" style={{ backgroundColor: primary }} />
-          <div className="h-1 w-4 bg-white/10 rounded" />
-          <div className="h-1 w-3 bg-white/10 rounded" />
+      <div className="flex-1 flex gap-2 items-stretch z-10 min-h-0">
+        <div className="w-8 bg-white/5 border border-white/10 rounded-md p-1.5 flex flex-col gap-1.5 shrink-0">
+          <div className="h-1.5 rounded-sm w-full" style={{ backgroundColor: primary }} />
+          <div className="h-1 w-5 bg-white/10 rounded-sm" />
+          <div className="h-1 w-4 bg-white/10 rounded-sm" />
+          <div className="h-1 w-6 bg-white/10 rounded-sm" />
         </div>
         <div className="flex-1 flex flex-col gap-2 min-w-0">
-          <div className="h-2 w-14 rounded" style={{ backgroundColor: primary }} />
-          <div className="h-1 w-20 bg-white/20 rounded" />
-          <div className="flex-1 border border-white/10 bg-white/5 rounded p-1 flex gap-0.5 items-end">
+          <div className="h-2 w-16 rounded-sm" style={{ backgroundColor: primary }} />
+          <div className="h-1 w-24 bg-white/20 rounded-sm" />
+          <div className="flex-1 border border-white/10 bg-white/5 rounded-md p-1.5 flex gap-1 items-end">
             <div className="w-full h-[40%] rounded-sm" style={{ backgroundColor: primary }} />
             <div className="w-full h-[75%] rounded-sm" style={{ backgroundColor: secondary }} />
             <div className="w-full h-[100%] rounded-sm" style={{ backgroundColor: accent }} />
+            <div className="w-full h-[55%] rounded-sm bg-white/10" />
           </div>
         </div>
-      </div>
-
-      <div className="mt-1.5 flex justify-between items-center text-[5px] text-white/30 z-10 border-t border-white/5 pt-1">
-        <span className="capitalize">{getProjectTypeLabel(project.projectType)} • {project.style}</span>
-        <span className="font-mono flex items-center gap-0.5" style={{ color: accent }}>
-          <span className="w-1.5 h-1.5 rounded-full bg-current" />
-          activo
-        </span>
       </div>
     </div>
   );
@@ -152,11 +121,31 @@ function ProjectPreviewError({ project }: { project: Project }) {
 
 type PreviewStatus = "idle" | "loading" | "ready" | "empty" | "error";
 
+const PREVIEW_BASE_W = 1280;
+const PREVIEW_BASE_H = 800;
+
 function ProjectLivePreview({ project }: { project: Project }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [status, setStatus] = useState<PreviewStatus>("idle");
   const [html, setHtml] = useState<string | null>(null);
+  const [scale, setScale] = useState(0.25);
+
+  // Escala al ancho real de la card (preview centrada y a todo el ancho)
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const updateScale = () => {
+      const w = el.clientWidth;
+      if (w > 0) setScale(w / PREVIEW_BASE_W);
+    };
+    updateScale();
+
+    const ro = new ResizeObserver(updateScale);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   // Cargar solo cuando la card entra en viewport
   useEffect(() => {
@@ -286,33 +275,20 @@ function ProjectLivePreview({ project }: { project: Project }) {
   }, [status, project.chatId, project.id]);
 
   return (
-    <div ref={containerRef} className="w-full h-full relative overflow-hidden bg-[#0a0a0c]">
-      {/* Chrome de browser sutil encima del preview */}
-      <div className="absolute top-0 left-0 right-0 z-10 flex items-center gap-1.5 px-2.5 py-1.5 bg-black/40 backdrop-blur-sm border-b border-white/5">
-        <div className="flex gap-1">
-          <div className="w-1.5 h-1.5 rounded-full bg-red-500/50" />
-          <div className="w-1.5 h-1.5 rounded-full bg-yellow-500/50" />
-          <div className="w-1.5 h-1.5 rounded-full bg-green-500/50" />
-        </div>
-        <div className="flex-1 h-3 rounded bg-white/5 border border-white/5 flex items-center px-1.5">
-          <span className="text-[6px] text-white/25 font-mono truncate">
-            {project.name.toLowerCase().replace(/\s+/g, "-")}.preview
-          </span>
-        </div>
-      </div>
-
+    <div ref={containerRef} className="w-full h-full relative overflow-hidden bg-[#111113]">
       {status === "ready" && html ? (
-        <div className="absolute inset-0 pt-6 overflow-hidden bg-white">
+        <div className="absolute inset-0 overflow-hidden bg-white">
           <iframe
             ref={iframeRef}
             title={`Preview ${project.name}`}
             srcDoc={html}
             sandbox="allow-scripts allow-same-origin"
-            className="border-0 pointer-events-none absolute top-0 left-0 origin-top-left"
+            className="border-0 pointer-events-none absolute top-0 left-0"
             style={{
-              width: "1280px",
-              height: "800px",
-              transform: "scale(0.28)",
+              width: PREVIEW_BASE_W,
+              height: PREVIEW_BASE_H,
+              transform: `scale(${scale})`,
+              transformOrigin: "top left",
             }}
             tabIndex={-1}
             aria-hidden
@@ -325,7 +301,7 @@ function ProjectLivePreview({ project }: { project: Project }) {
       ) : status === "loading" || status === "idle" ? (
         <div className="w-full h-full relative">
           <ProjectMockupPreview project={project} />
-          <div className="absolute inset-0 bg-black/20 flex items-end justify-center pb-3">
+          <div className="absolute inset-0 bg-black/15 flex items-end justify-center pb-3">
             <div className="h-1 w-12 rounded-full bg-white/10 overflow-hidden">
               <div className="h-full w-1/2 rounded-full bg-white/30 animate-pulse" />
             </div>
@@ -395,14 +371,14 @@ export function ProjectCard({ project, index }: ProjectCardProps) {
       <Link
         href={`/${language}/proyectos/${project.id}`}
         className={cn(
-          "group relative block rounded-2xl border border-zinc-800 bg-[#16161a] overflow-hidden transition-all duration-300",
-          "hover:border-zinc-700 hover:shadow-2xl hover:shadow-black/60",
-          "hover:-translate-y-1 active:scale-[0.98]",
+          "group relative block rounded-lg border border-zinc-800 bg-[#16161a] overflow-hidden transition-all duration-300",
+          "hover:border-zinc-700 hover:shadow-xl hover:shadow-black/50",
+          "hover:-translate-y-0.5 active:scale-[0.99]",
           isDeleting && "opacity-50 pointer-events-none"
         )}
       >
         {/* Live preview del proyecto (o mockup/error si no hay código) */}
-        <div className="h-40 relative overflow-hidden border-b border-zinc-800">
+        <div className="h-40 relative overflow-hidden border-b border-zinc-800/80 bg-[#111113]">
           <ProjectLivePreview project={project} />
 
           {/* Options menu floating on top right */}

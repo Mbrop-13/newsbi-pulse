@@ -26,7 +26,7 @@ type ProjectFilter = "all" | "web" | "app" | "multiplatform";
 
 function ProjectSkeleton() {
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-[#16161a] overflow-hidden animate-pulse">
+    <div className="rounded-lg border border-zinc-800 bg-[#16161a] overflow-hidden animate-pulse">
       <div className="h-40 bg-zinc-900/60" />
       <div className="p-4 space-y-3">
         <div className="flex items-start gap-3">
@@ -177,7 +177,7 @@ export default function ProyectosPage() {
 
       {/* SECCIÓN 2: Panel de Proyectos (Estilo de la imagen adjunta) */}
       <div className="w-full max-w-5xl mx-auto mt-16 px-4">
-        <div className="bg-[#18181b] dark:bg-[#0b0c10]/90 border border-zinc-200/10 dark:border-white/[0.04] rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+        <div className="bg-[#18181b] dark:bg-[#0b0c10]/90 border border-zinc-200/10 dark:border-white/[0.04] rounded-xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
           {/* Fondo de patrón de rejilla sutil */}
           <div className="absolute inset-0 opacity-[0.02] bg-[radial-gradient(#fff_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none" />
 
@@ -281,7 +281,7 @@ export default function ProyectosPage() {
               {/* Tarjeta Nuevo Proyecto con bordes discontinuos - SIEMPRE VISIBLE */}
               <div
                 onClick={scrollToTop}
-                className="group border-2 border-dashed border-zinc-800 hover:border-zinc-700 hover:bg-[#121214]/50 hover:border-white/20 transition-all rounded-2xl h-[220px] flex flex-col items-center justify-center cursor-pointer select-none bg-zinc-900/5"
+                className="group border-2 border-dashed border-zinc-800 hover:border-zinc-700 hover:bg-[#121214]/50 hover:border-white/20 transition-all rounded-lg h-[220px] flex flex-col items-center justify-center cursor-pointer select-none bg-zinc-900/5"
               >
                 <div className="w-10 h-10 rounded-full border border-dashed border-zinc-750 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform duration-300">
                   <Plus className="w-5 h-5 text-zinc-400" />
@@ -298,7 +298,7 @@ export default function ProyectosPage() {
                 ))
               ) : filteredProjects.length === 0 ? (
                 // Mensaje si no hay proyectos creados
-                <div className="col-span-1 sm:col-span-2 flex flex-col items-center justify-center p-6 border border-zinc-800/40 rounded-2xl bg-zinc-900/5 h-[220px] text-center">
+                <div className="col-span-1 sm:col-span-2 flex flex-col items-center justify-center p-6 border border-zinc-800/40 rounded-lg bg-zinc-900/5 h-[220px] text-center">
                   <p className="text-xs text-zinc-200">
                     {search || filter !== "all"
                       ? "No se encontraron proyectos con los filtros de búsqueda aplicados."

@@ -70,12 +70,12 @@ export default function ProjectWorkspacePage() {
     [projects, projectId]
   );
 
-  // Cargar proyectos si aún no se han cargado
+  // Cargar / revalidar proyectos del usuario autenticado
   useEffect(() => {
-    if (isAuthenticated && user && !projectsLoaded) {
-      loadProjects();
+    if (isAuthenticated && user?.id) {
+      void loadProjects();
     }
-  }, [isAuthenticated, user, projectsLoaded, loadProjects]);
+  }, [isAuthenticated, user?.id, loadProjects]);
 
   // Inicializar WebBuilder cuando el proyecto está disponible
   useEffect(() => {

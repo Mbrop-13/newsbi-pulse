@@ -1,23 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useProjectsStore, type Project } from "@/lib/stores/projects-store";
 import { useLanguageStore } from "@/lib/stores/language-store";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { createClient } from "@/lib/supabase/client";
+import { renderProjectToHtml } from "@/lib/webbuilder-canvas-renderer";
+import { normalizeFiles } from "@/lib/stores/webbuilder-store";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
-  Globe,
-  Smartphone,
-  Monitor,
   MoreHorizontal,
   Trash2,
   Pencil,
-  Clock,
   Check,
-  X,
+  AlertTriangle,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -28,19 +27,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 // ── Helpers ──
-
-function getProjectTypeIcon(type: string) {
-  switch (type) {
-    case "web":
-      return Globe;
-    case "app":
-      return Smartphone;
-    case "multiplatform":
-      return Monitor;
-    default:
-      return Globe;
-  }
-}
 
 function getProjectTypeLabel(type: string): string {
   switch (type) {
@@ -70,7 +56,10 @@ function formatRelativeDate(dateStr: string): string {
   return date.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
 }
 
-// ── Previsualización de Mockup de Proyecto Dinámico ──
+// Cache de previews para no re-fetch al re-renderizar la grilla
+const previewCache = new Map<string, { html: string | null; error: string | null }>();
+
+// ── Fallback mockup (sin archivos o cargando fallido) ──
 
 function ProjectMockupPreview({ project }: { project: Project }) {
   const primary = project.colorScheme.primary;
@@ -83,18 +72,14 @@ function ProjectMockupPreview({ project }: { project: Project }) {
       className="w-full h-full p-2.5 flex flex-col justify-between font-sans text-[8px] select-none overflow-hidden relative"
       style={{ backgroundColor: bg }}
     >
-      {/* Background glow using project colors */}
       <div
         className="absolute inset-0 opacity-20 pointer-events-none blur-2xl"
         style={{
           background: `radial-gradient(circle at 60% 40%, ${primary}, ${secondary} 50%, transparent 100%)`,
         }}
       />
-
-      {/* Grid pattern */}
       <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#fff_1px,transparent_1px)] bg-[size:10px_10px] pointer-events-none" />
 
-      {/* Browser address bar */}
       <div className="flex justify-between items-center border-b border-white/10 pb-1.5 z-10 shrink-0">
         <div className="flex gap-1">
           <div className="w-1.5 h-1.5 rounded-full bg-red-500/60" />
@@ -104,63 +89,26 @@ function ProjectMockupPreview({ project }: { project: Project }) {
         <div className="w-24 h-3 rounded bg-white/5 border border-white/10 flex items-center justify-center text-[5px] text-white/30 font-mono tracking-tight px-1 truncate">
           {project.name.toLowerCase().replace(/\s+/g, "-")}.maverlang.cl
         </div>
-        <div className="w-3.5 h-3 rounded bg-white/10 flex items-center justify-center" />
+        <div className="w-3.5 h-3 rounded bg-white/10" />
       </div>
 
-      {/* Viewport content */}
       <div className="flex-1 flex gap-2 mt-2 items-stretch z-10 min-h-0">
-        {/* Mock Sidebar */}
         <div className="w-7 bg-white/5 border border-white/10 rounded p-1 flex flex-col gap-1.5 shrink-0">
           <div className="h-1.5 rounded w-full" style={{ backgroundColor: primary }} />
           <div className="h-1 w-4 bg-white/10 rounded" />
           <div className="h-1 w-3 bg-white/10 rounded" />
-          <div className="h-1 w-5 bg-white/10 rounded" />
         </div>
-
-        {/* Mock Canvas Area */}
-        <div className="flex-1 flex flex-col gap-2 min-w-0 justify-between">
-          <div className="space-y-1">
-            <div className="h-2 w-14 rounded" style={{ backgroundColor: primary }} />
-            <div className="h-1 w-20 bg-white/20 rounded" />
+        <div className="flex-1 flex flex-col gap-2 min-w-0">
+          <div className="h-2 w-14 rounded" style={{ backgroundColor: primary }} />
+          <div className="h-1 w-20 bg-white/20 rounded" />
+          <div className="flex-1 border border-white/10 bg-white/5 rounded p-1 flex gap-0.5 items-end">
+            <div className="w-full h-[40%] rounded-sm" style={{ backgroundColor: primary }} />
+            <div className="w-full h-[75%] rounded-sm" style={{ backgroundColor: secondary }} />
+            <div className="w-full h-[100%] rounded-sm" style={{ backgroundColor: accent }} />
           </div>
-
-          {/* Graphical widget mock */}
-          {project.projectType === "web" ? (
-            <div className="flex-1 border border-white/10 bg-white/5 rounded p-1 flex flex-col justify-between">
-              <div className="flex justify-between items-center">
-                <div className="h-1 w-6 bg-white/30 rounded" />
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: accent }} />
-              </div>
-              <div className="flex gap-0.5 items-end h-6 mt-1">
-                <div className="w-full h-[40%] rounded-sm" style={{ backgroundColor: primary }} />
-                <div className="w-full h-[75%] rounded-sm" style={{ backgroundColor: secondary }} />
-                <div className="w-full h-[100%] rounded-sm" style={{ backgroundColor: accent }} />
-                <div className="w-full h-[60%] rounded-sm bg-white/10" />
-              </div>
-            </div>
-          ) : project.projectType === "app" ? (
-            <div className="flex-1 border border-white/10 bg-white/5 rounded p-1 flex flex-col justify-between items-center">
-              <div className="w-6 h-6 rounded-full border border-dashed border-white/20 flex items-center justify-center mt-0.5">
-                <div className="w-4 h-4 rounded-full" style={{ backgroundColor: primary }} />
-              </div>
-              <div className="h-1.5 w-12 rounded" style={{ backgroundColor: secondary }} />
-            </div>
-          ) : (
-            <div className="flex-grow grid grid-cols-2 gap-1">
-              <div className="border border-white/10 bg-white/5 rounded p-1 flex flex-col justify-between">
-                <div className="h-1 w-4 bg-white/20 rounded" />
-                <div className="h-2 w-full rounded" style={{ backgroundColor: primary }} />
-              </div>
-              <div className="border border-white/10 bg-white/5 rounded p-1 flex flex-col justify-between">
-                <div className="h-1 w-4 bg-white/20 rounded" />
-                <div className="h-2 w-full rounded" style={{ backgroundColor: secondary }} />
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Mock status line */}
       <div className="mt-1.5 flex justify-between items-center text-[5px] text-white/30 z-10 border-t border-white/5 pt-1">
         <span className="capitalize">{getProjectTypeLabel(project.projectType)} • {project.style}</span>
         <span className="font-mono flex items-center gap-0.5" style={{ color: accent }}>
@@ -168,6 +116,224 @@ function ProjectMockupPreview({ project }: { project: Project }) {
           activo
         </span>
       </div>
+    </div>
+  );
+}
+
+// Mini error elegante cuando el preview del proyecto falla
+function ProjectPreviewError({ project }: { project: Project }) {
+  return (
+    <div
+      className="w-full h-full flex flex-col items-center justify-center relative overflow-hidden select-none"
+      style={{ backgroundColor: project.colorScheme.background || "#0b0f19" }}
+    >
+      <div
+        className="absolute inset-0 opacity-30 pointer-events-none"
+        style={{
+          background: `radial-gradient(circle at 50% 40%, ${project.colorScheme.primary}33, transparent 70%)`,
+        }}
+      />
+      <div className="relative z-10 flex flex-col items-center gap-2 px-4 text-center">
+        <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
+          <AlertTriangle className="w-4 h-4 text-amber-400/90" />
+        </div>
+        <p className="text-[10px] font-semibold text-white/80 leading-tight">
+          Preview no disponible
+        </p>
+        <p className="text-[8px] text-white/40 leading-snug max-w-[140px]">
+          Abre el proyecto para repararlo
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ── Preview real (iframe escalado del código del proyecto) ──
+
+type PreviewStatus = "idle" | "loading" | "ready" | "empty" | "error";
+
+function ProjectLivePreview({ project }: { project: Project }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [status, setStatus] = useState<PreviewStatus>("idle");
+  const [html, setHtml] = useState<string | null>(null);
+
+  // Cargar solo cuando la card entra en viewport
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setStatus((s) => (s === "idle" ? "loading" : s));
+          obs.disconnect();
+        }
+      },
+      { rootMargin: "120px" }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  // Fetch + render del HTML del proyecto
+  useEffect(() => {
+    if (status !== "loading") return;
+
+    const userId = useAuthStore.getState().user?.id;
+    const cacheKey = `${userId || "anon"}:${project.chatId || project.id}`;
+    const cached = previewCache.get(cacheKey);
+    if (cached) {
+      if (cached.error) {
+        setStatus("error");
+      } else if (cached.html) {
+        setHtml(cached.html);
+        setStatus("ready");
+      } else {
+        setStatus("empty");
+      }
+      return;
+    }
+
+    if (!project.chatId || !userId) {
+      previewCache.set(cacheKey, { html: null, error: null });
+      setStatus("empty");
+      return;
+    }
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const supabase = createClient();
+
+        // Asegurar sesión Supabase (RLS) antes de leer archivos del usuario
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session?.user?.id) {
+          if (!cancelled) setStatus("empty");
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from("ai_webbuilder_projects")
+          .select("project_files")
+          .eq("chat_id", project.chatId)
+          .eq("user_id", session.user.id)
+          .limit(1)
+          .maybeSingle();
+
+        if (cancelled) return;
+
+        if (error || !data?.project_files) {
+          previewCache.set(cacheKey, { html: null, error: null });
+          setStatus("empty");
+          return;
+        }
+
+        const files = normalizeFiles(data.project_files as Record<string, unknown>);
+        const hasCode = Object.values(files).some(
+          (f) => (f?.code ?? "").trim().length > 0
+        );
+
+        if (!hasCode) {
+          previewCache.set(cacheKey, { html: null, error: null });
+          setStatus("empty");
+          return;
+        }
+
+        const result = renderProjectToHtml(files);
+        if (cancelled) return;
+
+        if (result.error || !result.html) {
+          previewCache.set(cacheKey, { html: null, error: result.error || "error" });
+          setStatus("error");
+          return;
+        }
+
+        previewCache.set(cacheKey, { html: result.html, error: null });
+        setHtml(result.html);
+        setStatus("ready");
+      } catch {
+        if (!cancelled) {
+          previewCache.set(cacheKey, { html: null, error: null });
+          setStatus("empty");
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [status, project.chatId, project.id]);
+
+  // Errores de runtime solo de ESTE iframe → estado local (sin tocar webbuilder store)
+  useEffect(() => {
+    if (status !== "ready") return;
+
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type !== "MAVERLANG_RUNTIME_ERROR") return;
+      if (iframeRef.current && e.source !== iframeRef.current.contentWindow) return;
+      setStatus("error");
+      const userId = useAuthStore.getState().user?.id;
+      const cacheKey = `${userId || "anon"}:${project.chatId || project.id}`;
+      previewCache.set(cacheKey, { html: null, error: e.data?.message || "runtime" });
+    };
+
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, [status, project.chatId, project.id]);
+
+  return (
+    <div ref={containerRef} className="w-full h-full relative overflow-hidden bg-[#0a0a0c]">
+      {/* Chrome de browser sutil encima del preview */}
+      <div className="absolute top-0 left-0 right-0 z-10 flex items-center gap-1.5 px-2.5 py-1.5 bg-black/40 backdrop-blur-sm border-b border-white/5">
+        <div className="flex gap-1">
+          <div className="w-1.5 h-1.5 rounded-full bg-red-500/50" />
+          <div className="w-1.5 h-1.5 rounded-full bg-yellow-500/50" />
+          <div className="w-1.5 h-1.5 rounded-full bg-green-500/50" />
+        </div>
+        <div className="flex-1 h-3 rounded bg-white/5 border border-white/5 flex items-center px-1.5">
+          <span className="text-[6px] text-white/25 font-mono truncate">
+            {project.name.toLowerCase().replace(/\s+/g, "-")}.preview
+          </span>
+        </div>
+      </div>
+
+      {status === "ready" && html ? (
+        <div className="absolute inset-0 pt-6 overflow-hidden bg-white">
+          <iframe
+            ref={iframeRef}
+            title={`Preview ${project.name}`}
+            srcDoc={html}
+            sandbox="allow-scripts allow-same-origin"
+            className="border-0 pointer-events-none absolute top-0 left-0 origin-top-left"
+            style={{
+              width: "1280px",
+              height: "800px",
+              transform: "scale(0.28)",
+            }}
+            tabIndex={-1}
+            aria-hidden
+          />
+          {/* Overlay para capturar el click del Link padre */}
+          <div className="absolute inset-0 z-[5]" />
+        </div>
+      ) : status === "error" ? (
+        <ProjectPreviewError project={project} />
+      ) : status === "loading" || status === "idle" ? (
+        <div className="w-full h-full relative">
+          <ProjectMockupPreview project={project} />
+          <div className="absolute inset-0 bg-black/20 flex items-end justify-center pb-3">
+            <div className="h-1 w-12 rounded-full bg-white/10 overflow-hidden">
+              <div className="h-full w-1/2 rounded-full bg-white/30 animate-pulse" />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <ProjectMockupPreview project={project} />
+      )}
     </div>
   );
 }
@@ -235,9 +401,9 @@ export function ProjectCard({ project, index }: ProjectCardProps) {
           isDeleting && "opacity-50 pointer-events-none"
         )}
       >
-        {/* Mockup Preview Area at Top */}
-        <div className="h-36 relative overflow-hidden border-b border-zinc-800">
-          <ProjectMockupPreview project={project} />
+        {/* Live preview del proyecto (o mockup/error si no hay código) */}
+        <div className="h-40 relative overflow-hidden border-b border-zinc-800">
+          <ProjectLivePreview project={project} />
 
           {/* Options menu floating on top right */}
           <div className="absolute top-2.5 right-2.5 z-20">

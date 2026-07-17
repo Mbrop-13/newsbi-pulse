@@ -72,6 +72,8 @@ interface ProjectsStore {
   projects: Project[];
   isLoading: boolean;
   hasLoaded: boolean;
+  /** userId del dueño de la lista actual (evita mezclar cuentas) */
+  loadedUserId: string | null;
 
   // Wizard de creación
   isWizardOpen: boolean;
@@ -87,10 +89,15 @@ interface ProjectsStore {
 
   // CRUD actions
   loadProjects: () => Promise<void>;
+  clearProjects: () => void;
   createProject: () => Promise<Project | null>;
   deleteProject: (id: string) => Promise<void>;
   updateProject: (id: string, updates: Partial<Project>) => Promise<void>;
 }
+
+// Evita cargas concurrentes de loadProjects
+let loadProjectsInFlight: Promise<void> | null = null;
+let loadProjectsForUser: string | null = null;
 
 // ── Helper: mapea fila de Supabase a nuestro tipo ──
 
@@ -118,6 +125,7 @@ export const useProjectsStore = create<ProjectsStore>()(
       projects: [],
       isLoading: false,
       hasLoaded: false,
+      loadedUserId: null,
 
       // Wizard state
       isWizardOpen: false,
@@ -153,33 +161,103 @@ export const useProjectsStore = create<ProjectsStore>()(
           wizardData: { ...DEFAULT_WIZARD_DATA },
         }),
 
+      clearProjects: () => {
+        loadProjectsInFlight = null;
+        loadProjectsForUser = null;
+        set({
+          projects: [],
+          isLoading: false,
+          hasLoaded: false,
+          loadedUserId: null,
+        });
+      },
+
       // ── CRUD ──
 
       loadProjects: async () => {
         const user = useAuthStore.getState().user;
-        if (!user) return;
+        if (!user?.id) return;
+
+        // Si ya hay un load en curso para el mismo usuario, reutilizarlo
+        if (loadProjectsInFlight && loadProjectsForUser === user.id) {
+          return loadProjectsInFlight;
+        }
+
+        // Usuario distinto → limpiar lista stale de otra cuenta de inmediato
+        if (get().loadedUserId && get().loadedUserId !== user.id) {
+          set({
+            projects: [],
+            hasLoaded: false,
+            loadedUserId: null,
+          });
+        }
 
         set({ isLoading: true });
-        try {
-          const supabase = createClient();
-          const { data, error } = await supabase
-            .from("ai_projects")
-            .select("*")
-            .eq("user_id", user.id)
-            .order("updated_at", { ascending: false });
+        loadProjectsForUser = user.id;
 
-          if (error) {
-            console.error("[ProjectsStore] Error loading projects:", error);
+        const run = (async () => {
+          try {
+            const supabase = createClient();
+
+            // Esperar sesión real de Supabase: RLS usa auth.uid(), no el user del store.
+            // Sin esto a veces la query devuelve [] o falla de forma intermitente.
+            let session = (await supabase.auth.getSession()).data.session;
+
+            // Un reintento corto si el store ya tiene user pero la sesión aún no hidrató
+            if (!session?.user?.id) {
+              await new Promise((r) => setTimeout(r, 250));
+              session = (await supabase.auth.getSession()).data.session;
+            }
+
+            if (!session?.user?.id) {
+              // No borrar cache local: puede ser un race de hidratación de auth
+              set({ isLoading: false });
+              return;
+            }
+
+            const userId = session.user.id;
+
+            // Alinear store auth vs session (por si divergieron)
+            if (userId !== user.id) {
+              set({ projects: [], hasLoaded: false, loadedUserId: null });
+            }
+
+            const { data, error } = await supabase
+              .from("ai_projects")
+              .select("*")
+              .eq("user_id", userId)
+              .order("updated_at", { ascending: false });
+
+            // Si el usuario cambió mientras cargábamos, descartar resultado
+            const currentUser = useAuthStore.getState().user;
+            if (!currentUser || currentUser.id !== userId) {
+              return;
+            }
+
+            if (error) {
+              console.error("[ProjectsStore] Error loading projects:", error);
+              set({ isLoading: false, hasLoaded: true, loadedUserId: userId });
+              return;
+            }
+
+            const projects = (data || []).map(mapRowToProject);
+            set({
+              projects,
+              isLoading: false,
+              hasLoaded: true,
+              loadedUserId: userId,
+            });
+          } catch (err) {
+            console.error("[ProjectsStore] Unexpected error loading projects:", err);
             set({ isLoading: false, hasLoaded: true });
-            return;
+          } finally {
+            loadProjectsInFlight = null;
+            loadProjectsForUser = null;
           }
+        })();
 
-          const projects = (data || []).map(mapRowToProject);
-          set({ projects, isLoading: false, hasLoaded: true });
-        } catch (err) {
-          console.error("[ProjectsStore] Unexpected error loading projects:", err);
-          set({ isLoading: false, hasLoaded: true });
-        }
+        loadProjectsInFlight = run;
+        return run;
       },
 
       createProject: async () => {
@@ -218,6 +296,8 @@ export const useProjectsStore = create<ProjectsStore>()(
           const newProject = mapRowToProject(data);
           set((s) => ({
             projects: [newProject, ...s.projects],
+            loadedUserId: user.id,
+            hasLoaded: true,
             isWizardOpen: false,
             wizardStep: 1,
             wizardData: { ...DEFAULT_WIZARD_DATA },
@@ -311,10 +391,10 @@ export const useProjectsStore = create<ProjectsStore>()(
     {
       name: "maverlang-projects",
       partialize: (state) => ({
-        // Solo persistir la lista de proyectos para UX instantánea
-        // (luego se re-sincroniza con loadProjects).
+        // Cache local solo si sabemos de qué usuario es (evita mezclar cuentas).
+        // hasLoaded NO se persiste: siempre revalidamos contra Supabase al montar.
         projects: state.projects,
-        hasLoaded: state.hasLoaded,
+        loadedUserId: state.loadedUserId,
       }),
     }
   )

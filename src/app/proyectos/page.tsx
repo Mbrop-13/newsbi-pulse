@@ -27,7 +27,7 @@ type ProjectFilter = "all" | "web" | "app" | "multiplatform";
 function ProjectSkeleton() {
   return (
     <div className="rounded-2xl border border-zinc-800 bg-[#16161a] overflow-hidden animate-pulse">
-      <div className="h-36 bg-zinc-900/60" />
+      <div className="h-40 bg-zinc-900/60" />
       <div className="p-4 space-y-3">
         <div className="flex items-start gap-3">
           <div className="w-8 h-8 rounded-full bg-zinc-900" />
@@ -48,9 +48,9 @@ export default function ProyectosPage() {
   const { openModal } = useAuthModalStore();
   const {
     projects,
-    isLoading,
-    hasLoaded,
+    loadedUserId,
     loadProjects,
+    clearProjects,
     openWizard,
     updateWizardData,
   } = useProjectsStore();
@@ -66,12 +66,18 @@ export default function ProyectosPage() {
     setThemeMounted(true);
   }, []);
 
-  // Cargar proyectos cuando el usuario esté autenticado
+  // Cargar proyectos solo cuando auth esté listo y haya sesión real del usuario
   useEffect(() => {
-    if (isAuthenticated && user) {
-      loadProjects();
+    if (!isLoaded) return;
+
+    if (isAuthenticated && user?.id) {
+      void loadProjects();
+      return;
     }
-  }, [isAuthenticated, user, loadProjects]);
+
+    // Logout / sin sesión: no dejar proyectos de otra cuenta en pantalla
+    clearProjects();
+  }, [isLoaded, isAuthenticated, user?.id, loadProjects, clearProjects]);
 
   // Logotipos adaptativos
   const isDark = themeMounted && resolvedTheme === "dark";
@@ -95,17 +101,25 @@ export default function ProyectosPage() {
     setInput("");
   };
 
-  // Función de scroll suave al hacer clic en "Nuevo proyecto"
+  // Scroll del contenedor principal (no window: evita pelear con el layout)
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    const main = document.querySelector("main");
+    if (main) {
+      main.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
     setTimeout(() => {
       const textarea = document.getElementById("chat-input") as HTMLTextAreaElement | null;
       if (textarea) textarea.focus();
-    }, 500);
+    }, 400);
   };
 
-  // Filtrar proyectos
-  const filteredProjects = projects.filter((p) => {
+  // Solo proyectos del usuario actual (nunca cache de otra cuenta)
+  const listBelongsToUser = !!user?.id && loadedUserId === user.id;
+  const userProjects = listBelongsToUser ? projects : [];
+
+  const filteredProjects = userProjects.filter((p) => {
     const matchesFilter = filter === "all" || p.projectType === filter;
     const matchesSearch =
       !search ||
@@ -114,10 +128,13 @@ export default function ProyectosPage() {
     return matchesFilter && matchesSearch;
   });
 
-  const showLoading = !hasLoaded || isLoading;
+  // Skeleton solo si aún no hay lista confiable de ESTE usuario
+  // (si hay cache del mismo user, se muestra y se revalida en background)
+  const showLoading =
+    !isLoaded || (isAuthenticated && !!user?.id && !listBelongsToUser);
 
   return (
-    <div className="min-h-screen bg-background relative overflow-y-auto pb-16">
+    <div className="min-h-full bg-background relative pb-16">
       {/* Elementos decorativos de fondo al estilo premium chat */}
       <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-blue-500/[0.03] rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
       <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-indigo-500/[0.03] rounded-full blur-[100px] translate-x-1/4 translate-y-1/4 pointer-events-none" />

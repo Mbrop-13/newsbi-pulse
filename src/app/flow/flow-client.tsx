@@ -615,7 +615,10 @@ export default function FlowClient() {
                 }}
               />
 
-              <h2 className="relative text-[2rem] sm:text-4xl md:text-[2.75rem] font-black tracking-tight leading-[1.1] text-zinc-900 dark:text-white">
+              <h2
+                className="relative text-[2.75rem] sm:text-5xl md:text-[3.5rem] font-medium leading-[1.15] text-zinc-900 dark:text-white"
+                style={{ fontFamily: "var(--font-caveat), cursive" }}
+              >
                 <span className="inline-block">
                   {"Empieza a crear".split("").map((char, i) => (
                     <motion.span
@@ -644,25 +647,12 @@ export default function FlowClient() {
               >
                 Describe lo que imaginas y dale vida
               </motion.p>
-
-              {/* Subtle breathing underline accent */}
-              <motion.div
-                initial={{ scaleX: 0, opacity: 0 }}
-                animate={{ scaleX: 1, opacity: 1 }}
-                transition={{ duration: 0.7, delay: 0.7, ease: [0.22, 1, 0.36, 1] }}
-                className="relative mt-5 h-px w-16 origin-center rounded-full bg-gradient-to-r from-transparent via-[#1890FF]/70 to-transparent"
-                style={{ animation: "flow-line-pulse 3.2s ease-in-out infinite" }}
-              />
             </motion.div>
 
             <style>{`
               @keyframes flow-glow-breathe {
                 0%, 100% { opacity: 0.55; transform: translate(-50%, -50%) scale(1); }
                 50% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
-              }
-              @keyframes flow-line-pulse {
-                0%, 100% { opacity: 0.45; }
-                50% { opacity: 1; }
               }
             `}</style>
           </div>

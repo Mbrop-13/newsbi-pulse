@@ -904,16 +904,12 @@ function BuildErrorView({ error }: { error: string }) {
   const resetAutoFixAttempts = useWebBuilderStore((s) => s.resetAutoFixAttempts);
   const setSelectedTab = useWebBuilderStore((s) => s.setSelectedTab);
   const setActiveFile = useWebBuilderStore((s) => s.setActiveFile);
+  const [showDetails, setShowDetails] = useState(false);
 
-  // Extrae {path, line} del log de error. Cubre formatos comunes de bundlers:
-  //   "/App.tsx:5:10"        -> { path: "/App.tsx", line: 5 }
-  //   "App.tsx line 5"       -> { path: "/App.tsx", line: 5 }
-  //   "./src/App.tsx(5,10)"  -> { path: "/App.tsx", line: 5 }
-  //   "/App.tsx:5"           -> { path: "/App.tsx", line: 5 }
+  // Extrae {path, line} del log de error. Cubre formatos comunes de bundlers.
   function extractErrorLocation(log: string): { path: string; line: number } | null {
     const match = log.match(/\(?\.?\/?([\w\-./]*\.(?:tsx|ts|jsx|js|css|json))(?::(\d+)(?::\d+)?|[(,](\d+)|\s+line\s+(\d+))/i);
     if (!match) {
-      // Sin número de línea: al menos intentamos devolver el archivo.
       const fm = log.match(/\(?\/?([\w\-./]*\.(?:tsx|ts|jsx|js|css|json))\b/);
       if (!fm) return null;
       let p = fm[1];
@@ -928,9 +924,10 @@ function BuildErrorView({ error }: { error: string }) {
     return { path: p, line };
   }
 
-  // Abre el editor en el archivo/línea del error (si lo detecta).
+  const loc = extractErrorLocation(error);
+  const shortError = error.split("\n")[0].slice(0, 120);
+
   const jumpToError = () => {
-    const loc = extractErrorLocation(error);
     const { files } = useWebBuilderStore.getState();
     const target =
       (loc && files[loc.path] && loc.path) ||
@@ -938,7 +935,6 @@ function BuildErrorView({ error }: { error: string }) {
       Object.keys(files)[0];
     if (target) {
       setActiveFile(target);
-      // Emitir evento para que CodeViewer/Sandpack intente posicionar la línea.
       if (loc && loc.line > 0) {
         window.dispatchEvent(
           new CustomEvent("maverlang-goto-line", { detail: { line: loc.line } })
@@ -949,91 +945,92 @@ function BuildErrorView({ error }: { error: string }) {
     resetAutoFixAttempts();
   };
 
-  // Reintentar de verdad: limpia el flag Y fuerza un remontaje del SandpackProvider
-  // (buildVersion++) para que recompile desde cero. resetAutoFixAttempts() solo
-  // borraba el flag y dejaba el preview congelado en la pantalla de error.
   const handleRetry = () => {
     resetAutoFixAttempts();
-    // Forzar recompilación completa subiendo buildVersion (remount del provider).
-    // Usamos CustomEvent (API moderna) en vez de document.createEvent, que está
-    // deprecado. PreviewPanel escucha este evento y sube buildVersion.
     window.dispatchEvent(new CustomEvent("maverlang-retry-build"));
   };
 
-  const handleOpenInEditor = () => {
-    jumpToError();
-  };
-
   return (
-    <div className="flex-grow flex flex-col items-center justify-center min-h-0 w-full h-full relative overflow-auto p-6 bg-slate-955 text-white select-none">
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(239,68,68,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(239,68,68,0.015)_1px,transparent_1px)] bg-[size:1.5rem_1.5rem] opacity-60 pointer-events-none" />
-      <div className="absolute -top-12 -left-12 w-64 h-64 bg-red-500/10 rounded-full blur-[80px] pointer-events-none" />
-      <div className="absolute -bottom-12 -right-12 w-64 h-64 bg-amber-500/5 rounded-full blur-[80px] pointer-events-none" />
+    <div className="flex-grow flex flex-col items-center justify-center min-h-0 w-full h-full relative overflow-hidden select-none bg-[#0a0b10]">
+      {/* Fondo sutil */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(99,102,241,0.08)_0%,transparent_60%)] pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(239,68,68,0.06),transparent_40%)] pointer-events-none" />
+      <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#fff_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none" />
 
-      <div className="relative z-10 w-full max-w-xl mx-auto space-y-5 px-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-red-500/10 flex items-center justify-center shrink-0 border border-red-500/25">
-            <XCircle className="w-5 h-5 text-red-500" />
+      <div className="relative z-10 w-full max-w-sm mx-auto px-6 flex flex-col items-center text-center">
+        {/* Icono */}
+        <div className="relative mb-5">
+          <div className="absolute inset-0 rounded-2xl bg-red-500/20 blur-xl scale-150" />
+          <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-red-500/15 to-orange-500/10 border border-red-500/20 flex items-center justify-center shadow-lg shadow-red-950/40">
+            <XCircle className="w-7 h-7 text-red-400" />
           </div>
-          <div className="min-w-0">
-            <h2 className="text-sm font-bold text-white flex items-center gap-2">
-              Error de compilación
-              <span className="text-[9px] font-black uppercase tracking-wider bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded-full">
-                Build Failed
-              </span>
-            </h2>
-            <p className="text-[10px] text-gray-400 mt-0.5">
-              El empaquetador de módulos detectó un error al compilar los archivos.
+        </div>
+
+        <h2 className="text-base font-bold text-white tracking-tight">
+          Algo no cuadra
+        </h2>
+        <p className="text-[12px] text-zinc-400 mt-1.5 leading-relaxed max-w-[260px]">
+          Esta preview no pudo cargarse. Suele ser un error de código — se puede arreglar en segundos.
+        </p>
+
+        {/* Chip del archivo/línea si se detecta */}
+        {loc && (
+          <button
+            onClick={jumpToError}
+            className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-[11px] text-zinc-300 font-mono transition-colors cursor-pointer"
+          >
+            <Code2 className="w-3 h-3 text-blue-400 shrink-0" />
+            <span className="truncate max-w-[200px]">{loc.path}</span>
+            {loc.line > 0 && <span className="text-zinc-500">:{loc.line}</span>}
+          </button>
+        )}
+
+        {/* Detalle colapsable */}
+        <button
+          onClick={() => setShowDetails((v) => !v)}
+          className="mt-3 text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer flex items-center gap-1"
+        >
+          {showDetails ? "Ocultar detalle" : "Ver detalle técnico"}
+          <ChevronDown className={cn("w-3 h-3 transition-transform", showDetails && "rotate-180")} />
+        </button>
+
+        {showDetails && (
+          <div className="mt-2 w-full rounded-xl border border-white/8 bg-black/30 p-3 text-left select-text">
+            <p className="text-[10px] font-mono text-zinc-400 leading-relaxed break-words max-h-28 overflow-y-auto hidden-scrollbar">
+              {error}
             </p>
           </div>
-        </div>
+        )}
 
-        {/* Error Code Diagnostic */}
-        <div className="rounded-2xl border border-red-500/15 bg-red-950/10 p-4 font-mono text-[11px] leading-relaxed overflow-x-auto select-text shadow-inner">
-          <span className="text-red-400 font-bold block mb-1">Diagnostic Log:</span>
-          <pre className="whitespace-pre-wrap text-gray-300 break-words max-h-40 overflow-y-auto hidden-scrollbar">{error}</pre>
-        </div>
+        {!showDetails && shortError && (
+          <p className="mt-2 text-[10px] font-mono text-zinc-600 truncate max-w-full px-2">
+            {shortError}
+          </p>
+        )}
 
-        {/* Atajo: saltar al archivo/línea del error si lo detectamos */}
-        {(() => {
-          const loc = extractErrorLocation(error);
-          if (!loc) return null;
-          return (
-            <button
-              onClick={jumpToError}
-              className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-xs font-bold text-blue-300 transition-all active:scale-98"
-            >
-              <Code2 className="w-3.5 h-3.5" />
-              Abrir <span className="font-mono">{loc.path}</span>
-              {loc.line > 0 && <span className="opacity-70">:{loc.line}</span>} en el editor
-            </button>
-          );
-        })()}
-
-        {/* Action buttons */}
-        <div className="flex flex-col sm:flex-row gap-3 pt-2">
+        {/* Acciones */}
+        <div className="mt-6 flex flex-col w-full gap-2">
           <button
             onClick={handleRetry}
-            className="flex-grow py-2.5 px-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-bold text-white transition-all cursor-pointer text-center active:scale-98"
+            className="w-full py-2.5 px-4 rounded-xl bg-white text-zinc-900 text-xs font-bold hover:bg-zinc-100 transition-all cursor-pointer active:scale-[0.98] flex items-center justify-center gap-2"
           >
-            Reintentar Compilación
+            <RefreshCw className="w-3.5 h-3.5" />
+            Reintentar
           </button>
-
-          <button
-            onClick={handleOpenInEditor}
-            className="flex-grow py-2.5 px-4 rounded-xl border border-blue-500/20 bg-blue-500/10 hover:bg-blue-500/20 text-xs font-bold text-blue-300 transition-all cursor-pointer text-center active:scale-98"
-          >
-            Abrir en Editor
-          </button>
-          
-          <button
-            onClick={() => {
-              useWebBuilderStore.getState().resetProject();
-            }}
-            className="flex-grow py-2.5 px-4 rounded-xl border border-red-500/20 bg-red-500/10 hover:bg-red-500/20 text-xs font-bold text-red-400 transition-all cursor-pointer text-center active:scale-98"
-          >
-            Restaurar Plantilla Limpia
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={jumpToError}
+              className="flex-1 py-2.5 px-3 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-xs font-semibold text-zinc-200 transition-all cursor-pointer active:scale-[0.98]"
+            >
+              Abrir editor
+            </button>
+            <button
+              onClick={() => useWebBuilderStore.getState().resetProject()}
+              className="flex-1 py-2.5 px-3 rounded-xl border border-white/5 text-xs font-medium text-zinc-500 hover:text-zinc-300 hover:border-white/10 transition-all cursor-pointer active:scale-[0.98]"
+            >
+              Plantilla limpia
+            </button>
+          </div>
         </div>
       </div>
     </div>

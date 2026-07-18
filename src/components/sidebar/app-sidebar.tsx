@@ -20,6 +20,7 @@ import { NavMain } from "@/components/sidebar/nav-main"
 import { NavUser } from "@/components/sidebar/nav-user"
 import { NavChats } from "@/components/sidebar/nav-chats"
 import { NavFinance } from "@/components/sidebar/nav-finance"
+import { NavBrand } from "@/components/sidebar/nav-brand"
 import { SidebarLogo } from "@/components/sidebar/sidebar-logo"
 import { SearchDialog } from "@/components/search-dialog"
 import { Button } from "@/components/ui/button"
@@ -194,6 +195,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           <NavMain items={mainButtons} />
           {state === "expanded" && mounted && (
             <>
+              {isFlowPage && <NavBrand />}
               {!isFlowPage && <NavFinance items={financeButtons} />}
               <NavChats />
             </>

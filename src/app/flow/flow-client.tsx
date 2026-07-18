@@ -31,6 +31,8 @@ import {
   Target,
   Scale,
   Layers,
+  Sparkles,
+  Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -42,6 +44,11 @@ import { useSidebar } from "@/components/ui/sidebar";
 import { useSubscriptionStore } from "@/lib/stores/subscription-store";
 import { getPlanConfig } from "@/lib/plan-limits";
 import { UpgradeModal } from "@/components/upgrade-modal";
+import {
+  useBrandStore,
+  LOGO_MODE_OPTIONS,
+  type LogoMode,
+} from "@/lib/stores/brand-store";
 
 const ADVANCED_TOOLS = [
   { id: 'chart_bar', label: 'Gráfico de Barras', icon: BarChart3, category: 'Gráficos' },
@@ -112,10 +119,28 @@ export default function FlowClient() {
   const [loading, setLoading] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [showBrandContext, setShowBrandContext] = useState(false);
+
+  const brand = useBrandStore((s) => s.brand);
+  const loadBrand = useBrandStore((s) => s.loadBrand);
+  const hasLoadedBrand = useBrandStore((s) => s.hasLoaded);
+  const activeItemId = useBrandStore((s) => s.activeItemId);
+  const setActiveItemId = useBrandStore((s) => s.setActiveItemId);
+  const logoMode = useBrandStore((s) => s.logoMode);
+  const setLogoMode = useBrandStore((s) => s.setLogoMode);
+  const openBrandForm = useBrandStore((s) => s.openForm);
+  const buildGenerationContext = useBrandStore((s) => s.buildGenerationContext);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated && !hasLoadedBrand) {
+      loadBrand();
+    }
+  }, [isAuthenticated, hasLoadedBrand, loadBrand]);
 
   // Selector states matching the screenshot design
   const [generationType, setGenerationType] = useState<"imagen" | "video">("imagen");
@@ -389,6 +414,7 @@ export default function FlowClient() {
     setItems((prev) => [...newItems, ...prev]);
 
     try {
+      const brandContext = buildGenerationContext();
       const res = await fetch("/api/flow", {
         method: "POST",
         headers: {
@@ -398,6 +424,7 @@ export default function FlowClient() {
           prompt: userPrompt,
           model: selectedModel.id,
           isAgentActive,
+          brandContext: brandContext || undefined,
         }),
       });
 
@@ -616,8 +643,8 @@ export default function FlowClient() {
               />
 
               <h2
-                className="relative text-[2.75rem] sm:text-5xl md:text-[3.5rem] font-medium leading-[1.15] text-zinc-900 dark:text-white"
-                style={{ fontFamily: "var(--font-caveat), cursive" }}
+                className="relative text-[2.75rem] sm:text-5xl md:text-[3.5rem] font-serif italic font-normal leading-[1.15] text-zinc-900 dark:text-white"
+                style={{ fontFamily: "var(--font-playfair), serif" }}
               >
                 <span className="inline-block">
                   {"Empieza a crear".split("").map((char, i) => (
@@ -762,6 +789,104 @@ export default function FlowClient() {
 
       {/* Floating Prompt Chat Panel at the bottom (Light Mode styled matching normal ChatInput exactly) */}
       <div className="w-full max-w-3xl mx-auto px-4 pb-5 absolute bottom-0 left-1/2 -translate-x-1/2 shrink-0 z-20">
+        {/* Brand context bar */}
+        {brand && (
+          <div className="mb-2 relative">
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setShowBrandContext((v) => !v)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] font-bold border transition-all cursor-pointer",
+                  showBrandContext
+                    ? "bg-[#1890FF]/12 border-[#1890FF]/35 text-[#1890FF]"
+                    : "bg-white/90 dark:bg-[#1E1E20]/95 border-zinc-200/70 dark:border-zinc-700/60 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 shadow-sm"
+                )}
+              >
+                <Sparkles className="w-3 h-3" />
+                Marca · {brand.name}
+                <ChevronDown className={cn("w-3 h-3 transition-transform", showBrandContext && "rotate-180")} />
+              </button>
+              {activeItemId && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20">
+                  <Package className="w-3 h-3" />
+                  {brand.items.find((i) => i.id === activeItemId)?.name || "Producto"}
+                </span>
+              )}
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border border-zinc-200/60 dark:border-zinc-700/50">
+                Logo: {LOGO_MODE_OPTIONS.find((o) => o.id === logoMode)?.label || logoMode}
+              </span>
+            </div>
+
+            <AnimatePresence>
+              {showBrandContext && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                  className="absolute bottom-full left-0 mb-2 w-full max-w-md bg-white dark:bg-[#1E1E20] border border-zinc-200/80 dark:border-zinc-800 rounded-2xl shadow-2xl p-3.5 z-40"
+                >
+                  <div className="flex items-center justify-between mb-2.5">
+                    <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                      Contexto de generación
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => openBrandForm()}
+                      className="text-[10px] font-bold text-[#1890FF] hover:underline"
+                    >
+                      Editar marca
+                    </button>
+                  </div>
+
+                  <label className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">
+                    Producto o página
+                  </label>
+                  <select
+                    value={activeItemId || ""}
+                    onChange={(e) => setActiveItemId(e.target.value || null)}
+                    className="mt-1 w-full h-9 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900/50 text-xs font-semibold px-2.5 mb-3"
+                  >
+                    <option value="">Sin producto específico</option>
+                    {brand.items.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.kind === "product" ? "📦 " : item.kind === "home" ? "🌐 " : "🔗 "}
+                        {item.name}
+                      </option>
+                    ))}
+                  </select>
+
+                  <label className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">
+                    Uso del logo
+                  </label>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {LOGO_MODE_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setLogoMode(opt.id as LogoMode)}
+                        className={cn(
+                          "px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all cursor-pointer",
+                          logoMode === opt.id
+                            ? "bg-[#1890FF]/12 border-[#1890FF]/40 text-[#1890FF]"
+                            : "border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300"
+                        )}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                  {!brand.logo_data && logoMode !== "none" && (
+                    <p className="mt-2 text-[10px] text-amber-600 dark:text-amber-400">
+                      No hay logo subido. Súbelo en Marca para aplicarlo en las imágenes.
+                    </p>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="relative">
           {/* Border Beam keyframes */}
           <style>{`

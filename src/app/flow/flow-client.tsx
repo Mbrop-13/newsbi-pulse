@@ -799,7 +799,7 @@ export default function FlowClient() {
                 className={cn(
                   "inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] font-bold border transition-all cursor-pointer",
                   showBrandContext
-                    ? "bg-[#1890FF]/12 border-[#1890FF]/35 text-[#1890FF]"
+                    ? "bg-zinc-900 border-zinc-900 text-white dark:bg-zinc-100 dark:border-zinc-100 dark:text-zinc-900"
                     : "bg-white/90 dark:bg-[#1E1E20]/95 border-zinc-200/70 dark:border-zinc-700/60 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 shadow-sm"
                 )}
               >
@@ -808,7 +808,7 @@ export default function FlowClient() {
                 <ChevronDown className={cn("w-3 h-3 transition-transform", showBrandContext && "rotate-180")} />
               </button>
               {activeItemId && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20">
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200/80 dark:border-zinc-700/50">
                   <Package className="w-3 h-3" />
                   {brand.items.find((i) => i.id === activeItemId)?.name || "Producto"}
                 </span>
@@ -833,7 +833,7 @@ export default function FlowClient() {
                     <button
                       type="button"
                       onClick={() => openBrandForm()}
-                      className="text-[10px] font-bold text-[#1890FF] hover:underline"
+                      className="text-[10px] font-bold text-zinc-900 dark:text-zinc-100 hover:underline"
                     >
                       Editar marca
                     </button>
@@ -868,7 +868,7 @@ export default function FlowClient() {
                         className={cn(
                           "px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all cursor-pointer",
                           logoMode === opt.id
-                            ? "bg-[#1890FF]/12 border-[#1890FF]/40 text-[#1890FF]"
+                            ? "bg-zinc-900 border-zinc-900 text-white dark:bg-zinc-100 dark:border-zinc-100 dark:text-zinc-900"
                             : "border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300"
                         )}
                       >

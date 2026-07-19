@@ -54,13 +54,13 @@ function KindGlyph({ kind, className }: { kind: ItemKind; className?: string }) 
 function kindAccent(kind: ItemKind) {
   switch (kind) {
     case "home":
-      return "text-[#1890FF] bg-[#1890FF]/10";
+      return "text-zinc-800 dark:text-zinc-100 bg-zinc-200/80 dark:bg-zinc-700/60";
     case "product":
-      return "text-violet-500 bg-violet-500/10";
+      return "text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800";
     case "catalog":
-      return "text-amber-500 bg-amber-500/10";
+      return "text-zinc-600 dark:text-zinc-300 bg-zinc-100/80 dark:bg-zinc-800/80";
     default:
-      return "text-zinc-500 bg-zinc-500/10";
+      return "text-zinc-500 bg-zinc-100 dark:bg-zinc-800/60";
   }
 }
 
@@ -142,7 +142,7 @@ export function NavBrand() {
                   <span className="flex items-center gap-2">
                     Marca
                     {brand?.analysis_status === "completed" && (
-                      <BadgeCheck className="w-3.5 h-3.5 text-[#1890FF]" />
+                      <BadgeCheck className="w-3.5 h-3.5 text-zinc-900 dark:text-zinc-100" />
                     )}
                   </span>
                   <ChevronRight
@@ -174,7 +174,7 @@ export function NavBrand() {
                           }}
                           className="flex items-center gap-2.5 w-full py-1 text-left"
                         >
-                          <div className="w-6 h-6 rounded-md bg-[#1890FF]/10 text-[#1890FF] flex items-center justify-center shrink-0">
+                          <div className="w-6 h-6 rounded-md bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 flex items-center justify-center shrink-0">
                             <Plus className="h-3.5 w-3.5" />
                           </div>
                           <span className="truncate font-semibold">
@@ -197,7 +197,7 @@ export function NavBrand() {
                                 className="w-full h-full object-contain p-0.5"
                               />
                             ) : (
-                              <span className="text-xs font-black text-[#1890FF]">
+                              <span className="text-xs font-black text-zinc-900 dark:text-zinc-100">
                                 {brand.name.slice(0, 1).toUpperCase()}
                               </span>
                             )}
@@ -233,7 +233,7 @@ export function NavBrand() {
                             type="button"
                             disabled={reanalyzing}
                             onClick={onReanalyze}
-                            className="flex-1 flex items-center justify-center gap-1 py-1 rounded-lg text-[10px] font-bold text-[#1890FF] hover:bg-[#1890FF]/10 transition-colors disabled:opacity-50"
+                            className="flex-1 flex items-center justify-center gap-1 py-1 rounded-lg text-[10px] font-bold text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
                           >
                             {reanalyzing ? (
                               <Loader2 className="w-3 h-3 animate-spin" />

@@ -4,7 +4,8 @@ import { useEffect, useRef, useState, useMemo } from "react"
 import { useTheme } from "next-themes"
 import { useSidebar } from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
-import { Bot, User, ThumbsUp, ThumbsDown, Share2, RefreshCw, ChevronRight, ChevronDown, ChevronUp, Sparkles, Loader2, Globe, ExternalLink, X, ArrowDown, CheckCircle2, XCircle, Clock, Cpu, ClipboardList, FileCode2, Maximize2, Info, FolderOpen, Code2, Search, Brain, Plus, Compass } from "lucide-react"
+import { Bot, User, ThumbsUp, ThumbsDown, Share2, RefreshCw, ChevronRight, ChevronDown, ChevronUp, Sparkles, Loader2, Globe, ExternalLink, X, ArrowDown, CheckCircle2, XCircle, Clock, Cpu, ClipboardList, FileCode2, Maximize2, Info, FolderOpen, Code2, Search, Plus, Compass, Copy, Pencil, Check } from "lucide-react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import ReactMarkdown from "react-markdown"
@@ -32,6 +33,8 @@ interface ChatMessagesProps {
   onFeedback?: (messageId: string, feedback: 'like' | 'dislike' | null) => void
   onRetry?: () => void
   onShare?: (question: string, answer: string) => void
+  /** Edit a user message and re-send (truncates history after that message). */
+  onEditMessage?: (messageId: string, newContent: string) => void
   messageFeedback?: Record<string, 'like' | 'dislike'>
   openReasoning?: Record<string, boolean>
   onToggleReasoning?: (id: string) => void
@@ -44,6 +47,7 @@ export function ChatMessages({
   onFeedback,
   onRetry,
   onShare,
+  onEditMessage,
   messageFeedback = {},
   openReasoning = {},
   onToggleReasoning,
@@ -123,6 +127,7 @@ export function ChatMessages({
               onFeedback={onFeedback}
               onRetry={idx === messages.length - 1 && msg.role === 'assistant' ? onRetry : undefined}
               onShare={onShare}
+              onEditMessage={onEditMessage}
               isReasoningOpen={openReasoning[msg.id] === true}
               onToggleReasoning={() => onToggleReasoning?.(msg.id)}
               prevMessageContent={idx > 0 ? messages[idx - 1].content : ""}
@@ -454,22 +459,42 @@ function isOrchestrationLog(text: string): boolean {
          text.includes('agentes constructores');
 }
 
-// ─── Limpia el ruido del orquestador del texto en crudo ───
-// Quita los marcadores `🧠 [Orquestador WebBuilder]`, `[Agente]`, emojis
-// iniciales y líneas vacías, para que el panel de razonamiento muestre solo
-// el mensaje humano (no los prefijos de log internos).
+// ─── Limpia el ruido del orquestador / tags del texto de razonamiento ───
+// Quita marcadores internos, emojis de log y basura al INICIO del texto
+// (símbolos raros residuales del stream / modelo) para que se vea limpio.
 function cleanOrchestrationText(text: string): string {
   if (!text) return "";
-  return text
-    // Quitar etiquetas de rol del orquestador/agentes
+
+  let t = String(text)
+    // Tags de modelo / think
+    .replace(/<\/?think>/gi, "")
+    .replace(/<\/?reasoning>/gi, "")
+    .replace(/<\/?redacted_reasoning>/gi, "")
+    // Etiquetas de rol del orquestador/agentes
     .replace(/\[Orquestador\s*WebBuilder\]|\[Orquestador\]|\[Agente\]/g, "")
-    // Quitar emojis de log comunes al inicio de línea
-    .replace(/^[🧠🔍📊✅🤖⏳❌⚠️]\s*/gm, "")
-    // Colapsar espacios sobrantes tras quitar los marcadores
+    // Carácter de reemplazo () y basura de encoding
+    .replace(/\uFFFD/g, "")
+    // Zero-width / BOM / bidi controls en todo el texto
+    .replace(/[\u200b-\u200f\u2028-\u202f\u2060-\u206f\ufeff]/g, "")
+    // Emojis / pictogramas al inicio de cada línea
+    .replace(/^[\p{Extended_Pictographic}\uFE0F\u200D\u20E3]+/gmu, "")
+    // Bullets y símbolos decorativos al inicio de línea
+    .replace(/^[\s▪•●◦‣⁃·‧∙▸▹►▻◆◇★☆▶▷◀◁➤➜→⇒‣※※]+\s*/gm, "")
+    // Prefijos tipo "Thinking:" residuales
+    .replace(/^(Thinking|Pensando|Reasoning|Razonamiento)\s*[:：]\s*/gim, "");
+
+  // Quitar basura SOLO al comienzo del bloque hasta la primera letra/número
+  // o un inicio de markdown razonable (# * - > " ' ` [ ( ¿ ¡).
+  // Esto elimina el "símbolo raro" que a veces manda el stream al inicio.
+  t = t.replace(/^[^\p{L}\p{N}#*"'`>\-\(\[¿¡]+/u, "");
+
+  // Colapsar espacios y saltos
+  t = t
     .replace(/[ \t]{2,}/g, " ")
-    // Quitar líneas vacías al inicio/final y normalizar saltos dobles
     .replace(/\n{3,}/g, "\n\n")
     .trim();
+
+  return t;
 }
 
 // ─── Parse orchestration log lines from reasoning text ───
@@ -684,6 +709,7 @@ function MessageBubble({
   onFeedback,
   onRetry,
   onShare,
+  onEditMessage,
   isReasoningOpen,
   onToggleReasoning,
   prevMessageContent,
@@ -697,6 +723,7 @@ function MessageBubble({
   onFeedback?: (messageId: string, feedback: 'like' | 'dislike' | null) => void
   onRetry?: () => void
   onShare?: (question: string, answer: string) => void
+  onEditMessage?: (messageId: string, newContent: string) => void
   isReasoningOpen: boolean
   onToggleReasoning: () => void
   prevMessageContent: string
@@ -708,6 +735,12 @@ function MessageBubble({
   const isUser = message.role === "user"
   const [isUserMessageExpanded, setIsUserMessageExpanded] = useState(false)
   const isLongUserMessage = isUser && (message.content.length > 450 || message.content.split('\n').length > 5)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editText, setEditText] = useState(message.content)
+  const [showMobileActions, setShowMobileActions] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const userMsgRef = useRef<HTMLDivElement>(null)
+  const editTextareaRef = useRef<HTMLTextAreaElement>(null)
   const [isCitationsOpen, setIsCitationsOpen] = useState(false)
   const [activePreviewUrl, setActivePreviewUrl] = useState<string | null>(null)
   const [isAgentsExpanded, setIsAgentsExpanded] = useState(false)
@@ -722,28 +755,55 @@ function MessageBubble({
   
   // Custom states for redesigned thinking/reasoning blocks
   const [showAllSources, setShowAllSources] = useState(false)
-  const [isThinkingExpanded, setIsThinkingExpanded] = useState(isLast && isLoading)
+  const [isThinkingExpanded, setIsThinkingExpanded] = useState(false)
   const [localExpandedReportIdx, setLocalExpandedReportIdx] = useState<number | null>(null)
-  const [localReasoningOpen, setLocalReasoningOpen] = useState(isLast && isLoading)
+  // Grok-style: reasoning starts collapsed; never auto-expands
+  const [localReasoningOpen, setLocalReasoningOpen] = useState(false)
   const hasManuallyToggledRef = useRef(false)
 
-  // Keep track of loading transition to auto-collapse/expand states
+  // Keep track of loading transition to auto-collapse states when stream ends
   const isResponding = isLast && isLoading;
   const prevLoadingRef = useRef(isLoading);
   
   useEffect(() => {
     if (isResponding) {
+      // Research/agents panel can expand during stream; reasoning stays closed
       setIsThinkingExpanded(true);
-      if (extractedReasoning || message.thinkingSteps?.length) {
-        setLocalReasoningOpen(true);
-      }
     } else if (prevLoadingRef.current && !isLoading) {
-      // Collapse thinking phase and reasoning once finished loading
+      // Collapse everything when the answer finishes
       setIsThinkingExpanded(false);
       setLocalReasoningOpen(false);
     }
     prevLoadingRef.current = isLoading;
-  }, [isLoading, isResponding, message.reasoning, message.thinkingSteps]);
+  }, [isLoading, isResponding]);
+
+  // Keep edit draft in sync if the message content changes (e.g. chat reload)
+  useEffect(() => {
+    if (!isEditing) setEditText(message.content)
+  }, [message.content, isEditing])
+
+  // Autofocus textarea when entering edit mode
+  useEffect(() => {
+    if (isEditing && editTextareaRef.current) {
+      const el = editTextareaRef.current
+      el.focus()
+      el.setSelectionRange(el.value.length, el.value.length)
+      el.style.height = "auto"
+      el.style.height = `${Math.min(el.scrollHeight, 240)}px`
+    }
+  }, [isEditing])
+
+  // Mobile: dismiss action bar when tapping outside the message
+  useEffect(() => {
+    if (!showMobileActions || !isMobile) return
+    const onPointerDown = (e: PointerEvent) => {
+      if (userMsgRef.current && !userMsgRef.current.contains(e.target as Node)) {
+        setShowMobileActions(false)
+      }
+    }
+    document.addEventListener("pointerdown", onPointerDown)
+    return () => document.removeEventListener("pointerdown", onPointerDown)
+  }, [showMobileActions, isMobile])
 
   // Check citations
   let citationsList: string[] = message.citations || []
@@ -1100,54 +1160,70 @@ function MessageBubble({
     }
   }
 
-  // ─── Render Model Reasoning (DeepSeek-R1 style) ───
+  // ─── Model Reasoning (Grok-style) ───
+  // - Label: solo "Razonamiento" + flecha (sin icono de cerebro)
+  // - Colapsado por defecto (nunca se auto-despliega)
+  // - Mientras responde: visible
+  // - Al terminar: oculto salvo hover del mensaje (en móvil se mantiene visible colapsado)
   const renderModelReasoning = () => {
     if (!extractedReasoning && !message.thinkingSteps?.length) return null
-    const content = cleanOrchestrationText(extractedReasoning || message.thinkingSteps?.join('\n') || '')
+    const content = cleanOrchestrationText(
+      extractedReasoning || message.thinkingSteps?.join("\n") || ""
+    )
     if (!content) return null
     const isThinking = isResponding && !finalContent
 
     return (
-      <div className="mb-4">
-        {/* Toggle Button at the top */}
-        <Button
-          variant="ghost"
-          size="sm"
+      <div
+        className={cn(
+          "mb-2 transition-opacity duration-200",
+          // Finished: only show on hover (desktop). Mobile keeps the compact label.
+          !isResponding && !isMobile && "opacity-0 group-hover:opacity-100",
+          !isResponding && isMobile && "opacity-100"
+        )}
+      >
+        <button
+          type="button"
+          onClick={() => setLocalReasoningOpen((v) => !v)}
           className={cn(
-            "h-8 w-fit px-3.5 rounded-full text-xs font-bold gap-2 border transition-all cursor-pointer mb-2 group",
-            localReasoningOpen
-              ? "bg-zinc-100 dark:bg-zinc-900 text-foreground border-zinc-200 dark:border-zinc-800"
-              : "bg-white dark:bg-zinc-900/60 text-muted-foreground hover:text-foreground border-zinc-200/60 dark:border-zinc-800/60 hover:border-zinc-300 dark:hover:border-zinc-700"
+            "inline-flex items-center gap-1 select-none cursor-pointer",
+            "text-[13px] font-medium text-muted-foreground/80 hover:text-foreground",
+            "transition-colors duration-150 bg-transparent border-0 p-0",
+            isThinking && "text-muted-foreground animate-pulse"
           )}
-          onClick={() => setLocalReasoningOpen(!localReasoningOpen)}
-          title="Toggles deep reasoning visibility"
+          aria-expanded={localReasoningOpen}
+          aria-label={localReasoningOpen ? "Ocultar razonamiento" : "Ver razonamiento"}
         >
-          <span className={cn(
-            "relative flex h-4 w-4 items-center justify-center",
-            isThinking && "animate-pulse"
-          )}>
-            <Brain className={cn("h-3.5 w-3.5 transition-colors", localReasoningOpen ? "text-foreground" : "text-muted-foreground group-hover:text-foreground")} />
-          </span>
-          <span>{isThinking ? "Pensando…" : "Razonamiento"}</span>
-          <ChevronRight className={cn("h-3 w-3 transition-transform duration-200", localReasoningOpen && "rotate-90")} />
-        </Button>
+          <span>{isThinking ? "Pensando" : "Razonamiento"}</span>
+          <ChevronDown
+            className={cn(
+              "h-3.5 w-3.5 shrink-0 transition-transform duration-200",
+              localReasoningOpen ? "rotate-180" : "rotate-0"
+            )}
+          />
+        </button>
 
-        <AnimatePresence>
+        <AnimatePresence initial={false}>
           {localReasoningOpen && (
             <motion.div
-              initial={{ opacity: 0, height: 0, marginTop: 0 }}
-              animate={{ opacity: 1, height: 'auto', marginTop: 8 }}
-              exit={{ opacity: 0, height: 0, marginTop: 0 }}
-              transition={{ duration: 0.2 }}
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
               className="overflow-hidden"
             >
-              <div className="relative rounded-xl bg-zinc-50/80 dark:bg-zinc-900/40 border border-zinc-200/60 dark:border-zinc-800/60">
-                <div className="px-4 py-3 text-[13px] text-muted-foreground dark:text-zinc-400 font-sans whitespace-pre-wrap leading-relaxed max-h-72 overflow-y-auto scrollbar-hide">
-                  {content}
-                  {isThinking && (
-                    <span className="inline-block w-1.5 h-4 ml-0.5 bg-foreground/70 dark:bg-zinc-300 animate-pulse align-middle rounded-sm" />
-                  )}
-                </div>
+              {/* Grok-like: soft left border, muted prose, no heavy card */}
+              <div
+                className={cn(
+                  "mt-2 pl-3 border-l border-border/70",
+                  "text-[13px] leading-relaxed text-muted-foreground",
+                  "whitespace-pre-wrap max-h-60 overflow-y-auto scrollbar-hide"
+                )}
+              >
+                {content}
+                {isThinking && (
+                  <span className="inline-block w-1 h-3.5 ml-0.5 bg-muted-foreground/60 animate-pulse align-middle rounded-sm" />
+                )}
               </div>
             </motion.div>
           )}
@@ -1407,35 +1483,207 @@ function MessageBubble({
     );
   };
 
+  const handleCopyMessage = async () => {
+    try {
+      await navigator.clipboard.writeText(message.content)
+      setCopied(true)
+      toast.success("Mensaje copiado")
+      setTimeout(() => setCopied(false), 1500)
+    } catch {
+      toast.error("No se pudo copiar el mensaje")
+    }
+  }
+
+  const handleStartEdit = () => {
+    if (isLoading) {
+      toast.error("Espera a que termine la respuesta para editar")
+      return
+    }
+    setEditText(message.content)
+    setIsEditing(true)
+    setShowMobileActions(false)
+  }
+
+  const handleCancelEdit = () => {
+    setIsEditing(false)
+    setEditText(message.content)
+  }
+
+  const handleSubmitEdit = () => {
+    const trimmed = editText.trim()
+    if (!trimmed) {
+      toast.error("El mensaje no puede estar vacío")
+      return
+    }
+    if (trimmed === message.content.trim()) {
+      setIsEditing(false)
+      return
+    }
+    if (isLoading) {
+      toast.error("Espera a que termine la respuesta para editar")
+      return
+    }
+    setIsEditing(false)
+    onEditMessage?.(message.id, trimmed)
+  }
+
   if (isUser) {
+    const showActions = !isEditing && (isMobile ? showMobileActions : true)
+
     return (
-      <div className="flex justify-end" id={`msg-user-${message.id}`}>
-        <div className={cn(isWebBuilderMode ? "max-w-[95%]" : "max-w-[85%] md:max-w-[75%]")}>
-          <div className={cn(
-            "bg-secondary dark:bg-secondary text-[15px] relative overflow-hidden",
-            isWebBuilderMode ? "rounded-2xl px-3.5 py-2.5" : "rounded-3xl px-5 py-3.5"
-          )}>
+      <div
+        ref={userMsgRef}
+        className="flex justify-end group/user-msg"
+        id={`msg-user-${message.id}`}
+      >
+        <div className={cn(
+          "relative flex flex-col items-end",
+          isWebBuilderMode ? "max-w-[95%]" : "max-w-[85%] md:max-w-[75%]"
+        )}>
+          {isEditing ? (
             <div className={cn(
-              "transition-all duration-300 relative",
-              isLongUserMessage && !isUserMessageExpanded ? "max-h-[140px] overflow-hidden" : ""
+              "w-full min-w-[min(100%,280px)] sm:min-w-[320px] bg-secondary dark:bg-secondary border border-border/60 shadow-sm",
+              isWebBuilderMode ? "rounded-2xl px-3.5 py-2.5" : "rounded-3xl px-4 py-3"
             )}>
-              <p className="whitespace-pre-wrap">{message.content}</p>
-              {isLongUserMessage && !isUserMessageExpanded && (
-                <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#EBEBED] via-[#EBEBED]/90 to-transparent dark:from-[#0A0A0A] dark:via-[#0A0A0A]/90 dark:to-transparent pointer-events-none" />
-              )}
-            </div>
-            
-            {isLongUserMessage && (
-              <div className="flex justify-end mt-2 pr-1">
-                <span
-                  onClick={() => setIsUserMessageExpanded(!isUserMessageExpanded)}
-                  className="text-xs font-semibold text-black dark:text-white hover:opacity-70 transition-all flex items-center gap-1 cursor-pointer select-none"
+              <textarea
+                ref={editTextareaRef}
+                value={editText}
+                onChange={(e) => {
+                  setEditText(e.target.value)
+                  const el = e.target
+                  el.style.height = "auto"
+                  el.style.height = `${Math.min(el.scrollHeight, 240)}px`
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    e.preventDefault()
+                    handleCancelEdit()
+                  } else if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault()
+                    handleSubmitEdit()
+                  }
+                }}
+                rows={2}
+                className="w-full resize-none bg-transparent text-[15px] leading-relaxed text-foreground outline-none placeholder:text-muted-foreground/60 scrollbar-hide"
+                placeholder="Edita tu mensaje..."
+                aria-label="Editar mensaje"
+              />
+              <div className="flex items-center justify-end gap-2 mt-2.5 pt-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCancelEdit}
+                  className="h-8 px-3 rounded-full text-xs font-semibold"
                 >
-                  {isUserMessageExpanded ? "Ver menos ↑" : "Ver más →"}
-                </span>
+                  Cancelar
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleSubmitEdit}
+                  disabled={!editText.trim() || isLoading}
+                  className="h-8 px-3.5 rounded-full text-xs font-semibold bg-black dark:bg-white text-white dark:text-black hover:bg-black/90 dark:hover:bg-white/90"
+                >
+                  Enviar
+                </Button>
               </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            <>
+              <div
+                role={isMobile ? "button" : undefined}
+                tabIndex={isMobile ? 0 : undefined}
+                onClick={() => {
+                  if (isMobile) setShowMobileActions((v) => !v)
+                }}
+                onKeyDown={(e) => {
+                  if (isMobile && (e.key === "Enter" || e.key === " ")) {
+                    e.preventDefault()
+                    setShowMobileActions((v) => !v)
+                  }
+                }}
+                className={cn(
+                  "bg-secondary dark:bg-secondary text-[15px] relative overflow-hidden",
+                  isWebBuilderMode ? "rounded-2xl px-3.5 py-2.5" : "rounded-3xl px-5 py-3.5",
+                  isMobile && "cursor-pointer active:opacity-90 transition-opacity",
+                  showMobileActions && isMobile && "ring-2 ring-[#1890FF]/30"
+                )}
+              >
+                <div className={cn(
+                  "transition-all duration-300 relative",
+                  isLongUserMessage && !isUserMessageExpanded ? "max-h-[140px] overflow-hidden" : ""
+                )}>
+                  <p className="whitespace-pre-wrap">{message.content}</p>
+                  {isLongUserMessage && !isUserMessageExpanded && (
+                    <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#EBEBED] via-[#EBEBED]/90 to-transparent dark:from-[#0A0A0A] dark:via-[#0A0A0A]/90 dark:to-transparent pointer-events-none" />
+                  )}
+                </div>
+
+                {isLongUserMessage && (
+                  <div className="flex justify-end mt-2 pr-1">
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setIsUserMessageExpanded(!isUserMessageExpanded)
+                      }}
+                      className="text-xs font-semibold text-black dark:text-white hover:opacity-70 transition-all flex items-center gap-1 cursor-pointer select-none"
+                    >
+                      {isUserMessageExpanded ? "Ver menos ↑" : "Ver más →"}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Action bar: hover on desktop (absolute, no layout shift), tap-to-reveal on mobile */}
+              <div
+                className={cn(
+                  "flex items-center gap-0.5 transition-all duration-200 z-10",
+                  isMobile
+                    ? showActions
+                      ? "opacity-100 mt-1.5"
+                      : "opacity-0 h-0 mt-0 overflow-hidden pointer-events-none"
+                    : "absolute top-full right-0 mt-1 opacity-0 pointer-events-none group-hover/user-msg:opacity-100 group-hover/user-msg:pointer-events-auto"
+                )}
+              >
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 rounded-full text-muted-foreground hover:text-foreground bg-background/80 backdrop-blur-sm shadow-sm border border-border/40"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleCopyMessage()
+                  }}
+                  aria-label="Copiar mensaje"
+                  title="Copiar"
+                >
+                  {copied ? (
+                    <Check className="h-3.5 w-3.5 text-emerald-500" />
+                  ) : (
+                    <Copy className="h-3.5 w-3.5" />
+                  )}
+                </Button>
+                {onEditMessage && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 rounded-full text-muted-foreground hover:text-foreground bg-background/80 backdrop-blur-sm shadow-sm border border-border/40"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleStartEdit()
+                    }}
+                    disabled={isLoading}
+                    aria-label="Editar mensaje"
+                    title="Editar"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
     )
@@ -1570,14 +1818,24 @@ function MessageBubble({
               return null;
             }
 
+            // Empty assistant message after stop/error: never leave infinite bouncing dots
             if (!message.toolResults?.length && !message.toolInvocations?.length && !message.reasoning) {
-              return (
-                <div className="flex items-center gap-1 py-1.5">
-                  <div className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                </div>
-              );
+              if (isLast && !isLoading) {
+                return (
+                  <p className="text-sm text-muted-foreground italic py-1">
+                    Respuesta detenida. Puedes reintentar o editar tu mensaje.
+                  </p>
+                );
+              }
+              if (isLast && isLoading) {
+                return (
+                  <div className="flex items-center gap-1 py-1.5">
+                    <div className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <div className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <div className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                );
+              }
             }
 
             return null;
@@ -1587,34 +1845,22 @@ function MessageBubble({
         {/* 4. Tool results & charts (AFTER text) */}
         {!isWebBuilderMode && renderToolResults()}
 
+        {/* Actions bar — always visible on mobile for last message, hover on desktop */}
+        {!isResponding && (
+        <div className={cn(
+          "flex items-center gap-1 mt-2 transition-opacity",
+          isLast
+            ? "opacity-100"
+            : "opacity-0 group-hover:opacity-100"
+        )}>
 
-
-        {/* Actions bar */}
-        <div className="flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-
-          {/* Razonamiento: botón rápido en la barra de hover (igual que like/dislike).
-              Solo aparece cuando el mensaje tiene razonamiento; toggolea el panel. */}
-          {(extractedReasoning || message.thinkingSteps?.length) && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "h-7 w-7 rounded-full",
-                localReasoningOpen && "bg-muted"
-              )}
-              onClick={() => setLocalReasoningOpen(!localReasoningOpen)}
-              aria-label="Ver razonamiento"
-              title="Razonamiento"
-            >
-              <Brain className={cn("h-3.5 w-3.5 transition-colors", localReasoningOpen ? "text-foreground" : "text-muted-foreground")} />
-            </Button>
-          )}
           <Button
             variant="ghost"
             size="icon"
             className="h-7 w-7 rounded-full"
             onClick={() => onFeedback?.(message.id, feedback === 'like' ? null : 'like')}
             aria-label="Me gusta"
+            title="Me gusta"
           >
             <ThumbsUp className={cn("h-3.5 w-3.5 transition-colors", feedback === 'like' && "text-black fill-black dark:text-white dark:fill-white")} />
           </Button>
@@ -1624,6 +1870,7 @@ function MessageBubble({
             className="h-7 w-7 rounded-full"
             onClick={() => onFeedback?.(message.id, feedback === 'dislike' ? null : 'dislike')}
             aria-label="No me gusta"
+            title="No me gusta"
           >
             <ThumbsDown className={cn("h-3.5 w-3.5 transition-colors", feedback === 'dislike' && "text-black fill-black dark:text-white dark:fill-white")} />
           </Button>
@@ -1634,20 +1881,25 @@ function MessageBubble({
               className="h-7 w-7 rounded-full"
               onClick={onRetry}
               aria-label="Reintentar"
+              title="Reintentar"
             >
               <RefreshCw className="h-3.5 w-3.5" />
             </Button>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 rounded-full"
-            onClick={() => onShare?.(prevMessageContent, message.content)}
-            aria-label="Compartir"
-          >
-            <Share2 className="h-3.5 w-3.5" />
-          </Button>
+          {onShare && message.content?.trim() && prevMessageContent?.trim() && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 rounded-full"
+              onClick={() => onShare(prevMessageContent, message.content)}
+              aria-label="Compartir"
+              title="Compartir respuesta"
+            >
+              <Share2 className="h-3.5 w-3.5" />
+            </Button>
+          )}
         </div>
+        )}
       </div>
     </div>
   )

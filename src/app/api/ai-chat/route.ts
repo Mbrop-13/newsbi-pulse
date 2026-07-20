@@ -3,7 +3,7 @@ import { streamText, StreamData, formatStreamPart, tool } from 'ai';
 import { z } from 'zod';
 import { runPythonCode } from "@/lib/services/pyodide-sandbox";
 import { createClient } from "@/lib/supabase/server";
-import { checkLimit, incrementUsage, getUserTier, checkTokenLimit, incrementTokenUsage } from "@/lib/check-limits";
+import { getUserTier, checkTokenLimit, incrementTokenUsage } from "@/lib/check-limits";
 import { rateLimit, rateLimitResponse, AI_CHAT_LIMIT } from "@/lib/rate-limit";
 import { detectSuspiciousPatterns } from "@/lib/security";
 import { runOrchestration, runWebBuilderOrchestration, planWebBuilder, executeWebBuilderAgents, selectRelevantContext } from "@/lib/services/agent-orchestrator";
@@ -231,16 +231,25 @@ export async function POST(req: NextRequest) {
     });
 
     const encoder = new TextEncoder();
-    let streamController: any = null;
+    let streamController: ReadableStreamDefaultController<Uint8Array> | null = null;
+    // Client abort (stop button) → cancel server work as soon as possible
+    const abortSignal = req.signal;
+    let clientAborted = abortSignal.aborted;
 
     const responseStream = new ReadableStream({
       start(controller) {
         streamController = controller;
-      }
+      },
+      cancel() {
+        // Client closed the connection (stop / navigation)
+        clientAborted = true;
+      },
     });
 
+    const isAborted = () => clientAborted || abortSignal.aborted;
+
     const sendData = (type: 'text' | 'data' | 'error', value: any) => {
-      if (!streamController) return;
+      if (!streamController || isAborted()) return;
       try {
         const chunkStr = formatStreamPart(type, value);
         streamController.enqueue(encoder.encode(chunkStr));
@@ -248,6 +257,10 @@ export async function POST(req: NextRequest) {
         console.error("[DataStream] error writing chunk:", err);
       }
     };
+
+    abortSignal.addEventListener("abort", () => {
+      clientAborted = true;
+    });
 
     // ── Heartbeat keepalive ──
     // GLM-5.2 (y modelos lentos en general) pueden tardar 30-120s en la
@@ -265,7 +278,10 @@ export async function POST(req: NextRequest) {
     // AI SDK no los soporta y el parser lanza "Failed to parse stream string.
     // Invalid code .", matando todo el stream.
     const heartbeatInterval = setInterval(() => {
-      if (!streamController) return;
+      if (!streamController || isAborted()) {
+        clearInterval(heartbeatInterval);
+        return;
+      }
       try {
         // Reusamos el MISMO formato que onOrchProgress (reasoning), que ya
         // sabemos que el parser del cliente procesa sin romper. Texto vacío =
@@ -279,6 +295,7 @@ export async function POST(req: NextRequest) {
     // Run async execution in the background
     (async () => {
       try {
+        if (isAborted()) return;
         // Create a wrapper for streamData that directs append calls to sendData
         const fakeStreamData = {
           append: (value: any) => {
@@ -312,6 +329,7 @@ export async function POST(req: NextRequest) {
         let planTurnHandled = false;
 
         const onOrchProgress = (text: string) => {
+          if (isAborted()) return;
           try { fakeStreamData.append({ type: 'reasoning', text }); } catch { /* Ignore */ }
         };
 
@@ -473,7 +491,9 @@ export async function POST(req: NextRequest) {
           );
         }
 
-        // Track orchestrator tokens
+        if (isAborted()) return;
+
+        // Track orchestrator tokens (token-only metering)
         if (orchestrationResult.totalTokensUsed > 0) {
           await incrementTokenUsage(userId, orchestrationResult.totalTokensUsed).catch(console.error);
           
@@ -736,6 +756,8 @@ REGLAS OBLIGATORIAS PARA EL MODO NAVEGADOR:
 4. Explícale al usuario los pasos que vas realizando y los resultados que vas observando en la pantalla del navegador virtual (el usuario verá la captura de pantalla de lo que haces en tiempo real).`;
         }
 
+        if (isAborted()) return;
+
         const result = await streamText({
           model: llm(finalModelStr),
           system: systemPrompt,
@@ -743,6 +765,7 @@ REGLAS OBLIGATORIAS PARA EL MODO NAVEGADOR:
           maxTokens: (webBuilder && orchestrationResult.isComplex) ? 2048 : 8192,
           maxSteps: webBuilder ? undefined : 8,
           toolChoice: webBuilder ? 'none' : 'auto',
+          abortSignal,
           tools: webBuilder ? {} : {
             ...getFinanceTools({ user, userId }),
             ...(browser ? getBrowserTools({ streamData: fakeStreamData }) : {}),
@@ -753,6 +776,9 @@ REGLAS OBLIGATORIAS PARA EL MODO NAVEGADOR:
                 packages: z.array(z.string()).optional().describe('Lista de paquetes de pip para instalar antes de la ejecución (ej: ["numpy", "pandas"]).'),
               }),
               execute: async ({ script, packages }) => {
+                if (isAborted()) {
+                  return { success: false, error: "Cancelado por el usuario", stdout: "", stderr: "aborted", durationMs: 0 };
+                }
                 try {
                   const result = await runPythonCode(script, {}, packages || []);
                   return result;
@@ -763,38 +789,57 @@ REGLAS OBLIGATORIAS PARA EL MODO NAVEGADOR:
             })
           },
           onFinish: async ({ text, usage, finishReason }) => {
-            const hasContent = text && text.trim().length > 0;
-            const isValidFinish = finishReason !== 'error';
-
-            if (hasContent && isValidFinish) {
-              await incrementUsage(userId, "ai_message").catch(console.error);
-            }
-
-            if (usage && usage.totalTokens) {
+            // Token-only metering: we no longer increment message counters for AI chat.
+            // Still bill tokens even on partial/aborted responses when usage is reported.
+            if (usage && usage.totalTokens && usage.totalTokens > 0) {
               await incrementTokenUsage(userId, usage.totalTokens).catch(console.error);
             }
             if (text && (text.includes("[ALERTA_SEGURIDAD]") || text.includes("ALERTA DE SEGURIDAD") || text.includes("intento de evasión detectado"))) {
               console.warn(`[SECURITY_ALERT] [LLM_DETECTION] El modelo Maverlang AI detectó un intento de manipulación o solicitud inusual del usuario ${userId}. Respuesta del modelo: "${text}"`);
             }
+            void finishReason;
           }
         });
 
         // Pipe the final LLM text data stream chunks into our custom stream
         const textStreamReader = result.toDataStream().getReader();
-        while (true) {
-          const { done, value } = await textStreamReader.read();
-          if (done) break;
-          if (streamController && value) {
-            streamController.enqueue(value);
+        try {
+          while (true) {
+            if (isAborted()) {
+              try { await textStreamReader.cancel("client_aborted"); } catch { /* ignore */ }
+              break;
+            }
+            const { done, value } = await textStreamReader.read();
+            if (done) break;
+            if (streamController && value && !isAborted()) {
+              try {
+                streamController.enqueue(value);
+              } catch {
+                break; // controller already closed
+              }
+            }
+          }
+        } catch (readErr: any) {
+          // AbortError is expected when the user stops generation
+          if (readErr?.name !== "AbortError" && !isAborted()) {
+            throw readErr;
           }
         }
         } // fin del else (!planTurnHandled)
       } catch (err: any) {
-        console.error("[AI Chat Stream] Error in stream execution:", err);
-        sendData('error', err.message || String(err));
+        if (isAborted() || err?.name === "AbortError") {
+          console.log("[AI Chat Stream] Aborted by client");
+        } else {
+          console.error("[AI Chat Stream] Error in stream execution:", err);
+          sendData('error', err.message || String(err));
+        }
       } finally {
         clearInterval(heartbeatInterval);
-        streamController?.close();
+        try {
+          streamController?.close();
+        } catch {
+          // already closed
+        }
       }
     })();
 

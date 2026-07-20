@@ -53,6 +53,24 @@ export function AuthSync() {
                 role: data.role,
               });
               useSubscriptionStore.getState().setTier(data.tier);
+              // Sync token usage for AI quota UI (token-based limits)
+              try {
+                const usageRes = await fetch("/api/user/usage");
+                if (usageRes.ok) {
+                  const usage = await usageRes.json();
+                  const tokenRes = usage?.resources?.find((r: any) => r.id === "ai_tokens");
+                  if (tokenRes) {
+                    const used = Number(tokenRes.used) || 0;
+                    useSubscriptionStore.getState().setUsage(
+                      data.tier === "free"
+                        ? { lifetimeAiTokens: used }
+                        : { monthlyAiTokens: used }
+                    );
+                  }
+                }
+              } catch {
+                // non-fatal
+              }
             }
           } catch (error) {
             console.error("[AuthSync] Failed to fetch user tier:", error);
@@ -96,6 +114,23 @@ export function AuthSync() {
               role: data.role,
             });
             useSubscriptionStore.getState().setTier(data.tier);
+            try {
+              const usageRes = await fetch("/api/user/usage");
+              if (usageRes.ok) {
+                const usage = await usageRes.json();
+                const tokenRes = usage?.resources?.find((r: any) => r.id === "ai_tokens");
+                if (tokenRes) {
+                  const used = Number(tokenRes.used) || 0;
+                  useSubscriptionStore.getState().setUsage(
+                    data.tier === "free"
+                      ? { lifetimeAiTokens: used }
+                      : { monthlyAiTokens: used }
+                  );
+                }
+              }
+            } catch {
+              // non-fatal
+            }
           }
         } catch (error) {
           console.error("[AuthSync] Failed to fetch tier on auth change:", error);
@@ -103,6 +138,7 @@ export function AuthSync() {
       } else {
         setUser(null);
         useSubscriptionStore.getState().setTier("free");
+        useSubscriptionStore.getState().setUsage({ monthlyAiTokens: 0, lifetimeAiTokens: 0 });
       }
     });
 

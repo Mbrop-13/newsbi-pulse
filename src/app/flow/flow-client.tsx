@@ -62,30 +62,66 @@ const ADVANCED_TOOLS = [
 ];
 
 // Model option interface
+type ModelProvider = "google";
+
 interface ModelOption {
   id: string;
   name: string;
-  badge: string;
   icon: string;
-  desc: string;
+  provider: ModelProvider;
 }
 
 const FLOW_MODELS: ModelOption[] = [
   {
     id: "google/gemini-3.1-flash-lite-image",
     name: "Nano Banana 2 Lite",
-    badge: "Lite",
     icon: "🍌",
-    desc: "Google Gemini 3.1 Flash Lite Image. Modelo de generación rápido y eficiente (consume 15 créditos).",
+    provider: "google",
   },
   {
     id: "google/gemini-3-pro-image",
     name: "Nano Banana Pro",
-    badge: "Pro",
     icon: "🍌",
-    desc: "Google Gemini 3 Pro Image. Calidad de imagen y razonamiento de primer nivel (consume 55 créditos).",
+    provider: "google",
   },
 ];
+
+function ProviderLogo({
+  provider,
+  className,
+}: {
+  provider: ModelProvider;
+  className?: string;
+}) {
+  if (provider === "google") {
+    return (
+      <svg
+        viewBox="0 0 24 24"
+        className={className}
+        aria-hidden
+        focusable="false"
+      >
+        <path
+          fill="#4285F4"
+          d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
+        />
+        <path
+          fill="#34A853"
+          d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+        />
+        <path
+          fill="#FBBC05"
+          d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18A10.96 10.96 0 0 0 1 12c0 1.77.42 3.45 1.18 4.93l3.66-2.84z"
+        />
+        <path
+          fill="#EA4335"
+          d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+        />
+      </svg>
+    );
+  }
+  return null;
+}
 
 interface WorkspaceItem {
   id: string;
@@ -1278,56 +1314,73 @@ export default function FlowClient() {
                             })}
                           </div>
 
-                          {/* 4. Model Selection Dropdown Field */}
-                          <div className="flex flex-col gap-1">
+                          {/* 4. Model Selection — submenu flotante (no expande el panel) */}
+                          <div className="relative">
                             <button
                               type="button"
                               onClick={() => setShowModelList(!showModelList)}
                               className="w-full bg-zinc-100/70 dark:bg-zinc-900/50 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 rounded-xl px-3 py-2 flex items-center justify-between transition-all select-none cursor-pointer border border-transparent hover:border-zinc-200/50 dark:hover:border-zinc-800/50"
                             >
-                              <span className="text-xs font-bold text-zinc-800 dark:text-zinc-250 flex items-center gap-1.5">
-                                <span className="text-xs leading-none">{selectedModel.icon}</span>
-                                <span>{selectedModel.name}</span>
+                              <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5 min-w-0">
+                                <span className="text-xs leading-none shrink-0">{selectedModel.icon}</span>
+                                <span className="truncate">{selectedModel.name}</span>
                               </span>
-                              <ChevronDown className={cn("w-3.5 h-3.5 text-zinc-500 transition-transform duration-200", showModelList && "rotate-180")} />
+                              <span className="flex items-center gap-1.5 shrink-0 ml-2">
+                                <ProviderLogo
+                                  provider={selectedModel.provider}
+                                  className="w-3.5 h-3.5"
+                                />
+                                <ChevronDown
+                                  className={cn(
+                                    "w-3.5 h-3.5 text-zinc-500 transition-transform duration-200",
+                                    showModelList && "rotate-180"
+                                  )}
+                                />
+                              </span>
                             </button>
 
                             <AnimatePresence>
                               {showModelList && (
                                 <motion.div
-                                  initial={{ opacity: 0, height: 0 }}
-                                  animate={{ opacity: 1, height: "auto" }}
-                                  exit={{ opacity: 0, height: 0 }}
-                                  className="overflow-hidden bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-900 rounded-xl flex flex-col p-0.5"
+                                  initial={{ opacity: 0, y: 6, scale: 0.98 }}
+                                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                                  exit={{ opacity: 0, y: 6, scale: 0.98 }}
+                                  transition={{ duration: 0.15 }}
+                                  className={cn(
+                                    "absolute left-0 right-0 bottom-full mb-1.5 z-50",
+                                    "rounded-xl border border-zinc-200/90 dark:border-zinc-700/80",
+                                    "bg-white dark:bg-[#252528] shadow-xl",
+                                    "p-1 flex flex-col gap-0.5"
+                                  )}
                                 >
-                                  {FLOW_MODELS.map((m) => (
-                                    <button
-                                      key={m.id}
-                                      type="button"
-                                      onClick={() => {
-                                        setSelectedModel(m);
-                                        setShowModelList(false);
-                                      }}
-                                      className={cn(
-                                        "w-full text-left px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all flex items-center justify-between cursor-pointer",
-                                        selectedModel.id === m.id
-                                          ? "bg-zinc-200/60 dark:bg-zinc-800/60 text-[#1890FF]"
-                                          : "text-zinc-650 dark:text-zinc-355 hover:bg-zinc-100 dark:hover:bg-zinc-800/40"
-                                      )}
-                                    >
-                                      <div className="flex flex-col gap-0.5">
-                                        <div className="flex items-center gap-1">
-                                          <span>{m.icon}</span>
-                                          <span>{m.name}</span>
-                                          <span className="text-[8px] uppercase px-1 py-0.5 rounded bg-zinc-200/50 dark:bg-zinc-800 text-zinc-500 font-black tracking-wider leading-none">{m.badge}</span>
-                                        </div>
-                                        <span className="text-[8px] font-medium text-zinc-400 dark:text-zinc-500 line-clamp-1">{m.desc}</span>
-                                      </div>
-                                      {selectedModel.id === m.id && (
-                                        <div className="w-1 h-1 rounded-full bg-[#1890FF]" />
-                                      )}
-                                    </button>
-                                  ))}
+                                  {FLOW_MODELS.map((m) => {
+                                    const active = selectedModel.id === m.id;
+                                    return (
+                                      <button
+                                        key={m.id}
+                                        type="button"
+                                        onClick={() => {
+                                          setSelectedModel(m);
+                                          setShowModelList(false);
+                                        }}
+                                        className={cn(
+                                          "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold transition-colors flex items-center justify-between gap-2 cursor-pointer",
+                                          active
+                                            ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
+                                            : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/70"
+                                        )}
+                                      >
+                                        <span className="flex items-center gap-1.5 min-w-0">
+                                          <span className="shrink-0 leading-none">{m.icon}</span>
+                                          <span className="truncate">{m.name}</span>
+                                        </span>
+                                        <ProviderLogo
+                                          provider={m.provider}
+                                          className="w-3.5 h-3.5 shrink-0 opacity-90"
+                                        />
+                                      </button>
+                                    );
+                                  })}
                                 </motion.div>
                               )}
                             </AnimatePresence>

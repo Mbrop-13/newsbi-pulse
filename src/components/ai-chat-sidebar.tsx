@@ -8,6 +8,7 @@ import { useAIChatStore, ChatMessage, AttachedArticle, ToolResultUI } from "@/li
 import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useConversionStore } from "@/lib/stores/conversion-store";
+import { useSubscriptionStore } from "@/lib/stores/subscription-store";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -75,9 +76,25 @@ export function AIChatSidebar() {
   const isPremium = userTier === "max" || userTier === "ultra";
   const { openModal } = useConversionStore();
 
-  const userMessagesCount = messages.filter((m) => m.role === "user").length;
-  const questionLimit = userTier === "free" ? 5 : userTier === "pro" ? 100 : userTier === "max" ? 300 : 999999;
-  const reachedQuestionLimit = userMessagesCount >= questionLimit;
+  // AI quota is token-based (not per-message)
+  const lifetimeAiTokens = useSubscriptionStore((s) => s.lifetimeAiTokens);
+  const monthlyAiTokens = useSubscriptionStore((s) => s.monthlyAiTokens);
+  const tokenRemaining = useSubscriptionStore((s) => s.getAiRemaining());
+  const tokenLimit = useSubscriptionStore((s) => s.getAiTokenLimit());
+  const canSendByTokens = useSubscriptionStore((s) => s.canSendAiMessage());
+  const reachedTokenLimit = !canSendByTokens;
+  const tokensUsed = Math.max(0, (tokenLimit > 0 && tokenLimit < 999999 ? tokenLimit : 0) - tokenRemaining);
+  const tokenBarPct =
+    tokenLimit > 0 && tokenLimit < 999999
+      ? Math.min(100, (tokensUsed / tokenLimit) * 100)
+      : 0;
+  const formatTok = (n: number) =>
+    n >= 1_000_000 ? `${(n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1)}M`
+    : n >= 1_000 ? `${(n / 1_000).toFixed(n % 1_000 === 0 ? 0 : 1)}k`
+    : String(n);
+  // silence unused if store not hydrated yet
+  void lifetimeAiTokens;
+  void monthlyAiTokens;
   const MAX_AI_ARTICLES = userTier === "free" ? 1 : userTier === "pro" ? 5 : 10;
   const MAX_FILES = userTier === "free" ? 1 : userTier === "pro" ? 3 : 10;
 
@@ -170,14 +187,15 @@ export function AIChatSidebar() {
     const text = textOverride || input.trim();
     if (!text || isLoading) return;
 
-    if (reachedQuestionLimit && userTier === "free") {
+    if (reachedTokenLimit) {
       openModal("ai_chat");
+      toast.error("Has alcanzado tu límite de tokens de IA. Actualiza tu plan para continuar.");
       return;
     }
 
-    if (userMessagesCount === questionLimit - 1 && userTier === "free") {
-      toast("Última consulta de IA", {
-        description: "Este es tu último mensaje. Actualiza tu plan para obtener más tokens de IA.",
+    if (tokenLimit > 0 && tokenLimit < 999999 && tokenRemaining < tokenLimit * 0.1) {
+      toast("Tokens de IA bajos", {
+        description: `Te quedan ${formatTok(tokenRemaining)} tokens. Actualiza tu plan para más capacidad.`,
         icon: <Sparkles className="w-4 h-4 text-[#1890FF]" />,
       });
     }
@@ -362,13 +380,15 @@ export function AIChatSidebar() {
                 </button>
               </div>
             </div>
-            {/* Compact usage bar */}
-            {(userTier === "free" || userTier === "pro") && (
+            {/* Compact token usage bar */}
+            {tokenLimit > 0 && tokenLimit < 999999 && (
               <div className="mt-2.5 flex items-center gap-2">
                 <div className="flex-1 h-1 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-[#1890FF] rounded-full transition-all" style={{ width: `${Math.min(100, (userMessagesCount / questionLimit) * 100)}%` }} />
+                  <div className="h-full bg-[#1890FF] rounded-full transition-all" style={{ width: `${tokenBarPct}%` }} />
                 </div>
-                <span className="text-[10px] font-bold text-gray-400 shrink-0">{userMessagesCount}/{questionLimit}</span>
+                <span className="text-[10px] font-bold text-gray-400 shrink-0">
+                  {formatTok(tokenRemaining)}/{formatTok(tokenLimit)}
+                </span>
               </div>
             )}
           </div>

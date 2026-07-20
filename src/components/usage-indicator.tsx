@@ -10,8 +10,21 @@ interface UsageIndicatorProps {
   className?: string;
 }
 
+/** Format large token numbers: 12500 → "12.5k", 1000000 → "1M" */
+function formatTokens(n: number): string {
+  if (n >= 1_000_000) {
+    const m = n / 1_000_000;
+    return Number.isInteger(m) ? `${m}M` : `${m.toFixed(1)}M`;
+  }
+  if (n >= 1_000) {
+    const k = n / 1_000;
+    return Number.isInteger(k) ? `${k}k` : `${k.toFixed(1)}k`;
+  }
+  return String(n);
+}
+
 export function UsageIndicator({ type, compact = false, className = "" }: UsageIndicatorProps) {
-  const { tier } = useSubscriptionStore();
+  const tier = useSubscriptionStore((s) => s.tier);
   const config = getPlanConfig(tier);
   
   const remaining = type === "ai" 
@@ -23,13 +36,14 @@ export function UsageIndicator({ type, compact = false, className = "" }: UsageI
   let periodLabel: string;
   
   if (type === "ai") {
+    // Primary AI quota is tokens (not message count)
     if (tier === "free") {
-      limit = config.aiLifetimeMessages;
-      label = "Consultas IA";
+      limit = config.aiLifetimeTokens;
+      label = "Tokens IA";
       periodLabel = "de por vida";
     } else {
-      limit = config.aiMessagesPerMonth;
-      label = "Consultas IA";
+      limit = config.aiTokensPerMonth;
+      label = "Tokens IA";
       periodLabel = "/mes";
     }
   } else {
@@ -46,7 +60,7 @@ export function UsageIndicator({ type, compact = false, className = "" }: UsageI
   
   if (limit === -1) return null; // Unlimited — no indicator needed
   
-  const used = limit - remaining;
+  const used = Math.max(0, limit - remaining);
   const percentage = Math.min((used / limit) * 100, 100);
   const isLow = percentage >= 80;
   const isExhausted = percentage >= 100;
@@ -63,6 +77,8 @@ export function UsageIndicator({ type, compact = false, className = "" }: UsageI
     ? "text-amber-500"
     : "text-muted-foreground";
 
+  const format = type === "ai" ? formatTokens : (n: number) => String(n);
+
   if (compact) {
     return (
       <div className={`flex items-center gap-1.5 ${className}`}>
@@ -75,7 +91,7 @@ export function UsageIndicator({ type, compact = false, className = "" }: UsageI
           />
         </div>
         <span className={`text-[10px] font-bold ${textColor}`}>
-          {remaining}/{limit}
+          {format(remaining)}/{format(limit)}
         </span>
       </div>
     );
@@ -86,7 +102,7 @@ export function UsageIndicator({ type, compact = false, className = "" }: UsageI
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs font-semibold text-foreground">{label}</span>
         <span className={`text-[11px] font-bold ${textColor}`}>
-          {remaining} restantes {periodLabel}
+          {format(remaining)} restantes {periodLabel}
         </span>
       </div>
       <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
@@ -99,7 +115,7 @@ export function UsageIndicator({ type, compact = false, className = "" }: UsageI
       </div>
       {isExhausted && (
         <p className="text-[10px] text-red-500 font-medium mt-1.5">
-          Has alcanzado tu límite. Mejora tu plan para continuar.
+          Has alcanzado tu límite de tokens. Mejora tu plan para continuar.
         </p>
       )}
     </div>

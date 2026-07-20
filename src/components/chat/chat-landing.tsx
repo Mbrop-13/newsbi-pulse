@@ -43,7 +43,7 @@ import {
 import { cn, formatDate as fmtDate, getFallbackImage, slugify, getCleanPathname } from "@/lib/utils"
 import { useLanguageStore } from "@/lib/stores/language-store"
 import { motion, AnimatePresence } from "framer-motion"
-import { Newspaper, Sparkles, Headphones, LineChart, Coins, Landmark, Briefcase, Shield, Lightbulb, Globe, Flame, Calendar, Cpu, ArrowUpRight, ArrowDownRight, MoreHorizontal, Link2, SquarePen, Trash2, FolderOpen, Code2, FileCode2, ChevronRight, Copy, Eye, Smartphone, Monitor } from "lucide-react"
+import { Newspaper, Sparkles, Headphones, LineChart, Coins, Landmark, Briefcase, Shield, Lightbulb, Globe, Flame, Calendar, Cpu, ArrowUpRight, ArrowDownRight, MoreHorizontal, SquarePen, Trash2, FolderOpen, Code2, FileCode2, ChevronRight, Copy, Eye, Smartphone, Monitor, Share2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useSidebar } from "@/components/ui/sidebar"
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store"
@@ -505,6 +505,11 @@ function groupConsecutiveMessages(messages: ChatMessage[]): ChatMessage[] {
       if (msg.secondsElapsed) {
         lastGrouped.secondsElapsed = (lastGrouped.secondsElapsed || 0) + msg.secondsElapsed;
       }
+
+      // Keep the latest pending plan card when merging assistant chunks
+      if (msg.pendingPlan) {
+        lastGrouped.pendingPlan = msg.pendingPlan;
+      }
     } else {
       grouped.push({ 
         ...msg,
@@ -577,7 +582,12 @@ function ChatLandingContent() {
   // Legacy data fetching and activeMenu state have been removed as part of Phase 5 cleanup.
 
   const [openReasoning, setOpenReasoning] = useState<Record<string, boolean>>({})
-  const [shareDialog, setShareDialog] = useState({ isOpen: false, question: "", answer: "" })
+  const [shareDialog, setShareDialog] = useState<{
+    isOpen: boolean
+    question: string
+    answer: string
+    defaultMode: "qa" | "full"
+  }>({ isOpen: false, question: "", answer: "", defaultMode: "qa" })
   const lastLoadedChatIdRef = useRef<string | null>(null)
 
   const router = useRouter()
@@ -711,15 +721,44 @@ function ChatLandingContent() {
     }
   }
 
-  const handleCopyLink = () => {
-    if (typeof window !== "undefined") {
-      navigator.clipboard.writeText(window.location.href)
-      toast.success("Enlace del chat copiado al portapapeles")
+  /** Open share dialog for the entire current conversation. */
+  const handleShareFullChat = () => {
+    // Prefer live AI messages, fall back to persisted store
+    const live = aiMessagesRef.current?.length
+      ? aiMessagesRef.current
+      : storeMessages
+    const msgs = (live as any[]).filter(
+      (m) => m.role === "user" || m.role === "assistant" || m.role === "tool"
+    )
+    if (!msgs.length) {
+      toast.error("No hay mensajes para compartir")
+      return
     }
+    if (!isAuthenticated) {
+      openAuthModal("register")
+      return
+    }
+    const firstUser = msgs.find((m) => m.role === "user")
+    const firstAssistant = msgs.find(
+      (m) => m.role === "assistant" || m.role === "tool"
+    )
+    setShareDialog({
+      isOpen: true,
+      question: firstUser?.content || "Conversación",
+      answer: firstAssistant?.content || "Chat compartido en Maverlang AI.",
+      defaultMode: "full",
+    })
   }
 
   const accumulatedReasoningRef = useRef<string>("")
   const accumulatedCitationsRef = useRef<string[]>([]);
+  /** Last tool options used on send — reused by edit / retry so modes aren't reset */
+  const lastSendOptionsRef = useRef<{
+    webSearch: boolean
+    image: boolean
+    codeInterpreter: boolean
+    browser: boolean
+  }>({ webSearch: false, image: false, codeInterpreter: false, browser: false })
   const [activeQuestion, setActiveQuestion] = useState<WebBuilderQuestion | null>(null);
 
   // Track store hydration
@@ -1201,10 +1240,14 @@ function ChatLandingContent() {
       useWebBuilderStore.getState().clearBuildDiff()
       useWebBuilderStore.getState().setAiResponding(true)
     }
-    // Create chat ID if new
+    // Remember tools so edit/retry keep the same modes
+    lastSendOptionsRef.current = options
+
+    // Create chat ID if new — use ONE shared id for store + useChat
     let activeChatId = currentChatId
+    const userMsgId = `user-${Date.now()}`
     const userMsg: ChatMessage = {
-      id: `user-${Date.now()}`,
+      id: userMsgId,
       role: "user",
       content: text,
       timestamp: new Date(),
@@ -1257,9 +1300,9 @@ function ChatLandingContent() {
     // Find matching project type
     const currentProject = useProjectsStore.getState().projects.find(p => p.chatId === activeChatId);
 
-    // Use AI SDK append
+    // Use AI SDK append with the SAME id as the store message
     append(
-      { role: "user", content: text },
+      { id: userMsgId, role: "user", content: text } as any,
       {
         body: {
           articles: attachedArticles,
@@ -1299,8 +1342,165 @@ function ChatLandingContent() {
   }
 
   const handleShare = (question: string, answer: string) => {
-    setShareDialog({ isOpen: true, question, answer })
+    const q = (question || "").trim()
+    const a = (answer || "").trim()
+    if (!q || !a) {
+      toast.error("No hay contenido suficiente para compartir")
+      return
+    }
+    if (!isAuthenticated) {
+      openAuthModal("register")
+      return
+    }
+    setShareDialog({ isOpen: true, question: q, answer: a, defaultMode: "qa" })
   }
+
+  /**
+   * Stop the active AI stream cleanly:
+   * - abort the fetch
+   * - clear WebBuilder "responding" flags (onFinish is NOT called on abort)
+   * - persist partial assistant content so it isn't lost
+   */
+  const handleStop = () => {
+    stop()
+
+    // WebBuilder / agent UI flags only clear in onFinish/onError — force clear on stop
+    try {
+      useWebBuilderStore.getState().setAiResponding(false)
+      useWebBuilderStore.getState().setActiveAgentReports(null)
+    } catch {
+      // store may not be ready
+    }
+
+    // Persist whatever was streamed so far
+    const latest = aiMessagesRef.current
+    if (latest.length > 0) {
+      const currentStoreMessages = useAIChatStore.getState().messages
+      const formatted: ChatMessage[] = latest.map((m: any) => {
+        const storeMsg = currentStoreMessages.find((sm) => sm.id === m.id)
+        const content =
+          m.content && String(m.content).trim().length > 0
+            ? m.content
+            : m.role === "assistant" || m.role === "tool"
+              ? "*(Respuesta detenida)*"
+              : m.content
+        return {
+          id: m.id,
+          role: (m.role === "tool" ? "assistant" : m.role) as "user" | "assistant",
+          content,
+          timestamp: storeMsg?.timestamp || m.timestamp || new Date(),
+          model: storeMsg?.model || m.model || (selectedModel === "fast" ? "deepseek" : "grok"),
+          toolInvocations: m.toolInvocations,
+          citations: storeMsg?.citations || m.citations || [],
+          reasoning: storeMsg?.reasoning || m.reasoning || accumulatedReasoningRef.current || undefined,
+          reasoningSteps: storeMsg?.reasoningSteps || m.reasoningSteps,
+          secondsElapsed: storeMsg?.secondsElapsed || m.secondsElapsed,
+        }
+      })
+
+      // Also patch aiMessages if the last assistant message was empty
+      const needsAiPatch = latest.some(
+        (m: any) =>
+          (m.role === "assistant" || m.role === "tool") &&
+          (!m.content || !String(m.content).trim())
+      )
+      if (needsAiPatch) {
+        setAiMessages(
+          formatted.map((m) => ({
+            id: m.id,
+            role: m.role,
+            content: m.content,
+            toolInvocations: m.toolInvocations,
+            reasoning: m.reasoning,
+            citations: m.citations,
+            model: m.model,
+            secondsElapsed: m.secondsElapsed,
+            reasoningSteps: m.reasoningSteps,
+            timestamp: m.timestamp,
+            createdAt: m.timestamp ? new Date(m.timestamp) : undefined,
+          })) as any
+        )
+      }
+
+      useAIChatStore.setState({ messages: formatted, isLoading: false })
+      useAIChatStore.getState().updateCurrentChat()
+    } else {
+      useAIChatStore.setState({ isLoading: false })
+    }
+
+    toast.message("Generación detenida", {
+      description: "Puedes editar tu mensaje o reintentar la respuesta.",
+    })
+  }
+
+  // When editing a user message we first truncate history via setAiMessages.
+  // useChat's append() reads messagesRef, which only updates after that render,
+  // so the re-send is deferred to the next aiMessages effect.
+  const pendingEditRef = useRef<string | null>(null)
+
+  /**
+   * Edit a previous user message: truncate conversation from that point,
+   * then re-send the edited text so the AI responds again.
+   */
+  const handleEditMessage = (messageId: string, newContent: string) => {
+    if (!newContent.trim() || aiLoading) return
+
+    if (!isAuthenticated) {
+      openAuthModal("register")
+      return
+    }
+
+    const storeMsgs = useAIChatStore.getState().messages
+    const aiMsgs = aiMessagesRef.current
+
+    let storeIdx = storeMsgs.findIndex((m) => m.id === messageId)
+    let aiIdx = aiMsgs.findIndex((m: any) => m.id === messageId)
+
+    // IDs can diverge briefly between the Zustand store and useChat; resolve by
+    // matching the ordinal of the user message in each list.
+    if (storeIdx === -1 && aiIdx !== -1) {
+      const userOrdinal = aiMsgs.slice(0, aiIdx + 1).filter((m: any) => m.role === "user").length - 1
+      const storeUserEntries = storeMsgs
+        .map((m, i) => ({ m, i }))
+        .filter((x) => x.m.role === "user")
+      storeIdx = storeUserEntries[userOrdinal]?.i ?? -1
+      if (storeIdx === -1) {
+        const content = aiMsgs[aiIdx]?.content
+        storeIdx = storeMsgs.findIndex((m) => m.role === "user" && m.content === content)
+      }
+    }
+
+    if (aiIdx === -1 && storeIdx !== -1) {
+      const userOrdinal = storeMsgs.slice(0, storeIdx + 1).filter((m) => m.role === "user").length - 1
+      const aiUserEntries = aiMsgs
+        .map((m: any, i: number) => ({ m, i }))
+        .filter((x) => x.m.role === "user")
+      aiIdx = aiUserEntries[userOrdinal]?.i ?? -1
+    }
+
+    if (storeIdx === -1 && aiIdx === -1) {
+      toast.error("No se pudo editar el mensaje")
+      return
+    }
+
+    const truncateStoreAt = storeIdx !== -1 ? storeIdx : aiIdx
+    const truncateAiAt = aiIdx !== -1 ? aiIdx : storeIdx
+
+    // Drop the edited message and everything after it
+    useAIChatStore.setState({ messages: storeMsgs.slice(0, truncateStoreAt) })
+    pendingEditRef.current = newContent
+    setAiMessages(aiMsgs.slice(0, truncateAiAt) as any)
+    useAIChatStore.getState().updateCurrentChat()
+  }
+
+  // Flush deferred re-send after setAiMessages has committed (messagesRef is in sync)
+  useEffect(() => {
+    const pending = pendingEditRef.current
+    if (!pending) return
+    pendingEditRef.current = null
+    handleSend(pending, { ...lastSendOptionsRef.current })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-send when history was truncated for edit
+  }, [aiMessages])
 
   const hasMessages = storeMessages.length > 0 || aiMessages.length > 0
 
@@ -1349,13 +1549,14 @@ function ChatLandingContent() {
       role: (m.role === 'tool' ? 'assistant' : m.role) as 'user' | 'assistant',
       content: m.content,
       timestamp: storeMsg?.timestamp || (m as any).timestamp || new Date(),
-      model: storeMsg?.model || selectedModel === "fast" ? "deepseek" : "grok",
+      model: storeMsg?.model ?? (selectedModel === "fast" ? "deepseek" : "grok"),
       toolInvocations: m.toolInvocations,
       reasoning: reasoningText || undefined,
       citations: citationsList || [],
       isCollapsed: storeMsg?.isCollapsed || (m as any).isCollapsed,
       secondsElapsed: storeMsg?.secondsElapsed || (m as any).secondsElapsed,
       reasoningSteps: reasoningStepsList,
+      pendingPlan: storeMsg?.pendingPlan || (m as any).pendingPlan,
     };
   });
 
@@ -1843,20 +2044,20 @@ function ChatLandingContent() {
             </Sheet>
             )}
 
-            {/* Copy link — oculto en modo build */}
+            {/* Compartir chat completo — oculto en modo build */}
             {!isWebBuilderMode && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <button 
                   type="button" 
-                  onClick={handleCopyLink} 
+                  onClick={handleShareFullChat} 
                   className="w-9 h-9 rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-850 dark:hover:bg-zinc-850/80 flex items-center justify-center text-gray-700 dark:text-gray-200 transition-all cursor-pointer shadow-xs border border-transparent dark:border-white/5 active:scale-95"
                 >
-                  <Link2 className="w-4.5 h-4.5" />
+                  <Share2 className="w-4.5 h-4.5" />
                 </button>
               </TooltipTrigger>
               <TooltipContent side="bottom" className="text-xs font-semibold">
-                Copiar enlace
+                Compartir chat
               </TooltipContent>
             </Tooltip>
             )}
@@ -1929,7 +2130,7 @@ function ChatLandingContent() {
                   onSubmit={handleSend}
                   disabled={false}
                   isStreaming={aiLoading}
-                  onStop={stop}
+                  onStop={handleStop}
                   value={input}
                   onChange={setInput}
                 />
@@ -1968,7 +2169,7 @@ function ChatLandingContent() {
                     onSubmit={handleSend}
                     disabled={false}
                     isStreaming={aiLoading}
-                    onStop={stop}
+                    onStop={handleStop}
                     value={input}
                     onChange={setInput}
                   />
@@ -2064,13 +2265,15 @@ function ChatLandingContent() {
                  streamData={data}
                  onFeedback={setFeedback}
                  onRetry={() => {
-                   // Re-send the last user message
+                   // Regenerate without duplicating the user turn: truncate from
+                   // the last user message and re-send (same path as edit).
                    const lastUserMsg = [...displayMessages].reverse().find(m => m.role === 'user')
                    if (lastUserMsg) {
-                     handleSend(lastUserMsg.content, { webSearch: false, image: false, codeInterpreter: false, browser: false })
+                     handleEditMessage(lastUserMsg.id, lastUserMsg.content)
                    }
                  }}
                  onShare={handleShare}
+                 onEditMessage={handleEditMessage}
                  messageFeedback={messageFeedback}
                  openReasoning={openReasoning}
                  onToggleReasoning={toggleReasoning}
@@ -2085,11 +2288,11 @@ function ChatLandingContent() {
                       question={activeQuestion}
                       onSubmit={(answer) => {
                         setActiveQuestion(null);
-                        handleSend(answer, { webSearch: false, image: false, codeInterpreter: false, browser: false });
+                        handleSend(answer, { ...lastSendOptionsRef.current });
                       }}
                       onSkip={() => {
                         setActiveQuestion(null);
-                        handleSend("Omitir preguntas y continuar con la configuración estándar", { webSearch: false, image: false, codeInterpreter: false, browser: false });
+                        handleSend("Omitir preguntas y continuar con la configuración estándar", { ...lastSendOptionsRef.current });
                       }}
                       onClose={() => {
                         setActiveQuestion(null);
@@ -2102,7 +2305,7 @@ function ChatLandingContent() {
                   onSubmit={handleSend}
                   disabled={false}
                   isStreaming={aiLoading}
-                  onStop={stop}
+                  onStop={handleStop}
                   value={input}
                   onChange={setInput}
                 />
@@ -2112,12 +2315,24 @@ function ChatLandingContent() {
         )}
       </div>
 
-      {/* Share dialog */}
+      {/* Share dialog — Q&A or full conversation */}
       <ShareChatDialog
         isOpen={shareDialog.isOpen}
         onClose={() => setShareDialog({ ...shareDialog, isOpen: false })}
         question={shareDialog.question}
         answer={shareDialog.answer}
+        defaultMode={shareDialog.defaultMode}
+        messages={(
+          (aiMessagesRef.current?.length ? aiMessagesRef.current : storeMessages) as any[]
+        )
+          .filter((m) => m.role === "user" || m.role === "assistant" || m.role === "tool")
+          .map((m) => ({
+            id: m.id,
+            role: (m.role === "tool" ? "assistant" : m.role) as "user" | "assistant",
+            content: m.content || "",
+            timestamp: m.timestamp || m.createdAt,
+            citations: m.citations,
+          }))}
       />
 
 

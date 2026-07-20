@@ -204,7 +204,6 @@ export function CanvasPanel() {
     closeCanvas,
     updateActiveFileCode,
   } = useCanvasStore();
-  const currentChatId = useAIChatStore((s) => s.currentChatId);
   const isLoading = useAIChatStore((s) => s.isLoading);
 
   const [isCopied, setIsCopied] = useState(false);
@@ -431,16 +430,41 @@ export function CanvasPanel() {
 
         {/* Grupo Derecho: Acciones */}
         <div className="flex items-center gap-1.5">
-          {/* Botón Compartir */}
+          {/* Botón Compartir — crea un enlace público real vía /api/share-chat */}
           <button
             disabled={!activeFile}
-            onClick={() => {
+            onClick={async () => {
               if (!activeFile) return;
-              const shareUrl = currentChatId 
-                ? `${window.location.origin}/share/chat/${currentChatId}` 
-                : window.location.href;
-              navigator.clipboard.writeText(shareUrl);
-              toast.success("Enlace de compartir copiado al portapapeles");
+              try {
+                const code = isEditing ? editCode : activeFile.code;
+                const question = `Código compartido: ${activeFile.title || "archivo"}`;
+                const answer =
+                  "```" +
+                  (activeFile.language || "") +
+                  "\n" +
+                  code.slice(0, 18000) +
+                  "\n```";
+                const res = await fetch("/api/share-chat", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ mode: "qa", question, answer }),
+                });
+                if (res.status === 401) {
+                  toast.error("Inicia sesión para compartir");
+                  return;
+                }
+                if (!res.ok) {
+                  const data = await res.json().catch(() => null);
+                  throw new Error(data?.error || "No se pudo generar el enlace");
+                }
+                const { id } = await res.json();
+                const shareUrl = `${window.location.origin}/share/chat/${id}`;
+                await navigator.clipboard.writeText(shareUrl);
+                toast.success("Enlace público copiado");
+              } catch (err: any) {
+                console.error("[Canvas share]", err);
+                toast.error(err?.message || "Error al compartir");
+              }
             }}
             className={cn(
               "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors",

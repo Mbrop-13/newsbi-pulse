@@ -8,26 +8,35 @@ export interface SubscriptionState {
   periodEnd: string | null;
   
   // Usage tracking (loaded from Supabase)
+  /** @deprecated AI gating uses tokens now */
   monthlyAiMessages: number;
   monthlyTtsAudios: number;
   dailyTtsAudios: number;
+  /** @deprecated AI gating uses tokens now */
   lifetimeAiMessages: number;
+  /** Tokens used this month (or lifetime for free — see lifetimeAiTokens) */
+  monthlyAiTokens: number;
+  lifetimeAiTokens: number;
   monthlyImageCreditsUsed?: number;
   
   // Actions
   setTier: (tier: PlanTier) => void;
   setStatus: (status: SubscriptionState["status"]) => void;
   setPeriodEnd: (date: string | null) => void;
-  setUsage: (usage: Partial<Pick<SubscriptionState, "monthlyAiMessages" | "monthlyTtsAudios" | "dailyTtsAudios" | "lifetimeAiMessages" | "monthlyImageCreditsUsed">>) => void;
+  setUsage: (usage: Partial<Pick<SubscriptionState, "monthlyAiMessages" | "monthlyTtsAudios" | "dailyTtsAudios" | "lifetimeAiMessages" | "monthlyAiTokens" | "lifetimeAiTokens" | "monthlyImageCreditsUsed">>) => void;
   incrementAiMessages: () => void;
+  incrementAiTokens: (tokens: number) => void;
   incrementTtsAudios: () => void;
   incrementImageCreditsUsed: (credits: number) => void;
   
   // Helpers
   getPlanConfig: () => PlanConfig;
+  /** Based on token quota (not message count) */
   canSendAiMessage: () => boolean;
   canGenerateAudio: () => boolean;
+  /** Remaining tokens (primary AI limit) */
   getAiRemaining: () => number;
+  getAiTokenLimit: () => number;
   getTtsRemaining: () => number;
 }
 
@@ -42,6 +51,8 @@ export const useSubscriptionStore = create<SubscriptionState>()(
       monthlyTtsAudios: 0,
       dailyTtsAudios: 0,
       lifetimeAiMessages: 0,
+      monthlyAiTokens: 0,
+      lifetimeAiTokens: 0,
       monthlyImageCreditsUsed: 0,
       
       setTier: (tier) => set({ tier }),
@@ -54,6 +65,11 @@ export const useSubscriptionStore = create<SubscriptionState>()(
         monthlyAiMessages: s.monthlyAiMessages + 1,
         lifetimeAiMessages: s.lifetimeAiMessages + 1,
       })),
+
+      incrementAiTokens: (tokens) => set((s) => ({
+        monthlyAiTokens: s.monthlyAiTokens + tokens,
+        lifetimeAiTokens: s.lifetimeAiTokens + tokens,
+      })),
       
       incrementTtsAudios: () => set((s) => ({
         monthlyTtsAudios: s.monthlyTtsAudios + 1,
@@ -65,19 +81,17 @@ export const useSubscriptionStore = create<SubscriptionState>()(
       })),
       
       getPlanConfig: () => getPlanConfig(get().tier),
+
+      getAiTokenLimit: () => {
+        const { tier } = get();
+        const config = getPlanConfig(tier);
+        if (tier === "free") return config.aiLifetimeTokens;
+        return config.aiTokensPerMonth;
+      },
       
       canSendAiMessage: () => {
-        const { tier, monthlyAiMessages, lifetimeAiMessages } = get();
-        const config = getPlanConfig(tier);
-        
-        if (tier === "free") {
-          // Free uses lifetime limit
-          return lifetimeAiMessages < config.aiLifetimeMessages;
-        }
-        
-        // Paid plans use monthly limit
-        if (config.aiMessagesPerMonth === -1) return true;
-        return monthlyAiMessages < config.aiMessagesPerMonth;
+        // Primary gate: token quota (message counts are no longer enforced for AI)
+        return get().getAiRemaining() > 0;
       },
       
       canGenerateAudio: () => {
@@ -95,15 +109,18 @@ export const useSubscriptionStore = create<SubscriptionState>()(
       },
       
       getAiRemaining: () => {
-        const { tier, monthlyAiMessages, lifetimeAiMessages } = get();
+        const { tier, monthlyAiTokens, lifetimeAiTokens } = get();
         const config = getPlanConfig(tier);
         
         if (tier === "free") {
-          return Math.max(0, config.aiLifetimeMessages - lifetimeAiMessages);
+          const limit = config.aiLifetimeTokens;
+          if (limit === -1) return 999999;
+          return Math.max(0, limit - lifetimeAiTokens);
         }
         
-        if (config.aiMessagesPerMonth === -1) return 999;
-        return Math.max(0, config.aiMessagesPerMonth - monthlyAiMessages);
+        const limit = config.aiTokensPerMonth;
+        if (limit === -1) return 999999;
+        return Math.max(0, limit - monthlyAiTokens);
       },
       
       getTtsRemaining: () => {

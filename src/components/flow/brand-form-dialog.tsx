@@ -16,7 +16,6 @@ import {
   ArrowRight,
   Check,
   ImageIcon,
-  Building2,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -52,11 +51,11 @@ function uid() {
 
 type WizardStep = 1 | 2 | 3;
 
-const STEPS: { id: WizardStep; label: string; short: string }[] = [
-  { id: 1, label: "Identidad", short: "Marca" },
-  { id: 2, label: "Logo", short: "Logo" },
-  { id: 3, label: "Productos", short: "Catálogo" },
-];
+const STEP_HINTS: Record<WizardStep, string> = {
+  1: "Nombre, tipo de negocio y sitio web",
+  2: "Logo y cómo debe aparecer en las imágenes",
+  3: "Productos y páginas para dar contexto a la IA",
+};
 
 export function BrandFormDialog() {
   const isOpen = useBrandStore((s) => s.isFormOpen);
@@ -198,6 +197,18 @@ export function BrandFormDialog() {
     if (step > 1) setStep((step - 1) as WizardStep);
   };
 
+  const goToStep = (target: WizardStep) => {
+    if (target === step) return;
+    if (target < step) {
+      setStep(target);
+      return;
+    }
+    for (let i = step; i < target; i++) {
+      if (!validateStep(i as WizardStep)) return;
+    }
+    setStep(target);
+  };
+
   const persist = async () => {
     if (!isAuthenticated) {
       openAuthModal("register");
@@ -282,200 +293,111 @@ export function BrandFormDialog() {
       <Dialog open={isOpen} onOpenChange={(o) => !o && closeForm()}>
         <DialogContent
           className={cn(
-            "w-[calc(100%-1.5rem)] sm:max-w-3xl lg:max-w-4xl",
-            "max-h-[90vh] overflow-hidden rounded-2xl p-0 gap-0",
+            "w-[calc(100%-1.5rem)] sm:max-w-lg",
+            "max-h-[88vh] overflow-hidden rounded-2xl p-0 gap-0",
             "border-zinc-200/80 dark:border-zinc-800",
             "flex flex-col"
           )}
           showCloseButton={false}
         >
-          {/* Header */}
-          <div className="shrink-0 border-b border-zinc-100 dark:border-zinc-800/80 px-6 sm:px-8 pt-5 pb-4">
-            <div className="flex items-start justify-between gap-4">
-              <DialogHeader className="gap-1 text-left space-y-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="w-8 h-8 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 flex items-center justify-center">
-                    <Building2 className="w-4 h-4" />
-                  </div>
-                  <span className="text-[10px] font-black uppercase tracking-[0.14em] text-zinc-400">
-                    Flow · Marca
-                  </span>
-                </div>
-                <DialogTitle className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white">
-                  {brand ? "Editar marca" : "Configurar marca"}
-                </DialogTitle>
-                <DialogDescription className="text-sm text-zinc-500 dark:text-zinc-400 max-w-xl">
-                  {step === 1 &&
-                    "Cuéntanos quién eres: nombre, tipo de negocio y tu sitio web."}
-                  {step === 2 &&
-                    "Sube tu logo y elige cómo debe aparecer en las generaciones."}
-                  {step === 3 &&
-                    "Añade productos y páginas para que la IA entienda tu catálogo."}
-                </DialogDescription>
-              </DialogHeader>
-              <button
-                type="button"
-                onClick={closeForm}
-                className="p-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 transition-colors shrink-0"
-                aria-label="Cerrar"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Stepper */}
-            <div className="mt-5 flex items-center gap-0">
-              {STEPS.map((s, idx) => {
-                const active = step === s.id;
-                const done = step > s.id;
-                return (
-                  <div key={s.id} className="flex items-center flex-1 min-w-0">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (s.id < step) setStep(s.id);
-                        else if (s.id > step) {
-                          for (let i = step; i < s.id; i++) {
-                            if (!validateStep(i as WizardStep)) return;
-                          }
-                          setStep(s.id);
-                        }
-                      }}
-                      className="flex items-center gap-2.5 min-w-0 group"
-                    >
-                      <div
-                        className={cn(
-                          "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 border transition-all",
-                          done &&
-                            "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 border-transparent",
-                          active &&
-                            !done &&
-                            "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 border-transparent ring-4 ring-zinc-900/10 dark:ring-white/10",
-                          !active &&
-                            !done &&
-                            "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 border-zinc-200 dark:border-zinc-700"
-                        )}
-                      >
-                        {done ? <Check className="w-3.5 h-3.5" /> : s.id}
-                      </div>
-                      <div className="min-w-0 text-left hidden sm:block">
-                        <p
-                          className={cn(
-                            "text-[11px] font-bold truncate leading-none",
-                            active || done
-                              ? "text-zinc-900 dark:text-zinc-100"
-                              : "text-zinc-400"
-                          )}
-                        >
-                          {s.label}
-                        </p>
-                        <p className="text-[10px] text-zinc-400 mt-0.5 truncate">
-                          Paso {s.id} de {STEPS.length}
-                        </p>
-                      </div>
-                    </button>
-                    {idx < STEPS.length - 1 && (
-                      <div
-                        className={cn(
-                          "h-px flex-1 mx-3 sm:mx-4 transition-colors",
-                          step > s.id
-                            ? "bg-zinc-900 dark:bg-zinc-200"
-                            : "bg-zinc-200 dark:bg-zinc-800"
-                        )}
-                      />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+          {/* Header — compacto */}
+          <div className="shrink-0 px-5 pt-4 pb-3 flex items-start justify-between gap-3">
+            <DialogHeader className="gap-0.5 text-left space-y-0">
+              <DialogTitle className="text-base font-semibold tracking-tight text-zinc-900 dark:text-white">
+                {brand ? "Editar marca" : "Nueva marca"}
+              </DialogTitle>
+              <DialogDescription className="text-[13px] text-zinc-500 dark:text-zinc-400">
+                {STEP_HINTS[step]}
+              </DialogDescription>
+            </DialogHeader>
+            <button
+              type="button"
+              onClick={closeForm}
+              className="p-1.5 -mr-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors shrink-0"
+              aria-label="Cerrar"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
 
           {/* Body */}
-          <div className="flex-1 overflow-y-auto px-6 sm:px-8 py-6 min-h-[320px] max-h-[min(52vh,480px)]">
+          <div className="flex-1 overflow-y-auto px-5 pb-4 min-h-0 max-h-[min(58vh,520px)]">
             <AnimatePresence mode="wait">
               {step === 1 && (
                 <motion.div
                   key="step-1"
-                  initial={{ opacity: 0, x: 16 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -16 }}
-                  transition={{ duration: 0.2 }}
-                  className="space-y-6"
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.15 }}
+                  className="space-y-4"
                 >
-                  <div className="grid sm:grid-cols-2 gap-5">
-                    <div className="space-y-2 sm:col-span-2">
-                      <Label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-                        Nombre de la marca
-                      </Label>
-                      <Input
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="Ej. Aurora Cosmetics"
-                        className="rounded-xl h-11 text-[15px]"
-                        maxLength={80}
-                        autoFocus
-                      />
-                    </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[12px] font-medium text-zinc-600 dark:text-zinc-400">
+                      Nombre
+                    </Label>
+                    <Input
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Ej. Aurora Cosmetics"
+                      className="rounded-lg h-10"
+                      maxLength={80}
+                      autoFocus
+                    />
+                  </div>
 
-                    <div className="space-y-2 sm:col-span-2">
-                      <Label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-                        Tipo de marca
-                      </Label>
-                      <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5">
-                        {BRAND_TYPE_OPTIONS.map((opt) => {
-                          const active = brandType === opt.id;
-                          return (
-                            <button
-                              key={opt.id}
-                              type="button"
-                              onClick={() => setBrandType(opt.id)}
-                              className={cn(
-                                "text-left rounded-xl border px-3.5 py-3 transition-all",
-                                active
-                                  ? "border-zinc-900 dark:border-zinc-100 bg-zinc-900/[0.04] dark:bg-white/[0.06] ring-1 ring-zinc-900/20 dark:ring-white/20"
-                                  : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-600"
-                              )}
-                            >
-                              <div className="text-[13px] font-bold text-zinc-900 dark:text-zinc-100">
-                                {opt.label}
-                              </div>
-                              <div className="text-[11px] text-zinc-500 mt-0.5 leading-snug">
-                                {opt.desc}
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[12px] font-medium text-zinc-600 dark:text-zinc-400">
+                      Tipo
+                    </Label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {BRAND_TYPE_OPTIONS.map((opt) => {
+                        const active = brandType === opt.id;
+                        return (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => setBrandType(opt.id)}
+                            title={opt.desc}
+                            className={cn(
+                              "px-2.5 py-1.5 rounded-lg text-[12px] font-medium border transition-colors",
+                              active
+                                ? "border-zinc-900 dark:border-zinc-100 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900"
+                                : "border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-800/60"
+                            )}
+                          >
+                            {opt.label}
+                          </button>
+                        );
+                      })}
                     </div>
+                  </div>
 
-                    <div className="space-y-2 sm:col-span-2">
-                      <Label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
-                        <Globe className="w-3.5 h-3.5 text-zinc-500" />
-                        Sitio web principal
-                      </Label>
-                      <Input
-                        value={websiteUrl}
-                        onChange={(e) => setWebsiteUrl(e.target.value)}
-                        placeholder="https://tumarca.com"
-                        className="rounded-xl h-11 text-[15px]"
-                      />
-                      <p className="text-[11px] text-zinc-400">
-                        La IA usará esta URL como base para entender tu marca.
-                      </p>
-                    </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[12px] font-medium text-zinc-600 dark:text-zinc-400 flex items-center gap-1.5">
+                      <Globe className="w-3 h-3" />
+                      Sitio web
+                    </Label>
+                    <Input
+                      value={websiteUrl}
+                      onChange={(e) => setWebsiteUrl(e.target.value)}
+                      placeholder="https://tumarca.com"
+                      className="rounded-lg h-10"
+                    />
+                  </div>
 
-                    <div className="space-y-2 sm:col-span-2">
-                      <Label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-                        Contexto de la marca
-                      </Label>
-                      <Textarea
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        placeholder="Tono de voz, público objetivo, colores, diferenciadores, estilo visual…"
-                        className="rounded-xl min-h-[110px] resize-none text-[14px]"
-                        maxLength={4000}
-                      />
-                    </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[12px] font-medium text-zinc-600 dark:text-zinc-400">
+                      Contexto{" "}
+                      <span className="font-normal text-zinc-400">(opcional)</span>
+                    </Label>
+                    <Textarea
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="Tono, público, colores, estilo visual…"
+                      className="rounded-lg min-h-[88px] resize-none text-[13px]"
+                      maxLength={4000}
+                    />
                   </div>
                 </motion.div>
               )}
@@ -483,128 +405,116 @@ export function BrandFormDialog() {
               {step === 2 && (
                 <motion.div
                   key="step-2"
-                  initial={{ opacity: 0, x: 16 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -16 }}
-                  transition={{ duration: 0.2 }}
-                  className="space-y-6"
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.15 }}
+                  className="space-y-4"
                 >
-                  <div className="grid sm:grid-cols-[200px_1fr] gap-6 items-start">
-                    <div className="space-y-3">
-                      <Label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-                        Logo de la marca
-                      </Label>
-                      <button
-                        type="button"
-                        onClick={() => logoInputRef.current?.click()}
-                        className={cn(
-                          "w-full aspect-square max-w-[200px] rounded-2xl border-2 border-dashed",
-                          "flex flex-col items-center justify-center gap-2 overflow-hidden transition-all",
-                          "hover:border-zinc-400 dark:hover:border-zinc-500",
-                          logoData
-                            ? "border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900"
-                            : "border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50"
-                        )}
-                      >
-                        {logoData ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={logoData}
-                            alt="Logo"
-                            className="w-full h-full object-contain p-4"
-                          />
-                        ) : (
-                          <>
-                            <div className="w-12 h-12 rounded-xl bg-zinc-200/80 dark:bg-zinc-800 flex items-center justify-center">
-                              <ImageIcon className="w-5 h-5 text-zinc-500" />
-                            </div>
-                            <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-400">
-                              Subir logo
-                            </span>
-                            <span className="text-[10px] text-zinc-400 px-4 text-center">
-                              PNG, JPG, WEBP o SVG
-                            </span>
-                          </>
-                        )}
-                      </button>
-                      <input
-                        ref={logoInputRef}
-                        type="file"
-                        accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                        className="hidden"
-                        onChange={handleLogo}
-                      />
-                      <div className="flex flex-col gap-1.5">
+                  <div className="flex gap-4 items-start">
+                    <button
+                      type="button"
+                      onClick={() => logoInputRef.current?.click()}
+                      className={cn(
+                        "w-[104px] h-[104px] shrink-0 rounded-xl border border-dashed",
+                        "flex flex-col items-center justify-center gap-1.5 overflow-hidden transition-colors",
+                        "hover:border-zinc-400 dark:hover:border-zinc-500",
+                        logoData
+                          ? "border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900"
+                          : "border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40"
+                      )}
+                    >
+                      {logoData ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={logoData}
+                          alt="Logo"
+                          className="w-full h-full object-contain p-2.5"
+                        />
+                      ) : (
+                        <>
+                          <ImageIcon className="w-5 h-5 text-zinc-400" />
+                          <span className="text-[11px] font-medium text-zinc-500">
+                            Subir
+                          </span>
+                        </>
+                      )}
+                    </button>
+                    <input
+                      ref={logoInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                      className="hidden"
+                      onChange={handleLogo}
+                    />
+
+                    <div className="flex-1 min-w-0 space-y-2 pt-0.5">
+                      <p className="text-[13px] text-zinc-600 dark:text-zinc-400 leading-snug">
+                        Sube el logo de tu marca. Opcional: puedes continuar sin
+                        él.
+                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
-                          className="rounded-xl h-9 text-xs w-full"
+                          className="rounded-lg h-8 text-xs"
                           onClick={() => logoInputRef.current?.click()}
                         >
-                          <Upload className="w-3.5 h-3.5 mr-1.5" />
-                          {logoData ? "Cambiar archivo" : "Seleccionar archivo"}
+                          <Upload className="w-3 h-3 mr-1.5" />
+                          {logoData ? "Cambiar" : "Seleccionar"}
                         </Button>
                         {logoData && (
                           <button
                             type="button"
                             onClick={() => setLogoData(null)}
-                            className="text-[11px] text-zinc-500 hover:text-red-500 text-center py-1"
+                            className="text-[12px] text-zinc-500 hover:text-red-500 transition-colors"
                           >
-                            Quitar logo
+                            Quitar
                           </button>
                         )}
-                        <p className="text-[10px] text-zinc-400 text-center">
-                          Máximo 1.5 MB
-                        </p>
                       </div>
+                      <p className="text-[11px] text-zinc-400">
+                        PNG, JPG, WEBP o SVG · máx. 1.5 MB
+                      </p>
                     </div>
+                  </div>
 
-                    <div className="space-y-4">
-                      <div>
-                        <Label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-                          Logo en las generaciones
-                        </Label>
-                        <p className="text-[12px] text-zinc-500 mt-1 mb-3">
-                          Define si el logo debe aparecer en las imágenes y en
-                          qué posición por defecto.
-                        </p>
-                        <div className="grid sm:grid-cols-2 gap-2">
-                          {LOGO_MODE_OPTIONS.map((opt) => {
-                            const active = logoMode === opt.id;
-                            return (
-                              <button
-                                key={opt.id}
-                                type="button"
-                                onClick={() => setLogoMode(opt.id)}
-                                className={cn(
-                                  "text-left rounded-xl border px-3.5 py-3 transition-all",
-                                  active
-                                    ? "border-zinc-900 dark:border-zinc-100 bg-zinc-900/[0.04] dark:bg-white/[0.06] ring-1 ring-zinc-900/15 dark:ring-white/15"
-                                    : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-600"
-                                )}
-                              >
-                                <div className="flex items-center justify-between gap-2">
-                                  <span className="text-[13px] font-bold text-zinc-900 dark:text-zinc-100">
-                                    {opt.label}
-                                  </span>
-                                  {active && (
-                                    <Check className="w-3.5 h-3.5 text-zinc-900 dark:text-zinc-100 shrink-0" />
-                                  )}
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-900/40 px-4 py-3">
-                        <p className="text-[12px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                          Podrás cambiar esta opción cada vez que generes una
-                          imagen desde la barra de contexto de Flow. El logo no
-                          es obligatorio para continuar.
-                        </p>
-                      </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[12px] font-medium text-zinc-600 dark:text-zinc-400">
+                      Logo en generaciones
+                    </Label>
+                    <div className="grid grid-cols-1 gap-1">
+                      {LOGO_MODE_OPTIONS.map((opt) => {
+                        const active = logoMode === opt.id;
+                        return (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => setLogoMode(opt.id)}
+                            className={cn(
+                              "flex items-center justify-between text-left rounded-lg border px-3 py-2 transition-colors",
+                              active
+                                ? "border-zinc-900 dark:border-zinc-100 bg-zinc-50 dark:bg-zinc-900"
+                                : "border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-900/50"
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                "text-[13px]",
+                                active
+                                  ? "font-medium text-zinc-900 dark:text-zinc-100"
+                                  : "text-zinc-600 dark:text-zinc-400"
+                              )}
+                            >
+                              {opt.label}
+                            </span>
+                            {active && (
+                              <Check className="w-3.5 h-3.5 text-zinc-900 dark:text-zinc-100 shrink-0" />
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 </motion.div>
@@ -613,65 +523,51 @@ export function BrandFormDialog() {
               {step === 3 && (
                 <motion.div
                   key="step-3"
-                  initial={{ opacity: 0, x: 16 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -16 }}
-                  transition={{ duration: 0.2 }}
-                  className="space-y-6"
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.15 }}
+                  className="space-y-5"
                 >
                   {/* Products */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <Label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
-                          <Package className="w-3.5 h-3.5 text-zinc-500" />
-                          Productos
-                        </Label>
-                        <p className="text-[11px] text-zinc-400 mt-0.5">
-                          Nombre y URL de cada producto para analizar y generar
-                          con contexto.
-                        </p>
-                      </div>
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <Label className="text-[12px] font-medium text-zinc-600 dark:text-zinc-400 flex items-center gap-1.5">
+                        <Package className="w-3 h-3" />
+                        Productos{" "}
+                        <span className="font-normal text-zinc-400">
+                          (opcional)
+                        </span>
+                      </Label>
                       <button
                         type="button"
                         onClick={addProduct}
-                        className="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-bold bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:opacity-90 transition-opacity"
+                        className="inline-flex items-center gap-1 text-[12px] font-medium text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors"
                       >
-                        <Plus className="w-3 h-3" /> Agregar
+                        <Plus className="w-3.5 h-3.5" />
+                        Agregar
                       </button>
                     </div>
 
                     {products.length === 0 ? (
-                      <div className="rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800 py-10 flex flex-col items-center text-center px-4">
-                        <div className="w-11 h-11 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mb-3">
-                          <Package className="w-5 h-5 text-zinc-400" />
-                        </div>
-                        <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                          Sin productos todavía
-                        </p>
-                        <p className="text-[12px] text-zinc-400 mt-1 max-w-sm">
-                          Opcional, pero recomendado si vendes o ofreces varios
-                          ítems.
-                        </p>
-                        <button
-                          type="button"
-                          onClick={addProduct}
-                          className="mt-4 text-[12px] font-bold text-zinc-900 dark:text-zinc-100 underline underline-offset-4"
-                        >
-                          Agregar el primero
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={addProduct}
+                        className="w-full rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800 py-6 flex flex-col items-center text-center hover:border-zinc-300 dark:hover:border-zinc-700 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/30 transition-colors"
+                      >
+                        <Package className="w-4 h-4 text-zinc-400 mb-1.5" />
+                        <span className="text-[13px] text-zinc-500">
+                          Agregar producto
+                        </span>
+                      </button>
                     ) : (
-                      <div className="space-y-2.5">
+                      <div className="space-y-2">
                         {products.map((p, idx) => (
                           <div
                             key={p.clientId}
-                            className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-3.5 space-y-2.5 bg-zinc-50/40 dark:bg-zinc-900/30"
+                            className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-2.5 space-y-2"
                           >
                             <div className="flex gap-2 items-center">
-                              <span className="text-[10px] font-black text-zinc-400 w-5 shrink-0">
-                                {idx + 1}
-                              </span>
                               <Input
                                 value={p.name}
                                 onChange={(e) =>
@@ -684,7 +580,7 @@ export function BrandFormDialog() {
                                   )
                                 }
                                 placeholder="Nombre del producto"
-                                className="rounded-lg h-9 text-sm"
+                                className="rounded-md h-8 text-[13px]"
                               />
                               <button
                                 type="button"
@@ -693,12 +589,12 @@ export function BrandFormDialog() {
                                     list.filter((_, i) => i !== idx)
                                   )
                                 }
-                                className="p-2 rounded-lg text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 shrink-0"
+                                className="p-1.5 rounded-md text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 shrink-0"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             </div>
-                            <div className="grid sm:grid-cols-2 gap-2 pl-7">
+                            <div className="grid sm:grid-cols-2 gap-2">
                               <Input
                                 value={p.url}
                                 onChange={(e) =>
@@ -710,8 +606,8 @@ export function BrandFormDialog() {
                                     )
                                   )
                                 }
-                                placeholder="URL del producto"
-                                className="rounded-lg h-9 text-sm"
+                                placeholder="URL"
+                                className="rounded-md h-8 text-[13px]"
                               />
                               <Input
                                 value={p.description}
@@ -724,8 +620,8 @@ export function BrandFormDialog() {
                                     )
                                   )
                                 }
-                                placeholder="Descripción breve (opcional)"
-                                className="rounded-lg h-9 text-sm"
+                                placeholder="Descripción (opcional)"
+                                className="rounded-md h-8 text-[13px]"
                               />
                             </div>
                           </div>
@@ -735,23 +631,22 @@ export function BrandFormDialog() {
                   </div>
 
                   {/* Extra pages */}
-                  <div className="space-y-3 pt-1 border-t border-zinc-100 dark:border-zinc-800">
-                    <div className="flex items-center justify-between gap-3 pt-4">
-                      <div>
-                        <Label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
-                          <Link2 className="w-3.5 h-3.5 text-zinc-500" />
-                          Páginas adicionales
-                        </Label>
-                        <p className="text-[11px] text-zinc-400 mt-0.5">
-                          Catálogo, sobre nosotros, colecciones, etc.
-                        </p>
-                      </div>
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <Label className="text-[12px] font-medium text-zinc-600 dark:text-zinc-400 flex items-center gap-1.5">
+                        <Link2 className="w-3 h-3" />
+                        Páginas{" "}
+                        <span className="font-normal text-zinc-400">
+                          (opcional)
+                        </span>
+                      </Label>
                       <button
                         type="button"
                         onClick={addPage}
-                        className="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-bold border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                        className="inline-flex items-center gap-1 text-[12px] font-medium text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors"
                       >
-                        <Plus className="w-3 h-3" /> Página
+                        <Plus className="w-3.5 h-3.5" />
+                        Página
                       </button>
                     </div>
 
@@ -760,7 +655,7 @@ export function BrandFormDialog() {
                         {pages.map((p, idx) => (
                           <div
                             key={p.clientId}
-                            className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center"
+                            className="flex gap-1.5 items-center"
                           >
                             <select
                               value={p.kind}
@@ -777,7 +672,7 @@ export function BrandFormDialog() {
                                   )
                                 )
                               }
-                              className="h-9 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-background text-xs px-2 sm:w-[110px]"
+                              className="h-8 rounded-md border border-zinc-200 dark:border-zinc-800 bg-background text-[12px] px-1.5 w-[92px] shrink-0"
                             >
                               <option value="catalog">Catálogo</option>
                               <option value="page">Página</option>
@@ -794,7 +689,7 @@ export function BrandFormDialog() {
                                 )
                               }
                               placeholder="Nombre"
-                              className="rounded-lg h-9 text-sm flex-1"
+                              className="rounded-md h-8 text-[13px] flex-1 min-w-0"
                             />
                             <Input
                               value={p.url}
@@ -808,7 +703,7 @@ export function BrandFormDialog() {
                                 )
                               }
                               placeholder="URL"
-                              className="rounded-lg h-9 text-sm flex-[1.4]"
+                              className="rounded-md h-8 text-[13px] flex-[1.3] min-w-0"
                             />
                             <button
                               type="button"
@@ -817,9 +712,9 @@ export function BrandFormDialog() {
                                   list.filter((_, i) => i !== idx)
                                 )
                               }
-                              className="p-2 rounded-lg text-zinc-400 hover:text-red-500 self-end sm:self-center"
+                              className="p-1.5 rounded-md text-zinc-400 hover:text-red-500 shrink-0"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         ))}
@@ -827,11 +722,7 @@ export function BrandFormDialog() {
                     )}
 
                     <p className="text-[11px] text-zinc-400">
-                      URLs a analizar:{" "}
-                      <span className="font-bold text-zinc-600 dark:text-zinc-300">
-                        {countUrls()}
-                      </span>{" "}
-                      / {MAX_BRAND_URLS}
+                      URLs: {countUrls()} / {MAX_BRAND_URLS}
                     </p>
                   </div>
                 </motion.div>
@@ -839,70 +730,112 @@ export function BrandFormDialog() {
             </AnimatePresence>
           </div>
 
-          {/* Footer */}
-          <div className="shrink-0 border-t border-zinc-100 dark:border-zinc-800 px-6 sm:px-8 py-4 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 bg-zinc-50/50 dark:bg-zinc-900/30">
-            <div className="flex gap-2">
+          {/* Footer: pasos pequeños + acciones */}
+          <div className="shrink-0 border-t border-zinc-100 dark:border-zinc-800 px-5 py-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 min-w-0">
               {step > 1 ? (
                 <Button
                   type="button"
-                  variant="outline"
-                  className="rounded-xl h-10 px-4"
+                  variant="ghost"
+                  size="sm"
+                  className="rounded-lg h-9 px-2.5 text-zinc-600 dark:text-zinc-400"
                   onClick={goBack}
                   disabled={busy}
                 >
-                  <ArrowLeft className="w-4 h-4 mr-1.5" />
+                  <ArrowLeft className="w-4 h-4 mr-1" />
                   Atrás
                 </Button>
               ) : (
                 <Button
                   type="button"
                   variant="ghost"
-                  className="rounded-xl h-10 px-4 text-zinc-500"
+                  size="sm"
+                  className="rounded-lg h-9 px-2.5 text-zinc-500"
                   onClick={closeForm}
                   disabled={busy}
                 >
                   Cancelar
                 </Button>
               )}
+
+              {/* Mini step indicator */}
+              <div
+                className="hidden sm:flex items-center gap-1 ml-1"
+                aria-label={`Paso ${step} de 3`}
+              >
+                {([1, 2, 3] as WizardStep[]).map((s) => {
+                  const active = step === s;
+                  const done = step > s;
+                  return (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => goToStep(s)}
+                      disabled={busy}
+                      className={cn(
+                        "w-6 h-6 rounded-full text-[11px] font-semibold transition-colors",
+                        active &&
+                          "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900",
+                        done &&
+                          !active &&
+                          "bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-300 dark:hover:bg-zinc-600",
+                        !active &&
+                          !done &&
+                          "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                      )}
+                      aria-current={active ? "step" : undefined}
+                      aria-label={`Paso ${s}`}
+                    >
+                      {s}
+                    </button>
+                  );
+                })}
+              </div>
+              <span className="sm:hidden text-[11px] text-zinc-400 tabular-nums">
+                {step}/3
+              </span>
             </div>
 
-            <div className="flex flex-col-reverse sm:flex-row gap-2 sm:items-center">
+            <div className="flex items-center gap-2 shrink-0">
               {step < 3 ? (
                 <Button
                   type="button"
-                  className="rounded-xl h-10 px-5 bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900"
+                  size="sm"
+                  className="rounded-lg h-9 px-4 bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900"
                   onClick={goNext}
                   disabled={busy}
                 >
                   Continuar
-                  <ArrowRight className="w-4 h-4 ml-1.5" />
+                  <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
                 </Button>
               ) : (
                 <>
                   <Button
                     type="button"
                     variant="outline"
-                    className="rounded-xl h-10 px-4"
+                    size="sm"
+                    className="rounded-lg h-9 px-3"
                     onClick={handleSave}
                     disabled={busy}
                   >
                     {saving ? (
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
                     ) : null}
                     Guardar
                   </Button>
                   <Button
                     type="button"
-                    className="rounded-xl h-10 px-5 bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-semibold"
+                    size="sm"
+                    className="rounded-lg h-9 px-3 bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-medium"
                     onClick={handleUnderstand}
                     disabled={busy}
                   >
                     {analyzing ? (
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
                     ) : (
-                      <Sparkles className="w-4 h-4 mr-2" />
+                      <Sparkles className="w-3.5 h-3.5 mr-1.5" />
                     )}
-                    Entender marca con IA
+                    Entender con IA
                   </Button>
                 </>
               )}

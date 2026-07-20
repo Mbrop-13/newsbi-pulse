@@ -17,6 +17,8 @@ import {
   Pencil,
   Check,
   AlertTriangle,
+  Loader2,
+  MessageSquare,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -25,6 +27,15 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 // ── Helpers ──
 
@@ -330,13 +341,27 @@ export function ProjectCard({ project, index }: ProjectCardProps) {
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(project.name);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const handleDelete = async () => {
-    if (!confirm(`¿Eliminar "${project.name}"? Esta acción no se puede deshacer.`)) return;
     setIsDeleting(true);
-    await deleteProject(project.id);
-    toast.success("Proyecto eliminado");
-    setIsDeleting(false);
+    try {
+      await deleteProject(project.id);
+      // Invalidar cache del preview de esta tarjeta
+      const userId = useAuthStore.getState().user?.id;
+      const cacheKey = `${userId || "anon"}:${project.chatId || project.id}`;
+      previewCache.delete(cacheKey);
+      toast.success(
+        project.chatId
+          ? "Proyecto y chat eliminados"
+          : "Proyecto eliminado"
+      );
+      setShowDeleteDialog(false);
+    } catch {
+      toast.error("No se pudo eliminar el proyecto");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleRename = async () => {
@@ -359,6 +384,7 @@ export function ProjectCard({ project, index }: ProjectCardProps) {
     : "M";
 
   return (
+    <>
     <motion.div
       initial={{ opacity: 0, y: 16, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -412,7 +438,8 @@ export function ProjectCard({ project, index }: ProjectCardProps) {
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.preventDefault();
-                    handleDelete();
+                    e.stopPropagation();
+                    setShowDeleteDialog(true);
                   }}
                   className="text-xs rounded-lg text-red-400 focus:text-red-500 hover:bg-red-950/20 cursor-pointer"
                 >
@@ -477,5 +504,69 @@ export function ProjectCard({ project, index }: ProjectCardProps) {
         </div>
       </Link>
     </motion.div>
+
+    <Dialog open={showDeleteDialog} onOpenChange={(open) => !isDeleting && setShowDeleteDialog(open)}>
+      <DialogContent
+        showCloseButton={!isDeleting}
+        className="max-w-md rounded-2xl border border-zinc-800 bg-[#16161a] p-6 text-zinc-100 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <DialogHeader className="gap-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20">
+              <Trash2 className="w-5 h-5 text-red-400" />
+            </div>
+            <DialogTitle className="text-lg font-bold text-white">
+              Eliminar proyecto
+            </DialogTitle>
+          </div>
+          <DialogDescription className="text-sm text-zinc-400 leading-relaxed text-left">
+            ¿Seguro que quieres eliminar{" "}
+            <span className="font-semibold text-zinc-200">&ldquo;{project.name}&rdquo;</span>?
+            Esta acción no se puede deshacer.
+          </DialogDescription>
+        </DialogHeader>
+
+        {project.chatId && (
+          <div className="flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 px-3.5 py-3">
+            <MessageSquare className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <p className="text-xs text-amber-200/90 leading-relaxed">
+              También se eliminará el <strong className="font-semibold text-amber-100">chat asociado</strong> a este proyecto, incluida toda su conversación e historial.
+            </p>
+          </div>
+        )}
+
+        <DialogFooter className="mt-2 border-0 bg-transparent p-0 sm:justify-end gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isDeleting}
+            onClick={() => setShowDeleteDialog(false)}
+            className="rounded-xl border-zinc-700 bg-transparent text-zinc-300 hover:bg-zinc-800 hover:text-white"
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="button"
+            disabled={isDeleting}
+            onClick={handleDelete}
+            className="rounded-xl bg-red-600 hover:bg-red-500 text-white font-semibold"
+          >
+            {isDeleting ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Eliminando…
+              </>
+            ) : (
+              <>
+                <Trash2 className="w-3.5 h-3.5" />
+                Eliminar
+              </>
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

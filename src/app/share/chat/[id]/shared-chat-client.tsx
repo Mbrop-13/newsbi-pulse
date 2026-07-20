@@ -1,34 +1,85 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Bot, User, ArrowRight, MessageSquarePlus, LogIn, Copy, Check, Share2 } from "lucide-react";
+import {
+  Bot,
+  MessageSquarePlus,
+  LogIn,
+  Copy,
+  Check,
+  Share2,
+  MessagesSquare,
+} from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuthModalStore } from "@/lib/stores/auth-store";
+import { ChatMessages } from "@/components/chat/chat-messages";
+import type { ChatMessage } from "@/lib/stores/ai-chat-store";
+
+interface SharedMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp?: string | number | Date;
+  citations?: string[];
+}
 
 interface SharedChatData {
   question: string;
   answer: string;
   created_at: string;
   user_id: string;
+  title?: string | null;
+  share_type?: string | null;
+  messages?: SharedMessage[] | null;
 }
 
-export function SharedChatClient({ chat, chatId }: { chat: SharedChatData; chatId: string }) {
+export function SharedChatClient({
+  chat,
+  chatId,
+}: {
+  chat: SharedChatData;
+  chatId: string;
+}) {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [copied, setCopied] = useState(false);
   const { openModal } = useAuthModalStore();
 
+  const fullMessages: ChatMessage[] = useMemo(() => {
+    if (!Array.isArray(chat.messages) || chat.messages.length === 0) return [];
+    return chat.messages
+      .filter((m) => m && (m.role === "user" || m.role === "assistant") && m.content)
+      .map((m, idx) => ({
+        id: m.id || `shared-${chatId}-${idx}`,
+        role: m.role,
+        content: m.content,
+        timestamp: m.timestamp ? new Date(m.timestamp) : new Date(chat.created_at),
+        citations: m.citations,
+      }));
+  }, [chat.messages, chat.created_at, chatId]);
+
+  const isFullChat = fullMessages.length > 0 || chat.share_type === "full";
+  const displayTitle =
+    chat.title ||
+    (chat.question
+      ? chat.question.length > 72
+        ? chat.question.slice(0, 69) + "..."
+        : chat.question
+      : "Conversación compartida");
+
   useEffect(() => {
     const checkAuth = async () => {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       setIsLoggedIn(!!user);
       setIsCheckingAuth(false);
     };
@@ -37,7 +88,7 @@ export function SharedChatClient({ chat, chatId }: { chat: SharedChatData; chatI
 
   const handleStartOwnConversation = () => {
     if (isLoggedIn) {
-      router.push("/");
+      router.push("/ai");
     } else {
       openModal("register");
     }
@@ -58,10 +109,13 @@ export function SharedChatClient({ chat, chatId }: { chat: SharedChatData; chatI
     <div className="flex flex-col h-screen bg-background overflow-hidden">
       {/* Top Header Bar */}
       <header className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-border/40 bg-background/80 backdrop-blur-xl shrink-0 z-10">
-        <Link href="/home" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
-          <img 
-            src="/assets/maverlang-logo-small.png" 
-            alt="Maverlang Logo" 
+        <Link
+          href="/home"
+          className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
+        >
+          <img
+            src="/assets/maverlang-logo-small.png"
+            alt="Maverlang Logo"
             className="h-7 w-auto object-contain select-none pointer-events-none"
           />
           <span className="font-extrabold text-sm tracking-wide text-foreground uppercase hidden sm:inline">
@@ -74,57 +128,88 @@ export function SharedChatClient({ chat, chatId }: { chat: SharedChatData; chatI
             onClick={handleCopyLink}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-border/50 bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground transition-all cursor-pointer active:scale-95"
           >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Share2 className="w-3.5 h-3.5" />}
+            {copied ? (
+              <Check className="w-3.5 h-3.5 text-emerald-500" />
+            ) : (
+              <Share2 className="w-3.5 h-3.5" />
+            )}
             {copied ? "Copiado" : "Compartir"}
           </button>
         </div>
       </header>
 
       {/* Shared chat label */}
-      <div className="flex items-center justify-center py-2 bg-muted/30 border-b border-border/20">
-        <p className="text-[11px] text-muted-foreground font-medium">
-          Conversación compartida · {new Date(chat.created_at).toLocaleDateString("es-CL", { day: "numeric", month: "long", year: "numeric" })}
-        </p>
+      <div className="flex flex-col items-center justify-center gap-0.5 py-2.5 px-4 bg-muted/30 border-b border-border/20">
+        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium">
+          {isFullChat ? (
+            <MessagesSquare className="w-3.5 h-3.5 text-[#1890FF]" />
+          ) : (
+            <Share2 className="w-3.5 h-3.5 text-[#1890FF]" />
+          )}
+          <span>
+            {isFullChat ? "Conversación completa compartida" : "Respuesta compartida"}
+            {" · "}
+            {new Date(chat.created_at).toLocaleDateString("es-CL", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })}
+          </span>
+        </div>
+        {displayTitle && (
+          <p className="text-xs font-semibold text-foreground/80 text-center line-clamp-1 max-w-xl">
+            {displayTitle}
+          </p>
+        )}
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-3xl mx-auto w-full px-4 sm:px-6 py-6 space-y-6">
-          
-          {/* User Message */}
-          <div className="flex justify-end">
-            <div className="max-w-[85%] md:max-w-[75%]">
-              <div className="bg-secondary dark:bg-secondary text-[15px] rounded-3xl px-5 py-3.5">
-                <p className="whitespace-pre-wrap">{chat.question}</p>
+      <div className="flex-1 overflow-y-auto min-h-0">
+        {fullMessages.length > 0 ? (
+          <div className="h-full min-h-0">
+            <ChatMessages messages={fullMessages} isLoading={false} />
+          </div>
+        ) : (
+          <div className="max-w-3xl mx-auto w-full px-4 sm:px-6 py-6 space-y-6">
+            {/* User Message */}
+            <div className="flex justify-end">
+              <div className="max-w-[85%] md:max-w-[75%]">
+                <div className="bg-secondary dark:bg-secondary text-[15px] rounded-3xl px-5 py-3.5">
+                  <p className="whitespace-pre-wrap">{chat.question}</p>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* AI Response */}
-          <div className="flex gap-3 items-start max-w-full">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#1890FF] to-indigo-600 flex items-center justify-center shrink-0 shadow-sm mt-0.5">
-              <Bot className="w-4 h-4 text-white" />
-            </div>
-            <div className="flex-1 min-w-0 overflow-hidden">
-              <div className={cn(
-                "prose prose-sm md:prose-base dark:prose-invert",
-                "prose-p:leading-relaxed prose-p:my-2",
-                "prose-headings:font-bold prose-headings:tracking-tight",
-                "prose-pre:bg-zinc-100 dark:prose-pre:bg-zinc-900/80 prose-pre:rounded-xl prose-pre:border prose-pre:border-border/30",
-                "prose-code:text-[13px] prose-code:font-mono",
-                "prose-table:text-sm",
-                "prose-li:my-0.5",
-                "prose-a:text-[#1890FF] prose-a:no-underline hover:prose-a:underline",
-                "text-foreground max-w-none"
-              )}>
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{chat.answer}</ReactMarkdown>
+            {/* AI Response */}
+            <div className="flex gap-3 items-start max-w-full">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#1890FF] to-indigo-600 flex items-center justify-center shrink-0 shadow-sm mt-0.5">
+                <Bot className="w-4 h-4 text-white" />
+              </div>
+              <div className="flex-1 min-w-0 overflow-hidden">
+                <div
+                  className={cn(
+                    "prose prose-sm md:prose-base dark:prose-invert",
+                    "prose-p:leading-relaxed prose-p:my-2",
+                    "prose-headings:font-bold prose-headings:tracking-tight",
+                    "prose-pre:bg-zinc-100 dark:prose-pre:bg-zinc-900/80 prose-pre:rounded-xl prose-pre:border prose-pre:border-border/30",
+                    "prose-code:text-[13px] prose-code:font-mono",
+                    "prose-table:text-sm",
+                    "prose-li:my-0.5",
+                    "prose-a:text-[#1890FF] prose-a:no-underline hover:prose-a:underline",
+                    "text-foreground max-w-none"
+                  )}
+                >
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {chat.answer}
+                  </ReactMarkdown>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
-      {/* Bottom CTA Bar — replaces the input bar */}
+      {/* Bottom CTA Bar */}
       <div className="shrink-0 border-t border-border/40 bg-background/80 backdrop-blur-xl">
         <div className="max-w-3xl mx-auto w-full px-4 sm:px-6 py-4">
           <button

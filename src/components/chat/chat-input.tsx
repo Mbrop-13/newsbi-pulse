@@ -919,15 +919,26 @@ export function ChatInput({
 
               {/* Primary action button (Microphone when empty/listening, Send when has text) */}
               {isStreaming ? (
-                <Button
-                  type="button"
-                  size="icon"
-                  onClick={onStop}
-                  className="rounded-full h-8 w-8 bg-foreground text-background hover:opacity-90 transition-opacity cursor-pointer flex items-center justify-center shrink-0"
-                  aria-label="Detener generación"
-                >
-                  <div className="h-2.5 w-2.5 bg-current rounded-[1px]" />
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      size="icon"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        onStop?.()
+                      }}
+                      className="rounded-full h-8 w-8 bg-red-500 hover:bg-red-600 text-white shadow-[0_0_12px_rgba(239,68,68,0.35)] transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-95"
+                      aria-label="Detener generación"
+                    >
+                      <div className="h-2.5 w-2.5 bg-current rounded-[2px]" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p>Detener generación</p>
+                  </TooltipContent>
+                </Tooltip>
               ) : (isListening || value.trim() === "") ? (
                 <Button
                   type="button"

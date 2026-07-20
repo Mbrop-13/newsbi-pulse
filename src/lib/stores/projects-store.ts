@@ -317,8 +317,9 @@ export const useProjectsStore = create<ProjectsStore>()(
         try {
           const supabase = createClient();
 
-          // Encontrar el proyecto para obtener su chatId (limpiar archivos webbuilder)
+          // Encontrar el proyecto para obtener su chatId (limpiar webbuilder + chat)
           const project = get().projects.find((p) => p.id === id);
+          const chatId = project?.chatId;
 
           const { error } = await supabase
             .from("ai_projects")
@@ -331,13 +332,43 @@ export const useProjectsStore = create<ProjectsStore>()(
             return;
           }
 
-          // Limpiar archivos de webbuilder asociados
-          if (project?.chatId) {
+          // Limpiar archivos de webbuilder y el chat asociado al proyecto
+          if (chatId) {
             await supabase
               .from("ai_webbuilder_projects")
               .delete()
-              .eq("chat_id", project.chatId)
+              .eq("chat_id", chatId)
               .eq("user_id", user.id);
+
+            const { error: chatError } = await supabase
+              .from("ai_saved_chats")
+              .delete()
+              .eq("chat_id", chatId)
+              .eq("user_id", user.id);
+
+            if (chatError) {
+              console.error("[ProjectsStore] Error deleting associated chat:", chatError);
+            }
+
+            // Actualizar historial de chats en memoria (y localStorage vía persist)
+            try {
+              const { useAIChatStore } = await import("@/lib/stores/ai-chat-store");
+              const chatState = useAIChatStore.getState();
+              const next: {
+                savedChats: typeof chatState.savedChats;
+                currentChatId?: string | null;
+                messages?: typeof chatState.messages;
+              } = {
+                savedChats: chatState.savedChats.filter((c) => c.id !== chatId),
+              };
+              if (chatState.currentChatId === chatId) {
+                next.currentChatId = null;
+                next.messages = [];
+              }
+              useAIChatStore.setState(next);
+            } catch (chatStoreErr) {
+              console.error("[ProjectsStore] Error updating chat store:", chatStoreErr);
+            }
           }
 
           set((s) => ({

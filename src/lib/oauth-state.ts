@@ -1,4 +1,4 @@
-import crypto from "crypto";
+import * as crypto from "crypto";
 
 /**
  * OAuth state + PKCE helpers (ASVS 2.5.x — CSRF & code interception protection).

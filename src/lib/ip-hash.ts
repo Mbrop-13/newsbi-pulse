@@ -1,4 +1,4 @@
-import crypto from "crypto";
+import * as crypto from "crypto";
 
 /**
  * Hashea una IP antes de almacenarla o usarla como clave (ASVS 7.1.4).

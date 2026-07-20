@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createClient } from "@supabase/supabase-js";
+import * as crypto from "crypto";
 import { z } from "zod";
 
 /**
@@ -81,7 +82,7 @@ export async function POST(req: NextRequest) {
       // Constant-time compare
       const a = Buffer.from(String(confirmToken));
       const b = Buffer.from(String(expectedToken));
-      if (a.length !== b.length || !safeEqual(a, b)) {
+      if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
         return NextResponse.json({ error: "Token inválido" }, { status: 403 });
       }
     }
@@ -114,14 +115,8 @@ export async function POST(req: NextRequest) {
     await supabase.auth.signOut();
 
     return NextResponse.json({ success: true, message: "Perfil eliminado con éxito" });
-  } catch (err: any) {
+  } catch (err) {
     console.error("[Delete Profile API] Exception:", err);
     return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
   }
-}
-
-function safeEqual(a: Buffer, b: Buffer): boolean {
-  const { timingSafeEqual } = require("crypto");
-  if (a.length !== b.length) return false;
-  return timingSafeEqual(a, b);
 }

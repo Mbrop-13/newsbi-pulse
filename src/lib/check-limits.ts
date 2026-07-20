@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { PlanTier, getPlanConfig, enterpriseToTier, type EnterprisePlan } from "@/lib/plan-limits";
 import type { UserOrgMembership } from "@/lib/types";
+import { hashIp } from "@/lib/ip-hash";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -178,118 +179,185 @@ export async function checkLimit(userId: string, feature: FeatureType): Promise<
 
 /**
  * Increment usage counter after an action is performed
+ *
+ * ASVS 4.3.3 — usa RPC atómicas (INSERT ... ON CONFLICT DO UPDATE SET x = x + 1)
+ * en lugar del patrón read-then-write previo, que era vulnerable a TOCTOU:
+ * dos requests concurrentes leían el mismo N y ambas escribían N+1, perdiendo
+ * un incremento y permitiendo bypass de cuota.
+ *
+ * Fallback graceful: si la RPC no existe aún (migración no aplicada), usa el
+ * patrón anterior para no romper el servicio, pero loguea el warning.
  */
 export async function incrementUsage(userId: string, feature: "ai_message" | "tts_audio"): Promise<void> {
   const currentMonth = new Date().toISOString().slice(0, 7) + "-01"; // YYYY-MM-01
   const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
   const isGuest = userId.startsWith("guest-");
-  
+
   if (feature === "ai_message") {
     if (isGuest) {
+      // Guests: identidad por IP hasheada (M-14). service_role obligatorio.
+      // El userId llega como "guest-<algo>"; extraer el hash IP subyacente.
+      const ipHash = resolveGuestIpHash(userId);
       try {
-        const { data: existing } = await supabase
-          .from("guest_usage")
-          .select("ai_messages_total")
-          .eq("ip_address", userId)
-          .maybeSingle();
-
-        if (existing) {
-          await supabase
-            .from("guest_usage")
-            .update({ ai_messages_total: (existing.ai_messages_total || 0) + 1, updated_at: new Date().toISOString() })
-            .eq("ip_address", userId);
-        } else {
-          await supabase
-            .from("guest_usage")
-            .insert({ ip_address: userId, ai_messages_total: 1, updated_at: new Date().toISOString() });
-        }
+        const { error } = await supabase.rpc("increment_guest_ai_message", { p_ip_hash: ipHash });
+        if (!error) return;
+        // RPC no existe o falló — fallback legacy con IP hasheada
+        if (!isPostgresFunctionMissingError(error)) throw error;
+        console.warn("[incrementUsage] RPC increment_guest_ai_message no disponible, usando fallback");
+        await legacyGuestIncrement(ipHash, "ai_messages_total", 1);
       } catch (err) {
-        console.warn("[incrementUsage] Failed to update guest_usage:", err);
+        console.warn("[incrementUsage] Failed guest AI increment:", err);
       }
       return;
     }
 
-    // Increment monthly usage (direct upsert — works even without RPCs)
-    const { data: existing } = await supabase
-      .from("monthly_usage")
-      .select("ai_messages")
-      .eq("user_id", userId)
-      .eq("month", currentMonth)
-      .maybeSingle();
+    try {
+      // Mensual: RPC atómica
+      const { error: mErr } = await supabase.rpc("increment_monthly_ai", {
+        p_user_id: userId,
+        p_month: currentMonth,
+      });
+      if (mErr && !isPostgresFunctionMissingError(mErr)) throw mErr;
+      if (mErr) console.warn("[incrementUsage] RPC increment_monthly_ai no disponible, usando fallback");
 
-    if (existing) {
-      await supabase
-        .from("monthly_usage")
-        .update({ ai_messages: (existing.ai_messages || 0) + 1 })
-        .eq("user_id", userId)
-        .eq("month", currentMonth);
-    } else {
-      await supabase
-        .from("monthly_usage")
-        .insert({ user_id: userId, month: currentMonth, ai_messages: 1 });
-    }
-    
-    // Increment lifetime usage
-    const { data: lifeData } = await supabase
-      .from("lifetime_usage")
-      .select("ai_messages_total")
-      .eq("user_id", userId)
-      .maybeSingle();
+      // Lifetime: RPC atómica
+      const { error: lErr } = await supabase.rpc("increment_lifetime_ai", { p_user_id: userId });
+      if (lErr && !isPostgresFunctionMissingError(lErr)) throw lErr;
 
-    if (lifeData) {
-      await supabase
-        .from("lifetime_usage")
-        .update({ ai_messages_total: (lifeData.ai_messages_total || 0) + 1 })
-        .eq("user_id", userId);
-    } else {
-      await supabase
-        .from("lifetime_usage")
-        .insert({ user_id: userId, ai_messages_total: 1 });
+      // Si las RPC fallaron por no existir, fallback legacy
+      if (mErr || lErr) {
+        await legacyMonthlyIncrement(userId, currentMonth, "ai_messages", 1);
+        if (lErr) await legacyLifetimeIncrement(userId, "ai_messages_total", 1);
+      }
+    } catch (err) {
+      console.warn("[incrementUsage] Failed AI increment (RPC path):", err);
     }
   }
-  
+
   if (feature === "tts_audio") {
     if (isGuest) return; // Guests do not support TTS audio usage tracking
 
-    // Increment monthly
-    const { data: existing } = await supabase
+    try {
+      const { error: mErr } = await supabase.rpc("increment_monthly_tts", {
+        p_user_id: userId,
+        p_month: currentMonth,
+      });
+      if (mErr && !isPostgresFunctionMissingError(mErr)) throw mErr;
+      if (mErr) console.warn("[incrementUsage] RPC increment_monthly_tts no disponible, usando fallback");
+
+      const { error: dErr } = await supabase.rpc("increment_daily_tts", {
+        p_user_id: userId,
+        p_date: today,
+      });
+      if (dErr && !isPostgresFunctionMissingError(dErr)) throw dErr;
+
+      if (mErr || dErr) {
+        if (mErr) await legacyMonthlyIncrement(userId, currentMonth, "tts_audios", 1);
+        if (dErr) await legacyDailyIncrement(userId, today, 1);
+      }
+    } catch (err) {
+      console.warn("[incrementUsage] Failed TTS increment (RPC path):", err);
+    }
+  }
+}
+
+// ── Helpers de detección y fallback legacy ──
+
+/** Detecta errores donde la RPC simplemente no existe aún (migración no aplicada). */
+function isPostgresFunctionMissingError(err: any): boolean {
+  const msg = (err?.message || "").toLowerCase();
+  return msg.includes("could not find the function") ||
+         msg.includes("function") && msg.includes("does not exist") ||
+         msg.includes("p_user_id") && msg.includes("does not exist") ||
+         err?.code === "42883"; // undefined_function
+}
+
+/**
+ * Extrae el hash IP de un identificador guest ("guest-<hash>").
+ * Si el ID no trae hash (formato legacy con IP en claro), lo hashea al vuelo.
+ */
+function resolveGuestIpHash(guestId: string): string {
+  // Aceptamos formatos: "guest-<sha256hex>" o "guest-<ip-plano-legacy>"
+  const raw = guestId.startsWith("guest-") ? guestId.slice("guest-".length) : guestId;
+  // Un sha256 tiene 64 hex chars. Si raw ya es eso, lo usamos tal cual.
+  if (/^[0-9a-f]{64}$/i.test(raw)) return raw;
+  // Sino, es IP legacy en claro → hashear
+  return hashIp(raw);
+}
+
+async function legacyGuestIncrement(ipHash: string, column: string, delta: number): Promise<void> {
+  const { data: existing } = await supabase
+    .from("guest_usage")
+    .select(column)
+    .eq("ip_address", ipHash)
+    .maybeSingle();
+  if (existing) {
+    await supabase
+      .from("guest_usage")
+      .update({ [column]: (existing[column] || 0) + delta, updated_at: new Date().toISOString() })
+      .eq("ip_address", ipHash);
+  } else {
+    await supabase
+      .from("guest_usage")
+      .insert({ ip_address: ipHash, [column]: delta, updated_at: new Date().toISOString() });
+  }
+}
+
+async function legacyMonthlyIncrement(userId: string, month: string, column: string, delta: number): Promise<void> {
+  const { data: existing } = await supabase
+    .from("monthly_usage")
+    .select(column)
+    .eq("user_id", userId)
+    .eq("month", month)
+    .maybeSingle();
+  if (existing) {
+    await supabase
       .from("monthly_usage")
-      .select("tts_audios")
+      .update({ [column]: (existing[column] || 0) + delta })
       .eq("user_id", userId)
-      .eq("month", currentMonth)
-      .maybeSingle();
+      .eq("month", month);
+  } else {
+    await supabase
+      .from("monthly_usage")
+      .insert({ user_id: userId, month, [column]: delta });
+  }
+}
 
-    if (existing) {
-      await supabase
-        .from("monthly_usage")
-        .update({ tts_audios: (existing.tts_audios || 0) + 1 })
-        .eq("user_id", userId)
-        .eq("month", currentMonth);
-    } else {
-      await supabase
-        .from("monthly_usage")
-        .insert({ user_id: userId, month: currentMonth, tts_audios: 1 });
-    }
-    
-    // Increment daily
-    const { data: dailyData } = await supabase
+async function legacyLifetimeIncrement(userId: string, column: string, delta: number): Promise<void> {
+  const { data: existing } = await supabase
+    .from("lifetime_usage")
+    .select(column)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (existing) {
+    await supabase
+      .from("lifetime_usage")
+      .update({ [column]: (existing[column] || 0) + delta })
+      .eq("user_id", userId);
+  } else {
+    await supabase
+      .from("lifetime_usage")
+      .insert({ user_id: userId, [column]: delta });
+  }
+}
+
+async function legacyDailyIncrement(userId: string, date: string, delta: number): Promise<void> {
+  const { data: existing } = await supabase
+    .from("daily_usage")
+    .select("tts_audios")
+    .eq("user_id", userId)
+    .eq("date", date)
+    .maybeSingle();
+  if (existing) {
+    await supabase
       .from("daily_usage")
-      .select("tts_audios")
+      .update({ tts_audios: (existing.tts_audios || 0) + delta })
       .eq("user_id", userId)
-      .eq("date", today)
-      .maybeSingle();
-
-    if (dailyData) {
-      await supabase
-        .from("daily_usage")
-        .update({ tts_audios: (dailyData.tts_audios || 0) + 1 })
-        .eq("user_id", userId)
-        .eq("date", today);
-    } else {
-      await supabase
-        .from("daily_usage")
-        .insert({ user_id: userId, date: today, tts_audios: 1 });
-    }
+      .eq("date", date);
+  } else {
+    await supabase
+      .from("daily_usage")
+      .insert({ user_id: userId, date, tts_audios: delta });
   }
 }
 
@@ -304,10 +372,11 @@ async function checkAiMessageLimit(userId: string, tier: PlanTier): Promise<Limi
     let used = 0;
     if (isGuest) {
       try {
+        const ipHash = resolveGuestIpHash(userId);
         const { data, error } = await supabase
           .from("guest_usage")
           .select("ai_messages_total")
-          .eq("ip_address", userId)
+          .eq("ip_address", ipHash)
           .maybeSingle();
         if (!error && data) {
           used = data.ai_messages_total || 0;
@@ -497,10 +566,11 @@ export async function checkTokenLimit(userId: string): Promise<{ allowed: boolea
     const generalPromise = (async () => {
       if (tier === "free") {
         if (isGuest) {
+          const ipHash = resolveGuestIpHash(userId);
           const { data } = await supabase
             .from("guest_usage")
             .select("ai_tokens_total")
-            .eq("ip_address", userId)
+            .eq("ip_address", ipHash)
             .maybeSingle();
           return data?.ai_tokens_total || 0;
         } else {
@@ -593,98 +663,93 @@ export async function checkTokenLimit(userId: string): Promise<{ allowed: boolea
 }
 
 /**
- * Increment user's token usage in database (updating lifetime/monthly counters and logging to token_usage_logs)
+ * Increment user's token usage in database.
+ * Usa RPC atómicas (M-11): INSERT ... ON CONFLICT DO UPDATE SET ai_tokens = ai_tokens + p_tokens.
+ * Fallback legacy si las RPC no están desplegadas todavía.
  */
 export async function incrementTokenUsage(userId: string, tokens: number): Promise<void> {
   const currentMonth = new Date().toISOString().slice(0, 7) + "-01";
   const isGuest = userId.startsWith("guest-");
+  const safeTokens = Math.max(0, Math.floor(tokens));
 
-  // 1. Log event in token_usage_logs for time window checks
+  // 1. Log event en token_usage_logs (RPC atómica, hace también purge inline)
   try {
-    await supabase
-      .from("token_usage_logs")
-      .insert({ user_id: userId, tokens });
-
-    // Clean up older records asynchronously to keep the table size small
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    supabase
-      .from("token_usage_logs")
-      .delete()
-      .lt("created_at", sevenDaysAgo)
-      .then(({ error }) => {
-        if (error) console.warn("[incrementTokenUsage] Failed to purge old logs:", error);
-      });
+    const { error: logErr } = await supabase.rpc("log_token_usage", { p_tokens: safeTokens });
+    if (logErr) {
+      if (!isPostgresFunctionMissingError(logErr)) throw logErr;
+      // Fallback: insert directo
+      await supabase.from("token_usage_logs").insert({ user_id: userId, tokens: safeTokens });
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      supabase
+        .from("token_usage_logs")
+        .delete()
+        .lt("created_at", sevenDaysAgo)
+        .then(({ error }) => {
+          if (error) console.warn("[incrementTokenUsage] Failed to purge old logs:", error);
+        });
+    }
   } catch (dbErr) {
     console.warn("[incrementTokenUsage] Failed to write token_usage_logs:", dbErr);
   }
 
+  // 2. Guest path: service_role RPC atómica con IP hasheada
   if (isGuest) {
+    const ipHash = resolveGuestIpHash(userId);
     try {
-      const { data: existingGuest } = await supabase
-        .from("guest_usage")
-        .select("ai_tokens_total")
-        .eq("ip_address", userId)
-        .maybeSingle();
-
-      if (existingGuest) {
-        await supabase
-          .from("guest_usage")
-          .update({ ai_tokens_total: (existingGuest.ai_tokens_total || 0) + tokens, updated_at: new Date().toISOString() })
-          .eq("ip_address", userId);
-      } else {
-        await supabase
-          .from("guest_usage")
-          .insert({ ip_address: userId, ai_tokens_total: tokens, updated_at: new Date().toISOString() });
+      const { error: gErr } = await supabase.rpc("increment_guest_tokens", {
+        p_ip_hash: ipHash,
+        p_tokens: safeTokens,
+      });
+      if (gErr && !isPostgresFunctionMissingError(gErr)) throw gErr;
+      if (gErr) {
+        console.warn("[incrementTokenUsage] RPC increment_guest_tokens no disponible, usando fallback");
+        await legacyGuestTokenIncrement(ipHash, safeTokens);
       }
     } catch (dbErr) {
-      console.warn("[incrementTokenUsage] Failed to update guest_usage ai_tokens_total:", dbErr);
+      console.warn("[incrementTokenUsage] Failed guest token increment:", dbErr);
     }
     return;
   }
 
-  // 2. Increment monthly usage tokens
+  // 3. Authenticated path: RPC mensual + lifetime atómicas
   try {
-    const { data: existingMonthly } = await supabase
-      .from("monthly_usage")
-      .select("ai_tokens")
-      .eq("user_id", userId)
-      .eq("month", currentMonth)
-      .maybeSingle();
+    const { error: mErr } = await supabase.rpc("increment_monthly_tokens", {
+      p_month: currentMonth,
+      p_tokens: safeTokens,
+    });
+    if (mErr && !isPostgresFunctionMissingError(mErr)) throw mErr;
+    if (mErr) {
+      console.warn("[incrementTokenUsage] RPC increment_monthly_tokens no disponible, usando fallback");
+      await legacyMonthlyIncrement(userId, currentMonth, "ai_tokens", safeTokens);
+    }
 
-    if (existingMonthly) {
-      await supabase
-        .from("monthly_usage")
-        .update({ ai_tokens: (existingMonthly.ai_tokens || 0) + tokens })
-        .eq("user_id", userId)
-        .eq("month", currentMonth);
-    } else {
-      await supabase
-        .from("monthly_usage")
-        .insert({ user_id: userId, month: currentMonth, ai_tokens: tokens });
+    const { error: lErr } = await supabase.rpc("increment_lifetime_tokens", { p_tokens: safeTokens });
+    if (lErr && !isPostgresFunctionMissingError(lErr)) throw lErr;
+    if (lErr) {
+      console.warn("[incrementTokenUsage] RPC increment_lifetime_tokens no disponible, usando fallback");
+      await legacyLifetimeIncrement(userId, "ai_tokens_total", safeTokens);
     }
   } catch (dbErr) {
-    console.warn("[incrementTokenUsage] Failed to update monthly ai_tokens:", dbErr);
+    console.warn("[incrementTokenUsage] Failed token increment (RPC path):", dbErr);
   }
+}
 
-  // 3. Increment lifetime usage tokens
-  try {
-    const { data: existingLifetime } = await supabase
-      .from("lifetime_usage")
-      .select("ai_tokens_total")
-      .eq("user_id", userId)
-      .maybeSingle();
+/** Fallback legacy para tokens de invitados. */
+async function legacyGuestTokenIncrement(ipHash: string, tokens: number): Promise<void> {
+  const { data: existingGuest } = await supabase
+    .from("guest_usage")
+    .select("ai_tokens_total")
+    .eq("ip_address", ipHash)
+    .maybeSingle();
 
-    if (existingLifetime) {
-      await supabase
-        .from("lifetime_usage")
-        .update({ ai_tokens_total: (existingLifetime.ai_tokens_total || 0) + tokens })
-        .eq("user_id", userId);
-    } else {
-      await supabase
-        .from("lifetime_usage")
-        .insert({ user_id: userId, ai_tokens_total: tokens });
-    }
-  } catch (dbErr) {
-    console.warn("[incrementTokenUsage] Failed to update lifetime ai_tokens_total:", dbErr);
+  if (existingGuest) {
+    await supabase
+      .from("guest_usage")
+      .update({ ai_tokens_total: (existingGuest.ai_tokens_total || 0) + tokens, updated_at: new Date().toISOString() })
+      .eq("ip_address", ipHash);
+  } else {
+    await supabase
+      .from("guest_usage")
+      .insert({ ip_address: ipHash, ai_tokens_total: tokens, updated_at: new Date().toISOString() });
   }
 }

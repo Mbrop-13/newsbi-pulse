@@ -12,14 +12,21 @@ interface PageProps {
 async function getSharedChat(id: string) {
   const supabase = createServiceClient();
 
+  // Validar formato mínimo del ID para evitar lookups innecesarios y logs ruidosos.
+  // shared_chat_links.id es UUID v4.
+  if (!id || !/^[0-9a-fA-F-]{8,64}$/.test(id)) {
+    return null;
+  }
+
   // Prefer full columns; fall back if migration not applied
   let { data, error } = await supabase
     .from("shared_chat_links")
-    .select("question, answer, created_at, user_id, title, share_type, messages")
+    .select("question, answer, created_at, user_id, title, share_type, messages, is_active, expires_at")
     .eq("id", id)
     .single();
 
-  if (error && /column|messages|share_type|title/i.test(error.message || "")) {
+  if (error && /column|messages|share_type|title|is_active|expires_at/i.test(error.message || "")) {
+    // Migración de revocación no aplicada: retry sin las columnas nuevas
     const retry = await supabase
       .from("shared_chat_links")
       .select("question, answer, created_at, user_id")
@@ -31,6 +38,8 @@ async function getSharedChat(id: string) {
           title: null,
           share_type: "qa",
           messages: null,
+          is_active: true,
+          expires_at: null,
         }
       : null;
     error = retry.error;
@@ -39,6 +48,16 @@ async function getSharedChat(id: string) {
   if (error || !data) {
     return null;
   }
+
+  // ── Control de acceso (A-2): revocación + expiración ──
+  // Si el dueño revocó el enlace o expiró, devolver null (404).
+  if (data.is_active === false) {
+    return null;
+  }
+  if (data.expires_at && new Date(data.expires_at).getTime() < Date.now()) {
+    return null;
+  }
+
   return data;
 }
 

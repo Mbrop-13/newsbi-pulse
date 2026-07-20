@@ -738,8 +738,11 @@ function MessageBubble({
   const [isEditing, setIsEditing] = useState(false)
   const [editText, setEditText] = useState(message.content)
   const [showMobileActions, setShowMobileActions] = useState(false)
+  /** Mobile: tap assistant message to reveal like/share/retry bar */
+  const [showAssistantMobileActions, setShowAssistantMobileActions] = useState(false)
   const [copied, setCopied] = useState(false)
   const userMsgRef = useRef<HTMLDivElement>(null)
+  const assistantMsgRef = useRef<HTMLDivElement>(null)
   const editTextareaRef = useRef<HTMLTextAreaElement>(null)
   const [isCitationsOpen, setIsCitationsOpen] = useState(false)
   const [activePreviewUrl, setActivePreviewUrl] = useState<string | null>(null)
@@ -793,17 +796,21 @@ function MessageBubble({
     }
   }, [isEditing])
 
-  // Mobile: dismiss action bar when tapping outside the message
+  // Mobile: dismiss action bars when tapping outside the message
   useEffect(() => {
-    if (!showMobileActions || !isMobile) return
+    if ((!showMobileActions && !showAssistantMobileActions) || !isMobile) return
     const onPointerDown = (e: PointerEvent) => {
-      if (userMsgRef.current && !userMsgRef.current.contains(e.target as Node)) {
+      const t = e.target as Node
+      if (userMsgRef.current && !userMsgRef.current.contains(t)) {
         setShowMobileActions(false)
+      }
+      if (assistantMsgRef.current && !assistantMsgRef.current.contains(t)) {
+        setShowAssistantMobileActions(false)
       }
     }
     document.addEventListener("pointerdown", onPointerDown)
     return () => document.removeEventListener("pointerdown", onPointerDown)
-  }, [showMobileActions, isMobile])
+  }, [showMobileActions, showAssistantMobileActions, isMobile])
 
   // Check citations
   let citationsList: string[] = message.citations || []
@@ -1178,7 +1185,7 @@ function MessageBubble({
         className={cn(
           "mb-2 transition-opacity duration-200",
           // Finished: only show on hover (desktop). Mobile keeps the compact label.
-          !isResponding && !isMobile && "opacity-0 group-hover:opacity-100",
+          !isResponding && !isMobile && "opacity-0 group-hover/assistant:opacity-100",
           !isResponding && isMobile && "opacity-100"
         )}
       >
@@ -1690,7 +1697,13 @@ function MessageBubble({
   }
   // ─── Unified Assistant message return ───
   return (
-    <div className={cn("flex group", isBubbleSplitMode ? "gap-2 pl-1.5" : "gap-3")}>
+    <div
+      ref={assistantMsgRef}
+      className={cn("flex group/assistant", isBubbleSplitMode ? "gap-2 pl-1.5" : "gap-3")}
+      onClick={() => {
+        if (isMobile && !isResponding) setShowAssistantMobileActions((v) => !v)
+      }}
+    >
       {!isBubbleSplitMode && !isMobile && <AssistantAvatar isResponding={isResponding} isWebBuilderMode={isWebBuilderMode} />}
       <div className="flex-1 min-w-0">
         {/* 1. Unified Thinking & Search Phase */}
@@ -1845,15 +1858,19 @@ function MessageBubble({
         {/* 4. Tool results & charts (AFTER text) */}
         {!isWebBuilderMode && renderToolResults()}
 
-        {/* Actions bar — always visible on mobile for last message, hover on desktop */}
+        {/* Actions bar: hover on AI response (desktop), tap to reveal (mobile) */}
         {!isResponding && (
-        <div className={cn(
-          "flex items-center gap-1 mt-2 transition-opacity",
-          isLast
-            ? "opacity-100"
-            : "opacity-0 group-hover:opacity-100"
-        )}>
-
+        <div
+          className={cn(
+            "flex items-center gap-1 mt-2 transition-opacity duration-200",
+            isMobile
+              ? showAssistantMobileActions
+                ? "opacity-100"
+                : "opacity-0 pointer-events-none h-0 mt-0 overflow-hidden"
+              : "opacity-0 group-hover/assistant:opacity-100"
+          )}
+          onClick={(e) => e.stopPropagation()}
+        >
           <Button
             variant="ghost"
             size="icon"

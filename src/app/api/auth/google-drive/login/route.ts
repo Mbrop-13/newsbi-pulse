@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { google } from "googleapis";
+import { issueOAuthState, issuePkce } from "@/lib/oauth-state";
 
 export async function GET(req: NextRequest) {
   try {
@@ -21,21 +22,34 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // ── NEW-3: CSRF protection (state) + PKCE (code interception protection) ──
+    const { state, cookieHeader: stateCookie } = issueOAuthState();
+    const { codeChallenge, codeChallengeMethod, cookieHeader: pkceCookie } = issuePkce();
+
     const oauth2 = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
 
-    // Generate authentication URL requesting read-only access to Drive files and user email
+    // Generate authentication URL requesting read-only access to Drive files and user email.
+    // state + code_challenge protegen el round-trip OAuth contra CSRF y code interception.
     const authUrl = oauth2.generateAuthUrl({
       access_type: "offline",
       prompt: "consent", // Force consent screen to guarantee refresh token is returned
+      state,
+      code_challenge: codeChallenge,
+      code_challenge_method: codeChallengeMethod,
       scope: [
         "https://www.googleapis.com/auth/drive.readonly",
         "https://www.googleapis.com/auth/userinfo.email",
       ],
     });
 
-    return NextResponse.redirect(authUrl);
+    const res = NextResponse.redirect(authUrl);
+    // Ambas cookies: HttpOnly + Secure + SameSite=Lax. Max-Age 10 min cubre el flujo OAuth.
+    res.headers.set("Set-Cookie", stateCookie);
+    res.headers.append("Set-Cookie", pkceCookie);
+    return res;
   } catch (err: any) {
     console.error("[Drive Auth Login] Error:", err);
-    return new Response(`Error al iniciar autenticación con Google: ${err.message || String(err)}`, { status: 500 });
+    // M-9: no reflejar err.message en el body.
+    return new Response("Error al iniciar autenticación con Google Drive.", { status: 500 });
   }
 }

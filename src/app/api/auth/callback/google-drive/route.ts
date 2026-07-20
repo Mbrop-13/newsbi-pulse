@@ -1,9 +1,10 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { google } from "googleapis";
 import { rateLimit, rateLimitResponse, AUTH_LIMIT } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/auth-helpers";
+import { verifyOAuthState, readPkceVerifier, clearOAuthCookies } from "@/lib/oauth-state";
 
 export async function GET(req: NextRequest) {
   // ── Rate-limit OAuth callback (A-14: AUTH_LIMIT, ASVS 11.3.1) ──
@@ -12,9 +13,25 @@ export async function GET(req: NextRequest) {
   if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
 
   const code = req.nextUrl.searchParams.get("code");
+  const stateFromQuery = req.nextUrl.searchParams.get("state");
+  const cookieHeader = req.headers.get("cookie");
 
   if (!code) {
     return new Response("No authorization code provided", { status: 400 });
+  }
+
+  // ── NEW-3: verificar state (CSRF) ──
+  // Si no hay cookie o no coincide, es login-CSRF o replay — rechazar.
+  if (!verifyOAuthState(stateFromQuery, cookieHeader)) {
+    console.warn("[Drive OAuth Callback] Invalid or missing state — possible CSRF");
+    return new Response("Sesión OAuth inválida (state mismatch). Reinicia el flujo.", { status: 400 });
+  }
+
+  // ── NEW-3: recuperar PKCE verifier de la cookie ──
+  const codeVerifier = readPkceVerifier(cookieHeader);
+  if (!codeVerifier) {
+    console.warn("[Drive OAuth Callback] Missing PKCE verifier cookie");
+    return new Response("Sesión OAuth inválida (PKCE). Reinicia el flujo.", { status: 400 });
   }
 
   try {
@@ -29,7 +46,9 @@ export async function GET(req: NextRequest) {
     const redirectUri = `${req.nextUrl.origin}/api/auth/callback/google-drive`;
 
     const oauth2 = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
-    const { tokens } = await oauth2.getToken(code);
+    // PKCE: enviar code_verifier en el intercambio. Google valida que el challenge
+    // del login corresponda a este verifier.
+    const { tokens } = await oauth2.getToken({ code, code_verifier: codeVerifier });
     oauth2.setCredentials(tokens);
 
     // Fetch email of connected account
@@ -49,7 +68,7 @@ export async function GET(req: NextRequest) {
       {
         user_id: user.id,
         access_token: tokens.access_token!,
-        ...(tokens.refresh_token ? { refresh_token: tokens.refresh_token } : {}), // Keep existing refresh token if Google doesn't return a new one on re-auth
+        ...(tokens.refresh_token ? { refresh_token: tokens.refresh_token } : {}),
         expires_at: expiresAt,
         email,
       },
@@ -60,7 +79,9 @@ export async function GET(req: NextRequest) {
       throw upsertError;
     }
 
-    // Return HTML to notify parent window and close popup
+    // Return HTML to notify parent window and close popup.
+    // NEW-3: postMessage con origin FIJO (no "*") — evita que otros sitios reciban el evento.
+    const appOrigin = req.nextUrl.origin;
     const html = `
       <!DOCTYPE html>
       <html>
@@ -73,22 +94,21 @@ export async function GET(req: NextRequest) {
           <script>
             try {
               if (window.opener) {
-                window.opener.postMessage("google-drive-connected", "*");
+                window.opener.postMessage("google-drive-connected", ${JSON.stringify(appOrigin)});
               }
-              setTimeout(function() {
-                window.close();
-              }, 1500);
-            } catch (e) {
-              console.error(e);
-            }
+              setTimeout(function() { window.close(); }, 1500);
+            } catch (e) { console.error(e); }
           </script>
         </body>
       </html>
     `;
 
-    return new Response(html, {
+    const res = new NextResponse(html, {
       headers: { "Content-Type": "text/html; charset=utf-8" },
     });
+    // Limpiar cookies OAuth de un solo uso
+    res.headers.set("Set-Cookie", clearOAuthCookies());
+    return res;
   } catch (err: any) {
     // M-9: do NOT reflect err.message into the HTML body (reflected XSS)
     console.error("[Drive OAuth Callback] Error:", err);

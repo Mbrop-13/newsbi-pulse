@@ -395,7 +395,12 @@ export default function PortfolioClient() {
                                       onBlur={async (e) => {
                                         const val = parseFloat(e.target.value) || 0;
                                         setAssets(prev => prev.map(a => a.id === asset.id ? { ...a, shares: val } : a));
-                                        await supabase.from("portfolios").update({ shares: val }).eq("id", asset.id);
+                                        // A-6: mutación validada server-side (rango + ownership).
+                                        await fetch("/api/portfolio/update", {
+                                          method: "POST",
+                                          headers: { "Content-Type": "application/json" },
+                                          body: JSON.stringify({ assetId: asset.id, field: "shares", value: val }),
+                                        });
                                       }}
                                       className={`w-full px-3 py-2 rounded-lg border text-sm font-bold outline-none transition-all ${
                                         (asset.shares || 0) > 0 
@@ -414,7 +419,12 @@ export default function PortfolioClient() {
                                       onBlur={async (e) => {
                                         const val = parseFloat(e.target.value) || 0;
                                         setAssets(prev => prev.map(a => a.id === asset.id ? { ...a, average_price: val } : a));
-                                        await supabase.from("portfolios").update({ average_price: val }).eq("id", asset.id);
+                                        // A-6: mutación validada server-side (rango + ownership).
+                                        await fetch("/api/portfolio/update", {
+                                          method: "POST",
+                                          headers: { "Content-Type": "application/json" },
+                                          body: JSON.stringify({ assetId: asset.id, field: "average_price", value: val }),
+                                        });
                                       }}
                                       className={`w-full px-3 py-2 rounded-lg border text-sm font-bold outline-none transition-all ${
                                         (asset.average_price || 0) > 0 

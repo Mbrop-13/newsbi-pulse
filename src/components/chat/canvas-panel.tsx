@@ -667,7 +667,7 @@ export function CanvasPanel() {
                     ref={htmlIframeRef}
                     srcDoc={activeFile.code}
                     title="HTML Preview"
-                    sandbox="allow-scripts allow-same-origin"
+                    sandbox="allow-scripts"
                     className="w-full h-full border-0 bg-white"
                   />
                 )}

@@ -12,7 +12,16 @@ const supabase = createClient(
 );
 
 const ACCESS_TOKEN = process.env.MERCADOPAGO_ACCESS_TOKEN!;
-const WEBHOOK_SECRET = process.env.MERCADOPAGO_WEBHOOK_SECRET!;
+// WEBHOOK_SECRET es la "Clave secreta" configurada en el panel de MercadoPago
+// (Tu aplicación → Notificaciones → Webhooks). Sin ella, todos los eventos
+// legítimos se rechazan y los upgrades de tier no se aplican. Validamos al boot.
+const WEBHOOK_SECRET = process.env.MERCADOPAGO_WEBHOOK_SECRET;
+if (process.env.NODE_ENV === "production" && !WEBHOOK_SECRET) {
+  throw new Error(
+    "[Webhook MP] Falta MERCADOPAGO_WEBHOOK_SECRET en el entorno. " +
+    "Obtenlo en el panel de MercadoPago → Tu aplicación → Notificaciones → Webhooks."
+  );
+}
 
 // Reverse lookup: plan ID → tier
 const PLAN_ID_TO_TIER: Record<string, PlanTier> = {

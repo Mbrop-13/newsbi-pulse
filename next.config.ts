@@ -8,44 +8,44 @@ const nextConfig = {
   },
   async headers() {
     // ── Content-Security-Policy (ASVS 7.2.1) ──
-    // Mitigates XSS (incl. the WebBuilder iframe previews) and injection.
-    // 'unsafe-inline' for styles is required by Tailwind/inline styles; scripts are locked down.
-    // 'unsafe-eval' kept for dev tooling; remove for prod if no eval-based lib is used.
+    // Mitiga XSS (incl. el WebBuilder) e inyección.
+    //
+    // NOTA de seguridad (deuda técnica M-1):
+    //  - 'unsafe-inline' en script-src es necesario por Next.js (estilos inline
+    //    y, en algunos modos, hoisting de scripts). La migración a nonces por-
+    //    request ('nonce-<random>') lo eliminaría a costa de middleware custom.
+    //  - 'unsafe-eval' se mantiene sólo porque Tailwind Play CDN y Babel
+    //    standalone lo requieren en el iframe de preview del canvas. Si se
+    //    sirve el preview desde un subdominio sandbox aislado, se puede quitar
+    //    del CSP principal.
+    //  - report-to dirige las violaciones a un endpoint configurable para
+    //    detectar intentos de XSS / CSP bypass en producción.
+    const cspReportUri = process.env.CSP_REPORT_URI || "/api/csp-report";
+    const isProd = process.env.NODE_ENV === "production";
+    // En dev mantenemos unsafe-eval para HMR; en prod lo dejamos activo sólo
+    // mientras la preview dependa de él (ver NOTA arriba).
+    const scriptSrc = isProd
+      ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com https://esm.sh https://*.esm.sh https://unpkg.com https://cdn.tailwindcss.com"
+      : "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com https://esm.sh https://*.esm.sh https://unpkg.com https://cdn.tailwindcss.com";
+
     const csp = [
       "default-src 'self'",
-      // script-src incluye los CDN que usa el iframe del preview canvas-style:
-      //  - https://esm.sh y https://*.esm.sh: React, framer-motion, lucide-react,
-      //    recharts, etc. cargados vía importmap del iframe.
-      //  - https://unpkg.com: Babel standalone (transpila el TSX del LLM en el navegador).
-      //  - https://cdn.tailwindcss.com: Tailwind Play CDN (procesa clases en runtime).
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com https://esm.sh https://*.esm.sh https://unpkg.com https://cdn.tailwindcss.com",
+      scriptSrc,
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob: https: http:",
       "font-src 'self' data: https://fonts.gstatic.com",
-      // connect-src incluye los dominios del bundler de Sandpack (webbuilder):
-      //  - https://*.codesandbox.io y https://codesandbox.io: el bundler
-      //    descarga su runtime y mantiene el canal con el worker desde ahí.
-      //  - https://col.csbops.io y https://*.csbops.io: endpoint de telemetría
-      //    de CodeSandbox. El bundler hace POSTs aquí; si la CSP lo bloquea, el
-      //    worker del iframe puede quedarse esperando y contribuir al
-      //    ERR_CONNECTION_TIMED_OUT / TIME_OUT de la preview.
-      // Sin estos, aunque el iframe esté permitido por frame-src, el runtime no
-      // conecta bien y la preview se queda cargando hasta TIME_OUT.
-      //  (Tras la migración a SelfHostedPreview el bundler de Sandpack casi no se
-      //   usa, pero el editor (CodeMirror) sigue cargándose desde ahí.)
       "connect-src 'self' https://*.supabase.co https://api.mercadopago.com https://api.openai.com https://openrouter.ai https://api.x.ai https://api.mapbox.com https://api.newsdata.io https://www.googleapis.com https://generativelanguage.googleapis.com https://*.upstash.io https://*.codesandbox.io https://codesandbox.io https://col.csbops.io https://*.csbops.io https://unpkg.com https://esm.sh https://*.esm.sh wss: ws:",
-      // frame-src incluye los dominios del bundler de Sandpack (webbuilder):
-      // - sandpack.codesandbox.io (worker/runtime por versión, ej. 2-19-8-sandpack.codesandbox.io)
-      // - *.codesandbox.io  (cubre versiones nuevas y subdominios del bundler)
-      // Sin esto el navegador bloquea el iframe del preview con:
-      //   "Framing 'https://X-sandpack.codesandbox.io/' violates CSP frame-src"
-      // lo que produce el TIME_OUT del bundler de Sandpack.
       "frame-src 'self' https://www.youtube.com https://*.mercadopago.cl https://*.mercadopago.com https://hcaptcha.com https://*.hcaptcha.com https://*.codesandbox.io https://codesandbox.io",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self' https://*.mercadopago.cl https://*.mercadopago.com",
       "frame-ancestors 'self'",
       "upgrade-insecure-requests",
+      // ── Reporting (ASVS 14.x) ──
+      // report-uri está deprecated pero algunos navegadores aún lo usan.
+      // report-to es el moderno; requiere definir el endpoint abajo.
+      `report-uri ${cspReportUri}`,
+      `report-to csp-endpoint`,
     ].join("; ");
 
     return [
@@ -79,6 +79,11 @@ const nextConfig = {
             // permiso. (self) lo permite en el propio origen únicamente.
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(self), geolocation=(), interest-cohort=()',
+          },
+          // Reporting API: agrupa violaciones y las POSTea al endpoint.
+          {
+            key: 'Reporting-Endpoints',
+            value: `csp-endpoint="${cspReportUri}"`,
           },
         ],
       },

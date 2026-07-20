@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
 
 /**
  * GET /api/empresas/invitations/[token]
  * Valida un token de invitación (pública). Devuelve info de previsualización.
+ *
+ * NEW-1: usa la RPC `lookup_invitation_by_token` (SECURITY DEFINER) en lugar
+ * de un SELECT directo a la tabla. Esto permite que la RLS de
+ * organization_invitations sea estricta (sólo admins de la org pueden SELECT
+ * directo) sin romper la previsualización pública por token.
  */
 export async function GET(
   _request: NextRequest,
@@ -12,32 +17,24 @@ export async function GET(
   const { token } = await params;
 
   try {
-    const service = createServiceClient();
-
-    const { data: invitation, error } = await service
-      .from("organization_invitations")
-      .select("id, organization_id, email, role, expires_at, accepted_at")
-      .eq("token", token)
-      .maybeSingle();
-
-    if (error || !invitation) {
+    // Validación básica del formato del token antes de ir a BD
+    if (!token || token.length < 32 || token.length > 128) {
       return NextResponse.json({ valid: false, error: "Invitación no encontrada" }, { status: 404 });
     }
 
-    if (invitation.accepted_at) {
-      return NextResponse.json({ valid: false, error: "Esta invitación ya fue utilizada" });
+    // Cliente anónimo es suficiente: la RPC está GRANTada a anon/authenticated
+    // y filtra por token + status=pending + no expirada internamente.
+    const supabase = createClient();
+
+    const { data, error } = await supabase.rpc("lookup_invitation_by_token", {
+      p_token: token,
+    });
+
+    if (error || !data || data.length === 0) {
+      return NextResponse.json({ valid: false, error: "Invitación no encontrada o expirada" }, { status: 404 });
     }
 
-    if (new Date(invitation.expires_at) < new Date()) {
-      return NextResponse.json({ valid: false, error: "Esta invitación ha expirado" });
-    }
-
-    // Nombre de la org para previsualización
-    const { data: org } = await service
-      .from("organizations")
-      .select("name, logo_url")
-      .eq("id", invitation.organization_id)
-      .maybeSingle();
+    const invitation = Array.isArray(data) ? data[0] : data;
 
     return NextResponse.json({
       valid: true,
@@ -46,7 +43,10 @@ export async function GET(
         role: invitation.role,
         expires_at: invitation.expires_at,
       },
-      organization: org ?? null,
+      organization: {
+        name: invitation.organization_name,
+        logo_url: null,
+      },
     });
   } catch (error: any) {
     console.error("[invitations GET] Error:", error);

@@ -39,10 +39,57 @@ async function runWithMutex<T>(fn: () => Promise<T>): Promise<T> {
 
 async function getPyodideInstance() {
   if (!cachedPyodide) {
-    // Load pyodide with the jsDelivr CDN fallback to avoid local WebAssembly file requirements
+    // Load pyodide with the jsDelivr CDN fallback to avoid local WebAssembly file requirements.
+    // fullStdLib: false  → no stdlib pre-cargado; sólo lo que la allowlist instale.
     cachedPyodide = await loadPyodide({
-      indexURL: "https://cdn.jsdelivr.net/pyodide/v314.0.0/full/"
+      indexURL: "https://cdn.jsdelivr.net/pyodide/v314.0.0/full/",
+      fullStdLib: false,
     });
+    // ── Hardening de red (ASVS 12.3.1) ──
+    // Pyodide expone `pyodide.http.pyfetch` que permite al código del usuario
+    // hacer peticiones HTTP a cualquier URL (exfiltración, C2, descarga de payloads).
+    // Lo eliminamos completamente para que el sandbox no tenga salida de red.
+    try {
+      const py = cachedPyodide;
+      // Borrar el módulo http para impedir pyodide.http.pyfetch / open_url
+      py.registerJsModule = py.registerJsModule; // no-op, evita tree-shake
+      py.runPythonAsync(`
+import sys
+# Eliminar módulos de red del sandbox
+for _m in ["pyodide.http", "pyodide.http"]:
+    try:
+        del sys.modules[_m]
+    except KeyError:
+        pass
+try:
+    import pyodide
+    class _Disabled:
+        def __getattr__(self, _): raise RuntimeError("Red deshabilitada en el sandbox")
+        def __setattr__(self, *_): raise RuntimeError("Red deshabilitada en el sandbox")
+    pyodide.http = _Disabled()
+except Exception:
+    pass
+# Bloquear urllib del stdlib por si un paquete lo importa
+try:
+    import sys as _sys
+    _sys.modules["urllib.request"] = None
+    _sys.modules["urllib3"] = None
+    _sys.modules["ssl"] = None
+except Exception:
+    pass
+# Eliminar __builtins__ peligrosos que permiten evadir el regex denylist del route handler
+import builtins as _b
+for _name in ["__import__", "eval", "exec", "compile", "globals", "vars"]:
+    if hasattr(_b, _name):
+        setattr(_b, _name, lambda *a, **k: (_ for _ in ()).throw(
+            RuntimeError(f"Función '{_name}' deshabilitada en el sandbox")))
+`);
+    } catch (err) {
+      console.error("[Pyodide Sandbox] Fallo al aplicar hardening de red/builtins:", err);
+      // Invalidar la caché para no dejar una instancia sin endurecer
+      cachedPyodide = null;
+      throw err;
+    }
   }
   return cachedPyodide;
 }
@@ -61,17 +108,31 @@ async function runPythonInMainThread(
   return runWithMutex(async () => {
     try {
       const py = await getPyodideInstance();
-      
+
       let stdoutBuffer = "";
       let stderrBuffer = "";
-      
-      // Install required packages on-demand via micropip
+
+      // ── Carga de paquetes sin descargas arbitrarias ──
+      // ANTES: micropip.install(packages) descargaba wheels de PyPI/internet,
+      // permitiendo exfiltración y bypass de la allowlist. AHORA: py.loadPackage
+      // sólo resuelve paquetes del catálogo oficial de Pyodide (que viene del
+      // indexURL) y los carga desde ahí. Los paquetes ya están filtrados por
+      // la PACKAGE_ALLOWLIST del route handler, así que no puede llegar nada
+      // fuera de la lista blanca.
       if (packages && packages.length > 0) {
-        await py.loadPackage("micropip");
-        const micropip = await py.pyimport("micropip");
-        const cleanPackages = packages.filter((p: any) => typeof p === 'string' && p.trim().length > 0);
+        const cleanPackages = packages.filter((p: any) => typeof p === "string" && p.trim().length > 0);
         if (cleanPackages.length > 0) {
-          await micropip.install(cleanPackages);
+          try {
+            await py.loadPackage(cleanPackages, { messageCallback: () => {} });
+          } catch (loadErr: any) {
+            return {
+              success: false,
+              output: null,
+              stdout: "",
+              stderr: `Paquete no disponible en el catálogo del sandbox. Sólo se permiten paquetes de la lista blanca.`,
+              durationMs: Date.now() - t0,
+            };
+          }
         }
       }
       
@@ -168,20 +229,43 @@ export async function runPythonCode(
         try {
           const { script, context, packages, pyodidePath } = workerData;
           const { loadPyodide } = require(pyodidePath);
-          
+
           let stdoutBuffer = "";
           let stderrBuffer = "";
-          
-          // Loads local Pyodide WebAssembly binaries
-          const py = await loadPyodide();
-          
-          // Install required packages on-demand via micropip
+
+          // Loads local Pyodide WebAssembly binaries (sin stdlib completo)
+          const py = await loadPyodide({ fullStdLib: false });
+
+          // ── Hardening de red + builtins (igual que en main-thread) ──
+          try {
+            py.runPythonAsync(\`
+import sys
+try:
+    import pyodide
+    class _Disabled:
+        def __getattr__(self, _): raise RuntimeError("Red deshabilitada en el sandbox")
+        def __setattr__(self, *_): raise RuntimeError("Red deshabilitada en el sandbox")
+    pyodide.http = _Disabled()
+except Exception:
+    pass
+for _m in ["urllib.request", "urllib3", "ssl"]:
+    try: sys.modules[_m] = None
+    except Exception: pass
+import builtins as _b
+for _n in ["__import__", "eval", "exec", "compile", "globals", "vars"]:
+    if hasattr(_b, _n):
+        setattr(_b, _n, lambda *a, **k: (_ for _ in ()).throw(RuntimeError("Función '" + _n + "' deshabilitada en el sandbox")))
+\`);
+          } catch (hErr) {
+            parentPort.postMessage({ success: false, error: "No se pudo inicializar el sandbox seguro: " + (hErr.message || hErr) });
+            return;
+          }
+
+          // Cargar paquetes sólo desde catálogo oficial (no descargas arbitrarias)
           if (packages && packages.length > 0) {
-            await py.loadPackage("micropip");
-            const micropip = await py.pyimport("micropip");
             const cleanPackages = packages.filter(p => typeof p === 'string' && p.trim().length > 0);
             if (cleanPackages.length > 0) {
-              await micropip.install(cleanPackages);
+              await py.loadPackage(cleanPackages, { messageCallback: () => {} });
             }
           }
           

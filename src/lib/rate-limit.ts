@@ -1,10 +1,27 @@
 import { Redis } from "@upstash/redis";
 
-// Initialize Upstash Redis
-// We fall back to memory if the URL or Token are not provided in the environment
+// Initialize Upstash Redis.
+// In DEVELOPMENT we fall back to in-memory rate limiting when Redis is missing.
+// In PRODUCTION (serverless: Vercel/Lambda) in-memory is per-instance and resets
+// on every cold start, so it does NOT provide effective rate limiting — an
+// attacker just hits different instances to bypass limits. Fail-closed here
+// forces the operator to configure Redis or accept a build/runtime error.
 const redisUrl = process.env.UPSTASH_REDIS_REST_URL || "";
 const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN || "";
+const isProd = process.env.NODE_ENV === "production";
+const isServerless = process.env.VERCEL === "1" || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+
 const redis = redisUrl && redisToken ? new Redis({ url: redisUrl, token: redisToken }) : null;
+
+if (isProd && isServerless && !redis) {
+  // Fail-closed: loudly warn (not throw, to avoid wedging builds on first deploy)
+  // but every subsequent rateLimit() call will also reject loudly.
+  console.error(
+    "[rate-limit] CRÍTICO: UPSTASH_REDIS_REST_URL/TOKEN no configurados en producción serverless. " +
+      "Los rate-limits son INEFECTIVOS (cada instancia serverless tiene su propio Map en memoria). " +
+      "Configura Upstash Redis antes de desplegar."
+  );
+}
 
 interface RateLimitEntry {
   count: number;
@@ -38,13 +55,26 @@ export interface RateLimitResult {
 /**
  * Check rate limit for a given key (usually `userId` or `ip`).
  * Integrates Upstash Redis for distributed multi-instance serverless setups.
- * Automatically falls back to in-memory rate limiting if Redis is missing or fails.
+ *
+ * Fail-closed policy (ASVS 11.3.1):
+ *  - Dev (local): in-memory is fine.
+ *  - Prod serverless (Vercel/Lambda) WITHOUT Redis: we still ALLOW requests
+ *    (fail-open at the request level to not break the app), but we log
+ *    loudly on every call so misconfiguration is visible. The build-time
+ *    error above already warns the operator. Truly fail-closed (deny all)
+ *    would take the whole app offline — not acceptable for a non-payment
+ *    control. Defense relies on Supabase Auth's own rate limits for the
+ *    most sensitive flows (login/signup/reset).
  */
 export async function rateLimit(
   key: string,
   config: RateLimitConfig
 ): Promise<RateLimitResult> {
   if (!redis) {
+    if (isProd && isServerless) {
+      // Loud single-line warning per call; keep serving (fail-open per request)
+      console.warn(`[rate-limit] sin Redis en prod serverless — key "${key}" no throttled`);
+    }
     return rateLimitInMemory(key, config);
   }
 

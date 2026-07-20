@@ -63,19 +63,22 @@ export async function updateSession(request: NextRequest) {
   // Any route relying on an anonymous caller must be added here on purpose.
   if (request.nextUrl.pathname.startsWith('/api/')) {
     const PUBLIC_API_ALLOWLIST = [
-      '/api/auth/',            // supabase auth callback / oauth
-      '/api/webhooks/',        // 3rd-party webhooks (verify signature in-route)
-      '/api/cron/',            // scheduled jobs (verify CRON_SECRET in-route)
-      '/api/news/fetch',       // public news feed (read-only)
-      '/api/news/live',        // public live ticker (read-only)
-      '/api/news/enrich',      // public enrichment (no PII)
-      '/api/news/deduplicate', // dedup helper
-      '/api/og/',              // OpenGraph image generator (public)
-      '/api/tags',             // public tag list
-      '/api/newsletter',       // newsletter signup (has its own rate-limit)
-      '/api/market-overview',  // public market data
-      '/api/auth/google-drive',// OAuth login initiator
-      '/api/auth/callback',    // OAuth callback
+      '/api/auth/',                  // supabase auth callback / oauth
+      '/api/webhooks/',              // 3rd-party webhooks (verify signature in-route)
+      '/api/cron/',                  // scheduled jobs (verify CRON_SECRET in-route)
+      '/api/news/fetch',             // public news feed (read-only)
+      '/api/news/live',              // public live ticker (read-only)
+      '/api/news/enrich',            // public enrichment (no PII)
+      '/api/news/deduplicate',       // dedup helper
+      '/api/og/',                    // OpenGraph image generator (public)
+      '/api/tags',                   // public tag list
+      '/api/newsletter',             // newsletter signup (has its own rate-limit)
+      '/api/market-overview',        // public market data
+      '/api/auth/google-drive',      // OAuth login initiator
+      '/api/auth/callback',          // OAuth callback
+      '/api/csp-report',             // CSP violation reporting endpoint (public by spec)
+      '/api/empresas/invitations/',  // enterprise invitation preview (validates via RPC lookup_invitation_by_token)
+      '/api/empresas/lead',          // enterprise sales lead form (zod-validated, rate-limited in-route)
     ];
     const isPublic = PUBLIC_API_ALLOWLIST.some((p) =>
       request.nextUrl.pathname.startsWith(p)

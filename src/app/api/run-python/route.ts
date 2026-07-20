@@ -50,7 +50,16 @@ export async function POST(req: NextRequest) {
 
     // Validate packages: forbid network/shell-escape, allowlist-only
     for (const pkg of packages) {
-      const name = pkg.split(/[<>=!~]/)[0].trim().toLowerCase();
+      // Normalizar: minúsculas, sin extras [extra], sin versionado, sin espacios
+      const name = pkg
+        .replace(/\[.*\]/g, "")        // quitar extras: pkg[extra] → pkg
+        .split(/[<>=!~;, ]/)[0]         // quitar versión/especificadores
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9._-]/g, "");  // descartar cualquier otra cosa
+      if (!name) {
+        return NextResponse.json({ error: "Nombre de paquete inválido." }, { status: 400 });
+      }
       if (FORBIDDEN_PACKAGES.has(name)) {
         return NextResponse.json(
           { error: `Paquete no permitido: ${name}` },
@@ -65,8 +74,17 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Sanity: reject scripts containing obvious escape primitives
-    if (/\b(import\s+os|import\s+subprocess|__import__|eval\(|exec\(|os\.system|pty\.|ctypes\.|socket\.)\b/.test(script)) {
+    // Sanity: reject scripts containing obvious escape primitives.
+    // Defensa en profundidad — el hardening real está en el sandbox (builtins deshabilitados).
+    const ESCAPE_PATTERNS = [
+      /\bimport\s+os\b/, /\bimport\s+subprocess\b/, /\bimport\s+socket\b/,
+      /\bimport\s+ctypes\b/, /\bimport\s+pty\b/, /\bimport\s+shutil\b/,
+      /__import__/, /\beval\s*\(/, /\bexec\s*\(/,
+      /\bos\.system\b/, /\bpty\./, /\bctypes\./, /\bsocket\./,
+      /\b__builtins__\b/, /\bgetattr\s*\(\s*__builtins__/,
+      /\bglobals\s*\(\s*\)\s*\[/, /\bcompile\s*\(/, /\bopen\s*\(\s*['"][a-zA-Z]:/, // open(C:...) fs
+    ];
+    if (ESCAPE_PATTERNS.some((re) => re.test(script))) {
       return NextResponse.json(
         { error: "El script contiene operaciones no permitidas." },
         { status: 400 }

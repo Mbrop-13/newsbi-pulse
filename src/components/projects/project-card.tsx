@@ -293,7 +293,7 @@ function ProjectLivePreview({ project }: { project: Project }) {
             ref={iframeRef}
             title={`Preview ${project.name}`}
             srcDoc={html}
-            sandbox="allow-scripts allow-same-origin"
+            sandbox="allow-scripts"
             className="border-0 pointer-events-none absolute top-0 left-0"
             style={{
               width: PREVIEW_BASE_W,

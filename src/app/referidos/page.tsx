@@ -14,7 +14,7 @@ export default function ReferidosPage() {
   useEffect(() => {
     // Open the referrals popup dialog and redirect to main chat area
     setOpen(true);
-    router.replace(`/${language}/ai`);
+    router.replace(`/${language}`);
   }, [router, setOpen, language]);
 
   return (

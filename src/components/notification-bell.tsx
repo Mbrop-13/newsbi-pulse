@@ -471,7 +471,7 @@ export function NotificationBell({ asMenuItem }: { asMenuItem?: boolean }) {
                                 promptText = `Analiza el rally y la subida de precio de ${symbol || 'este activo'}. Busca noticias relevantes, catalizadores de crecimiento o anuncios corporativos recientes que expliquen esta alza y analiza si tiene potencial para continuar subiendo.`;
                               }
                             }
-                            router.push(`/ai?prompt=${encodeURIComponent(promptText)}`);
+                            router.push(`/?prompt=${encodeURIComponent(promptText)}`);
                           }
                         }}
                         className={cn(

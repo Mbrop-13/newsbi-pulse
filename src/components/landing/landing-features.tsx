@@ -10,7 +10,7 @@ const SECTIONS = [
     title: "Asistente Conversacional Maverlang AI",
     desc: "Pregúntale sobre cualquier evento económico, tendencia o noticia. Maverlang AI investiga fuentes en vivo, resume el contexto y responde de forma crítica y analítica. Ahora, analizar mercados es tan fácil como mantener una conversación.",
     cta: "Más sobre el Asistente",
-    link: "/ai",
+    link: "/",
     visual: (
       <div className="relative w-full h-full min-h-[300px] md:min-h-[380px] bg-gradient-to-br from-neutral-900 to-black flex items-center justify-center p-8 overflow-hidden">
         {/* Abstract network or glowing lines */}

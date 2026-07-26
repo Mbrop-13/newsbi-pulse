@@ -50,7 +50,7 @@ export function LandingNavbar() {
       >
         {/* Main Comenzar Button */}
         <button
-          onClick={() => isAuthenticated ? router.push("/ai") : openModal("login")}
+          onClick={() => isAuthenticated ? router.push("/") : openModal("login")}
           className="flex items-center gap-1 text-xs md:text-sm font-extrabold bg-black text-white hover:bg-black/90 px-5 rounded-l-xl border-r border-white/10 shadow-sm shadow-black/10 transition-all select-none cursor-pointer"
         >
           Comenzar
@@ -82,7 +82,7 @@ export function LandingNavbar() {
                 <ul className="space-y-2">
                   <li>
                     <Link 
-                      href="/ai" 
+                      href="/" 
                       className="flex items-center justify-between text-[13px] font-bold text-slate-800 hover:text-black transition-colors"
                     >
                       <span>Asistente de IA (Maverlang AI)</span>

@@ -121,7 +121,7 @@ export function LandingChatDemo() {
 
   const handleCTAClick = () => {
     if (isAuthenticated) {
-      router.push("/ai");
+      router.push("/");
     } else {
       openModal("register");
     }

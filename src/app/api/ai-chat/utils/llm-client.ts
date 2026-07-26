@@ -1,5 +1,6 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { StreamData } from 'ai';
+import { apiKeyRotator } from '@/lib/services/api-key-rotator';
 
 // Helper to safely decode escaped characters in JSON string slices
 export function decodeJsonString(escapedStr: string): string {
@@ -15,11 +16,15 @@ export function decodeJsonString(escapedStr: string): string {
   }
 }
 
-// ── LLM client factory with web_search injection ──
+// ── LLM client factory with web_search injection and Silent Multi-Account Key Failover ──
 export function createLlmWithWebSearch(userId: string, streamData?: StreamData, webSearchEnabled: boolean = true) {
+  // Obtain initial active key from the rotator pool
+  const initialKeyInfo = apiKeyRotator.getActiveKey();
+  const initialApiKey = initialKeyInfo.key || process.env.LLM_API_KEY || process.env.MIMO_API_KEY || '';
+
   return createOpenAI({
     baseURL: process.env.LLM_BASE_URL || 'https://api.xiaomimimo.com/v1',
-    apiKey: process.env.LLM_API_KEY || process.env.MIMO_API_KEY,
+    apiKey: initialApiKey,
     fetch: async (url, options) => {
       // Intercept the request to inject the native web_search tool and user context
       if (options?.body && typeof options.body === 'string') {
@@ -44,7 +49,7 @@ export function createLlmWithWebSearch(userId: string, streamData?: StreamData, 
               body.tools = body.tools.filter((t: any) => t.type !== 'web_search');
             }
           }
-          // Inject user identity for Xiaomi native edge rate-limiting and audit tracking
+          // Inject user identity for Xiaomi/OpenCode native edge rate-limiting and audit tracking
           body.user = userId;
           
           options.body = JSON.stringify(body);
@@ -52,9 +57,62 @@ export function createLlmWithWebSearch(userId: string, streamData?: StreamData, 
           // If parsing fails, proceed with original request
         }
       }
-      let res = await fetch(url, options);
 
-      // If MiMo fails with payment/balance/server error, fall back to OpenRouter!
+      // Ensure headers have active API Key dynamically from rotator
+      let currentKeyInfo = apiKeyRotator.getActiveKey();
+      let currentKey = currentKeyInfo.key || initialApiKey;
+      const headers = new Headers(options?.headers);
+      if (currentKey) {
+        headers.set('Authorization', `Bearer ${currentKey}`);
+      }
+
+      let res = await fetch(url, { ...options, headers });
+
+      // ── Key Pool Failover Loop: Retry transparently across available keys if rate-limited ──
+      const totalKeysInPool = apiKeyRotator.getKeyCount();
+      let attempt = 0;
+
+      while (!res.ok && attempt < totalKeysInPool) {
+        const clone = res.clone();
+        let errMsg = '';
+        try {
+          const errText = await clone.text();
+          try {
+            const errBody = JSON.parse(errText);
+            errMsg = errBody?.error?.message || errBody?.message || errText;
+          } catch {
+            errMsg = errText;
+          }
+        } catch {
+          errMsg = '';
+        }
+
+        // Check if error is rate limit, quota, balance or 429/402/403
+        if (apiKeyRotator.isRateLimitOrQuotaError(res.status, errMsg)) {
+          attempt++;
+          if (attempt < totalKeysInPool) {
+            console.warn(
+              `[LLM-CLIENT] Rate limit/quota error on key attempt #${attempt} (Status: ${res.status}). Performing silent failover to next key...`
+            );
+            // Mark key as exhausted and get next key
+            const nextKeyInfo = apiKeyRotator.markKeyExhausted(currentKey);
+            currentKey = nextKeyInfo.nextKey;
+
+            if (currentKey) {
+              const retryHeaders = new Headers(options?.headers);
+              retryHeaders.set('Authorization', `Bearer ${currentKey}`);
+              res = await fetch(url, { ...options, headers: retryHeaders });
+              continue;
+            }
+          }
+        }
+
+        // Break if error is not rate-limit related or no more keys in pool to retry
+        break;
+      }
+
+      // ── Secondary Fallback Provider: OpenRouter ──
+      // If all primary pool keys fail or respond with insufficient balance, fall back to OpenRouter
       if (!res.ok) {
         const clone = res.clone();
         try {
@@ -63,8 +121,8 @@ export function createLlmWithWebSearch(userId: string, streamData?: StreamData, 
           try { errBody = JSON.parse(errText); } catch {}
           const errMsg = errBody?.error?.message || errBody?.message || errText || "";
           
-          if (res.status === 402 || errMsg.toLowerCase().includes("balance") || errMsg.toLowerCase().includes("insufficient")) {
-            console.warn("[LLM-CLIENT] Insufficient balance or error from primary provider. Falling back to OpenRouter...");
+          if (res.status === 402 || res.status === 429 || apiKeyRotator.isRateLimitOrQuotaError(res.status, errMsg)) {
+            console.warn("[LLM-CLIENT] All primary OpenCode/LLM keys exhausted or rate-limited. Falling back silently to OpenRouter...");
             
             const urlString = typeof url === 'string' ? url : 'href' in url ? url.href : String(url);
             const currentBaseUrl = process.env.LLM_BASE_URL || 'https://api.xiaomimimo.com/v1';
@@ -99,7 +157,7 @@ export function createLlmWithWebSearch(userId: string, streamData?: StreamData, 
         }
       }
 
-      // If it's a stream, intercept chunks to extract MiMo's native web search annotations
+      // If it's a stream, intercept chunks to extract native web search annotations and reasoning
       if (res.body && streamData) {
         const collectedUrls = new Set<string>();
         let buffer = "";

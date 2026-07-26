@@ -45,7 +45,7 @@ export function LandingHero({ onScrollToFeatures }: LandingHeroProps) {
 
   const handleCTA = () => {
     if (isAuthenticated) {
-      router.push("/ai");
+      router.push("/");
     } else {
       openModal("register");
     }

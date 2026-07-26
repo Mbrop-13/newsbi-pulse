@@ -55,7 +55,7 @@ export default function AISetupPage() {
       setStep(s => s + 1);
     } else {
       completeSetup();
-      router.push("/ai");
+      router.push("/");
     }
   };
 

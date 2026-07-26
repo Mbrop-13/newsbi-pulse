@@ -22,7 +22,7 @@ import {
 const tabs = [
   { id: "home", href: "/noticias", icon: Home, label: "Inicio" },
   { id: "mercados", href: "/mercados", icon: TrendingUp, label: "Mercados" },
-  { id: "ai", href: "/ai", icon: Sparkles, label: "AI" },
+  { id: "ai", href: "/", icon: Sparkles, label: "AI" },
   { id: "proyectos", href: "/proyectos", icon: FolderKanban, label: "Proyectos" },
   { id: "portafolio", href: "/portafolio", icon: Briefcase, label: "Portafolio" },
 ];

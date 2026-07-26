@@ -120,7 +120,7 @@ export function NavChats() {
         if (targetChat?.isFlow) {
           router.push(`/${language}/flow`)
         } else {
-          router.push(`/${language}/ai`)
+          router.push(`/${language}`)
         }
       }
     },

@@ -698,7 +698,7 @@ function ChatLandingContent() {
       activeFilePath: "/App.tsx",
       pendingPlan: null
     })
-    router.push(`/${language}/ai`)
+    router.push(`/${language}`)
   }
 
   const handleDeleteCurrentChat = async () => {
@@ -716,7 +716,7 @@ function ChatLandingContent() {
           activeFilePath: "/App.tsx",
           pendingPlan: null
         })
-        router.push(`/${language}/ai`)
+        router.push(`/${language}`)
       }
     }
   }
@@ -1100,14 +1100,14 @@ function ChatLandingContent() {
     if (typeof window !== "undefined") {
       const currentPath = window.location.pathname;
       const cleanPath = getCleanPathname(currentPath);
-      let cleanTargetPath = '/ai';
+      let cleanTargetPath = '';
       if (currentChatId) {
         const firstUserMsg = storeMessages.find(m => m.role === 'user')?.content || '';
         const title = firstUserMsg.slice(0, 40) || 'Nuevo Chat';
         const slug = slugify(title);
         cleanTargetPath = `/ai/chat/${slug ? `${slug}-` : ''}${currentChatId}`;
       }
-      const targetPath = `/${language}${cleanTargetPath}`;
+      const targetPath = cleanTargetPath ? `/${language}${cleanTargetPath}` : `/${language}`;
       if ((cleanPath === '/ai' || cleanPath === '/' || cleanPath === '') && targetPath !== currentPath && !currentPath.startsWith('/share/')) {
         window.history.pushState(null, '', targetPath);
       }

@@ -217,7 +217,7 @@ export function Navbar() {
               {isAuthenticated ? (
                 <>
                   {renderNavLink("/noticias", "Noticias")}
-                  {renderNavLink("/ai", "Copiloto IA")}
+                  {renderNavLink("/", "Copiloto IA")}
                   {renderNavLink("/portafolio", "Portafolio")}
                   {renderNavLink("/mercados", "Mercados")}
                 </>
@@ -273,7 +273,7 @@ export function Navbar() {
               <Search className="w-4 h-4" />
             </button>
 
-            {pathname === '/ai' && (
+            {pathname === '/' && (
               <>
                 <div className="w-px h-5 bg-gray-200 dark:bg-gray-700" />
                 <button

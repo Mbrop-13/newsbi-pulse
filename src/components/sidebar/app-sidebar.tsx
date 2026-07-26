@@ -74,7 +74,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       }> = [
         {
           title: t("new_chat"),
-          url: `/${language}/ai`,
+          url: `/${language}`,
           icon: MessageSquarePlus,
           onClick: () => {
             clearMessages();
@@ -152,7 +152,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                   <>
                     <div className="flex-1 flex items-center gap-3 min-w-0">
                       <button 
-                        onClick={() => router.push(`/${language}/ai`)}
+                        onClick={() => router.push(`/${language}`)}
                         className="p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-850 hover:text-foreground transition-all duration-200 active:scale-95 cursor-pointer shrink-0 border border-zinc-200/50 dark:border-zinc-800/40 shadow-xs"
                         title="Volver"
                       >

@@ -88,7 +88,7 @@ export function SharedChatClient({
 
   const handleStartOwnConversation = () => {
     if (isLoggedIn) {
-      router.push("/ai");
+      router.push("/");
     } else {
       openModal("register");
     }

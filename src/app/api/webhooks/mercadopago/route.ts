@@ -11,17 +11,8 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const ACCESS_TOKEN = process.env.MERCADOPAGO_ACCESS_TOKEN!;
-// WEBHOOK_SECRET es la "Clave secreta" configurada en el panel de MercadoPago
-// (Tu aplicación → Notificaciones → Webhooks). Sin ella, todos los eventos
-// legítimos se rechazan y los upgrades de tier no se aplican. Validamos al boot.
-const WEBHOOK_SECRET = process.env.MERCADOPAGO_WEBHOOK_SECRET;
-if (process.env.NODE_ENV === "production" && !WEBHOOK_SECRET) {
-  throw new Error(
-    "[Webhook MP] Falta MERCADOPAGO_WEBHOOK_SECRET en el entorno. " +
-    "Obtenlo en el panel de MercadoPago → Tu aplicación → Notificaciones → Webhooks."
-  );
-}
+const ACCESS_TOKEN = process.env.MERCADOPAGO_ACCESS_TOKEN || "";
+const WEBHOOK_SECRET = process.env.MERCADOPAGO_WEBHOOK_SECRET || "";
 
 // Reverse lookup: plan ID → tier
 const PLAN_ID_TO_TIER: Record<string, PlanTier> = {
@@ -32,6 +23,14 @@ const PLAN_ID_TO_TIER: Record<string, PlanTier> = {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!WEBHOOK_SECRET) {
+      console.error(
+        "[Webhook MP] Falta MERCADOPAGO_WEBHOOK_SECRET en el entorno. " +
+        "Obtenlo en el panel de MercadoPago → Tu aplicación → Notificaciones → Webhooks."
+      );
+      return NextResponse.json({ error: "Webhook secret is not configured" }, { status: 500 });
+    }
+
     // ── Verify HMAC signature (ASVS 8.3.5 — event integrity) ──
     // MP signs with the application's webhook secret. Reject unsigned/forged events.
     const rawBody = await request.text();

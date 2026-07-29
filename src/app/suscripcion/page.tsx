@@ -816,7 +816,7 @@ function SubscriptionPageContent() {
                   <div className="flex justify-between text-sm font-black text-neutral-900 dark:text-white mt-3 pt-3 border-t border-neutral-200 dark:border-zinc-750">
                     <span>Total Mensual:</span>
                     <span>
-                      ${orgPlan ? (orgPlan === 'team' ? 14990 : 29990) * orgSeats : 0} CLP/mes
+                      ${orgPlan ? ENTERPRISE_PLANS[orgPlan].pricePerSeat * orgSeats : 0} CLP/mes
                     </span>
                   </div>
                   <div className="text-[10px] text-emerald-500 font-black mt-2 text-center">
@@ -866,8 +866,8 @@ function EnterprisePlansGrid({
           Precios por asiento, escala con tu equipo
         </h2>
         <p className="text-neutral-500 dark:text-neutral-400 text-xs md:text-sm mt-2 max-w-xl mx-auto">
-          Paga solo por los usuarios que activas. 14 días de prueba gratis, sin tarjeta.
-          Facturación centralizada, panel de administración y soporte dedicado.
+          Paga solo por los usuarios que activas. 14 días de prueba gratis.
+          Facturación centralizada, panel de administración y herramientas compartidas.
         </p>
       </div>
 
@@ -887,7 +887,7 @@ function EnterprisePlansGrid({
                 <span className="text-xs font-bold text-neutral-500 dark:text-neutral-400">/asiento/mes</span>
               </div>
               <p className="text-[11px] md:text-xs text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
-                Para equipos pequeños que colaboran en finanzas.
+                Para equipos pequeños que colaboran y comparten recursos.
               </p>
             </div>
 
@@ -914,12 +914,12 @@ function EnterprisePlansGrid({
 
             <ul className="space-y-2.5">
               {[
-                "200 mensajes IA / asiento / mes",
-                "Análisis avanzado de IA",
-                "Workspaces y alertas compartidas",
-                "Panel de administración",
-                "Facturación centralizada",
-                "Soporte prioritario",
+                "100 mensajes IA / asiento / mes (Plan Pro)",
+                "1.000 créditos de imagen en Flow",
+                "Workspaces y proyectos compartidos",
+                "Alertas y agentes compartidos",
+                "Panel de administración de equipo",
+                "Facturación centralizada para la empresa",
               ].map((f) => (
                 <li key={f} className="flex items-start gap-2.5 text-xs md:text-sm">
                   <div className="w-5 h-5 rounded-full bg-neutral-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 border border-neutral-200/50 dark:border-zinc-700/50 mt-0.5">
@@ -950,7 +950,7 @@ function EnterprisePlansGrid({
                 <span className="text-xs font-bold text-neutral-500 dark:text-neutral-400">/asiento/mes</span>
               </div>
               <p className="text-[11px] md:text-xs text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
-                Para empresas en crecimiento con necesidades avanzadas.
+                Para equipos en crecimiento con mayores requerimientos de volumen.
               </p>
             </div>
 
@@ -977,13 +977,12 @@ function EnterprisePlansGrid({
 
             <ul className="space-y-2.5">
               {[
-                "500 mensajes IA / asiento / mes",
+                "200 mensajes IA / asiento / mes (Plan Max)",
+                "2.000 créditos de imagen en Flow",
                 "IA con búsqueda web activa",
-                "Agentes de IA compartidos",
-                "Auto-join por dominio",
-                "CSM dedicado + onboarding",
-                "Acceso a API (básico)",
-                "SLA 4h + 99.9% uptime",
+                "Agentes y plantillas compartidas",
+                "Panel de administración avanzado",
+                "Facturación centralizada para la empresa",
               ].map((f) => (
                 <li key={f} className="flex items-start gap-2.5 text-xs md:text-sm">
                   <div className="w-5 h-5 rounded-full bg-neutral-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 border border-neutral-200/50 dark:border-zinc-700/50 mt-0.5">
@@ -1008,13 +1007,13 @@ function EnterprisePlansGrid({
                 <span className="text-3xl md:text-4xl font-black tracking-tight text-white">Hablemos</span>
               </div>
               <p className="text-[11px] md:text-xs text-white/50 mt-2 leading-relaxed">
-                Para grandes organizaciones con requisitos a medida.
+                Para grandes organizaciones con necesidades a medida.
               </p>
             </div>
 
             <div className="mb-6 p-3 bg-white/5 rounded-2xl border border-white/10">
               <p className="text-xs text-white/60 leading-relaxed">
-                Plan a medida con SLA dedicado, CSM asignado, SSO SAML/SCIM, data residency y API completa.
+                Plan a medida con límites de Plan Ultra por asiento, gestión de organización, workspaces compartidos y facturación a convenir.
               </p>
             </div>
 
@@ -1027,13 +1026,13 @@ function EnterprisePlansGrid({
 
             <ul className="space-y-2.5">
               {[
-                "2.000 mensajes IA / asiento / mes",
-                "SSO SAML / SCIM",
-                "Data residency (región)",
-                "API completa + integraciones",
-                "SLA 99.99% dedicado",
-                "CSM + onboarding guiado",
-                "Facturación anual / orden de compra",
+                "500 mensajes IA / asiento / mes (Plan Ultra)",
+                "5.000 créditos de imagen en Flow",
+                "IA con búsqueda web y análisis avanzado",
+                "Workspaces, agentes y alertas compartidas",
+                "Panel de administración de organización",
+                "Facturación centralizada a medida",
+                "Soporte dedicado",
               ].map((f) => (
                 <li key={f} className="flex items-start gap-2.5 text-xs md:text-sm">
                   <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center shrink-0 border border-white/20 mt-0.5">

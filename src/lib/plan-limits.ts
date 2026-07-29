@@ -102,8 +102,8 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
   pro: {
     id: "pro",
     name: "Pro",
-    price: 22990,
-    priceUSD: 24.99,
+    price: 19990,
+    priceUSD: 19.99,
     annualDiscount: 2 / 12,
     
     aiMessagesPerMonth: 100,
@@ -142,8 +142,8 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
   max: {
     id: "max",
     name: "Max",
-    price: 43990,
-    priceUSD: 45.99,
+    price: 39990,
+    priceUSD: 39.99,
     annualDiscount: 2 / 12,
     
     aiMessagesPerMonth: 200, // x2 Pro
@@ -182,8 +182,8 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
   ultra: {
     id: "ultra",
     name: "Ultra",
-    price: 97990,
-    priceUSD: 99.99,
+    price: 89990,
+    priceUSD: 89.99,
     annualDiscount: 2 / 12,
     
     aiMessagesPerMonth: 500, // x5 Pro
@@ -222,8 +222,8 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
   ultra_x20: {
     id: "ultra_x20",
     name: "Ultra x20",
-    price: 195980, // 97990 * 2
-    priceUSD: 199.99,
+    price: 179980, // 89990 * 2
+    priceUSD: 179.99,
     annualDiscount: 2 / 12,
     
     aiMessagesPerMonth: 2000, // x20 Pro
@@ -366,26 +366,26 @@ export const ENTERPRISE_PLANS: Record<EnterprisePlan, EnterprisePlanConfig> = {
   team: {
     id: "team",
     name: "Team",
-    tagline: "Para equipos pequeños que colaboran en finanzas.",
-    pricePerSeat: 14990,
-    pricePerSeatUSD: 15.99,
+    tagline: "Para equipos pequeños que colaboran y comparten recursos.",
+    pricePerSeat: 19990,
+    pricePerSeatUSD: 19.99,
     minSeats: 3,
     maxSeats: 20,
     recommendedSeats: 5,
     highlighted: false,
     cta: "trial",
     annualDiscount: 2 / 12,
-    aiMessagesPerSeatPerMonth: 200,
-    imageCreditsPerSeatPerMonth: 2000,
-    aiTokensPerSeatPerMonth: 2000000,
-    maxAlertsPerSeat: 15,
-    maxPortfolioAssetsPerSeat: 75,
-    aiModel: "x-ai/grok-4.1-fast:online",
+    aiMessagesPerSeatPerMonth: 100,
+    imageCreditsPerSeatPerMonth: 1000,
+    aiTokensPerSeatPerMonth: 1000000,
+    maxAlertsPerSeat: 5,
+    maxPortfolioAssetsPerSeat: 25,
+    aiModel: "x-ai/grok-4.1-fast",
     aiWebSearch: false,
-    aiAdvancedAnalysis: true,
+    aiAdvancedAnalysis: false,
     adFree: true,
     sharedWorkspaces: true,
-    sharedAgents: false,
+    sharedAgents: true,
     sharedAlerts: true,
     centralBilling: true,
     auditLog: true,
@@ -397,26 +397,26 @@ export const ENTERPRISE_PLANS: Record<EnterprisePlan, EnterprisePlanConfig> = {
     supportLevel: "priority",
     dedicatedCSM: false,
     onboardingSession: false,
-    sla: "Respuesta en 24h hábiles",
+    sla: "Soporte prioritario por email",
   },
 
   business: {
     id: "business",
     name: "Business",
-    tagline: "Para empresas en crecimiento con necesidades avanzadas.",
-    pricePerSeat: 29990,
-    pricePerSeatUSD: 32.99,
+    tagline: "Para equipos en crecimiento con mayores requerimientos de volumen.",
+    pricePerSeat: 39990,
+    pricePerSeatUSD: 39.99,
     minSeats: 5,
     maxSeats: 100,
     recommendedSeats: 15,
     highlighted: true, // Popular
     cta: "trial",
     annualDiscount: 2 / 12,
-    aiMessagesPerSeatPerMonth: 500,
-    imageCreditsPerSeatPerMonth: 5000,
-    aiTokensPerSeatPerMonth: 5000000,
-    maxAlertsPerSeat: 30,
-    maxPortfolioAssetsPerSeat: 150,
+    aiMessagesPerSeatPerMonth: 200,
+    imageCreditsPerSeatPerMonth: 2000,
+    aiTokensPerSeatPerMonth: 2000000,
+    maxAlertsPerSeat: 10,
+    maxPortfolioAssetsPerSeat: 50,
     aiModel: "x-ai/grok-4.1-fast:online",
     aiWebSearch: true,
     aiAdvancedAnalysis: true,
@@ -434,13 +434,13 @@ export const ENTERPRISE_PLANS: Record<EnterprisePlan, EnterprisePlanConfig> = {
     supportLevel: "priority",
     dedicatedCSM: true,
     onboardingSession: true,
-    sla: "Respuesta en 4h hábiles + 99.9% uptime",
+    sla: "Soporte prioritario",
   },
 
   enterprise: {
     id: "enterprise",
     name: "Enterprise",
-    tagline: "Para grandes organizaciones con requisitos a medida.",
+    tagline: "Para grandes organizaciones con necesidades a medida.",
     pricePerSeat: 0, // "Hablemos"
     pricePerSeatUSD: 0,
     minSeats: 100,
@@ -449,11 +449,11 @@ export const ENTERPRISE_PLANS: Record<EnterprisePlan, EnterprisePlanConfig> = {
     highlighted: false,
     cta: "contact",
     annualDiscount: 2 / 12,
-    aiMessagesPerSeatPerMonth: 2000,
-    imageCreditsPerSeatPerMonth: 10000,
-    aiTokensPerSeatPerMonth: 20000000,
-    maxAlertsPerSeat: 100,
-    maxPortfolioAssetsPerSeat: 500,
+    aiMessagesPerSeatPerMonth: 500,
+    imageCreditsPerSeatPerMonth: 5000,
+    aiTokensPerSeatPerMonth: 5000000,
+    maxAlertsPerSeat: 25,
+    maxPortfolioAssetsPerSeat: 125,
     aiModel: "x-ai/grok-4.1-fast:online",
     aiWebSearch: true,
     aiAdvancedAnalysis: true,
@@ -464,14 +464,14 @@ export const ENTERPRISE_PLANS: Record<EnterprisePlan, EnterprisePlanConfig> = {
     centralBilling: true,
     auditLog: true,
     adminDashboard: true,
-    ssoType: "saml",
+    ssoType: "email",
     allowedDomains: true,
     apiAccess: true,
-    dataResidency: true,
+    dataResidency: false,
     supportLevel: "dedicated",
     dedicatedCSM: true,
     onboardingSession: true,
-    sla: "SLA dedicado 99.99% + CSM asignado",
+    sla: "Soporte dedicado 24/7",
   },
 };
 
@@ -480,9 +480,9 @@ export const ENTERPRISE_PLANS: Record<EnterprisePlan, EnterprisePlanConfig> = {
  */
 export function enterpriseToTier(plan: EnterprisePlan): PlanTier {
   switch (plan) {
-    case "team": return "max";
-    case "business": return "ultra";
-    case "enterprise": return "ultra_x20";
+    case "team": return "pro";
+    case "business": return "max";
+    case "enterprise": return "ultra";
   }
 }
 

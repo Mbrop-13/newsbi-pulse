@@ -90,14 +90,14 @@ export async function GET(request: Request) {
           .eq("month", currentMonth)
           .maybeSingle();
 
-        const prices: Record<string, number> = { pro: 22990, max: 44990, ultra: 79990 };
+        const prices: Record<string, number> = { pro: 19990, max: 39990, ultra: 89990 };
         const { subject, html } = trialExpiringEmail({
           userName: profile.full_name,
           planName: sub.tier.charAt(0).toUpperCase() + sub.tier.slice(1),
           daysLeft: 2,
           aiMessagesUsed: usage?.ai_messages || 0,
           ttsUsed: usage?.tts_audios || 0,
-          price: formatCLP(prices[sub.tier] || 22990),
+          price: formatCLP(prices[sub.tier] || 19990),
         });
 
         await sendEmail({ to: profile.email, subject, html });

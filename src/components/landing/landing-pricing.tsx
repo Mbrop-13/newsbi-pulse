@@ -23,7 +23,7 @@ const PLANS = [
   },
   {
     name: "Pro",
-    price: "$22.990",
+    price: "$19.990",
     period: "al mes",
     desc: "Para inversores y profesionales activos de la información.",
     features: [
@@ -42,7 +42,7 @@ const PLANS = [
   },
   {
     name: "Max",
-    price: "$44.990",
+    price: "$39.990",
     period: "al mes",
     desc: "Para inversores exigentes que quieren el máximo potencial.",
     features: [
@@ -61,7 +61,7 @@ const PLANS = [
   },
   {
     name: "Ultra",
-    price: "$79.990",
+    price: "$89.990",
     period: "al mes",
     desc: "El máximo poder analítico con infraestructura dedicada.",
     features: [

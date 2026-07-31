@@ -135,6 +135,72 @@ type PreviewStatus = "idle" | "loading" | "ready" | "empty" | "error";
 const PREVIEW_BASE_W = 1280;
 const PREVIEW_BASE_H = 800;
 
+/**
+ * Inyecta CSS/JS en el HTML del thumbnail para que el preview quede FIJO:
+ * sin scroll interno, sin sticky/fixed “flotando”, y sin reaccionar a la rueda.
+ * Solo se usa en las tarjetas de la grilla de proyectos (no en el workspace).
+ */
+function lockThumbnailPreview(html: string): string {
+  if (html.includes("maverlang-card-preview-lock")) return html;
+
+  const lockSnippet = `
+    <style id="maverlang-card-preview-lock">
+      html, body {
+        overflow: hidden !important;
+        height: 100% !important;
+        max-height: 100vh !important;
+        overscroll-behavior: none !important;
+        /* Fija el documento del iframe al viewport del thumbnail */
+        position: relative !important;
+      }
+      /* Evita que sticky/fixed del proyecto se desplacen al scrollear la página padre */
+      [style*="position: fixed"], [style*="position:fixed"],
+      [style*="position: sticky"], [style*="position:sticky"],
+      .fixed, .sticky {
+        position: absolute !important;
+      }
+      * {
+        scroll-behavior: auto !important;
+        overscroll-behavior: none !important;
+      }
+      /* Oculta scrollbars residuales */
+      ::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+      * { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+    </style>
+    <script id="maverlang-card-preview-lock-js">
+      (function () {
+        var freeze = function () {
+          try {
+            window.scrollTo(0, 0);
+            document.documentElement.scrollTop = 0;
+            document.body.scrollTop = 0;
+          } catch (_) {}
+        };
+        var block = function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          freeze();
+        };
+        document.addEventListener("wheel", block, { passive: false, capture: true });
+        document.addEventListener("touchmove", block, { passive: false, capture: true });
+        document.addEventListener("scroll", freeze, { passive: true, capture: true });
+        window.addEventListener("scroll", freeze, { passive: true, capture: true });
+        freeze();
+        setTimeout(freeze, 50);
+        setTimeout(freeze, 250);
+      })();
+    </script>
+  `;
+
+  if (html.includes("</head>")) {
+    return html.replace("</head>", `${lockSnippet}</head>`);
+  }
+  if (html.includes("<body")) {
+    return html.replace(/<body([^>]*)>/i, `<body$1>${lockSnippet}`);
+  }
+  return lockSnippet + html;
+}
+
 function ProjectLivePreview({ project }: { project: Project }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -187,7 +253,12 @@ function ProjectLivePreview({ project }: { project: Project }) {
       if (cached.error) {
         setStatus("error");
       } else if (cached.html) {
-        setHtml(cached.html);
+        // Re-aplica lock por si el cache es de una sesión anterior sin el fix
+        const locked = lockThumbnailPreview(cached.html);
+        if (locked !== cached.html) {
+          previewCache.set(cacheKey, { html: locked, error: null });
+        }
+        setHtml(locked);
         setStatus("ready");
       } else {
         setStatus("empty");
@@ -252,8 +323,10 @@ function ProjectLivePreview({ project }: { project: Project }) {
           return;
         }
 
-        previewCache.set(cacheKey, { html: result.html, error: null });
-        setHtml(result.html);
+        // Cachear HTML ya con el lock de thumbnail (preview fijo en la grilla)
+        const lockedHtml = lockThumbnailPreview(result.html);
+        previewCache.set(cacheKey, { html: lockedHtml, error: null });
+        setHtml(lockedHtml);
         setStatus("ready");
       } catch {
         if (!cancelled) {
@@ -285,27 +358,64 @@ function ProjectLivePreview({ project }: { project: Project }) {
     return () => window.removeEventListener("message", handler);
   }, [status, project.chatId, project.id]);
 
+  // HTML listo para srcDoc: garantiza el lock aunque venga de cache antiguo
+  const lockedHtml = html ? lockThumbnailPreview(html) : null;
+
   return (
-    <div ref={containerRef} className="w-full h-full relative overflow-hidden bg-[#111113]">
-      {status === "ready" && html ? (
-        <div className="absolute inset-0 overflow-hidden bg-white">
+    <div
+      ref={containerRef}
+      className="w-full h-full relative overflow-hidden bg-[#111113]"
+      style={{
+        // Aísla el iframe del scroll de la página (evita efecto “parallax” / desfase al scrollear)
+        contain: "paint",
+        isolation: "isolate",
+        overscrollBehavior: "none",
+        // Fuerza capa de composición estable en Chrome/Edge al scrollear
+        transform: "translateZ(0)",
+        WebkitBackfaceVisibility: "hidden",
+        backfaceVisibility: "hidden",
+      }}
+      // Si el cursor está sobre la card, no dejes que la rueda scrollee el iframe
+      onWheel={(e) => e.stopPropagation()}
+    >
+      {status === "ready" && lockedHtml ? (
+        <div
+          className="absolute inset-0 overflow-hidden bg-white"
+          style={{
+            clipPath: "inset(0)",
+            WebkitClipPath: "inset(0)",
+            transform: "translateZ(0)",
+          }}
+        >
           <iframe
             ref={iframeRef}
             title={`Preview ${project.name}`}
-            srcDoc={html}
+            srcDoc={lockedHtml}
             sandbox="allow-scripts"
+            scrolling="no"
+            loading="lazy"
             className="border-0 pointer-events-none absolute top-0 left-0"
             style={{
               width: PREVIEW_BASE_W,
               height: PREVIEW_BASE_H,
               transform: `scale(${scale})`,
               transformOrigin: "top left",
+              // El iframe no debe capturar scroll ni reflow al scrollear la grilla
+              pointerEvents: "none",
+              overflow: "hidden",
             }}
             tabIndex={-1}
             aria-hidden
           />
-          {/* Overlay para capturar el click del Link padre */}
-          <div className="absolute inset-0 z-[5]" />
+          {/* Overlay para capturar click del Link y bloquear interacción/scroll del iframe */}
+          <div
+            className="absolute inset-0 z-[5]"
+            style={{ touchAction: "none" }}
+            onWheel={(e) => {
+              // Deja que el scroll de la página continúe, sin mover el preview
+              e.stopPropagation();
+            }}
+          />
         </div>
       ) : status === "error" ? (
         <ProjectPreviewError project={project} />
@@ -403,8 +513,16 @@ export function ProjectCard({ project, index }: ProjectCardProps) {
           isDeleting && "opacity-50 pointer-events-none"
         )}
       >
-        {/* Live preview del proyecto (o mockup/error si no hay código) */}
-        <div className="h-40 relative overflow-hidden border-b border-zinc-800/80 bg-[#111113]">
+        {/* Live preview del proyecto (o mockup/error si no hay código).
+            overflow + isolation fijos: el iframe no debe “deslizarse” al scrollear la grilla */}
+        <div
+          className="h-40 relative overflow-hidden border-b border-zinc-800/80 bg-[#111113]"
+          style={{
+            contain: "paint",
+            isolation: "isolate",
+            transform: "translateZ(0)",
+          }}
+        >
           <ProjectLivePreview project={project} />
 
           {/* Options menu floating on top right */}

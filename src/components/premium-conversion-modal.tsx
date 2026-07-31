@@ -141,7 +141,7 @@ export function PremiumConversionModal() {
                 >
                   <span className="absolute inset-0 bg-gradient-to-r from-[#1890FF] via-indigo-500 to-purple-500 rounded-2xl" />
                   <div className="relative flex items-center justify-center gap-2 bg-[#0B1121] group-hover:bg-opacity-0 transition-all duration-300 px-6 py-4 rounded-[15px]">
-                    <span className="text-white font-bold text-lg">Inicia tus 7 Días Gratis</span>
+                    <span className="text-white font-bold text-lg">Obtener Plan Pro</span>
                     <ArrowRight className="w-5 h-5 text-white" />
                   </div>
                 </button>

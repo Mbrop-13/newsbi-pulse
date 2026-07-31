@@ -32,28 +32,39 @@ import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
 import { useBrowserStore } from "@/lib/stores/browser-store";
 import { useCanvasStore } from "@/lib/stores/canvas-store";
 import { useViewStore } from "@/lib/stores/use-view-store";
-import { Button } from "@/components/ui/button";
-import { Menu, Plus } from "lucide-react";
-import { ModelSelector } from "@/components/chat/model-selector";
+import { Menu } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useLanguageStore } from "@/lib/stores/language-store";
 import { getCleanPathname } from "@/lib/utils";
 
 import { useState, useEffect } from "react";
 
+/**
+ * Botón hamburguesa flotante (móvil): círculo con 3 líneas en la esquina
+ * superior izquierda. Abre la barra lateral para cambiar de sección.
+ * Reemplaza la barra de navegación inferior en finanzas y resto de páginas con sidebar.
+ */
 function MobileMenuButton() {
   const { setOpenMobile } = useSidebar();
   return (
-    <Button
+    <button
       type="button"
-      variant="secondary"
-      size="icon"
-      className="fixed top-4 left-4 h-10 w-10 rounded-full shadow-lg border border-border/45 backdrop-blur-md bg-background/80 text-muted-foreground hover:text-foreground z-40 md:hidden flex items-center justify-center cursor-pointer active:scale-95 transition-all"
       onClick={() => setOpenMobile(true)}
-      aria-label="Abrir menú"
+      aria-label="Abrir menú de navegación"
+      className={cn(
+        "fixed z-50 md:hidden",
+        "top-[max(0.875rem,env(safe-area-inset-top))] left-[max(0.875rem,env(safe-area-inset-left))]",
+        "flex h-11 w-11 items-center justify-center rounded-full",
+        "border border-border/50 bg-background/90 text-foreground",
+        "shadow-lg shadow-black/15 dark:shadow-black/40",
+        "backdrop-blur-xl",
+        "active:scale-95 hover:bg-background hover:border-border",
+        "transition-all duration-200 cursor-pointer",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1890FF]/50"
+      )}
     >
-      <Menu className="h-5 w-5" />
-    </Button>
+      <Menu className="h-5 w-5" strokeWidth={2.25} />
+    </button>
   );
 }
 
@@ -169,8 +180,31 @@ export function ClientLayoutProviders({
   const isCanvasOpen = useCanvasStore((s) => s.isOpen);
   const isFixedLayout = showBuilderWorkspace || isBrowserOpen || isCanvasOpen;
 
-  // Show bottom nav on mobile for sidebar pages, EXCEPT when on AI page
-  const showMobileNavOnSidebar = isMobile && isSidebarPage && !isAiPage;
+  // Sección Finanzas (y páginas hermanas del menú lateral): en móvil solo
+  // el círculo hamburguesa arriba-izquierda; la barra flotante inferior ya no encaja.
+  const isFinanceSection =
+    pathname === "/portafolio" ||
+    pathname.startsWith("/portafolio/") ||
+    pathname === "/mercados" ||
+    pathname.startsWith("/mercados/") ||
+    pathname === "/noticias" ||
+    pathname.startsWith("/noticias/") ||
+    pathname === "/mundo" ||
+    pathname.startsWith("/mundo/") ||
+    pathname === "/finanzas" ||
+    pathname.startsWith("/finanzas/") ||
+    pathname === "/economia" ||
+    pathname.startsWith("/economia/") ||
+    pathname === "/inversiones" ||
+    pathname.startsWith("/inversiones/") ||
+    pathname === "/tech-global" ||
+    pathname.startsWith("/tech-global/") ||
+    pathname === "/impacto-global" ||
+    pathname.startsWith("/impacto-global/");
+
+  // Bottom nav móvil solo donde aún aporta (p. ej. proyectos); no en AI ni finanzas
+  const showMobileNavOnSidebar =
+    isMobile && isSidebarPage && !isAiPage && !isFinanceSection;
 
   // Aplicar tamaño de fuente + esquema sepia globalmente (accesibilidad visual)
   const fontSize = useViewStore((s) => s.fontSize);
@@ -206,9 +240,12 @@ export function ClientLayoutProviders({
         <div className="flex flex-col h-[100dvh] overflow-hidden relative">
           {/* Top Navbar removed as requested to unify layout */}
           <main
-            className={`flex-1 transition-all duration-300 ease-in-out ${
-              (isFixedLayout || isAiPage) ? "overflow-hidden h-full" : "overflow-y-auto h-full"
-            } ${isAdminPage ? "" : "pb-16 md:pb-0"}`}
+            className={cn(
+              "flex-1 transition-all duration-300 ease-in-out",
+              (isFixedLayout || isAiPage) ? "overflow-hidden h-full" : "overflow-y-auto h-full",
+              // Espacio inferior solo si hay barra flotante móvil (no en AI ni finanzas)
+              !isAdminPage && !isAiPage && !isFinanceSection && "pb-16 md:pb-0"
+            )}
             style={{
               ...((!isAdminPage && audioMode === "pinned") ? { marginRight: pinnedWidth } : {}),
               transition: 'margin-right 0.3s ease-in-out',

@@ -256,8 +256,8 @@ function SubscriptionPageContent() {
       a: "Todos nuestros pagos se procesan de forma segura a través de MercadoPago, permitiéndote pagar con tarjetas de crédito, débito, transferencias y más.",
     },
     {
-      q: "¿Cómo funciona la prueba gratuita?",
-      a: "Nuestra prueba gratuita de 7 días está disponible de forma exclusiva para el plan Pro en la modalidad mensual. Puedes cancelar antes de terminar los 7 días y no se realizará ningún cargo.",
+      q: "¿Puedo cambiar de plan en cualquier momento?",
+      a: "Sí, puedes actualizar o ajustar tu plan cuando lo necesites desde la plataforma. Tu cuenta aplicará los nuevos beneficios inmediatamente.",
     },
     {
       q: "¿Qué es la opción Ultra x20?",
@@ -765,7 +765,7 @@ function SubscriptionPageContent() {
                 Configurar Plan de Empresa
               </h3>
               <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-6">
-                Ingresa los datos para registrar a tu organización. Tendrás 14 días de prueba gratuita.
+                Ingresa los datos para registrar a tu organización.
               </p>
               
               {orgError && (
@@ -818,10 +818,6 @@ function SubscriptionPageContent() {
                     <span>
                       ${orgPlan ? ENTERPRISE_PLANS[orgPlan].pricePerSeat * orgSeats : 0} CLP/mes
                     </span>
-                  </div>
-                  <div className="text-[10px] text-emerald-500 font-black mt-2 text-center">
-                    ✓ Incluye 14 días de prueba gratis ($0 hoy)
-                  </div>
                 </div>
                 
                 <Button
@@ -829,7 +825,7 @@ function SubscriptionPageContent() {
                   disabled={submittingOrg}
                   className="w-full h-11 bg-neutral-950 dark:bg-white text-white dark:text-black font-extrabold rounded-full hover:bg-neutral-800 dark:hover:bg-neutral-100 shadow-md transition-all active:scale-[0.98]"
                 >
-                  {submittingOrg ? "Procesando..." : "Comenzar Prueba Gratis"}
+                  {submittingOrg ? "Procesando..." : "Crear Organización"}
                 </Button>
               </form>
             </motion.div>
@@ -866,7 +862,7 @@ function EnterprisePlansGrid({
           Precios por asiento, escala con tu equipo
         </h2>
         <p className="text-neutral-500 dark:text-neutral-400 text-xs md:text-sm mt-2 max-w-xl mx-auto">
-          Paga solo por los usuarios que activas. 14 días de prueba gratis.
+          Paga solo por los usuarios que activas.
           Facturación centralizada, panel de administración y herramientas compartidas.
         </p>
       </div>
@@ -909,7 +905,7 @@ function EnterprisePlansGrid({
               onClick={() => onSelectEnterprise("team", teamSeats)}
               className="w-full h-11 rounded-full font-bold text-sm bg-neutral-200 hover:bg-neutral-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-neutral-900 dark:text-white mb-6"
             >
-              Probar Team 14 días
+              Elegir Plan Team
             </Button>
 
             <ul className="space-y-2.5">
@@ -972,7 +968,7 @@ function EnterprisePlansGrid({
               onClick={() => onSelectEnterprise("business", businessSeats)}
               className="w-full h-11 rounded-full font-bold text-sm bg-neutral-950 dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-100 mb-6"
             >
-              Probar Business 14 días
+              Elegir Plan Business
             </Button>
 
             <ul className="space-y-2.5">

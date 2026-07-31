@@ -68,7 +68,8 @@ export function MarketSearchBar() {
   const showPopular = isFocused && query.trim().length === 0;
 
   return (
-    <div ref={containerRef} className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 pt-2 pb-3 relative z-30">
+    {/* pl-14 en móvil (solo por debajo de md): hueco para el círculo hamburguesa flotante */}
+    <div ref={containerRef} className="w-full max-w-[1440px] mx-auto pl-14 pr-4 md:px-6 pt-2 pb-3 relative z-30">
       <div className="relative">
         {/* Search input */}
         <div className={`flex items-center bg-white dark:bg-[#141821] rounded-2xl border shadow-sm transition-all duration-200 px-4 h-12 ${isFocused ? "border-[#1890FF] ring-2 ring-[#1890FF]/15" : "border-gray-200/80 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20"}`}>

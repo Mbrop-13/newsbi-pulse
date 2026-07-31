@@ -465,7 +465,8 @@ export function CountryFeedPage({ initialFeed, initialFilter, searchTag }: Props
         </div>
       </header>
 
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 pb-16 pt-4">
+      {/* pt-14 móvil: hueco vertical para el círculo de menú flotante */}
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 pb-16 pt-14 md:pt-4">
 
         {/* Active source filters Row */}
         {selectedSources.length > 0 && (

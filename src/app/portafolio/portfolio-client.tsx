@@ -246,7 +246,8 @@ export default function PortfolioClient() {
   }
 
   return (
-    <div className="min-h-screen bg-background pt-4 md:pt-6 pb-24">
+    <div className="min-h-screen bg-background pt-14 md:pt-6 pb-10 md:pb-16">
+      {/* pt-14 móvil: deja pasar el círculo de menú sin solapar el header */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {/* Header removed as requested to clean up UI */}
 

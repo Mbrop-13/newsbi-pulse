@@ -37,7 +37,7 @@ const PLANS = [
       "Soporte estándar por email"
     ],
     popular: false,
-    cta: "Probar 7 días gratis",
+    cta: "Elegir plan Pro",
     link: "/suscripcion"
   },
   {
@@ -56,7 +56,7 @@ const PLANS = [
       "Informes semanales de portafolio"
     ],
     popular: true,
-    cta: "Comenzar prueba gratis",
+    cta: "Elegir plan Max",
     link: "/suscripcion"
   },
   {

@@ -38,13 +38,10 @@ export async function POST(request: NextRequest) {
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://maverlang.cl";
 
-    const trialEnd = new Date();
-    trialEnd.setDate(trialEnd.getDate() + 7);
-
     const finalPrice = planConfig.price;
-    const planReason = `Suscripción Maverlang ${plan.toUpperCase()} — 7 días gratis`;
+    const planReason = `Suscripción Maverlang ${planConfig.name.toUpperCase()}`;
 
-    // Create a preapproval (subscription) with 7-day free trial
+    // Create a preapproval (subscription)
     const preapprovalBody = {
       reason: planReason,
       auto_recurring: {
@@ -52,16 +49,11 @@ export async function POST(request: NextRequest) {
         frequency_type: "months",
         transaction_amount: finalPrice,
         currency_id: "CLP",
-        free_trial: plan === "pro" ? {
-          frequency: 7,
-          frequency_type: "days",
-        } : undefined,
       },
       payer_email: user.email,
       external_reference: JSON.stringify({
         user_id: user.id,
         plan,
-        trial_end: trialEnd.toISOString(),
       }),
       back_url: `${siteUrl}/suscripcion?status=success&plan=${plan}`,
     };

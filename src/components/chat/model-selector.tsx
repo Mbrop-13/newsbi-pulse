@@ -178,7 +178,7 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
                     }} 
                     className="w-full py-6 rounded-2xl bg-gradient-to-r from-[#1890FF] to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-black text-sm shadow-lg shadow-blue-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
                   >
-                    <span>Prueba 7 días gratis</span>
+                    <span>Ver planes premium</span>
                     <ArrowRight className="w-4 h-4" />
                   </Button>
 
@@ -340,7 +340,7 @@ export function ModelSelector({ selectedModelId, onModelSelect, variant = "float
                   }} 
                   className="w-full py-6 rounded-2xl bg-gradient-to-r from-[#1890FF] to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-black text-sm shadow-lg shadow-blue-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
-                  <span>Prueba 7 días gratis</span>
+                  <span>Ver planes premium</span>
                   <ArrowRight className="w-4 h-4" />
                 </Button>
 

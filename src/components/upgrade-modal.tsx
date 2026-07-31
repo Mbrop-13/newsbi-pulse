@@ -178,7 +178,7 @@ export function UpgradeModal({ isOpen, onClose, feature, customTitle, customMess
               
               <Link href="/suscripcion" onClick={onClose}>
                 <Button className="w-full h-12 bg-gradient-to-r from-accent to-purple-600 hover:from-accent/90 hover:to-purple-700 text-white font-bold rounded-xl text-sm shadow-lg shadow-accent/20 group">
-                  Prueba 7 días gratis
+                  Mejorar mi plan
                   <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-0.5 transition-transform" />
                 </Button>
               </Link>

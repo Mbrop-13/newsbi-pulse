@@ -67,8 +67,8 @@ export function MarketSearchBar() {
   const showDropdown = isFocused && (query.trim().length > 0 || results.length === 0);
   const showPopular = isFocused && query.trim().length === 0;
 
+  // pl-14 en móvil (solo por debajo de md): hueco para el círculo hamburguesa flotante
   return (
-    {/* pl-14 en móvil (solo por debajo de md): hueco para el círculo hamburguesa flotante */}
     <div ref={containerRef} className="w-full max-w-[1440px] mx-auto pl-14 pr-4 md:px-6 pt-2 pb-3 relative z-30">
       <div className="relative">
         {/* Search input */}

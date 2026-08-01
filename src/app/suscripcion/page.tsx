@@ -818,6 +818,7 @@ function SubscriptionPageContent() {
                     <span>
                       ${orgPlan ? ENTERPRISE_PLANS[orgPlan].pricePerSeat * orgSeats : 0} CLP/mes
                     </span>
+                  </div>
                 </div>
                 
                 <Button

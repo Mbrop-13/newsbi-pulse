@@ -225,56 +225,55 @@
   .dark .glass {
     background: rgba(28, 25, 23, 0.85);
   }
-  /* Liquid glass — barra lateral / top bar (escritorio) */
-  .liquid-glass {
+  /* Pastilla de búsqueda mercados — liquid glass ovalada */
+  .market-search-pill {
     background: linear-gradient(
-      165deg,
-      rgba(255, 255, 255, 0.72) 0%,
-      rgba(255, 255, 255, 0.48) 50%,
-      rgba(255, 255, 255, 0.38) 100%
+      145deg,
+      rgba(255, 255, 255, 0.88) 0%,
+      rgba(255, 255, 255, 0.62) 45%,
+      rgba(248, 250, 252, 0.55) 100%
     );
     backdrop-filter: blur(28px) saturate(180%);
     -webkit-backdrop-filter: blur(28px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.55);
-    box-shadow:
-      0 8px 32px rgba(15, 23, 42, 0.06),
-      inset 0 1px 0 rgba(255, 255, 255, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.75);
   }
-  .dark .liquid-glass {
+  .dark .market-search-pill {
     background: linear-gradient(
-      165deg,
-      rgba(24, 24, 27, 0.72) 0%,
-      rgba(12, 12, 14, 0.55) 55%,
-      rgba(9, 9, 11, 0.48) 100%
+      145deg,
+      rgba(39, 39, 42, 0.82) 0%,
+      rgba(24, 24, 27, 0.72) 50%,
+      rgba(18, 18, 20, 0.68) 100%
     );
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     box-shadow:
-      0 8px 32px rgba(0, 0, 0, 0.35),
+      0 4px 24px rgba(0, 0, 0, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+  .market-search-dropdown {
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.94) 0%,
+      rgba(255, 255, 255, 0.88) 100%
+    );
+    backdrop-filter: blur(32px) saturate(160%);
+    -webkit-backdrop-filter: blur(32px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    box-shadow:
+      0 20px 50px rgba(15, 23, 42, 0.14),
+      0 4px 16px rgba(15, 23, 42, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  }
+  .dark .market-search-dropdown {
+    background: linear-gradient(
+      180deg,
+      rgba(28, 28, 32, 0.94) 0%,
+      rgba(18, 18, 20, 0.92) 100%
+    );
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow:
+      0 20px 50px rgba(0, 0, 0, 0.55),
+      0 4px 16px rgba(0, 0, 0, 0.3),
       inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  }
-  .liquid-glass-bar {
-    background: linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.78) 0%,
-      rgba(255, 255, 255, 0.52) 100%
-    );
-    backdrop-filter: blur(24px) saturate(170%);
-    -webkit-backdrop-filter: blur(24px) saturate(170%);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.5);
-    box-shadow:
-      0 4px 24px rgba(15, 23, 42, 0.05),
-      inset 0 1px 0 rgba(255, 255, 255, 0.7);
-  }
-  .dark .liquid-glass-bar {
-    background: linear-gradient(
-      180deg,
-      rgba(24, 24, 27, 0.78) 0%,
-      rgba(12, 12, 14, 0.58) 100%
-    );
-    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-    box-shadow:
-      0 4px 24px rgba(0, 0, 0, 0.3),
-      inset 0 1px 0 rgba(255, 255, 255, 0.05);
   }
   .editorial-rule {
     border-bottom: 1px solid var(--editorial-rule);

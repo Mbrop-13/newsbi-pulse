@@ -247,12 +247,14 @@ export default function MercadosPage() {
     <SidebarLayout>
     <AuthGuard>
     <div className="min-h-screen bg-background pt-2 md:pt-0">
-      {/* Buscador solo en móvil; en PC va en FinanceTopBar */}
-      <div className="md:hidden">
-        <MarketSearchBar />
+      {/* Buscador mobile: pastilla ovalada liquid glass centrada y sobrepuesta */}
+      <div className="md:hidden sticky top-2 z-40 px-3 pb-2 pointer-events-none">
+        <div className="pointer-events-auto">
+          <MarketSearchBar className="px-0" />
+        </div>
       </div>
 
-      <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 pt-3 md:pt-4 pb-16">
+      <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 pt-2 md:pt-4 pb-16">
 
         {/* TAB BAR */}
         <div className="flex items-center gap-4 overflow-x-auto hide-scrollbar mb-6 pt-1">

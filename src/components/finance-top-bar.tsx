@@ -63,9 +63,9 @@ function isNavActive(pathname: string, href: string): boolean {
 }
 
 /**
- * Barra superior de finanzas (solo escritorio):
- * izquierda = Portafolio / Mercados / Noticias / Mundo
- * derecha = buscador de mercados (excepto en Mundo)
+ * Barra superior PC:
+ * - izquierda: navegación entre Portafolio / Mercados / Noticias / Mundo
+ * - derecha: buscador ovalado liquid glass (sobrepuesto), excepto en Mundo
  */
 export function FinanceTopBar() {
   const rawPathname = usePathname() || "";
@@ -76,40 +76,42 @@ export function FinanceTopBar() {
   if (!isFinanceTopBarPath(rawPathname)) return null;
 
   return (
-    <div className="hidden md:block sticky top-0 z-40 w-full liquid-glass-bar">
-      <div className="w-full max-w-[1440px] mx-auto h-12 px-4 lg:px-6 flex items-center gap-4">
-        {/* Nav pills — izquierda */}
-        <nav className="flex items-center gap-1 shrink-0" aria-label="Secciones de finanzas">
-          {NAV_ITEMS.map((item) => {
-            const active = isNavActive(pathname, item.href);
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.id}
-                href={`/${language}${item.href}`}
-                className={cn(
-                  "inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[13px] font-semibold transition-all duration-200",
-                  active
-                    ? "bg-[#1890FF]/12 text-[#1890FF] shadow-sm ring-1 ring-[#1890FF]/20"
-                    : "text-muted-foreground hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
-                )}
-              >
-                <Icon className="w-3.5 h-3.5 shrink-0" strokeWidth={active ? 2.25 : 1.75} />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
+    <div className="hidden md:block sticky top-0 z-40 w-full pointer-events-none">
+      {/* Franja delgada; el buscador flota encima con glass */}
+      <div className="w-full border-b border-border/50 bg-background/80 backdrop-blur-md">
+        <div className="w-full max-w-[1440px] mx-auto h-14 px-4 lg:px-6 flex items-center gap-4 pointer-events-auto">
+          <nav className="flex items-center gap-1 shrink-0" aria-label="Secciones de finanzas">
+            {NAV_ITEMS.map((item) => {
+              const active = isNavActive(pathname, item.href);
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.id}
+                  href={`/${language}${item.href}`}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[13px] font-semibold transition-all duration-200",
+                    active
+                      ? "bg-[#1890FF] text-white shadow-md shadow-[#1890FF]/25"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/80"
+                  )}
+                >
+                  <Icon className="w-3.5 h-3.5 shrink-0" strokeWidth={active ? 2.25 : 1.75} />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
 
-        {/* Buscador — derecha (no en Mundo) */}
-        {!isMundo && (
-          <div className="flex-1 min-w-0 flex justify-end">
-            <div className="w-full max-w-md">
-              <MarketSearchBar variant="compact" />
+          {!isMundo && (
+            <div className="flex-1 min-w-0 flex justify-end">
+              {/* Buscador sobrepuesto, ovalado, liquid glass */}
+              <div className="w-full max-w-[420px] relative z-50">
+                <MarketSearchBar variant="compact" />
+              </div>
             </div>
-          </div>
-        )}
-        {isMundo && <div className="flex-1" />}
+          )}
+          {isMundo && <div className="flex-1" />}
+        </div>
       </div>
     </div>
   );

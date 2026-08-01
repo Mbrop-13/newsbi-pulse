@@ -24,18 +24,22 @@ const nextConfig = {
     const isProd = process.env.NODE_ENV === "production";
     // En dev mantenemos unsafe-eval para HMR; en prod lo dejamos activo sólo
     // mientras la preview dependa de él (ver NOTA arriba).
+    // TradingView widgets (mercados): scripts + iframes desde s3 / s.tradingview.com
+    const tradingViewHosts =
+      "https://s3.tradingview.com https://www.tradingview.com https://*.tradingview.com https://s.tradingview.com";
+
     const scriptSrc = isProd
-      ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com https://esm.sh https://*.esm.sh https://unpkg.com https://cdn.tailwindcss.com"
-      : "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com https://esm.sh https://*.esm.sh https://unpkg.com https://cdn.tailwindcss.com";
+      ? `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com https://esm.sh https://*.esm.sh https://unpkg.com https://cdn.tailwindcss.com ${tradingViewHosts}`
+      : `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com https://esm.sh https://*.esm.sh https://unpkg.com https://cdn.tailwindcss.com ${tradingViewHosts}`;
 
     const csp = [
       "default-src 'self'",
       scriptSrc,
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com ${tradingViewHosts}`,
       "img-src 'self' data: blob: https: http:",
       "font-src 'self' data: https://fonts.gstatic.com",
-      "connect-src 'self' https://*.supabase.co https://api.mercadopago.com https://api.openai.com https://openrouter.ai https://api.x.ai https://api.mapbox.com https://api.newsdata.io https://www.googleapis.com https://generativelanguage.googleapis.com https://*.upstash.io https://*.codesandbox.io https://codesandbox.io https://col.csbops.io https://*.csbops.io https://unpkg.com https://esm.sh https://*.esm.sh wss: ws:",
-      "frame-src 'self' https://www.youtube.com https://*.mercadopago.cl https://*.mercadopago.com https://hcaptcha.com https://*.hcaptcha.com https://*.codesandbox.io https://codesandbox.io",
+      `connect-src 'self' https://*.supabase.co https://api.mercadopago.com https://api.openai.com https://openrouter.ai https://api.x.ai https://api.mapbox.com https://api.newsdata.io https://www.googleapis.com https://generativelanguage.googleapis.com https://*.upstash.io https://*.codesandbox.io https://codesandbox.io https://col.csbops.io https://*.csbops.io https://unpkg.com https://esm.sh https://*.esm.sh ${tradingViewHosts} wss: ws:`,
+      `frame-src 'self' https://www.youtube.com https://*.mercadopago.cl https://*.mercadopago.com https://hcaptcha.com https://*.hcaptcha.com https://*.codesandbox.io https://codesandbox.io ${tradingViewHosts}`,
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self' https://*.mercadopago.cl https://*.mercadopago.com",

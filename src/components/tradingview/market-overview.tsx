@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { useTheme } from "next-themes";
 
 interface SymbolOverviewProps {
@@ -44,72 +44,93 @@ export function SymbolOverview({ symbols, height = 500 }: SymbolOverviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const symbolsKey = useMemo(() => JSON.stringify(symbols), [symbols]);
 
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
-    if (!mounted || !containerRef.current) return;
-    containerRef.current.innerHTML = "";
+    if (!mounted || !containerRef.current || !resolvedTheme) return;
+
+    const el = containerRef.current;
+    el.innerHTML = "";
 
     const isDark = resolvedTheme === "dark";
+    let cancelled = false;
 
-    const wrapper = document.createElement("div");
-    wrapper.className = "tradingview-widget-container";
-    wrapper.innerHTML = `<div class="tradingview-widget-container__widget"></div>`;
+    // Defer script inject so DOM is stable after tab switches
+    const timer = window.setTimeout(() => {
+      if (cancelled || !containerRef.current) return;
 
-    const script = document.createElement("script");
-    script.type = "text/javascript";
-    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js";
-    script.async = true;
-    script.textContent = JSON.stringify({
-      lineWidth: 2,
-      lineType: 0,
-      chartType: "area",
-      fontColor: isDark ? "rgb(180, 183, 195)" : "rgb(106, 109, 120)",
-      gridLineColor: isDark ? "rgba(242, 242, 242, 0.06)" : "rgba(46, 46, 46, 0.06)",
-      volumeUpColor: "rgba(34, 171, 148, 0.5)",
-      volumeDownColor: "rgba(247, 82, 95, 0.5)",
-      backgroundColor: isDark ? "#1A1A1E" : "#ffffff",
-      widgetFontColor: isDark ? "#DBDBDB" : "#0F0F0F",
-      upColor: "#22ab94",
-      downColor: "#f7525f",
-      borderUpColor: "#22ab94",
-      borderDownColor: "#f7525f",
-      wickUpColor: "#22ab94",
-      wickDownColor: "#f7525f",
-      colorTheme: isDark ? "dark" : "light",
-      isTransparent: false,
-      locale: "es",
-      chartOnly: false,
-      scalePosition: "right",
-      scaleMode: "Normal",
-      fontFamily: "-apple-system, BlinkMacSystemFont, Trebuchet MS, Roboto, Ubuntu, sans-serif",
-      valuesTracking: "1",
-      changeMode: "price-and-percent",
-      symbols: symbols,
-      dateRanges: [
-        "1d|1", "1m|30", "3m|60", "12m|1D", "60m|1W", "all|1M",
-      ],
-      fontSize: "10",
-      headerFontSize: "medium",
-      autosize: true,
-      width: "100%",
-      height: "100%",
-      noTimeScale: false,
-      hideDateRanges: false,
-      hideMarketStatus: false,
-      hideSymbolLogo: false,
-    });
+      const wrapper = document.createElement("div");
+      wrapper.className = "tradingview-widget-container";
+      wrapper.style.width = "100%";
+      wrapper.style.height = "100%";
+      const widgetDiv = document.createElement("div");
+      widgetDiv.className = "tradingview-widget-container__widget";
+      widgetDiv.style.width = "100%";
+      widgetDiv.style.height = "100%";
+      wrapper.appendChild(widgetDiv);
 
-    wrapper.appendChild(script);
-    containerRef.current.appendChild(wrapper);
-  }, [mounted, symbols, resolvedTheme]);
+      const script = document.createElement("script");
+      script.type = "text/javascript";
+      script.src = "https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js";
+      script.async = true;
+      script.innerHTML = JSON.stringify({
+        lineWidth: 2,
+        lineType: 0,
+        chartType: "area",
+        fontColor: isDark ? "rgb(180, 183, 195)" : "rgb(106, 109, 120)",
+        gridLineColor: isDark ? "rgba(242, 242, 242, 0.06)" : "rgba(46, 46, 46, 0.06)",
+        volumeUpColor: "rgba(34, 171, 148, 0.5)",
+        volumeDownColor: "rgba(247, 82, 95, 0.5)",
+        backgroundColor: isDark ? "#1A1A1E" : "#ffffff",
+        widgetFontColor: isDark ? "#DBDBDB" : "#0F0F0F",
+        upColor: "#22ab94",
+        downColor: "#f7525f",
+        borderUpColor: "#22ab94",
+        borderDownColor: "#f7525f",
+        wickUpColor: "#22ab94",
+        wickDownColor: "#f7525f",
+        colorTheme: isDark ? "dark" : "light",
+        isTransparent: false,
+        locale: "es",
+        chartOnly: false,
+        scalePosition: "right",
+        scaleMode: "Normal",
+        fontFamily: "-apple-system, BlinkMacSystemFont, Trebuchet MS, Roboto, Ubuntu, sans-serif",
+        valuesTracking: "1",
+        changeMode: "price-and-percent",
+        symbols: JSON.parse(symbolsKey) as [string, string][],
+        dateRanges: ["1d|1", "1m|30", "3m|60", "12m|1D", "60m|1W", "all|1M"],
+        fontSize: "10",
+        headerFontSize: "medium",
+        autosize: true,
+        width: "100%",
+        height: "100%",
+        noTimeScale: false,
+        hideDateRanges: false,
+        hideMarketStatus: false,
+        hideSymbolLogo: false,
+      });
 
-  if (!mounted) return <div style={{ height }} className="animate-pulse bg-gray-100 dark:bg-white/5 rounded-2xl" />;
+      wrapper.appendChild(script);
+      containerRef.current.appendChild(wrapper);
+    }, 50);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+      if (el) el.innerHTML = "";
+    };
+  }, [mounted, symbolsKey, resolvedTheme]);
+
+  if (!mounted || !resolvedTheme) {
+    return <div style={{ height }} className="animate-pulse bg-gray-100 dark:bg-white/5 rounded-2xl" />;
+  }
 
   return (
-    <div className="rounded-2xl overflow-hidden border border-gray-200 dark:border-white/5 shadow-sm">
-      <div ref={containerRef} style={{ height }} />
+    <div className="rounded-2xl overflow-hidden border border-gray-200 dark:border-white/5 shadow-sm bg-white dark:bg-[#1A1A1E]">
+      <div ref={containerRef} style={{ height, width: "100%" }} />
     </div>
   );
 }

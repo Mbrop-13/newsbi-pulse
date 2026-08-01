@@ -24,7 +24,13 @@ const POPULAR_SYMBOLS = [
   { symbol: "BTC-USD", name: "Bitcoin", exchange: "CCC" },
 ];
 
-export function MarketSearchBar() {
+interface MarketSearchBarProps {
+  /** full = página mercados; compact = top bar escritorio */
+  variant?: "full" | "compact";
+  className?: string;
+}
+
+export function MarketSearchBar({ variant = "full", className }: MarketSearchBarProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -32,6 +38,7 @@ export function MarketSearchBar() {
   const [hasError, setHasError] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const containerRef = useRef<HTMLDivElement>(null);
+  const isCompact = variant === "compact";
 
   const handleSearch = useCallback((term: string) => {
     setQuery(term);
@@ -67,25 +74,46 @@ export function MarketSearchBar() {
   const showDropdown = isFocused && (query.trim().length > 0 || results.length === 0);
   const showPopular = isFocused && query.trim().length === 0;
 
-  // pl-14 en móvil (solo por debajo de md): hueco para el círculo hamburguesa flotante
   return (
-    <div ref={containerRef} className="w-full max-w-[1440px] mx-auto pl-14 pr-4 md:px-6 pt-2 pb-3 relative z-30">
+    <div
+      ref={containerRef}
+      className={
+        className ??
+        (isCompact
+          ? "w-full relative z-30"
+          : "w-full max-w-[1440px] mx-auto pl-14 pr-4 md:px-6 pt-2 pb-3 relative z-30")
+      }
+    >
       <div className="relative">
         {/* Search input */}
-        <div className={`flex items-center bg-white dark:bg-[#141821] rounded-2xl border shadow-sm transition-all duration-200 px-4 h-12 ${isFocused ? "border-[#1890FF] ring-2 ring-[#1890FF]/15" : "border-gray-200/80 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20"}`}>
-          <Search className={`w-[18px] h-[18px] mr-3 transition-colors ${isFocused ? "text-[#1890FF]" : "text-gray-400"}`} />
+        <div
+          className={`flex items-center transition-all duration-200 ${
+            isCompact
+              ? `bg-white/70 dark:bg-white/[0.06] backdrop-blur-md rounded-full border px-3 h-9 ${
+                  isFocused
+                    ? "border-[#1890FF] ring-2 ring-[#1890FF]/15"
+                    : "border-white/50 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20"
+                }`
+              : `bg-white dark:bg-[#141821] rounded-2xl border shadow-sm px-4 h-12 ${
+                  isFocused
+                    ? "border-[#1890FF] ring-2 ring-[#1890FF]/15"
+                    : "border-gray-200/80 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20"
+                }`
+          }`}
+        >
+          <Search className={`${isCompact ? "w-4 h-4 mr-2" : "w-[18px] h-[18px] mr-3"} transition-colors ${isFocused ? "text-[#1890FF]" : "text-gray-400"}`} />
           <input
             type="text"
             value={query}
             onChange={(e) => handleSearch(e.target.value)}
             onFocus={() => setIsFocused(true)}
-            placeholder="Buscar acciones, ETFs, criptos... (ej. AAPL, Bitcoin, NVIDIA)"
-            className="flex-1 bg-transparent text-sm font-medium outline-none text-gray-900 dark:text-white placeholder:text-gray-400 placeholder:font-normal"
+            placeholder={isCompact ? "Buscar acciones, ETFs, cripto..." : "Buscar acciones, ETFs, criptos... (ej. AAPL, Bitcoin, NVIDIA)"}
+            className={`flex-1 bg-transparent font-medium outline-none text-gray-900 dark:text-white placeholder:text-gray-400 placeholder:font-normal ${isCompact ? "text-xs" : "text-sm"}`}
           />
-          {isSearching && <Loader2 className="w-4 h-4 animate-spin text-[#1890FF] ml-2" />}
+          {isSearching && <Loader2 className={`${isCompact ? "w-3.5 h-3.5" : "w-4 h-4"} animate-spin text-[#1890FF] ml-2`} />}
           {query && !isSearching && (
-            <button onClick={() => { setQuery(""); setResults([]); }} className="ml-2 p-1 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
-              <X className="w-4 h-4" />
+            <button onClick={() => { setQuery(""); setResults([]); }} className="ml-1.5 p-1 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
+              <X className={isCompact ? "w-3.5 h-3.5" : "w-4 h-4"} />
             </button>
           )}
         </div>
@@ -98,7 +126,7 @@ export function MarketSearchBar() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.15 }}
-              className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#141821] border border-gray-200/80 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden max-h-[420px] overflow-y-auto hidden-scrollbar"
+              className={`absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#141821] border border-gray-200/80 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden max-h-[420px] overflow-y-auto hidden-scrollbar ${isCompact ? "min-w-[320px]" : ""}`}
             >
               {/* Popular (cuando vacío) */}
               {showPopular && (

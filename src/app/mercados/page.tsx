@@ -60,6 +60,7 @@ type TabId = "chile" | "global" | "tendencia";
 export default function MercadosPage() {
   const [activeTab, setActiveTab] = useState<TabId>("chile");
   const [articles, setArticles] = useState<any[]>([]);
+  const [newsLoading, setNewsLoading] = useState(true);
   const supabase = createClient();
 
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
@@ -153,23 +154,60 @@ export default function MercadosPage() {
   };
 
   useEffect(() => {
+    let cancelled = false;
     const fetchNews = async () => {
-      const { data } = await supabase
-        .from("news_articles")
-        .select("*")
-        .order("published_at", { ascending: false })
-        .limit(200);
-      if (data) setArticles(data);
+      setNewsLoading(true);
+      try {
+        // Prefer articles already tagged as finance-related feeds
+        let { data, error } = await supabase
+          .from("news_articles")
+          .select("*")
+          .in("feed_tag", ["finanzas", "inversiones", "economia", "chile", "impacto_global"])
+          .order("published_at", { ascending: false })
+          .limit(60);
+
+        if (error || !data?.length) {
+          const fallback = await supabase
+            .from("news_articles")
+            .select("*")
+            .order("published_at", { ascending: false })
+            .limit(120);
+          data = fallback.data;
+        }
+
+        if (!cancelled) setArticles(data || []);
+      } catch {
+        if (!cancelled) setArticles([]);
+      } finally {
+        if (!cancelled) setNewsLoading(false);
+      }
     };
     fetchNews();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Filter articles that match finance keywords
+  // Filter: keywords first, then category, then recent fallback so the panel never stays empty
   const financeNews = useMemo(() => {
-    return articles.filter(a => {
-      const text = `${a.title} ${a.summary}`.toLowerCase();
-      return FINANCE_KEYWORDS.some(kw => text.includes(kw.toLowerCase()));
-    }).slice(0, 15);
+    if (!articles.length) return [];
+
+    const byKeyword = articles.filter((a) => {
+      const text = `${a.title || ""} ${a.summary || ""}`.toLowerCase();
+      return FINANCE_KEYWORDS.some((kw) => text.includes(kw.toLowerCase()));
+    });
+    if (byKeyword.length >= 5) return byKeyword.slice(0, 15);
+
+    const financeCats = ["business", "finance", "economy", "markets", "finanzas", "economia"];
+    const byCategory = articles.filter((a) => {
+      const cat = (a.category || "").toLowerCase();
+      const tag = (a.feed_tag || "").toLowerCase();
+      return financeCats.some((c) => cat.includes(c) || tag.includes(c))
+        || ["finanzas", "inversiones", "economia", "chile"].includes(tag);
+    });
+    if (byCategory.length >= 3) return byCategory.slice(0, 15);
+
+    // Fallback: latest articles so the UI always has content
+    return (byKeyword.length ? byKeyword : byCategory.length ? byCategory : articles).slice(0, 15);
   }, [articles]);
 
   const featuredArticle = financeNews[0];
@@ -208,16 +246,16 @@ export default function MercadosPage() {
   return (
     <SidebarLayout>
     <AuthGuard>
-    <div className="min-h-screen bg-background pt-4">
-      {/* ── SEARCH BAR (reemplaza la cinta giratoria) ── */}
-      <MarketSearchBar />
+    <div className="min-h-screen bg-background pt-2 md:pt-0">
+      {/* Buscador solo en móvil; en PC va en FinanceTopBar */}
+      <div className="md:hidden">
+        <MarketSearchBar />
+      </div>
 
-      <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 pt-4 pb-16">
+      <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 pt-3 md:pt-4 pb-16">
 
-        {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
-        {/* TAB BAR (Home-page style pills)                   */}
-        {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
-        <div className="flex items-center gap-4 overflow-x-auto hide-scrollbar mb-6 pt-2">
+        {/* TAB BAR */}
+        <div className="flex items-center gap-4 overflow-x-auto hide-scrollbar mb-6 pt-1">
           {/* Tab pills */}
           <div className="flex items-center gap-2">
             {TABS.map(tab => (
@@ -254,26 +292,17 @@ export default function MercadosPage() {
         {/* ROW 1: Symbol Overview Chart + Top Finance News    */}
         {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
-          {/* LEFT: Symbol Overview (with visible chart and symbol tabs) */}
-          <div className="xl:col-span-2 relative">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeTab}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.15 }}
-              >
-                <SymbolOverview
-                  symbols={
-                    activeTab === "chile" ? CHILE_SYMBOLS 
-                    : activeTab === "global" ? GLOBAL_SYMBOLS 
-                    : TENDENCIA_SYMBOLS
-                  }
-                  height={520}
-                />
-              </motion.div>
-            </AnimatePresence>
+          {/* LEFT: Symbol Overview */}
+          <div className="xl:col-span-2 relative min-h-[320px]">
+            <SymbolOverview
+              key={activeTab}
+              symbols={
+                activeTab === "chile" ? CHILE_SYMBOLS
+                : activeTab === "global" ? GLOBAL_SYMBOLS
+                : TENDENCIA_SYMBOLS
+              }
+              height={520}
+            />
           </div>
 
           {/* RIGHT: Top Finance News Panel */}
@@ -284,9 +313,9 @@ export default function MercadosPage() {
                 <h3 className="font-bold text-sm text-gray-900 dark:text-white">Top Noticias Financieras</h3>
               </div>
               <div className="flex-1 overflow-y-auto divide-y divide-border">
-                {financeNews.length === 0 ? (
+                {newsLoading ? (
                   <div className="p-8 flex flex-col gap-4">
-                    {[1,2,3,4,5].map(i => (
+                    {[1, 2, 3, 4, 5].map((i) => (
                       <div key={i} className="flex gap-3 animate-pulse">
                         <div className="w-5 h-4 rounded bg-gray-100 dark:bg-white/5 flex-shrink-0" />
                         <div className="flex-1 space-y-1.5">
@@ -295,6 +324,11 @@ export default function MercadosPage() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                ) : financeNews.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <Newspaper className="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+                    <p className="text-sm text-gray-500 dark:text-gray-400">No hay noticias financieras por ahora.</p>
                   </div>
                 ) : (
                   financeNews.slice(0, 10).map((article, i) => (

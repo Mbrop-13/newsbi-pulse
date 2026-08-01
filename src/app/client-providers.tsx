@@ -2,8 +2,8 @@
 
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { Footer } from "@/components/footer";
+import { FinanceTopBar, isFinanceTopBarPath } from "@/components/finance-top-bar";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ServiceWorkerRegistration } from "@/components/sw-register";
@@ -180,32 +180,6 @@ export function ClientLayoutProviders({
   const isCanvasOpen = useCanvasStore((s) => s.isOpen);
   const isFixedLayout = showBuilderWorkspace || isBrowserOpen || isCanvasOpen;
 
-  // Sección Finanzas (y páginas hermanas del menú lateral): en móvil solo
-  // el círculo hamburguesa arriba-izquierda; la barra flotante inferior ya no encaja.
-  const isFinanceSection =
-    pathname === "/portafolio" ||
-    pathname.startsWith("/portafolio/") ||
-    pathname === "/mercados" ||
-    pathname.startsWith("/mercados/") ||
-    pathname === "/noticias" ||
-    pathname.startsWith("/noticias/") ||
-    pathname === "/mundo" ||
-    pathname.startsWith("/mundo/") ||
-    pathname === "/finanzas" ||
-    pathname.startsWith("/finanzas/") ||
-    pathname === "/economia" ||
-    pathname.startsWith("/economia/") ||
-    pathname === "/inversiones" ||
-    pathname.startsWith("/inversiones/") ||
-    pathname === "/tech-global" ||
-    pathname.startsWith("/tech-global/") ||
-    pathname === "/impacto-global" ||
-    pathname.startsWith("/impacto-global/");
-
-  // Bottom nav móvil solo donde aún aporta (p. ej. proyectos); no en AI ni finanzas
-  const showMobileNavOnSidebar =
-    isMobile && isSidebarPage && !isAiPage && !isFinanceSection;
-
   // Aplicar tamaño de fuente + esquema sepia globalmente (accesibilidad visual)
   const fontSize = useViewStore((s) => s.fontSize);
   const colorScheme = useViewStore((s) => s.colorScheme);
@@ -242,9 +216,7 @@ export function ClientLayoutProviders({
           <main
             className={cn(
               "flex-1 transition-all duration-300 ease-in-out",
-              (isFixedLayout || isAiPage) ? "overflow-hidden h-full" : "overflow-y-auto h-full",
-              // Espacio inferior solo si hay barra flotante móvil (no en AI ni finanzas)
-              !isAdminPage && !isAiPage && !isFinanceSection && "pb-16 md:pb-0"
+              (isFixedLayout || isAiPage) ? "overflow-hidden h-full" : "overflow-y-auto h-full"
             )}
             style={{
               ...((!isAdminPage && audioMode === "pinned") ? { marginRight: pinnedWidth } : {}),
@@ -259,9 +231,10 @@ export function ClientLayoutProviders({
                   <div className={cn(
                     (isFixedLayout || isAiPage)
                       ? "flex flex-col h-[100dvh] w-full min-w-0 overflow-hidden relative"
-                      : "flex flex-col min-h-full w-full min-w-0",
-                    showMobileNavOnSidebar && "pb-24"
+                      : "flex flex-col min-h-full w-full min-w-0"
                   )}>
+                    {/* Barra superior PC: nav Portafolio/Mercados/Noticias/Mundo + buscador */}
+                    {!isMobile && isFinanceTopBarPath(pathname) && <FinanceTopBar />}
                     {children}
                   </div>
                 </SidebarInset>
@@ -271,11 +244,10 @@ export function ClientLayoutProviders({
                 <div className="flex-1">
                   {children}
                 </div>
-                {mounted && (!isFullscreenPage || showMobileNavOnSidebar) && !isAdminPage && !isLandingPage && !isSharePage && <Footer />}
+                {mounted && !isFullscreenPage && !isAdminPage && !isLandingPage && !isSharePage && <Footer />}
               </div>
             )}
           </main>
-          {mounted && (!isFullscreenPage || showMobileNavOnSidebar) && !isAdminPage && !isLandingPage && !isSharePage && <MobileBottomNav />}
           <ServiceWorkerRegistration />
           <CapacitorInit />
           {!isAdminPage && <PersonalizationApplier />}

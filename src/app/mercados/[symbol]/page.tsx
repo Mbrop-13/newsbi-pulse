@@ -67,7 +67,7 @@ export default async function TickerPage({ params }: Props) {
   const info = getTickerInfo(symbol);
 
   return (
-    <div className="min-h-screen bg-transparent pt-20 pb-16">
+    <div className="min-h-screen bg-transparent pt-4 md:pt-4 pb-16">
       <div className="w-full mx-auto px-4 sm:px-6 xl:px-8">
 
         {/* ── BREADCRUMB ── */}

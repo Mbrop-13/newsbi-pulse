@@ -107,11 +107,11 @@ export function NewsCard({ article, index, layout = "default" }: NewsCardProps) 
   };
 
   const titleSizeClass = 
-    layout === 'featured' ? 'text-2xl sm:text-3xl' :
+    layout === 'featured' ? 'text-xl sm:text-2xl md:text-3xl' :
     layout === 'compact' ? 'text-sm font-bold' :
     fontSize === 'sm' ? 'text-sm font-semibold' :
     fontSize === 'lg' ? 'text-base font-bold' :
-    'text-sm.5 font-bold'; // base default for Google News card style
+    'text-sm sm:text-[15px] font-bold';
 
   // Show summary only on featured, list or horizontal layouts
   const showSummary = layout === 'featured' || layout === 'list' || layout === 'traditional' || layout === 'horizontal';
@@ -120,8 +120,8 @@ export function NewsCard({ article, index, layout = "default" }: NewsCardProps) 
     <motion.article
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.04, duration: 0.4, ease: "easeOut" }}
-      className={`group relative w-full bg-card rounded-2xl border border-border/60 hover:shadow-lg hover:shadow-blue-500/5 transition-all duration-300 overflow-hidden flex flex-col ${
+      transition={{ delay: Math.min(index, 8) * 0.04, duration: 0.4, ease: "easeOut" }}
+      className={`group relative w-full bg-card rounded-xl sm:rounded-2xl border border-border/60 hover:shadow-lg hover:shadow-blue-500/5 transition-all duration-300 overflow-hidden flex flex-col ${
         layout !== 'default' ? 'h-full' : ''
       }`}
     >
@@ -135,7 +135,7 @@ export function NewsCard({ article, index, layout = "default" }: NewsCardProps) 
         {/* Hero Image */}
         {showImages && article.image_url && (
           <div className={`relative w-full overflow-hidden rounded-t-xl bg-gray-50 dark:bg-slate-800/40 shrink-0 ${
-             layout === 'featured' ? 'h-64 sm:h-80 md:h-[350px]' :
+             layout === 'featured' ? 'h-48 sm:h-64 md:h-[350px]' :
              layout === 'compact' ? 'aspect-[2/1] sm:aspect-video' :
              'aspect-[16/10]'
           }`}>
@@ -143,24 +143,24 @@ export function NewsCard({ article, index, layout = "default" }: NewsCardProps) 
               src={imgError ? getFallbackImage(article.category) : article.image_url}
               onError={() => setImgError(true)}
               alt={article.title}
-              className="w-full h-full object-cover transition-transform duration-750 group-hover:scale-[1.03]"
+              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
             />
           </div>
         )}
 
         {/* Card Body */}
-        <div className="flex flex-col p-4 sm:p-5 gap-2.5 flex-1 mt-auto">
+        <div className="flex flex-col p-3.5 sm:p-5 gap-2 sm:gap-2.5 flex-1 mt-auto">
           
           {/* Top Meta info */}
-          <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-gray-400">
-            <span className="uppercase text-[#1890FF] tracking-wider">{article.category}</span>
+          <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-gray-400 min-w-0">
+            <span className="uppercase text-[#1890FF] tracking-wider truncate">{article.category}</span>
             <span className="w-0.5 h-0.5 rounded-full bg-gray-400 shrink-0" />
-            <span>Publicado {formatTimeAgo(article.published_at)}</span>
+            <span className="truncate">{formatTimeAgo(article.published_at)}</span>
             
             {hasEnriched && (
               <>
                 <span className="w-0.5 h-0.5 rounded-full bg-gray-400 shrink-0 ml-auto" />
-                <span className="flex items-center gap-0.5 text-[9px] font-bold text-gray-400 dark:text-gray-500">
+                <span className="flex items-center gap-0.5 text-[9px] font-bold text-gray-400 dark:text-gray-500 shrink-0">
                   <ShieldCheck className="w-3 h-3 text-[#1890FF]" />
                   IA
                 </span>
@@ -169,19 +169,19 @@ export function NewsCard({ article, index, layout = "default" }: NewsCardProps) 
           </div>
 
           {/* Title */}
-          <h3 className={`font-sans leading-tight transition-colors line-clamp-3 text-gray-950 dark:text-gray-50 group-hover:text-[#1890FF] ${titleSizeClass}`}>
+          <h3 className={`font-sans leading-snug sm:leading-tight transition-colors line-clamp-3 text-gray-950 dark:text-gray-50 group-hover:text-[#1890FF] ${titleSizeClass}`}>
             {article.title}
           </h3>
 
           {/* Summary */}
           {showSummary && article.summary && (
-            <div className="text-gray-500 dark:text-gray-400 text-xs.5 sm:text-sm leading-relaxed line-clamp-3 mt-1.5">
+            <div className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm leading-relaxed line-clamp-2 sm:line-clamp-3 mt-0.5 sm:mt-1.5">
               <ReactMarkdown>{article.summary}</ReactMarkdown>
             </div>
           )}
 
           {/* Footer actions and sources */}
-          <div className="flex items-center mt-auto pt-3 border-t border-border/40 justify-between">
+          <div className="flex items-center mt-auto pt-2.5 sm:pt-3 border-t border-border/40 justify-between gap-2">
             {article.sources && article.sources.length > 0 ? (
               <div className="flex items-center gap-1.5 min-w-0 z-30">
                 <div className="flex items-center -space-x-1 shrink-0">
@@ -201,16 +201,16 @@ export function NewsCard({ article, index, layout = "default" }: NewsCardProps) 
                     );
                   })}
                 </div>
-                <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400 truncate">
+                <span className="text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-gray-400 truncate">
                   {article.sources.length} {article.sources.length === 1 ? "fuente" : "fuentes"}
                 </span>
               </div>
             ) : (
-              <div className="text-[11px] text-gray-400 font-medium">Maverlang</div>
+              <div className="text-[10px] sm:text-[11px] text-gray-400 font-medium">Maverlang</div>
             )}
 
             {/* Premium action buttons */}
-            <div className="flex items-center gap-2 z-30 shrink-0">
+            <div className="flex items-center gap-1 sm:gap-2 z-30 shrink-0">
               <button
                 onClick={handleToggleBookmark}
                 className={`p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-full transition-colors ${

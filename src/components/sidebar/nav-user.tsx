@@ -159,18 +159,27 @@ export function NavUser() {
 
   return (
     <>
-      <div className="flex items-center gap-0.5 w-full">
+      {/* Avatar anclado a la izquierda: sin justify-center ni transition de width
+          (evita el “salto” de derecha → izquierda al colapsar la sidebar). */}
+      <div className="flex items-center gap-0.5 w-full min-w-0">
         <SidebarMenu className="flex-1 min-w-0">
           <SidebarMenuItem className="list-none">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton
                   size="lg"
-                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:!justify-center !overflow-visible"
+                  className={cn(
+                    "data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground",
+                    "!overflow-visible !justify-start",
+                    // Icon mode: tamaño fijo, sin animar width/height (evita el desliz del avatar)
+                    "group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:!gap-0",
+                    "group-data-[collapsible=icon]:!justify-start group-data-[collapsible=icon]:!items-center",
+                    "!transition-none"
+                  )}
                 >
-                  <div className="relative shrink-0">
+                  <div className="relative shrink-0 size-8 flex items-center justify-center">
                     <Avatar className={cn(
-                      "h-8 w-8 rounded-full transition-all",
+                      "h-8 w-8 rounded-full",
                       mounted && isAuthenticated && userTier !== "free" && "ring-[1.5px] ring-black/80 dark:ring-white/80"
                     )}>
                       <AvatarImage src={mounted ? avatarSrc : undefined} alt={mounted ? displayName : "Usuario"} />

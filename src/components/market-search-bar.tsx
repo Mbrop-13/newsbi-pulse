@@ -28,9 +28,20 @@ interface MarketSearchBarProps {
   /** full = mercados (móvil / standalone); compact = top bar PC */
   variant?: "full" | "compact";
   className?: string;
+  /** Fondo más transparente (top bar) */
+  transparent?: boolean;
+  /** Estado expandido controlado por el padre (opcional) */
+  expanded?: boolean;
+  onFocusChange?: (focused: boolean) => void;
 }
 
-export function MarketSearchBar({ variant = "full", className }: MarketSearchBarProps) {
+export function MarketSearchBar({
+  variant = "full",
+  className,
+  transparent = false,
+  expanded,
+  onFocusChange,
+}: MarketSearchBarProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -38,7 +49,17 @@ export function MarketSearchBar({ variant = "full", className }: MarketSearchBar
   const [hasError, setHasError] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const isCompact = variant === "compact";
+  const isExpanded = expanded ?? isFocused;
+
+  const setFocused = useCallback(
+    (value: boolean) => {
+      setIsFocused(value);
+      onFocusChange?.(value);
+    },
+    [onFocusChange]
+  );
 
   const handleSearch = useCallback((term: string) => {
     setQuery(term);
@@ -67,12 +88,12 @@ export function MarketSearchBar({ variant = "full", className }: MarketSearchBar
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsFocused(false);
+        setFocused(false);
       }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, []);
+  }, [setFocused]);
 
   const showDropdown = isFocused && query.trim().length > 0;
   const showPopular = isFocused && query.trim().length === 0;
@@ -86,29 +107,43 @@ export function MarketSearchBar({ variant = "full", className }: MarketSearchBar
         className
       )}
     >
-      {/* Pastilla ovalada liquid glass — sobrepuesta */}
+      {/* Pastilla ovalada — liquid glass o transparente */}
       <div
         className={cn(
-          "group relative flex items-center rounded-full transition-all duration-300 ease-out",
-          "market-search-pill",
+          "group relative flex items-center rounded-full transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+          !transparent && "market-search-pill",
+          transparent && [
+            "bg-black/[0.04] dark:bg-white/[0.06]",
+            "backdrop-blur-md border border-black/[0.06] dark:border-white/[0.1]",
+            "hover:bg-black/[0.06] dark:hover:bg-white/[0.09]",
+            "hover:border-black/[0.1] dark:hover:border-white/[0.14]",
+          ],
           isCompact ? "h-10 px-3.5 gap-2" : "h-12 sm:h-14 px-4 sm:px-5 gap-2.5",
-          isFocused
-            ? "ring-2 ring-[#1890FF]/35 shadow-[0_8px_32px_rgba(24,144,255,0.18),0_2px_12px_rgba(0,0,0,0.08)] scale-[1.01]"
-            : "shadow-[0_4px_24px_rgba(15,23,42,0.08),0_1px_0_rgba(255,255,255,0.6)_inset] hover:shadow-[0_8px_28px_rgba(15,23,42,0.12)]"
+          isFocused || isExpanded
+            ? transparent
+              ? "bg-background/70 dark:bg-background/60 backdrop-blur-xl border-black/[0.1] dark:border-white/[0.14] shadow-[0_8px_30px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.35)] ring-1 ring-black/[0.04] dark:ring-white/[0.06]"
+              : "ring-2 ring-[#1890FF]/35 shadow-[0_8px_32px_rgba(24,144,255,0.18),0_2px_12px_rgba(0,0,0,0.08)] scale-[1.01]"
+            : !transparent &&
+              "shadow-[0_4px_24px_rgba(15,23,42,0.08),0_1px_0_rgba(255,255,255,0.6)_inset] hover:shadow-[0_8px_28px_rgba(15,23,42,0.12)]"
         )}
+        onClick={() => inputRef.current?.focus()}
       >
-        {/* Brillo superior sutil */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-4 top-0 h-px rounded-full bg-gradient-to-r from-transparent via-white/80 to-transparent dark:via-white/20"
-        />
+        {/* Brillo superior sutil (solo estilo glass clásico) */}
+        {!transparent && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-4 top-0 h-px rounded-full bg-gradient-to-r from-transparent via-white/80 to-transparent dark:via-white/20"
+          />
+        )}
 
         <div
           className={cn(
             "flex items-center justify-center rounded-full shrink-0 transition-colors",
             isCompact ? "w-7 h-7" : "w-8 h-8",
             isFocused
-              ? "bg-[#1890FF]/15 text-[#1890FF]"
+              ? transparent
+                ? "bg-black/10 dark:bg-white/10 text-foreground"
+                : "bg-[#1890FF]/15 text-[#1890FF]"
               : "bg-black/[0.04] dark:bg-white/[0.06] text-gray-500 dark:text-gray-400"
           )}
         >
@@ -120,13 +155,16 @@ export function MarketSearchBar({ variant = "full", className }: MarketSearchBar
         </div>
 
         <input
+          ref={inputRef}
           type="text"
           value={query}
           onChange={(e) => handleSearch(e.target.value)}
-          onFocus={() => setIsFocused(true)}
+          onFocus={() => setFocused(true)}
           placeholder={
             isCompact
-              ? "Buscar acciones, ETFs, cripto…"
+              ? isExpanded
+                ? "Buscar acciones, ETFs, cripto…"
+                : "Buscar…"
               : "Buscar acciones, ETFs, criptos… (AAPL, Bitcoin, NVIDIA)"
           }
           className={cn(
@@ -147,6 +185,7 @@ export function MarketSearchBar({ variant = "full", className }: MarketSearchBar
               onClick={() => {
                 setQuery("");
                 setResults([]);
+                inputRef.current?.focus();
               }}
               className="shrink-0 p-1.5 rounded-full text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-black/[0.06] dark:hover:bg-white/10 transition-colors"
               aria-label="Limpiar búsqueda"
@@ -185,7 +224,7 @@ export function MarketSearchBar({ variant = "full", className }: MarketSearchBar
                     symbol={s.symbol}
                     name={s.name}
                     exchange={s.exchange}
-                    onClick={() => setIsFocused(false)}
+                    onClick={() => setFocused(false)}
                   />
                 ))}
               </>
@@ -199,7 +238,7 @@ export function MarketSearchBar({ variant = "full", className }: MarketSearchBar
                   </div>
                 ) : isSearching ? (
                   <div className="px-4 py-8 flex items-center justify-center gap-2 text-sm text-gray-400">
-                    <Loader2 className="w-4 h-4 animate-spin text-[#1890FF]" /> Buscando…
+                    <Loader2 className="w-4 h-4 animate-spin text-foreground/60" /> Buscando…
                   </div>
                 ) : results.length === 0 ? (
                   <div className="px-4 py-10 text-center">
@@ -223,7 +262,7 @@ export function MarketSearchBar({ variant = "full", className }: MarketSearchBar
                         symbol={res.symbol}
                         name={res.shortname || res.longname || res.symbol}
                         exchange={res.exchDisp || res.exchange}
-                        onClick={() => setIsFocused(false)}
+                        onClick={() => setFocused(false)}
                       />
                     ))}
                   </>
@@ -252,7 +291,7 @@ function SearchResultItem({
     <Link
       href={`/mercados/${encodeURIComponent(symbol)}`}
       onClick={onClick}
-      className="flex items-center gap-3 px-3.5 py-2.5 mx-1.5 my-0.5 rounded-2xl hover:bg-[#1890FF]/08 dark:hover:bg-[#1890FF]/12 transition-colors group"
+      className="flex items-center gap-3 px-3.5 py-2.5 mx-1.5 my-0.5 rounded-2xl hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors group"
     >
       <div className="w-9 h-9 rounded-full bg-white dark:bg-white/10 flex items-center justify-center overflow-hidden shrink-0 border border-black/[0.06] dark:border-white/10 shadow-sm group-hover:scale-105 transition-transform duration-200">
         <img
@@ -266,7 +305,7 @@ function SearchResultItem({
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="font-bold text-sm text-gray-900 dark:text-white group-hover:text-[#1890FF] transition-colors">
+          <span className="font-bold text-sm text-gray-900 dark:text-white group-hover:text-foreground transition-colors">
             {symbol}
           </span>
           {exchange && (
@@ -277,7 +316,7 @@ function SearchResultItem({
         </div>
         <p className="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">{name}</p>
       </div>
-      <ArrowUpRight className="w-4 h-4 text-gray-300 group-hover:text-[#1890FF] shrink-0 transition-colors" />
+      <ArrowUpRight className="w-4 h-4 text-gray-300 group-hover:text-foreground shrink-0 transition-colors" />
     </Link>
   );
 }

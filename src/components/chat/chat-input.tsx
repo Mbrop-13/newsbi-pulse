@@ -476,10 +476,13 @@ export function ChatInput({
   };
 
   return (
-    <div className="bg-transparent px-2 md:px-0 pb-0 shadow-none !shadow-none">
+    <div className={cn(
+      "bg-transparent pb-0 shadow-none !shadow-none min-w-0 w-full max-w-full",
+      isProjectsPage ? "px-0" : "px-2 md:px-0"
+    )}>
       <form
         onSubmit={handleSubmit}
-        className={cn("w-full max-w-full px-0 pt-0 relative", className)}
+        className={cn("w-full max-w-full min-w-0 px-0 pt-0 relative", className)}
       >
         {/* Banner de límite de tokens alcanzado (sobre la barra de input) */}
         <AnimatePresence>
@@ -861,44 +864,54 @@ export function ChatInput({
                           </>
                         )
                       ) : (
-                        // Desktop/default layout
-                        <>
-                          {!isWebBuilderMode && (
+                        // Desktop/default: modos exclusivos.
+                        // Al activar uno se mantiene visible y se ocultan los otros.
+                        isWebBuilderMode ? (
+                          <WebBuilderPill onActivate={() => { setCodeInterpreter(false); setBrowser(false); useCanvasStore.getState().setOpen(false); }} />
+                        ) : codeInterpreter ? (
+                          <Pill
+                            active={codeInterpreter}
+                            onClick={() => {
+                              setCodeInterpreter(false);
+                              useCanvasStore.getState().setOpen(false);
+                            }}
+                            icon={<Code2 className="h-4 w-4" />}
+                            label="Canvas"
+                          />
+                        ) : browser ? (
+                          <Pill
+                            active={browser}
+                            onClick={() => {
+                              setBrowser(false);
+                            }}
+                            icon={<Chrome className="h-4 w-4" />}
+                            label="Navegador virtual"
+                          />
+                        ) : (
+                          <>
                             <WebBuilderPill onActivate={() => { setCodeInterpreter(false); setBrowser(false); useCanvasStore.getState().setOpen(false); }} />
-                          )}
-                          {(!isWebBuilderMode || messages.length === 0) && (
-                            <>
-                              <Pill
-                                active={codeInterpreter}
-                                onClick={() => {
-                                  const next = !codeInterpreter;
-                                  setCodeInterpreter(next);
-                                  if (next) {
-                                    setWebBuilderMode(false);
-                                    setBrowser(false);
-                                  } else {
-                                    useCanvasStore.getState().setOpen(false);
-                                  }
-                                }}
-                                icon={<Code2 className="h-4 w-4" />}
-                                label="Canvas"
-                              />
-                              <Pill
-                                active={browser}
-                                onClick={() => {
-                                  const next = !browser;
-                                  setBrowser(next);
-                                  if (next) {
-                                    setWebBuilderMode(false);
-                                    setCodeInterpreter(false);
-                                  }
-                                }}
-                                icon={<Chrome className="h-4 w-4" />}
-                                label="Navegador virtual"
-                              />
-                            </>
-                          )}
-                        </>
+                            <Pill
+                              active={codeInterpreter}
+                              onClick={() => {
+                                setCodeInterpreter(true);
+                                setWebBuilderMode(false);
+                                setBrowser(false);
+                              }}
+                              icon={<Code2 className="h-4 w-4" />}
+                              label="Canvas"
+                            />
+                            <Pill
+                              active={browser}
+                              onClick={() => {
+                                setBrowser(true);
+                                setWebBuilderMode(false);
+                                setCodeInterpreter(false);
+                              }}
+                              icon={<Chrome className="h-4 w-4" />}
+                              label="Navegador virtual"
+                            />
+                          </>
+                        )
                       )}
                     </>
                   )}

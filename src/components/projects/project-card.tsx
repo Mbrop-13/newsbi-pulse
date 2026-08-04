@@ -503,11 +503,12 @@ export function ProjectCard({ project, index }: ProjectCardProps) {
         delay: index * 0.06,
         ease: [0.32, 0.72, 0, 1],
       }}
+      className="min-w-0 w-full"
     >
       <Link
         href={`/${language}/proyectos/${project.id}`}
         className={cn(
-          "group relative block rounded-lg border border-zinc-800 bg-[#16161a] overflow-hidden transition-all duration-300",
+          "group relative block rounded-lg border border-zinc-800 bg-[#16161a] overflow-hidden transition-all duration-300 min-w-0 w-full",
           "hover:border-zinc-700 hover:shadow-xl hover:shadow-black/50",
           "hover:-translate-y-0.5 active:scale-[0.99]",
           isDeleting && "opacity-50 pointer-events-none"

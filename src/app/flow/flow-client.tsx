@@ -3,34 +3,17 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Search,
-  Sliders,
   Plus,
-  HelpCircle,
-  Settings,
   MoreHorizontal,
   ArrowUp,
   Mic,
   ChevronDown,
-  ChevronRight,
   Heart,
   Download,
   Image as ImageIcon,
   Paperclip,
-  PieChart,
-  TrendingUp,
-  Star,
   X,
   FileText,
-  BookOpen,
-  Code2,
-  Chrome,
-  BarChart3,
-  LineChart,
-  AreaChart,
-  Target,
-  Scale,
-  Layers,
   Sparkles,
   Package,
 } from "lucide-react";
@@ -40,7 +23,6 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAIChatStore, type SavedChat, type ChatMessage } from "@/lib/stores/ai-chat-store";
 import { useAuthStore } from "@/lib/stores/auth-store";
-import { useSidebar } from "@/components/ui/sidebar";
 import { useSubscriptionStore } from "@/lib/stores/subscription-store";
 import { getPlanConfig } from "@/lib/plan-limits";
 import { UpgradeModal } from "@/components/upgrade-modal";
@@ -50,23 +32,14 @@ import {
   type LogoMode,
 } from "@/lib/stores/brand-store";
 
-const ADVANCED_TOOLS = [
-  { id: 'chart_bar', label: 'Gráfico de Barras', icon: BarChart3, category: 'Gráficos' },
-  { id: 'chart_line', label: 'Gráfico de Líneas', icon: LineChart, category: 'Gráficos' },
-  { id: 'chart_pie', label: 'Gráfico Circular', icon: PieChart, category: 'Gráficos' },
-  { id: 'chart_area', label: 'Gráfico de Área', icon: AreaChart, category: 'Gráficos' },
-  { id: 'chart_radar', label: 'Gráfico de Radar', icon: Target, category: 'Gráficos' },
-  { id: 'analyze_stock', label: 'Análisis Fundamental', icon: TrendingUp, category: 'Análisis' },
-  { id: 'compare_stocks', label: 'Comparar Acciones', icon: Scale, category: 'Análisis' },
-  { id: 'get_sector_performance', label: 'Rendimiento Sectorial', icon: Layers, category: 'Análisis' },
-];
-
 // Model option interface
 type ModelProvider = "google";
 
 interface ModelOption {
   id: string;
   name: string;
+  /** Nombre corto para la barra en móvil (ej. "Lite") */
+  shortName: string;
   icon: string;
   provider: ModelProvider;
 }
@@ -75,12 +48,14 @@ const FLOW_MODELS: ModelOption[] = [
   {
     id: "google/gemini-3.1-flash-lite-image",
     name: "Nano Banana 2 Lite",
+    shortName: "Lite",
     icon: "🍌",
     provider: "google",
   },
   {
     id: "google/gemini-3-pro-image",
     name: "Nano Banana Pro",
+    shortName: "Pro",
     icon: "🍌",
     provider: "google",
   },
@@ -126,6 +101,7 @@ function ProviderLogo({
 interface WorkspaceItem {
   id: string;
   prompt: string;
+  label?: string;
   imageUrl?: string;
   status: "generating" | "completed" | "failed";
   progress: number;
@@ -133,18 +109,25 @@ interface WorkspaceItem {
   modelName: string;
 }
 
-// Initial waves pattern images to display exactly like the mockup screenshot
 const INITIAL_ITEMS: WorkspaceItem[] = [];
 
-// Curated library of premium unsplash patterns/textures to display on new image generation
-const CURATED_PATTERNS = [
-  "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?q=80&w=800",
-  "https://images.unsplash.com/photo-1502691876148-a84978e59fa8?q=80&w=800",
-  "https://images.unsplash.com/photo-1541701494587-cb58502866ab?q=80&w=800",
-  "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=800",
-  "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800",
-  "https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?q=80&w=800",
-];
+/** Client-side estimate: how many images the agent will likely create from the prompt */
+function estimateAgentImageCount(prompt: string, fallback: number): number {
+  const lower = prompt.toLowerCase();
+  const numMatch =
+    lower.match(/(\d+)\s*(im[aá]genes?|imgs?|fotos?|slides?|paneles?|piezas?|posts?|variantes?)/i) ||
+    lower.match(/(im[aá]genes?|imgs?|fotos?|slides?)\s*(de|:)?\s*(\d+)/i) ||
+    lower.match(/\bx\s*([2-4])\b/) ||
+    lower.match(/\b([2-4])x\b/);
+  if (numMatch) {
+    const raw = parseInt(numMatch[1] || numMatch[3], 10);
+    if (raw >= 1 && raw <= 4) return raw;
+  }
+  if (/carrusel|carousel|serie de|set de|pack de|secuencia|storyboard|feed de instagram|posts? para instagram/i.test(lower)) {
+    return Math.max(fallback, 3);
+  }
+  return fallback;
+}
 
 export default function FlowClient() {
   const [selectedModel, setSelectedModel] = useState<ModelOption>(FLOW_MODELS[0]);
@@ -202,9 +185,8 @@ export default function FlowClient() {
     resizeTextarea();
   }, [prompt]);
 
-  // Audio dictation & file upload states/helpers matching normal ChatInput
+  // Audio dictation & file upload
   const [showAttachMenu, setShowAttachMenu] = useState(false);
-  const [attachMenuView, setAttachMenuView] = useState<'main' | 'charts' | 'analysis'>('main');
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -213,22 +195,15 @@ export default function FlowClient() {
   const attachedFiles = useAIChatStore((s) => s.attachedFiles);
   const attachFile = useAIChatStore((s) => s.attachFile);
   const removeFile = useAIChatStore((s) => s.removeFile);
-  const activeTools = useAIChatStore((s) => s.activeTools || []);
-  const favoriteTools = useAIChatStore((s) => s.favoriteTools || []);
-  const toggleTool = useAIChatStore((s) => s.toggleTool);
-  const toggleFavoriteTool = useAIChatStore((s) => s.toggleFavoriteTool);
 
   const userTier = useAuthStore((s) => s.user?.role === "admin" ? "ultra" : (s.user?.tier || "free"));
   const MAX_FILES = userTier === "free" ? 1 : userTier === "pro" ? 3 : 10;
-  const { isMobile } = useSidebar();
-  const openUpward = true; // Always open upward since prompt is at the bottom
 
   // Click outside listener for attachment menu
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (attachMenuRef.current && !attachMenuRef.current.contains(event.target as Node)) {
         setShowAttachMenu(false);
-        setTimeout(() => setAttachMenuView('main'), 200);
       }
     }
     if (showAttachMenu) {
@@ -389,7 +364,18 @@ export default function FlowClient() {
     }
   };
 
-  const totalCost = getBaseCost(selectedModel.id) * getMultiplierNumber(multiplier);
+  const multCount = getMultiplierNumber(multiplier);
+  const estimatedCount = isAgentActive
+    ? estimateAgentImageCount(prompt, multCount)
+    : multCount;
+  const totalCost = getBaseCost(selectedModel.id) * estimatedCount;
+  const creditsRemaining = mounted
+    ? Math.max(
+        0,
+        getPlanConfig(userTier).imageCreditsPerMonth -
+          (useSubscriptionStore.getState().monthlyImageCreditsUsed || 0)
+      )
+    : getPlanConfig(userTier).imageCreditsPerMonth;
 
   // Effect to slowly count up progress percentage for any item in "generating" state
   useEffect(() => {
@@ -400,7 +386,6 @@ export default function FlowClient() {
       setItems((prevItems) =>
         prevItems.map((item) => {
           if (item.status === "generating" && item.progress < 95) {
-            // Increments by a small random step slowly
             const step = Math.floor(Math.random() * 2) + 1;
             return { ...item, progress: Math.min(95, item.progress + step) };
           }
@@ -417,29 +402,41 @@ export default function FlowClient() {
     if (!prompt.trim() || loading) return;
 
     const userPrompt = prompt.trim();
-    
+    const plannedCount = isAgentActive
+      ? estimateAgentImageCount(userPrompt, multCount)
+      : multCount;
+    const estimatedCost = getBaseCost(selectedModel.id) * plannedCount;
+
     // Check credits limit
     const limit = getPlanConfig(userTier).imageCreditsPerMonth;
     const used = useSubscriptionStore.getState().monthlyImageCreditsUsed || 0;
     const remaining = Math.max(0, limit - used);
 
-    if (remaining < totalCost) {
+    if (remaining < estimatedCost) {
       setShowUpgradeModal(true);
       return;
+    }
+
+    // Inform user about multi-image + credits before generation starts
+    if (plannedCount > 1 || isAgentActive) {
+      toast.message(
+        isAgentActive
+          ? `Agente: generaré ~${plannedCount} imagen${plannedCount > 1 ? "es" : ""}. Se consumirán ${estimatedCost} créditos.`
+          : `Se generarán ${plannedCount} imágenes · ${estimatedCost} créditos`,
+        { duration: 4000 }
+      );
     }
 
     setPrompt("");
     setLoading(true);
     generatingRef.current = true;
 
-    const multCount = getMultiplierNumber(multiplier);
     const newItems: WorkspaceItem[] = [];
-
-    // Create placeholder loading items
-    for (let i = 0; i < multCount; i++) {
+    for (let i = 0; i < plannedCount; i++) {
       newItems.push({
-        id: `gen-${Math.random().toString()}`,
+        id: `gen-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 7)}`,
         prompt: userPrompt,
+        label: plannedCount > 1 ? `Imagen ${i + 1}` : undefined,
         status: "generating",
         progress: 0,
         aspectRatio,
@@ -451,6 +448,15 @@ export default function FlowClient() {
 
     try {
       const brandContext = buildGenerationContext();
+      const referenceImages = attachedFiles
+        .filter(
+          (f) =>
+            f.type === "image" ||
+            (typeof f.content === "string" && f.content.startsWith("data:image"))
+        )
+        .slice(0, 4)
+        .map((f) => f.content);
+
       const res = await fetch("/api/flow", {
         method: "POST",
         headers: {
@@ -461,22 +467,106 @@ export default function FlowClient() {
           model: selectedModel.id,
           isAgentActive,
           brandContext: brandContext || undefined,
+          aspectRatio,
+          count: plannedCount,
+          referenceImages: referenceImages.length ? referenceImages : undefined,
         }),
       });
 
+      const data = await res.json().catch(() => ({}));
+
       if (!res.ok) {
-        throw new Error("Lo sentimos, estamos teniendo dificultades en este momento.");
+        if (res.status === 402 || data.code === "IMAGE_CREDITS_EXCEEDED") {
+          if (typeof data.creditsUsed === "number") {
+            useSubscriptionStore.getState().setUsage({
+              monthlyImageCreditsUsed: data.creditsUsed,
+            });
+          }
+          setShowUpgradeModal(true);
+          throw new Error(
+            data.error ||
+              "Créditos de imagen insuficientes. Actualiza tu plan para seguir creando."
+          );
+        }
+        throw new Error(data.error || "Lo sentimos, estamos teniendo dificultades en este momento.");
       }
 
-      toast.success("Imágenes generadas correctamente.");
-      useSubscriptionStore.getState().incrementImageCreditsUsed(totalCost);
+      const generated: { url: string; prompt?: string; label?: string }[] =
+        Array.isArray(data.images) ? data.images : [];
+      const actualCredits =
+        typeof data.credits === "number"
+          ? data.credits
+          : getBaseCost(selectedModel.id) * generated.length;
+      const finalRatio = (data.aspectRatio as WorkspaceItem["aspectRatio"]) || aspectRatio;
+      const agentMessage =
+        typeof data.agentMessage === "string" ? data.agentMessage : null;
 
-      // Choose or create Flow chat ID
+      if (generated.length === 0) {
+        throw new Error("No se recibieron imágenes del servidor.");
+      }
+
+      // Sync server-side usage (source of truth)
+      if (typeof data.creditsUsed === "number") {
+        useSubscriptionStore.getState().setUsage({
+          monthlyImageCreditsUsed: data.creditsUsed,
+        });
+      } else {
+        useSubscriptionStore.getState().incrementImageCreditsUsed(actualCredits);
+      }
+
+      // Sync placeholder count with actual results (agent may change count)
+      if (generated.length !== newItems.length) {
+        setItems((prev) => {
+          const withoutPlaceholders = prev.filter(
+            (item) => !newItems.some((ni) => ni.id === item.id)
+          );
+          const synced: WorkspaceItem[] = generated.map((img, i) => ({
+            id: `gen-${Date.now()}-${i}`,
+            prompt: img.prompt || userPrompt,
+            label: img.label || (generated.length > 1 ? `Imagen ${i + 1}` : undefined),
+            imageUrl: img.url,
+            status: "completed" as const,
+            progress: 100,
+            aspectRatio: finalRatio,
+            modelName: selectedModel.name,
+          }));
+          return [...synced, ...withoutPlaceholders];
+        });
+      } else {
+        setItems((prevItems) => {
+          let genIdx = 0;
+          return prevItems.map((item) => {
+            const isTarget = newItems.some((ni) => ni.id === item.id);
+            if (isTarget) {
+              const img = generated[genIdx];
+              genIdx++;
+              return {
+                ...item,
+                status: "completed" as const,
+                progress: 100,
+                imageUrl: img?.url,
+                prompt: img?.prompt || item.prompt,
+                label: img?.label || item.label,
+                aspectRatio: finalRatio,
+              };
+            }
+            return item;
+          });
+        });
+      }
+
+      toast.success(
+        agentMessage ||
+          `Listo: ${generated.length} imagen${generated.length > 1 ? "es" : ""} · −${actualCredits} créditos`
+      );
+
+      // Persist to Flow chat
       const activeChatId = useAIChatStore.getState().currentChatId;
-      const isExistingFlowChat = activeChatId && useAIChatStore.getState().savedChats.find(c => c.id === activeChatId)?.isFlow;
-      const chatId = isExistingFlowChat ? activeChatId : `flow-${Date.now()}`;
+      const isExistingFlowChat =
+        activeChatId &&
+        useAIChatStore.getState().savedChats.find((c) => c.id === activeChatId)?.isFlow;
+      const chatId = isExistingFlowChat ? activeChatId! : `flow-${Date.now()}`;
 
-      // Build new chat messages
       const newMessages: ChatMessage[] = [
         {
           id: `msg-user-${Date.now()}`,
@@ -487,58 +577,37 @@ export default function FlowClient() {
         {
           id: `msg-assistant-${Date.now()}`,
           role: "assistant",
-          content: `Generadas ${multCount} imágenes con ${selectedModel.name}.`,
+          content:
+            agentMessage ||
+            `Generadas ${generated.length} imagen${generated.length > 1 ? "es" : ""} con ${selectedModel.name}. Se consumieron ${actualCredits} créditos.`,
           timestamp: new Date(),
-        }
+        },
       ];
 
-      // Retrieve previous chat images if updating
       const savedChatsList = useAIChatStore.getState().savedChats;
-      const existingIndex = savedChatsList.findIndex(c => c.id === chatId);
+      const existingIndex = savedChatsList.findIndex((c) => c.id === chatId);
       let chatImages: string[] = [];
 
       if (existingIndex >= 0) {
-        chatImages = savedChatsList[existingIndex].attachedFiles.map(f => f.content);
+        chatImages = savedChatsList[existingIndex].attachedFiles.map((f) => f.content);
       }
 
-      // Add the new images to the persisted chat list
-      const newlyGeneratedImages: string[] = [];
-      for (let i = 0; i < multCount; i++) {
-        const randIdx = Math.floor(Math.random() * CURATED_PATTERNS.length);
-        newlyGeneratedImages.push(CURATED_PATTERNS[randIdx]);
-      }
-
+      const newlyGeneratedImages = generated.map((g) => g.url);
       chatImages = [...newlyGeneratedImages, ...chatImages];
-
-      // Update the local state items
-      setItems((prevItems) => {
-        let genIdx = 0;
-        return prevItems.map((item) => {
-          const isTarget = newItems.some(ni => ni.id === item.id);
-          if (isTarget) {
-            const imgUrl = newlyGeneratedImages[genIdx % newlyGeneratedImages.length];
-            genIdx++;
-            return {
-              ...item,
-              status: "completed",
-              progress: 100,
-              imageUrl: imgUrl,
-            };
-          }
-          return item;
-        });
-      });
 
       const updatedChat: SavedChat = {
         id: chatId,
         title: userPrompt.slice(0, 30) + (userPrompt.length > 30 ? "..." : ""),
-        messages: existingIndex >= 0 ? [...savedChatsList[existingIndex].messages, ...newMessages] : newMessages,
+        messages:
+          existingIndex >= 0
+            ? [...savedChatsList[existingIndex].messages, ...newMessages]
+            : newMessages,
         attachedArticles: [],
         attachedFiles: chatImages.map((url, index) => ({
           id: `img-${index}-${Date.now()}`,
           name: `generacion-${index}.jpg`,
           content: url,
-          type: "image"
+          type: "image" as const,
         })),
         timestamp: new Date(),
         isFlow: true,
@@ -552,17 +621,20 @@ export default function FlowClient() {
         nextSavedChats = [updatedChat, ...savedChatsList];
       }
 
-      // Commit update to AIChatStore
       useAIChatStore.setState({
         currentChatId: chatId,
-        savedChats: nextSavedChats
+        savedChats: nextSavedChats,
       });
-
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[FLOW-CLIENT] Error:", err);
-      toast.error("Lo sentimos, estamos teniendo dificultades en este momento. Por favor, inténtalo de nuevo.");
-      // Cancel the loading items
-      setItems((prevItems) => prevItems.filter(item => !newItems.some(ni => ni.id === item.id)));
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Lo sentimos, estamos teniendo dificultades en este momento. Por favor, inténtalo de nuevo.";
+      toast.error(msg);
+      setItems((prevItems) =>
+        prevItems.filter((item) => !newItems.some((ni) => ni.id === item.id))
+      );
     } finally {
       setLoading(false);
       generatingRef.current = false;
@@ -641,9 +713,27 @@ export default function FlowClient() {
     }
   };
 
+  const renderTitleLine = (text: string, baseDelay = 0) =>
+    text.split("").map((char, i) => (
+      <motion.span
+        key={`${text}-${char}-${i}`}
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{
+          duration: 0.45,
+          delay: baseDelay + i * 0.035,
+          ease: [0.22, 1, 0.36, 1],
+        }}
+        className="inline-block"
+        style={{ whiteSpace: char === " " ? "pre" : undefined }}
+      >
+        {char === " " ? "\u00A0" : char}
+      </motion.span>
+    ));
+
   return (
-    <div className="flex-1 min-h-screen bg-[#f8f9fa] text-zinc-900 flex flex-col relative overflow-hidden font-sans select-none">
-      {/* Background Subtle Gradient Grids (Light Mode style) */}
+    <div className="flex-1 h-full min-h-0 max-h-full bg-[#f8f9fa] dark:bg-[#07080a] text-zinc-900 dark:text-zinc-50 flex flex-col relative overflow-hidden font-sans select-none">
+      {/* Background Subtle Gradient Grids */}
       <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(24,144,255,0.04),transparent)]" />
       <div 
         className="absolute inset-0 opacity-[0.03] pointer-events-none"
@@ -654,22 +744,19 @@ export default function FlowClient() {
         }}
       />
 
-
-
-      {/* Main Workspace Body: Premium Masonry Grid / Empty State */}
-      <main className="flex-1 p-6 relative z-10 overflow-y-auto hidden-scrollbar pb-32 flex flex-col justify-center">
+      {/* Workspace: ocupa el espacio disponible; la barra va debajo en el flujo flex */}
+      <main className="flex-1 min-h-0 p-3 sm:p-6 relative z-10 overflow-y-auto hidden-scrollbar flex flex-col justify-center">
         {items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center text-center px-6 -mt-16 md:-mt-24 select-none">
+          <div className="flex flex-col items-center justify-center text-center px-4 sm:px-6 -mt-2 sm:-mt-10 md:-mt-16 select-none">
             <motion.div
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
               className="relative flex flex-col items-center"
             >
-              {/* Soft ambient glow behind the headline */}
               <div
                 aria-hidden
-                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] h-[120px] md:w-[360px] md:h-[140px] rounded-full pointer-events-none"
+                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[220px] h-[90px] sm:w-[280px] sm:h-[120px] md:w-[360px] md:h-[140px] rounded-full pointer-events-none"
                 style={{
                   background:
                     "radial-gradient(ellipse at center, rgba(24,144,255,0.14) 0%, rgba(24,144,255,0.04) 45%, transparent 70%)",
@@ -679,26 +766,17 @@ export default function FlowClient() {
               />
 
               <h2
-                className="relative text-[2.75rem] sm:text-5xl md:text-[3.5rem] font-serif italic font-normal leading-[1.15] text-zinc-900 dark:text-white"
+                className="relative text-[1.85rem] sm:text-[2.75rem] md:text-[3.5rem] font-serif italic font-normal leading-[1.2] text-zinc-900 dark:text-white"
                 style={{ fontFamily: "var(--font-playfair), serif" }}
               >
-                <span className="inline-block">
-                  {"Empieza a crear".split("").map((char, i) => (
-                    <motion.span
-                      key={`${char}-${i}`}
-                      initial={{ opacity: 0, y: 14 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{
-                        duration: 0.45,
-                        delay: 0.08 + i * 0.035,
-                        ease: [0.22, 1, 0.36, 1],
-                      }}
-                      className="inline-block"
-                      style={{ whiteSpace: char === " " ? "pre" : undefined }}
-                    >
-                      {char === " " ? "\u00A0" : char}
-                    </motion.span>
-                  ))}
+                {/* Móvil: dos líneas para que no se corte */}
+                <span className="flex flex-col items-center sm:hidden">
+                  <span className="inline-block">{renderTitleLine("Empieza a", 0.08)}</span>
+                  <span className="inline-block">{renderTitleLine("crear", 0.08 + 10 * 0.035)}</span>
+                </span>
+                {/* Desktop: una sola línea */}
+                <span className="hidden sm:inline-block">
+                  {renderTitleLine("Empieza a crear", 0.08)}
                 </span>
               </h2>
 
@@ -706,7 +784,7 @@ export default function FlowClient() {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.55, delay: 0.55, ease: "easeOut" }}
-                className="relative mt-3.5 text-sm md:text-[15px] font-medium tracking-wide text-zinc-400 dark:text-zinc-500"
+                className="relative mt-2.5 sm:mt-3.5 text-xs sm:text-sm md:text-[15px] font-medium tracking-wide text-zinc-400 dark:text-zinc-500"
               >
                 Describe lo que imaginas y dale vida
               </motion.p>
@@ -720,7 +798,7 @@ export default function FlowClient() {
             `}</style>
           </div>
         ) : (
-          <div className="max-w-7xl mx-auto columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4 w-full">
+          <div className="max-w-7xl mx-auto columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-3 sm:gap-4 space-y-3 sm:space-y-4 w-full">
             <AnimatePresence initial={false}>
               {items.map((item) => (
                 <motion.div
@@ -771,8 +849,8 @@ export default function FlowClient() {
                         />
 
                         {/* Floating actions and prompt details shown on hover */}
-                        <div className="absolute inset-0 bg-black/35 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-between p-4 z-10">
-                          {/* Top: Premium action buttons */}
+                        {/* Actions: always visible on mobile (touch), hover on desktop */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/20 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-300 flex flex-col justify-between p-2.5 sm:p-4 z-10">
                           <div className="flex justify-end gap-1.5">
                             <button
                               type="button"
@@ -780,7 +858,8 @@ export default function FlowClient() {
                                 e.stopPropagation();
                                 toast.success("Añadido a favoritos");
                               }}
-                              className="p-2 rounded-xl bg-white/90 hover:bg-white text-zinc-700 hover:text-red-500 hover:scale-105 border border-zinc-200/50 transition-all cursor-pointer shadow-sm"
+                              className="p-2.5 sm:p-2 rounded-xl bg-white/95 hover:bg-white text-zinc-700 hover:text-red-500 active:scale-95 border border-zinc-200/50 transition-all cursor-pointer shadow-sm"
+                              aria-label="Favorito"
                             >
                               <Heart className="w-3.5 h-3.5" />
                             </button>
@@ -788,9 +867,16 @@ export default function FlowClient() {
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                toast.success("Descarga iniciada");
+                                if (item.imageUrl) {
+                                  const a = document.createElement("a");
+                                  a.href = item.imageUrl;
+                                  a.download = `flow-${item.id}.png`;
+                                  a.click();
+                                  toast.success("Descarga iniciada");
+                                }
                               }}
-                              className="p-2 rounded-xl bg-white/90 hover:bg-white text-zinc-700 hover:text-[#1890FF] hover:scale-105 border border-zinc-200/50 transition-all cursor-pointer shadow-sm"
+                              className="p-2.5 sm:p-2 rounded-xl bg-white/95 hover:bg-white text-zinc-700 hover:text-[#1890FF] active:scale-95 border border-zinc-200/50 transition-all cursor-pointer shadow-sm"
+                              aria-label="Descargar"
                             >
                               <Download className="w-3.5 h-3.5" />
                             </button>
@@ -798,17 +884,22 @@ export default function FlowClient() {
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                toast.info(`Creado con: ${item.modelName}`);
+                                toast.info(item.label ? `${item.label} · ${item.modelName}` : `Creado con: ${item.modelName}`);
                               }}
-                              className="p-2 rounded-xl bg-white/90 hover:bg-white text-zinc-700 hover:text-zinc-900 hover:scale-105 border border-zinc-200/50 transition-all cursor-pointer shadow-sm"
+                              className="p-2.5 sm:p-2 rounded-xl bg-white/95 hover:bg-white text-zinc-700 hover:text-zinc-900 active:scale-95 border border-zinc-200/50 transition-all cursor-pointer shadow-sm"
+                              aria-label="Más info"
                             >
                               <MoreHorizontal className="w-3.5 h-3.5" />
                             </button>
                           </div>
 
-                          {/* Bottom: Prompt text caption */}
-                          <div className="bg-white/90 border border-zinc-200/60 rounded-xl p-2.5 max-w-full shadow-sm">
-                            <p className="text-[10px] font-bold text-zinc-800 leading-snug truncate">
+                          <div className="bg-white/95 border border-zinc-200/60 rounded-xl p-2 sm:p-2.5 max-w-full shadow-sm">
+                            {item.label && (
+                              <p className="text-[9px] font-black uppercase tracking-wide text-[#1890FF] mb-0.5">
+                                {item.label}
+                              </p>
+                            )}
+                            <p className="text-[10px] font-bold text-zinc-800 leading-snug line-clamp-2 sm:truncate">
                               {item.prompt}
                             </p>
                           </div>
@@ -823,33 +914,33 @@ export default function FlowClient() {
         )}
       </main>
 
-      {/* Floating Prompt Chat Panel at the bottom (Light Mode styled matching normal ChatInput exactly) */}
-      <div className="w-full max-w-3xl mx-auto px-4 pb-5 absolute bottom-0 left-1/2 -translate-x-1/2 shrink-0 z-20">
+      {/* Prompt bar — en el flujo flex (siempre visible, no se va bajo el viewport) */}
+      <div className="w-full max-w-3xl mx-auto px-2.5 sm:px-4 pt-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:pb-4 shrink-0 z-20 relative">
         {/* Brand context bar */}
         {brand && (
-          <div className="mb-2 relative">
-            <div className="flex items-center gap-2 flex-wrap">
+          <div className="mb-1.5 sm:mb-2 relative">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
               <button
                 type="button"
                 onClick={() => setShowBrandContext((v) => !v)}
                 className={cn(
-                  "inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] font-bold border transition-all cursor-pointer",
+                  "inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-[11px] font-bold border transition-all cursor-pointer max-w-full",
                   showBrandContext
                     ? "bg-zinc-900 border-zinc-900 text-white dark:bg-zinc-100 dark:border-zinc-100 dark:text-zinc-900"
                     : "bg-white/90 dark:bg-[#1E1E20]/95 border-zinc-200/70 dark:border-zinc-700/60 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 shadow-sm"
                 )}
               >
-                <Sparkles className="w-3 h-3" />
-                Marca · {brand.name}
-                <ChevronDown className={cn("w-3 h-3 transition-transform", showBrandContext && "rotate-180")} />
+                <Sparkles className="w-3 h-3 shrink-0" />
+                <span className="truncate max-w-[9rem] sm:max-w-none">Marca · {brand.name}</span>
+                <ChevronDown className={cn("w-3 h-3 shrink-0 transition-transform", showBrandContext && "rotate-180")} />
               </button>
               {activeItemId && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200/80 dark:border-zinc-700/50">
+                <span className="hidden sm:inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200/80 dark:border-zinc-700/50">
                   <Package className="w-3 h-3" />
                   {brand.items.find((i) => i.id === activeItemId)?.name || "Producto"}
                 </span>
               )}
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border border-zinc-200/60 dark:border-zinc-700/50">
+              <span className="hidden sm:inline-flex items-center px-2 py-1 rounded-full text-[10px] font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border border-zinc-200/60 dark:border-zinc-700/50">
                 Logo: {LOGO_MODE_OPTIONS.find((o) => o.id === logoMode)?.label || logoMode}
               </span>
             </div>
@@ -958,7 +1049,7 @@ export default function FlowClient() {
 
           {/* The actual input bar — NEVER changes size/border/padding */}
           <div className={cn(
-            "rounded-xl p-2.5 bg-white dark:bg-[#1E1E20] border-[#DBDBDB] dark:border-[#2e2e2e] border relative z-10",
+            "rounded-xl p-2 sm:p-2.5 bg-white dark:bg-[#1E1E20] border-[#DBDBDB] dark:border-[#2e2e2e] border relative z-10",
             "shadow-[0_10px_40px_rgba(0,0,0,0.04),0_1px_4px_rgba(0,0,0,0.02)] transition-all duration-300 group focus-within:border-zinc-300 dark:focus-within:border-zinc-650 focus-within:shadow-[0_12px_45px_rgba(0,0,0,0.08),0_1px_4px_rgba(0,0,0,0.02)]",
             isListening && "border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.15)]"
           )}>
@@ -1032,7 +1123,7 @@ export default function FlowClient() {
                 disabled={loading}
                 rows={1}
                 className={cn(
-                  "min-h-12 max-h-72 text-[15px] md:!text-[15px] px-1",
+                  "min-h-10 sm:min-h-12 max-h-40 sm:max-h-72 text-[15px] md:!text-[15px] px-1",
                   "resize-none overflow-y-auto",
                   "border-0 bg-transparent dark:bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
                 )}
@@ -1045,17 +1136,34 @@ export default function FlowClient() {
               />
             </div>
 
+            {/* Cost hint when multi-image / agent */}
+            {(estimatedCount > 1 || isAgentActive) && prompt.trim() && (
+              <div className="px-2 pb-1">
+                <p className="text-[10px] sm:text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
+                  {isAgentActive ? "Agente · " : ""}
+                  ~{estimatedCount} imagen{estimatedCount > 1 ? "es" : ""} ·{" "}
+                  <span className="text-zinc-800 dark:text-zinc-200 font-bold">
+                    {totalCost} créditos
+                  </span>
+                  <span className="text-zinc-400 dark:text-zinc-500">
+                    {" "}
+                    ({creditsRemaining} disp.)
+                  </span>
+                </p>
+              </div>
+            )}
+
             {/* Bottom actions row */}
-            <div className="mt-1 flex items-center justify-between px-1">
+            <div className="mt-1 flex items-center justify-between gap-1.5 px-0.5 sm:px-1">
               {/* Left group: Plus and Agent pill */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                 <div ref={attachMenuRef} className="relative shrink-0">
                   <Button
                     type="button"
                     variant={showAttachMenu ? "secondary" : "ghost"}
                     size="icon"
-                    className={cn("rounded-full transition-all duration-300", showAttachMenu && "bg-foreground text-background hover:bg-foreground/90 dark:bg-foreground dark:text-background shadow-md")}
-                    aria-label="Opciones"
+                    className={cn("rounded-full h-9 w-9 sm:h-10 sm:w-10 transition-all duration-300", showAttachMenu && "bg-foreground text-background hover:bg-foreground/90 dark:bg-foreground dark:text-background shadow-md")}
+                    aria-label="Adjuntar referencia"
                     onClick={() => setShowAttachMenu(prev => !prev)}
                   >
                     <Plus className={cn("h-5 w-5 transition-transform duration-300", showAttachMenu && "rotate-45")} />
@@ -1063,113 +1171,26 @@ export default function FlowClient() {
                   <AnimatePresence>
                     {showAttachMenu && (
                       <motion.div
-                        initial={{ opacity: 0, y: openUpward ? 10 : -10, scale: 0.95 }}
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: openUpward ? 10 : -10, scale: 0.95 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
                         transition={{ type: "spring", damping: 20, stiffness: 300 }}
                         className={cn(
-                          "absolute left-0 z-40 w-64 flex flex-col max-h-[350px] overflow-hidden rounded-2xl border shadow-2xl",
-                          openUpward ? "bottom-12" : "top-12",
-                          "bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl border-gray-200/50 dark:border-white/5 shadow-blue-500/5 dark:shadow-blue-900/10 text-zinc-950 dark:text-zinc-50"
+                          "absolute left-0 bottom-12 z-40 w-[min(16rem,calc(100vw-2rem))] flex flex-col overflow-hidden rounded-2xl border shadow-2xl",
+                          "bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl border-gray-200/50 dark:border-white/5 text-zinc-950 dark:text-zinc-50"
                         )}
                       >
-                        <div className="flex-1 overflow-y-auto hidden-scrollbar p-2.5 space-y-3">
-                          
-                          {attachMenuView === 'main' && (
-                            <motion.div key="main" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}>
-                              {/* Archivos */}
-                              <div className="pt-1">
-                                <button
-                                  type="button"
-                                  onClick={() => { setShowAttachMenu(false); triggerUploadFiles(); }}
-                                  className="group/btn w-full flex items-center gap-3 px-2.5 py-2.5 text-sm font-semibold text-gray-750 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.03] hover:text-foreground rounded-xl transition-all duration-200 active:scale-[0.98] text-left"
-                                >
-                                  <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/5 text-foreground group-hover/btn:bg-foreground group-hover/btn:text-background flex items-center justify-center shrink-0 transition-colors duration-200">
-                                    <Paperclip className="w-4 h-4" />
-                                  </div>
-                                  Subir archivo
-                                </button>
-                              </div>
-
-                              <div className="mt-1">
-                                <button type="button" onClick={() => setAttachMenuView('charts')}
-                                  className="group/btn w-full flex items-center justify-between px-2.5 py-2.5 text-sm font-semibold text-gray-750 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.03] hover:text-foreground rounded-xl transition-all duration-200 active:scale-[0.98]">
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/5 text-foreground group-hover/btn:bg-foreground group-hover/btn:text-background flex items-center justify-center shrink-0 transition-colors duration-200"><PieChart className="w-4 h-4" /></div>
-                                    Gráficos
-                                  </div>
-                                  <ChevronRight className="w-4 h-4 text-gray-400 group-hover/btn:translate-x-0.5 transition-transform" />
-                                </button>
-                                <button type="button" onClick={() => setAttachMenuView('analysis')}
-                                  className="group/btn w-full flex items-center justify-between px-2.5 py-2.5 text-sm font-semibold text-gray-750 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.03] hover:text-foreground rounded-xl transition-all duration-200 active:scale-[0.98] mt-1">
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/5 text-foreground group-hover/btn:bg-foreground group-hover/btn:text-background flex items-center justify-center shrink-0 transition-colors duration-200"><TrendingUp className="w-4 h-4" /></div>
-                                    Análisis
-                                  </div>
-                                  <ChevronRight className="w-4 h-4 text-gray-400 group-hover/btn:translate-x-0.5 transition-transform" />
-                                </button>
-                              </div>
-                            </motion.div>
-                          )}
-
-                          {attachMenuView === 'charts' && (
-                            <motion.div key="charts" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
-                              <button type="button" onClick={() => setAttachMenuView('main')} className="flex items-center gap-1.5 text-[10px] font-black text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-2.5 py-1 mb-2 transition-colors">
-                                <ChevronRight className="w-3.5 h-3.5 rotate-180" /> Volver
-                              </button>
-                              <div className="px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-[#1890FF] dark:text-blue-400 mb-1 opacity-80">Gráficos</div>
-                              <div className="space-y-1">
-                                {ADVANCED_TOOLS.filter(t => t.category === 'Gráficos').map(tool => {
-                                  const Icon = tool.icon;
-                                  const isActive = activeTools.includes(tool.id);
-                                  return (
-                                    <div key={tool.id} className={cn("w-full flex items-center justify-between px-2 py-1.5 rounded-xl transition-all duration-200 group border border-transparent", isActive && "bg-blue-50/50 dark:bg-blue-950/20 border-blue-100/50 dark:border-blue-900/50")}>
-                                      <button type="button" onClick={() => { toggleTool(tool.id, tool.category); setShowAttachMenu(false); setTimeout(() => setAttachMenuView('main'), 200); }} 
-                                        className={cn("flex-1 flex items-center gap-3 text-left text-sm font-semibold transition-colors", isActive ? "text-[#1890FF] dark:text-blue-400" : "text-gray-750 dark:text-gray-300 hover:text-[#1890FF]")}>
-                                        <div className={cn("w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors", isActive ? "bg-[#1890FF] text-white" : "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400")}>
-                                          <Icon className="w-4 h-4" />
-                                        </div>
-                                        {tool.label}
-                                      </button>
-                                      <button type="button" onClick={(e) => { e.stopPropagation(); toggleFavoriteTool(tool.id); }} className={cn("p-1.5 transition-all", favoriteTools.includes(tool.id) ? "text-amber-500" : "text-gray-300 hover:text-amber-500 dark:text-gray-655 dark:hover:text-amber-550 opacity-0 group-hover:opacity-100")}>
-                                        <Star className={cn("w-4 h-4 transition-transform duration-200 active:scale-125", favoriteTools.includes(tool.id) ? "fill-amber-500 text-amber-500" : "")} />
-                                      </button>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </motion.div>
-                          )}
-
-                          {attachMenuView === 'analysis' && (
-                            <motion.div key="analysis" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
-                              <button type="button" onClick={() => setAttachMenuView('main')} className="flex items-center gap-1.5 text-[10px] font-black text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-2.5 py-1 mb-2 transition-colors">
-                                <ChevronRight className="w-3.5 h-3.5 rotate-180" /> Volver
-                              </button>
-                              <div className="px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-purple-500 dark:text-purple-400 mb-1 opacity-80">Análisis</div>
-                              <div className="space-y-1">
-                                {ADVANCED_TOOLS.filter(t => t.category === 'Análisis').map(tool => {
-                                  const Icon = tool.icon;
-                                  const isActive = activeTools.includes(tool.id);
-                                  return (
-                                    <div key={tool.id} className={cn("w-full flex items-center justify-between px-2 py-1.5 rounded-xl transition-all duration-200 group border border-transparent", isActive && "bg-purple-50/50 dark:bg-purple-950/20 border-purple-100/50 dark:border-purple-900/50")}>
-                                      <button type="button" onClick={() => { toggleTool(tool.id, tool.category); setShowAttachMenu(false); setTimeout(() => setAttachMenuView('main'), 200); }} 
-                                        className={cn("flex-1 flex items-center gap-3 text-left text-sm font-semibold transition-colors", isActive ? "text-purple-600 dark:text-purple-400" : "text-gray-750 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400")}>
-                                        <div className={cn("w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors", isActive ? "bg-purple-500 text-white" : "bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400")}>
-                                          <Icon className="w-4 h-4" />
-                                        </div>
-                                        {tool.label}
-                                      </button>
-                                      <button type="button" onClick={(e) => { e.stopPropagation(); toggleFavoriteTool(tool.id); }} className={cn("p-1.5 transition-all", favoriteTools.includes(tool.id) ? "text-amber-500" : "text-gray-300 hover:text-amber-500 dark:text-gray-655 dark:hover:text-amber-550 opacity-0 group-hover:opacity-100")}>
-                                        <Star className={cn("w-4 h-4 transition-transform duration-200 active:scale-125", favoriteTools.includes(tool.id) ? "fill-amber-500 text-amber-500" : "")} />
-                                      </button>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </motion.div>
-                          )}
-
+                        <div className="p-2.5">
+                          <button
+                            type="button"
+                            onClick={() => { setShowAttachMenu(false); triggerUploadFiles(); }}
+                            className="group/btn w-full flex items-center gap-3 px-2.5 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.03] hover:text-foreground rounded-xl transition-all duration-200 active:scale-[0.98] text-left"
+                          >
+                            <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/5 text-foreground group-hover/btn:bg-foreground group-hover/btn:text-background flex items-center justify-center shrink-0 transition-colors duration-200">
+                              <Paperclip className="w-4 h-4" />
+                            </div>
+                            Subir imagen de referencia
+                          </button>
                         </div>
                       </motion.div>
                     )}
@@ -1181,41 +1202,52 @@ export default function FlowClient() {
                   onClick={() => {
                     const next = !isAgentActive;
                     setIsAgentActive(next);
-                    toast.success(next ? "Modo Agente activado" : "Modo Agente desactivado");
+                    toast.success(
+                      next
+                        ? "Modo Agente: detecta carruseles y multi-imagen automáticamente"
+                        : "Modo Agente desactivado"
+                    );
                   }}
-                  className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all duration-200 active:scale-95 cursor-pointer flex items-center shrink-0 select-none border ${
+                  className={`h-8 sm:h-auto px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-[11px] font-bold transition-all duration-200 active:scale-95 cursor-pointer flex items-center shrink-0 select-none border ${
                     isAgentActive 
                       ? "bg-[#1890FF]/15 text-[#1890FF] border-[#1890FF]/30" 
-                      : "bg-zinc-100 hover:bg-zinc-255 border border-zinc-200/50 text-zinc-505 hover:text-zinc-750"
+                      : "bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 border-zinc-200/50 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300"
                   }`}
+                  aria-label="Modo Agente"
                 >
-                  <span>Agente</span>
+                  <Sparkles className={cn("w-3 h-3 sm:mr-1", isAgentActive && "text-[#1890FF]")} />
+                  <span className="hidden sm:inline">Agente</span>
                 </button>
               </div>
 
               {/* Right group: Model selector & send button */}
-              <div className="flex items-center gap-2 relative">
-                {/* Image/Video LLM Selector Pill */}
-                <div className="relative">
+              <div className="flex items-center gap-1 sm:gap-2 relative min-w-0">
+                {/* Model pill — en móvil solo 🍌 Lite / 🍌 Pro */}
+                <div className="relative min-w-0">
                   <button
                     type="button"
                     onClick={() => {
                       setShowModelDropdown(!showModelDropdown);
                       setShowModelList(false);
                     }}
-                    className="px-4 py-2 rounded-full bg-zinc-100 hover:bg-zinc-200/80 dark:bg-zinc-800/80 dark:hover:bg-zinc-700/80 border border-zinc-200/50 dark:border-zinc-700/50 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 text-[12px] font-semibold flex items-center gap-2 transition-all duration-200 select-none cursor-pointer leading-none"
+                    className="max-w-full px-2 sm:px-4 py-1.5 sm:py-2 rounded-full bg-zinc-100 hover:bg-zinc-200/80 dark:bg-zinc-800/80 dark:hover:bg-zinc-700/80 border border-zinc-200/50 dark:border-zinc-700/50 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 text-[11px] sm:text-[12px] font-semibold flex items-center gap-1 sm:gap-2 transition-all duration-200 select-none cursor-pointer leading-none"
                   >
-                    <span className="truncate flex items-center gap-1">
-                      <span className="text-sm">{selectedModel.icon}</span>
-                      <span>{selectedModel.name}</span>
+                    <span className="flex items-center gap-0.5 sm:gap-1 shrink-0">
+                      <span className="text-sm leading-none">{selectedModel.icon}</span>
+                      <span className="sm:hidden font-bold">{selectedModel.shortName}</span>
+                      <span className="hidden sm:inline truncate max-w-[9rem]">
+                        {selectedModel.name}
+                      </span>
                     </span>
-                    <span className="flex items-center gap-1.5 shrink-0 text-zinc-550 dark:text-zinc-400">
-                      {getMiniAspectRatioSvg(aspectRatio)}
-                      <span className="text-[11px] font-bold text-zinc-600 dark:text-zinc-300">{multiplier}</span>
+                    <span className="flex items-center gap-1 sm:gap-1.5 shrink-0 text-zinc-500 dark:text-zinc-400">
+                      <span className="hidden sm:inline">{getMiniAspectRatioSvg(aspectRatio)}</span>
+                      <span className="text-[10px] sm:text-[11px] font-bold text-zinc-600 dark:text-zinc-300">
+                        {multiplier}
+                      </span>
                     </span>
                   </button>
 
-                  {/* Model Selector Dropdown (Light/Clear Mode styled layout matching the image) */}
+                  {/* Model Selector Dropdown */}
                   <AnimatePresence>
                     {showModelDropdown && (
                       <>
@@ -1224,7 +1256,7 @@ export default function FlowClient() {
                           initial={{ opacity: 0, scale: 0.95, y: 10 }}
                           animate={{ opacity: 1, scale: 1, y: 0 }}
                           exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                          className="absolute right-0 bottom-full mb-3 w-[19rem] bg-white dark:bg-[#1E1E20] border border-zinc-200/80 dark:border-zinc-800 shadow-2xl p-3.5 z-40 rounded-3xl text-zinc-950 dark:text-zinc-50 flex flex-col gap-2.5 select-none font-sans"
+                          className="absolute left-0 right-0 sm:left-auto sm:right-0 bottom-full mb-2 sm:mb-3 w-auto sm:w-[19rem] max-h-[min(70vh,28rem)] overflow-y-auto bg-white dark:bg-[#1E1E20] border border-zinc-200/80 dark:border-zinc-800 shadow-2xl p-3 sm:p-3.5 z-40 rounded-2xl sm:rounded-3xl text-zinc-950 dark:text-zinc-50 flex flex-col gap-2.5 select-none font-sans"
                         >
                           {/* 1. Tabs at the top (Imagen / Vídeo) */}
                           <div className="flex bg-zinc-100/80 dark:bg-zinc-900 rounded-full p-0.5 gap-0.5">
@@ -1386,13 +1418,26 @@ export default function FlowClient() {
                             </AnimatePresence>
                           </div>
 
-                          {/* 5. Points cost indicator */}
+                          {/* 5. Credits cost indicator */}
                           <div className="text-center py-0.5 border-t border-zinc-100 dark:border-zinc-800/65 pt-2 flex flex-col gap-1">
-                            <p className="text-[10px] text-zinc-550 dark:text-zinc-450 font-semibold leading-none">
-                              La generación consumirá <span className="underline decoration-1 underline-offset-4 font-bold text-zinc-800 dark:text-zinc-100">{totalCost} puntos</span>
+                            <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-semibold leading-snug">
+                              {isAgentActive
+                                ? `Agente puede crear varias imágenes. Estimado: `
+                                : `La generación consumirá `}
+                              <span className="underline decoration-1 underline-offset-4 font-bold text-zinc-800 dark:text-zinc-100">
+                                {totalCost} créditos
+                              </span>
+                              {estimatedCount > 1 && (
+                                <span className="text-zinc-400">
+                                  {" "}
+                                  (~{estimatedCount}×)
+                                </span>
+                              )}
                             </p>
-                            <p className="text-[9px] text-zinc-450 dark:text-zinc-500 leading-none">
-                              Disponibles: <span className="font-bold">{Math.max(0, getPlanConfig(userTier).imageCreditsPerMonth - (mounted ? (useSubscriptionStore.getState().monthlyImageCreditsUsed || 0) : 0))}</span> / {getPlanConfig(userTier).imageCreditsPerMonth} puntos
+                            <p className="text-[9px] text-zinc-400 dark:text-zinc-500 leading-none">
+                              Disponibles:{" "}
+                              <span className="font-bold">{creditsRemaining}</span> /{" "}
+                              {getPlanConfig(userTier).imageCreditsPerMonth} créditos
                             </p>
                           </div>
 

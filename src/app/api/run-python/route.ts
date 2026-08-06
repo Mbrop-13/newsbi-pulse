@@ -31,9 +31,17 @@ export async function POST(req: NextRequest) {
 
     // Strict per-user rate limit on this expensive/RCE-adjacent endpoint
     const ip = getClientIp(req);
-    const rlIp = await rateLimit("runpython-ip:" + ip, { maxRequests: 5, windowSeconds: 120 });
+    const rlIp = await rateLimit("runpython-ip:" + ip, {
+      maxRequests: 5,
+      windowSeconds: 120,
+      failClosedInProd: true,
+    });
     if (!rlIp.allowed) return rateLimitResponse(rlIp.retryAfterSeconds);
-    const rlUser = await rateLimit("runpython:" + auth.data.user.id, { maxRequests: 5, windowSeconds: 120 });
+    const rlUser = await rateLimit("runpython:" + auth.data.user.id, {
+      maxRequests: 5,
+      windowSeconds: 120,
+      failClosedInProd: true,
+    });
     if (!rlUser.allowed) return rateLimitResponse(rlUser.retryAfterSeconds);
 
     const body = await req.json();

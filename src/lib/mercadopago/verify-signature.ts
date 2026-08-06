@@ -11,13 +11,24 @@ import crypto from "crypto";
  *
  * Header format: `ts=<timestamp>,v1=<hex-hmac>`
  */
+/** Max age of webhook timestamp (5 minutes) — anti-replay */
+const MAX_TS_SKEW_SECONDS = 300;
+
 export function verifyMercadoPagoSignature(opts: {
   signatureHeader: string | null;
   requestId: string | null;
   dataId: string | string[] | null;
   secret: string;
+  /** If true (default), reject signatures older than MAX_TS_SKEW_SECONDS */
+  enforceTimestamp?: boolean;
 }): boolean {
-  const { signatureHeader, requestId, dataId, secret } = opts;
+  const {
+    signatureHeader,
+    requestId,
+    dataId,
+    secret,
+    enforceTimestamp = true,
+  } = opts;
   if (!signatureHeader || !secret) return false;
 
   // Parse "ts=...,v1=..."
@@ -25,21 +36,34 @@ export function verifyMercadoPagoSignature(opts: {
     signatureHeader
       .split(",")
       .map((kv) => kv.trim().split("="))
-      .map(([k, v]) => [k, v])
+      .map(([k, ...rest]) => [k, rest.join("=")])
   );
   const ts = parts["ts"];
   const v1 = parts["v1"];
   if (!ts || !v1) return false;
 
-  // Build the manifest per MP spec
-  const manifest = `id:${Array.isArray(dataId) ? dataId[0] : (dataId ?? "")};request-id:${requestId ?? ""};ts:${ts};`;
+  if (enforceTimestamp) {
+    const tsNum = Number(ts);
+    if (!Number.isFinite(tsNum)) return false;
+    const nowSec = Math.floor(Date.now() / 1000);
+    // MP ts can be ms or seconds — normalize if clearly ms
+    const tsSec = tsNum > 1e12 ? Math.floor(tsNum / 1000) : tsNum;
+    if (Math.abs(nowSec - tsSec) > MAX_TS_SKEW_SECONDS) {
+      return false;
+    }
+  }
+
+  const id =
+    Array.isArray(dataId) ? String(dataId[0] ?? "") : String(dataId ?? "");
+
+  // Manifest per MP docs: id:{data.id};request-id:{x-request-id};ts:{ts};
+  const manifest = `id:${id};request-id:${requestId ?? ""};ts:${ts};`;
 
   const expected = crypto
     .createHmac("sha256", secret)
     .update(manifest)
     .digest("hex");
 
-  // Timing-safe compare
   try {
     const a = Buffer.from(v1, "hex");
     const b = Buffer.from(expected, "hex");

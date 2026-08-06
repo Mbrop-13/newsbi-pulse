@@ -11,14 +11,22 @@ import * as crypto from "crypto";
  * El salt debe estar en una variable de entorno (IP_HASH_SALT). Si no está
  * configurado, se usa un valor de desarrollo y se lanza un warning en prod.
  */
-const SALT = process.env.IP_HASH_SALT || "dev-only-insecure-salt-change-in-prod";
+const isProd = process.env.NODE_ENV === "production";
+const envSalt = process.env.IP_HASH_SALT || "";
 
-if (process.env.NODE_ENV === "production" && !process.env.IP_HASH_SALT) {
+if (isProd && !envSalt) {
   console.error(
-    "[ip-hash] IP_HASH_SALT no configurado en producción. " +
-      "Las IPs de invitados se hashean con un salt inseguro por defecto."
+    "[ip-hash] CRÍTICO: IP_HASH_SALT no configurado en producción. " +
+      "Configúralo en Vercel para no usar un salt predecible."
   );
 }
+
+// En prod sin env: salt derivado de service role (mejor que literal fijo, peor que IP_HASH_SALT dedicado)
+const SALT =
+  envSalt ||
+  (isProd
+    ? `prod-fallback:${process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(0, 24) || "missing"}`
+    : "dev-only-insecure-salt-change-in-prod");
 
 /**
  * Devuelve un hash hex de 64 chars (sha256) de la IP normalizada + sal.

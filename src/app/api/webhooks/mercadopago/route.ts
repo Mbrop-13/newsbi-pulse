@@ -32,44 +32,55 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Verify HMAC signature (ASVS 8.3.5 — event integrity) ──
-    // MP signs with the application's webhook secret. Reject unsigned/forged events.
+    // Manifest uses data.id from the notification body (or query), NOT a custom header.
     const rawBody = await request.text();
+
+    let body: { type?: string; action?: string; data?: { id?: string | number } };
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    }
+
+    const url = new URL(request.url);
+    const dataIdFromQuery =
+      url.searchParams.get("data.id") || url.searchParams.get("id");
+    const dataId =
+      body?.data?.id != null
+        ? String(body.data.id)
+        : dataIdFromQuery ||
+          request.headers.get("x-data-id"); // fallback legacy
 
     const signatureOk = verifyMercadoPagoSignature({
       signatureHeader: request.headers.get("x-signature"),
       requestId: request.headers.get("x-request-id"),
-      dataId: request.headers.get("x-data-id"),
+      dataId,
       secret: WEBHOOK_SECRET,
+      enforceTimestamp: true,
     });
     if (!signatureOk) {
       console.warn("[Webhook] Invalid or missing signature — rejecting");
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
 
-    let body: { type?: string; action?: string; data?: { id?: string } };
-    try {
-      body = JSON.parse(rawBody);
-    } catch {
-      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-    }
     const { type, data, action } = body;
 
     console.log(`[Webhook] Verified: type=${type} action=${action} id=${data?.id}`);
 
     // ─── Handle subscription preapproval events ───
     if (type === "subscription_preapproval") {
-      if (!data?.id) {
+      if (data?.id == null || data.id === "") {
         return NextResponse.json({ error: "Missing subscription preapproval ID" }, { status: 400 });
       }
-      return handleSubscriptionEvent(data.id);
+      return handleSubscriptionEvent(String(data.id));
     }
 
     // ─── Handle payment events (recurring charges) ───
     if (type === "payment") {
-      if (!data?.id) {
+      if (data?.id == null || data.id === "") {
         return NextResponse.json({ error: "Missing payment data ID" }, { status: 400 });
       }
-      return handlePaymentEvent(data.id);
+      return handlePaymentEvent(String(data.id));
     }
 
     // Other event types — acknowledge

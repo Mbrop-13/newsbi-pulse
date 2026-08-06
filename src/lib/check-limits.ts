@@ -753,3 +753,261 @@ async function legacyGuestTokenIncrement(ipHash: string, tokens: number): Promis
       .insert({ ip_address: ipHash, ai_tokens_total: tokens, updated_at: new Date().toISOString() });
   }
 }
+
+// ─── Flow image credits (server-side quota) ───────────────────────────
+
+export interface ImageCreditResult {
+  allowed: boolean;
+  used: number;
+  limit: number;
+  remaining: number;
+  tier: PlanTier;
+  reason?: string;
+  consumed?: number;
+}
+
+function currentMonthDate(): string {
+  return new Date().toISOString().slice(0, 7) + "-01";
+}
+
+/**
+ * Lee uso actual de créditos de imagen del mes (service_role).
+ */
+export async function getImageCreditsUsage(userId: string): Promise<{
+  used: number;
+  limit: number;
+  remaining: number;
+  tier: PlanTier;
+}> {
+  const tier = await getUserTier(userId);
+  const limit = getPlanConfig(tier).imageCreditsPerMonth;
+  if (limit <= 0) {
+    return { used: 0, limit, remaining: 0, tier };
+  }
+
+  const month = currentMonthDate();
+  const { data } = await supabase
+    .from("monthly_usage")
+    .select("image_credits")
+    .eq("user_id", userId)
+    .eq("month", month)
+    .maybeSingle();
+
+  const used = Number(data?.image_credits) || 0;
+  return {
+    used,
+    limit,
+    remaining: Math.max(0, limit - used),
+    tier,
+  };
+}
+
+/**
+ * Reserva/consume créditos de imagen de forma atómica ANTES de generar.
+ * Prefer RPC try_consume_image_credits; fallback read-modify-write con service_role.
+ */
+export async function tryConsumeImageCredits(
+  userId: string,
+  amount: number
+): Promise<ImageCreditResult> {
+  const tier = await getUserTier(userId);
+  const limit = getPlanConfig(tier).imageCreditsPerMonth;
+  const month = currentMonthDate();
+  const safeAmount = Math.max(0, Math.floor(amount));
+
+  if (safeAmount < 1) {
+    return { allowed: false, used: 0, limit, remaining: 0, tier, reason: "invalid_amount" };
+  }
+  if (limit <= 0) {
+    return { allowed: false, used: 0, limit, remaining: 0, tier, reason: "no_quota" };
+  }
+
+  // Admins / ultra con límites altos: still enforce limit from plan config
+  try {
+    const { data, error } = await supabase.rpc("try_consume_image_credits", {
+      p_user_id: userId,
+      p_month: month,
+      p_amount: safeAmount,
+      p_limit: limit,
+    });
+
+    if (!error && data) {
+      const row = typeof data === "string" ? JSON.parse(data) : data;
+      return {
+        allowed: Boolean(row.allowed),
+        used: Number(row.used) || 0,
+        limit: Number(row.limit) ?? limit,
+        remaining: Number(row.remaining) ?? 0,
+        tier,
+        reason: row.reason,
+        consumed: row.consumed,
+      };
+    }
+
+    if (error && !isPostgresFunctionMissingError(error) && !isMissingColumnError(error)) {
+      console.warn("[tryConsumeImageCredits] RPC error:", error);
+    }
+  } catch (err) {
+    console.warn("[tryConsumeImageCredits] RPC failed, using fallback:", err);
+  }
+
+  // Fallback (TOCTOU-prone but better than client-only; apply migration ASAP)
+  return legacyTryConsumeImageCredits(userId, month, safeAmount, limit, tier);
+}
+
+/**
+ * Devuelve créditos si se generaron menos imágenes de las reservadas.
+ */
+export async function refundImageCredits(
+  userId: string,
+  amount: number
+): Promise<void> {
+  const safeAmount = Math.max(0, Math.floor(amount));
+  if (safeAmount < 1) return;
+  const month = currentMonthDate();
+
+  try {
+    const { error } = await supabase.rpc("refund_image_credits", {
+      p_user_id: userId,
+      p_month: month,
+      p_amount: safeAmount,
+    });
+    if (!error) return;
+    if (!isPostgresFunctionMissingError(error) && !isMissingColumnError(error)) {
+      console.warn("[refundImageCredits] RPC error:", error);
+    }
+  } catch (err) {
+    console.warn("[refundImageCredits] RPC failed:", err);
+  }
+
+  try {
+    const { data } = await supabase
+      .from("monthly_usage")
+      .select("image_credits")
+      .eq("user_id", userId)
+      .eq("month", month)
+      .maybeSingle();
+    if (!data) return;
+    const next = Math.max(0, (Number(data.image_credits) || 0) - safeAmount);
+    await supabase
+      .from("monthly_usage")
+      .update({ image_credits: next })
+      .eq("user_id", userId)
+      .eq("month", month);
+  } catch (err) {
+    console.warn("[refundImageCredits] Fallback failed:", err);
+  }
+}
+
+function isMissingColumnError(err: any): boolean {
+  const msg = (err?.message || "").toLowerCase();
+  return (
+    msg.includes("image_credits") ||
+    msg.includes("column") && msg.includes("does not exist") ||
+    err?.code === "42703"
+  );
+}
+
+async function legacyTryConsumeImageCredits(
+  userId: string,
+  month: string,
+  amount: number,
+  limit: number,
+  tier: PlanTier
+): Promise<ImageCreditResult> {
+  try {
+    const { data: row } = await supabase
+      .from("monthly_usage")
+      .select("image_credits")
+      .eq("user_id", userId)
+      .eq("month", month)
+      .maybeSingle();
+
+    const used = Number(row?.image_credits) || 0;
+    if (used + amount > limit) {
+      return {
+        allowed: false,
+        used,
+        limit,
+        remaining: Math.max(0, limit - used),
+        tier,
+        reason: "insufficient",
+      };
+    }
+
+    if (row) {
+      const { error } = await supabase
+        .from("monthly_usage")
+        .update({ image_credits: used + amount })
+        .eq("user_id", userId)
+        .eq("month", month)
+        .eq("image_credits", used); // optimistic lock
+      if (error) {
+        // Column missing: fail closed for free, allow with warning for paid? Fail closed always.
+        if (isMissingColumnError(error)) {
+          console.error(
+            "[tryConsumeImageCredits] Columna image_credits ausente. Ejecuta flow-image-credits-migration.sql"
+          );
+          return {
+            allowed: false,
+            used: 0,
+            limit,
+            remaining: 0,
+            tier,
+            reason: "migration_required",
+          };
+        }
+        return {
+          allowed: false,
+          used,
+          limit,
+          remaining: Math.max(0, limit - used),
+          tier,
+          reason: "race",
+        };
+      }
+    } else {
+      const { error } = await supabase.from("monthly_usage").insert({
+        user_id: userId,
+        month,
+        image_credits: amount,
+      });
+      if (error) {
+        if (isMissingColumnError(error)) {
+          console.error(
+            "[tryConsumeImageCredits] Columna image_credits ausente. Ejecuta flow-image-credits-migration.sql"
+          );
+          return {
+            allowed: false,
+            used: 0,
+            limit,
+            remaining: 0,
+            tier,
+            reason: "migration_required",
+          };
+        }
+        // concurrent insert — re-check
+        return legacyTryConsumeImageCredits(userId, month, amount, limit, tier);
+      }
+    }
+
+    return {
+      allowed: true,
+      used: used + amount,
+      limit,
+      remaining: Math.max(0, limit - used - amount),
+      tier,
+      consumed: amount,
+    };
+  } catch (err) {
+    console.error("[legacyTryConsumeImageCredits]", err);
+    return {
+      allowed: false,
+      used: 0,
+      limit,
+      remaining: 0,
+      tier,
+      reason: "error",
+    };
+  }
+}

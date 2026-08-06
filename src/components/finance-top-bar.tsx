@@ -166,10 +166,14 @@ export function FinanceTopBar() {
             : "border-b border-transparent bg-transparent"
         )}
       >
-        <div className="w-full max-w-[1440px] mx-auto h-14 px-4 lg:px-6 grid grid-cols-[1fr_auto_1fr] items-center gap-3 pointer-events-auto">
-          {/* Nav izquierda */}
+        <div className="w-full max-w-[1440px] mx-auto h-14 px-4 lg:px-6 flex items-center gap-3 pointer-events-auto">
+          {/* Bloque nav: pastilla semitransparente (no se solapa con el buscador) */}
           <nav
-            className="flex items-center gap-1 justify-self-start min-w-0"
+            className={cn(
+              "relative z-20 shrink-0 flex items-center gap-0.5 p-1 rounded-full",
+              "bg-black/[0.04] dark:bg-white/[0.06]",
+              "backdrop-blur-md border border-black/[0.05] dark:border-white/[0.07]"
+            )}
             aria-label="Secciones de finanzas"
           >
             {NAV_ITEMS.map((item) => {
@@ -180,7 +184,7 @@ export function FinanceTopBar() {
                   key={item.id}
                   href={`/${language}${item.href}`}
                   className={cn(
-                    "inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[13px] font-semibold transition-all duration-200",
+                    "inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[13px] font-semibold transition-all duration-200",
                     active
                       ? "bg-black text-white shadow-sm dark:bg-white dark:text-black"
                       : "text-muted-foreground hover:text-foreground hover:bg-black/[0.05] dark:hover:bg-white/[0.08]"
@@ -193,27 +197,33 @@ export function FinanceTopBar() {
             })}
           </nav>
 
-          {/* Buscador centrado (no en Mundo) */}
+          {/*
+            Buscador solo en el espacio libre (a la derecha del nav).
+            Se centra en esa zona y al expandir crece a ambos lados
+            sin solaparse con Portafolio/Mercados/Noticias/Mundo.
+          */}
           {!isMundo ? (
-            <div
-              className={cn(
-                "justify-self-center transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
-                searchFocused ? "w-[min(52vw,520px)]" : "w-[min(36vw,340px)]"
-              )}
-            >
-              <MarketSearchBar
-                variant="compact"
-                transparent
-                expanded={searchFocused}
-                onFocusChange={setSearchFocused}
-              />
+            <div className="relative z-10 flex-1 min-w-0 flex items-center justify-center pl-2 pr-3">
+              <div
+                className={cn(
+                  "w-full transition-[max-width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                  // Ligeramente sesgado a la izquierda del área libre con mr auto sutil:
+                  // idle más compacto; focus crece (~300 → 460) dentro del hueco.
+                  searchFocused ? "max-w-[460px]" : "max-w-[300px]",
+                  searchFocused ? "ml-0 mr-0" : "ml-0 mr-[min(8%,48px)]"
+                )}
+              >
+                <MarketSearchBar
+                  variant="compact"
+                  transparent
+                  expanded={searchFocused}
+                  onFocusChange={setSearchFocused}
+                />
+              </div>
             </div>
           ) : (
-            <div />
+            <div className="flex-1" />
           )}
-
-          {/* Columna derecha: equilibra el grid para centrar el buscador */}
-          <div className="justify-self-end min-w-0" aria-hidden />
         </div>
       </div>
     </div>

@@ -40,9 +40,15 @@ export async function POST(req: Request) {
 
     // IP + user rate limit (burst + per-user)
     const ip = getClientIp(req);
-    const rlIp = await rateLimit(`ai-legacy-ip:${ip}`, AI_CHAT_LIMIT);
+    const rlIp = await rateLimit(`ai-legacy-ip:${ip}`, {
+      ...AI_CHAT_LIMIT,
+      failClosedInProd: true,
+    });
     if (!rlIp.allowed) return rateLimitResponse(rlIp.retryAfterSeconds);
-    const rlUser = await rateLimit(`ai-legacy:${userId}`, AI_CHAT_LIMIT);
+    const rlUser = await rateLimit(`ai-legacy:${userId}`, {
+      ...AI_CHAT_LIMIT,
+      failClosedInProd: true,
+    });
     if (!rlUser.allowed) return rateLimitResponse(rlUser.retryAfterSeconds);
 
     const rawBody = await req.json();

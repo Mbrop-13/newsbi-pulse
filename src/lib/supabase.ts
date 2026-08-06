@@ -5,10 +5,23 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholde
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Server-side client with service role
+/**
+ * Server-side client with service role (bypasses RLS).
+ * Never import this into client components.
+ * Fails hard in production if the key is missing (prevents silent open access).
+ */
 export function createServiceClient() {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-  return createClient(supabaseUrl, serviceRoleKey);
+  if (!serviceRoleKey) {
+    const msg =
+      "[createServiceClient] SUPABASE_SERVICE_ROLE_KEY no está definida. " +
+      "Configúrala en Vercel / entorno servidor.";
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(msg);
+    }
+    console.error(msg);
+  }
+  return createClient(supabaseUrl, serviceRoleKey || "missing-service-role-key");
 }
 
 /*

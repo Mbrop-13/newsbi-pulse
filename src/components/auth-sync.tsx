@@ -59,14 +59,20 @@ export function AuthSync() {
                 if (usageRes.ok) {
                   const usage = await usageRes.json();
                   const tokenRes = usage?.resources?.find((r: any) => r.id === "ai_tokens");
-                  if (tokenRes) {
-                    const used = Number(tokenRes.used) || 0;
-                    useSubscriptionStore.getState().setUsage(
-                      data.tier === "free"
-                        ? { lifetimeAiTokens: used }
-                        : { monthlyAiTokens: used }
-                    );
-                  }
+                  const imageUsed =
+                    typeof usage?.monthlyImageCreditsUsed === "number"
+                      ? usage.monthlyImageCreditsUsed
+                      : Number(
+                          usage?.resources?.find((r: any) => r.id === "image_credits")
+                            ?.used
+                        ) || 0;
+                  const used = Number(tokenRes?.used) || 0;
+                  useSubscriptionStore.getState().setUsage({
+                    ...(data.tier === "free"
+                      ? { lifetimeAiTokens: used }
+                      : { monthlyAiTokens: used }),
+                    monthlyImageCreditsUsed: imageUsed,
+                  });
                 }
               } catch {
                 // non-fatal
@@ -119,14 +125,20 @@ export function AuthSync() {
               if (usageRes.ok) {
                 const usage = await usageRes.json();
                 const tokenRes = usage?.resources?.find((r: any) => r.id === "ai_tokens");
-                if (tokenRes) {
-                  const used = Number(tokenRes.used) || 0;
-                  useSubscriptionStore.getState().setUsage(
-                    data.tier === "free"
-                      ? { lifetimeAiTokens: used }
-                      : { monthlyAiTokens: used }
-                  );
-                }
+                const imageUsed =
+                  typeof usage?.monthlyImageCreditsUsed === "number"
+                    ? usage.monthlyImageCreditsUsed
+                    : Number(
+                        usage?.resources?.find((r: any) => r.id === "image_credits")
+                          ?.used
+                      ) || 0;
+                const used = Number(tokenRes?.used) || 0;
+                useSubscriptionStore.getState().setUsage({
+                  ...(data.tier === "free"
+                    ? { lifetimeAiTokens: used }
+                    : { monthlyAiTokens: used }),
+                  monthlyImageCreditsUsed: imageUsed,
+                });
               }
             } catch {
               // non-fatal

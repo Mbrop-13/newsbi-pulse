@@ -141,8 +141,11 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Burst protection — prevents rapid-fire abuse
-    const rl = await rateLimit(`ai:${userId}`, AI_CHAT_LIMIT);
+    // Burst protection — prevents rapid-fire abuse (fail-closed sin Redis en prod)
+    const rl = await rateLimit(`ai:${userId}`, {
+      ...AI_CHAT_LIMIT,
+      failClosedInProd: true,
+    });
     if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
 
     const tokenLimit = await checkTokenLimit(userId);

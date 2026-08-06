@@ -227,11 +227,8 @@ export default function PortfolioClient() {
   }
 
   if (!isLoaded) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] pt-24 pb-16 px-4 flex flex-col items-center justify-center text-center">
-        <div className="w-8 h-8 rounded-full border-4 border-[#1890FF]/30 border-t-[#1890FF] animate-spin" />
-      </div>
-    );
+    // AuthGuard ya muestra skeleton; fallback por si se usa sin guard
+    return null;
   }
 
   if (!isAuthenticated) {
@@ -341,7 +338,21 @@ export default function PortfolioClient() {
             <div className="space-y-3">
               <h2 className="font-bold text-gray-900 dark:text-white text-lg">Tus Activos ({assets.length})</h2>
               {loading && assets.length === 0 ? (
-                <div className="p-12 flex justify-center bg-card rounded-2xl border border-border"><RefreshCw className="w-8 h-8 animate-spin text-[#1890FF]" /></div>
+                <div className="space-y-3">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-4 p-4 rounded-2xl border border-border bg-card animate-pulse"
+                    >
+                      <div className="w-12 h-12 rounded-xl bg-muted" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 w-20 bg-muted rounded" />
+                        <div className="h-3 w-32 bg-muted/60 rounded" />
+                      </div>
+                      <div className="h-4 w-14 bg-muted rounded" />
+                    </div>
+                  ))}
+                </div>
               ) : assets.length === 0 ? (
                 <div className="p-12 text-center text-gray-500 bg-card rounded-2xl border border-border">
                   <TrendingUp className="w-12 h-12 mx-auto mb-4 opacity-20" />

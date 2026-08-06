@@ -44,6 +44,12 @@ export interface RateLimitConfig {
   maxRequests: number;
   /** Window duration in seconds */
   windowSeconds: number;
+  /**
+   * If true: in production serverless without Redis, DENY the request
+   * (fail-closed). Use on expensive/abuse-prone endpoints (Flow, Python, AI).
+   * Default false keeps the app available for lighter routes.
+   */
+  failClosedInProd?: boolean;
 }
 
 export interface RateLimitResult {
@@ -56,15 +62,11 @@ export interface RateLimitResult {
  * Check rate limit for a given key (usually `userId` or `ip`).
  * Integrates Upstash Redis for distributed multi-instance serverless setups.
  *
- * Fail-closed policy (ASVS 11.3.1):
- *  - Dev (local): in-memory is fine.
- *  - Prod serverless (Vercel/Lambda) WITHOUT Redis: we still ALLOW requests
- *    (fail-open at the request level to not break the app), but we log
- *    loudly on every call so misconfiguration is visible. The build-time
- *    error above already warns the operator. Truly fail-closed (deny all)
- *    would take the whole app offline — not acceptable for a non-payment
- *    control. Defense relies on Supabase Auth's own rate limits for the
- *    most sensitive flows (login/signup/reset).
+ * Policy (ASVS 11.3.1):
+ *  - Dev: in-memory OK.
+ *  - Prod serverless WITHOUT Redis:
+ *      · default: in-memory + loud warning (fail-open)
+ *      · failClosedInProd: deny with retryAfter (fail-closed for costly APIs)
  */
 export async function rateLimit(
   key: string,
@@ -72,8 +74,18 @@ export async function rateLimit(
 ): Promise<RateLimitResult> {
   if (!redis) {
     if (isProd && isServerless) {
-      // Loud single-line warning per call; keep serving (fail-open per request)
-      console.warn(`[rate-limit] sin Redis en prod serverless — key "${key}" no throttled`);
+      console.warn(
+        `[rate-limit] sin Redis en prod serverless — key "${key}" ${
+          config.failClosedInProd ? "DENEGADO (fail-closed)" : "solo memoria local"
+        }`
+      );
+      if (config.failClosedInProd) {
+        return {
+          allowed: false,
+          remaining: 0,
+          retryAfterSeconds: 60,
+        };
+      }
     }
     return rateLimitInMemory(key, config);
   }
@@ -82,7 +94,6 @@ export async function rateLimit(
     const currentCount = await redis.incr(key);
 
     if (currentCount === 1) {
-      // First request in the window, set expiration
       await redis.expire(key, config.windowSeconds);
       return { allowed: true, remaining: config.maxRequests - 1, retryAfterSeconds: 0 };
     }
@@ -91,13 +102,14 @@ export async function rateLimit(
       return { allowed: true, remaining: config.maxRequests - currentCount, retryAfterSeconds: 0 };
     }
 
-    // Rate limited
     const ttl = await redis.ttl(key);
     const retryAfter = Math.max(1, ttl);
     return { allowed: false, remaining: 0, retryAfterSeconds: retryAfter };
-
   } catch (err) {
-    console.warn(`[rateLimit] Redis rate limit failed, falling back to memory for key "${key}":`, err);
+    console.warn(`[rateLimit] Redis falló para key "${key}":`, err);
+    if (isProd && config.failClosedInProd) {
+      return { allowed: false, remaining: 0, retryAfterSeconds: 30 };
+    }
     return rateLimitInMemory(key, config);
   }
 }

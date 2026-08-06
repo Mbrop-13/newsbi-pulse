@@ -26,7 +26,7 @@ export async function GET() {
     const [monthlyRes, lifetimeRes, logsRes, subRes] = await Promise.all([
       serviceClient
         .from("monthly_usage")
-        .select("ai_tokens")
+        .select("ai_tokens, image_credits")
         .eq("user_id", user.id)
         .eq("month", currentMonth)
         .maybeSingle(),
@@ -110,10 +110,15 @@ export async function GET() {
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
     const monthlyReset = currentPeriodEnd || endOfMonth;
 
+    const imageCreditsUsed = Number(monthly?.image_credits) || 0;
+    const imageCreditsLimit = config.imageCreditsPerMonth;
+
     const usage = {
       tier,
       planName: baseConfig.name,
       currentPeriodEnd,
+      monthlyImageCreditsUsed: imageCreditsUsed,
+      imageCreditsLimit,
       resources: [
         {
           id: "ai_tokens_5h",
@@ -149,6 +154,17 @@ export async function GET() {
           color: "#8B5CF6", // violet
           formatAsK: true,
           resetTime: isFree ? null : monthlyReset,
+        },
+        {
+          id: "image_credits",
+          label: "Flow image credits",
+          icon: "image",
+          used: imageCreditsUsed,
+          limit: imageCreditsLimit,
+          period: "este mes",
+          color: "#1890FF",
+          formatAsK: false,
+          resetTime: monthlyReset,
         },
       ],
     };

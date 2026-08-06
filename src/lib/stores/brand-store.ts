@@ -150,6 +150,7 @@ interface BrandStore {
     description: string;
     logoMode: LogoMode;
     hasLogo: boolean;
+    logoData?: string | null;
     productName?: string;
     productDescription?: string;
     productUrl?: string;
@@ -550,6 +551,7 @@ export const useBrandStore = create<BrandStore>((set, get) => ({
       description: brand.description,
       logoMode,
       hasLogo: Boolean(brand.logo_data),
+      logoData: brand.logo_data,
       productName: item?.name,
       productDescription: item?.description,
       productUrl: item?.url || undefined,

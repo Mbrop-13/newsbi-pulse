@@ -246,9 +246,9 @@ export default function MercadosPage() {
   return (
     <SidebarLayout>
     <AuthGuard>
-    <div className="min-h-screen bg-background pt-2 md:pt-0">
-      {/* Buscador mobile: pastilla ovalada liquid glass centrada y sobrepuesta */}
-      <div className="md:hidden sticky top-2 z-40 px-3 pb-2 pointer-events-none">
+    <div className="min-h-screen bg-background pt-14 md:pt-0">
+      {/* Buscador mobile: debajo del menú hamburguesa */}
+      <div className="md:hidden sticky top-14 z-40 px-3 pb-2 pointer-events-none">
         <div className="pointer-events-auto">
           <MarketSearchBar className="px-0" />
         </div>

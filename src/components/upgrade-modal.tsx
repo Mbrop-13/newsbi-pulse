@@ -49,28 +49,28 @@ const FEATURE_MESSAGES: Record<string, { title: string; message: string; icon: R
 const TIER_BENEFITS: Record<PlanTier, string[]> = {
   free: [],
   pro: [
-    "Límites de IA mucho más altos",
+    "2M tokens de IA al mes",
     "1.000 créditos de imagen en Flow",
     "5 alertas de precio",
     "25 activos en portafolio",
     "Sin publicidad",
   ],
   max: [
-    "x2 límites Plan Pro",
+    "4M tokens de IA al mes (x2 Pro)",
     "2.000 créditos de imagen en Flow",
     "10 alertas de precio",
     "50 activos en portafolio",
     "Informe semanal y recomendaciones IA",
   ],
   ultra: [
-    "x5 límites Plan Pro",
+    "10M tokens de IA al mes (x5 Pro)",
     "5.000 créditos de imagen en Flow",
     "25 alertas de precio",
     "IA con búsqueda web activa",
     "Análisis avanzado de portafolio",
   ],
   ultra_x20: [
-    "x20 límites Plan Pro",
+    "40M tokens de IA al mes (x20 Pro)",
     "10.000 créditos de imagen en Flow",
     "100 alertas de precio",
     "IA con búsqueda web activa",

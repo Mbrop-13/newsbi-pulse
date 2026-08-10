@@ -67,8 +67,8 @@ export function PremiumConversionModal() {
   const content = getFeatureContent();
 
   const benefits = [
-    "2M tokens de IA al mes (Plan Pro)",
-    "1.000 créditos de imagen en Flow",
+    "Límites de IA mucho más altos que Free",
+    "Créditos de imagen en Flow incluidos",
     "Más alertas de precio y activos en portafolio",
     "Lectura sin publicidad",
   ];

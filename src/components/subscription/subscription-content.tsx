@@ -207,45 +207,44 @@ export function SubscriptionContent({
     return annualTotal.toLocaleString("es-CL");
   };
 
-  // Build features dynamically based on states
+  // Copy de marketing: NO mostrar números crudos de tokens (2M, 4M…).
+  // Pro = “límites mucho más altos”; Max/Ultra = múltiplos relativos a Pro.
   const getPlanFeatures = (planId: PlanTier) => {
     if (planId === "pro") {
       return [
-        { text: "2M tokens de IA al mes", included: true },
-        { text: "1.000 créditos de imagen en Flow", included: true },
-        { text: "5 alertas de precio activas", included: true },
-        { text: "25 activos en portafolio", included: true },
+        { text: "Límites de IA mucho más altos que Free", included: true },
+        { text: "Créditos de imagen en Flow incluidos", included: true },
+        { text: "Más alertas de precio y activos en portafolio", included: true },
+        { text: "Historial de chats y adjuntos en IA", included: true },
         { text: "Sin publicidad", included: true },
       ];
     }
     if (planId === "max") {
       return [
-        { text: "4M tokens de IA al mes (x2 Pro)", included: true },
-        { text: "2.000 créditos de imagen en Flow", included: true },
-        { text: "10 alertas de precio (x2 Pro)", included: true },
-        { text: "50 activos en portafolio (x2 Pro)", included: true },
-        { text: "Informe semanal y Recomendaciones IA", included: true },
+        { text: "x2 límites Pro (IA, imágenes, alertas y más)", included: true },
+        { text: "Todo lo de Pro, con el doble de capacidad", included: true },
+        { text: "Informe semanal y recomendaciones IA", included: true },
+        { text: "Análisis avanzado de portafolio", included: true },
+        { text: "Sin publicidad", included: true },
       ];
     }
 
     // Plan Ultra
     if (isUltraX20Toggled) {
       return [
-        { text: "Todas las funciones de Plan Ultra", included: true },
-        { text: "40M tokens de IA al mes (x20 Pro)", included: true },
-        { text: "10.000 créditos de imagen en Flow", included: true },
-        { text: "100 alertas de precio (x20 Pro)", included: true },
-        { text: "500 activos en portafolio (x20 Pro)", included: true },
+        { text: "Todo Ultra, potenciado", included: true },
+        { text: "x20 límites Pro (máxima capacidad)", included: true },
+        { text: "Uso intensivo de IA, Flow e alertas", included: true },
         { text: "IA con búsqueda web activa", included: true },
+        { text: "Análisis premium de portafolio", included: true },
       ];
     }
     return [
-      { text: "Todas las funciones de Plan Max", included: true },
-      { text: "10M tokens de IA al mes (x5 Pro)", included: true },
-      { text: "5.000 créditos de imagen en Flow", included: true },
-      { text: "25 alertas de precio (x5 Pro)", included: true },
-      { text: "125 activos en portafolio (x5 Pro)", included: true },
+      { text: "Todo lo de Max, y más", included: true },
+      { text: "x5 límites Pro (IA, imágenes, alertas y más)", included: true },
       { text: "IA con búsqueda web activa", included: true },
+      { text: "Análisis premium de portafolio", included: true },
+      { text: "Máxima capacidad para profesionales", included: true },
     ];
   };
 
@@ -269,7 +268,7 @@ export function SubscriptionContent({
     },
     {
       q: "¿Qué es la opción Ultra x20?",
-      a: "Es una ampliación exclusiva para el plan Ultra orientada a analistas intensivos y profesionales. Duplica el costo mensual pero multiplica por 20 todos los límites base del plan Pro, ofreciendo x20 en tokens de IA, 10.000 créditos de imagen en Flow y 100 alertas activas.",
+      a: "Es una ampliación del plan Ultra para uso muy intensivo. Multiplica por 20 los límites del plan Pro (IA, imágenes en Flow, alertas, portafolio y más), pensada para profesionales y equipos que no quieren quedarse cortos.",
     },
   ];
 
@@ -285,7 +284,7 @@ export function SubscriptionContent({
         <button
           type="button"
           onClick={() => onClose?.()}
-          className="absolute top-4 right-4 md:top-6 md:right-6 p-2 rounded-full bg-neutral-200/60 hover:bg-neutral-200 dark:bg-zinc-850/60 dark:hover:bg-zinc-800 text-neutral-500 hover:text-neutral-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-all duration-300 z-50 shadow-sm border border-neutral-300/20 dark:border-zinc-700/20 cursor-pointer active:scale-95"
+          className="fixed top-4 right-4 md:top-6 md:right-6 p-2.5 rounded-full bg-neutral-200/80 hover:bg-neutral-200 dark:bg-zinc-800/90 dark:hover:bg-zinc-700 text-neutral-600 hover:text-neutral-900 dark:text-zinc-300 dark:hover:text-white transition-all duration-300 z-[210] shadow-md border border-neutral-300/30 dark:border-zinc-600/40 cursor-pointer active:scale-95 backdrop-blur-sm"
           aria-label="Cerrar planes"
         >
           <X className="w-5 h-5" />
@@ -948,8 +947,7 @@ function EnterprisePlansGrid({
 
             <ul className="space-y-2.5">
               {[
-                "2M tokens de IA / asiento / mes (Plan Pro)",
-                "1.000 créditos de imagen en Flow",
+                "Límites Pro por asiento (IA y Flow mucho más altos)",
                 "Workspaces y proyectos compartidos",
                 "Alertas y agentes compartidos",
                 "Panel de administración de equipo",
@@ -1011,8 +1009,7 @@ function EnterprisePlansGrid({
 
             <ul className="space-y-2.5">
               {[
-                "4M tokens de IA / asiento / mes (Plan Max)",
-                "2.000 créditos de imagen en Flow",
+                "x2 límites Pro por asiento (equivalente Max)",
                 "IA con búsqueda web activa",
                 "Agentes y plantillas compartidas",
                 "Panel de administración avanzado",
@@ -1060,8 +1057,7 @@ function EnterprisePlansGrid({
 
             <ul className="space-y-2.5">
               {[
-                "10M tokens de IA / asiento / mes (Plan Ultra)",
-                "5.000 créditos de imagen en Flow",
+                "x5 límites Pro por asiento (equivalente Ultra)",
                 "IA con búsqueda web y análisis avanzado",
                 "Workspaces, agentes y alertas compartidas",
                 "Panel de administración de organización",

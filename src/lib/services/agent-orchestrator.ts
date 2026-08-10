@@ -1060,10 +1060,12 @@ Recuerda devolver ÚNICAMENTE el XML con tu código.`;
         relevantFiles
       );
 
+      // 140s por agente (en paralelo). La ruta /api/ai-chat tiene maxDuration 300s
+      // (plan + agentes + resumen final). 200s dejaba poco margen y Vercel devolvía 504.
       const agentResponse = await withTimeout(
         agentPromise,
-        200000,
-        new Error("Excedió el tiempo límite de ejecución de 200 segundos")
+        140000,
+        new Error("Excedió el tiempo límite de ejecución de 140 segundos")
       );
 
       const duration = Date.now() - agentStartTime;

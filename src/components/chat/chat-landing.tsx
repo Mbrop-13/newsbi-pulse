@@ -48,6 +48,7 @@ import { createClient } from "@/lib/supabase/client"
 import { useSidebar } from "@/components/ui/sidebar"
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store"
 import { WebBuilderWorkspace } from "@/components/webbuilder/workspace"
+import { WebBuilderErrorBoundary } from "@/components/webbuilder/error-boundary"
 import { parseArtifact, actionsToFiles, containsArtifact } from "@/lib/webbuilder-parser"
 import { classifyPlanResponse } from "@/lib/webbuilder-plan-utils"
 import { CanvasWorkspace } from "@/components/chat/canvas-workspace"
@@ -759,6 +760,21 @@ function ChatLandingContent() {
     codeInterpreter: boolean
     browser: boolean
   }>({ webSearch: false, image: false, codeInterpreter: false, browser: false })
+  /** Último prompt del usuario en Build — para "Continuar generando" tras error/timeout */
+  const lastBuildPromptRef = useRef<string>("")
+  /** handleSend se define más abajo; el onError del stream lo llama vía ref */
+  const handleSendRef = useRef<
+    | ((
+        text: string,
+        options?: {
+          webSearch: boolean
+          image: boolean
+          codeInterpreter: boolean
+          browser: boolean
+        }
+      ) => void)
+    | null
+  >(null)
   const [activeQuestion, setActiveQuestion] = useState<WebBuilderQuestion | null>(null);
 
   // Track store hydration
@@ -959,9 +975,87 @@ function ChatLandingContent() {
     },
     onError: (error) => {
       console.error("[AI Chat] Stream error:", error);
-      toast.error(error.message || "Ocurrió un error al procesar la solicitud. Por favor, intenta de nuevo.");
-      useWebBuilderStore.getState().setAiResponding(false);
-      useWebBuilderStore.getState().setActiveAgentReports(null);
+      const wb = useWebBuilderStore.getState();
+      const wasBuild = wb.isWebBuilderMode;
+      const fileCount = Object.keys(wb.files || {}).length;
+      const rawMsg = (error?.message || "").toString();
+      const isTimeout =
+        /504|timeout|timed out|gateway|excedió el tiempo|time.?out/i.test(rawMsg) ||
+        rawMsg.includes("Failed to fetch");
+
+      wb.setAiResponding(false);
+      wb.setActiveAgentReports(null);
+
+      // Conservar lo ya generado y ofrecer continuar (Build / timeout / fallo de red)
+      if (wasBuild) {
+        try {
+          wb.syncToCloud();
+        } catch {
+          /* non-fatal */
+        }
+
+        const recoveryPrompt =
+          "Hubo un error o timeout al generar. Continúa construyendo el proyecto desde donde quedó. " +
+          "Revisa los archivos actuales del workspace, completa lo que falte y corrige lo incompleto. " +
+          (lastBuildPromptRef.current
+            ? `Pedido original del usuario: "${lastBuildPromptRef.current.slice(0, 500)}"`
+            : "Completa el sitio/app que el usuario pidió.");
+
+        const friendly = isTimeout
+          ? fileCount > 0
+            ? "La generación se cortó por tiempo (timeout). Ya hay archivos en el proyecto."
+            : "La generación se cortó por tiempo (timeout) antes de terminar."
+          : fileCount > 0
+            ? "Algo falló al generar, pero se conservaron los archivos ya creados."
+            : "Algo falló al generar tu proyecto.";
+
+        toast.error(friendly, {
+          duration: 16000,
+          action: {
+            label: "Continuar generando",
+            onClick: () => {
+              handleSendRef.current?.(recoveryPrompt, {
+                ...lastSendOptionsRef.current,
+              });
+            },
+          },
+        });
+
+        // Mensaje visible en el chat (además del toast) para que el usuario no se pierda
+        try {
+          const recoveryId = `assistant-recovery-${Date.now()}`;
+          const recoveryContent =
+            `⚠️ **${friendly}**\n\n` +
+            (fileCount > 0
+              ? `Hay **${fileCount}** archivo(s) en el workspace. Podés:\n` +
+                `1. Pulsar **Continuar generando** en el aviso de arriba, o\n` +
+                `2. Escribir qué querés que complete o corrija.\n\n` +
+                `No se perdió el trabajo ya aplicado al panel Build.`
+              : `Podés pulsar **Continuar generando** o reescribir tu pedido. Si el error se repite, probá un pedido más corto o en modo Plan.`);
+
+          const current = useAIChatStore.getState().messages;
+          useAIChatStore.setState({
+            messages: [
+              ...current,
+              {
+                id: recoveryId,
+                role: "assistant",
+                content: recoveryContent,
+                timestamp: new Date(),
+                model: "deepseek",
+              },
+            ],
+          });
+          useAIChatStore.getState().updateCurrentChat();
+        } catch (e) {
+          console.warn("[AI Chat] Failed to append recovery message:", e);
+        }
+        return;
+      }
+
+      toast.error(
+        rawMsg || "Ocurrió un error al procesar la solicitud. Por favor, intenta de nuevo."
+      );
     }
   })
 
@@ -1239,6 +1333,10 @@ function ChatLandingContent() {
       // perdiendo trabajo al revertir.
       useWebBuilderStore.getState().clearBuildDiff()
       useWebBuilderStore.getState().setAiResponding(true)
+      // Guardar prompt original (no el de recuperación interna) para reintentos
+      if (!text.startsWith("Hubo un error o timeout al generar")) {
+        lastBuildPromptRef.current = text
+      }
     }
     // Remember tools so edit/retry keep the same modes
     lastSendOptionsRef.current = options
@@ -1336,6 +1434,8 @@ function ChatLandingContent() {
     }
   }
 
+  // Mantener ref al día para onError / recovery (useChat se define antes que handleSend)
+  handleSendRef.current = handleSend
 
   const toggleReasoning = (id: string) => {
     setOpenReasoning((prev) => ({ ...prev, [id]: !prev[id] }))
@@ -1597,24 +1697,27 @@ function ChatLandingContent() {
       }
 
       // Find the plan card (modo Plan): {type:'plan', planId, reason, agents}
+      // Solo setear si cambió el planId (evita re-renders en cada tick del stream).
       const planObj = (data as any[]).find((d: any) => d?.type === 'plan');
       if (planObj?.agents && planObj.agents.length > 0) {
-        // Último mensaje del usuario que originó el plan (para replan/ejecución).
-        const lastUserMsg = [...aiMessages].reverse().find(m => m.role === 'user')?.content || "";
-        store.setPendingPlan({
-          planId: planObj.planId || `plan-${Date.now()}`,
-          reason: planObj.reason || "",
-          agents: planObj.agents,
-          originalUserMessage: lastUserMsg,
-        });
+        const nextPlanId = planObj.planId || "";
+        if (!store.pendingPlan || store.pendingPlan.planId !== nextPlanId) {
+          const lastUserMsg = [...aiMessages].reverse().find(m => m.role === 'user')?.content || "";
+          store.setPendingPlan({
+            planId: nextPlanId || `plan-${Date.now()}`,
+            reason: planObj.reason || "",
+            agents: planObj.agents,
+            originalUserMessage: lastUserMsg,
+          });
+        }
       }
 
-      // Find agent reports
+      // Find agent reports (solo actualizar si hay datos nuevos)
       const reportsObj = (data as any[]).find((d: any) => d?.type === 'agentReports');
       if (reportsObj?.reports) {
         store.setActiveAgentReports(reportsObj.reports);
         // Si llegan agentReports es que se construyó: limpiar plan pendiente.
-        store.clearPendingPlan();
+        if (store.pendingPlan) store.clearPendingPlan();
       }
 
       // Find webbuilder files — usar la ÚLTIMA emisión, no la primera.
@@ -2388,7 +2491,20 @@ function ChatLandingContent() {
   // If WebBuilder mode is active and we have messages, wrap in the split-screen workspace
   if (isWebBuilderMode && storeMessages.length > 0) {
     return (
-      <WebBuilderWorkspace chatPanel={chatContent} />
+      <WebBuilderErrorBoundary
+        label="El panel de Build se detuvo"
+        onRecover={() => {
+          // Re-montar workspace y desbloquear flags de "generando"
+          try {
+            useWebBuilderStore.getState().setAiResponding(false)
+            useWebBuilderStore.getState().setActiveAgentReports(null)
+          } catch {
+            /* noop */
+          }
+        }}
+      >
+        <WebBuilderWorkspace chatPanel={chatContent} />
+      </WebBuilderErrorBoundary>
     )
   }
 

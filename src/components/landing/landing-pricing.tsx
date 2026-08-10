@@ -25,7 +25,7 @@ const PLANS = [
     period: "al mes",
     desc: "Para inversores y profesionales activos de la información.",
     features: [
-      "2M tokens de IA al mes",
+      "Límites de IA mucho más altos",
       "1.000 créditos de imagen en Flow",
       "5 alertas de precio activas",
       "Hasta 25 activos en portafolio",
@@ -42,7 +42,7 @@ const PLANS = [
     period: "al mes",
     desc: "Para inversores exigentes que quieren el máximo potencial.",
     features: [
-      "4M tokens de IA al mes (x2 Pro)",
+      "x2 límites Plan Pro",
       "2.000 créditos de imagen en Flow",
       "10 alertas de precio activas",
       "Hasta 50 activos en portafolio",
@@ -59,7 +59,7 @@ const PLANS = [
     period: "al mes",
     desc: "El máximo poder analítico con infraestructura dedicada.",
     features: [
-      "10M tokens de IA al mes (x5 Pro)",
+      "x5 límites Plan Pro",
       "5.000 créditos de imagen en Flow",
       "25 alertas de precio activas",
       "125 activos en portafolio",

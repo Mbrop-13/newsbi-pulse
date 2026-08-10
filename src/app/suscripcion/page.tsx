@@ -197,7 +197,7 @@ function SubscriptionPageContent() {
   const getPlanFeatures = (planId: PlanTier) => {
     if (planId === "pro") {
       return [
-        { text: "2M tokens de IA al mes", included: true },
+        { text: "Límites de IA mucho más altos", included: true },
         { text: "1.000 créditos de imagen en Flow", included: true },
         { text: "5 alertas de precio activas", included: true },
         { text: "25 activos en portafolio", included: true },
@@ -206,7 +206,7 @@ function SubscriptionPageContent() {
     }
     if (planId === "max") {
       return [
-        { text: "4M tokens de IA al mes (x2 Pro)", included: true },
+        { text: "x2 límites Plan Pro", included: true },
         { text: "2.000 créditos de imagen en Flow", included: true },
         { text: "10 alertas de precio (x2 Pro)", included: true },
         { text: "50 activos en portafolio (x2 Pro)", included: true },
@@ -218,7 +218,7 @@ function SubscriptionPageContent() {
     if (isUltraX20Toggled) {
       return [
         { text: "Todas las funciones de Plan Ultra", included: true },
-        { text: "40M tokens de IA al mes (x20 Pro)", included: true },
+        { text: "x20 límites Plan Pro", included: true },
         { text: "10.000 créditos de imagen en Flow", included: true },
         { text: "100 alertas de precio (x20 Pro)", included: true },
         { text: "500 activos en portafolio (x20 Pro)", included: true },
@@ -227,7 +227,7 @@ function SubscriptionPageContent() {
     }
     return [
       { text: "Todas las funciones de Plan Max", included: true },
-      { text: "10M tokens de IA al mes (x5 Pro)", included: true },
+      { text: "x5 límites Plan Pro", included: true },
       { text: "5.000 créditos de imagen en Flow", included: true },
       { text: "25 alertas de precio (x5 Pro)", included: true },
       { text: "125 activos en portafolio (x5 Pro)", included: true },
@@ -905,7 +905,7 @@ function EnterprisePlansGrid({
 
             <ul className="space-y-2.5">
               {[
-                "2M tokens de IA / asiento / mes (Plan Pro)",
+                "Límites de IA mucho más altos / asiento (Plan Pro)",
                 "1.000 créditos de imagen en Flow",
                 "Workspaces y proyectos compartidos",
                 "Alertas y agentes compartidos",
@@ -968,7 +968,7 @@ function EnterprisePlansGrid({
 
             <ul className="space-y-2.5">
               {[
-                "4M tokens de IA / asiento / mes (Plan Max)",
+                "x2 límites Plan Pro / asiento (Plan Max)",
                 "2.000 créditos de imagen en Flow",
                 "IA con búsqueda web activa",
                 "Agentes y plantillas compartidas",
@@ -1017,7 +1017,7 @@ function EnterprisePlansGrid({
 
             <ul className="space-y-2.5">
               {[
-                "10M tokens de IA / asiento / mes (Plan Ultra)",
+                "x5 límites Plan Pro / asiento (Plan Ultra)",
                 "5.000 créditos de imagen en Flow",
                 "IA con búsqueda web y análisis avanzado",
                 "Workspaces, agentes y alertas compartidas",

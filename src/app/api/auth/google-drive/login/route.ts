@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
       prompt: "consent", // Force consent screen to guarantee refresh token is returned
       state,
       code_challenge: codeChallenge,
-      code_challenge_method: codeChallengeMethod,
+      code_challenge_method: codeChallengeMethod as any,
       scope: [
         "https://www.googleapis.com/auth/drive.readonly",
         "https://www.googleapis.com/auth/userinfo.email",

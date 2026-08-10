@@ -430,3 +430,34 @@ export const useProjectsStore = create<ProjectsStore>()(
     }
   )
 );
+
+export function buildProjectBrief(project: Project): string {
+  const typeLabel =
+    project.projectType === "web"
+      ? "Web"
+      : project.projectType === "app"
+      ? "App"
+      : project.projectType === "multiplatform"
+      ? "Multiplataforma ∞"
+      : project.projectType;
+  const colors = project.colorScheme;
+
+  let brief = `🚀 **Proyecto: ${project.name}**\n\n`;
+  brief += `Se ha configurado un nuevo proyecto de tipo **${typeLabel}** con las siguientes preferencias:\n\n`;
+
+  if (project.description) {
+    brief += `📝 **Descripción:** ${project.description}\n\n`;
+  }
+
+  brief += `🎨 **Paleta de colores:**\n`;
+  brief += `- Primario: \`${colors.primary}\`\n`;
+  brief += `- Secundario: \`${colors.secondary}\`\n`;
+  brief += `- Acento: \`${colors.accent}\`\n`;
+  brief += `- Fondo: \`${colors.background}\`\n\n`;
+
+  brief += `✨ **Estilo visual:** ${project.style}\n\n`;
+
+  brief += `¿Qué te gustaría construir? Describe tu idea y comenzaré a generar la interfaz usando tus preferencias de diseño.`;
+
+  return brief;
+}

@@ -632,29 +632,45 @@ export async function checkTokenLimit(userId: string): Promise<{ allowed: boolea
 
 /**
  * Increment user's token usage in database.
- * Usa RPC atómicas (M-11): INSERT ... ON CONFLICT DO UPDATE SET ai_tokens = ai_tokens + p_tokens.
- * Fallback legacy si las RPC no están desplegadas todavía.
+ *
+ * Este módulo usa el cliente SERVICE ROLE (sin JWT de usuario). Las RPC
+ * `log_token_usage` / `increment_*_tokens` dependen de auth.uid() y fallan
+ * con "unauthenticated" desde aquí: el contador semanal (token_usage_logs)
+ * no se escribía, mientras lifetime/mensual a veces sí (fallback legacy).
+ *
+ * Orden de escritura:
+ *  1. RPC service_* con p_user_id (atómicas; ver service-token-rpc.sql)
+ *  2. Insert/update directo con userId (service_role bypasea RLS)
  */
 export async function incrementTokenUsage(userId: string, tokens: number): Promise<void> {
   const currentMonth = new Date().toISOString().slice(0, 7) + "-01";
   const isGuest = userId.startsWith("guest-");
   const safeTokens = Math.max(0, Math.floor(tokens));
+  if (safeTokens === 0) return;
 
-  // 1. Log event en token_usage_logs (RPC atómica, hace también purge inline)
+  // 1. Log en ventana semanal (token_usage_logs) — SIEMPRE con userId explícito
   try {
-    const { error: logErr } = await supabase.rpc("log_token_usage", { p_tokens: safeTokens });
-    if (logErr) {
-      if (!isPostgresFunctionMissingError(logErr)) throw logErr;
-      // Fallback: insert directo
-      await supabase.from("token_usage_logs").insert({ user_id: userId, tokens: safeTokens });
-      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-      supabase
+    const { error: svcLogErr } = await supabase.rpc("service_log_token_usage", {
+      p_user_id: userId,
+      p_tokens: safeTokens,
+    });
+    if (svcLogErr) {
+      const { error: insErr } = await supabase
         .from("token_usage_logs")
-        .delete()
-        .lt("created_at", sevenDaysAgo)
-        .then(({ error }) => {
-          if (error) console.warn("[incrementTokenUsage] Failed to purge old logs:", error);
-        });
+        .insert({ user_id: userId, tokens: safeTokens });
+      if (insErr) {
+        console.warn("[incrementTokenUsage] token_usage_logs insert failed:", insErr);
+      } else {
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+        supabase
+          .from("token_usage_logs")
+          .delete()
+          .eq("user_id", userId)
+          .lt("created_at", sevenDaysAgo)
+          .then(({ error }) => {
+            if (error) console.warn("[incrementTokenUsage] Failed to purge old logs:", error);
+          });
+      }
     }
   } catch (dbErr) {
     console.warn("[incrementTokenUsage] Failed to write token_usage_logs:", dbErr);
@@ -668,7 +684,6 @@ export async function incrementTokenUsage(userId: string, tokens: number): Promi
         p_ip_hash: ipHash,
         p_tokens: safeTokens,
       });
-      if (gErr && !isPostgresFunctionMissingError(gErr)) throw gErr;
       if (gErr) {
         console.warn("[incrementTokenUsage] RPC increment_guest_tokens no disponible, usando fallback");
         await legacyGuestTokenIncrement(ipHash, safeTokens);
@@ -679,26 +694,32 @@ export async function incrementTokenUsage(userId: string, tokens: number): Promi
     return;
   }
 
-  // 3. Authenticated path: RPC mensual + lifetime atómicas
+  // 3. Authenticated: contadores mensual + lifetime (siempre con userId)
   try {
-    const { error: mErr } = await supabase.rpc("increment_monthly_tokens", {
+    const { error: mErr } = await supabase.rpc("service_increment_monthly_tokens", {
+      p_user_id: userId,
       p_month: currentMonth,
       p_tokens: safeTokens,
     });
-    if (mErr && !isPostgresFunctionMissingError(mErr)) throw mErr;
     if (mErr) {
-      console.warn("[incrementTokenUsage] RPC increment_monthly_tokens no disponible, usando fallback");
       await legacyMonthlyIncrement(userId, currentMonth, "ai_tokens", safeTokens);
     }
 
-    const { error: lErr } = await supabase.rpc("increment_lifetime_tokens", { p_tokens: safeTokens });
-    if (lErr && !isPostgresFunctionMissingError(lErr)) throw lErr;
+    const { error: lErr } = await supabase.rpc("service_increment_lifetime_tokens", {
+      p_user_id: userId,
+      p_tokens: safeTokens,
+    });
     if (lErr) {
-      console.warn("[incrementTokenUsage] RPC increment_lifetime_tokens no disponible, usando fallback");
       await legacyLifetimeIncrement(userId, "ai_tokens_total", safeTokens);
     }
   } catch (dbErr) {
-    console.warn("[incrementTokenUsage] Failed token increment (RPC path):", dbErr);
+    console.warn("[incrementTokenUsage] Failed token increment, trying legacy:", dbErr);
+    try {
+      await legacyMonthlyIncrement(userId, currentMonth, "ai_tokens", safeTokens);
+      await legacyLifetimeIncrement(userId, "ai_tokens_total", safeTokens);
+    } catch (legacyErr) {
+      console.warn("[incrementTokenUsage] Legacy token increment failed:", legacyErr);
+    }
   }
 }
 

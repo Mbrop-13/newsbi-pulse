@@ -58,8 +58,7 @@ import {
 import { injectInspectorScript } from "@/lib/webbuilder-canvas-renderer";
 export { injectInspectorScript };
 
-import { useProjectsStore, type ProjectType, type ProjectStyle, type Project } from "@/lib/stores/projects-store";
-import { buildProjectBrief } from "@/app/proyectos/[id]/page";
+import { useProjectsStore, type ProjectType, type ProjectStyle, type Project, buildProjectBrief } from "@/lib/stores/projects-store";
 import { Button } from "@/components/ui/button";
 
 

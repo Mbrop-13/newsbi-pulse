@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore, useAuthModalStore } from "@/lib/stores/auth-store";
-import { useProjectsStore, type Project } from "@/lib/stores/projects-store";
+import { useProjectsStore, type Project, buildProjectBrief } from "@/lib/stores/projects-store";
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
 import { useAIChatStore } from "@/lib/stores/ai-chat-store";
 import { useLanguageStore } from "@/lib/stores/language-store";
@@ -218,30 +218,4 @@ export default function ProjectWorkspacePage() {
 
   // Renderizar el ChatLanding que maneja internamente el WebBuilderWorkspace
   return <ChatLanding />;
-}
-
-// ── Helper: genera el brief del proyecto para la IA ──
-
-function buildProjectBrief(project: Project): string {
-  const typeLabel = getProjectTypeLabel(project.projectType);
-  const colors = project.colorScheme;
-
-  let brief = `🚀 **Proyecto: ${project.name}**\n\n`;
-  brief += `Se ha configurado un nuevo proyecto de tipo **${typeLabel}** con las siguientes preferencias:\n\n`;
-
-  if (project.description) {
-    brief += `📝 **Descripción:** ${project.description}\n\n`;
-  }
-
-  brief += `🎨 **Paleta de colores:**\n`;
-  brief += `- Primario: \`${colors.primary}\`\n`;
-  brief += `- Secundario: \`${colors.secondary}\`\n`;
-  brief += `- Acento: \`${colors.accent}\`\n`;
-  brief += `- Fondo: \`${colors.background}\`\n\n`;
-
-  brief += `✨ **Estilo visual:** ${project.style}\n\n`;
-
-  brief += `¿Qué te gustaría construir? Describe tu idea y comenzaré a generar la interfaz usando tus preferencias de diseño.`;
-
-  return brief;
 }

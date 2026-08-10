@@ -70,6 +70,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }
-
-// Export simbólico para evitar tree-shake del techo de posiciones (doc).
-export const _MAX_POSITIONS = MAX_POSITIONS;

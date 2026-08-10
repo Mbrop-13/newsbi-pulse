@@ -47,8 +47,8 @@ export async function GET(req: NextRequest) {
 
     const oauth2 = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
     // PKCE: enviar code_verifier en el intercambio. Google valida que el challenge
-    // del login corresponda a este verifier.
-    const { tokens } = await oauth2.getToken({ code, code_verifier: codeVerifier });
+    const tokenRes = await oauth2.getToken({ code, codeVerifier } as any);
+    const tokens = tokenRes.tokens;
     oauth2.setCredentials(tokens);
 
     // Fetch email of connected account

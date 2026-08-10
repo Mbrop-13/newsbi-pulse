@@ -26,6 +26,7 @@ import { useRouter } from "next/navigation"
 import { useConversionStore } from "@/lib/stores/conversion-store"
 import { cn } from "@/lib/utils"
 import { useReferralsDialogStore } from "@/lib/stores/referrals-dialog-store"
+import { useSubscriptionDialogStore } from "@/lib/stores/subscription-dialog-store"
 
 import {
   Avatar,
@@ -269,11 +270,13 @@ export function NavUser() {
                   <span className="text-[10px] text-muted-foreground/50 font-mono">↑ ^,</span>
                 </DropdownMenuItem>
 
-                {/* Subscription plan */}
+                {/* Subscription plan — overlay de planes (no navega a /suscripcion) */}
                 <DropdownMenuItem
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.preventDefault();
                     if (isMobile) setOpenMobile(false);
-                    router.push("/suscripcion");
+                    // Misma UX que Referidos: modal sobre la página actual
+                    useSubscriptionDialogStore.getState().open();
                   }}
                   className="text-[13px] font-medium py-2 px-3 rounded-xl cursor-pointer flex items-center gap-3 focus:bg-muted focus:text-foreground"
                 >

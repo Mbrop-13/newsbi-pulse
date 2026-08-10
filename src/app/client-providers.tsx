@@ -15,6 +15,7 @@ import { CapacitorInit } from "@/components/capacitor-init";
 import { AuthSync } from "@/components/auth-sync";
 import { ReferralAttribution } from "@/components/referral-attribution";
 import { PremiumConversionModal } from "@/components/premium-conversion-modal";
+import { SubscriptionDialog } from "@/components/subscription/subscription-dialog";
 import { AuthModals } from "@/components/auth-modals";
 import { useAuthModalStore } from "@/lib/stores/auth-store";
 import { Toaster } from "sonner";
@@ -271,6 +272,7 @@ export function ClientLayoutProviders({
           defaultTab={settingsTab as any}
         />
         <ReferralsDialog />
+        <SubscriptionDialog />
         <OnboardingDialog />
       </TooltipProvider>
     </ThemeProvider>

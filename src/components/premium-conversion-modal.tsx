@@ -3,13 +3,12 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Crown, Headphones, Sparkles, TrendingUp, CheckCircle2, ArrowRight, Loader2 } from "lucide-react";
 import { useConversionStore } from "@/lib/stores/conversion-store";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useSubscriptionStore } from "@/lib/stores/subscription-store";
+import { useSubscriptionDialogStore } from "@/lib/stores/subscription-dialog-store";
 
 export function PremiumConversionModal() {
   const { isOpen, feature, closeModal } = useConversionStore();
-  const router = useRouter();
   const { tier } = useSubscriptionStore();
   const [mounted, setMounted] = useState(false);
 
@@ -18,13 +17,14 @@ export function PremiumConversionModal() {
   }, []);
 
   // Do not show for users who are already pro/ultra
-  if (mounted && (tier === "pro" || tier === "max" || tier === "ultra")) {
+  if (mounted && (tier === "pro" || tier === "max" || tier === "ultra" || tier === "ultra_x20")) {
     return null;
   }
 
   const handleUpgradeClick = () => {
     closeModal();
-    router.push("/suscripcion");
+    // Overlay de planes (misma página) en vez de navegar a /suscripcion
+    useSubscriptionDialogStore.getState().open();
   };
 
   const getFeatureContent = () => {

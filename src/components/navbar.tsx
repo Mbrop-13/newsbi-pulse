@@ -29,6 +29,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useFilterStore } from "@/lib/stores/filter-store";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useReferralsDialogStore } from "@/lib/stores/referrals-dialog-store";
+import { useSubscriptionDialogStore } from "@/lib/stores/subscription-dialog-store";
 import { getCleanPathname } from "@/lib/utils";
 export function Navbar() {
   const { theme, setTheme, resolvedTheme } = useTheme();
@@ -360,13 +361,17 @@ export function Navbar() {
                     Referidos
                   </DropdownMenuItem>
                   <div className="px-2 py-1">
-                    <Link href="/suscripcion">
-                      <DropdownMenuItem className="text-sm py-2 px-4 cursor-pointer rounded-full transition-all duration-300 text-[#1890FF] font-bold bg-[#1890FF]/10 hover:bg-[#1890FF]/20 hover:scale-[1.02] flex items-center justify-center gap-2 group relative overflow-hidden shadow-[0_0_15px_-3px_rgba(24,144,255,0.3)]">
-                        <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent -translate-x-[150%] group-hover:translate-x-[150%] transition-transform duration-1000 ease-in-out" />
-                        <Crown className="w-4 h-4 group-hover:-rotate-12 group-hover:scale-110 transition-all duration-300" />
-                        Suscripción Premium
-                      </DropdownMenuItem>
-                    </Link>
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.preventDefault();
+                        useSubscriptionDialogStore.getState().open();
+                      }}
+                      className="text-sm py-2 px-4 cursor-pointer rounded-full transition-all duration-300 text-[#1890FF] font-bold bg-[#1890FF]/10 hover:bg-[#1890FF]/20 hover:scale-[1.02] flex items-center justify-center gap-2 group relative overflow-hidden shadow-[0_0_15px_-3px_rgba(24,144,255,0.3)]"
+                    >
+                      <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent -translate-x-[150%] group-hover:translate-x-[150%] transition-transform duration-1000 ease-in-out" />
+                      <Crown className="w-4 h-4 group-hover:-rotate-12 group-hover:scale-110 transition-all duration-300" />
+                      Suscripción Premium
+                    </DropdownMenuItem>
                   </div>
                   <DropdownMenuSeparator className="bg-gray-100 dark:bg-gray-800 mx-1" />
                   

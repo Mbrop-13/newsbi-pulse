@@ -22,27 +22,9 @@ export function PremiumConversionModal() {
     return null;
   }
 
-  const [loadingCheckout, setLoadingCheckout] = useState(false);
-
-  const handleUpgradeClick = async (selectedPlan: "pro" | "max" | "ultra" = "pro") => {
-    try {
-      setLoadingCheckout(true);
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: selectedPlan }),
-      });
-      const data = await res.json();
-      if (data?.init_point) {
-        window.location.href = data.init_point;
-      } else {
-        console.error("Checkout failed:", data);
-        setLoadingCheckout(false);
-      }
-    } catch (e) {
-      console.error("Checkout error:", e);
-      setLoadingCheckout(false);
-    }
+  const handleUpgradeClick = () => {
+    closeModal();
+    router.push("/suscripcion");
   };
 
   const getFeatureContent = () => {
@@ -154,20 +136,13 @@ export function PremiumConversionModal() {
 
               <div className="space-y-4">
                 <button
-                  onClick={() => handleUpgradeClick("pro")}
-                  disabled={loadingCheckout}
-                  className="w-full relative group overflow-hidden rounded-2xl p-[1px] disabled:opacity-60 cursor-pointer"
+                  onClick={handleUpgradeClick}
+                  className="w-full relative group overflow-hidden rounded-2xl p-[1px] cursor-pointer"
                 >
                   <span className="absolute inset-0 bg-gradient-to-r from-[#1890FF] via-indigo-500 to-purple-500 rounded-2xl" />
                   <div className="relative flex items-center justify-center gap-2 bg-[#0B1121] group-hover:bg-opacity-0 transition-all duration-300 px-6 py-4 rounded-[15px]">
-                    <span className="text-white font-bold text-lg">
-                      {loadingCheckout ? "Cargando..." : "Obtener Plan Pro"}
-                    </span>
-                    {loadingCheckout ? (
-                      <Loader2 className="w-5 h-5 text-white animate-spin" />
-                    ) : (
-                      <ArrowRight className="w-5 h-5 text-white" />
-                    )}
+                    <span className="text-white font-bold text-lg">Obtener Plan Pro</span>
+                    <ArrowRight className="w-5 h-5 text-white" />
                   </div>
                 </button>
                 <p className="text-center text-xs text-slate-500 font-medium">

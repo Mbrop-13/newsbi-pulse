@@ -187,26 +187,20 @@ export function UpgradeModal({ isOpen, onClose, feature, customTitle, customMess
                 </div>
               </div>
               
-              <Button
-                onClick={() => {
-                  onClose();
-                  useConversionStore.getState().openModal("general");
-                }}
-                className="w-full h-12 bg-gradient-to-r from-accent to-purple-600 hover:from-accent/90 hover:to-purple-700 text-white font-bold rounded-xl text-sm shadow-lg shadow-accent/20 group cursor-pointer"
-              >
-                Mejorar mi plan
-                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-0.5 transition-transform" />
-              </Button>
+              <Link href="/suscripcion" onClick={onClose}>
+                <Button className="w-full h-12 bg-gradient-to-r from-accent to-purple-600 hover:from-accent/90 hover:to-purple-700 text-white font-bold rounded-xl text-sm shadow-lg shadow-accent/20 group">
+                  Mejorar mi plan
+                  <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-0.5 transition-transform" />
+                </Button>
+              </Link>
 
-              <button
-                onClick={() => {
-                  onClose();
-                  useConversionStore.getState().openModal("general");
-                }}
-                className="w-full mt-2 text-center text-xs text-[#1890FF] hover:underline font-medium cursor-pointer"
+              <Link
+                href="/suscripcion"
+                onClick={onClose}
+                className="w-full mt-2 text-center text-xs text-[#1890FF] hover:underline font-medium"
               >
                 ¿Eres empresa? Ver planes para equipos →
-              </button>
+              </Link>
 
               <button
                 onClick={onClose}

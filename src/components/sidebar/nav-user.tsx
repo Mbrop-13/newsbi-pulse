@@ -273,7 +273,7 @@ export function NavUser() {
                 <DropdownMenuItem
                   onClick={() => {
                     if (isMobile) setOpenMobile(false);
-                    useConversionStore.getState().openModal("general");
+                    router.push("/suscripcion");
                   }}
                   className="text-[13px] font-medium py-2 px-3 rounded-xl cursor-pointer flex items-center gap-3 focus:bg-muted focus:text-foreground"
                 >

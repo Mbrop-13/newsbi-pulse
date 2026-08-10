@@ -1302,7 +1302,7 @@ function ChatLandingContent() {
 
   const handleSend = (
     text: string,
-    options: { webSearch: boolean; image: boolean; codeInterpreter: boolean; browser: boolean }
+    options: { webSearch: boolean; image: boolean; codeInterpreter: boolean; browser: boolean } = { webSearch: false, image: false, codeInterpreter: false, browser: false }
   ) => {
     if (!text.trim() || aiLoading) return
 

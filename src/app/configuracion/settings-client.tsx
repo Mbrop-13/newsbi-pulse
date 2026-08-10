@@ -478,12 +478,9 @@ export default function SettingsClient() {
                                             : "Plan Gratuito"}
                                         </span>
                                         <span>·</span>
-                                        <button
-                                          onClick={() => useConversionStore.getState().openModal("general")}
-                                          className="font-semibold text-gray-900 dark:text-white hover:underline cursor-pointer"
-                                        >
+                                        <Link href="/suscripcion" className="font-semibold text-gray-900 dark:text-white hover:underline">
                                           Gestionar
-                                        </button>
+                                        </Link>
                                       </div>
                                     </div>
 
@@ -497,13 +494,13 @@ export default function SettingsClient() {
                                         <RefreshCw className={`w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400 ${usageLoading ? "animate-spin" : ""}`} />
                                       </button>
                                       
-                                      <button
-                                        onClick={() => useConversionStore.getState().openModal("general")}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-black dark:bg-white text-white dark:text-black font-black text-[11px] rounded-xl hover:opacity-90 transition-opacity shadow-sm cursor-pointer"
+                                      <Link
+                                        href="/suscripcion"
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-black dark:bg-white text-white dark:text-black font-black text-[11px] rounded-xl hover:opacity-90 transition-opacity shadow-sm"
                                       >
                                         <Rocket className="w-3.5 h-3.5" />
                                         Upgrade
-                                      </button>
+                                      </Link>
                                     </div>
                                   </div>
 

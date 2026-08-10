@@ -369,13 +369,17 @@ export default function FlowClient() {
     ? estimateAgentImageCount(prompt, multCount)
     : multCount;
   const totalCost = getBaseCost(selectedModel.id) * estimatedCount;
-  const creditsRemaining = mounted
-    ? Math.max(
-        0,
-        getPlanConfig(userTier).imageCreditsPerMonth -
-          (useSubscriptionStore.getState().monthlyImageCreditsUsed || 0)
-      )
-    : getPlanConfig(userTier).imageCreditsPerMonth;
+  const imageCreditsLimit = getPlanConfig(userTier).imageCreditsPerMonth;
+  const imageCreditsIncluded = imageCreditsLimit > 0;
+  const creditsRemaining = !imageCreditsIncluded
+    ? 0
+    : mounted
+      ? Math.max(
+          0,
+          imageCreditsLimit -
+            (useSubscriptionStore.getState().monthlyImageCreditsUsed || 0)
+        )
+      : imageCreditsLimit;
 
   // Effect to slowly count up progress percentage for any item in "generating" state
   useEffect(() => {
@@ -407,8 +411,12 @@ export default function FlowClient() {
       : multCount;
     const estimatedCost = getBaseCost(selectedModel.id) * plannedCount;
 
-    // Check credits limit
+    // Check credits limit (Free = 0 → upgrade; paid sin cupo → upgrade)
     const limit = getPlanConfig(userTier).imageCreditsPerMonth;
+    if (limit <= 0) {
+      setShowUpgradeModal(true);
+      return;
+    }
     const used = useSubscriptionStore.getState().monthlyImageCreditsUsed || 0;
     const remaining = Math.max(0, limit - used);
 
@@ -1136,8 +1144,15 @@ export default function FlowClient() {
               />
             </div>
 
-            {/* Cost hint when multi-image / agent */}
-            {(estimatedCount > 1 || isAgentActive) && prompt.trim() && (
+            {/* Cost hint when multi-image / agent — o aviso Free */}
+            {prompt.trim() && !imageCreditsIncluded && (
+              <div className="px-2 pb-1">
+                <p className="text-[10px] sm:text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                  Actualiza tu plan para generar imágenes en Flow
+                </p>
+              </div>
+            )}
+            {imageCreditsIncluded && (estimatedCount > 1 || isAgentActive) && prompt.trim() && (
               <div className="px-2 pb-1">
                 <p className="text-[10px] sm:text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
                   {isAgentActive ? "Agente · " : ""}
@@ -1221,18 +1236,18 @@ export default function FlowClient() {
               </div>
 
               {/* Right group: Model selector & send button */}
-              <div className="flex items-center gap-1 sm:gap-2 relative min-w-0">
-                {/* Model pill — en móvil solo 🍌 Lite / 🍌 Pro */}
-                <div className="relative min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 relative shrink-0">
+                {/* Model pill — en móvil: 🍌 Lite · 3:4 · x2 (sin recorte) */}
+                <div className="relative shrink-0">
                   <button
                     type="button"
                     onClick={() => {
                       setShowModelDropdown(!showModelDropdown);
                       setShowModelList(false);
                     }}
-                    className="max-w-full px-2 sm:px-4 py-1.5 sm:py-2 rounded-full bg-zinc-100 hover:bg-zinc-200/80 dark:bg-zinc-800/80 dark:hover:bg-zinc-700/80 border border-zinc-200/50 dark:border-zinc-700/50 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 text-[11px] sm:text-[12px] font-semibold flex items-center gap-1 sm:gap-2 transition-all duration-200 select-none cursor-pointer leading-none"
+                    className="px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-zinc-100 hover:bg-zinc-200/80 dark:bg-zinc-800/80 dark:hover:bg-zinc-700/80 border border-zinc-200/50 dark:border-zinc-700/50 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 text-[11px] sm:text-[12px] font-semibold flex items-center gap-1.5 sm:gap-2 transition-all duration-200 select-none cursor-pointer leading-none whitespace-nowrap"
                   >
-                    <span className="flex items-center gap-0.5 sm:gap-1 shrink-0">
+                    <span className="flex items-center gap-1 shrink-0">
                       <span className="text-sm leading-none">{selectedModel.icon}</span>
                       <span className="sm:hidden font-bold">{selectedModel.shortName}</span>
                       <span className="hidden sm:inline truncate max-w-[9rem]">
@@ -1240,33 +1255,56 @@ export default function FlowClient() {
                       </span>
                     </span>
                     <span className="flex items-center gap-1 sm:gap-1.5 shrink-0 text-zinc-500 dark:text-zinc-400">
-                      <span className="hidden sm:inline">{getMiniAspectRatioSvg(aspectRatio)}</span>
+                      <span className="opacity-90">{getMiniAspectRatioSvg(aspectRatio)}</span>
                       <span className="text-[10px] sm:text-[11px] font-bold text-zinc-600 dark:text-zinc-300">
                         {multiplier}
                       </span>
+                      <ChevronDown
+                        className={cn(
+                          "w-3 h-3 text-zinc-400 transition-transform duration-200",
+                          showModelDropdown && "rotate-180"
+                        )}
+                      />
                     </span>
                   </button>
 
-                  {/* Model Selector Dropdown */}
+                  {/*
+                    Panel de generación: en móvil es bottom-sheet fixed a viewport
+                    (no se aplasta al ancho del pill). En desktop ancla al botón.
+                  */}
                   <AnimatePresence>
                     {showModelDropdown && (
                       <>
-                        <div className="fixed inset-0 z-30" onClick={() => setShowModelDropdown(false)} />
+                        <div
+                          className="fixed inset-0 z-40 bg-black/20 sm:bg-transparent"
+                          onClick={() => {
+                            setShowModelDropdown(false);
+                            setShowModelList(false);
+                          }}
+                        />
                         <motion.div
-                          initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                          initial={{ opacity: 0, scale: 0.96, y: 12 }}
                           animate={{ opacity: 1, scale: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                          className="absolute left-0 right-0 sm:left-auto sm:right-0 bottom-full mb-2 sm:mb-3 w-auto sm:w-[19rem] max-h-[min(70vh,28rem)] overflow-y-auto bg-white dark:bg-[#1E1E20] border border-zinc-200/80 dark:border-zinc-800 shadow-2xl p-3 sm:p-3.5 z-40 rounded-2xl sm:rounded-3xl text-zinc-950 dark:text-zinc-50 flex flex-col gap-2.5 select-none font-sans"
+                          exit={{ opacity: 0, scale: 0.96, y: 12 }}
+                          transition={{ type: "spring", damping: 24, stiffness: 320 }}
+                          className={cn(
+                            "z-50 bg-white dark:bg-[#1E1E20] border border-zinc-200/80 dark:border-zinc-800 shadow-2xl",
+                            "text-zinc-950 dark:text-zinc-50 flex flex-col gap-3 select-none font-sans overflow-y-auto p-3.5",
+                            // Móvil: bottom-sheet a ancho de viewport (no del pill)
+                            "fixed left-3 right-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] rounded-2xl max-h-[min(78vh,32rem)]",
+                            // Desktop: popover anclado al botón, ancho fijo cómodo
+                            "sm:absolute sm:left-auto sm:right-0 sm:bottom-full sm:mb-3 sm:w-[19rem] sm:max-h-[min(70vh,28rem)] sm:rounded-3xl"
+                          )}
                         >
-                          {/* 1. Tabs at the top (Imagen / Vídeo) */}
-                          <div className="flex bg-zinc-100/80 dark:bg-zinc-900 rounded-full p-0.5 gap-0.5">
+                          {/* 1. Tabs (Imagen / Vídeo) */}
+                          <div className="flex bg-zinc-100/80 dark:bg-zinc-900 rounded-full p-0.5 gap-0.5 shrink-0">
                             <button
                               type="button"
                               onClick={() => setGenerationType("imagen")}
                               className={cn(
-                                "flex-1 py-1.5 rounded-full flex items-center justify-center gap-1.5 text-xs font-bold transition-all duration-200 cursor-pointer",
+                                "flex-1 py-2 sm:py-1.5 rounded-full flex items-center justify-center gap-1.5 text-xs font-bold transition-all duration-200 cursor-pointer min-h-[40px] sm:min-h-0",
                                 generationType === "imagen"
-                                  ? "bg-white text-zinc-955 dark:bg-zinc-800 dark:text-zinc-50 shadow-sm"
+                                  ? "bg-white text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50 shadow-sm"
                                   : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
                               )}
                             >
@@ -1281,9 +1319,9 @@ export default function FlowClient() {
                               type="button"
                               onClick={() => setGenerationType("video")}
                               className={cn(
-                                "flex-1 py-1.5 rounded-full flex items-center justify-center gap-1.5 text-xs font-bold transition-all duration-200 cursor-pointer",
+                                "flex-1 py-2 sm:py-1.5 rounded-full flex items-center justify-center gap-1.5 text-xs font-bold transition-all duration-200 cursor-pointer min-h-[40px] sm:min-h-0",
                                 generationType === "video"
-                                  ? "bg-white text-zinc-955 dark:bg-zinc-800 dark:text-zinc-50 shadow-sm"
+                                  ? "bg-white text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50 shadow-sm"
                                   : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
                               )}
                             >
@@ -1295,8 +1333,8 @@ export default function FlowClient() {
                             </button>
                           </div>
 
-                          {/* 2. Aspect Ratio Row */}
-                          <div className="bg-zinc-100/70 dark:bg-zinc-900/50 p-1 rounded-xl grid grid-cols-5 gap-0.5">
+                          {/* 2. Aspect ratio — touch targets más amplios en móvil */}
+                          <div className="bg-zinc-100/70 dark:bg-zinc-900/50 p-1 rounded-xl grid grid-cols-5 gap-1 sm:gap-0.5 shrink-0">
                             {[
                               { id: "16:9", label: "16:9", icon: <rect x="2" y="6" width="20" height="12" rx="1.5" className="fill-none stroke-current" strokeWidth="2" /> },
                               { id: "4:3", label: "4:3", icon: <rect x="3.5" y="5" width="17" height="14" rx="1.5" className="fill-none stroke-current" strokeWidth="2" /> },
@@ -1311,21 +1349,21 @@ export default function FlowClient() {
                                   type="button"
                                   onClick={() => setAspectRatio(item.id as any)}
                                   className={cn(
-                                    "flex flex-col items-center justify-center py-1.5 rounded-lg gap-1 transition-all duration-200 cursor-pointer aspect-square",
+                                    "flex flex-col items-center justify-center py-2 sm:py-1.5 rounded-lg gap-1 transition-all duration-200 cursor-pointer min-h-[48px] sm:min-h-0 sm:aspect-square",
                                     active
-                                      ? "bg-zinc-200/90 text-zinc-955 dark:bg-zinc-800 dark:text-zinc-50 shadow-xs"
+                                      ? "bg-zinc-200/90 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50 shadow-xs"
                                       : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
                                   )}
                                 >
                                   <svg viewBox="0 0 24 24" className="w-4 h-4 shrink-0" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{item.icon}</svg>
-                                  <span className="text-[9px] font-black">{item.label}</span>
+                                  <span className="text-[9px] sm:text-[9px] font-black">{item.label}</span>
                                 </button>
                               );
                             })}
                           </div>
 
-                          {/* 3. Multiplier Row (1x, x2, x3, x4) */}
-                          <div className="grid grid-cols-4 bg-zinc-100/70 dark:bg-zinc-900/50 p-1 rounded-xl gap-0.5">
+                          {/* 3. Multiplier */}
+                          <div className="grid grid-cols-4 bg-zinc-100/70 dark:bg-zinc-900/50 p-1 rounded-xl gap-1 sm:gap-0.5 shrink-0">
                             {["1x", "x2", "x3", "x4"].map((m) => {
                               const active = multiplier === m;
                               return (
@@ -1334,10 +1372,10 @@ export default function FlowClient() {
                                   type="button"
                                   onClick={() => setMultiplier(m as any)}
                                   className={cn(
-                                    "py-1.5 rounded-lg text-xs font-bold text-center transition-all duration-200 cursor-pointer",
+                                    "py-2.5 sm:py-1.5 rounded-lg text-xs font-bold text-center transition-all duration-200 cursor-pointer min-h-[40px] sm:min-h-0",
                                     active
-                                      ? "bg-zinc-200/90 text-zinc-955 dark:bg-zinc-800 dark:text-zinc-50 shadow-xs"
-                                      : "text-zinc-550 dark:text-zinc-450 hover:text-zinc-800 dark:hover:text-zinc-200"
+                                      ? "bg-zinc-200/90 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50 shadow-xs"
+                                      : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
                                   )}
                                 >
                                   {m}
@@ -1346,15 +1384,15 @@ export default function FlowClient() {
                             })}
                           </div>
 
-                          {/* 4. Model Selection — submenu flotante (no expande el panel) */}
-                          <div className="relative">
+                          {/* 4. Modelos — lista inline (no submenu flotante que se recorta en móvil) */}
+                          <div className="flex flex-col gap-1.5 shrink-0">
                             <button
                               type="button"
                               onClick={() => setShowModelList(!showModelList)}
-                              className="w-full bg-zinc-100/70 dark:bg-zinc-900/50 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 rounded-xl px-3 py-2 flex items-center justify-between transition-all select-none cursor-pointer border border-transparent hover:border-zinc-200/50 dark:hover:border-zinc-800/50"
+                              className="w-full bg-zinc-100/70 dark:bg-zinc-900/50 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 rounded-xl px-3 py-2.5 sm:py-2 flex items-center justify-between transition-all select-none cursor-pointer border border-transparent hover:border-zinc-200/50 dark:hover:border-zinc-800/50 min-h-[44px] sm:min-h-0"
                             >
                               <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5 min-w-0">
-                                <span className="text-xs leading-none shrink-0">{selectedModel.icon}</span>
+                                <span className="text-sm leading-none shrink-0">{selectedModel.icon}</span>
                                 <span className="truncate">{selectedModel.name}</span>
                               </span>
                               <span className="flex items-center gap-1.5 shrink-0 ml-2">
@@ -1371,76 +1409,98 @@ export default function FlowClient() {
                               </span>
                             </button>
 
-                            <AnimatePresence>
+                            <AnimatePresence initial={false}>
                               {showModelList && (
                                 <motion.div
-                                  initial={{ opacity: 0, y: 6, scale: 0.98 }}
-                                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                                  exit={{ opacity: 0, y: 6, scale: 0.98 }}
-                                  transition={{ duration: 0.15 }}
-                                  className={cn(
-                                    "absolute left-0 right-0 bottom-full mb-1.5 z-50",
-                                    "rounded-xl border border-zinc-200/90 dark:border-zinc-700/80",
-                                    "bg-white dark:bg-[#252528] shadow-xl",
-                                    "p-1 flex flex-col gap-0.5"
-                                  )}
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: "auto" }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  transition={{ duration: 0.18 }}
+                                  className="overflow-hidden"
                                 >
-                                  {FLOW_MODELS.map((m) => {
-                                    const active = selectedModel.id === m.id;
-                                    return (
-                                      <button
-                                        key={m.id}
-                                        type="button"
-                                        onClick={() => {
-                                          setSelectedModel(m);
-                                          setShowModelList(false);
-                                        }}
-                                        className={cn(
-                                          "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold transition-colors flex items-center justify-between gap-2 cursor-pointer",
-                                          active
-                                            ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
-                                            : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/70"
-                                        )}
-                                      >
-                                        <span className="flex items-center gap-1.5 min-w-0">
-                                          <span className="shrink-0 leading-none">{m.icon}</span>
-                                          <span className="truncate">{m.name}</span>
-                                        </span>
-                                        <ProviderLogo
-                                          provider={m.provider}
-                                          className="w-3.5 h-3.5 shrink-0 opacity-90"
-                                        />
-                                      </button>
-                                    );
-                                  })}
+                                  <div
+                                    className={cn(
+                                      "rounded-xl border border-zinc-200/90 dark:border-zinc-700/80",
+                                      "bg-zinc-50 dark:bg-[#252528]",
+                                      "p-1 flex flex-col gap-0.5"
+                                    )}
+                                  >
+                                    {FLOW_MODELS.map((m) => {
+                                      const active = selectedModel.id === m.id;
+                                      return (
+                                        <button
+                                          key={m.id}
+                                          type="button"
+                                          onClick={() => {
+                                            setSelectedModel(m);
+                                            setShowModelList(false);
+                                          }}
+                                          className={cn(
+                                            "w-full text-left px-3 py-2.5 sm:py-2 rounded-lg text-xs font-semibold transition-colors flex items-center justify-between gap-2 cursor-pointer min-h-[44px] sm:min-h-0",
+                                            active
+                                              ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 shadow-sm"
+                                              : "text-zinc-700 dark:text-zinc-300 hover:bg-white/70 dark:hover:bg-zinc-800/70"
+                                          )}
+                                        >
+                                          <span className="flex items-center gap-2 min-w-0">
+                                            <span className="shrink-0 leading-none text-sm">{m.icon}</span>
+                                            <span className="truncate">{m.name}</span>
+                                          </span>
+                                          <ProviderLogo
+                                            provider={m.provider}
+                                            className="w-3.5 h-3.5 shrink-0 opacity-90"
+                                          />
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
                                 </motion.div>
                               )}
                             </AnimatePresence>
                           </div>
 
-                          {/* 5. Credits cost indicator */}
-                          <div className="text-center py-0.5 border-t border-zinc-100 dark:border-zinc-800/65 pt-2 flex flex-col gap-1">
-                            <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-semibold leading-snug">
-                              {isAgentActive
-                                ? `Agente puede crear varias imágenes. Estimado: `
-                                : `La generación consumirá `}
-                              <span className="underline decoration-1 underline-offset-4 font-bold text-zinc-800 dark:text-zinc-100">
-                                {totalCost} créditos
-                              </span>
-                              {estimatedCount > 1 && (
-                                <span className="text-zinc-400">
-                                  {" "}
-                                  (~{estimatedCount}×)
-                                </span>
-                              )}
-                            </p>
-                            <p className="text-[9px] text-zinc-400 dark:text-zinc-500 leading-none">
-                              Disponibles:{" "}
-                              <span className="font-bold">{creditsRemaining}</span> /{" "}
-                              {getPlanConfig(userTier).imageCreditsPerMonth} créditos
-                            </p>
+                          {/* 5. Créditos / upgrade Free */}
+                          <div className="text-center py-0.5 border-t border-zinc-100 dark:border-zinc-800/65 pt-2.5 flex flex-col gap-1 shrink-0">
+                            {!imageCreditsIncluded ? (
+                              <>
+                                <p className="text-[10px] text-zinc-600 dark:text-zinc-300 font-semibold leading-snug">
+                                  Tu plan no incluye generación de imágenes.
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setShowModelDropdown(false);
+                                    setShowUpgradeModal(true);
+                                  }}
+                                  className="text-[10px] font-bold text-[#1890FF] hover:underline cursor-pointer"
+                                >
+                                  Actualiza tu plan para usar Flow
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <p className="text-[10px] sm:text-[10px] text-zinc-500 dark:text-zinc-400 font-semibold leading-snug">
+                                  {isAgentActive
+                                    ? `Agente puede crear varias imágenes. Estimado: `
+                                    : `La generación consumirá `}
+                                  <span className="underline decoration-1 underline-offset-4 font-bold text-zinc-800 dark:text-zinc-100">
+                                    {totalCost} créditos
+                                  </span>
+                                  {estimatedCount > 1 && (
+                                    <span className="text-zinc-400">
+                                      {" "}
+                                      (~{estimatedCount}×)
+                                    </span>
+                                  )}
+                                </p>
+                                <p className="text-[9px] text-zinc-400 dark:text-zinc-500 leading-none">
+                                  Disponibles:{" "}
+                                  <span className="font-bold">{creditsRemaining}</span> /{" "}
+                                  {imageCreditsLimit} créditos
+                                </p>
+                              </>
+                            )}
                           </div>
-
                         </motion.div>
                       </>
                     )}
@@ -1514,14 +1574,24 @@ export default function FlowClient() {
         </form>
       </div>
 
-      {/* Upgrade modal for credit limits */}
+      {/* Upgrade modal for credit limits / free plan */}
       <UpgradeModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
         feature="image_credits"
+        customTitle={
+          !imageCreditsIncluded ? "Imágenes no incluidas en tu plan" : undefined
+        }
+        customMessage={
+          !imageCreditsIncluded
+            ? "El plan Gratuito no incluye créditos de imagen en Flow. Actualiza a Pro (1.000/mes), Max (2.000) o Ultra (5.000+) para generar."
+            : undefined
+        }
         usage={{
-          used: mounted ? (useSubscriptionStore.getState().monthlyImageCreditsUsed || 0) : 0,
-          limit: getPlanConfig(userTier).imageCreditsPerMonth,
+          used: mounted
+            ? useSubscriptionStore.getState().monthlyImageCreditsUsed || 0
+            : 0,
+          limit: imageCreditsLimit,
         }}
       />
     </div>

@@ -292,9 +292,10 @@ async function legacyGuestIncrement(ipHash: string, column: string, delta: numbe
     .eq("ip_address", ipHash)
     .maybeSingle();
   if (existing) {
+    const prev = (existing as Record<string, any>)[column] || 0;
     await supabase
       .from("guest_usage")
-      .update({ [column]: (existing[column] || 0) + delta, updated_at: new Date().toISOString() })
+      .update({ [column]: prev + delta, updated_at: new Date().toISOString() })
       .eq("ip_address", ipHash);
   } else {
     await supabase
@@ -311,9 +312,10 @@ async function legacyMonthlyIncrement(userId: string, month: string, column: str
     .eq("month", month)
     .maybeSingle();
   if (existing) {
+    const prev = (existing as Record<string, any>)[column] || 0;
     await supabase
       .from("monthly_usage")
-      .update({ [column]: (existing[column] || 0) + delta })
+      .update({ [column]: prev + delta })
       .eq("user_id", userId)
       .eq("month", month);
   } else {
@@ -330,9 +332,10 @@ async function legacyLifetimeIncrement(userId: string, column: string, delta: nu
     .eq("user_id", userId)
     .maybeSingle();
   if (existing) {
+    const prev = (existing as Record<string, any>)[column] || 0;
     await supabase
       .from("lifetime_usage")
-      .update({ [column]: (existing[column] || 0) + delta })
+      .update({ [column]: prev + delta })
       .eq("user_id", userId);
   } else {
     await supabase
@@ -541,28 +544,26 @@ async function checkPortfolioLimit(userId: string, tier: PlanTier): Promise<Limi
 }
 
 /**
- * Check if user has enough tokens remaining (checking monthly/lifetime, 5-hour, and weekly limits in parallel)
+ * Check if user has enough tokens remaining.
+ * Solo ventanas: mensual (o lifetime en free) + semanal (7 días).
+ * El límite de 5 horas se eliminó.
  */
 export async function checkTokenLimit(userId: string): Promise<{ allowed: boolean; remaining: number; limit: number; tier: PlanTier }> {
   const tier = await getUserTier(userId);
   const config = getPlanConfig(tier);
   const isGuest = userId.startsWith("guest-");
 
-  // Define limits based on tier
+  // Free: lifetime; planes de pago: mes calendario
   const monthlyLimit = tier === "free" ? config.aiLifetimeTokens : config.aiTokensPerMonth;
-  const fiveHourLimit = config.aiTokensPer5Hours;
   const weeklyLimit = config.aiTokensPerWeek;
 
   let monthlyUsed = 0;
-  let fiveHourUsed = 0;
   let weeklyUsed = 0;
 
   const currentMonth = new Date().toISOString().slice(0, 7) + "-01";
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-  const fiveHoursAgo = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString();
 
   try {
-    // 1. Fetch general limit usage (monthly or lifetime)
     const generalPromise = (async () => {
       if (tier === "free") {
         if (isGuest) {
@@ -592,7 +593,7 @@ export async function checkTokenLimit(userId: string): Promise<{ allowed: boolea
       }
     })();
 
-    // 2. Fetch rolling time window logs from token_usage_logs (last 7 days covers weekly and 5h)
+    // Ventana semanal: suma de token_usage_logs de los últimos 7 días
     const logsPromise = supabase
       .from("token_usage_logs")
       .select("tokens, created_at")
@@ -603,62 +604,29 @@ export async function checkTokenLimit(userId: string): Promise<{ allowed: boolea
     monthlyUsed = genUsed;
 
     if (logs) {
-      const sortedLogs = [...logs].sort(
-        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-      );
-      
-      let blockStart: number | null = null;
-
-      sortedLogs.forEach((log) => {
-        const t = log.tokens || 0;
-        const logTime = new Date(log.created_at).getTime();
-        const now = Date.now();
-
-        weeklyUsed += t;
-
-        if (blockStart === null) {
-          if (now - logTime < 5 * 60 * 60 * 1000) {
-            blockStart = logTime;
-            fiveHourUsed = t;
-          }
-        } else {
-          if (logTime - blockStart < 5 * 60 * 60 * 1000) {
-            fiveHourUsed += t;
-          } else {
-            if (now - logTime < 5 * 60 * 60 * 1000) {
-              blockStart = logTime;
-              fiveHourUsed = t;
-            }
-          }
-        }
-      });
+      for (const log of logs) {
+        weeklyUsed += log.tokens || 0;
+      }
     }
   } catch (dbErr) {
     console.warn("[checkTokenLimit] Database error checking token windows, falling back:", dbErr);
   }
 
-  // Calculate remaining capacities for each limit
   const monthlyRemaining = monthlyLimit === -1 ? 9999999 : Math.max(0, monthlyLimit - monthlyUsed);
-  const fiveHourRemaining = fiveHourLimit === -1 ? 9999999 : Math.max(0, fiveHourLimit - fiveHourUsed);
   const weeklyRemaining = weeklyLimit === -1 ? 9999999 : Math.max(0, weeklyLimit - weeklyUsed);
 
-  // The true limit is the bottleneck limit (lowest remaining capacity)
-  const minRemaining = Math.min(monthlyRemaining, fiveHourRemaining, weeklyRemaining);
+  const minRemaining = Math.min(monthlyRemaining, weeklyRemaining);
   const allowed = minRemaining > 0;
 
-  // Find which limit is the bottleneck to return correct capacity info
-  let activeLimit = monthlyLimit;
-  if (fiveHourRemaining < monthlyRemaining && fiveHourRemaining < weeklyRemaining) {
-    activeLimit = fiveHourLimit;
-  } else if (weeklyRemaining < monthlyRemaining) {
-    activeLimit = weeklyLimit;
-  }
+  // Cuello de botella: el más restrictivo entre semanal y mensual/lifetime
+  const activeLimit =
+    weeklyRemaining < monthlyRemaining ? weeklyLimit : monthlyLimit;
 
   return {
     allowed,
     remaining: minRemaining,
     limit: activeLimit,
-    tier
+    tier,
   };
 }
 

@@ -184,60 +184,54 @@ function SubscriptionPageContent() {
     return getAnnualMonthlyPrice(actualPlanId).toLocaleString("es-CL");
   };
 
+  /** Total anual cobrado (10 meses = 2 meses gratis). Equiv. mensual = total/12. */
   const getAnnualTotal = (planId: PlanTier): string => {
     const actualPlanId = planId === "ultra" && isUltraX20Toggled ? "ultra_x20" : planId;
     const config = PLAN_CONFIGS[actualPlanId];
-    let basePrice = config.price;
-    return Math.round(basePrice * 10).toLocaleString("es-CL");
+    // price * 12 * (1 - annualDiscount)  →  p.ej. 19990 * 10 = 199900
+    const annualTotal = Math.round(config.price * 12 * (1 - config.annualDiscount));
+    return annualTotal.toLocaleString("es-CL");
   };
 
   // Build features dynamically based on states
   const getPlanFeatures = (planId: PlanTier) => {
     if (planId === "pro") {
       return [
-        { text: "Mucha más capacidad de preguntas al mes", included: true },
+        { text: "2M tokens de IA al mes", included: true },
         { text: "1.000 créditos de imagen en Flow", included: true },
-        { text: "50 audios de noticias/mes", included: true },
         { text: "5 alertas de precio activas", included: true },
         { text: "25 activos en portafolio", included: true },
         { text: "Sin publicidad", included: true },
-        { text: "Soporte por email", included: true },
       ];
     }
     if (planId === "max") {
       return [
-        { text: "Doble de límites de preguntas (x2 límites de Pro)", included: true },
+        { text: "4M tokens de IA al mes (x2 Pro)", included: true },
         { text: "2.000 créditos de imagen en Flow", included: true },
-        { text: "100 audios al mes (x2 Pro)", included: true },
         { text: "10 alertas de precio (x2 Pro)", included: true },
         { text: "50 activos en portafolio (x2 Pro)", included: true },
         { text: "Informe semanal y Recomendaciones IA", included: true },
-        { text: "Soporte prioritario", included: true },
       ];
     }
-    
+
     // Plan Ultra
     if (isUltraX20Toggled) {
       return [
         { text: "Todas las funciones de Plan Ultra", included: true },
-        { text: "Límites de preguntas x20 (x20 límites de Pro)", included: true },
+        { text: "40M tokens de IA al mes (x20 Pro)", included: true },
         { text: "10.000 créditos de imagen en Flow", included: true },
-        { text: "1.000 audios al mes (x20 Pro)", included: true },
         { text: "100 alertas de precio (x20 Pro)", included: true },
         { text: "500 activos en portafolio (x20 Pro)", included: true },
         { text: "IA con búsqueda web activa", included: true },
-        { text: "Soporte dedicado 24/7", included: true },
       ];
     }
     return [
       { text: "Todas las funciones de Plan Max", included: true },
-      { text: "Límites de preguntas x5 (x5 límites de Pro)", included: true },
+      { text: "10M tokens de IA al mes (x5 Pro)", included: true },
       { text: "5.000 créditos de imagen en Flow", included: true },
-      { text: "250 audios al mes (x5 Pro)", included: true },
       { text: "25 alertas de precio (x5 Pro)", included: true },
       { text: "125 activos en portafolio (x5 Pro)", included: true },
       { text: "IA con búsqueda web activa", included: true },
-      { text: "Soporte dedicado 24/7", included: true },
     ];
   };
 
@@ -261,7 +255,7 @@ function SubscriptionPageContent() {
     },
     {
       q: "¿Qué es la opción Ultra x20?",
-      a: "Es una ampliación exclusiva para el plan Ultra orientada a analistas intensivos y profesionales. Duplica el costo mensual pero multiplica por 20 todos los límites base del plan Pro, ofreciendo x20 en los límites de preguntas, 1000 audios y 100 alertas activas.",
+      a: "Es una ampliación exclusiva para el plan Ultra orientada a analistas intensivos y profesionales. Duplica el costo mensual pero multiplica por 20 todos los límites base del plan Pro, ofreciendo x20 en tokens de IA, 10.000 créditos de imagen en Flow y 100 alertas activas.",
     },
   ];
 
@@ -301,7 +295,7 @@ function SubscriptionPageContent() {
           {currentTier === "free" && isPromoX2Active() && (
             <div className="inline-flex items-center gap-2 mt-4 mb-2 px-4 py-1.5 rounded-full bg-neutral-200/50 dark:bg-zinc-800 border border-neutral-350 dark:border-zinc-700 text-neutral-800 dark:text-neutral-200 text-xs font-black shadow-sm">
               <Zap className="w-4 h-4" />
-              ¡PROMO ACTIVA! Doble de consultas IA y audios en planes de pago este mes.
+              ¡PROMO ACTIVA! Beneficios extra en planes de pago este mes.
             </div>
           )}
         </div>
@@ -414,7 +408,7 @@ function SubscriptionPageContent() {
                 
                 {billingCycle === "annual" ? (
                   <p className="text-[12px] md:text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
-                    equivalente a ${getDisplayPrice("pro")} CLP/mes
+                    equivalente a ${getAnnualMonthlyPriceStr("pro")} CLP/mes
                   </p>
                 ) : (
                   <p className="text-[12px] md:text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
@@ -496,7 +490,7 @@ function SubscriptionPageContent() {
                 
                 {billingCycle === "annual" ? (
                   <p className="text-[12px] md:text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
-                    equivalente a ${getDisplayPrice("max")} CLP/mes
+                    equivalente a ${getAnnualMonthlyPriceStr("max")} CLP/mes
                   </p>
                 ) : (
                   <p className="text-[12px] md:text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
@@ -608,7 +602,7 @@ function SubscriptionPageContent() {
                 
                 {billingCycle === "annual" ? (
                   <p className="text-[12px] md:text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
-                    equivalente a ${getDisplayPrice(isUltraX20Toggled ? "ultra_x20" : "ultra")} CLP/mes
+                    equivalente a ${getAnnualMonthlyPriceStr(isUltraX20Toggled ? "ultra_x20" : "ultra")} CLP/mes
                   </p>
                 ) : (
                   <p className="text-[12px] md:text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
@@ -911,7 +905,7 @@ function EnterprisePlansGrid({
 
             <ul className="space-y-2.5">
               {[
-                "100 mensajes IA / asiento / mes (Plan Pro)",
+                "2M tokens de IA / asiento / mes (Plan Pro)",
                 "1.000 créditos de imagen en Flow",
                 "Workspaces y proyectos compartidos",
                 "Alertas y agentes compartidos",
@@ -974,7 +968,7 @@ function EnterprisePlansGrid({
 
             <ul className="space-y-2.5">
               {[
-                "200 mensajes IA / asiento / mes (Plan Max)",
+                "4M tokens de IA / asiento / mes (Plan Max)",
                 "2.000 créditos de imagen en Flow",
                 "IA con búsqueda web activa",
                 "Agentes y plantillas compartidas",
@@ -1023,13 +1017,12 @@ function EnterprisePlansGrid({
 
             <ul className="space-y-2.5">
               {[
-                "500 mensajes IA / asiento / mes (Plan Ultra)",
+                "10M tokens de IA / asiento / mes (Plan Ultra)",
                 "5.000 créditos de imagen en Flow",
                 "IA con búsqueda web y análisis avanzado",
                 "Workspaces, agentes y alertas compartidas",
                 "Panel de administración de organización",
                 "Facturación centralizada a medida",
-                "Soporte dedicado",
               ].map((f) => (
                 <li key={f} className="flex items-start gap-2.5 text-xs md:text-sm">
                   <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center shrink-0 border border-white/20 mt-0.5">

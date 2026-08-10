@@ -13,11 +13,14 @@ export interface WebBuilderQuestion {
   title: string;
   options: WebBuilderQuestionOption[];
   allowWriteIn?: boolean;
+  /** Client-side intent, e.g. "workspace_mode" for Build/Canvas offer */
+  intent?: string;
 }
 
 interface InteractiveQuestionCardProps {
   question: WebBuilderQuestion;
-  onSubmit: (answer: string) => void;
+  /** answer text + optional option id (for client actions like activate Build) */
+  onSubmit: (answer: string, optionId?: string) => void;
   onSkip: () => void;
   onClose?: () => void;
 }
@@ -35,12 +38,12 @@ export function InteractiveQuestionCard({
   const handleNext = () => {
     if (selectedOptionId === "custom") {
       if (customText.trim()) {
-        onSubmit(customText.trim());
+        onSubmit(customText.trim(), "custom");
       }
     } else {
       const option = question.options.find((o) => o.id === selectedOptionId);
       if (option) {
-        onSubmit(option.title);
+        onSubmit(option.title, option.id);
       }
     }
   };

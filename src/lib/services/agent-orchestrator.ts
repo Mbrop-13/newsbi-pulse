@@ -1,5 +1,5 @@
 import { generateText, LanguageModel } from 'ai';
-import { containsArtifact, parseArtifact, ParsedAction, validateDiffsAgainstFile } from '@/lib/webbuilder-parser';
+import { containsArtifact, parseArtifact, ParsedAction, validateDiffsAgainstFile, toCodeMap } from '@/lib/webbuilder-parser';
 import { validateFileSyntax } from '@/lib/webbuilder-syntax-validator';
 import { BUILDER_DESIGN_GUIDELINES } from '@/app/api/ai-chat/prompts/builder-guidelines';
 
@@ -749,18 +749,30 @@ async function generateWebBuilderCodeWithVerification(
       }
 
       if (failedSearchBlocks.length > 0) {
-        // Contexto real: las primeras ~15 líneas del archivo(s) afectado(s)
-        // para que el LLM regenere un SEARCH exacto en el intento 2.
+        // Contexto real del archivo: hasta ~120 líneas o 12k chars (antes solo
+        // 15 líneas del head → el LLM no veía el tramo a editar en archivos
+        // medianos/grandes y reintentaba a ciegas).
         const fileContext = parsed.actions
           .filter((a): a is Extract<ParsedAction, { type: 'update' }> => a.type === 'update')
           .map(a => {
             const code = existingFiles[a.filePath] ?? '';
-            const head = code.split('\n').slice(0, 15).join('\n');
-            return `--- Código actual de ${a.filePath} (primeras 15 líneas) ---\n${head}\n---`;
+            const lines = code.split('\n');
+            const MAX_LINES = 120;
+            const MAX_CHARS = 12000;
+            let body: string;
+            if (lines.length <= MAX_LINES && code.length <= MAX_CHARS) {
+              body = code;
+            } else {
+              const head = lines.slice(0, 80).join('\n');
+              const tail = lines.slice(-40).join('\n');
+              body = `${head}\n\n/* ... (${lines.length - 120} líneas omitidas) ... */\n\n${tail}`;
+              if (body.length > MAX_CHARS) body = body.slice(0, MAX_CHARS) + '\n/* ... truncado ... */';
+            }
+            return `--- Código actual de ${a.filePath} ---\n${body}\n---`;
           })
           .join('\n\n');
 
-        currentSystemPrompt = `${systemPrompt}\n\n[ERROR ANTERIOR] Tus bloques SEARCH no coinciden con el código actual del archivo. El diff NO se aplicará. Corrígelo usando el texto EXACTO del archivo real:\n${failedSearchBlocks.join('\n')}\n\n${fileContext}\n\nIMPORTANTE: copia el código del archivo literalmente en el bloque SEARCH, respetando indentación y saltos de línea. Si el bloque es ambiguo (aparece varias veces), incluye más líneas alrededor para hacerlo único.`;
+        currentSystemPrompt = `${systemPrompt}\n\n[ERROR ANTERIOR] Tus bloques SEARCH no coinciden con el código actual del archivo. El diff NO se aplicará. Corrígelo usando el texto EXACTO del archivo real:\n${failedSearchBlocks.join('\n')}\n\n${fileContext}\n\nIMPORTANTE: copia el código del archivo literalmente en el bloque SEARCH, respetando indentación y saltos de línea. Si el bloque es ambiguo (aparece varias veces), incluye más líneas alrededor para hacerlo único. Si el cambio es grande (>60% del archivo), usa type="file" con el archivo completo.`;
         onProgress?.(`⚠️ [Agente] ${agent.agentName}: ${failedSearchBlocks.length} bloque(s) SEARCH no coinciden con el código actual. Re-pidiendo al LLM con el contexto real...\n`);
         attempt++;
         continue;
@@ -811,10 +823,12 @@ export interface WebBuilderPlan {
 export async function planWebBuilder(
   model: LanguageModel,
   userMessage: string,
-  existingFiles?: Record<string, string>,
+  existingFiles?: Record<string, string> | Record<string, unknown>,
   onProgress?: (text: string) => void,
   replanFeedback?: string
 ): Promise<WebBuilderPlan> {
+  // Defensa: el cliente/store manda { path: { code } }; aquí siempre string.
+  const filesMap = toCodeMap(existingFiles as Record<string, unknown> | undefined);
   let totalTokensUsed = 0;
   const isReplan = !!replanFeedback;
   onProgress?.(isReplan
@@ -822,7 +836,7 @@ export async function planWebBuilder(
     : "🧠 [Orquestador WebBuilder] Iniciando planificación de arquitectura y archivos...\n"
   );
 
-  const existingFilesContext = existingFiles && Object.keys(existingFiles).length > 0;
+  const existingFilesContext = Object.keys(filesMap).length > 0;
 
   const basePlannerPrompt = `Actúas como el Arquitecto de Software y Orquestador de Maverlang WebBuilder.
 Tu tarea es analizar la consulta del usuario y los archivos existentes en el proyecto (si los hay), y planificar los cambios de código.
@@ -893,8 +907,14 @@ DEBES responder ÚNICAMENTE con un bloque JSON en uno de los formatos anteriores
         {
           role: 'user',
           content: `Consulta del usuario: "${userMessage}"
- 
-${existingFilesContext ? `Archivos existentes:\n${Object.keys(existingFiles).map(p => `- ${p}`).join('\n')}` : '(Proyecto vacío)'}`
+
+${existingFilesContext
+  ? `Archivos existentes del proyecto (ya hay código; prioriza type="update" / isComplex según alcance real de la petición):\n${Object.entries(filesMap).map(([p, code]) => {
+      const lines = code.split('\n').length;
+      const preview = code.slice(0, 280).replace(/\n/g, ' ');
+      return `- ${p} (${lines} líneas): ${preview}${code.length > 280 ? '…' : ''}`;
+    }).join('\n')}`
+  : '(Proyecto vacío)'}`
         }
       ],
       temperature: 0.1,
@@ -953,10 +973,12 @@ export async function executeWebBuilderAgents(
   model: LanguageModel,
   agents: WebBuilderAgentInfo[],
   userMessage: string,
-  existingFiles?: Record<string, string>,
+  existingFiles?: Record<string, string> | Record<string, unknown>,
   onProgress?: (text: string) => void,
   onFileReady?: (agent: WebBuilderAgentInfo, content: string, success: boolean) => void
 ): Promise<{ agentReports: WebBuilderAgentReport[]; totalOrchestrationTimeMs: number; totalTokensUsed: number }> {
+  // Defensa: siempre trabajar con Record<path, string> de código real.
+  const filesMap = toCodeMap(existingFiles as Record<string, unknown> | undefined);
   const startTime = Date.now();
   let totalTokensUsed = 0;
 
@@ -1013,8 +1035,8 @@ Si vas a MODIFICAR un archivo existente, usa type="update" con bloques search/re
 ${BUILDER_DESIGN_GUIDELINES}
 `;
 
-    // Filter existing files context per-agent to optimize tokens
-    const relevantFiles = selectRelevantContext(agent.filePath, existingFiles || {});
+    // Filter existing files context per-agent to optimize tokens (código string real)
+    const relevantFiles = selectRelevantContext(agent.filePath, filesMap);
     const relevantFilesContext = Object.keys(relevantFiles).length > 0;
 
     const agentUserMessage = `Consulta original del usuario: "${userMessage}"

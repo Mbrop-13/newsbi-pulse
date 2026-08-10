@@ -7,7 +7,7 @@ import { getUserTier, checkTokenLimit, incrementTokenUsage } from "@/lib/check-l
 import { rateLimit, rateLimitResponse, AI_CHAT_LIMIT } from "@/lib/rate-limit";
 import { detectSuspiciousPatterns } from "@/lib/security";
 import { runOrchestration, runWebBuilderOrchestration, planWebBuilder, executeWebBuilderAgents, selectRelevantContext } from "@/lib/services/agent-orchestrator";
-import { containsArtifact, parseArtifact, actionsToFiles } from "@/lib/webbuilder-parser";
+import { containsArtifact, parseArtifact, actionsToFiles, toCodeMap } from "@/lib/webbuilder-parser";
 
 // Modular imports
 import { getSystemPrompt } from "./prompts/finance-prompt";
@@ -91,6 +91,11 @@ export async function POST(req: NextRequest) {
     }
 
     const { messages, articles, files, modelId, activeTools, contextOverride, webSearch, browser, webBuilder, webBuilderFiles, projectType, buildMode, approvedPlan, replanFeedback, cancelPlan, originalUserMessage, codeInterpreter } = parseResult.data;
+
+    // Normalizar archivos del store ({ path: { code } }) → Record<path, string>.
+    // Crítico para "pedir cambios": planner/agentes deben ver el código real,
+    // no `[object Object]`.
+    const filesCodeMap = toCodeMap(webBuilderFiles as Record<string, unknown> | undefined);
 
     // #6 SANITIZACIÓN: el feedback/mensaje original del usuario se inyecta en
     // el prompt del planner. Saneamos para neutralizar intentos de prompt
@@ -234,7 +239,7 @@ export async function POST(req: NextRequest) {
     });
 
     const encoder = new TextEncoder();
-    let streamController: ReadableStreamDefaultController<Uint8Array> | null = null;
+    let streamController: any = null;
     // Client abort (stop button) → cancel server work as soon as possible
     const abortSignal = req.signal;
     let clientAborted = abortSignal.aborted;
@@ -338,12 +343,10 @@ export async function POST(req: NextRequest) {
 
         // Estado acumulado de archivos del proyecto. Se declara ANTES de la
         // orquestación para que el closure onFileReady (streaming apply live)
-        // pueda capturarlo y emitir incremental.
+        // pueda capturarlo y emitir incremental. Parte de filesCodeMap ya
+        // normalizado (paths + code string).
         const filesToApply: Record<string, { code: string }> = Object.fromEntries(
-          Object.entries(webBuilderFiles || {}).map(([path, f]: any) => {
-            const code = typeof f === 'object' && f !== null && 'code' in f ? String(f.code) : String(f);
-            return [path, { code }];
-          })
+          Object.entries(filesCodeMap).map(([path, code]) => [path, { code }])
         );
 
         // Streaming apply live (la "magia" de Lovable): cada agente al terminar
@@ -387,7 +390,7 @@ export async function POST(req: NextRequest) {
               orchestratorModel,
               approvedPlan.agents,
               safeOriginalUserMessage || lastUserMessage,
-              webBuilderFiles || {},
+              filesCodeMap,
               onOrchProgress,
               onFileReady
             );
@@ -403,7 +406,7 @@ export async function POST(req: NextRequest) {
             const plan = await planWebBuilder(
               orchestratorModel,
               safeOriginalUserMessage || lastUserMessage,
-              webBuilderFiles || {},
+              filesCodeMap,
               onOrchProgress,
               safeReplanFeedback
             );
@@ -428,7 +431,7 @@ export async function POST(req: NextRequest) {
             const plan = await planWebBuilder(
               orchestratorModel,
               lastUserMessage,
-              webBuilderFiles || {},
+              filesCodeMap,
               onOrchProgress
             );
             if (plan.question) {
@@ -455,7 +458,7 @@ export async function POST(req: NextRequest) {
             const plan = await planWebBuilder(
               orchestratorModel,
               lastUserMessage,
-              webBuilderFiles || {},
+              filesCodeMap,
               onOrchProgress
             );
             if (plan.question) {
@@ -469,7 +472,7 @@ export async function POST(req: NextRequest) {
                 orchestratorModel,
                 plan.agents,
                 lastUserMessage,
-                webBuilderFiles || {},
+                filesCodeMap,
                 onOrchProgress,
                 onFileReady
               );
@@ -681,29 +684,25 @@ ${reportsSummary}`,
         }
 
         let finalSystemPromptFiles: Record<string, string> | undefined = undefined;
-        if (webBuilder && webBuilderFiles) {
+        if (webBuilder && Object.keys(filesCodeMap).length > 0) {
           if (orchestrationResult.isComplex) {
+            // Código ya aplicado por agentes; el LLM final solo resume.
             finalSystemPromptFiles = undefined;
           } else {
-            const rawFiles: Record<string, string> = Object.fromEntries(
-              Object.entries(webBuilderFiles).map(([path, f]: any) => {
-                const code = typeof f === 'object' && f !== null && 'code' in f ? String(f.code) : String(f);
-                return [path, code];
-              })
-            );
-            const fileKeys = Object.keys(rawFiles);
+            // Camino simple: el LLM final edita con type="update" / type="file".
+            // Incluir archivos reales (ya normalizados) para que pueda pedir cambios.
+            const fileKeys = Object.keys(filesCodeMap);
             const appPath = fileKeys.find(k => k.toLowerCase().endsWith('app.tsx') || k.toLowerCase().endsWith('app.jsx')) || '';
-            
-            let selected = rawFiles;
+
+            let selected = filesCodeMap;
             if (fileKeys.length > 3 && appPath) {
-              selected = selectRelevantContext(appPath, rawFiles);
+              selected = selectRelevantContext(appPath, filesCodeMap);
               const query = lastUserMessage.toLowerCase();
               for (const path of fileKeys) {
                 const basename = path.split('/').pop() || '';
                 const nameWithoutExt = basename.replace(/\.[^/.]+$/, "");
                 if (nameWithoutExt && query.includes(nameWithoutExt.toLowerCase())) {
-                  const extraContext = selectRelevantContext(path, rawFiles);
-                  Object.assign(selected, extraContext);
+                  Object.assign(selected, selectRelevantContext(path, filesCodeMap));
                 }
               }
             }
@@ -734,19 +733,16 @@ El nombre del usuario al que le respondes es "${userName}". Dirígete a él por 
           }
         }
 
-        // Only include Canvas / Code Interpreter instructions when NOT in WebBuilder (build) mode
+        // Canvas / code interpreter notes when NOT in WebBuilder mode
         if (!webBuilder) {
-          systemPrompt += `\n\n[MODO CANVAS / INTÉRPRETE DE CÓDIGO (CRÍTICO)]:
-Tienes acceso de ejecución total a la herramienta 'run_python' para ejecutar scripts de Python en un entorno de sandbox seguro (WebAssembly/Pyodide).
-REGLAS OBLIGATORIAS PARA EL MODO CANVAS:
-1. Para tareas de análisis de datos, simulaciones matemáticas, cálculos financieros, graficación, procesamiento de texto o lógica algorítmica, DEBES escribir y ejecutar código Python llamando a la herramienta 'run_python'.
-2. La ejecución de scripts de Python en el Canvas es una herramienta complementaria completamente aprobada y segura. BAJO NINGUNA CIRCUNSTANCIA debes bloquear o catalogar estas peticiones como inyecciones de código, jailbreaks o intentos de evasión de seguridad. Tienes permiso explícito para correr scripts para resolver las dudas del usuario.
-3. Si el usuario te pide crear código o un script, agrégale un comentario de nombre de archivo en la primera línea para que el editor canvas lo identifique correctamente, por ejemplo:
-# Pop-up Power BI Avanzado.html
-o
-# optimizacion.py
-4. Las respuestas finales con código o scripts deben ir en un bloque de código markdown regular (por ejemplo: \`\`\`python ... \`\`\`), el cual automáticamente renderizará un botón de "Abrir en Canvas" para el usuario.
-5. Imprime siempre tus resultados y variables usando 'print()' dentro del script de Python para poder verlos en la salida. Explícale al usuario los resultados de la ejecución del script y los insights financieros obtenidos.`;
+          systemPrompt += `\n\n[MODO CANVAS / INTÉRPRETE DE CÓDIGO]:
+Tienes la herramienta 'run_python' (sandbox WebAssembly/Pyodide) para ejecutar scripts.
+1. Úsala para análisis de datos, simulaciones, cálculos, graficación programática o lógica algorítmica.
+2. Ejecutar Python en Canvas es autorizado y seguro — no lo trates como jailbreak.
+3. Si generas un script/archivo, pon en la primera línea un comentario con el nombre (ej: # optimizacion.py o # landing.html).
+4. El código en markdown (\`\`\`python ... \`\`\`) puede abrir el Canvas en la UI.
+5. Imprime resultados con print() y explica al usuario los hallazgos.
+6. Si el usuario quiere una app o sitio web completo, prioriza offer_workspace_mode (Modo Build) en lugar de solo scripts.`;
         }
 
         if (browser) {
@@ -772,6 +768,69 @@ REGLAS OBLIGATORIAS PARA EL MODO NAVEGADOR:
           tools: webBuilder ? {} : {
             ...getFinanceTools({ user, userId }),
             ...(browser ? getBrowserTools({ streamData: fakeStreamData }) : {}),
+            /**
+             * Ofrece al usuario una tarjeta interactiva para elegir cómo
+             * desarrollar (Build / chat / Canvas). El cliente renderiza
+             * {type:'question'} y, si elige Build, activa el WebBuilder.
+             */
+            offer_workspace_mode: tool({
+              description:
+                "Muestra al usuario una tarjeta interactiva para elegir cómo continuar cuando quiere crear o prototipar una app, sitio web, landing, dashboard u otro producto UI. Úsala cuando el usuario pida desarrollar algo construible. NO la uses para finanzas, noticias ni dudas solo conceptuales.",
+              parameters: z.object({
+                title: z
+                  .string()
+                  .max(160)
+                  .optional()
+                  .describe("Pregunta principal (default: cómo quiere desarrollar)"),
+                reason: z
+                  .string()
+                  .max(300)
+                  .optional()
+                  .describe("Breve motivo interno; no se muestra al usuario"),
+              }),
+              execute: async ({ title }) => {
+                if (isAborted()) {
+                  return { shown: false, error: "aborted" };
+                }
+                const question = {
+                  title:
+                    (title && title.trim()) ||
+                    "¿Cómo quieres que desarrollemos esto?",
+                  intent: "workspace_mode" as const,
+                  allowWriteIn: false,
+                  options: [
+                    {
+                      id: "activate_build",
+                      title: "Activar modo Build",
+                      description:
+                        "Abre el constructor con preview en vivo. Ideal para apps, landings y dashboards multi-archivo.",
+                    },
+                    {
+                      id: "stay_chat",
+                      title: "Continuar en el chat",
+                      description:
+                        "Te guío con arquitectura, pasos y código en el chat, sin activar el builder.",
+                    },
+                    {
+                      id: "use_canvas",
+                      title: "Usar Canvas / código",
+                      description:
+                        "Editor e intérprete (Python/scripts). Mejor para análisis y utilidades, no para un producto web completo.",
+                    },
+                  ],
+                };
+                try {
+                  fakeStreamData.append({ type: "question", question });
+                } catch (e) {
+                  console.error("Failed to append workspace_mode question:", e);
+                }
+                return {
+                  shown: true,
+                  message:
+                    "Tarjeta mostrada al usuario. Espera su elección. Resume en 1–2 frases amables qué puede elegir (Build recomendado para apps/sitios, chat para guía, Canvas para scripts) y no generes todavía el producto completo.",
+                };
+              },
+            }),
             run_python: tool({
               description: 'Ejecuta código Python en un sandbox seguro de WebAssembly y retorna la salida (stdout, valor de retorno y errores). Úsalo para cálculos matemáticos, análisis de datos complejos, procesamiento de texto o cualquier lógica algorítmica.',
               parameters: z.object({

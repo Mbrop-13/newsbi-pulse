@@ -662,7 +662,7 @@ export function AIChatSidebar() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-                  placeholder={reachedQuestionLimit ? "Límite alcanzado" : "Pregúntale a Maverlang AI..."}
+                  placeholder={reachedTokenLimit ? "Límite alcanzado" : "Pregúntale a Maverlang AI..."}
                   className="flex-1 bg-transparent text-[13px] py-2.5 px-1 max-h-28 min-h-[40px] resize-none outline-none disabled:cursor-not-allowed font-medium text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
                   disabled={isLoading}
                   rows={1}

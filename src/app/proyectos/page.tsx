@@ -141,18 +141,21 @@ export default function ProyectosPage() {
 
       {/* SECCIÓN 1: Réplica superior del Chat de IA */}
       <div className="w-full max-w-3xl mx-auto px-3 sm:px-4 pt-[18vh] sm:pt-[25vh] flex flex-col items-center min-w-0">
-        {/* Logotipo Centrado */}
+        {/* Logotipo Centrado — más grande que en el chat general */}
         <motion.div
           initial={{ opacity: 0, y: -10, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.5, ease: "easeOut" }}
-          className="text-center mb-6 sm:mb-8 shrink-0 w-full"
+          className="text-center mb-7 sm:mb-10 shrink-0 w-full"
         >
           <img
             src={chatLogoSrc}
             alt="Maverlang Logo"
-            className="h-12 sm:h-14 w-auto max-w-[min(220px,70vw)] object-contain select-none pointer-events-none mx-auto"
+            className="h-16 sm:h-20 md:h-24 w-auto max-w-[min(340px,85vw)] object-contain select-none pointer-events-none mx-auto drop-shadow-sm"
           />
+          <p className="mt-3 sm:mt-4 text-xs sm:text-sm text-muted-foreground font-medium tracking-tight">
+            Crea apps y sitios web con IA
+          </p>
         </motion.div>
 
         {/* Barra de Chat Identica */}
@@ -163,7 +166,7 @@ export default function ProyectosPage() {
           className="w-full min-w-0 max-w-full pb-2"
         >
           <ChatInput
-            placeholder="Escribe el prompt para tu nuevo proyecto..."
+            placeholder="Crea una aplicación o sitio web..."
             onSubmit={handleSend}
             disabled={false}
             isStreaming={false}

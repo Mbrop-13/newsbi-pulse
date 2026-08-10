@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
       error = retry.error;
     }
 
-    if (error) {
+    if (error || !data) {
       console.error("[Share Chat API] Error inserting into DB:", error);
       return NextResponse.json(
         { error: "Error al guardar el chat compartido" },

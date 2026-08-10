@@ -17,7 +17,7 @@ const MAX_POSITIONS = 1000; // techo razonable por usuario
 
 const updateSchema = z.object({
   assetId: z.string().uuid("assetId debe ser un UUID válido"),
-  field: z.enum(["shares", "average_price"], "campo no modificable"),
+  field: z.enum(["shares", "average_price"]),
   value: z
     .number()
     .finite()

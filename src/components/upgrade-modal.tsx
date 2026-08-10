@@ -38,8 +38,9 @@ const FEATURE_MESSAGES: Record<string, { title: string; message: string; icon: R
     icon: <Crown className="w-6 h-6" />,
   },
   image_credits: {
-    title: "Límite de créditos de imagen",
-    message: "Has alcanzado el límite de créditos de imagen para tu plan en Flow. Actualiza tu suscripción para seguir creando.",
+    title: "Imágenes en Flow",
+    message:
+      "La generación de imágenes no está incluida en el plan Gratuito, o agotaste tus créditos del mes. Actualiza a Pro o superior para obtener créditos mensuales de Flow.",
     icon: <Sparkles className="w-6 h-6" />,
   },
 };
@@ -47,32 +48,32 @@ const FEATURE_MESSAGES: Record<string, { title: string; message: string; icon: R
 const TIER_BENEFITS: Record<PlanTier, string[]> = {
   free: [],
   pro: [
-    "Mucha más capacidad de preguntas al mes",
+    "2M tokens de IA al mes",
     "1.000 créditos de imagen en Flow",
-    "50 audios de noticias al mes",
     "5 alertas de precio",
+    "25 activos en portafolio",
     "Sin publicidad",
   ],
   max: [
-    "Doble de límites de preguntas (x2 límites de Pro)",
+    "4M tokens de IA al mes (x2 Pro)",
     "2.000 créditos de imagen en Flow",
-    "100 audios al mes (x2 Pro)",
-    "10 alertas de precio (x2 Pro)",
-    "Informe semanal IA",
+    "10 alertas de precio",
+    "50 activos en portafolio",
+    "Informe semanal y recomendaciones IA",
   ],
   ultra: [
-    "Límites de preguntas x5 (x5 límites de Pro)",
+    "10M tokens de IA al mes (x5 Pro)",
     "5.000 créditos de imagen en Flow",
-    "250 audios al mes (x5 Pro)",
+    "25 alertas de precio",
     "IA con búsqueda web activa",
-    "Soporte dedicado 24/7",
+    "Análisis avanzado de portafolio",
   ],
   ultra_x20: [
-    "Límites de preguntas x20 (x20 límites de Pro)",
+    "40M tokens de IA al mes (x20 Pro)",
     "10.000 créditos de imagen en Flow",
-    "1.000 audios al mes (x20 Pro)",
-    "100 alertas de precio (x20 Pro)",
-    "Soporte dedicado 24/7",
+    "100 alertas de precio",
+    "IA con búsqueda web activa",
+    "Máxima capacidad para uso intensivo",
   ],
 };
 
@@ -127,19 +128,28 @@ export function UpgradeModal({ isOpen, onClose, feature, customTitle, customMess
                 <h2 className="text-xl font-bold mb-1">{title}</h2>
                 <p className="text-sm text-muted-foreground">{message}</p>
 
-                {/* Usage bar */}
-                {usage && (
+                {/* Usage bar — solo si el plan tiene cuota real (limit > 0) */}
+                {usage && usage.limit > 0 && (
                   <div className="mt-4 bg-background/60 backdrop-blur-sm rounded-xl p-3 border border-border/50">
                     <div className="flex items-center justify-between mb-1.5">
                       <span className="text-xs font-bold text-muted-foreground">Uso este mes</span>
                       <span className="text-xs font-bold text-foreground">{usage.used}/{usage.limit}</span>
                     </div>
                     <div className="h-2 bg-muted rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-gradient-to-r from-red-500 to-orange-500 rounded-full transition-all" 
-                        style={{ width: `${Math.min(100, (usage.used / usage.limit) * 100)}%` }} 
+                      <div
+                        className="h-full bg-gradient-to-r from-red-500 to-orange-500 rounded-full transition-all"
+                        style={{
+                          width: `${Math.min(100, (usage.used / usage.limit) * 100)}%`,
+                        }}
                       />
                     </div>
+                  </div>
+                )}
+                {usage && usage.limit <= 0 && (
+                  <div className="mt-4 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2.5">
+                    <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 leading-snug">
+                      No incluido en tu plan actual · requiere upgrade
+                    </p>
                   </div>
                 )}
               </div>

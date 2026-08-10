@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useMemo } from "react"
 import { useTheme } from "next-themes"
 import { useSidebar } from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
-import { Bot, User, ThumbsUp, ThumbsDown, Share2, RefreshCw, ChevronRight, ChevronDown, ChevronUp, Sparkles, Loader2, Globe, ExternalLink, X, ArrowDown, CheckCircle2, XCircle, Clock, Cpu, ClipboardList, FileCode2, Maximize2, Info, FolderOpen, Code2, Search, Plus, Compass, Copy, Pencil, Check } from "lucide-react"
+import { Bot, User, ThumbsUp, ThumbsDown, Share2, RefreshCw, ChevronRight, ChevronDown, Sparkles, Loader2, Globe, ExternalLink, X, ArrowDown, CheckCircle2, XCircle, Clock, Cpu, ClipboardList, FileCode2, Maximize2, Info, FolderOpen, Code2, Search, Plus, Compass, Copy, Pencil, Check } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -57,36 +57,6 @@ export function ChatMessages({
   const isCanvasOpen = useCanvasStore((s) => s.isOpen)
   const isSplitMode = isWebBuilderMode || isBrowserOpen || isCanvasOpen
   const { isMobile } = useSidebar()
-  
-  // ─── Lógica para el timeline flotante de preguntas del usuario ───
-  const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
-  const [activeQuestionIdx, setActiveQuestionIdx] = useState<number>(0);
-  const [isTimelineHovered, setIsTimelineHovered] = useState(false);
-  const [isBottomArrowHovered, setIsBottomArrowHovered] = useState(false);
-
-  // Extraemos todos los mensajes que son del rol "user"
-  const userMessages = useMemo(() => {
-    return messages
-      .map((msg, index) => ({ msg, index }))
-      .filter(item => item.msg.role === 'user');
-  }, [messages]);
-
-  // Se muestra solo si hay al menos 2 preguntas de usuario, no está en versión móvil y no está en modo split (Canvas/Browser/Builder)
-  const showTimeline = userMessages.length >= 2 && !isMobile && !isSplitMode;
-
-  const scrollToQuestion = (msgId: string, idx: number) => {
-    setActiveQuestionIdx(idx);
-    const el = document.getElementById(`msg-user-${msgId}`);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      
-      // Añadimos una clase temporal de destello (highlight)
-      el.classList.add("ring-4", "ring-blue-500/50", "transition-all", "duration-500", "rounded-3xl");
-      setTimeout(() => {
-        el.classList.remove("ring-4", "ring-blue-500/50");
-      }, 1500);
-    }
-  };
 
   // Extract live streaming data for WebBuilder loading indicator
   const liveReasoning = useMemo(() => {
@@ -257,152 +227,6 @@ export function ChatMessages({
           </motion.button>
         )}
       </AnimatePresence>
-
-      {/* Floating Question Navigation Timeline */}
-      {showTimeline && (
-        <div 
-          onMouseEnter={() => setIsTimelineHovered(true)}
-          onMouseLeave={() => {
-            setIsTimelineHovered(false);
-            setHoveredMsgId(null);
-            setIsBottomArrowHovered(false);
-          }}
-          className="fixed right-5 top-1/2 -translate-y-1/2 flex flex-col items-center gap-3 z-40 select-none pr-1"
-        >
-          {/* Top Arrow Button (Scroll to previous question) */}
-          <AnimatePresence>
-            {isTimelineHovered && (
-              <motion.button
-                initial={{ opacity: 0, scale: 0.8, y: -10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.8, y: -10 }}
-                transition={{ duration: 0.2 }}
-                type="button"
-                disabled={activeQuestionIdx === 0}
-                onClick={() => {
-                  if (activeQuestionIdx > 0) {
-                    const prevIdx = activeQuestionIdx - 1;
-                    scrollToQuestion(userMessages[prevIdx].msg.id, prevIdx);
-                  }
-                }}
-                className={cn(
-                  "h-8 w-8 rounded-full border flex items-center justify-center transition-all duration-200 shadow-sm shrink-0",
-                  activeQuestionIdx === 0
-                    ? "border-zinc-200 dark:border-zinc-800 text-zinc-350 dark:text-zinc-700 bg-zinc-50/50 dark:bg-zinc-950/20 cursor-not-allowed opacity-50"
-                    : "border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-650 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-850 hover:scale-105 active:scale-95 cursor-pointer"
-                )}
-                aria-label="Pregunta anterior"
-                title="Pregunta anterior"
-              >
-                <ChevronUp className="w-4 h-4" />
-              </motion.button>
-            )}
-          </AnimatePresence>
-
-          {/* Group of Horizontal Lines */}
-          <div className="flex flex-col items-end gap-1.5 py-1">
-            {userMessages.map((item, idx) => {
-              const msg = item.msg;
-              // Precise width sequence based on index (simulating the varying lines in the image)
-              const widths = ["w-3.5", "w-5.5", "w-2.5", "w-6", "w-4", "w-7"];
-              const inactiveWidth = widths[idx % widths.length];
-              const isSelected = idx === activeQuestionIdx;
-              const isHovered = hoveredMsgId === msg.id;
-              const isSelectedOrHovered = isSelected || isHovered;
-
-              return (
-                <div
-                  key={msg.id}
-                  className="relative flex items-center justify-end h-6 w-16 cursor-pointer"
-                  onMouseEnter={() => setHoveredMsgId(msg.id)}
-                  onMouseLeave={() => setHoveredMsgId(null)}
-                  onClick={() => scrollToQuestion(msg.id, idx)}
-                >
-                  {/* Floating Preview Hover Card */}
-                  <AnimatePresence>
-                    {isHovered && (
-                      <motion.div
-                        initial={{ opacity: 0, x: -12, scale: 0.96 }}
-                        animate={{ opacity: 1, x: 0, scale: 1 }}
-                        exit={{ opacity: 0, x: -12, scale: 0.96 }}
-                        transition={{ duration: 0.18, ease: "easeOut" }}
-                        className="absolute right-8 top-1/2 -translate-y-1/2 w-52 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border border-zinc-200/80 dark:border-zinc-800/80 p-3 rounded-2xl shadow-2xl z-50 pointer-events-none text-left"
-                      >
-                        <div className="text-[9px] font-black uppercase tracking-widest text-[#1890FF] dark:text-blue-400 mb-1 flex items-center gap-1">
-                          <span className="h-1 w-1 rounded-full bg-[#1890FF] dark:bg-blue-400 animate-pulse" />
-                          Pregunta {idx + 1}
-                        </div>
-                        <p className="text-[11px] text-zinc-700 dark:text-zinc-300 font-bold leading-relaxed line-clamp-3">
-                          {msg.content}
-                        </p>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  {/* Horizontal line marker (animates expanding to w-8 when active or hovered) */}
-                  <div
-                    className={cn(
-                      "h-[3px] rounded-full transition-all duration-300 ease-out",
-                      isSelectedOrHovered
-                        ? "w-8 bg-zinc-800 dark:bg-zinc-150 h-[3.5px] shadow-[0_0_8px_rgba(0,0,0,0.15)]"
-                        : `${inactiveWidth} bg-zinc-300/80 dark:bg-zinc-750 hover:bg-zinc-400 dark:hover:bg-zinc-650`
-                    )}
-                  />
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Bottom Arrow Button (Scroll to next question) */}
-          <AnimatePresence>
-            {isTimelineHovered && (
-              <div className="relative shrink-0">
-                {/* Tooltip text "Siguiente respuesta" shown at the left */}
-                <AnimatePresence>
-                  {isBottomArrowHovered && activeQuestionIdx < userMessages.length - 1 && (
-                    <motion.div
-                      initial={{ opacity: 0, x: -15, scale: 0.95 }}
-                      animate={{ opacity: 1, x: 0, scale: 1 }}
-                      exit={{ opacity: 0, x: -15, scale: 0.95 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute right-11 top-1/2 -translate-y-1/2 bg-white dark:bg-zinc-950 px-3.5 py-1.8 rounded-xl shadow-xl border border-zinc-200/60 dark:border-zinc-800/80 text-[11px] font-black text-zinc-800 dark:text-zinc-200 pointer-events-none whitespace-nowrap"
-                    >
-                      Siguiente respuesta
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                <motion.button
-                  initial={{ opacity: 0, scale: 0.8, y: 10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.8, y: 10 }}
-                  transition={{ duration: 0.2 }}
-                  type="button"
-                  disabled={activeQuestionIdx === userMessages.length - 1}
-                  onMouseEnter={() => setIsBottomArrowHovered(true)}
-                  onMouseLeave={() => setIsBottomArrowHovered(false)}
-                  onClick={() => {
-                    if (activeQuestionIdx < userMessages.length - 1) {
-                      const nextIdx = activeQuestionIdx + 1;
-                      scrollToQuestion(userMessages[nextIdx].msg.id, nextIdx);
-                    }
-                  }}
-                  className={cn(
-                    "h-8 w-8 rounded-full flex items-center justify-center transition-all duration-200 shadow-sm",
-                    activeQuestionIdx === userMessages.length - 1
-                      ? "bg-zinc-50/50 dark:bg-zinc-950/20 text-zinc-350 dark:text-zinc-700 cursor-not-allowed opacity-50"
-                      : "bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 hover:scale-105 active:scale-95 cursor-pointer"
-                  )}
-                  aria-label="Siguiente pregunta"
-                  title="Siguiente pregunta"
-                >
-                  <ChevronDown className="w-4 h-4" />
-                </motion.button>
-              </div>
-            )}
-          </AnimatePresence>
-        </div>
-      )}
     </div>
   )
 }

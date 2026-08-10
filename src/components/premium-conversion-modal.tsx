@@ -67,10 +67,10 @@ export function PremiumConversionModal() {
   const content = getFeatureContent();
 
   const benefits = [
-    "Audios ilimitados (Texto a Voz realista)",
-    "Mucha más capacidad de preguntas mensuales",
-    "Activos y alertas de precios ilimitadas",
-    "Reportes exclusivos de fin de semana"
+    "2M tokens de IA al mes (Plan Pro)",
+    "1.000 créditos de imagen en Flow",
+    "Más alertas de precio y activos en portafolio",
+    "Lectura sin publicidad",
   ];
 
   return (

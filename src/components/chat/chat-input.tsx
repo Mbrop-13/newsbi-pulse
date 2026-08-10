@@ -74,6 +74,33 @@ const ADVANCED_TOOLS = [
   { id: 'get_sector_performance', label: 'Rendimiento Sectorial', icon: Layers, category: 'Análisis' },
 ];
 
+/** Placeholders del chat general (finanzas + build + uso libre) */
+const CHAT_INPUT_PLACEHOLDERS = [
+  "Pregúntame lo que quieras...",
+  "Analiza mi portafolio...",
+  "Analiza esta acción...",
+  "Construye una web de...",
+  "Crea una alerta de precio para...",
+  "Compara Tesla vs Apple...",
+  "¿Qué opinas sobre el mercado hoy?...",
+  "Construye un clon de Twitter...",
+  "Analiza las finanzas de NVIDIA...",
+] as const;
+
+/** Placeholders solo para /proyectos — desarrollo de apps y sitios (sin finanzas) */
+const PROJECT_INPUT_PLACEHOLDERS = [
+  "Crea una aplicación de...",
+  "Haz un sitio web de...",
+  "Construye un landing page para...",
+  "Diseña un dashboard de...",
+  "Crea un clon de Instagram...",
+  "Haz una app móvil de tareas...",
+  "Construye un e-commerce de...",
+  "Diseña un portafolio web para...",
+  "Crea un panel de administración de...",
+  "Haz una PWA de reservas para...",
+] as const;
+
 interface ChatInputProps {
   placeholder?: string;
   disabled?: boolean;
@@ -152,18 +179,12 @@ export function ChatInput({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const attachMenuRef = useRef<HTMLDivElement>(null);
 
-  // Rotating/typing placeholder logic
-  const placeholders = [
-    "Pregúntame lo que quieras...",
-    "Analiza mi portafolio...",
-    "Analiza esta acción...",
-    "Construye una web de...",
-    "Crea una alerta de precio para...",
-    "Compara Tesla vs Apple...",
-    "¿Qué opinas sobre el mercado hoy?...",
-    "Construye un clon de Twitter...",
-    "Analiza las finanzas de NVIDIA..."
-  ];
+  // Placeholders rotativos: chat general vs Proyectos (solo apps/webs)
+  const placeholders = isProjectsPage
+    ? PROJECT_INPUT_PLACEHOLDERS
+    : CHAT_INPUT_PLACEHOLDERS;
+  // En Proyectos siempre rotamos placeholders (esta sección es solo para construir)
+  const showTypewriter = isProjectsPage || isNewChat;
 
   const [typewriter, setTypewriter] = useState({
     text: "",
@@ -171,22 +192,22 @@ export function ChatInput({
     index: 0,
   });
 
-  // Reset typewriter when starting a new chat
+  // Reset typewriter when starting a new chat or entering projects mode
   useEffect(() => {
-    if (isNewChat) {
+    if (showTypewriter) {
       setTypewriter({
         text: "",
         isDeleting: false,
         index: 0,
       });
     }
-  }, [isNewChat]);
+  }, [showTypewriter, isProjectsPage]);
 
   useEffect(() => {
-    if (value || !isNewChat) return;
+    if (value || !showTypewriter) return;
 
-    let timer: NodeJS.Timeout;
-    const fullText = placeholders[typewriter.index];
+    let timer: ReturnType<typeof setTimeout>;
+    const fullText = placeholders[typewriter.index % placeholders.length];
     const typingSpeed = typewriter.isDeleting ? 30 : 60;
     const delayBetweenWords = 2500;
 
@@ -203,7 +224,7 @@ export function ChatInput({
     } else {
       timer = setTimeout(() => {
         setTypewriter((prev) => {
-          const currentFullText = placeholders[prev.index];
+          const currentFullText = placeholders[prev.index % placeholders.length];
           const nextText = prev.isDeleting
             ? currentFullText.substring(0, prev.text.length - 1)
             : currentFullText.substring(0, prev.text.length + 1);
@@ -216,14 +237,15 @@ export function ChatInput({
     }
 
     return () => clearTimeout(timer);
-  }, [typewriter, value, isNewChat]);
+  }, [typewriter, value, showTypewriter, placeholders]);
 
-  const displayedPlaceholder = isListening 
-    ? "Escuchando... habla ahora" 
-    : (value 
-        ? "" 
-        : (isNewChat ? (typewriter.text || " ") : (customPlaceholder || "Envía un mensaje..."))
-      );
+  const displayedPlaceholder = isListening
+    ? "Escuchando... habla ahora"
+    : value
+      ? ""
+      : showTypewriter
+        ? typewriter.text || " "
+        : customPlaceholder || "Envía un mensaje...";
 
   // Click outside listener for attachment menu
   useEffect(() => {

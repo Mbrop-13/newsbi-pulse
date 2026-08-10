@@ -341,6 +341,39 @@ export function actionsToFiles(
 }
 
 /**
+ * Convierte el mapa de archivos del WebBuilder (store: `{ path: { code } }` o
+ * string plano) a `Record<path, string>` que consumen planner, agentes y
+ * system prompt. Sin esto, el orquestador inyectaba `[object Object]` en el
+ * contexto y el LLM no veía el código real → las ediciones (pedir cambios)
+ * fallaban o reescribían a ciegas.
+ */
+export function toCodeMap(
+  files?: Record<string, unknown> | null
+): Record<string, string> {
+  if (!files) return {};
+  const result: Record<string, string> = {};
+  for (const [rawPath, raw] of Object.entries(files)) {
+    const trimmed = (rawPath ?? "").trim();
+    if (!trimmed) continue;
+    const path = normalizeFilePath(trimmed);
+    let code: string;
+    if (typeof raw === "string") {
+      code = raw;
+    } else if (raw && typeof raw === "object" && "code" in (raw as object)) {
+      code = String((raw as { code?: unknown }).code ?? "");
+    } else if (raw == null) {
+      code = "";
+    } else {
+      code = String(raw);
+    }
+    // Preferir código no vacío si hay colisión de paths normalizados
+    if (result[path] && result[path].length > 0 && !code) continue;
+    result[path] = code;
+  }
+  return result;
+}
+
+/**
  * Check if a text chunk contains a WebBuilder artifact opening tag.
  */
 export function containsArtifact(text: string): boolean {

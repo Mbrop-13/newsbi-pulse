@@ -706,49 +706,95 @@ export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettings
                               <div className="border-t border-gray-200/60 dark:border-white/5 my-3.5" />
 
                               {/* Metrics Row */}
-                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                                 {usageData.resources.map((resource: any, idx: number) => {
-                                  const isUnlimited = resource.limit === -1;
-                                  const percentageUsed = isUnlimited ? 0 : resource.limit === 0 ? 100 : Math.min(100, Math.round((resource.used / resource.limit) * 100));
-                                  const percentageRemaining = isUnlimited ? 100 : Math.max(0, 100 - percentageUsed);
+                                  const isLocked =
+                                    resource.locked === true ||
+                                    (resource.id === "image_credits" &&
+                                      (resource.limit === 0 || resource.limit == null));
+                                  const isUnlimited = !isLocked && resource.limit === -1;
+                                  const percentageUsed = isLocked
+                                    ? 0
+                                    : isUnlimited
+                                      ? 0
+                                      : resource.limit > 0
+                                        ? Math.min(
+                                            100,
+                                            Math.round((resource.used / resource.limit) * 100)
+                                          )
+                                        : 0;
+                                  const percentageRemaining = isUnlimited
+                                    ? 100
+                                    : Math.max(0, 100 - percentageUsed);
 
                                   return (
                                     <div
                                       key={resource.id}
-                                      className="bg-white/50 dark:bg-zinc-900/20 border border-gray-200/40 dark:border-white/5 p-3.5 rounded-xl flex flex-col justify-between"
+                                      className={cn(
+                                        "bg-white/50 dark:bg-zinc-900/20 border border-gray-200/40 dark:border-white/5 p-3.5 rounded-xl flex flex-col justify-between min-h-[88px]",
+                                        isLocked && "opacity-95"
+                                      )}
                                     >
                                       <div>
-                                        {/* Resource label */}
                                         <span className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider block">
                                           {resource.label}
                                         </span>
 
-                                        {/* Resource Value & Reset time */}
-                                        <div className="flex items-baseline gap-1.5 mt-1 mb-2">
-                                          <span className="text-base font-black text-gray-900 dark:text-white leading-none">
-                                            {isUnlimited ? "Ilimitado" : `${percentageRemaining}%`}
-                                          </span>
-                                          {!isUnlimited && resource.resetTime && (
-                                            <span className="text-[8px] font-semibold text-zinc-400 dark:text-zinc-500">
-                                              {formatTimeReset(resource.resetTime)}
+                                        {isLocked ? (
+                                          <div className="mt-1.5 mb-2 space-y-1">
+                                            <span className="inline-flex items-center rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide">
+                                              No incluido
                                             </span>
-                                          )}
-                                        </div>
-                                      </div>
-
-                                      {/* Progress Bar (Black / White) */}
-                                      <div className="relative h-1 rounded-full bg-gray-200/80 dark:bg-zinc-800 overflow-hidden">
-                                        {isUnlimited ? (
-                                          <div className="absolute inset-0 bg-emerald-500/20 rounded-full" />
+                                            <p className="text-[10px] font-medium text-zinc-600 dark:text-zinc-400 leading-snug">
+                                              {resource.lockedMessage ||
+                                                "Actualiza tu plan para generar imágenes en Flow"}
+                                            </p>
+                                          </div>
                                         ) : (
-                                          <motion.div
-                                            initial={{ width: 0 }}
-                                            animate={{ width: `${percentageUsed}%` }}
-                                            transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: idx * 0.1 }}
-                                            className="absolute inset-y-0 left-0 bg-black dark:bg-white rounded-full"
-                                          />
+                                          <div className="flex items-baseline gap-1.5 mt-1 mb-2">
+                                            <span className="text-base font-black text-gray-900 dark:text-white leading-none">
+                                              {isUnlimited
+                                                ? "Ilimitado"
+                                                : `${percentageRemaining}%`}
+                                            </span>
+                                            {!isUnlimited && resource.resetTime && (
+                                              <span className="text-[8px] font-semibold text-zinc-400 dark:text-zinc-500">
+                                                {formatTimeReset(resource.resetTime)}
+                                              </span>
+                                            )}
+                                          </div>
                                         )}
                                       </div>
+
+                                      {isLocked ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            handleClose();
+                                            router.push("/suscripcion");
+                                          }}
+                                          className="mt-auto w-full text-[10px] font-bold py-1.5 rounded-lg bg-black dark:bg-white text-white dark:text-black hover:opacity-90 transition-opacity cursor-pointer"
+                                        >
+                                          Actualizar plan
+                                        </button>
+                                      ) : (
+                                        <div className="relative h-1 rounded-full bg-gray-200/80 dark:bg-zinc-800 overflow-hidden">
+                                          {isUnlimited ? (
+                                            <div className="absolute inset-0 bg-emerald-500/20 rounded-full" />
+                                          ) : (
+                                            <motion.div
+                                              initial={{ width: 0 }}
+                                              animate={{ width: `${percentageUsed}%` }}
+                                              transition={{
+                                                duration: 1.2,
+                                                ease: [0.16, 1, 0.3, 1],
+                                                delay: idx * 0.1,
+                                              }}
+                                              className="absolute inset-y-0 left-0 bg-black dark:bg-white rounded-full"
+                                            />
+                                          )}
+                                        </div>
+                                      )}
                                     </div>
                                   );
                                 })}

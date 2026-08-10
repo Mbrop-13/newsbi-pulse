@@ -2286,8 +2286,54 @@ function ChatLandingContent() {
                   <div className="mb-3">
                     <InteractiveQuestionCard
                       question={activeQuestion}
-                      onSubmit={(answer) => {
+                      onSubmit={(answer, optionId) => {
+                        const q = activeQuestion;
                         setActiveQuestion(null);
+
+                        // Oferta de workspace (chat normal → Build / Canvas / chat)
+                        if (q?.intent === "workspace_mode" || optionId === "activate_build" || optionId === "use_canvas" || optionId === "stay_chat") {
+                          const opts = { ...lastSendOptionsRef.current };
+                          // Última petición del usuario (lo que quería construir)
+                          const lastUser =
+                            [...storeMessages].reverse().find((m) => m.role === "user")?.content?.trim() ||
+                            [...aiMessages].reverse().find((m: any) => m.role === "user")?.content?.trim() ||
+                            "";
+
+                          if (optionId === "activate_build") {
+                            useWebBuilderStore.getState().setWebBuilderMode(true);
+                            useWebBuilderStore.getState().setSplitView(true);
+                            useCanvasStore.getState().setOpen(false);
+                            const prompt = lastUser
+                              ? lastUser
+                              : "Quiero construir lo que te pedí. Activa el modo Build y empecemos.";
+                            handleSend(prompt, {
+                              ...opts,
+                              codeInterpreter: false,
+                              browser: false,
+                            });
+                            return;
+                          }
+
+                          if (optionId === "use_canvas") {
+                            useWebBuilderStore.getState().setWebBuilderMode(false);
+                            useCanvasStore.getState().setOpen(true);
+                            opts.codeInterpreter = true;
+                            const prompt = lastUser
+                              ? `Continúa en Canvas con esto: ${lastUser}`
+                              : "Prefiero usar Canvas / código para esto.";
+                            handleSend(prompt, { ...opts, browser: false });
+                            return;
+                          }
+
+                          // stay_chat u otra opción genérica
+                          useWebBuilderStore.getState().setWebBuilderMode(false);
+                          const prompt = lastUser
+                            ? `Continúa en el chat normal (sin Build). Mi pedido: ${lastUser}`
+                            : answer || "Prefiero continuar en el chat normal.";
+                          handleSend(prompt, opts);
+                          return;
+                        }
+
                         handleSend(answer, { ...lastSendOptionsRef.current });
                       }}
                       onSkip={() => {

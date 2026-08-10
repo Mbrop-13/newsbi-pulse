@@ -202,21 +202,21 @@ Puedes entrar con correo + contraseña o con Google. Si olvidas tu contraseña, 
         content: `
 Maverlang ofrece varios tiers de suscripción con diferentes capacidades de IA y funciones.
 
-## Comparativa de planes
+## Comparativa de planes (tokens de IA)
 
-| Plan | Tokens 5h | Tokens semanales | Tokens mensuales |
-| --- | --- | --- | --- |
-| **Free** | 10.000 | 25.000 | 50.000 (de por vida) |
-| **Pro** | 150.000 | 400.000 | 1.000.000 / mes |
-| **Max** | 300.000 | 800.000 | 2.000.000 / mes |
-| **Ultra (x5)** | 750.000 | 2.000.000 | 5.000.000 / mes |
-| **Ultra (x20)** | 3.000.000 | 8.000.000 | 20.000.000 / mes |
+| Plan | Tokens semanales | Tokens mensuales / total |
+| --- | --- | --- |
+| **Free** | 25.000 | 50.000 (de por vida) |
+| **Pro** | 800.000 | 2.000.000 / mes |
+| **Max** | 1.600.000 | 4.000.000 / mes |
+| **Ultra (x5)** | 4.000.000 | 10.000.000 / mes |
+| **Ultra (x20)** | 16.000.000 | 40.000.000 / mes |
 
 ## Cómo mejorar tu plan
 
 Desde el menú de usuario, selecciona **Actualizar plan** para ver las opciones disponibles y gestionar tu suscripción.
 
-> **Promo X2:** Durante promociones activas, todos los límites se duplican automáticamente en el backend y se reflejan en tu tarjeta de consumo.
+> Los límites de tokens son **semanales** (ventana móvil de 7 días) y **mensuales** (o de por vida en Free). Ya no hay límite de 5 horas.
         `.trim(),
       },
     ],
@@ -413,25 +413,23 @@ Puedes afinar los canales de contacto desde el panel de ajustes:
         readTime: "5 min",
         tags: ["tokens", "límites"],
         content: `
-Para garantizar un servicio estable, Maverlang gestiona el consumo de IA a través de **ventanas temporales móviles** (Rolling Windows).
+Para garantizar un servicio estable, Maverlang gestiona el consumo de IA con **límite semanal** (ventana móvil de 7 días) y **límite mensual** (o de por vida en Free).
 
-## Ventanas móviles de consumo
+## Cómo se miden los tokens
 
-A diferencia de los límites mensuales fijos, Maverlang implementa límites rodantes:
-
-- **Límite de 5 horas** — calcula los tokens consumidos en las últimas 5 horas. A medida que pasa el tiempo, los tokens antiguos salen de la ventana y recuperas capacidad en tiempo real.
-- **Límite semanal** — controla el volumen máximo en un lapso móvil de 7 días.
-- **Límite mensual / vida** — la bolsa general asignada al mes de facturación, o el total acumulado de por vida en cuentas gratuitas.
+- **Límite semanal** — tokens consumidos en los últimos 7 días (ventana móvil). A medida que pasa el tiempo, los tokens antiguos salen de la ventana.
+- **Límite mensual / vida** — bolsa del mes de facturación en planes de pago, o total acumulado de por vida en cuentas gratuitas.
+- Ya **no** existe un límite de 5 horas.
 
 ## Límites base por tier
 
-| Tier | 5 horas | Semanal | Mensual / Total |
-| --- | --- | --- | --- |
-| **Free** | 10.000 | 25.000 | 50.000 (vida) |
-| **Pro** | 150.000 | 400.000 | 1.000.000 / mes |
-| **Max** | 300.000 | 800.000 | 2.000.000 / mes |
-| **Ultra (x5)** | 750.000 | 2.000.000 | 5.000.000 / mes |
-| **Ultra (x20)** | 3.000.000 | 8.000.000 | 20.000.000 / mes |
+| Tier | Semanal | Mensual / Total |
+| --- | --- | --- |
+| **Free** | 25.000 | 50.000 (vida) |
+| **Pro** | 800.000 | 2.000.000 / mes |
+| **Max** | 1.600.000 | 4.000.000 / mes |
+| **Ultra (x5)** | 4.000.000 | 10.000.000 / mes |
+| **Ultra (x20)** | 16.000.000 | 40.000.000 / mes |
 
 ## Multiplicadores y promociones
 
@@ -508,7 +506,7 @@ La tarjeta de Canvas aparece **inmediatamente** cuando la IA empieza a escribir,
 
 ## ¿Qué hago si me quedo sin tokens?
 
-Los límites son móviles: espera a que la ventana de 5 horas libere capacidad, o mejora tu plan. Tu tarjeta de consumo en **Ajustes → Plan y Consumo** te muestra cuánto te queda.
+Si se agota el cupo semanal, espera a que la ventana de 7 días libere tokens antiguos, o espera al próximo mes si se agotó el cupo mensual. También puedes mejorar tu plan. Tu tarjeta de consumo en **Ajustes → Plan y Consumo** te muestra cuánto te queda.
 
 ## ¿El WebBuilder funciona en móvil?
 

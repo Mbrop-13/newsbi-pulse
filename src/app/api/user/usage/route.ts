@@ -20,9 +20,8 @@ export async function GET() {
 
     const currentMonth = new Date().toISOString().slice(0, 7) + "-01";
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const fiveHoursAgo = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString();
 
-    // Fetch token usage logs for rolling windows and monthly/lifetime values in parallel
+    // Uso mensual/lifetime + logs semanales (ya no hay ventana de 5 horas)
     const [monthlyRes, lifetimeRes, logsRes, subRes] = await Promise.all([
       serviceClient
         .from("monthly_usage")
@@ -52,66 +51,46 @@ export async function GET() {
     const logs = logsRes.data;
     const subData = subRes?.data;
 
-    let fiveHourUsed = 0;
     let weeklyUsed = 0;
-    let oldestWeeklyLog: any = null;
-    let blockStart: number | null = null;
+    let oldestWeeklyLog: { created_at: string } | null = null;
 
     if (logs) {
-      const sortedLogs = [...logs].sort(
-        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-      );
-
-      sortedLogs.forEach((log) => {
-        const t = log.tokens || 0;
+      for (const log of logs) {
+        weeklyUsed += log.tokens || 0;
         const logTime = new Date(log.created_at).getTime();
-        const now = Date.now();
-
-        // Weekly calculations
-        weeklyUsed += t;
-        if (!oldestWeeklyLog || logTime < new Date(oldestWeeklyLog.created_at).getTime()) {
+        if (
+          !oldestWeeklyLog ||
+          logTime < new Date(oldestWeeklyLog.created_at).getTime()
+        ) {
           oldestWeeklyLog = log;
         }
-
-        // 5-hour calculations (fixed block window)
-        if (blockStart === null) {
-          if (now - logTime < 5 * 60 * 60 * 1000) {
-            blockStart = logTime;
-            fiveHourUsed = t;
-          }
-        } else {
-          if (logTime - blockStart < 5 * 60 * 60 * 1000) {
-            fiveHourUsed += t;
-          } else {
-            if (now - logTime < 5 * 60 * 60 * 1000) {
-              blockStart = logTime;
-              fiveHourUsed = t;
-            }
-          }
-        }
-      });
+      }
     }
 
-    const fiveHourReset = blockStart 
-      ? new Date(blockStart + 5 * 60 * 60 * 1000).toISOString()
-      : null;
-
     const weeklyReset = oldestWeeklyLog
-      ? new Date(new Date(oldestWeeklyLog.created_at).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString()
+      ? new Date(
+          new Date(oldestWeeklyLog.created_at).getTime() + 7 * 24 * 60 * 60 * 1000
+        ).toISOString()
       : null;
 
-    // Build usage response based on tier
     const isFree = tier === "free";
-    const currentPeriodEnd = subData && subData.status !== "expired" && subData.status !== "canceled"
-      ? subData.current_period_end
-      : null;
+    const currentPeriodEnd =
+      subData && subData.status !== "expired" && subData.status !== "canceled"
+        ? subData.current_period_end
+        : null;
 
     const now = new Date();
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
+    const endOfMonth = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      1
+    ).toISOString();
     const monthlyReset = currentPeriodEnd || endOfMonth;
 
     const imageCreditsUsed = Number(monthly?.image_credits) || 0;
     const imageCreditsLimit = config.imageCreditsPerMonth;
+    // Free (y cualquier plan sin cuota de imagen): feature bloqueada, no medidor 0%.
+    const imageCreditsIncluded = imageCreditsLimit > 0;
 
     const usage = {
       tier,
@@ -121,50 +100,46 @@ export async function GET() {
       imageCreditsLimit,
       resources: [
         {
-          id: "ai_tokens_5h",
-          label: "5-hour remaining",
-          icon: "brain",
-          used: fiveHourUsed,
-          limit: config.aiTokensPer5Hours,
-          period: "últimas 5 horas",
-          color: "#D946EF", // fuchsia
-          formatAsK: true,
-          resetTime: fiveHourReset,
-        },
-        {
           id: "ai_tokens_weekly",
-          label: "Weekly remaining",
+          label: "Tokens · 7 días",
           icon: "briefcase",
           used: weeklyUsed,
           limit: config.aiTokensPerWeek,
           period: "últimos 7 días",
-          color: "#EC4899", // pink
+          color: "#EC4899",
           formatAsK: true,
           resetTime: weeklyReset,
+          locked: false,
         },
         {
           id: "ai_tokens",
-          label: isFree ? "Lifetime quota" : "Monthly quota",
+          label: isFree ? "Tokens · de por vida" : "Tokens · mes",
           icon: "cpu",
-          used: isFree 
-            ? (lifetime?.ai_tokens_total || 0) 
-            : (monthly?.ai_tokens || 0),
+          used: isFree
+            ? lifetime?.ai_tokens_total || 0
+            : monthly?.ai_tokens || 0,
           limit: isFree ? config.aiLifetimeTokens : config.aiTokensPerMonth,
           period: isFree ? "de por vida" : "este mes",
-          color: "#8B5CF6", // violet
+          color: "#8B5CF6",
           formatAsK: true,
           resetTime: isFree ? null : monthlyReset,
+          locked: false,
         },
         {
           id: "image_credits",
-          label: "Flow image credits",
+          label: "Imágenes · Flow",
           icon: "image",
-          used: imageCreditsUsed,
+          used: imageCreditsIncluded ? imageCreditsUsed : 0,
           limit: imageCreditsLimit,
-          period: "este mes",
+          period: imageCreditsIncluded ? "este mes" : null,
           color: "#1890FF",
           formatAsK: false,
-          resetTime: monthlyReset,
+          resetTime: imageCreditsIncluded ? monthlyReset : null,
+          locked: !imageCreditsIncluded,
+          lockedMessage: imageCreditsIncluded
+            ? null
+            : "Actualiza tu plan para generar imágenes en Flow",
+          upgradeRequired: !imageCreditsIncluded,
         },
       ],
     };

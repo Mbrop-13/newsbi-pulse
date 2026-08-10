@@ -14,11 +14,12 @@ const supabase = createClient(
 const ACCESS_TOKEN = process.env.MERCADOPAGO_ACCESS_TOKEN || "";
 const WEBHOOK_SECRET = process.env.MERCADOPAGO_WEBHOOK_SECRET || "";
 
-// Reverse lookup: plan ID → tier
+// Reverse lookup: plan ID → tier (fallback si falta `plan` en external_reference)
 const PLAN_ID_TO_TIER: Record<string, PlanTier> = {
   [process.env.MERCADOPAGO_PLAN_PRO_ID || ""]: "pro",
   [process.env.MERCADOPAGO_PLAN_MAX_ID || ""]: "max",
   [process.env.MERCADOPAGO_PLAN_ULTRA_ID || ""]: "ultra",
+  [process.env.MERCADOPAGO_PLAN_ULTRA_X20_ID || ""]: "ultra_x20",
 };
 
 export async function POST(request: NextRequest) {

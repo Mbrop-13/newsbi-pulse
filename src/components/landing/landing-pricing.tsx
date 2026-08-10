@@ -12,10 +12,8 @@ const PLANS = [
     desc: "Para informarse y probar la tecnología de Maverlang.",
     features: [
       "Acceso a preguntas IA (límite básico)",
-      "5 audios de noticias al día",
       "Hasta 2 alertas de precio activas",
       "Hasta 5 activos en portafolio",
-      "Soporte de la comunidad"
     ],
     popular: false,
     cta: "Comenzar Gratis",
@@ -27,14 +25,12 @@ const PLANS = [
     period: "al mes",
     desc: "Para inversores y profesionales activos de la información.",
     features: [
-      "Mucha más capacidad de preguntas al mes",
+      "2M tokens de IA al mes",
       "1.000 créditos de imagen en Flow",
-      "50 audios de noticias al mes",
       "5 alertas de precio activas",
       "Hasta 25 activos en portafolio",
       "Lectura 100% sin publicidad",
       "Análisis básico de portafolio",
-      "Soporte estándar por email"
     ],
     popular: false,
     cta: "Elegir plan Pro",
@@ -46,14 +42,12 @@ const PLANS = [
     period: "al mes",
     desc: "Para inversores exigentes que quieren el máximo potencial.",
     features: [
-      "Doble de límites de preguntas (x2 límites de Pro)",
+      "4M tokens de IA al mes (x2 Pro)",
       "2.000 créditos de imagen en Flow",
-      "150 audios de noticias al mes",
-      "15 alertas de precio activas",
-      "Hasta 100 activos en portafolio",
+      "10 alertas de precio activas",
+      "Hasta 50 activos en portafolio",
       "Análisis avanzado de portafolio",
-      "Alertas automáticas por SMS",
-      "Informes semanales de portafolio"
+      "Informes semanales de portafolio",
     ],
     popular: true,
     cta: "Elegir plan Max",
@@ -65,14 +59,12 @@ const PLANS = [
     period: "al mes",
     desc: "El máximo poder analítico con infraestructura dedicada.",
     features: [
-      "Límites de preguntas x5 (x5 límites de Pro)",
+      "10M tokens de IA al mes (x5 Pro)",
       "5.000 créditos de imagen en Flow",
-      "300 audios de noticias al mes",
-      "30 alertas de precio activas",
-      "Activos de portafolio ilimitados",
+      "25 alertas de precio activas",
+      "125 activos en portafolio",
       "Análisis premium de portafolio",
       "IA avanzada con búsqueda web",
-      "Soporte dedicado 24/7"
     ],
     popular: false,
     cta: "Elegir plan Ultra",

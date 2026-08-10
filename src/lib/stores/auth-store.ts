@@ -6,7 +6,7 @@ export interface User {
   name: string;
   email: string;
   avatar: string;
-  tier?: "free" | "pro" | "max" | "ultra";
+  tier?: "free" | "pro" | "max" | "ultra" | "ultra_x20";
   role?: "admin" | "user";
 }
 

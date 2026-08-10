@@ -24,8 +24,7 @@ export interface PlanConfig {
   aiLifetimeMessages: number; // Solo aplica a free (total de por vida)
   aiTokensPerMonth: number; // Límite de tokens mensuales (-1 = sin límite)
   aiLifetimeTokens: number; // Límite de tokens de por vida (solo free)
-  aiTokensPer5Hours: number; // Límite de tokens por 5 horas
-  aiTokensPerWeek: number; // Límite de tokens por semana
+  aiTokensPerWeek: number; // Límite de tokens por semana (ventana móvil 7 días)
   aiModel: string; // Modelo de IA a usar
   aiChatHistory: number; // Cantidad de chats guardados (-1 = ilimitado)
   imageCreditsPerMonth: number; // Créditos de imagen en Flow
@@ -70,7 +69,6 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     aiLifetimeMessages: 5,
     aiTokensPerMonth: 0,
     aiLifetimeTokens: 50000,
-    aiTokensPer5Hours: 10000,
     aiTokensPerWeek: 25000,
     aiModel: "x-ai/grok-4.1-fast",
     aiChatHistory: 0,
@@ -108,10 +106,10 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     
     aiMessagesPerMonth: 100,
     aiLifetimeMessages: -1,
-    aiTokensPerMonth: 1000000,
+    // Tokens x2 vs base histórico (2026-08)
+    aiTokensPerMonth: 2000000,
     aiLifetimeTokens: -1,
-    aiTokensPer5Hours: 150000,
-    aiTokensPerWeek: 400000,
+    aiTokensPerWeek: 800000,
     aiModel: "x-ai/grok-4.1-fast",
     aiChatHistory: 10,
     imageCreditsPerMonth: 1000,
@@ -148,10 +146,10 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     
     aiMessagesPerMonth: 200, // x2 Pro
     aiLifetimeMessages: -1,
-    aiTokensPerMonth: 2000000, // x2 Pro
+    // Tokens x2 Pro (tras doble base)
+    aiTokensPerMonth: 4000000,
     aiLifetimeTokens: -1,
-    aiTokensPer5Hours: 300000,
-    aiTokensPerWeek: 800000,
+    aiTokensPerWeek: 1600000,
     aiModel: "x-ai/grok-4.1-fast:online",
     aiChatHistory: 20, // x2 Pro
     imageCreditsPerMonth: 2000,
@@ -188,10 +186,10 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     
     aiMessagesPerMonth: 500, // x5 Pro
     aiLifetimeMessages: -1,
-    aiTokensPerMonth: 5000000, // x5 Pro
+    // Tokens x5 Pro (tras doble base)
+    aiTokensPerMonth: 10000000,
     aiLifetimeTokens: -1,
-    aiTokensPer5Hours: 750000,
-    aiTokensPerWeek: 2000000,
+    aiTokensPerWeek: 4000000,
     aiModel: "x-ai/grok-4.1-fast:online",
     aiChatHistory: 50, // x5 Pro
     imageCreditsPerMonth: 5000,
@@ -228,10 +226,10 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     
     aiMessagesPerMonth: 2000, // x20 Pro
     aiLifetimeMessages: -1,
-    aiTokensPerMonth: 20000000, // x20 Pro
+    // Tokens x20 Pro (tras doble base)
+    aiTokensPerMonth: 40000000,
     aiLifetimeTokens: -1,
-    aiTokensPer5Hours: 3000000,
-    aiTokensPerWeek: 8000000,
+    aiTokensPerWeek: 16000000,
     aiModel: "x-ai/grok-4.1-fast:online",
     aiChatHistory: 200, // x20 Pro
     imageCreditsPerMonth: 10000,
@@ -280,7 +278,6 @@ export function getPlanConfig(tier: PlanTier): PlanConfig {
       ...baseConfig,
       aiMessagesPerMonth: baseConfig.aiMessagesPerMonth * 2,
       aiTokensPerMonth: baseConfig.aiTokensPerMonth * 2,
-      aiTokensPer5Hours: baseConfig.aiTokensPer5Hours * 2,
       aiTokensPerWeek: baseConfig.aiTokensPerWeek * 2,
       ttsAudiosPerMonth: baseConfig.ttsAudiosPerMonth * 2,
     };
@@ -377,7 +374,7 @@ export const ENTERPRISE_PLANS: Record<EnterprisePlan, EnterprisePlanConfig> = {
     annualDiscount: 2 / 12,
     aiMessagesPerSeatPerMonth: 100,
     imageCreditsPerSeatPerMonth: 1000,
-    aiTokensPerSeatPerMonth: 1000000,
+    aiTokensPerSeatPerMonth: 2000000,
     maxAlertsPerSeat: 5,
     maxPortfolioAssetsPerSeat: 25,
     aiModel: "x-ai/grok-4.1-fast",
@@ -414,7 +411,7 @@ export const ENTERPRISE_PLANS: Record<EnterprisePlan, EnterprisePlanConfig> = {
     annualDiscount: 2 / 12,
     aiMessagesPerSeatPerMonth: 200,
     imageCreditsPerSeatPerMonth: 2000,
-    aiTokensPerSeatPerMonth: 2000000,
+    aiTokensPerSeatPerMonth: 4000000,
     maxAlertsPerSeat: 10,
     maxPortfolioAssetsPerSeat: 50,
     aiModel: "x-ai/grok-4.1-fast:online",
@@ -451,7 +448,7 @@ export const ENTERPRISE_PLANS: Record<EnterprisePlan, EnterprisePlanConfig> = {
     annualDiscount: 2 / 12,
     aiMessagesPerSeatPerMonth: 500,
     imageCreditsPerSeatPerMonth: 5000,
-    aiTokensPerSeatPerMonth: 5000000,
+    aiTokensPerSeatPerMonth: 10000000,
     maxAlertsPerSeat: 25,
     maxPortfolioAssetsPerSeat: 125,
     aiModel: "x-ai/grok-4.1-fast:online",

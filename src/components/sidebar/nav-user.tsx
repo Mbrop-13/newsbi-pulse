@@ -73,12 +73,30 @@ function getInitials(name: string, email: string): string {
   return "U"
 }
 
+function planLabel(tier: string): string {
+  switch (tier) {
+    case "ultra_x20":
+      return "Ultra x20";
+    case "ultra":
+    case "admin":
+      return "Ultra";
+    case "max":
+      return "Max";
+    case "pro":
+      return "Pro";
+    default:
+      return "Free";
+  }
+}
+
 function PlanBadge({ tier }: { tier: string }) {
-  if (tier === "ultra" || tier === "admin") {
+  if (tier === "ultra" || tier === "ultra_x20" || tier === "admin") {
     return (
       <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-500/10 dark:to-orange-500/10 border border-amber-300/50 dark:border-amber-500/20 shadow-sm shrink-0">
         <Sparkles className="w-2.5 h-2.5 text-amber-600 dark:text-amber-400" />
-        <span className="text-[9px] font-black uppercase text-amber-700 dark:text-amber-400 tracking-wider">{tier}</span>
+        <span className="text-[9px] font-black uppercase text-amber-700 dark:text-amber-400 tracking-wider">
+          {planLabel(tier)}
+        </span>
       </div>
     )
   }
@@ -86,7 +104,9 @@ function PlanBadge({ tier }: { tier: string }) {
     return (
       <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-500/10 dark:to-indigo-500/10 border border-blue-200/50 dark:border-blue-500/20 shadow-sm shrink-0">
         <Crown className="w-2.5 h-2.5 text-blue-600 dark:text-blue-400" />
-        <span className="text-[9px] font-black uppercase text-blue-700 dark:text-blue-400 tracking-wider">{tier}</span>
+        <span className="text-[9px] font-black uppercase text-blue-700 dark:text-blue-400 tracking-wider">
+          {planLabel(tier)}
+        </span>
       </div>
     )
   }
@@ -188,10 +208,20 @@ export function NavUser() {
                       </AvatarFallback>
                     </Avatar>
                     
-                    {/* Overlapping Badge for Paid Tiers */}
+                    {/* Badge del plan (Pro / Max / Ultra) bajo el avatar con borde */}
                     {mounted && isAuthenticated && userTier !== "free" && (
-                      <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-black text-white dark:bg-zinc-900 text-[8px] font-extrabold px-1.5 h-[14px] rounded-full border border-white dark:border-zinc-950 shadow-sm leading-none flex items-center justify-center pointer-events-none select-none z-10">
-                        {userTier === "ultra" ? "Ultra" : userTier === "max" ? "Max" : userTier === "pro" ? "Pro" : "Admin"}
+                      <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-black text-white dark:bg-zinc-900 text-[8px] font-extrabold px-1.5 h-[14px] rounded-full border border-white dark:border-zinc-950 shadow-sm leading-none flex items-center justify-center pointer-events-none select-none z-10 max-w-[52px] truncate">
+                        {userTier === "ultra_x20"
+                          ? "x20"
+                          : userTier === "ultra"
+                            ? "Ultra"
+                            : userTier === "max"
+                              ? "Max"
+                              : userTier === "pro"
+                                ? "Pro"
+                                : userTier === "admin"
+                                  ? "Admin"
+                                  : planLabel(userTier)}
                       </div>
                     )}
                   </div>

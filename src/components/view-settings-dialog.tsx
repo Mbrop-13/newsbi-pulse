@@ -6,6 +6,7 @@ import { useAuthStore } from "@/lib/stores/auth-store";
 import { useAssistantStore } from "@/lib/stores/assistant-store";
 import { useAIChatStore } from "@/lib/stores/ai-chat-store";
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
+import { useConversionStore } from "@/lib/stores/conversion-store";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -576,7 +577,7 @@ export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettings
                       </div>
                       <button
                         type="button"
-                        onClick={() => { handleClose(); router.push("/suscripcion"); }}
+                        onClick={() => { handleClose(); useConversionStore.getState().openModal("general"); }}
                         className="px-4 py-1.5 rounded-full border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 text-[11px] font-semibold text-gray-800 dark:text-gray-200 cursor-pointer transition-all shrink-0"
                       >
                         Actualizar
@@ -672,7 +673,7 @@ export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettings
                                     <span>·</span>
                                     <button
                                       type="button"
-                                      onClick={() => { handleClose(); router.push("/suscripcion"); }}
+                                      onClick={() => { handleClose(); useConversionStore.getState().openModal("general"); }}
                                       className="font-semibold text-gray-900 dark:text-white hover:underline cursor-pointer"
                                     >
                                       Gestionar
@@ -693,7 +694,7 @@ export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettings
                                   
                                   <button
                                     type="button"
-                                    onClick={() => { handleClose(); router.push("/suscripcion"); }}
+                                    onClick={() => { handleClose(); useConversionStore.getState().openModal("general"); }}
                                     className="flex items-center gap-1.5 px-3 py-1.5 bg-black dark:bg-white text-white dark:text-black font-black text-[10px] rounded-xl hover:opacity-90 transition-opacity shadow-sm cursor-pointer"
                                   >
                                     <Rocket className="w-3 h-3" />
@@ -771,7 +772,7 @@ export function ViewSettingsDialog({ isOpen, onClose, defaultTab }: ViewSettings
                                           type="button"
                                           onClick={() => {
                                             handleClose();
-                                            router.push("/suscripcion");
+                                            useConversionStore.getState().openModal("general");
                                           }}
                                           className="mt-auto w-full text-[10px] font-bold py-1.5 rounded-lg bg-black dark:bg-white text-white dark:text-black hover:opacity-90 transition-opacity cursor-pointer"
                                         >

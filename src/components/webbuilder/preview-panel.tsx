@@ -864,6 +864,11 @@ function PlanView({ plan }: { plan: NonNullable<ReturnType<typeof useWebBuilderS
                     <span className="text-xs font-mono font-bold text-foreground break-all">
                       {agent.filePath}
                     </span>
+                    {agent.phase && (
+                      <span className="text-[9px] font-extrabold uppercase tracking-wider text-[#1890FF] bg-[#1890FF]/10 px-1.5 py-0.5 rounded-full">
+                        {agent.phase}
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-1.5 mt-1">
                     <span className="text-[11px] font-semibold text-foreground">

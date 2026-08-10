@@ -12,6 +12,7 @@ import { useAssistantStore, type Ticker } from "@/lib/stores/assistant-store";
 import { PREDEFINED_TOPICS } from "@/components/assistant/assistant-setup";
 import { useAIChatStore } from "@/lib/stores/ai-chat-store";
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
+import { useConversionStore } from "@/lib/stores/conversion-store";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -477,9 +478,12 @@ export default function SettingsClient() {
                                             : "Plan Gratuito"}
                                         </span>
                                         <span>·</span>
-                                        <Link href="/suscripcion" className="font-semibold text-gray-900 dark:text-white hover:underline">
+                                        <button
+                                          onClick={() => useConversionStore.getState().openModal("general")}
+                                          className="font-semibold text-gray-900 dark:text-white hover:underline cursor-pointer"
+                                        >
                                           Gestionar
-                                        </Link>
+                                        </button>
                                       </div>
                                     </div>
 
@@ -493,13 +497,13 @@ export default function SettingsClient() {
                                         <RefreshCw className={`w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400 ${usageLoading ? "animate-spin" : ""}`} />
                                       </button>
                                       
-                                      <Link
-                                        href="/suscripcion"
-                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-black dark:bg-white text-white dark:text-black font-black text-[11px] rounded-xl hover:opacity-90 transition-opacity shadow-sm"
+                                      <button
+                                        onClick={() => useConversionStore.getState().openModal("general")}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-black dark:bg-white text-white dark:text-black font-black text-[11px] rounded-xl hover:opacity-90 transition-opacity shadow-sm cursor-pointer"
                                       >
                                         <Rocket className="w-3.5 h-3.5" />
                                         Upgrade
-                                      </Link>
+                                      </button>
                                     </div>
                                   </div>
 

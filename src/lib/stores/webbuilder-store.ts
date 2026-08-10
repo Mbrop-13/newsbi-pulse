@@ -19,6 +19,8 @@ export interface PendingPlanAgent {
   role: string;
   task: string;
   filePath: string;
+  /** shell | feature | integrate — orden de ejecución híbrida */
+  phase?: "shell" | "feature" | "integrate";
 }
 export interface PendingPlan {
   planId: string;

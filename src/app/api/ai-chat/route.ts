@@ -66,7 +66,9 @@ const aiChatSchema = z.object({
       role: z.string().max(200),
       task: z.string().max(4000),
       filePath: z.string().max(300).regex(/^[\w\-./]+$/, "filePath debe ser una ruta relativa válida"),
-    })).min(1).max(5),
+      // shell → serie; feature → paralelo; integrate → wire final
+      phase: z.enum(["shell", "feature", "integrate"]).optional(),
+    })).min(1).max(10),
   }).optional(),
   // Feedback del usuario para replanificar (modo Plan): regenera el plan.
   replanFeedback: z.string().max(2000).optional(),

@@ -1,7 +1,13 @@
 import { generateText, LanguageModel } from 'ai';
-import { containsArtifact, parseArtifact, ParsedAction, validateDiffsAgainstFile, toCodeMap } from '@/lib/webbuilder-parser';
+import { containsArtifact, parseArtifact, ParsedAction, validateDiffsAgainstFile, toCodeMap, actionsToFiles } from '@/lib/webbuilder-parser';
 import { validateFileSyntax } from '@/lib/webbuilder-syntax-validator';
 import { BUILDER_DESIGN_GUIDELINES } from '@/app/api/ai-chat/prompts/builder-guidelines';
+
+/** Tope de archivos/agentes por turno de Build (sin templates todavía). */
+export const MAX_WEBBUILDER_AGENTS = 10;
+
+/** Fases de ejecución híbrida: shell → features (paralelo) → integrate. */
+export type WebBuilderPhase = "shell" | "feature" | "integrate";
 
 export interface AgentInfo {
   agentName: string;
@@ -287,10 +293,94 @@ REGLAS CRÍTICAS:
 
 export interface WebBuilderAgentInfo extends AgentInfo {
   filePath: string;
+  /** shell = esqueleto (secuencial); feature = en paralelo; integrate = wire final */
+  phase?: WebBuilderPhase;
 }
 
 export interface WebBuilderAgentReport extends AgentReport {
   filePath: string;
+  phase?: WebBuilderPhase;
+}
+
+/** Normaliza path de plan/archivo a convención WebBuilder. */
+function normalizePlanPath(filePath: string): string {
+  let p = (filePath || "/App.tsx").trim();
+  if (!p.startsWith("/")) p = "/" + p;
+  p = p.replace(/^\/src\//, "/").replace(/\\/g, "/");
+  return p;
+}
+
+/**
+ * Clasifica fase si el planner no la mandó o mandó basura.
+ * Heurística estable: App/styles/layout = shell; integrador por nombre; resto feature.
+ */
+export function resolveAgentPhase(agent: WebBuilderAgentInfo): WebBuilderPhase {
+  const raw = (agent.phase || "").toString().toLowerCase().trim();
+  if (raw === "shell" || raw === "feature" || raw === "integrate") {
+    return raw;
+  }
+  const path = normalizePlanPath(agent.filePath).toLowerCase();
+  const label = `${agent.agentName} ${agent.role} ${agent.task}`.toLowerCase();
+  if (
+    /integr|wire|orquest|ensambl|connect.*app|app.*connect|final.?pass|reconcili/.test(label)
+  ) {
+    return "integrate";
+  }
+  const base = path.split("/").pop() || "";
+  if (
+    base === "app.tsx" ||
+    base === "app.jsx" ||
+    base === "app.ts" ||
+    base === "app.js" ||
+    base === "styles.css" ||
+    base === "index.css" ||
+    base === "globals.css" ||
+    base === "theme.ts" ||
+    base === "theme.tsx" ||
+    path.includes("/layout") ||
+    path.includes("/router") ||
+    path.includes("/routes") ||
+    path.includes("/main.")
+  ) {
+    // Si es App.tsx y el plan ya tiene varios features, el App suele ser shell
+    // (montaje). Si el task dice "integrar/conectar todo", es integrate.
+    if ((base === "app.tsx" || base === "app.jsx") && /integr|conectar|ensambl|wire|montar todos/.test(label)) {
+      return "integrate";
+    }
+    return "shell";
+  }
+  return "feature";
+}
+
+/** Orden de shell: estilos/tema → layout/router → App → resto. */
+function shellSortKey(filePath: string): number {
+  const p = normalizePlanPath(filePath).toLowerCase();
+  const base = p.split("/").pop() || "";
+  if (base.includes("style") || base.includes("theme") || base.endsWith(".css")) return 0;
+  if (p.includes("layout") || p.includes("router") || p.includes("routes")) return 1;
+  if (base.startsWith("app.")) return 2;
+  if (base.startsWith("main.")) return 3;
+  return 4;
+}
+
+/** Aplica el artifact de un agente al mapa de código string. */
+function mergeArtifactIntoFilesMap(
+  content: string,
+  filesMap: Record<string, string>
+): Record<string, string> {
+  if (!content || !containsArtifact(content)) return filesMap;
+  const parsed = parseArtifact(content);
+  if (!parsed || parsed.actions.length === 0) return filesMap;
+  const existingAsFiles = Object.fromEntries(
+    Object.entries(filesMap).map(([path, code]) => [path, { code }])
+  );
+  const { files } = actionsToFiles(parsed.actions, existingAsFiles);
+  const next = { ...filesMap };
+  for (const [path, file] of Object.entries(files)) {
+    const code = typeof file === "string" ? file : (file as { code?: string })?.code ?? "";
+    if (code) next[normalizePlanPath(path)] = code;
+  }
+  return next;
 }
 
 export interface WebBuilderOrchestrationResult {
@@ -841,11 +931,21 @@ export async function planWebBuilder(
   const basePlannerPrompt = `Actúas como el Arquitecto de Software y Orquestador de Maverlang WebBuilder.
 Tu tarea es analizar la consulta del usuario y los archivos existentes en el proyecto (si los hay), y planificar los cambios de código.
 
-Si la consulta es muy general o vaga (ej: "quiero una web", "crea una tienda online", "diseña un ecommerce", "agrega una sección de productos", etc.) y consideras que es más profesional aclararla haciendo una pregunta interactiva al usuario sobre sus requerimientos específicos antes de armar el plan, DEBES responder con una estructura de pregunta interactiva.
+ARQUITECTURA DE PLAN (estilo product builders modernos, SIN templates prearmados):
+- Piensa en FASES, no en "2 archivos y listo".
+- phase="shell": esqueleto que debe existir primero (styles/theme, layout, App raíz, router si aplica). Se ejecutan EN SERIE.
+- phase="feature": componentes/secciones independientes (ProductCard, Cart, Header, pages…). Se ejecutan EN PARALELO después del shell.
+- phase="integrate": pasada final que conecta imports, props y montaje (casi siempre /App.tsx o layout). Se ejecuta AL FINAL con el código ya generado. En apps nuevas de 4+ archivos DEBES incluir al menos un agente integrate.
+- Máximo ${MAX_WEBBUILDER_AGENTS} agentes (1 archivo por agente). Un filePath NO se repite.
+- Apps nuevas / sitios completos (tienda, supermercado, landing rica, dashboard): apunta a 6–${MAX_WEBBUILDER_AGENTS} archivos. NO te quedes en 2 archivos salvo que el pedido sea trivial.
+- Cambios pequeños sobre proyecto existente: 1–3 archivos bastan; no infles el plan.
+- Cada task debe ser concreta (qué UI, datos mock, props públicas, imports esperados hacia otros filePath del plan).
+
+Si la consulta es muy general o vaga (ej: "quiero una web", "crea una tienda online") y falta un dato crítico de producto (nicho, público, estilo), puedes hacer UNA pregunta interactiva. Si hay suficiente para un MVP razonable, PLANIFICA DIRECTO (no preguntes por preguntar).
 
 Determina si la consulta es simple (isComplex: false) o compleja (isComplex: true).
-- Consultas simples (isComplex: false): Saludos, preguntas conceptuales de programación, o cambios muy pequeños en un único archivo que pueden ser realizados directamente por el LLM final (ej. "cambia el color del botón a azul", "cambia el título de la página").
-- Consultas complejas (isComplex: true): Crear una nueva aplicación web desde cero, agregar múltiples componentes interactivos, realizar modificaciones extensas en más de un archivo, o cambios estructurales grandes.
+- Consultas simples (isComplex: false): Saludos, preguntas conceptuales, o cambios muy pequeños en un único archivo (ej. "cambia el color del botón a azul").
+- Consultas complejas (isComplex: true): App/web nueva, múltiples componentes, cambios en varios archivos, o refactors estructurales.
 
 Si decides hacer una pregunta interactiva antes de planificar, responde con el siguiente formato JSON (con isComplex: false, agentes vacíos, y el objeto "question"):
 {
@@ -865,13 +965,28 @@ Si decides hacer una pregunta interactiva antes de planificar, responde con el s
 Si decides generar el plan directamente porque tienes suficiente información, responde con (isComplex: true):
 {
   "isComplex": true,
-  "reason": "Explicación del diseño y plan de archivos",
+  "reason": "Resumen del diseño: fases shell → features → integrate y qué producto se construye",
   "agents": [
     {
-      "agentName": "Nombre del Agente (ej: AppAgent)",
-      "role": "Rol específico del agente (ej: Desarrollador React Principal)",
-      "task": "Explicación detallada de lo que debe implementar en su archivo asignado",
-      "filePath": "Ruta exacta del archivo (ej: /App.tsx)"
+      "agentName": "Nombre del Agente (ej: StylesAgent)",
+      "role": "Rol específico (ej: Design system / CSS)",
+      "task": "Qué implementar en ESE archivo: UI, mocks, props exportadas, y con qué otros paths del plan debe alinearse",
+      "filePath": "/styles.css",
+      "phase": "shell"
+    },
+    {
+      "agentName": "HeaderAgent",
+      "role": "UI component",
+      "task": "...",
+      "filePath": "/components/Header.tsx",
+      "phase": "feature"
+    },
+    {
+      "agentName": "AppIntegrator",
+      "role": "Integrador",
+      "task": "Montar la app importando los componentes del plan, wiring de estado y rutas si aplica",
+      "filePath": "/App.tsx",
+      "phase": "integrate"
     }
   ]
 }
@@ -883,9 +998,9 @@ Si determinas que no requiere delegación ni preguntas (isComplex: false), respo
   "agents": []
 }
 
-IMPORTANTE - CONVENCIÓN DE RUTAS: Los archivos SIEMPRE se referencian con barra inicial y SIN la carpeta "src/". El archivo principal es "/App.tsx", los estilos globales son "/styles.css", y los componentes van en "/components/Nombre.tsx". NUNCA uses rutas como "src/App.tsx" o "/src/App.tsx".
+IMPORTANTE - CONVENCIÓN DE RUTAS: Los archivos SIEMPRE con barra inicial y SIN carpeta "src/". Principal: "/App.tsx". Estilos: "/styles.css". Componentes: "/components/Nombre.tsx". NUNCA "src/App.tsx".
 
-DEBES responder ÚNICAMENTE con un bloque JSON en uno de los formatos anteriores (sin explicaciones, sin markdown, solo el JSON).
+DEBES responder ÚNICAMENTE con un bloque JSON (sin markdown, sin texto fuera del JSON).
 `;
 
   const replanSection = isReplan
@@ -928,12 +1043,20 @@ ${existingFilesContext
     isComplex = !!result.isComplex;
     reason = result.reason || 'Sin motivo';
     const rawAgents = Array.isArray(result.agents) ? result.agents : [];
-    agents = rawAgents.slice(0, 5).map((a: any) => ({
-      agentName: a.agentName || 'BuilderAgent',
-      role: a.role || 'Desarrollador',
-      task: a.task || 'Crear código',
-      filePath: a.filePath || '/App.tsx'
-    }));
+    agents = rawAgents.slice(0, MAX_WEBBUILDER_AGENTS).map((a: any) => {
+      const info: WebBuilderAgentInfo = {
+        agentName: a.agentName || 'BuilderAgent',
+        role: a.role || 'Desarrollador',
+        task: a.task || 'Crear código',
+        filePath: normalizePlanPath(a.filePath || '/App.tsx'),
+        phase: undefined,
+      };
+      info.phase = resolveAgentPhase({
+        ...info,
+        phase: a.phase,
+      });
+      return info;
+    });
 
     if (result.question) {
       question = {
@@ -958,16 +1081,25 @@ ${existingFilesContext
   } else if (!isComplex || agents.length === 0) {
     onProgress?.(`✅ [Orquestador WebBuilder] Análisis completo: Es una consulta simple. Se resolverá de forma directa (${reason}).\n\n`);
   } else {
-    onProgress?.(`🔍 [Orquestador WebBuilder] Plan de archivos creado: "${reason}"\n`);
+    const nShell = agents.filter((a) => resolveAgentPhase(a) === "shell").length;
+    const nFeat = agents.filter((a) => resolveAgentPhase(a) === "feature").length;
+    const nInt = agents.filter((a) => resolveAgentPhase(a) === "integrate").length;
+    onProgress?.(
+      `🔍 [Orquestador WebBuilder] Plan: ${agents.length} archivo(s) · shell ${nShell} → features ${nFeat} → integrate ${nInt}\n"${reason}"\n`
+    );
   }
 
   return { isComplex, reason, agents, totalTokensUsed, question };
 }
 
 /**
- * Fase de EJECUCIÓN del WebBuilder.
- * Recibe un plan ya aprobado {agents} y corre los agentes constructores en
- * paralelo, generando el código de cada archivo. No planifica.
+ * Fase de EJECUCIÓN del WebBuilder (híbrida).
+ *
+ * 1) shell — secuencial (cada agente ve lo que ya generaron los anteriores)
+ * 2) feature — en paralelo (sobre el shell ya materializado)
+ * 3) integrate — secuencial al final (wiring con el mapa completo)
+ *
+ * No planifica. No usa templates (el código se genera desde cero / diffs).
  */
 export async function executeWebBuilderAgents(
   model: LanguageModel,
@@ -977,34 +1109,78 @@ export async function executeWebBuilderAgents(
   onProgress?: (text: string) => void,
   onFileReady?: (agent: WebBuilderAgentInfo, content: string, success: boolean) => void
 ): Promise<{ agentReports: WebBuilderAgentReport[]; totalOrchestrationTimeMs: number; totalTokensUsed: number }> {
-  // Defensa: siempre trabajar con Record<path, string> de código real.
-  const filesMap = toCodeMap(existingFiles as Record<string, unknown> | undefined);
+  // Mapa mutable: shell e integrate alimentan a las fases siguientes.
+  let filesMap = toCodeMap(existingFiles as Record<string, unknown> | undefined);
   const startTime = Date.now();
   let totalTokensUsed = 0;
 
-  // #5 DEDUP DE filePath: si el plan asigna el mismo filePath a varios agentes,
-  // dos escrituras concurrentes a filesToApply (vía onFileReady) generarían un
-  // race y la última en resolver ganaría de forma no determinista. Conservamos
-  // solo el PRIMER agente por filePath normalizado y descartamos duplicados.
+  // Dedup por filePath (primera ocurrencia gana).
   const seenPaths = new Set<string>();
-  const dedupedAgents = agents.filter(a => {
-    const norm = a.filePath.replace(/^\/src\//, '/').replace(/^src\//, '/');
-    if (seenPaths.has(norm)) return false;
+  const dedupedAgents: WebBuilderAgentInfo[] = [];
+  for (const a of agents.slice(0, MAX_WEBBUILDER_AGENTS)) {
+    const norm = normalizePlanPath(a.filePath);
+    if (seenPaths.has(norm)) continue;
     seenPaths.add(norm);
-    return true;
-  });
+    dedupedAgents.push({
+      ...a,
+      filePath: norm,
+      phase: resolveAgentPhase({ ...a, filePath: norm }),
+    });
+  }
   if (dedupedAgents.length < agents.length) {
-    onProgress?.(`⚠️ [Orquestador WebBuilder] Se detectaron ${agents.length - dedupedAgents.length} agente(s) duplicado(s) sobre el mismo archivo. Se mantiene solo el primero para evitar conflictos.\n`);
+    onProgress?.(
+      `⚠️ [Orquestador WebBuilder] Se omitieron ${agents.length - dedupedAgents.length} agente(s) duplicados o fuera de tope (${MAX_WEBBUILDER_AGENTS}).\n`
+    );
   }
 
-  onProgress?.(`🤖 Creando ${dedupedAgents.length} agentes constructores en paralelo...\n\n`);
+  const shellAgents = dedupedAgents
+    .filter((a) => a.phase === "shell")
+    .sort((a, b) => shellSortKey(a.filePath) - shellSortKey(b.filePath) || a.filePath.localeCompare(b.filePath));
+  const featureAgents = dedupedAgents.filter((a) => a.phase === "feature");
+  const integrateAgents = dedupedAgents
+    .filter((a) => a.phase === "integrate")
+    .sort((a, b) => shellSortKey(a.filePath) - shellSortKey(b.filePath));
 
-  const agentPromises = dedupedAgents.map(async (agent): Promise<WebBuilderAgentReport> => {
+  // Si no hay shell/feature explícitos (plan viejo o todo mal clasificado),
+  // fallback: todo en paralelo como antes (excepto integrate si hay).
+  const useHybrid =
+    shellAgents.length > 0 || integrateAgents.length > 0 || featureAgents.length > 0;
+
+  onProgress?.(
+    useHybrid
+      ? `🏗️ [Orquestador] Ejecución híbrida: shell ${shellAgents.length} (serie) → features ${featureAgents.length} (paralelo) → integrate ${integrateAgents.length} (serie). Total ${dedupedAgents.length} archivo(s).\n\n`
+      : `🤖 [Orquestador] Ejecutando ${dedupedAgents.length} agentes...\n\n`
+  );
+
+  const planSummary = dedupedAgents
+    .map(
+      (a) =>
+        `- [${a.phase}] \`${a.filePath}\` (${a.agentName} · ${a.role}): ${a.task}`
+    )
+    .join("\n");
+
+  const runOneAgent = async (
+    agent: WebBuilderAgentInfo,
+    currentMap: Record<string, string>,
+    timeoutMs: number,
+    phaseLabel: string
+  ): Promise<WebBuilderAgentReport> => {
     const agentStartTime = Date.now();
-    onProgress?.(`⏳ [Agente] ${agent.agentName} (${agent.role}) generando/actualizando \`${agent.filePath}\`...\n`);
+    const phase = agent.phase || resolveAgentPhase(agent);
+    onProgress?.(
+      `⏳ [${phaseLabel}] ${agent.agentName} → \`${agent.filePath}\`...\n`
+    );
+
+    const coherenceHint =
+      phase === "shell"
+        ? "Fase SHELL: crea la base sólida (tokens de diseño, layout o App mínima). Exporta defaults claros. Los features aún no existen: deja placeholders de import solo si el plan ya fija los paths exactos."
+        : phase === "feature"
+          ? "Fase FEATURE: implementa SOLO este archivo de forma completa y usable. Importa el shell (styles/theme) si aplica. Asume que los otros features del plan existirán en sus paths; no reescribas App.tsx salvo que sea tu filePath."
+          : "Fase INTEGRATE: conecta el proyecto. Importa los componentes del plan con las rutas exactas, pasa props coherentes, monta rutas/estado y elimina placeholders rotos. Prefiere type=\"file\" en App si el montaje es grande.";
 
     const agentSystemPrompt = `Actúas como el agente constructor experto "${agent.agentName}" con el rol de "${agent.role}". Eres un ingeniero de software senior de élite; la calidad de tu código debe ser excepcional, al nivel de los mejores equipos de producto (Linear, Vercel, Stripe, Apple).
 Tu tarea específica es implementar o modificar el archivo "${agent.filePath}" de acuerdo a la instrucción: "${agent.task}".
+Fase de pipeline: ${phase}. ${coherenceHint}
 
 Debes generar el contenido de tu archivo utilizando el formato XML de Maverlang Artifacts.
 REGLAS CRÍTICAS DE RESPUESTA:
@@ -1028,100 +1204,172 @@ Si vas a MODIFICAR un archivo existente, usa type="update" con bloques search/re
   </maverlangAction>
 </maverlangArtifact>
 
-3. Todo código React debe usar importaciones estándar que estén disponibles en un entorno Vite + React normal. Exportación por defecto del componente en cada archivo React.
-4. Recuerda: Tu response debe contener SOLAMENTE el XML. No agregues comentarios introductorios ni de cierre en markdown fuera del XML.
-5. EVITA EL TRUNCADO: Si vas a modificar un archivo existente en el proyecto, DEBES usar preferiblemente type="update" con bloques search/replace para realizar modificaciones locales, en lugar de type="file" que reescribe todo. Usa type="file" para archivos existentes SOLO si necesitas cambiar más del 60% del código y tienes la capacidad de escribir el archivo completo al 100% de manera íntegra, sin placeholders ni truncados.
-6. COHERENCIA MULTI-AGENTE: Eres uno de varios agentes construyendo el proyecto en paralelo. Tu archivo debe integrarse limpiamente con los demás. Asume que los componentes de otros agentes se importan por su ruta exacta (ej: import FinanceChart from './components/FinanceChart'). Respeta los nombres de componentes y props que el plan define.
+3. Todo código React debe usar importaciones estándar de un entorno Vite + React. Exportación por defecto en cada componente React.
+4. Response SOLO con el XML (sin markdown fuera del bloque).
+5. EVITA EL TRUNCADO: en archivos existentes prefiere type="update" (search/replace). Usa type="file" si cambias >60% o en shell/integrate cuando reescribes el montaje.
+6. COHERENCIA: respeta filePath y nombres del plan. Imports relativos correctos (ej: import Header from './components/Header').
 ${BUILDER_DESIGN_GUIDELINES}
 `;
 
-    // Filter existing files context per-agent to optimize tokens (código string real)
-    const relevantFiles = selectRelevantContext(agent.filePath, filesMap);
+    // Integrate ve más contexto (casi todo el mapa); shell/feature usan selector.
+    const relevantFiles =
+      phase === "integrate" || Object.keys(currentMap).length <= 8
+        ? currentMap
+        : selectRelevantContext(agent.filePath, currentMap);
     const relevantFilesContext = Object.keys(relevantFiles).length > 0;
 
     const agentUserMessage = `Consulta original del usuario: "${userMessage}"
 
-PLAN DE ARCHIVOS COORDINADOS:
-${agents.map(a => `- Archivo: \`${a.filePath}\` (generado por ${a.agentName} - ${a.role}): ${a.task}`).join('\n')}
+PLAN COORDINADO (fases shell → feature → integrate):
+${planSummary}
 
-ARCHIVOS EXISTENTES EN EL PROYECTO (SELECCIÓN RELEVANTE):
-${relevantFilesContext ? Object.entries(relevantFiles).map(([path, content]) => `--- Archivo: ${path} ---\n${content}\n`).join('\n') : '(Ninguno o vacío)'}
+ARCHIVOS YA MATERIALIZADOS EN EL PROYECTO (contexto relevante):
+${
+  relevantFilesContext
+    ? Object.entries(relevantFiles)
+        .map(([path, content]) => `--- Archivo: ${path} ---\n${content}\n`)
+        .join("\n")
+    : "(Ninguno o vacío)"
+}
 
 Tu tarea asignada: Generar o actualizar el archivo \`${agent.filePath}\` de acuerdo a: "${agent.task}".
 Recuerda devolver ÚNICAMENTE el XML con tu código.`;
 
     try {
-      const agentPromise = generateWebBuilderCodeWithVerification(
-        model,
-        agent,
-        agentSystemPrompt,
-        agentUserMessage,
-        onProgress,
-        relevantFiles
-      );
-
-      // 140s por agente (en paralelo). La ruta /api/ai-chat tiene maxDuration 300s
-      // (plan + agentes + resumen final). 200s dejaba poco margen y Vercel devolvía 504.
       const agentResponse = await withTimeout(
-        agentPromise,
-        140000,
-        new Error("Excedió el tiempo límite de ejecución de 140 segundos")
+        generateWebBuilderCodeWithVerification(
+          model,
+          agent,
+          agentSystemPrompt,
+          agentUserMessage,
+          onProgress,
+          relevantFiles
+        ),
+        timeoutMs,
+        new Error(`Excedió el tiempo límite de ${Math.round(timeoutMs / 1000)}s`)
       );
 
       const duration = Date.now() - agentStartTime;
       const tokensUsed = agentResponse.usage?.totalTokens || 0;
       const content = agentResponse.text;
-      onProgress?.(`✅ [Agente] ${agent.agentName} completó la edición de \`${agent.filePath}\` en ${duration}ms.\n`);
+      onProgress?.(
+        `✅ [${phaseLabel}] ${agent.agentName} completó \`${agent.filePath}\` en ${duration}ms.\n`
+      );
 
-      // Streaming apply live (la "magia" de Lovable): emitir el archivo al
-      // stream INMEDIATAMENTE cuando el agente termina, sin esperar al
-      // Promise.all. El callback es síncrono (parse+assign+append atómico en
-      // el event loop), así que no hay races sobre filesToApply.
       if (onFileReady) {
-        try { onFileReady(agent, content, true); } catch (e) {
+        try {
+          onFileReady(agent, content, true);
+        } catch (e) {
           console.error("onFileReady callback failed:", e);
         }
       }
 
       return {
         ...agent,
+        phase,
         content,
         durationMs: duration,
         success: true,
-        tokensUsed
+        tokensUsed,
       };
     } catch (err: any) {
       const duration = Date.now() - agentStartTime;
       console.error(`Error in WebBuilder Agent ${agent.agentName}:`, err);
-      onProgress?.(`❌ [Agente] ${agent.agentName} falló para \`${agent.filePath}\` después de ${duration}ms: ${err.message || String(err)}\n`);
-
-      // Avisar al callback que este archivo no estará disponible (no hay
-      // artefacto que emitir). El cliente simplemente no verá ese archivo
-      // hasta que el usuario lo regenere.
+      onProgress?.(
+        `❌ [${phaseLabel}] ${agent.agentName} falló en \`${agent.filePath}\` (${duration}ms): ${err.message || String(err)}\n`
+      );
       if (onFileReady) {
-        try { onFileReady(agent, '', false); } catch (e) {
+        try {
+          onFileReady(agent, "", false);
+        } catch (e) {
           console.error("onFileReady callback failed:", e);
         }
       }
-
       return {
         ...agent,
+        phase,
         content: `Error al procesar la tarea para ${agent.filePath}: ${err.message || String(err)}`,
         durationMs: duration,
         success: false,
-        tokensUsed: 0
+        tokensUsed: 0,
       };
     }
-  });
+  };
 
-  const agentReports = await Promise.all(agentPromises);
+  const agentReports: WebBuilderAgentReport[] = [];
 
-  for (const report of agentReports) {
+  // Timeouts acotados al maxDuration ~300s de la ruta (plan + build + resumen).
+  const SHELL_TIMEOUT_MS = 90_000;
+  const FEATURE_TIMEOUT_MS = 110_000;
+  const INTEGRATE_TIMEOUT_MS = 90_000;
+
+  // ── 1. SHELL (serie) ──
+  for (const agent of shellAgents) {
+    const report = await runOneAgent(agent, filesMap, SHELL_TIMEOUT_MS, "SHELL");
+    agentReports.push(report);
     if (report.tokensUsed) totalTokensUsed += report.tokensUsed;
+    if (report.success && report.content) {
+      filesMap = mergeArtifactIntoFilesMap(report.content, filesMap);
+    }
+  }
+
+  // ── 2. FEATURES (paralelo) ──
+  // Snapshot del shell para todos los features (evita races al leer el mapa).
+  const mapAfterShell = { ...filesMap };
+  if (featureAgents.length > 0) {
+    onProgress?.(
+      `⚡ [Orquestador] Lanzando ${featureAgents.length} feature(s) en paralelo sobre el shell...\n`
+    );
+    const featureReports = await Promise.all(
+      featureAgents.map((agent) =>
+        runOneAgent(agent, mapAfterShell, FEATURE_TIMEOUT_MS, "FEATURE")
+      )
+    );
+    for (const report of featureReports) {
+      agentReports.push(report);
+      if (report.tokensUsed) totalTokensUsed += report.tokensUsed;
+      if (report.success && report.content) {
+        // Merge serializado post-paralelo (cada feature un path distinto).
+        filesMap = mergeArtifactIntoFilesMap(report.content, filesMap);
+      }
+    }
+  }
+
+  // ── 3. INTEGRATE (serie, ve el mapa completo) ──
+  for (const agent of integrateAgents) {
+    const report = await runOneAgent(
+      agent,
+      filesMap,
+      INTEGRATE_TIMEOUT_MS,
+      "INTEGRATE"
+    );
+    agentReports.push(report);
+    if (report.tokensUsed) totalTokensUsed += report.tokensUsed;
+    if (report.success && report.content) {
+      filesMap = mergeArtifactIntoFilesMap(report.content, filesMap);
+    }
+  }
+
+  // Edge: plan sin fases útiles (todo vacío) — no debería pasar tras resolve.
+  if (agentReports.length === 0 && dedupedAgents.length > 0) {
+    onProgress?.(`⚠️ [Orquestador] Fallback: ejecutando todos en paralelo.\n`);
+    const fallback = await Promise.all(
+      dedupedAgents.map((a) =>
+        runOneAgent(a, filesMap, FEATURE_TIMEOUT_MS, "BUILD")
+      )
+    );
+    for (const report of fallback) {
+      agentReports.push(report);
+      if (report.tokensUsed) totalTokensUsed += report.tokensUsed;
+    }
   }
 
   const totalDuration = Date.now() - startTime;
-  onProgress?.(`\n📊 [Orquestador WebBuilder] Todos los archivos generados en paralelo (${totalDuration}ms total).\n\n`);
+  const ok = agentReports.filter((r) => r.success).length;
+  const fail = agentReports.length - ok;
+  onProgress?.(
+    `\n📊 [Orquestador WebBuilder] Listo en ${totalDuration}ms · ${ok} ok / ${fail} fallidos · ${agentReports.length} archivo(s).\n\n`
+  );
 
   return { agentReports, totalOrchestrationTimeMs: totalDuration, totalTokensUsed };
 }

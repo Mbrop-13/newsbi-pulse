@@ -76,7 +76,7 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     aiFileAttachments: false,
     aiAdvancedAnalysis: false,
     aiWebSearch: false,
-    maxAgents: 6,
+    maxAgents: 10,
     
     ttsAudiosPerMonth: 0, // No usa mensual, usa diario
     ttsDailyLimit: 5,

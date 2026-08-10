@@ -5,6 +5,7 @@ import { X, Crown, Zap, Sparkles, ArrowRight, Check, TrendingUp, Users, Gift } f
 import { Button } from "@/components/ui/button";
 import { useSubscriptionStore } from "@/lib/stores/subscription-store";
 import { PLAN_CONFIGS, getNextTier, formatCLP, type PlanTier } from "@/lib/plan-limits";
+import { useConversionStore } from "@/lib/stores/conversion-store";
 import Link from "next/link";
 
 interface UpgradeModalProps {
@@ -186,20 +187,26 @@ export function UpgradeModal({ isOpen, onClose, feature, customTitle, customMess
                 </div>
               </div>
               
-              <Link href="/suscripcion" onClick={onClose}>
-                <Button className="w-full h-12 bg-gradient-to-r from-accent to-purple-600 hover:from-accent/90 hover:to-purple-700 text-white font-bold rounded-xl text-sm shadow-lg shadow-accent/20 group">
-                  Mejorar mi plan
-                  <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-0.5 transition-transform" />
-                </Button>
-              </Link>
+              <Button
+                onClick={() => {
+                  onClose();
+                  useConversionStore.getState().openModal("general");
+                }}
+                className="w-full h-12 bg-gradient-to-r from-accent to-purple-600 hover:from-accent/90 hover:to-purple-700 text-white font-bold rounded-xl text-sm shadow-lg shadow-accent/20 group cursor-pointer"
+              >
+                Mejorar mi plan
+                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-0.5 transition-transform" />
+              </Button>
 
-              <Link
-                href="/suscripcion"
-                onClick={onClose}
-                className="w-full mt-2 text-center text-xs text-[#1890FF] hover:underline font-medium"
+              <button
+                onClick={() => {
+                  onClose();
+                  useConversionStore.getState().openModal("general");
+                }}
+                className="w-full mt-2 text-center text-xs text-[#1890FF] hover:underline font-medium cursor-pointer"
               >
                 ¿Eres empresa? Ver planes para equipos →
-              </Link>
+              </button>
 
               <button
                 onClick={onClose}

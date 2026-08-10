@@ -1144,7 +1144,19 @@ function MessageBubble({
           <div className="flex items-center justify-between text-[9px] border-t border-zinc-200/40 dark:border-zinc-800/60 pt-2 mt-0.5 font-bold uppercase tracking-wider">
             <span className="flex items-center gap-1.5 text-muted-foreground/70 dark:text-zinc-400">
               <FileCode2 className="w-3 h-3" />
-              {plan.agents.length} {plan.agents.length === 1 ? "archivo" : "archivos"} planificados
+              {plan.agents.length} {plan.agents.length === 1 ? "archivo" : "archivos"}
+              {(() => {
+                const phases = plan.agents.map((a: any) => a.phase).filter(Boolean);
+                if (phases.length === 0) return null;
+                const s = phases.filter((p: string) => p === "shell").length;
+                const f = phases.filter((p: string) => p === "feature").length;
+                const i = phases.filter((p: string) => p === "integrate").length;
+                return (
+                  <span className="font-semibold normal-case tracking-normal text-muted-foreground/60">
+                    · shell {s} · feat {f} · int {i}
+                  </span>
+                );
+              })()}
             </span>
             <span className="flex items-center gap-1 text-foreground dark:text-white tracking-wide font-extrabold group-hover:gap-1.5 transition-all">
               {isPlanExpanded ? "Ocultar" : "Ver detalles"}
@@ -1181,6 +1193,21 @@ function MessageBubble({
                               <FileCode2 className="w-3 h-3 text-muted-foreground dark:text-zinc-400 shrink-0" />
                               {agent.filePath}
                             </span>
+                            {agent.phase && (
+                              <span
+                                className={cn(
+                                  "text-[8px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded-full border",
+                                  agent.phase === "shell" &&
+                                    "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20",
+                                  agent.phase === "feature" &&
+                                    "bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20",
+                                  agent.phase === "integrate" &&
+                                    "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                                )}
+                              >
+                                {agent.phase}
+                              </span>
+                            )}
                           </div>
                           <p className="text-[9.5px] font-semibold text-muted-foreground dark:text-zinc-300 mt-1 leading-snug">
                             {agent.agentName} · {agent.role}
@@ -1265,12 +1292,17 @@ function MessageBubble({
                     <div className="space-y-3.5">
                       {plan.agents.map((agent: any, idx: number) => (
                         <div key={idx} className="p-4 bg-gray-50/50 dark:bg-white/[0.02] border border-gray-200/60 dark:border-white/5 rounded-xl shadow-sm space-y-3 hover:bg-gray-100/[0.15] dark:hover:bg-white/[0.03] transition-colors duration-200">
-                          <div className="flex items-center justify-between border-b border-gray-200/40 dark:border-white/5 pb-2">
+                          <div className="flex items-center justify-between border-b border-gray-200/40 dark:border-white/5 pb-2 gap-2">
                             <div className="flex items-center gap-2 min-w-0">
                               <FileCode2 className="w-4 h-4 text-[#1890FF] shrink-0" />
                               <span className="text-xs font-mono font-bold text-gray-900 dark:text-white truncate">
                                 {agent.filePath}
                               </span>
+                              {agent.phase && (
+                                <span className="text-[8px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-muted-foreground border border-zinc-200/60 dark:border-zinc-700 shrink-0">
+                                  {agent.phase}
+                                </span>
+                              )}
                             </div>
                             <span className="text-[9px] font-extrabold text-teal-650 dark:text-teal-400 uppercase tracking-wider bg-teal-500/10 dark:bg-teal-500/5 border border-teal-500/10 px-2 py-0.5 rounded-full shrink-0">
                               {agent.agentName}

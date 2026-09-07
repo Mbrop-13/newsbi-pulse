@@ -25,7 +25,7 @@ const sections = [
     icon: Users,
     title: "1. Aceptación de los Términos",
     content: [
-      "Al acceder y utilizar la plataforma **Maverlang** (disponible en maverlang.cl y sus aplicaciones móviles), aceptas quedar vinculado por estos Términos y Condiciones de Servicio.",
+      "Al acceder y utilizar la plataforma **Maverlang** (disponible en maverlang.com y sus aplicaciones móviles), aceptas quedar vinculado por estos Términos y Condiciones de Servicio.",
       "Si no estás de acuerdo con alguna parte de estos términos, no debes utilizar la plataforma.",
       "Nos reservamos el derecho de modificar estos términos en cualquier momento. Las modificaciones entrarán en vigor inmediatamente después de su publicación. El uso continuado de la plataforma constituye la aceptación de los términos modificados.",
     ],
@@ -98,7 +98,7 @@ const sections = [
     content: [
       "Estos términos se rigen por las leyes de la República de Chile. Cualquier disputa será sometida a la jurisdicción de los tribunales ordinarios de justicia de Santiago de Chile.",
       "Si alguna disposición de estos términos resulta inválida o inaplicable, las demás disposiciones permanecerán en pleno vigor y efecto.",
-      "Para consultas relacionadas con estos términos, puedes contactarnos en: **soporte@maverlang.cl**",
+      "Para consultas relacionadas con estos términos, puedes contactarnos en: **soporte@maverlang.com**",
       "La versión vigente de estos Términos y Condiciones siempre estará disponible en esta página.",
     ],
   },
@@ -164,7 +164,7 @@ export default function TerminosPage() {
     const body = encodeURIComponent(
       `Hola equipo de Maverlang,\n\nTengo la siguiente consulta sobre los Términos y Condiciones de Servicio:\n\n[Escribe tu consulta aquí]\n\nSaludos cordiales,\n${user?.name || '[Tu Nombre]'}`
     );
-    return `mailto:soporte@maverlang.cl?subject=${subject}&body=${body}`;
+    return `mailto:soporte@maverlang.com?subject=${subject}&body=${body}`;
   };
 
   const scrollToSection = (id: string) => {

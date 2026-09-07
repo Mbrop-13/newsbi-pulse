@@ -13,8 +13,8 @@ const BRAND = {
   red: "#f7525f",
   gray: "#6B7280",
   lightBg: "#f8fafc",
-  logo: "https://maverlang.cl/icon-192x192.png",
-  url: "https://maverlang.cl",
+  logo: "https://maverlang.com/icon-192x192.png",
+  url: "https://maverlang.com",
 };
 
 function baseLayout(content: string, preheader: string = ""): string {
@@ -48,7 +48,7 @@ function baseLayout(content: string, preheader: string = ""): string {
             <td style="padding:20px 32px;background-color:#f8fafc;border-top:1px solid #f1f5f9;">
               <p style="margin:0;font-size:12px;color:${BRAND.gray};line-height:1.5;">
                 © ${new Date().getFullYear()} Maverlang — Inteligencia Artificial Financiera.<br>
-                <a href="${BRAND.url}/empresas" style="color:${BRAND.primary};text-decoration:none;">maverlang.cl/empresas</a>
+                <a href="${BRAND.url}/empresas" style="color:${BRAND.primary};text-decoration:none;">maverlang.com/empresas</a>
               </p>
             </td>
           </tr>

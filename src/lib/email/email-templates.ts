@@ -10,8 +10,8 @@ const BRAND = {
   red: "#f7525f",
   gray: "#6B7280",
   lightBg: "#f8fafc",
-  logo: "https://maverlang.cl/icon-192x192.png",
-  url: "https://maverlang.cl",
+  logo: "https://maverlang.com/icon-192x192.png",
+  url: "https://maverlang.com",
 };
 
 function baseLayout(content: string, preheader: string = ""): string {
@@ -58,7 +58,7 @@ function baseLayout(content: string, preheader: string = ""): string {
                 © ${new Date().getFullYear()} Maverlang — Inteligencia de Noticias
               </p>
               <p style="margin:0;font-size:10px;color:#9CA3AF;">
-                <a href="${BRAND.url}" style="color:${BRAND.primary};text-decoration:none;">maverlang.cl</a> · 
+                <a href="${BRAND.url}" style="color:${BRAND.primary};text-decoration:none;">maverlang.com</a> · 
                 <a href="${BRAND.url}/configuracion" style="color:${BRAND.gray};text-decoration:none;">Gestionar notificaciones</a>
               </p>
             </td>

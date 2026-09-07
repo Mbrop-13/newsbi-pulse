@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No autenticado. Inicia sesión primero." }, { status: 401 });
     }
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://maverlang.cl";
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://maverlang.com";
 
     const finalPrice = planConfig.price;
     const planReason = `Suscripción Maverlang ${planConfig.name.toUpperCase()}`;

@@ -9,7 +9,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const SALES_EMAIL = process.env.SALES_EMAIL || "ventas@maverlang.cl";
+const SALES_EMAIL = process.env.SALES_EMAIL || "ventas@maverlang.com";
 
 const leadSchema = z.object({
   name: z.string().min(2).max(120),

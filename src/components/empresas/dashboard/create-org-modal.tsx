@@ -208,7 +208,7 @@ export function CreateOrgModal({
 
           {config.cta === "contact" && (
             <p className="text-sm text-neutral-500 dark:text-zinc-400 bg-neutral-50 dark:bg-zinc-800/40 border border-neutral-200/50 dark:border-zinc-700/50 rounded-2xl p-4">
-              Para Enterprise contáctanos en <a href="mailto:ventas@maverlang.cl" className="text-neutral-900 dark:text-white font-bold underline underline-offset-2">ventas@maverlang.cl</a>.
+              Para Enterprise contáctanos en <a href="mailto:ventas@maverlang.com" className="text-neutral-900 dark:text-white font-bold underline underline-offset-2">ventas@maverlang.com</a>.
             </p>
           )}
 

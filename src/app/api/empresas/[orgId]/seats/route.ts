@@ -75,7 +75,7 @@ export async function POST(
 
     // Generar checkout con el nuevo monto
     const ACCESS_TOKEN = process.env.MERCADOPAGO_ACCESS_TOKEN!;
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://maverlang.cl";
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://maverlang.com";
     const amount = calculateSeatTotal(plan, seats);
 
     const checkoutBody = {

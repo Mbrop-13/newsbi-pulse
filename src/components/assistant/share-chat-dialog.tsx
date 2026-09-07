@@ -110,12 +110,12 @@ export function ShareChatDialog({
             `${m.role === "user" ? "Tú" : "Maverlang AI"}:\n${m.content}`
         )
         .join("\n\n———\n\n");
-      return `${body}\n\n— Generado por Maverlang · maverlang.cl`;
+      return `${body}\n\n— Generado por Maverlang · maverlang.com`;
     }
     return (
       `Pregunta:\n${question}\n\n` +
       `Maverlang AI:\n${answer}\n\n` +
-      `— Generado por Maverlang · maverlang.cl`
+      `— Generado por Maverlang · maverlang.com`
     );
   };
 

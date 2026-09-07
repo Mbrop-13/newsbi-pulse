@@ -407,7 +407,7 @@ export function SubscriptionContent({
             onSelectEnterprise={(plan, seats) => {
               if (plan === "enterprise") {
                 // Enterprise = contacto de ventas (email)
-                window.location.href = "mailto:ventas@maverlang.cl?subject=Plan%20Enterprise";
+                window.location.href = "mailto:ventas@maverlang.com?subject=Plan%20Enterprise";
               } else {
                 setOrgPlan(plan);
                 setOrgSeats(seats);

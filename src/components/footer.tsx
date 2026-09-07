@@ -28,7 +28,7 @@ export function Footer() {
               <a href="https://linkedin.com" className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors" aria-label="LinkedIn">
                 <Linkedin className="w-4 h-4" />
               </a>
-              <a href="mailto:info@maverlang.cl" className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors" aria-label="Email">
+              <a href="mailto:info@maverlang.com" className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors" aria-label="Email">
                 <Mail className="w-4 h-4" />
               </a>
             </div>
@@ -74,12 +74,12 @@ export function Footer() {
               <li><Link href="/suscripcion" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Planes para Empresas</Link></li>
               <li>
                 <a
-                  href="https://maverlang.cl"
+                  href="https://maverlang.com"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
                 >
-                  maverlang.cl
+                  maverlang.com
                   <ExternalLink className="w-3 h-3" />
                 </a>
               </li>
@@ -110,7 +110,7 @@ export function Footer() {
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-muted-foreground">
             © {new Date().getFullYear()} Maverlang by{" "}
-            <a href="https://maverlang.cl" className="text-accent hover:underline" target="_blank" rel="noopener noreferrer">
+            <a href="https://maverlang.com" className="text-accent hover:underline" target="_blank" rel="noopener noreferrer">
               Maverlang
             </a>
             . Todos los derechos reservados.

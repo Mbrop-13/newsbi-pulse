@@ -170,7 +170,7 @@ La postura actual es **aceptable para un producto en crecimiento, pero aún no c
 
 - **Código:** `next.config.ts` headers.
 - **Impacto:** Mitigación XSS débil; un XSS gana ejecución de scripts.
-- **Remediación:** Nonces por request; aislar preview WebBuilder en subdominio sandbox (`preview.maverlang.cl`) sin cookies de sesión; quitar `unsafe-eval` del origen principal.
+- **Remediación:** Nonces por request; aislar preview WebBuilder en subdominio sandbox (`preview.maverlang.com`) sin cookies de sesión; quitar `unsafe-eval` del origen principal.
 
 ---
 

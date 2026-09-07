@@ -115,7 +115,7 @@ export async function POST(
     }
 
     // Enviar email
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://maverlang.cl";
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://maverlang.com";
     const acceptUrl = `${siteUrl}/invitar/${token}`;
     const inviterName = authz.data.org.name; // fallback al nombre de la org
 

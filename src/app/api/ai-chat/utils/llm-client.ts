@@ -129,7 +129,7 @@ export function createLlmWithWebSearch(userId: string, streamData?: StreamData, 
             const openRouterUrl = urlString.replace(currentBaseUrl.replace(/\/+$/, ''), 'https://openrouter.ai/api/v1');
             const openRouterHeaders = new Headers(options?.headers);
             openRouterHeaders.set('Authorization', `Bearer ${process.env.OPENROUTER_API_KEY}`);
-            openRouterHeaders.set('HTTP-Referer', 'https://maverlang.cl');
+            openRouterHeaders.set('HTTP-Referer', 'https://maverlang.com');
             openRouterHeaders.set('X-Title', 'Maverlang');
             
             let newBody = options?.body;

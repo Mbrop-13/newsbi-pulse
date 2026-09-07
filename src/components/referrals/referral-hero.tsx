@@ -16,7 +16,7 @@ export function ReferralHero({ code }: { code: string }) {
   const fullUrl =
     typeof window !== "undefined"
       ? `${window.location.origin}/?ref=${code}`
-      : `https://maverlang.cl/?ref=${code}`;
+      : `https://maverlang.com/?ref=${code}`;
 
   const shareText =
     "¡Únete a Maverlang! La IA que analiza mercados y noticias, y construye apps por ti. Usa mi enlace y obtenéis días gratis:";

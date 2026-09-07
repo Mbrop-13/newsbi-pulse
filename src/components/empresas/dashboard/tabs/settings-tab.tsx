@@ -146,7 +146,7 @@ export function SettingsTab({ orgId, membership, onUpdated, canAdmin }: Settings
             Esta acción es irreversible.
           </p>
           <a
-            href="mailto:ventas@maverlang.cl?subject=Cancelar%20organización"
+            href="mailto:ventas@maverlang.com?subject=Cancelar%20organización"
             className="inline-flex items-center gap-1.5 text-xs font-bold text-[#f7525f] px-4 py-2 rounded-full border border-red-200 dark:border-red-500/30 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
           >
             Solicitar cancelación <span aria-hidden>→</span>

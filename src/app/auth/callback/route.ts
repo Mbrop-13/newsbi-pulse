@@ -46,10 +46,10 @@ export async function GET(request: Request) {
       const isSafeHost = forwardedHost && (
         forwardedHost === 'localhost:3000' || 
         forwardedHost === 'newsbi-pulse.vercel.app' || 
-        forwardedHost === 'maverlang.cl' || 
-        forwardedHost === 'maverlang.com' ||
-        forwardedHost.endsWith('.maverlang.cl') || 
-        forwardedHost.endsWith('.maverlang.com')
+        forwardedHost === 'maverlang.com' || 
+        forwardedHost === 'maverlang.cl' ||
+        forwardedHost.endsWith('.maverlang.com') || 
+        forwardedHost.endsWith('.maverlang.cl')
       )
       
       const redirectUrl = isLocalEnv

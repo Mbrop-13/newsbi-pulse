@@ -244,7 +244,7 @@ export function ReferralsDialog() {
                       navigator.clipboard.writeText(
                         typeof window !== "undefined"
                           ? `${window.location.origin}/?ref=${stats.code}`
-                          : `https://maverlang.cl/?ref=${stats.code}`
+                          : `https://maverlang.com/?ref=${stats.code}`
                       );
                       alert("¡Enlace copiado!");
                     }}

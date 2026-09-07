@@ -47,7 +47,7 @@ export async function callOpenRouter(options: OpenRouterOptions): Promise<{
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
-        'HTTP-Referer': 'https://maverlang.cl',
+        'HTTP-Referer': 'https://maverlang.com',
         'X-Title': 'Maverlang',
         'Content-Type': 'application/json'
       },
@@ -73,7 +73,7 @@ export async function callOpenRouter(options: OpenRouterOptions): Promise<{
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${apiKey}`,
-            'HTTP-Referer': 'https://maverlang.cl',
+            'HTTP-Referer': 'https://maverlang.com',
             'X-Title': 'Maverlang',
             'Content-Type': 'application/json'
           },

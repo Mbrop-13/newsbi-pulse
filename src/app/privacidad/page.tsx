@@ -113,7 +113,7 @@ const sections = [
     icon: Mail,
     title: "8. Contacto y Cambios",
     content: [
-      "Si tienes preguntas sobre esta Política de Privacidad, puedes contactarnos en: **soporte@maverlang.cl**",
+      "Si tienes preguntas sobre esta Política de Privacidad, puedes contactarnos en: **soporte@maverlang.com**",
       "Nos reservamos el derecho de actualizar esta política periódicamente. Te notificaremos sobre cambios significativos a través de la plataforma o por correo electrónico.",
       "La fecha de la última actualización se indica al inicio de este documento.",
       "Al continuar utilizando Maverlang después de cualquier modificación, aceptas la política actualizada.",
@@ -183,7 +183,7 @@ export default function PrivacidadPage() {
     const body = encodeURIComponent(
       `Hola equipo de Maverlang,\n\nSolicito formalmente la eliminación completa de mi cuenta de usuario y todos los datos personales asociados en su base de datos.\n\nDatos de la cuenta:\n- Nombre: ${user?.name || '[Tu Nombre]'}\n- Correo: ${user?.email || '[Tu Correo]'}\n\nEntiendo que esta acción es permanente y no podrá deshacerse.\n\nSaludos cordiales.`
     );
-    return `mailto:soporte@maverlang.cl?subject=${subject}&body=${body}`;
+    return `mailto:soporte@maverlang.com?subject=${subject}&body=${body}`;
   };
 
   const scrollToSection = (id: string) => {

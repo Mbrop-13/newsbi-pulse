@@ -44,7 +44,7 @@ export default function MarketingAdminPage() {
   const [newsletterEnabled, setNewsletterEnabled] = useState(true);
   const [pushEnabled, setPushEnabled] = useState(false);
   const [senderName, setSenderName] = useState("Maverlang Inteligencia");
-  const [senderEmail, setSenderEmail] = useState("no-reply@maverlang.cl");
+  const [senderEmail, setSenderEmail] = useState("no-reply@maverlang.com");
 
   useEffect(() => {
     fetchEnrichedNews();
@@ -76,7 +76,7 @@ export default function MarketingAdminPage() {
   };
 
   const handleCopyNewsletter = (article: Article) => {
-    const text = `📰 *${article.title}*\n\n${article.enriched_content || "Sin contenido enriquecido"}\n\n👉 Lee más en maverlang.cl`;
+    const text = `📰 *${article.title}*\n\n${article.enriched_content || "Sin contenido enriquecido"}\n\n👉 Lee más en maverlang.com`;
     navigator.clipboard.writeText(text);
     setCopiedId(article.id);
     setTimeout(() => setCopiedId(null), 2000);

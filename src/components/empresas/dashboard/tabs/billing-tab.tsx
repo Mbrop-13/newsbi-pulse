@@ -219,7 +219,7 @@ export function BillingTab({ orgId, membership, subscription, seatCount, onSeats
       <div className="text-xs text-neutral-500 dark:text-zinc-400 bg-neutral-50 dark:bg-zinc-800/40 border border-neutral-200/50 dark:border-zinc-700/50 rounded-2xl p-4 leading-relaxed">
         <p>
           Para facturación con RUT, orden de compra o facturación anual en Enterprise,
-          escríbenos a <a href="mailto:ventas@maverlang.cl" className="text-neutral-900 dark:text-white font-bold underline underline-offset-2">ventas@maverlang.cl</a>.
+          escríbenos a <a href="mailto:ventas@maverlang.com" className="text-neutral-900 dark:text-white font-bold underline underline-offset-2">ventas@maverlang.com</a>.
         </p>
       </div>
     </div>

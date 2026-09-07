@@ -15,7 +15,7 @@ const caveat = Caveat({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://maverlang.cl"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://maverlang.com"),
   title: "Maverlang | Copiloto e Inteligencia Artificial",
   description: "Plataforma avanzada de Inteligencia Artificial para análisis de noticias, portafolio y toma de decisiones en tiempo real.",
   keywords: [
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     "agente autonomo",
     "tech news",
   ],
-  authors: [{ name: "Maverlang", url: "https://maverlang.cl" }],
+  authors: [{ name: "Maverlang", url: "https://maverlang.com" }],
   icons: {
     icon: "https://mail.programbi.com/uploads/magnific__background__76233.png",
     apple: "https://mail.programbi.com/uploads/magnific__background__76233.png",
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Maverlang | Inteligencia Artificial y Toma de Decisiones",
     description: "Plataforma avanzada de Inteligencia Artificial para análisis de noticias, portafolio y toma de decisiones en tiempo real.",
-    url: "https://maverlang.cl",
+    url: "https://maverlang.com",
     siteName: "Maverlang",
     type: "website",
     locale: "es_CL",

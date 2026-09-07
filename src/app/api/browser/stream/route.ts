@@ -1,6 +1,8 @@
 import { NextRequest } from "next/server";
 import { hasSession } from "@/lib/services/browser-manager";
 import { Redis } from "@upstash/redis";
+import { createClient } from "@/lib/supabase/server";
+import { assertBrowserOwner } from "@/lib/browser-session-auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,13 +18,29 @@ const redis = redisUrl && redisToken ? new Redis({ url: redisUrl, token: redisTo
  * step updates from Upstash Redis to support stateless serverless environments.
  */
 export async function GET(req: NextRequest) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return new Response(JSON.stringify({ error: "No autorizado" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   const sessionId = req.nextUrl.searchParams.get("sessionId");
 
-  if (!sessionId || !(await hasSession(sessionId))) {
+  if (!sessionId || sessionId.length > 128 || !(await hasSession(sessionId))) {
     return new Response(
       JSON.stringify({ error: "Session not found" }),
       { status: 404, headers: { "Content-Type": "application/json" } }
     );
+  }
+
+  if (!(await assertBrowserOwner(sessionId, user.id))) {
+    return new Response(JSON.stringify({ error: "Forbidden" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   const encoder = new TextEncoder();

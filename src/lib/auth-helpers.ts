@@ -62,11 +62,32 @@ export async function requireAdmin(): Promise<
   return auth;
 }
 
-/** Extract the client IP from common proxy headers. */
+/**
+ * Server Components / layouts: resolve an admin session or return null.
+ * Never throws; callers should redirect away from /admin.
+ */
+export async function getAdminSession(): Promise<AuthResult | null> {
+  const auth = await requireAdmin();
+  if (!auth.ok) return null;
+  return auth.data;
+}
+
+/**
+ * Client IP as set by the platform — never the first X-Forwarded-For hop
+ * (that value is attacker-spoofable if a proxy appends rather than overwrites).
+ * On Vercel, x-vercel-forwarded-for / x-real-ip are platform-controlled.
+ */
 export function getClientIp(req: Request): string {
-  return (
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    req.headers.get("x-real-ip")?.trim() ||
-    "unknown"
-  );
+  const vercel =
+    req.headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("x-real-ip")?.trim();
+  if (vercel) return vercel;
+  const xff = req.headers.get("x-forwarded-for");
+  if (xff) {
+    const parts = xff.split(",").map((s) => s.trim()).filter(Boolean);
+    // Prefer the right-most hop (closest trusted proxy) if the platform
+    // didn't set a dedicated header.
+    return parts[parts.length - 1] || "unknown";
+  }
+  return "unknown";
 }

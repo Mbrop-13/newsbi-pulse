@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
     if (!res.ok) {
       console.error("[Checkout] MP Preapproval error:", res.status, JSON.stringify(data));
       return NextResponse.json(
-        { error: "Error al crear suscripción", details: data },
+        { error: "Error al crear suscripción" },
         { status: 500 }
       );
     }

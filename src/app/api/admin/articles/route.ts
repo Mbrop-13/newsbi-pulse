@@ -6,12 +6,12 @@ import { buildIlike } from "@/lib/db-escape";
 // Helper: verify admin
 async function verifyAdmin(): Promise<{ user: any; sc: any } | string> {
   const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (!user) return `Not authenticated: ${authError?.message || "no session"}`;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return "Not authenticated";
 
   const sc = createServiceClient();
-  const { data: adminRow, error: adminError } = await sc.from("admin_users").select("role").eq("user_id", user.id).single();
-  if (!adminRow || adminRow.role !== "admin") return `Not admin: user=${user.email}, adminRow=${JSON.stringify(adminRow)}, err=${adminError?.message}`;
+  const { data: adminRow } = await sc.from("admin_users").select("role").eq("user_id", user.id).single();
+  if (!adminRow || adminRow.role !== "admin") return "Forbidden";
 
   return { user, sc };
 }

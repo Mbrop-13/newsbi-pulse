@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { checkLimit, incrementUsage } from "@/lib/check-limits";
+import { rateLimit, rateLimitResponse, TTS_LIMIT } from "@/lib/rate-limit";
 
 // ── Audio Generation API Route ───────────────────
 // Generates MP3 audio using Hugging Face XTTS-v2
@@ -11,6 +13,20 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
+
+    const rl = await rateLimit(`news-audio:${user.id}`, {
+      ...TTS_LIMIT,
+      failClosedInProd: true,
+    });
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
+
+    const limitCheck = await checkLimit(user.id, "tts_audio");
+    if (!limitCheck.allowed) {
+      return NextResponse.json(
+        { error: "Has alcanzado el límite de audios de tu plan actual.", code: "LIMIT_REACHED" },
+        { status: 403 }
+      );
     }
 
     const apiKey = process.env.HF_API_KEY;
@@ -72,6 +88,7 @@ export async function POST(request: NextRequest) {
       }
 
       const audioBuffer = await fallbackResponse.arrayBuffer();
+      await incrementUsage(user.id, "tts_audio").catch(console.error);
       return new NextResponse(audioBuffer, {
         headers: {
           "Content-Type": "audio/flac",
@@ -81,6 +98,7 @@ export async function POST(request: NextRequest) {
     }
 
     const audioBuffer = await response.arrayBuffer();
+    await incrementUsage(user.id, "tts_audio").catch(console.error);
     return new NextResponse(audioBuffer, {
       headers: {
         "Content-Type": "audio/wav",

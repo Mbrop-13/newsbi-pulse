@@ -5,6 +5,7 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { streamText, tool } from 'ai';
 import { z } from 'zod';
 import { rateLimit, rateLimitResponse, AI_CHAT_LIMIT } from '@/lib/rate-limit';
+import { sanitizeClientMessages } from '@/lib/llm-messages';
 
 export const maxDuration = 60;
 
@@ -59,7 +60,14 @@ export async function POST(req: Request) {
         details: parseResult.error.format() 
       }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
-    const { messages, profile } = parseResult.data;
+    const messages = sanitizeClientMessages(parseResult.data.messages);
+    const { profile } = parseResult.data;
+    if (messages.length === 0) {
+      return new Response(JSON.stringify({ error: "Messages are required" }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
 
     const supabase = getSupabase();
 

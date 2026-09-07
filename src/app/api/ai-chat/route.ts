@@ -15,6 +15,11 @@ import { getWebBuilderSystemPrompt } from "./prompts/webbuilder-prompt";
 import { createLlmWithWebSearch } from "./utils/llm-client";
 import { getFinanceTools } from "./handlers/finance-tools";
 import { getBrowserTools } from "./handlers/browser-tools";
+import { sanitizeClientMessages } from "@/lib/llm-messages";
+import { assertSafePython } from "@/lib/python-guard";
+import { hashIp } from "@/lib/ip-hash";
+import { getClientIp } from "@/lib/auth-helpers";
+import { captchaRequired, verifyHCaptcha } from "@/lib/captcha";
 
 export const maxDuration = 300;
 
@@ -41,9 +46,9 @@ function sanitizeUserPlanInput(raw: string | undefined | null, maxLen = 2000): s
 }
 
 const aiChatSchema = z.object({
-  messages: z.array(z.any()),
-  articles: z.array(z.any()).optional().default([]),
-  files: z.array(z.any()).optional().default([]),
+  messages: z.array(z.any()).max(40),
+  articles: z.array(z.any()).max(20).optional().default([]),
+  files: z.array(z.any()).max(8).optional().default([]),
   modelId: z.string().optional(),
   activeTools: z.array(z.string()).optional(),
   contextOverride: z.string().optional(),
@@ -77,6 +82,7 @@ const aiChatSchema = z.object({
   // Mensaje original del usuario que originó el plan (para replan / ejecución).
   originalUserMessage: z.string().max(8000).optional(),
   codeInterpreter: z.boolean().optional(),
+  captchaToken: z.string().max(4000).optional(),
 }).strict();
 
 export async function POST(req: NextRequest) {
@@ -92,12 +98,25 @@ export async function POST(req: NextRequest) {
       }), { status: 400 });
     }
 
-    const { messages, articles, files, modelId, activeTools, contextOverride, webSearch, browser, webBuilder, webBuilderFiles, projectType, buildMode, approvedPlan, replanFeedback, cancelPlan, originalUserMessage, codeInterpreter } = parseResult.data;
+    const { articles, files, modelId, activeTools, contextOverride, webSearch, browser, webBuilder, webBuilderFiles, projectType, buildMode, approvedPlan, replanFeedback, cancelPlan, originalUserMessage, codeInterpreter, captchaToken } = parseResult.data;
+    const messages = sanitizeClientMessages(parseResult.data.messages);
 
     // Normalizar archivos del store ({ path: { code } }) → Record<path, string>.
     // Crítico para "pedir cambios": planner/agentes deben ver el código real,
     // no `[object Object]`.
-    const filesCodeMap = toCodeMap(webBuilderFiles as Record<string, unknown> | undefined);
+    let filesCodeMap = toCodeMap(webBuilderFiles as Record<string, unknown> | undefined);
+    if (filesCodeMap) {
+      const capped: Record<string, string> = {};
+      let total = 0;
+      const entries = Object.entries(filesCodeMap).slice(0, 40);
+      for (const [path, code] of entries) {
+        const slice = String(code || "").slice(0, 80_000);
+        total += slice.length;
+        if (total > 400_000) break;
+        capped[path.slice(0, 300)] = slice;
+      }
+      filesCodeMap = capped;
+    }
 
     // #6 SANITIZACIÓN: el feedback/mensaje original del usuario se inyecta en
     // el prompt del planner. Saneamos para neutralizar intentos de prompt
@@ -112,9 +131,28 @@ export async function POST(req: NextRequest) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     
-    // IP-based fallback identifier for guest users
-    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-    const userId = user?.id || `guest-${ip}`;
+    // Guest identity: platform IP hashed (never raw XFF, never spoofable first hop)
+    const ip = getClientIp(req);
+    const userId = user?.id || `guest-${hashIp(ip)}`;
+
+    // Expensive tools require a real session — guests cannot drive LLM cost via
+    // browser / WebBuilder / Python / web search by rotating IPs.
+    if (!user && (browser || webBuilder || codeInterpreter || webSearch)) {
+      return new Response(JSON.stringify({
+        error: "Inicia sesión para usar el navegador, el constructor, la búsqueda web o el intérprete de código.",
+        code: "AUTH_REQUIRED",
+      }), { status: 401 });
+    }
+
+    if (!user && captchaRequired()) {
+      const ok = await verifyHCaptcha(captchaToken, ip);
+      if (!ok) {
+        return new Response(JSON.stringify({
+          error: "Verificación anti-bot fallida. Recarga la página e inténtalo de nuevo.",
+          code: "CAPTCHA_REQUIRED",
+        }), { status: 403 });
+      }
+    }
 
     // Fetch custom assistant configuration if it exists and user is logged in
     let assistantConfig = null;
@@ -188,12 +226,14 @@ export async function POST(req: NextRequest) {
     // Inject attached files into the conversation context if present
     if (files && Array.isArray(files) && files.length > 0) {
       contextPrefix += `[ARCHIVOS ADJUNTOS DEL USUARIO]\n`;
-      for (const file of files) {
-        const isImage = file.type === "image" || (file.content && file.content.startsWith("data:image/"));
+      for (const file of files.slice(0, 8)) {
+        const isImage = file.type === "image" || (file.content && String(file.content).startsWith("data:image/"));
+        const name = String(file.name || "archivo").slice(0, 200);
         if (isImage) {
-          contextPrefix += `--- Archivo de Imagen: ${file.name} (Imagen subida por el usuario) ---\n\n`;
+          contextPrefix += `--- Archivo de Imagen: ${name} (Imagen subida por el usuario) ---\n\n`;
         } else {
-          contextPrefix += `--- Archivo: ${file.name} ---\nContenido:\n${file.content}\n---------------------\n\n`;
+          const content = String(file.content || "").slice(0, 40_000);
+          contextPrefix += `--- Archivo: ${name} ---\nContenido:\n${content}\n---------------------\n\n`;
         }
       }
       contextPrefix += `[Fin de Archivos Adjuntos. Utiliza esta información si el usuario te hace consultas sobre estos archivos.]\n\n`;
@@ -769,7 +809,7 @@ REGLAS OBLIGATORIAS PARA EL MODO NAVEGADOR:
           abortSignal,
           tools: webBuilder ? {} : {
             ...getFinanceTools({ user, userId }),
-            ...(browser ? getBrowserTools({ streamData: fakeStreamData }) : {}),
+            ...(browser ? getBrowserTools({ streamData: fakeStreamData, userId }) : {}),
             /**
              * Ofrece al usuario una tarjeta interactiva para elegir cómo
              * desarrollar (Build / chat / Canvas). El cliente renderiza
@@ -843,11 +883,15 @@ REGLAS OBLIGATORIAS PARA EL MODO NAVEGADOR:
                 if (isAborted()) {
                   return { success: false, error: "Cancelado por el usuario", stdout: "", stderr: "aborted", durationMs: 0 };
                 }
+                const guard = assertSafePython(script, packages || []);
+                if (!guard.ok) {
+                  return { success: false, error: guard.error, stdout: "", stderr: guard.error, durationMs: 0 };
+                }
                 try {
-                  const result = await runPythonCode(script, {}, packages || []);
+                  const result = await runPythonCode(script, {}, guard.packages);
                   return result;
                 } catch (err: any) {
-                  return { success: false, error: err.message || String(err), stdout: "", stderr: err.message || String(err), durationMs: 0 };
+                  return { success: false, error: "Error de ejecución", stdout: "", stderr: "Execution error", durationMs: 0 };
                 }
               }
             })

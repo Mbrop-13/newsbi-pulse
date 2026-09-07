@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { clickCoordinate } from "@/lib/services/browser-manager";
 import { z } from "zod";
+import { assertBrowserOwner } from "@/lib/browser-session-auth";
 
 const clickSchema = z.object({
   sessionId: z.string(),
@@ -26,6 +27,9 @@ export async function POST(req: NextRequest) {
     }
 
     const { sessionId, x, y } = parsed.data;
+    if (!(await assertBrowserOwner(sessionId, user.id))) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     const result = await clickCoordinate(sessionId, x, y);
     
     if (!result.success) {
@@ -35,6 +39,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, url: result.url });
   } catch (error: any) {
     console.error("[Browser Click API] Error:", error);
-    return NextResponse.json({ success: false, error: error.message || String(error) }, { status: 500 });
+    return NextResponse.json({ success: false, error: "Error interno" }, { status: 500 });
   }
 }

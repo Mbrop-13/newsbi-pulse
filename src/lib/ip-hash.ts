@@ -17,22 +17,20 @@ const envSalt = process.env.IP_HASH_SALT || "";
 if (isProd && !envSalt) {
   console.error(
     "[ip-hash] CRÍTICO: IP_HASH_SALT no configurado en producción. " +
-      "Configúralo en Vercel para no usar un salt predecible."
+      "Configúralo en Vercel. El hash fallará en runtime hasta que exista."
   );
 }
 
-// En prod sin env: salt derivado de service role (mejor que literal fijo, peor que IP_HASH_SALT dedicado)
-const SALT =
-  envSalt ||
-  (isProd
-    ? `prod-fallback:${process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(0, 24) || "missing"}`
-    : "dev-only-insecure-salt-change-in-prod");
+const SALT = envSalt || "dev-only-insecure-salt-change-in-prod";
 
 /**
  * Devuelve un hash hex de 64 chars (sha256) de la IP normalizada + sal.
  * No es reversible: no se puede recuperar la IP original a partir del hash.
  */
 export function hashIp(ip: string | null | undefined): string {
+  if (isProd && !envSalt) {
+    throw new Error("IP_HASH_SALT is required in production");
+  }
   const normalized = (ip || "").trim().toLowerCase();
   if (!normalized) {
     // Hash determinista de cadena vacía: que la columna NOT NULL no pete,

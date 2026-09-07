@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { SupportTicket, SupportMessage } from "@/lib/types";
 import { Send, Loader2, ArrowLeft, RefreshCw, CheckCircle2, User, Headphones } from "lucide-react";
 import { format } from "date-fns";
@@ -18,7 +17,6 @@ interface TicketWithUser extends SupportTicket {
 }
 
 export default function AdminSupportPage() {
-  const supabase = createClient();
   const [tickets, setTickets] = useState<TicketWithUser[]>([]);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [messages, setMessages] = useState<SupportMessage[]>([]);
@@ -29,10 +27,7 @@ export default function AdminSupportPage() {
   const [isSending, setIsSending] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [adminUser, setAdminUser] = useState<any>(null);
-
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setAdminUser(data.user));
     loadTickets();
   }, []);
 
@@ -45,14 +40,10 @@ export default function AdminSupportPage() {
       // Workaround: We'll just fetch tickets. The user name can be pulled from user_profiles if you have it.
       // For now, we'll just show the ticket ID and subject.
       
-      const { data, error } = await supabase
-        .from("support_tickets")
-        .select("*")
-        .order("updated_at", { ascending: false });
-        
-      if (error) throw error;
-      
-      setTickets(data as any);
+      const res = await fetch("/api/admin/support/tickets");
+      if (!res.ok) throw new Error("tickets");
+      const json = await res.json();
+      setTickets(json.tickets || []);
     } catch (error) {
       console.error("Error loading tickets:", error);
     } finally {
@@ -66,14 +57,10 @@ export default function AdminSupportPage() {
     const loadMessages = async () => {
       setIsLoadingMessages(true);
       try {
-        const { data, error } = await supabase
-          .from("support_messages")
-          .select("*")
-          .eq("ticket_id", selectedTicketId)
-          .order("created_at", { ascending: true });
-
-        if (error) throw error;
-        setMessages(data || []);
+        const res = await fetch(`/api/admin/support/tickets/${selectedTicketId}/messages`);
+        if (!res.ok) throw new Error("messages");
+        const json = await res.json();
+        setMessages(json.messages || []);
       } catch (error) {
         console.error("Error loading messages:", error);
       } finally {
@@ -82,29 +69,6 @@ export default function AdminSupportPage() {
     };
 
     loadMessages();
-
-    // Subscribe to new messages for this ticket
-    const channel = supabase
-      .channel(`admin_support_${selectedTicketId}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'support_messages',
-        filter: `ticket_id=eq.${selectedTicketId}`
-      }, (payload) => {
-        const newMsg = payload.new as SupportMessage;
-        setMessages((prev) => {
-          if (!prev.find(m => m.id === newMsg.id)) {
-            return [...prev, newMsg];
-          }
-          return prev;
-        });
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, [selectedTicketId]);
 
   useEffect(() => {
@@ -113,38 +77,25 @@ export default function AdminSupportPage() {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !selectedTicketId || !adminUser || isSending) return;
+    if (!newMessage.trim() || !selectedTicketId || isSending) return;
 
     const msgText = newMessage.trim();
     setNewMessage("");
     setIsSending(true);
 
     try {
-      const { data, error } = await supabase
-        .from("support_messages")
-        .insert([{
-          ticket_id: selectedTicketId,
-          user_id: adminUser.id,
-          is_admin: true,
-          message: msgText
-        }])
-        .select()
-        .single();
+      const res = await fetch(`/api/admin/support/tickets/${selectedTicketId}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: msgText }),
+      });
+      if (!res.ok) throw new Error("send");
+      const json = await res.json();
+      if (json.message) setMessages(prev => [...prev, json.message]);
 
-      if (error) throw error;
-
-      setMessages(prev => [...prev, data]);
-      
-      await supabase
-        .from("support_tickets")
-        .update({ updated_at: new Date().toISOString() })
-        .eq("id", selectedTicketId);
-        
-      // Update local ticket list
-      setTickets(prev => prev.map(t => 
+      setTickets(prev => prev.map(t =>
         t.id === selectedTicketId ? { ...t, updated_at: new Date().toISOString() } : t
       ).sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()));
-
     } catch (error) {
       console.error("Error sending message:", error);
     } finally {
@@ -155,7 +106,12 @@ export default function AdminSupportPage() {
   const handleCloseTicket = async (ticketId: string) => {
     if (!confirm("¿Cerrar este ticket?")) return;
     try {
-      await supabase.from("support_tickets").update({ status: 'closed' }).eq('id', ticketId);
+      const res = await fetch(`/api/admin/support/tickets/${ticketId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "closed" }),
+      });
+      if (!res.ok) throw new Error("close");
       setTickets(prev => prev.map(t => t.id === ticketId ? { ...t, status: 'closed' } : t));
     } catch (error) {
       console.error(error);

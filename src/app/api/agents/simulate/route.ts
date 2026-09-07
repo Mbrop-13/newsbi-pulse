@@ -1,6 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { checkTokenLimit, incrementTokenUsage } from "@/lib/check-limits";
+import { checkTokenLimit, incrementTokenUsage, getUserTier } from "@/lib/check-limits";
+import { rateLimit, rateLimitResponse, AI_CHAT_LIMIT } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/auth-helpers";
+import { z } from "zod";
+
+const simulateSchema = z.object({
+  articleTitle: z.string().min(1).max(500),
+  articleContent: z.string().max(20_000).optional(),
+  rounds: z.number().int().min(1).max(8).optional().default(5),
+  modelId: z.string().max(40).optional(),
+  agentType: z.enum(["financial", "general", "research", "risk", "custom"]).optional().default("financial"),
+  customAgents: z.array(z.object({
+    agentName: z.string().max(80),
+    avatar: z.string().max(16).optional(),
+    role: z.string().max(200),
+    specialty: z.string().max(400).optional(),
+  })).max(8).optional(),
+  agentCount: z.number().int().min(1).max(6).optional().default(4),
+});
 
 export const maxDuration = 300; // 5 minutes (requires Pro plan on Vercel)
 
@@ -314,12 +332,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { articleTitle, articleContent, rounds = 5, modelId, agentType = 'financial', customAgents, agentCount = 4 } = body;
+    const ip = getClientIp(request);
+    const rl = await rateLimit(`agents:${user.id}:${ip}`, {
+      ...AI_CHAT_LIMIT,
+      failClosedInProd: true,
+    });
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
 
-    if (!articleTitle) {
-      return NextResponse.json({ error: "El título o tema es requerido" }, { status: 400 });
+    const parsedBody = simulateSchema.safeParse(await request.json());
+    if (!parsedBody.success) {
+      return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
     }
+    const { articleTitle, articleContent, rounds, modelId, agentType, customAgents, agentCount } = parsedBody.data;
 
     // 2. Check token limit for user
     const tokenLimit = await checkTokenLimit(user.id);
@@ -527,7 +551,9 @@ Devuelve estrictamente un objeto JSON con este formato exacto:
       .map((r: any) => `[${r.agentName} - ${r.role}]: ${r.answer}`)
       .join("\n\n");
 
-    const activeModel = modelId === "pro"
+    const tier = await getUserTier(user.id);
+    const canUsePro = tier !== "free";
+    const activeModel = modelId === "pro" && canUsePro
       ? (process.env.LLM_MODEL_PRO || "xiaomi/mimo-v2.5-pro")
       : (process.env.LLM_MODEL_FAST || "xiaomi/mimo-v2.5");
 
@@ -575,7 +601,7 @@ Devuelve estrictamente un objeto JSON con este formato exacto:
   } catch (error: any) {
     console.error("[Agents API] Error:", error);
     return NextResponse.json(
-      { error: "Failed to run expert roundtable debate", details: error.message },
+      { error: "Failed to run expert roundtable debate" },
       { status: 500 }
     );
   }

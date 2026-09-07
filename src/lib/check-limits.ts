@@ -57,8 +57,11 @@ export async function getUserOrg(userId: string): Promise<UserOrgMembership | nu
       .map((org) => {
         const membership = memberships.find((m) => m.organization_id === org.id)!;
         const sub = subs?.find((s) => s.organization_id === org.id) ?? null;
-        const isOrgActive = org.status === "active" || org.status === "trial";
-        const subActive = sub && (sub.status === "active" || sub.status === "trial");
+        // Only paid-active orgs inherit individual paid tiers.
+        // Unpaid "trial" / pending orgs must not grant Pro/Max/Ultra quotas
+        // (abuse: create org, skip MercadoPago, inherit business limits).
+        const isOrgActive = org.status === "active";
+        const subActive = Boolean(sub && sub.status === "active");
 
         // Verificar vigencia de periodo (con 3 días de gracia)
         let periodOk = true;
@@ -523,7 +526,7 @@ async function checkPortfolioLimit(userId: string, tier: PlanTier): Promise<Limi
   }
   
   const { count } = await supabase
-    .from("portfolio_assets")
+    .from("portfolios")
     .select("*", { count: "exact", head: true })
     .eq("user_id", userId);
   

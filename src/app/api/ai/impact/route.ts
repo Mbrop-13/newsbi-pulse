@@ -1,39 +1,70 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { callOpenRouter } from '@/lib/openrouter';
 import { createClient } from "@/lib/supabase/server";
 import { z } from 'zod';
+import { checkTokenLimit, incrementTokenUsage } from "@/lib/check-limits";
+import { rateLimit, rateLimitResponse, AI_CHAT_LIMIT } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/auth-helpers";
 
 const impactRequestSchema = z.object({
-  articles: z.array(z.any()).min(1, "At least one article is required"),
-  userProfile: z.object({
-    topics: z.array(z.string()).optional().default([]),
-    tickers: z.array(z.any()).optional().default([]),
-    interests: z.record(z.any()).optional().default({})
-  }).strict()
+  articles: z.array(z.object({
+    id: z.string().max(80),
+    title: z.string().max(400).optional(),
+    summary: z.string().max(2000).optional(),
+  })).min(1).max(12),
 }).strict();
 
-export const maxDuration = 60; // Allow enough time for AI response
+export const maxDuration = 60;
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    // Verify user is authenticated
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
+    const ip = getClientIp(req);
+    const rl = await rateLimit(`ai-impact:${user.id}:${ip}`, {
+      ...AI_CHAT_LIMIT,
+      failClosedInProd: true,
+    });
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
+
+    const tokenLimit = await checkTokenLimit(user.id);
+    if (!tokenLimit.allowed) {
+      return NextResponse.json({
+        error: "Has alcanzado el límite de tokens de tu plan para la IA.",
+        code: "TOKEN_LIMIT_REACHED",
+      }, { status: 403 });
+    }
+
     const rawBody = await req.json();
     const parseResult = impactRequestSchema.safeParse(rawBody);
     if (!parseResult.success) {
-      return NextResponse.json({ 
-        error: "Invalid request payload", 
-        details: parseResult.error.format() 
-      }, { status: 400 });
+      return NextResponse.json({ error: "Payload inválido" }, { status: 400 });
     }
-    const { articles, userProfile } = parseResult.data;
+    const { articles } = parseResult.data;
 
-    const { topics = [], tickers = [], interests = {} } = userProfile;
+    const [{ data: assistantConfig }, { data: portfolioRows }] = await Promise.all([
+      supabase
+        .from("assistant_configs")
+        .select("topics, interests")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+      supabase
+        .from("portfolios")
+        .select("symbol, company_name")
+        .eq("user_id", user.id)
+        .limit(50),
+    ]);
+
+    const topics = Array.isArray(assistantConfig?.topics) ? assistantConfig!.topics.slice(0, 20) : [];
+    const tickers = (portfolioRows || []).map((t) => ({
+      symbol: t.symbol,
+      name: t.company_name,
+    }));
+    const interests = (assistantConfig?.interests || {}) as Record<string, unknown>;
     
     // Flatten all interests into a readable string for the AI
     const subInterestsDesc = Object.entries(interests)
@@ -91,14 +122,16 @@ Ejemplo:
     try {
       const rawJson = content.replace(/```json\n?|\`\`\`/g, '').trim();
       const impactMap = JSON.parse(rawJson);
+      const used = Math.ceil((content?.length || 0) / 4) + 800;
+      await incrementTokenUsage(user.id, used);
       return NextResponse.json(impactMap);
     } catch (parseErr) {
       console.error("Impact JSON Parsing Error:", content);
       return NextResponse.json({ error: 'Failed to parse AI response' }, { status: 500 });
     }
 
-  } catch (error: any) {
+  } catch (error) {
     console.error("AI Impact Assessor Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }

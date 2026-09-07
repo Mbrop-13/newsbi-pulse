@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { createClient } from "@/lib/supabase/client";
+
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   ChevronDown, 
@@ -46,40 +46,23 @@ export default function AdminLogsPage() {
   const [stepFilter, setStepFilter] = useState("all");
   const [copiedId, setCopiedId] = useState<{ id: string; type: "prompt" | "response" } | null>(null);
 
-  const supabase = createClient();
-
   const fetchLogs = async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
-    const { data, error } = await supabase
-      .from("ai_pipeline_logs")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(80);
-
-    if (data) setLogs(data);
-    setLoading(false);
-    setRefreshing(false);
+    try {
+      const res = await fetch("/api/admin/logs");
+      if (res.ok) {
+        const json = await res.json();
+        if (Array.isArray(json.logs)) setLogs(json.logs);
+      }
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   };
 
   useEffect(() => {
     fetchLogs();
-
-    // Subscribe to real-time logs
-    const channel = supabase
-      .channel("ai_logs_realtime")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "ai_pipeline_logs" },
-        (payload) => {
-          setLogs((prev) => [payload.new as LogEntry, ...prev.slice(0, 79)]);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [supabase]);
+  }, []);
 
   // Copy helper
   const handleCopy = async (id: string, text: string, type: "prompt" | "response") => {

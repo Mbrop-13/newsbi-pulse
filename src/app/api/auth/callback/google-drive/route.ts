@@ -43,7 +43,8 @@ export async function GET(req: NextRequest) {
 
     const clientId = process.env.DRIVE_CLIENT_ID;
     const clientSecret = process.env.DRIVE_CLIENT_SECRET;
-    const redirectUri = `${req.nextUrl.origin}/api/auth/callback/google-drive`;
+    const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://maverlang.com").replace(/\/$/, "");
+    const redirectUri = `${siteUrl}/api/auth/callback/google-drive`;
 
     const oauth2 = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
     // PKCE: enviar code_verifier en el intercambio. Google valida que el challenge

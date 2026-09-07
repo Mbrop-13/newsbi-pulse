@@ -1,28 +1,41 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { rateLimit, rateLimitResponse, GENERAL_API_LIMIT } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/auth-helpers";
 
-// GET: Return all unique tags from news_articles
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const ip = getClientIp(req);
+    const rl = await rateLimit(`tags:${ip}`, {
+      ...GENERAL_API_LIMIT,
+      failClosedInProd: true,
+    });
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
+
     const supabase = await createClient();
     const { data, error } = await supabase
       .from("news_articles")
       .select("tags")
-      .not("tags", "eq", "{}");
+      .not("tags", "eq", "{}")
+      .limit(200);
 
-    if (error) throw error;
+    if (error) {
+      console.error("[tags]", error.message);
+      return NextResponse.json({ error: "No se pudieron cargar los tags" }, { status: 500 });
+    }
 
-    // Flatten and deduplicate tags
     const allTags = new Set<string>();
-    (data || []).forEach((row: any) => {
-      if (Array.isArray(row.tags)) {
-        row.tags.forEach((t: string) => allTags.add(t.toLowerCase()));
+    for (const row of data || []) {
+      if (!Array.isArray(row.tags)) continue;
+      for (const t of row.tags) {
+        if (typeof t === "string" && t.trim()) allTags.add(t.toLowerCase());
+        if (allTags.size >= 400) break;
       }
-    });
+      if (allTags.size >= 400) break;
+    }
 
-    const sorted = [...allTags].sort();
-    return NextResponse.json({ tags: sorted });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ tags: [...allTags].sort() });
+  } catch {
+    return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }

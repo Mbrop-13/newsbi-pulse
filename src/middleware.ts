@@ -5,6 +5,22 @@ export async function middleware(request: NextRequest) {
   const url = request.nextUrl.clone()
   const pathname = url.pathname
 
+  // Vercel Cron: fail-closed Bearer CRON_SECRET in production.
+  if (pathname.startsWith('/api/cron')) {
+    const secret = process.env.CRON_SECRET || ''
+    if (!secret) {
+      if (process.env.NODE_ENV === 'production') {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 503 })
+      }
+    } else {
+      const header = request.headers.get('authorization') || ''
+      const expected = `Bearer ${secret}`
+      if (header.length !== expected.length || header !== expected) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+    }
+  }
+
   // 1. Ignore static files, API routes, auth callback routes
   if (
     pathname.startsWith('/_next') ||

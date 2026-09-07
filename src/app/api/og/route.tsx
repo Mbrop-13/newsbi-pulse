@@ -3,7 +3,22 @@ import { NextRequest } from 'next/server';
 
 export const runtime = 'edge';
 
-// Default fonts will be used as no local font files are provided yet.
+function isSafeOgImageUrl(raw: string | null): boolean {
+  if (!raw) return false;
+  try {
+    const u = new URL(raw);
+    if (u.protocol !== "https:") return false;
+    const host = u.hostname.toLowerCase();
+    if (host === "images.unsplash.com") return true;
+    if (host === "maverlang.com" || host === "www.maverlang.com") return true;
+    if (host.endsWith(".maverlang.com") || host.endsWith(".maverlang.cl")) return true;
+    if (host.endsWith(".supabase.co")) return true;
+    if (host === "newsbi-pulse.vercel.app") return true;
+    return false;
+  } catch {
+    return false;
+  }
+}
 
 
 export async function GET(req: NextRequest) {
@@ -11,12 +26,13 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     
     // Dynamic params
-    const title = searchParams.get('title') || 'Noticias y Análisis IA';
-    const category = searchParams.get('category') || 'Maverlang';
+    const title = (searchParams.get('title') || 'Noticias y Análisis IA').slice(0, 200);
+    const category = (searchParams.get('category') || 'Maverlang').slice(0, 80);
     const date = searchParams.get('date') || new Date().toLocaleDateString('es-CL');
-    const image = searchParams.get('image'); // Optional background image
+    const image = searchParams.get('image');
 
-    const bgImage = image ? image : 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1200&h=630&fit=crop';
+    const DEFAULT_BG = 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1200&h=630&fit=crop';
+    const bgImage = isSafeOgImageUrl(image) ? image! : DEFAULT_BG;
 
     return new ImageResponse(
       (

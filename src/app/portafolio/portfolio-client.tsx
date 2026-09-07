@@ -6,7 +6,6 @@ import { Search, TrendingUp, TrendingDown, Plus, Trash2, BellRing, Briefcase, Re
 import { useAuthStore, useAuthModalStore } from "@/lib/stores/auth-store";
 import { useSubscriptionStore } from "@/lib/stores/subscription-store";
 import { useConversionStore } from "@/lib/stores/conversion-store";
-import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import Link from "next/link";
 
@@ -56,7 +55,6 @@ export default function PortfolioClient() {
   const openAuthModal = useAuthModalStore((s) => s.openModal);
   const { tier } = useSubscriptionStore();
   const { openModal: openConversionModal } = useConversionStore();
-  const supabase = createClient();
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
@@ -67,14 +65,18 @@ export default function PortfolioClient() {
 
   const fetchAlerts = async () => {
     if (!user) return;
-    const { data } = await supabase.from("price_alerts").select("*").eq("user_id", user.id).eq("is_active", true).order("created_at", { ascending: false });
-    if (data) setAlerts(data);
+    const res = await fetch("/api/portfolio/alerts");
+    if (!res.ok) return;
+    const json = await res.json();
+    if (Array.isArray(json.alerts)) setAlerts(json.alerts);
   };
 
   const fetchPortfolio = async () => {
     if (!user) return;
     setLoading(true);
-    const { data: dbAssets } = await supabase.from("portfolios").select("*").eq("user_id", user.id);
+    const listRes = await fetch("/api/portfolio");
+    const listJson = listRes.ok ? await listRes.json() : { assets: [] };
+    const dbAssets = Array.isArray(listJson.assets) ? listJson.assets : [];
     if (dbAssets && dbAssets.length > 0) {
       const symbols = dbAssets.map(a => a.symbol).join(",");
       try {
@@ -134,18 +136,20 @@ export default function PortfolioClient() {
     setSearchTerm("");
     setSearchResults([]);
 
-    const { error } = await supabase.from("portfolios").insert({ user_id: user.id, symbol, company_name: companyName });
-    if (error) {
-      // Revert optimistic add
+    const res = await fetch("/api/portfolio", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ symbol, company_name: companyName }),
+    });
+    if (!res.ok) {
       setAssets(prev => prev.filter(a => a.id !== tempAsset.id));
-      if (error.code === "42P01") {
-        setAddError("La tabla 'portfolios' no existe. Ejecuta el SQL de migración en Supabase.");
-      } else if (error.code === "23505") {
-        setAddError(`${symbol} ya está en tu portafolio.`);
+      const json = await res.json().catch(() => ({}));
+      if (res.status === 403) {
+        openConversionModal("portfolio");
       } else {
-        setAddError(`Error al agregar ${symbol}: ${error.message}`);
+        setAddError(json.error || `Error al agregar ${symbol}`);
+        setTimeout(() => setAddError(""), 5000);
       }
-      setTimeout(() => setAddError(""), 5000);
       return;
     }
     // Refresh with real data
@@ -155,23 +159,27 @@ export default function PortfolioClient() {
   const removeAsset = async (symbol: string) => {
     if (!user) return;
     setAssets(prev => prev.filter(a => a.symbol !== symbol));
-    await supabase.from("portfolios").delete().eq("user_id", user.id).eq("symbol", symbol);
+    await fetch(`/api/portfolio?symbol=${encodeURIComponent(symbol)}`, { method: "DELETE" });
   };
 
   const checkAlerts = async (liveData: any[]) => {
     if (!user) return;
-    const { data: activeAlerts } = await supabase.from("price_alerts").select("*").eq("user_id", user.id).eq("is_active", true);
+    const activeAlerts = alerts;
     if (!activeAlerts || activeAlerts.length === 0) return;
     for (const alert of activeAlerts) {
       const live = liveData.find((l: any) => l.symbol === alert.symbol);
       if (!live) continue;
       const triggered = (alert.condition === "above" && live.price >= alert.target_price) || (alert.condition === "below" && live.price <= alert.target_price);
       if (triggered) {
-        await supabase.from("price_alerts").update({ is_active: false }).eq("id", alert.id);
-        await supabase.from("notifications").insert({
-          user_id: user.id, type: "price_alert",
-          title: `🔔 Alerta: ${alert.symbol} ${alert.condition === "above" ? "superó" : "bajó de"} $${alert.target_price}`,
-          message: `${alert.symbol} ahora está en $${live.price.toFixed(2)}. Tu alerta de ${alert.condition === "above" ? "por encima de" : "por debajo de"} $${alert.target_price} se ha activado.`
+        await fetch("/api/portfolio/alerts", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: alert.id,
+            is_active: false,
+            notify: true,
+            price: live.price,
+          }),
         });
         setAlerts(prev => prev.filter(a => a.id !== alert.id));
       }
@@ -181,24 +189,33 @@ export default function PortfolioClient() {
   const createAlert = async () => {
     if (!user || !alertForm.targetPrice) return;
     setAlertSaving(true);
-    const { error } = await supabase.from("price_alerts").insert({
-      user_id: user.id, symbol: alertModal.symbol,
-      target_price: parseFloat(alertForm.targetPrice), condition: alertForm.condition,
+    const res = await fetch("/api/portfolio/alerts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        symbol: alertModal.symbol,
+        target_price: parseFloat(alertForm.targetPrice),
+        condition: alertForm.condition,
+      }),
     });
-    if (!error) {
+    if (res.ok) {
       setAlertModal({ open: false, symbol: "", price: 0 });
       setAlertForm({ targetPrice: "", condition: "above" });
       fetchAlerts();
     } else {
-      setAddError(`Error al crear alerta: ${error.message}`);
-      setTimeout(() => setAddError(""), 4000);
+      const json = await res.json().catch(() => ({}));
+      if (res.status === 403) openConversionModal("portfolio");
+      else {
+        setAddError(json.error || "Error al crear alerta");
+        setTimeout(() => setAddError(""), 4000);
+      }
     }
     setAlertSaving(false);
   };
 
   const deleteAlert = async (id: string) => {
     setAlerts(prev => prev.filter(a => a.id !== id));
-    await supabase.from("price_alerts").delete().eq("id", id);
+    await fetch(`/api/portfolio/alerts?id=${encodeURIComponent(id)}`, { method: "DELETE" });
   };
 
   const totalValue = assets.reduce((sum, a) => sum + ((a.price || 0) * (a.shares || 0)), 0);

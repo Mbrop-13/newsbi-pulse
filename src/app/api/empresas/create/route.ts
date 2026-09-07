@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { requireUser } from "@/lib/auth-helpers";
+import { requireUser, getClientIp } from "@/lib/auth-helpers";
 import { createServiceClient } from "@/lib/supabase";
+import { rateLimit, rateLimitResponse, GENERAL_API_LIMIT } from "@/lib/rate-limit";
 import {
   ENTERPRISE_PLANS,
   calculateSeatTotal,
@@ -35,6 +36,13 @@ export async function POST(request: NextRequest) {
     const { name, rut, plan, seats, billing_cycle } = parsed.data;
     const config = ENTERPRISE_PLANS[plan];
 
+    const ip = getClientIp(request);
+    const rl = await rateLimit(`empresas-create:${auth.data.user.id}:${ip}`, {
+      ...GENERAL_API_LIMIT,
+      failClosedInProd: true,
+    });
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
+
     // Validar asientos contra min/max del plan
     if (config.maxSeats !== -1 && seats > config.maxSeats) {
       return NextResponse.json(
@@ -58,6 +66,20 @@ export async function POST(request: NextRequest) {
     }
 
     const service = createServiceClient();
+
+    const { data: existingMembership } = await service
+      .from("organization_members")
+      .select("id")
+      .eq("user_id", auth.data.user.id)
+      .eq("status", "active")
+      .maybeSingle();
+    if (existingMembership) {
+      return NextResponse.json(
+        { error: "Ya perteneces a una organización. Sal o contacta soporte para crear otra." },
+        { status: 409 }
+      );
+    }
+
     const slug = await ensureUniqueSlug(slugify(name));
 
     // Período de prueba de 14 días
@@ -75,7 +97,7 @@ export async function POST(request: NextRequest) {
         plan,
         seat_count: seats,
         billing_cycle,
-        status: "trial",
+        status: "pending_payment",
         current_period_end: periodEnd.toISOString(),
         created_by: auth.data.user.id,
       })
@@ -107,7 +129,7 @@ export async function POST(request: NextRequest) {
       organization_id: org.id,
       plan,
       seats,
-      status: "trial",
+      status: "pending",
       billing_cycle: billing_cycle as BillingCycle,
       current_period_start: new Date().toISOString(),
       current_period_end: periodEnd.toISOString(),

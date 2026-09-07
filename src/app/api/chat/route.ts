@@ -4,6 +4,10 @@ import { detectSuspiciousPatterns } from "@/lib/security";
 import { createOpenAI } from '@ai-sdk/openai';
 import { generateText } from 'ai';
 import { runOrchestration } from "@/lib/services/agent-orchestrator";
+import { checkTokenLimit, incrementTokenUsage } from "@/lib/check-limits";
+import { rateLimit, rateLimitResponse, AI_CHAT_LIMIT } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/auth-helpers";
+import { sanitizeClientMessages } from "@/lib/llm-messages";
 
 // ── Chat API Route ───────────────────────────────
 // Handles per-article chat with Grok AI acting as coordinated agents
@@ -20,12 +24,30 @@ export async function POST(request: NextRequest) {
     const apiKey = process.env.XAI_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
-        { error: "XAI_API_KEY not configured" },
+        { error: "Servicio de IA no disponible" },
         { status: 500 }
       );
     }
 
-    const { message, articleContext, history } = await request.json();
+    const ip = getClientIp(request);
+    const rl = await rateLimit(`article-chat:${user.id}:${ip}`, {
+      ...AI_CHAT_LIMIT,
+      failClosedInProd: true,
+    });
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
+
+    const tokenLimit = await checkTokenLimit(user.id);
+    if (!tokenLimit.allowed) {
+      return NextResponse.json({
+        error: "Has alcanzado el límite de tokens de tu plan para la IA.",
+        code: "TOKEN_LIMIT_REACHED",
+      }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const message = typeof body?.message === "string" ? body.message.slice(0, 8000) : "";
+    const articleContext = body?.articleContext;
+    const history = sanitizeClientMessages(body?.history, { maxMessages: 12, maxContentChars: 8000 });
 
     if (!message) {
       return NextResponse.json(
@@ -83,8 +105,8 @@ Responde de forma precisa, neutral y profesional en español. Si no tienes infor
 
     let messagesForFinalLlm = [
       { role: "system" as const, content: systemPrompt },
-      ...(history || []).map((msg: { role: string; content: string }) => ({
-        role: (msg.role === 'user' || msg.role === 'assistant' || msg.role === 'system' ? msg.role : 'user') as 'user' | 'assistant' | 'system',
+      ...history.map((msg) => ({
+        role: msg.role as "user" | "assistant",
         content: msg.content,
       })),
       { role: "user" as const, content: message },
@@ -121,8 +143,13 @@ Responde de forma precisa, neutral y profesional en español. Si no tienes infor
 
     const reply = result.text || "Lo siento, no pude generar una respuesta.";
 
+    const used = result.usage?.totalTokens || orchestrationResult.totalTokensUsed || 0;
+    if (used > 0) {
+      await incrementTokenUsage(user.id, used).catch(console.error);
+    }
+
     if (reply.includes("[ALERTA_SEGURIDAD]") || reply.includes("ALERTA DE SEGURIDAD") || reply.includes("intento de evasión detectado")) {
-      console.warn(`[SECURITY_ALERT] [LLM_DETECTION] El modelo Grok detectó un intento de manipulación o solicitud inusual del usuario ${user.id}. Respuesta del modelo: "${reply}"`);
+      console.warn(`[SECURITY_ALERT] [LLM_DETECTION] El modelo Grok detectó un intento de manipulación del usuario ${user.id}.`);
     }
 
     return NextResponse.json({
@@ -132,7 +159,7 @@ Responde de forma precisa, neutral y profesional en español. Si no tienes infor
   } catch (error: unknown) {
     console.error("Chat error:", error);
     return NextResponse.json(
-      { error: "Failed to generate chat response", details: error instanceof Error ? error.message : "Unknown error" },
+      { error: "Failed to generate chat response" },
       { status: 500 }
     );
   }

@@ -2,12 +2,14 @@ import { tool, StreamData } from 'ai';
 import { z } from 'zod';
 import * as BrowserManager from "@/lib/services/browser-manager";
 import { assertSafeFetchUrl } from "@/lib/url-guard";
+import { bindBrowserSession } from "@/lib/browser-session-auth";
 
 interface BrowserToolsParams {
   streamData: StreamData;
+  userId: string;
 }
 
-export function getBrowserTools({ streamData }: BrowserToolsParams) {
+export function getBrowserTools({ streamData, userId }: BrowserToolsParams) {
   return {
     browser_navigate: tool({
       description: 'Navegar a una URL en el navegador virtual. Usar cuando el usuario pida visitar un sitio web, buscar algo en internet, o ver una página específica.',
@@ -28,6 +30,7 @@ export function getBrowserTools({ streamData }: BrowserToolsParams) {
           if (!sessionId) {
             sessionId = await BrowserManager.createSession();
             (streamData as any)._browserSessionId = sessionId;
+            await bindBrowserSession(sessionId, userId);
             streamData.append({ type: 'browser_session', sessionId });
           }
           const result = await BrowserManager.navigateTo(sessionId, safeUrl);

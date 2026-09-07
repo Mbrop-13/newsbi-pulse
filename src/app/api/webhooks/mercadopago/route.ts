@@ -5,6 +5,7 @@ import { paymentSuccessEmail } from "@/lib/email/email-templates";
 import { verifyMercadoPagoSignature } from "@/lib/mercadopago/verify-signature";
 import { grantReferralReward } from "@/lib/referrals";
 import type { PlanTier } from "@/lib/plan-limits";
+import { amountMatchesPlan, cheapestTierForAmount } from "@/lib/plan-amount";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -132,16 +133,25 @@ async function handleSubscriptionEvent(preapprovalId: string) {
     tier = PLAN_ID_TO_TIER[sub.preapproval_plan_id] || null;
   }
 
-  // If no user found from external_reference, look up by email
-  if (!userId && sub.payer_email) {
-    const { data: users } = await supabase.auth.admin.listUsers();
-    const matchedUser = users?.users?.find(u => u.email === sub.payer_email);
-    userId = matchedUser?.id || null;
+  // Do not enumerate auth.users. Checkout always sets user_id in
+  // external_reference; if it's missing, fail closed.
+  if (!userId) {
+    console.error("[Webhook] Missing user_id in external_reference; refusing email directory scan");
   }
 
   if (!userId || !tier) {
     console.error("[Webhook] Cannot resolve user or tier:", { userId, tier, planId: sub.preapproval_plan_id, externalRef: sub.external_reference });
     return NextResponse.json({ error: "Cannot resolve user or tier" }, { status: 400 });
+  }
+
+  const paidAmount = sub.auto_recurring?.transaction_amount;
+  if (sub.status === "authorized" && !amountMatchesPlan(tier, paidAmount)) {
+    const fallback = cheapestTierForAmount(paidAmount);
+    console.error("[Webhook] Plan/amount mismatch", { claimed: tier, paidAmount, fallback });
+    if (!fallback) {
+      return NextResponse.json({ error: "Amount mismatch" }, { status: 400 });
+    }
+    tier = fallback;
   }
 
   // Map MP subscription status to our status
@@ -212,7 +222,7 @@ async function handleSubscriptionEvent(preapprovalId: string) {
     }
   }
 
-  return NextResponse.json({ success: true, status: sub.status, tier, userId });
+  return NextResponse.json({ success: true, status: sub.status });
 }
 
 /**
@@ -271,9 +281,20 @@ async function handlePaymentEvent(paymentId: string) {
     return NextResponse.json({ success: true, org_id: externalRef.org_id });
   }
 
-  const { user_id, plan } = externalRef;
+  const { user_id } = externalRef;
+  let plan = externalRef.plan;
   if (!user_id || !plan) {
     return NextResponse.json({ received: true, note: "no_user_or_plan" });
+  }
+
+  const paidAmount = payment.transaction_amount ?? payment.auto_recurring?.transaction_amount;
+  if (!amountMatchesPlan(plan, paidAmount)) {
+    const fallback = cheapestTierForAmount(paidAmount);
+    console.error("[Webhook] Payment plan/amount mismatch", { claimed: plan, paidAmount, fallback });
+    if (!fallback) {
+      return NextResponse.json({ received: true, note: "amount_mismatch" });
+    }
+    plan = fallback;
   }
 
   // Extend subscription period
@@ -300,7 +321,7 @@ async function handlePaymentEvent(paymentId: string) {
   }
 
   console.log(`[Webhook] ✅ Payment ${paymentId} approved → User ${user_id} → ${plan}`);
-  return NextResponse.json({ success: true, plan, user_id });
+  return NextResponse.json({ success: true });
 }
 
 /**

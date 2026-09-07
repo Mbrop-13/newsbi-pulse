@@ -21,7 +21,7 @@ async function getSharedChat(id: string) {
   // Prefer full columns; fall back if migration not applied
   let { data, error } = await supabase
     .from("shared_chat_links")
-    .select("question, answer, created_at, user_id, title, share_type, messages, is_active, expires_at")
+    .select("question, answer, created_at, title, share_type, messages, is_active, expires_at")
     .eq("id", id)
     .single();
 
@@ -29,7 +29,7 @@ async function getSharedChat(id: string) {
     // Migración de revocación no aplicada: retry sin las columnas nuevas
     const retry = await supabase
       .from("shared_chat_links")
-      .select("question, answer, created_at, user_id")
+      .select("question, answer, created_at")
       .eq("id", id)
       .single();
     data = retry.data

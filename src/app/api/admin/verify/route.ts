@@ -1,29 +1,19 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { createServiceClient } from "@/lib/supabase";
+import { requireAdmin } from "@/lib/auth-helpers";
 
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ isAdmin: false, error: "Not authenticated" }, { status: 401 });
+    const auth = await requireAdmin();
+    if (!auth.ok) {
+      return NextResponse.json({ isAdmin: false }, { status: auth.response.status });
     }
 
-    const serviceClient = createServiceClient();
-    const { data: adminRow } = await serviceClient
-      .from("admin_users")
-      .select("role")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
     return NextResponse.json({
-      isAdmin: !!adminRow && adminRow.role === "admin",
-      role: adminRow?.role || null,
-      email: user.email,
+      isAdmin: true,
+      role: "admin",
+      email: auth.data.user.email,
     });
-  } catch (error: any) {
-    return NextResponse.json({ isAdmin: false, error: error.message }, { status: 500 });
+  } catch {
+    return NextResponse.json({ isAdmin: false }, { status: 500 });
   }
 }

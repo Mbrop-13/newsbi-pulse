@@ -3,6 +3,9 @@ import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { sendEmail } from "@/lib/email/azure-client";
 import { enterpriseLeadNotificationEmail } from "@/lib/email/enterprise-templates";
+import { rateLimit, rateLimitResponse, NEWSLETTER_LIMIT } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/auth-helpers";
+import { captchaRequired, verifyHCaptcha } from "@/lib/captcha";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -18,10 +21,18 @@ const leadSchema = z.object({
   rut: z.string().max(20).optional(),
   team_size: z.enum(["1-5", "6-20", "21-100", "100+"]).optional(),
   message: z.string().max(2000).optional(),
+  captchaToken: z.string().max(4000).optional(),
 });
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request);
+    const rl = await rateLimit(`empresas-lead:${ip}`, {
+      ...NEWSLETTER_LIMIT,
+      failClosedInProd: true,
+    });
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
+
     const body = await request.json().catch(() => null);
     const parsed = leadSchema.safeParse(body);
     if (!parsed.success) {
@@ -29,6 +40,13 @@ export async function POST(request: NextRequest) {
         { error: "Datos inválidos", details: parsed.error.format() },
         { status: 400 }
       );
+    }
+
+    if (captchaRequired()) {
+      const ok = await verifyHCaptcha(parsed.data.captchaToken, ip);
+      if (!ok) {
+        return NextResponse.json({ error: "Verificación anti-bot fallida" }, { status: 403 });
+      }
     }
 
     const { data, error } = await supabase

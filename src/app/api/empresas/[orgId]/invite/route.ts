@@ -132,7 +132,16 @@ export async function POST(
       console.warn("[invite] no se pudo enviar email:", emailErr);
     }
 
-    return NextResponse.json({ ok: true, invitation, acceptUrl });
+    return NextResponse.json({
+      ok: true,
+      invitation: {
+        id: invitation.id,
+        email: invitation.email,
+        role: invitation.role,
+        expires_at: invitation.expires_at,
+      },
+      acceptUrl,
+    });
   } catch (error: any) {
     console.error("[invite] Error:", error);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });

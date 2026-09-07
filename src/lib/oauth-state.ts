@@ -81,7 +81,13 @@ export function clearOAuthCookies(): string {
 // ─── internal ───
 
 function sign(payload: string): string {
-  const secret = process.env.OAUTH_STATE_SECRET || process.env.CRON_SECRET || "dev-only-secret";
+  const secret = process.env.OAUTH_STATE_SECRET || process.env.CRON_SECRET || "";
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("OAUTH_STATE_SECRET (or CRON_SECRET) is required in production");
+    }
+    return crypto.createHmac("sha256", "dev-only-secret").update(payload).digest("hex").slice(0, 32);
+  }
   return crypto.createHmac("sha256", secret).update(payload).digest("hex").slice(0, 32);
 }
 

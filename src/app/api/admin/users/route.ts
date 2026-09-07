@@ -357,6 +357,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ users: enrichedUsers, analytics });
   } catch (error: any) {
     console.error("Admin Users API Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }

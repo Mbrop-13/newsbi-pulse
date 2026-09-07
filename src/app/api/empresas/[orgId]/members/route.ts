@@ -42,17 +42,18 @@ export async function GET(
     let userMap: Record<string, { name?: string; email?: string; avatar_url?: string }> = {};
     if (userIds.length > 0) {
       try {
-        const { data: usersData } = await service.auth.admin.listUsers({
-          perPage: 1000,
-        });
-        for (const u of usersData?.users ?? []) {
-          if (userIds.includes(u.id)) {
-            userMap[u.id] = {
-              name: (u.user_metadata?.full_name as string) || undefined,
-              email: u.email || undefined,
-              avatar_url: (u.user_metadata?.avatar_url as string) || undefined,
-            };
-          }
+        const uniqueIds = [...new Set(userIds)].slice(0, 100);
+        const lookups = await Promise.all(
+          uniqueIds.map((id) => service.auth.admin.getUserById(id))
+        );
+        for (const { data } of lookups) {
+          const u = data?.user;
+          if (!u) continue;
+          userMap[u.id] = {
+            name: (u.user_metadata?.full_name as string) || undefined,
+            email: u.email || undefined,
+            avatar_url: (u.user_metadata?.avatar_url as string) || undefined,
+          };
         }
       } catch (e) {
         console.warn("[members GET] no se pudo enriquecer auth.users:", e);
@@ -67,7 +68,7 @@ export async function GET(
     // Invitaciones pendientes
     const { data: invitations } = await service
       .from("organization_invitations")
-      .select("*")
+      .select("id, email, role, expires_at, created_at, invited_by")
       .eq("organization_id", orgId)
       .is("accepted_at", null)
       .order("created_at", { ascending: false });

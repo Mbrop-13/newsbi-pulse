@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
   } catch (err: any) {
     console.error("[Drive API GET] Error:", err);
     return NextResponse.json(
-      { error: err.message || String(err), code: "DRIVE_ERROR" },
+      { error: "No se pudieron listar los archivos de Drive", code: "DRIVE_ERROR" },
       { status: 500 }
     );
   }
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
   } catch (err: any) {
     console.error("[Drive API POST] Error:", err);
     return NextResponse.json(
-      { error: err.message || String(err), code: "DRIVE_ERROR" },
+      { error: "No se pudo leer el archivo de Drive", code: "DRIVE_ERROR" },
       { status: 500 }
     );
   }

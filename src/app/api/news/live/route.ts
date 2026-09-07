@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { rateLimit, rateLimitResponse, GENERAL_API_LIMIT } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/auth-helpers";
 
 // ── YouTube Live Detection API Route ──────────────
 // Detects live streams from specific channels
@@ -14,6 +16,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
+    const ip = getClientIp(request);
+    const rl = await rateLimit(`yt-live:${user.id}:${ip}`, {
+      ...GENERAL_API_LIMIT,
+      failClosedInProd: true,
+    });
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
+
     const apiKey = process.env.YOUTUBE_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
@@ -23,7 +32,7 @@ export async function GET(request: NextRequest) {
     }
 
     const searchParams = request.nextUrl.searchParams;
-    const query = searchParams.get("q") || "White House live";
+    const query = (searchParams.get("q") || "White House live").slice(0, 80);
 
     // Search for live streams
     const url = new URL("https://www.googleapis.com/youtube/v3/search");

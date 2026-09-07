@@ -79,8 +79,8 @@ export async function POST(req: NextRequest) {
       if (new Date(expiresAt).getTime() < Date.now()) {
         return NextResponse.json({ error: "Token expirado" }, { status: 403 });
       }
-      // Constant-time compare
-      const a = Buffer.from(String(confirmToken));
+      const presented = crypto.createHash("sha256").update(String(confirmToken)).digest("hex");
+      const a = Buffer.from(presented);
       const b = Buffer.from(String(expectedToken));
       if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
         return NextResponse.json({ error: "Token inválido" }, { status: 403 });

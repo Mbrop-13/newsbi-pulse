@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { requireUser } from "@/lib/auth-helpers";
 import { requireOrgMember, getOrgSubscription } from "@/lib/enterprise-helpers";
 
@@ -58,10 +59,34 @@ export async function PATCH(
 
   try {
     const body = await request.json().catch(() => null);
-    const allowed = ["name", "rut", "billing_email", "logo_url", "allowed_domains"] as const;
+    const patchSchema = z.object({
+      name: z.string().min(2).max(120).optional(),
+      rut: z.string().max(20).optional(),
+      billing_email: z.string().email().max(200).optional(),
+      logo_url: z.string().url().max(500).refine(
+        (u) => {
+          try {
+            const host = new URL(u).hostname.toLowerCase();
+            return u.startsWith("https://") && (
+              host.endsWith(".supabase.co") ||
+              host.endsWith(".maverlang.com") ||
+              host === "maverlang.com"
+            );
+          } catch {
+            return false;
+          }
+        },
+        { message: "logo_url no permitido" }
+      ).optional(),
+      allowed_domains: z.array(z.string().max(80).regex(/^[a-z0-9.-]+\.[a-z]{2,}$/i)).max(20).optional(),
+    });
+    const parsed = patchSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
+    }
     const updates: Record<string, unknown> = {};
-    for (const key of allowed) {
-      if (body?.[key] !== undefined) updates[key] = body[key];
+    for (const [key, value] of Object.entries(parsed.data)) {
+      if (value !== undefined) updates[key] = value;
     }
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: "Nada que actualizar" }, { status: 400 });

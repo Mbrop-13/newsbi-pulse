@@ -213,7 +213,7 @@ export function SubscriptionContent({
     if (planId === "pro") {
       return [
         { text: "Límites de IA mucho más altos que Free", included: true },
-        { text: "Créditos de imagen en Flow incluidos", included: true },
+        { text: "Historial de chats y análisis de portafolio", included: true },
         { text: "Más alertas de precio y activos en portafolio", included: true },
         { text: "Historial de chats y adjuntos en IA", included: true },
         { text: "Sin publicidad", included: true },
@@ -221,7 +221,7 @@ export function SubscriptionContent({
     }
     if (planId === "max") {
       return [
-        { text: "x2 límites Pro (IA, imágenes, alertas y más)", included: true },
+        { text: "x2 límites Pro (IA, alertas y más)", included: true },
         { text: "Todo lo de Pro, con el doble de capacidad", included: true },
         { text: "Informe semanal y recomendaciones IA", included: true },
         { text: "Análisis avanzado de portafolio", included: true },
@@ -234,14 +234,14 @@ export function SubscriptionContent({
       return [
         { text: "Todo Ultra, potenciado", included: true },
         { text: "x20 límites Pro (máxima capacidad)", included: true },
-        { text: "Uso intensivo de IA, Flow e alertas", included: true },
+        { text: "Uso intensivo de IA y alertas", included: true },
         { text: "IA con búsqueda web activa", included: true },
         { text: "Análisis premium de portafolio", included: true },
       ];
     }
     return [
       { text: "Todo lo de Max, y más", included: true },
-      { text: "x5 límites Pro (IA, imágenes, alertas y más)", included: true },
+      { text: "x5 límites Pro (IA, alertas y más)", included: true },
       { text: "IA con búsqueda web activa", included: true },
       { text: "Análisis premium de portafolio", included: true },
       { text: "Máxima capacidad para profesionales", included: true },
@@ -268,7 +268,7 @@ export function SubscriptionContent({
     },
     {
       q: "¿Qué es la opción Ultra x20?",
-      a: "Es una ampliación del plan Ultra para uso muy intensivo. Multiplica por 20 los límites del plan Pro (IA, imágenes en Flow, alertas, portafolio y más), pensada para profesionales y equipos que no quieren quedarse cortos.",
+      a: "Es una ampliación del plan Ultra para uso muy intensivo. Multiplica por 20 los límites del plan Pro (IA, alertas, portafolio y más), pensada para profesionales y equipos que no quieren quedarse cortos.",
     },
   ];
 
@@ -947,7 +947,7 @@ function EnterprisePlansGrid({
 
             <ul className="space-y-2.5">
               {[
-                "Límites Pro por asiento (IA y Flow mucho más altos)",
+                "Límites Pro por asiento (IA mucho más alta)",
                 "Workspaces y proyectos compartidos",
                 "Alertas y agentes compartidos",
                 "Panel de administración de equipo",

@@ -23,7 +23,6 @@ function skeletonVariantForPath(pathname: string) {
     p === "/breaking"
   )
     return "news" as const;
-  if (p === "/flow" || p.startsWith("/flow/")) return "flow" as const;
   if (p === "/" || p === "/ai" || p.startsWith("/ai/")) return "chat" as const;
   return "default" as const;
 }

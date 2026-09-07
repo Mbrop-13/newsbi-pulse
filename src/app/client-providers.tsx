@@ -144,7 +144,6 @@ export function ClientLayoutProviders({
     "/para-ti",
     "/nuevo",
     "/breaking",
-    "/flow"
   ];
   const isStaticSidebar = sidebarPages.some(p => pathname === p || pathname.startsWith(p + "/"));
   const isArticlePage = pathname.startsWith("/article/");
@@ -164,9 +163,9 @@ export function ClientLayoutProviders({
   // completa y al intentar navegar a una página protegida aparece el popup de
   // registro (gate en nav-main.tsx + AuthGuard en cada página). El resto de
   // rutas con sidebar sí requieren auth (sus páginas tienen AuthGuard).
-  const isSidebarPage = (isSidebarRoute || pathname === "/" || pathname === "/ai" || pathname.startsWith("/ai/") || pathname === "/flow" || pathname.startsWith("/flow/")) && mounted && (pathname === "/" || pathname === "/ai" || pathname.startsWith("/ai/") || pathname === "/flow" || pathname.startsWith("/flow/") || !authLoaded || isAuthenticated);
+  const isSidebarPage = (isSidebarRoute || pathname === "/" || pathname === "/ai" || pathname.startsWith("/ai/")) && mounted && (pathname === "/" || pathname === "/ai" || pathname.startsWith("/ai/") || !authLoaded || isAuthenticated);
   const isFullscreenPage = isSidebarPage;
-  const isAiPage = pathname === "/ai" || pathname.startsWith("/ai/") || pathname === "/" || pathname === "" || pathname === "/flow" || pathname.startsWith("/flow/");
+  const isAiPage = pathname === "/ai" || pathname.startsWith("/ai/") || pathname === "/" || pathname === "";
   const isAdminPage = pathname.startsWith("/admin");
   const isSharePage = pathname.startsWith("/share");
   const audioMode = useAudioPlayerStore((s) => s.mode);

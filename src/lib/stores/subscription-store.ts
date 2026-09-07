@@ -17,18 +17,14 @@ export interface SubscriptionState {
   /** Tokens used this month (or lifetime for free — see lifetimeAiTokens) */
   monthlyAiTokens: number;
   lifetimeAiTokens: number;
-  monthlyImageCreditsUsed?: number;
-  
   // Actions
   setTier: (tier: PlanTier) => void;
   setStatus: (status: SubscriptionState["status"]) => void;
   setPeriodEnd: (date: string | null) => void;
-  setUsage: (usage: Partial<Pick<SubscriptionState, "monthlyAiMessages" | "monthlyTtsAudios" | "dailyTtsAudios" | "lifetimeAiMessages" | "monthlyAiTokens" | "lifetimeAiTokens" | "monthlyImageCreditsUsed">>) => void;
+  setUsage: (usage: Partial<Pick<SubscriptionState, "monthlyAiMessages" | "monthlyTtsAudios" | "dailyTtsAudios" | "lifetimeAiMessages" | "monthlyAiTokens" | "lifetimeAiTokens">>) => void;
   incrementAiMessages: () => void;
   incrementAiTokens: (tokens: number) => void;
   incrementTtsAudios: () => void;
-  incrementImageCreditsUsed: (credits: number) => void;
-  
   // Helpers
   getPlanConfig: () => PlanConfig;
   /** Based on token quota (not message count) */
@@ -53,8 +49,6 @@ export const useSubscriptionStore = create<SubscriptionState>()(
       lifetimeAiMessages: 0,
       monthlyAiTokens: 0,
       lifetimeAiTokens: 0,
-      monthlyImageCreditsUsed: 0,
-      
       setTier: (tier) => set({ tier }),
       setStatus: (status) => set({ status }),
       setPeriodEnd: (date) => set({ periodEnd: date }),
@@ -74,10 +68,6 @@ export const useSubscriptionStore = create<SubscriptionState>()(
       incrementTtsAudios: () => set((s) => ({
         monthlyTtsAudios: s.monthlyTtsAudios + 1,
         dailyTtsAudios: s.dailyTtsAudios + 1,
-      })),
-      
-      incrementImageCreditsUsed: (credits) => set((s) => ({
-        monthlyImageCreditsUsed: (s.monthlyImageCreditsUsed || 0) + credits,
       })),
       
       getPlanConfig: () => getPlanConfig(get().tier),
@@ -141,7 +131,6 @@ export const useSubscriptionStore = create<SubscriptionState>()(
         tier: state.tier,
         status: state.status,
         periodEnd: state.periodEnd,
-        monthlyImageCreditsUsed: state.monthlyImageCreditsUsed,
       }),
     }
   )

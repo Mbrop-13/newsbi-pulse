@@ -100,6 +100,26 @@ const nextConfig = {
         destination: '/suscripcion',
         permanent: true,
       },
+      {
+        source: '/casos-de-uso',
+        destination: '/',
+        permanent: true,
+      },
+      {
+        source: '/casos-de-uso/:path*',
+        destination: '/',
+        permanent: true,
+      },
+      {
+        source: '/flow',
+        destination: '/',
+        permanent: true,
+      },
+      {
+        source: '/flow/:path*',
+        destination: '/',
+        permanent: true,
+      },
     ];
   },
 };

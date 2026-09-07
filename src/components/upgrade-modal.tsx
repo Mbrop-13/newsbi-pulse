@@ -38,32 +38,26 @@ const FEATURE_MESSAGES: Record<string, { title: string; message: string; icon: R
     message: "Has alcanzado el máximo de activos en tu portafolio.",
     icon: <Crown className="w-6 h-6" />,
   },
-  image_credits: {
-    title: "Imágenes en Flow",
-    message:
-      "La generación de imágenes no está incluida en el plan Gratuito, o agotaste tus créditos del mes. Actualiza a Pro o superior para obtener créditos mensuales de Flow.",
-    icon: <Sparkles className="w-6 h-6" />,
-  },
 };
 
 const TIER_BENEFITS: Record<PlanTier, string[]> = {
   free: [],
   pro: [
     "Límites de IA mucho más altos que Free",
-    "Créditos de imagen en Flow incluidos",
+    "Historial de chats y análisis de portafolio",
     "Más alertas y activos en portafolio",
     "Historial de chats y adjuntos",
     "Sin publicidad",
   ],
   max: [
-    "x2 límites Pro (IA, imágenes y más)",
+    "x2 límites Pro (IA y más)",
     "Todo lo de Pro, con el doble de capacidad",
     "Informe semanal y recomendaciones IA",
     "Análisis avanzado de portafolio",
     "Sin publicidad",
   ],
   ultra: [
-    "x5 límites Pro (IA, imágenes y más)",
+    "x5 límites Pro (IA y más)",
     "Todo lo de Max, y más",
     "IA con búsqueda web activa",
     "Análisis premium de portafolio",
@@ -72,7 +66,7 @@ const TIER_BENEFITS: Record<PlanTier, string[]> = {
   ultra_x20: [
     "x20 límites Pro (máxima capacidad)",
     "Todo Ultra, potenciado",
-    "Uso intensivo de IA y Flow",
+    "Uso intensivo de IA",
     "IA con búsqueda web activa",
     "Pensado para uso intensivo",
   ],

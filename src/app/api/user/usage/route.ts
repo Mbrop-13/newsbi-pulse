@@ -25,7 +25,7 @@ export async function GET() {
     const [monthlyRes, lifetimeRes, logsRes, subRes] = await Promise.all([
       serviceClient
         .from("monthly_usage")
-        .select("ai_tokens, image_credits")
+        .select("ai_tokens")
         .eq("user_id", user.id)
         .eq("month", currentMonth)
         .maybeSingle(),
@@ -87,17 +87,10 @@ export async function GET() {
     ).toISOString();
     const monthlyReset = currentPeriodEnd || endOfMonth;
 
-    const imageCreditsUsed = Number(monthly?.image_credits) || 0;
-    const imageCreditsLimit = config.imageCreditsPerMonth;
-    // Free (y cualquier plan sin cuota de imagen): feature bloqueada, no medidor 0%.
-    const imageCreditsIncluded = imageCreditsLimit > 0;
-
     const usage = {
       tier,
       planName: baseConfig.name,
       currentPeriodEnd,
-      monthlyImageCreditsUsed: imageCreditsUsed,
-      imageCreditsLimit,
       resources: [
         {
           id: "ai_tokens_weekly",
@@ -124,22 +117,6 @@ export async function GET() {
           formatAsK: true,
           resetTime: isFree ? null : monthlyReset,
           locked: false,
-        },
-        {
-          id: "image_credits",
-          label: "Imágenes · Flow",
-          icon: "image",
-          used: imageCreditsIncluded ? imageCreditsUsed : 0,
-          limit: imageCreditsLimit,
-          period: imageCreditsIncluded ? "este mes" : null,
-          color: "#1890FF",
-          formatAsK: false,
-          resetTime: imageCreditsIncluded ? monthlyReset : null,
-          locked: !imageCreditsIncluded,
-          lockedMessage: imageCreditsIncluded
-            ? null
-            : "Actualiza tu plan para generar imágenes en Flow",
-          upgradeRequired: !imageCreditsIncluded,
         },
       ],
     };

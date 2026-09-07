@@ -26,7 +26,7 @@ const PLANS = [
     desc: "Para inversores y profesionales activos de la información.",
     features: [
       "Límites de IA mucho más altos que Free",
-      "Créditos de imagen en Flow incluidos",
+      "Historial de chats y análisis de portafolio",
       "Más alertas de precio y activos en portafolio",
       "Lectura 100% sin publicidad",
       "Análisis básico de portafolio",
@@ -41,7 +41,7 @@ const PLANS = [
     period: "al mes",
     desc: "Para inversores exigentes que quieren el máximo potencial.",
     features: [
-      "x2 límites Pro (IA, imágenes, alertas y más)",
+      "x2 límites Pro (IA, alertas y más)",
       "Todo lo de Pro, con el doble de capacidad",
       "Análisis avanzado de portafolio",
       "Informes semanales de portafolio",

@@ -6,7 +6,7 @@ import { useTheme } from "next-themes"
 import { ChatInput } from "@/components/chat/chat-input"
 import { ChatMessages } from "@/components/chat/chat-messages"
 import { ModelSelector, type MaverlangModel } from "@/components/chat/model-selector"
-import PromptSuggestions from "@/components/chat/prompt-suggestions"
+import { WelcomePopup, WelcomeChips, useWelcomePopup, type WelcomeAction } from "@/components/chat/welcome-popup"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
@@ -43,7 +43,7 @@ import {
 import { cn, formatDate as fmtDate, getFallbackImage, slugify, getCleanPathname } from "@/lib/utils"
 import { useLanguageStore } from "@/lib/stores/language-store"
 import { motion, AnimatePresence } from "framer-motion"
-import { Newspaper, Sparkles, Headphones, LineChart, Coins, Landmark, Briefcase, Shield, Lightbulb, Globe, Flame, Calendar, Cpu, ArrowUpRight, ArrowDownRight, MoreHorizontal, SquarePen, Trash2, FolderOpen, Code2, FileCode2, ChevronRight, Copy, Eye, Smartphone, Monitor, Share2 } from "lucide-react"
+import { Newspaper, Sparkles, Headphones, LineChart, Coins, Landmark, Briefcase, Shield, Lightbulb, Flame, Calendar, Cpu, ArrowUpRight, ArrowDownRight, MoreHorizontal, SquarePen, Trash2, FolderOpen, Code2, FileCode2, ChevronRight, Share2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useSidebar } from "@/components/ui/sidebar"
 import { useWebBuilderStore } from "@/lib/stores/webbuilder-store"
@@ -64,386 +64,6 @@ const MODEL_MAP: Record<string, string> = {
   pro: "pro",
   agent: "agent",
 }
-
-interface CreativeCategory {
-  id: string;
-  label: string;
-  icon: React.ComponentType<any>;
-  imageSrc: string;
-  slug: string;
-  examples: { label: string; slug: string }[];
-}
-
-const CREATIVE_CATEGORIES: CreativeCategory[] = [
-  { 
-    id: "sitios", 
-    label: "Sitios Web", 
-    icon: Globe, 
-    imageSrc: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=600",
-    slug: "sitio-web",
-    examples: [
-      { label: "Vestra (Inversión Social)", slug: "sitio-web" },
-      { label: "Lumen (SaaS Productividad)", slug: "aplicacion" },
-      { label: "Nocturne (Videojuegos Boutique)", slug: "multiplataforma" }
-    ]
-  },
-  { 
-    id: "apps", 
-    label: "Aplicaciones", 
-    icon: Smartphone, 
-    imageSrc: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?q=80&w=600",
-    slug: "aplicacion",
-    examples: [
-      { label: "NEXUS Blocks (Tetris Arcade)", slug: "aplicacion-1" },
-      { label: "Agora (Marketplace Móvil)", slug: "aplicacion-2" },
-      { label: "Clarity Invest (React Native)", slug: "aplicacion-3" }
-    ]
-  },
-  { 
-    id: "multiplatform", 
-    label: "Multiplataforma", 
-    icon: Monitor, 
-    imageSrc: "https://images.unsplash.com/photo-1531403009284-440f080d1e12?q=80&w=600",
-    slug: "multiplataforma",
-    examples: [
-      { label: "SplitWise Pro (Gestor de Gastos)", slug: "multiplataforma" },
-      { label: "Circle (Red Social Familiar)", slug: "multiplataforma-2" },
-      { label: "MentorMatch (Mentoría IA)", slug: "multiplataforma-3" }
-    ]
-  },
-];
-
-interface PreviewItem {
-  id: string;
-  category: string;
-  title: string;
-  desc: string;
-  imageSrc: string;
-  slug: string;
-  prompt: string;
-}const PREVIEW_ITEMS: PreviewItem[] = [
-  // sitios
-  {
-    id: "vestra",
-    category: "sitios",
-    title: "Vestra — Inversión Social",
-    desc: "Landing page de trading social con gráficos dinámicos de velas y panel de copy-trading.",
-    imageSrc: "https://mail.programbi.com/uploads/Captura-de-pantalla-2026-07-11-071843.png",
-    slug: "sitio-web-1",
-    prompt: `Diseña una página de inicio para una plataforma de inversión social y trading de acciones que transmite confianza, transparencia y empoderamiento financiero: el antídoto a las aplicaciones de trading caóticas, opacas e intimidantes.`
-  },
-  {
-    id: "lumen",
-    category: "sitios",
-    title: "Lumen — SaaS Productividad",
-    desc: "Software de productividad y gestión de proyectos con un enfoque de diseño limpio y calmado.",
-    imageSrc: "https://mail.programbi.com/uploads/Captura-de-pantalla-2026-07-11-071908.png",
-    slug: "sitio-web-2",
-    prompt: `Diseña una página de inicio para una empresa boutique de software(SaaS) que transmita claridad, sofisticación técnica y confianza serena: el antídoto a las interfaces caóticas, sobrecargadas y frías del software empresarial tradicional.`
-  },
-  {
-    id: "nocturne",
-    category: "sitios",
-    title: "Nocturne — Boutique Gaming",
-    desc: "Plataforma de e-commerce de videojuegos con estética cinematográfica brutalista oscura.",
-    imageSrc: "https://mail.programbi.com/uploads/Captura-de-pantalla-2026-07-11-071939.png",
-    slug: "sitio-web-3",
-    prompt: `Diseña una página de inicio para una tienda boutique de videojuegos premium que transmita emoción controlada, sofisticación y calidad cinematográfica: el antídoto a las tiendas caóticas, llenas de ofertas agresivas y diseño infantil.`
-  },
-  // apps
-  {
-    id: "nexus-blocks",
-    category: "apps",
-    title: "NEXUS Blocks — Tetris Arcade",
-    desc: "Juego móvil de Tetris moderno y pulido, con físicas SRS y animaciones glow optimizadas.",
-    imageSrc: "https://mail.programbi.com/uploads/Captura-de-pantalla-2026-07-12-032246.png",
-    slug: "aplicacion-1",
-    prompt: `Diseña un juego móvil estilo Tetris moderno, adictivo y altamente pulido, optimizado para teléfonos (portrait), con mecánicas clásicas mejoradas y una experiencia visual premium.`
-  },
-  {
-    id: "agora",
-    category: "apps",
-    title: "Agora — Marketplace Móvil",
-    desc: "Aplicación móvil de e-commerce vertical con catálogo interactivo y perfil de vendedor.",
-    imageSrc: "https://mail.programbi.com/uploads/Captura-de-pantalla-2026-07-12-035436.png",
-    slug: "aplicacion-2",
-    prompt: `Diseña una aplicación móvil de comercio electrónico estilo Mercado Libre, moderna, rápida y altamente profesional, optimizada exclusivamente para celulares(Mobile First - Portrait).`
-  },
-  {
-    id: "clarity-invest",
-    category: "apps",
-    title: "Clarity Invest — Finanzas",
-    desc: "Aplicación financiera para celulares con simulación de portafolios e interés compuesto.",
-    imageSrc: "https://mail.programbi.com/uploads/Captura-de-pantalla-2026-07-12-035517.png",
-    slug: "aplicacion-3",
-    prompt: `Crea una aplicación para celulares financiera premium para invertir en acciones, fondos indexados y ETFs, que transmita confianza, claridad, profesionalismo y sofisticación accesible. El antídoto a las apps financieras confusas, sobrecargadas de información y poco intuitivas.`
-  },
-  // multiplatform
-  {
-    id: "splitwise-pro",
-    category: "multiplatform",
-    title: "SplitWise Pro — Gastos",
-    desc: "Panel web interactivo para control de gastos grupales y división automática de cuentas.",
-    imageSrc: "https://mail.programbi.com/uploads/Captura-de-pantalla-2026-07-12-045548.png",
-    slug: "multiplataforma-1",
-    prompt: `Diseña una aplicación multiplataforma completa(iOS, Android, Web y Desktop) llamada SplitWise Pro, la versión premium y más avanzada de una app para dividir gastos y gestionar finanzas compartidas.`
-  },
-  {
-    id: "circle",
-    category: "multiplatform",
-    title: "Circle — Red Familiar",
-    desc: "Plataforma privada y segura para círculos familiares y sociales cercanos.",
-    imageSrc: "https://mail.programbi.com/uploads/Captura-de-pantalla-2026-07-12-045604.png",
-    slug: "multiplataforma-2",
-    prompt: `Diseña Circle, una aplicación multiplataforma(iOS, Android, Web y Desktop) de redes sociales privadas para grupos pequeños y cercanos.`
-  },
-  {
-    id: "mentormatch",
-    category: "multiplatform",
-    title: "MentorMatch — Mentoría IA",
-    desc: "Portal multiplataforma de agendamiento y tutoría impulsada por mentores virtuales.",
-    imageSrc: "https://mail.programbi.com/uploads/Captura-de-pantalla-2026-07-12-052712.png",
-    slug: "multiplataforma-3",
-    prompt: `Diseña una plataforma de mentoría profesional inteligente interactiva llamada MentorMatch que incluya un algoritmo visual de match (96% de compatibilidad), dashboard de objetivos de progreso semanal y agendamiento interactivo de citas.`
-  }
-];
-
-
-function MockupPreview({ type }: { type: string }) {
-  switch (type) {
-    case "retreat":
-      return (
-        <div className="w-full h-full bg-[#fbfaf8] dark:bg-[#1a1917] p-3 flex flex-col justify-between font-serif text-[10px] text-stone-850 dark:text-stone-250 select-none overflow-hidden relative border-b border-border/20">
-          <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#000_1px,transparent_1px)] dark:bg-[radial-gradient(#fff_1px,transparent_1px)] bg-[size:10px_10px]" />
-          <div className="flex justify-between items-center border-b border-stone-200 dark:border-stone-800 pb-1.5 z-10">
-            <span className="font-semibold tracking-wider text-xs">STILLWATER</span>
-            <div className="flex gap-2 text-[7px] font-sans text-stone-500">
-              <span>RESORT</span>
-              <span>RETIROS</span>
-            </div>
-          </div>
-          <div className="my-auto text-center px-2 py-1 z-10">
-            <h4 className="text-[11px] font-medium leading-tight">Encuentra paz en la naturaleza</h4>
-            <div className="w-8 h-[1px] bg-amber-600/60 mx-auto my-1.5" />
-            <p className="text-[7px] font-sans text-stone-500 leading-normal max-w-[150px] mx-auto line-clamp-1">Un santuario de tranquilidad y renovación mental.</p>
-          </div>
-          <div className="flex justify-between items-center mt-auto z-10">
-            <div className="w-12 h-3 rounded bg-stone-200 dark:bg-stone-800" />
-            <div className="w-14 h-4 rounded bg-stone-800 dark:bg-stone-200 text-white dark:text-stone-900 text-[6px] font-sans flex items-center justify-center font-bold tracking-wide">
-              RESERVAR AHORA
-            </div>
-          </div>
-        </div>
-      );
-    case "portfolio":
-      return (
-        <div className="w-full h-full bg-[#0d1612] p-3 flex flex-col justify-between font-serif text-[9px] text-[#e3eade] select-none overflow-hidden relative border-b border-border/20">
-          <div className="flex justify-between items-center border-b border-white/10 pb-1 z-10">
-            <span className="font-bold tracking-widest text-[9px] text-amber-500">SEVERIN HALBE</span>
-            <span className="text-[7px] text-[#8e988b]">PORTFOLIO</span>
-          </div>
-          <div className="flex gap-2 my-auto items-center z-10">
-            <div className="w-1/2 aspect-video bg-white/5 border border-white/10 rounded flex items-center justify-center">
-              <span className="text-[7px] text-amber-500/60 italic font-sans">BRUTALIST ARCH</span>
-            </div>
-            <div className="w-1/2 flex flex-col gap-1.5">
-              <h4 className="text-[9px] font-bold leading-tight">Estética y Forma</h4>
-              <p className="text-[6px] text-[#8e988b] leading-tight line-clamp-2">Exploración visual del concreto expuesto.</p>
-            </div>
-          </div>
-          <div className="flex justify-between items-center text-[7px] text-[#8e988b] mt-auto border-t border-white/10 pt-1 z-10">
-            <span>BERLIN, GER</span>
-            <span className="text-amber-500 font-sans font-bold">VER PROYECTO ↗</span>
-          </div>
-        </div>
-      );
-    case "gym":
-      return (
-        <div className="w-full h-full bg-[#0a0a0c] p-3 flex flex-col justify-between text-[9px] text-zinc-100 select-none overflow-hidden relative border-b border-border/20">
-          <div className="absolute inset-0 bg-gradient-to-tr from-orange-500/5 via-transparent to-transparent pointer-events-none" />
-          <div className="flex justify-between items-center z-10">
-            <span className="font-black tracking-tighter text-xs text-orange-500">IRON & STEEL</span>
-            <div className="px-1.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-800 text-[6px] text-zinc-400">GYM</div>
-          </div>
-          <div className="my-auto z-10 space-y-1">
-            <h4 className="text-[10px] font-black tracking-tight leading-none uppercase italic">BUILT BY DISCIPLINE.<br/>FORGED IN IRON.</h4>
-            <div className="flex gap-2 items-center text-[7px] text-zinc-400">
-              <span className="flex items-center gap-0.5"><span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />+500 SOCIOS</span>
-              <span>100% COACHES</span>
-            </div>
-          </div>
-          <div className="flex gap-1.5 items-center mt-auto z-10">
-            <div className="flex-1 h-4 rounded bg-orange-500 text-black text-[7px] font-black flex items-center justify-center tracking-wider">UNIRSE AL CLUB</div>
-            <div className="w-8 h-4 rounded bg-zinc-900 border border-zinc-800 flex items-center justify-center text-[8px]">▶</div>
-          </div>
-        </div>
-      );
-    case "compound":
-      return (
-        <div className="w-full h-full bg-[#090d16] p-3 flex flex-col justify-between text-[9px] text-slate-100 select-none overflow-hidden relative border-b border-border/20">
-          <div className="flex justify-between items-center z-10">
-            <span className="font-bold text-slate-300">Compound Calculator</span>
-            <span className="text-[7px] text-[#1890FF] font-bold bg-[#1890FF]/10 px-1.5 py-0.5 rounded">SIMULATOR</span>
-          </div>
-          <div className="my-auto flex items-end gap-1.5 h-12 z-10">
-            <div className="w-full flex items-end justify-between h-full px-1">
-              <div className="w-2.5 h-[15%] bg-slate-800 rounded-t-sm" />
-              <div className="w-2.5 h-[22%] bg-slate-800 rounded-t-sm" />
-              <div className="w-2.5 h-[32%] bg-slate-700 rounded-t-sm" />
-              <div className="w-2.5 h-[48%] bg-[#1890FF]/60 rounded-t-sm" />
-              <div className="w-2.5 h-[70%] bg-[#1890FF] rounded-t-sm" />
-              <div className="w-2.5 h-[100%] bg-emerald-500 rounded-t-sm" />
-            </div>
-          </div>
-          <div className="flex justify-between items-center mt-auto z-10 border-t border-slate-800 pt-1 text-[7px] text-slate-400">
-            <span>Aporte: $250/mes</span>
-            <span className="text-emerald-400 font-bold font-mono">+182% Ganado</span>
-          </div>
-        </div>
-      );
-    case "goal":
-      return (
-        <div className="w-full h-full bg-[#05110c] p-3 flex flex-col justify-between text-[9px] text-emerald-100 select-none overflow-hidden relative border-b border-border/20">
-          <div className="flex justify-between items-center z-10">
-            <span className="font-bold text-emerald-300">Goal Projector</span>
-            <span className="text-[6px] text-emerald-400 font-bold bg-emerald-950 border border-emerald-800/40 px-1 py-0.5 rounded">RULE of 4%</span>
-          </div>
-          <div className="my-auto flex items-center justify-between gap-2 z-10">
-            <div className="w-10 h-10 flex items-center justify-center relative shrink-0">
-              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                <circle cx="18" cy="18" r="15.9155" fill="none" stroke="currentColor" strokeWidth="3" className="text-emerald-950" />
-                <circle cx="18" cy="18" r="15.9155" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray="72, 100" strokeLinecap="round" className="text-emerald-500" />
-              </svg>
-              <span className="absolute text-[8px] font-bold text-emerald-400">72%</span>
-            </div>
-            <div className="flex flex-col gap-0.5">
-              <span className="text-[6px] text-emerald-500 uppercase tracking-wide">Meta Libertad Financiera</span>
-              <span className="text-[10px] font-bold text-white">$650K Ahorrado</span>
-              <span className="text-[6px] text-emerald-400 font-mono">Restan 4.5 años</span>
-            </div>
-          </div>
-          <div className="mt-auto border-t border-emerald-900/50 pt-1 text-[7px] text-emerald-500 z-10">
-            Tasa de ahorro mensual: 45%
-          </div>
-        </div>
-      );
-    case "mortgage":
-      return (
-        <div className="w-full h-full bg-[#110e16] p-3 flex flex-col justify-between text-[9px] text-purple-100 select-none overflow-hidden relative border-b border-border/20">
-          <div className="flex justify-between items-center z-10">
-            <span className="font-bold text-purple-300">Mortgage Planner</span>
-            <span className="text-[6px] text-purple-400 font-bold bg-purple-950 border border-purple-800/40 px-1 py-0.5 rounded">AMORTIZACIÓN</span>
-          </div>
-          <div className="my-auto flex gap-3 items-center z-10">
-            <div className="flex flex-col gap-1 w-1/2">
-              <div className="w-full h-3 rounded bg-zinc-900 border border-zinc-800 p-0.5 flex items-center"><span className="text-[6px] text-zinc-500">Tasa: 4.8%</span></div>
-              <div className="w-full h-3 rounded bg-zinc-900 border border-zinc-800 p-0.5 flex items-center"><span className="text-[6px] text-zinc-500">Monto: $300k</span></div>
-            </div>
-            <div className="flex-1 flex flex-col justify-center space-y-1">
-              <div className="flex justify-between text-[6px]">
-                <span className="text-blue-400">Principal</span>
-                <span className="text-purple-400">Interés</span>
-              </div>
-              <div className="w-full h-3.5 rounded-sm bg-zinc-900 flex overflow-hidden border border-zinc-800">
-                <div className="w-[40%] bg-blue-500" />
-                <div className="w-[60%] bg-purple-500" />
-              </div>
-              <span className="text-[8px] font-bold text-white text-center">$1,574/mes</span>
-            </div>
-          </div>
-          <div className="mt-auto border-t border-purple-900/50 pt-1 text-[7px] text-purple-500 flex justify-between z-10">
-            <span>Plazo: 30 Años</span>
-            <span className="text-blue-400">Ahorro fiscal: $4k/año</span>
-          </div>
-        </div>
-      );
-    case "kanban":
-      return (
-        <div className="w-full h-full bg-[#0d0f14] p-3 flex flex-col justify-between text-[9px] text-zinc-200 select-none overflow-hidden relative border-b border-border/20">
-          <div className="flex justify-between items-center z-10">
-            <span className="font-bold text-zinc-400">Productivity Kanban</span>
-            <span className="text-[6px] text-red-400 font-bold bg-red-950/60 border border-red-900 px-1 py-0.5 rounded flex items-center gap-0.5">🍅 POMODORO</span>
-          </div>
-          <div className="my-auto grid grid-cols-3 gap-1 z-10 w-full">
-            <div className="bg-zinc-900/60 rounded p-1 space-y-1 h-12">
-              <span className="text-[6px] text-zinc-500 uppercase font-black">TO DO</span>
-              <div className="bg-zinc-800 rounded px-1 py-0.5 text-[5px] text-zinc-300 border border-zinc-700/30 truncate">UI Layout</div>
-            </div>
-            <div className="bg-zinc-900/60 rounded p-1 space-y-1 h-12 border border-blue-500/20">
-              <span className="text-[6px] text-blue-400 uppercase font-black">DOING</span>
-              <div className="bg-zinc-800 rounded px-1 py-0.5 text-[5px] text-white border border-blue-500/40 truncate font-semibold">Database API</div>
-            </div>
-            <div className="bg-zinc-900/60 rounded p-1 space-y-1 h-12">
-              <span className="text-[6px] text-zinc-500 uppercase font-black">DONE</span>
-              <div className="bg-zinc-800 rounded px-1 py-0.5 text-[5px] text-zinc-500 line-through truncate opacity-50">Auth setup</div>
-            </div>
-          </div>
-          <div className="mt-auto border-t border-zinc-850 pt-1 text-[7px] text-zinc-550 z-10 flex justify-between items-center">
-            <span>3 Tareas activas</span>
-            <span className="text-red-400 font-bold">Sesión: 24:12</span>
-          </div>
-        </div>
-      );
-    case "ledger":
-      return (
-        <div className="w-full h-full bg-[#0a0a0d] p-3 flex flex-col justify-between text-[9px] text-zinc-200 select-none overflow-hidden relative border-b border-border/20">
-          <div className="flex justify-between items-center z-10">
-            <span className="font-bold text-zinc-400">Expense Ledger</span>
-            <span className="text-[6px] text-zinc-500 font-bold bg-zinc-900 border border-zinc-800 px-1 py-0.5 rounded">CASHFLOW</span>
-          </div>
-          <div className="my-auto space-y-1 z-10 w-full">
-            <div className="flex justify-between items-center p-1 rounded bg-zinc-900/50 border border-zinc-800 text-[6px]">
-              <span className="text-zinc-300">Amazon Web Services</span>
-              <span className="text-red-400 font-bold font-mono">-$45.20</span>
-            </div>
-            <div className="flex justify-between items-center p-1 rounded bg-zinc-900/50 border border-zinc-800 text-[6px]">
-              <span className="text-zinc-300">Nómina Recibida</span>
-              <span className="text-emerald-400 font-bold font-mono">+$2,450.00</span>
-            </div>
-            <div className="flex justify-between items-center p-1 rounded bg-zinc-900/50 border border-zinc-800 text-[6px]">
-              <span className="text-zinc-300">Netflix Premium</span>
-              <span className="text-red-400 font-bold font-mono">-$15.99</span>
-            </div>
-          </div>
-          <div className="mt-auto border-t border-zinc-850 pt-1 flex justify-between text-[7px] text-zinc-550 z-10">
-            <span>Balance del mes</span>
-            <span className="text-emerald-400 font-black">+$2,388.81</span>
-          </div>
-        </div>
-      );
-    case "sandbox":
-      return (
-        <div className="w-full h-full bg-[#151922] p-3 flex flex-col justify-between text-[9px] text-slate-300 select-none overflow-hidden relative border-b border-border/20">
-          <div className="flex justify-between items-center z-10">
-            <span className="font-bold text-slate-400 font-mono">Editor Sandbox</span>
-            <span className="text-[6px] text-amber-500 font-bold bg-amber-950/60 border border-amber-900 px-1 py-0.5 rounded">HTML/CSS</span>
-          </div>
-          <div className="my-auto flex gap-2 items-center z-10 w-full h-12">
-            <div className="w-1/2 bg-[#0d1117] rounded border border-slate-800 p-1 flex flex-col font-mono text-[5px] text-slate-450 h-full justify-between overflow-hidden">
-              <div>
-                <span className="text-purple-400">&lt;div</span> <span className="text-amber-500">class</span>=<span className="text-emerald-400">&quot;btn&quot;</span>&gt;
-                <div className="pl-2 text-slate-300">Click me</div>
-                <span className="text-purple-400">&lt;/div&gt;</span>
-              </div>
-            </div>
-            <div className="w-1/2 bg-[#090d16] rounded border border-slate-800 flex items-center justify-center h-full">
-              <div className="px-2 py-0.5 rounded bg-blue-500 text-white text-[5px] font-bold shadow animate-pulse">Click me</div>
-            </div>
-          </div>
-          <div className="mt-auto border-t border-slate-800 pt-1 text-[7px] text-slate-500 z-10">
-            Live Preview activa (120ms latencia)
-          </div>
-        </div>
-      );
-    default:
-      return (
-        <div className="w-full h-full bg-slate-900 flex items-center justify-center text-white text-xs select-none">
-          Layout Mockup
-        </div>
-      );
-  }
-}
-
 
 function groupConsecutiveMessages(messages: ChatMessage[]): ChatMessage[] {
   const grouped: ChatMessage[] = [];
@@ -574,11 +194,6 @@ function ChatLandingContent() {
 
   const [activeMenu, setActiveMenu] = useState<'noticias' | 'mercados' | 'portafolio' | 'mundo' | null>(null);
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
-  const [activeCategory, setActiveCategory] = useState<string | null>(
-    // En PC (vista de escritorio) arrancamos con "Sitios Web & Landings"
-    // seleccionado para mostrar la galería de inmediato. En móvil, null.
-    typeof window !== "undefined" && window.innerWidth >= 768 ? "sitios" : null
-  );
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   // Legacy data fetching and activeMenu state have been removed as part of Phase 5 cleanup.
 
@@ -1603,6 +1218,23 @@ function ChatLandingContent() {
   }, [aiMessages])
 
   const hasMessages = storeMessages.length > 0 || aiMessages.length > 0
+  const welcome = useWelcomePopup(!hasMessages)
+
+  const handleWelcomeAction = (action: WelcomeAction) => {
+    welcome.close()
+    if (action.id === "create-portfolio") {
+      if (!isAuthenticated) {
+        openAuthModal("register")
+        return
+      }
+      router.push("/portafolio")
+      return
+    }
+    if (action.prompt) {
+      handleSend(action.prompt)
+    }
+  }
+
 
   // Determine which messages to display, mapping from aiMessages to capture streaming state and fallback to storeMessages when syncing
   const isSyncing = currentChatId !== lastLoadedChatIdRef.current
@@ -1841,205 +1473,6 @@ function ChatLandingContent() {
     };
   }, [aiMessages, aiLoading, selectedModel]);
 
-  // Reusable category pill for desktop and mobile layouts
-  const CategoryPill = ({ cat, isActive, isMobile: mobile }: { cat: CreativeCategory; isActive: boolean; isMobile?: boolean }) => {
-    const CatIcon = cat.icon;
-    return (
-      <button
-        onClick={() => setActiveCategory(prev => prev === cat.id ? null : cat.id)}
-        className={cn(
-          "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all duration-200 whitespace-nowrap active:scale-95 cursor-pointer snap-start",
-          mobile && "shrink-0",
-          isActive
-            ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 border-zinc-200 dark:border-zinc-700"
-            : "bg-transparent border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-250 hover:bg-zinc-50 dark:hover:bg-zinc-900/50"
-        )}
-      >
-        <CatIcon className="w-3.5 h-3.5" />
-        {cat.label}
-      </button>
-    );
-  };
-
-  // Reusable preview card with mobile-optimized overlay visibility
-  const PreviewCard = ({ item, isMobile: mobile }: { item: PreviewItem; isMobile?: boolean }) => {
-    const [showMobileOverlay, setShowMobileOverlay] = useState(false);
-    const isApp = item.category === "apps";
-
-    if (isApp) {
-      return (
-        <div
-          onClick={() => {
-            if (mobile) {
-              setShowMobileOverlay(prev => !prev);
-            }
-          }}
-          className={cn(
-            "group relative bg-zinc-950 overflow-hidden border-[4px] border-zinc-800 dark:border-zinc-800/90 shadow-lg hover:shadow-xl transition-all duration-350 cursor-pointer select-none",
-            mobile 
-              ? "w-[110px] h-[195px] shrink-0 rounded-[20px] border-[3.5px] snap-start" 
-              : "w-[124px] h-[220px] mx-auto rounded-[24px]"
-          )}
-        >
-          {/* Background Image of the app (full bleed) */}
-          <img
-            src={item.imageSrc}
-            alt={item.title}
-            className="absolute inset-0 w-full h-full object-cover opacity-95 group-hover:scale-103 transition-transform duration-500 ease-out"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent z-10" />
-
-          {/* Interactive Hover/Active Overlay */}
-          <div
-            className={cn(
-              "absolute inset-0 bg-zinc-950/95 transition-all duration-300 p-2 flex flex-col justify-between shadow-md z-30",
-              mobile
-                ? (showMobileOverlay ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 translate-y-2 pointer-events-none")
-                : "opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto"
-            )}
-          >
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <h3 className="text-[9.5px] font-bold text-white tracking-tight leading-tight line-clamp-2">
-                  {item.title}
-                </h3>
-              </div>
-              <p className="text-[8px] text-zinc-300 leading-normal line-clamp-4">
-                {item.desc}
-              </p>
-            </div>
-
-            {/* Vertically Stacked Buttons to fit phone layout */}
-            <div className="flex flex-col gap-1 mt-auto w-full">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setInput(item.prompt);
-                  setTimeout(() => {
-                    const textarea = document.getElementById("chat-input") as HTMLTextAreaElement | null;
-                    if (textarea) {
-                      textarea.focus();
-                      const len = item.prompt.length;
-                      textarea.setSelectionRange(len, len);
-                    }
-                  }, 50);
-                  toast.success("Prompt copiado al chat", {
-                    description: "Puedes editar o enviar el mensaje directamente.",
-                    duration: 3000,
-                  });
-                }}
-                className="w-full py-1 rounded-lg border border-white/20 hover:bg-white/10 text-white text-[8.5px] font-bold transition-all duration-200 flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
-              >
-                <Copy className="w-2.5 h-2.5" />
-                Prompt
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  window.open(`/casos-de-uso/${item.slug}`, '_blank', 'noopener,noreferrer');
-                  toast.success("Abriendo demo...", {
-                    description: `Cargando el visor premium para ${item.title}`,
-                    duration: 3000,
-                  });
-                }}
-                className="w-full py-1 rounded-lg bg-[#1890FF] hover:bg-[#1890FF]/85 text-white text-[8.5px] font-bold transition-all duration-200 flex items-center justify-center gap-1 active:scale-95 cursor-pointer shadow-xs"
-              >
-                <Eye className="w-2.5 h-2.5" />
-                Ver Caso
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // Default horizontal layout for Websites and Multiplatform
-    return (
-      <div
-        onClick={() => {
-          if (mobile) {
-            setShowMobileOverlay(prev => !prev);
-          }
-        }}
-        className={cn(
-          "group relative rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800/85 bg-zinc-950 hover:border-[#1890FF]/40 hover:dark:border-[#1890FF]/40 shadow-sm hover:shadow-md transition-all duration-350 cursor-pointer select-none",
-          mobile ? "w-[280px] shrink-0 h-[160px] snap-start" : "h-[155px]"
-        )}
-      >
-        <img
-          src={item.imageSrc}
-          alt={item.title}
-          className="absolute inset-0 w-full h-full object-cover opacity-88 group-hover:scale-103 transition-transform duration-500 ease-out"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent z-10" />
-
-        {/* Interactive Hover/Active Overlay */}
-        <div
-          className={cn(
-            "absolute inset-0 bg-zinc-950/90 dark:bg-zinc-950/95 border border-zinc-200/40 dark:border-white/10 transition-all duration-300 p-4 flex flex-col justify-between shadow-md z-30",
-            mobile
-              ? (showMobileOverlay ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 translate-y-2 pointer-events-none")
-              : "opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto"
-          )}
-        >
-          <div className="space-y-1">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold text-white tracking-tight">
-                {item.title}
-              </h3>
-              <span className="text-[7px] font-extrabold text-[#1890FF] bg-[#1890FF]/15 border border-[#1890FF]/30 px-1 py-0.5 rounded tracking-wide uppercase shrink-0">
-                BUILD
-              </span>
-            </div>
-            <p className="text-[10px] text-zinc-300 leading-normal line-clamp-3">
-              {item.desc}
-            </p>
-          </div>
-
-          {/* Buttons inside overlay */}
-          <div className="flex gap-2 mt-auto">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setInput(item.prompt);
-                setTimeout(() => {
-                  const textarea = document.getElementById("chat-input") as HTMLTextAreaElement | null;
-                  if (textarea) {
-                    textarea.focus();
-                    const len = item.prompt.length;
-                    textarea.setSelectionRange(len, len);
-                  }
-                }, 50);
-                toast.success("Prompt copiado al chat", {
-                  description: "Puedes editar o enviar el mensaje directamente.",
-                  duration: 3000,
-                });
-              }}
-              className="flex-1 py-1.5 rounded-lg border border-white/20 hover:bg-white/10 text-white text-[10px] font-bold transition-all duration-200 flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
-            >
-              <Copy className="w-3 h-3" />
-              Prompt
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                window.open(`/casos-de-uso/${item.slug}`, '_blank', 'noopener,noreferrer');
-                toast.success("Abriendo demo...", {
-                  description: `Cargando el visor premium para ${item.title}`,
-                  duration: 3000,
-                });
-              }}
-              className="flex-1 py-1.5 rounded-lg bg-[#1890FF] hover:bg-[#1890FF]/85 text-white text-[10px] font-bold transition-all duration-200 flex items-center justify-center gap-1 active:scale-95 cursor-pointer shadow-xs"
-            >
-              <Eye className="w-3 h-3" />
-              Ver
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   // ── Render ──
   const chatContent = (
     <div className="flex flex-col h-full relative flex-1">
@@ -2188,13 +1621,9 @@ function ChatLandingContent() {
 <div className="flex flex-col h-full relative">
         {/* Main content area */}
         {!hasMessages ? (
-          /* Landing view - logo + input y galería de creaciones.
-             Al enviar el primer mensaje, hasMessages pasa a true y el input baja a su
-             posición fija en el fondo. */
+          /* Landing: logo + input. El popup de bienvenida cubre las acciones. */
           isMobile ? (
-            /* Mobile landing: logo + categories + preview cards carousel + input at bottom */
             <div className="flex flex-col h-full relative px-4 pt-4 pb-4 overflow-hidden">
-              {/* Top area: logo */}
               <div className="flex-1 flex flex-col items-center justify-center min-h-0 w-full max-w-md mx-auto">
                 <div className="text-center mb-5 shrink-0">
                   <img
@@ -2205,29 +1634,8 @@ function ChatLandingContent() {
                 </div>
               </div>
 
-              {/* Bottom area: horizontal scroll categories + preview cards + input */}
               <div className="relative w-full max-w-md mx-auto shrink-0 space-y-3 mt-5">
-                {/* Preview cards horizontal carousel - se superpone sobre el logo
-                    (overlay absoluto) para no desplazar el contenido superior */}
-                {activeCategory && (
-                  <div className="absolute bottom-full left-0 right-0 mb-2 w-full overflow-x-auto scrollbar-hide px-4 pb-2 snap-x snap-mandatory z-20">
-                    <div className="flex gap-3 pb-2 justify-center min-w-max mx-auto px-4">
-                      {PREVIEW_ITEMS.filter((item) => item.category === activeCategory).map((item) => (
-                        <PreviewCard key={item.id} item={item} isMobile />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Categories draggable row */}
-                <div className="overflow-x-auto scrollbar-hide w-full snap-x snap-mandatory">
-                  <div className="flex gap-2 pb-1 justify-center min-w-max mx-auto px-4">
-                    {CREATIVE_CATEGORIES.map((cat) => (
-                      <CategoryPill key={cat.id} cat={cat} isActive={activeCategory === cat.id} isMobile />
-                    ))}
-                  </div>
-                </div>
-
+                {!welcome.open && <WelcomeChips onAction={handleWelcomeAction} />}
                 <ChatInput
                   placeholder="Pregúntame lo que quieras..."
                   onSubmit={handleSend}
@@ -2240,10 +1648,6 @@ function ChatLandingContent() {
               </div>
             </div>
           ) : (
-            /* Desktop landing: centered logo + input + categories grid.
-               overflow-y-auto permite que el overlay de tarjetas (absoluto) se
-               despliegue hacia abajo sin mover el logo; el contenido en flujo
-               sigue centrado gracias a justify-center. */
             <div className="flex-1 flex flex-col items-center justify-start px-4 pt-[25vh] pb-4 relative h-full overflow-x-hidden overflow-y-auto scrollbar-hide">
               <div className="w-full max-w-4xl mx-auto flex flex-col items-center justify-start">
                 <motion.div
@@ -2278,33 +1682,15 @@ function ChatLandingContent() {
                   />
                 </motion.div>
 
-                {/* Categorías y Tarjetas de Previsualización */}
-                <div className="w-full mt-2 sm:mt-3 flex flex-col items-center relative">
-                  {/* Categorías (Pills) */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, ease: "easeOut", delay: 0.2 }}
-                    className="flex flex-wrap items-center justify-center gap-2 w-full max-w-2xl py-2 px-4 mt-1"
-                  >
-                    {CREATIVE_CATEGORIES.map((cat) => (
-                      <CategoryPill key={cat.id} cat={cat} isActive={activeCategory === cat.id} />
-                    ))}
-                  </motion.div>
-
-                  {/* Grid de Previsualización */}
-                  {activeCategory && (
-                    <div className="w-full max-w-4xl px-2 pb-6 z-20 mt-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
-                        {PREVIEW_ITEMS.filter((item) => item.category === activeCategory).map((item) => (
-                          <PreviewCard key={item.id} item={item} />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <motion.div
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, ease: "easeOut", delay: 0.2 }}
+                  className="w-full mt-3 flex justify-center"
+                >
+                  {!welcome.open && <WelcomeChips onAction={handleWelcomeAction} />}
+                </motion.div>
               </div>
-
             </div>
           )
         ) : (
@@ -2464,7 +1850,14 @@ function ChatLandingContent() {
         )}
       </div>
 
-      {/* Share dialog — Q&A or full conversation */}
+      {!hasMessages && (
+        <WelcomePopup
+          open={welcome.open}
+          onClose={welcome.close}
+          onAction={handleWelcomeAction}
+        />
+      )}
+
       <ShareChatDialog
         isOpen={shareDialog.isOpen}
         onClose={() => setShareDialog({ ...shareDialog, isOpen: false })}

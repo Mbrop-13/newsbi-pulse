@@ -59,19 +59,11 @@ export function AuthSync() {
                 if (usageRes.ok) {
                   const usage = await usageRes.json();
                   const tokenRes = usage?.resources?.find((r: any) => r.id === "ai_tokens");
-                  const imageUsed =
-                    typeof usage?.monthlyImageCreditsUsed === "number"
-                      ? usage.monthlyImageCreditsUsed
-                      : Number(
-                          usage?.resources?.find((r: any) => r.id === "image_credits")
-                            ?.used
-                        ) || 0;
                   const used = Number(tokenRes?.used) || 0;
                   useSubscriptionStore.getState().setUsage({
                     ...(data.tier === "free"
                       ? { lifetimeAiTokens: used }
                       : { monthlyAiTokens: used }),
-                    monthlyImageCreditsUsed: imageUsed,
                   });
                 }
               } catch {
@@ -125,19 +117,11 @@ export function AuthSync() {
               if (usageRes.ok) {
                 const usage = await usageRes.json();
                 const tokenRes = usage?.resources?.find((r: any) => r.id === "ai_tokens");
-                const imageUsed =
-                  typeof usage?.monthlyImageCreditsUsed === "number"
-                    ? usage.monthlyImageCreditsUsed
-                    : Number(
-                        usage?.resources?.find((r: any) => r.id === "image_credits")
-                          ?.used
-                      ) || 0;
                 const used = Number(tokenRes?.used) || 0;
                 useSubscriptionStore.getState().setUsage({
                   ...(data.tier === "free"
                     ? { lifetimeAiTokens: used }
                     : { monthlyAiTokens: used }),
-                  monthlyImageCreditsUsed: imageUsed,
                 });
               }
             } catch {

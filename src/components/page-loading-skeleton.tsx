@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 
-type Variant = "default" | "portfolio" | "markets" | "news" | "chat" | "flow" | "compact";
+type Variant = "default" | "portfolio" | "markets" | "news" | "chat" | "compact";
 
 /**
  * Skeleton de página completa — evita pantalla en blanco mientras carga auth o datos.
@@ -25,24 +25,6 @@ export function PageLoadingSkeleton({
         <div className="flex flex-col items-center gap-3">
           <div className="h-9 w-9 rounded-full border-[3px] border-[#1890FF]/25 border-t-[#1890FF] animate-spin" />
           <p className="text-xs font-medium text-muted-foreground">Cargando…</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (variant === "flow") {
-    return (
-      <div
-        className={cn(
-          "flex flex-1 flex-col h-[100dvh] bg-[#f8f9fa] dark:bg-[#07080a]",
-          className
-        )}
-      >
-        <div className="flex-1 flex items-center justify-center">
-          <div className="h-8 w-48 rounded-lg bg-zinc-200/70 dark:bg-zinc-800 animate-pulse" />
-        </div>
-        <div className="px-3 pb-4">
-          <div className="mx-auto max-w-3xl h-24 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800 animate-pulse" />
         </div>
       </div>
     );

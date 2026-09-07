@@ -5,7 +5,6 @@ import { useScroll, useTransform, motion } from "framer-motion";
 import { LandingHero } from "@/components/landing/landing-hero";
 import { LandingMobileMockup } from "@/components/landing/landing-mobile-mockup";
 import { LandingFeatures } from "@/components/landing/landing-features";
-import { LandingUseCases } from "@/components/landing/landing-use-cases";
 import { LandingStats } from "@/components/landing/landing-stats";
 import { LandingPricing } from "@/components/landing/landing-pricing";
 import { LandingCTA } from "@/components/landing/landing-cta";
@@ -56,7 +55,6 @@ export default function HomePage() {
       <div ref={featuresRef}>
         <LandingFeatures />
       </div>
-      <LandingUseCases />
       <LandingStats />
       <LandingPricing />
       <LandingCTA />

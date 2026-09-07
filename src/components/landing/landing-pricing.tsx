@@ -1,8 +1,9 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { Check, Sparkles, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuthStore, useAuthModalStore } from "@/lib/stores/auth-store";
 
 const PLANS = [
   {
@@ -17,7 +18,7 @@ const PLANS = [
     ],
     popular: false,
     cta: "Comenzar Gratis",
-    link: "/auth"
+    action: "register" as const,
   },
   {
     name: "Pro",
@@ -68,6 +69,18 @@ const PLANS = [
 ];
 
 export function LandingPricing() {
+  const router = useRouter();
+  const { isAuthenticated } = useAuthStore();
+  const { openModal } = useAuthModalStore();
+
+  const handleFreeCta = () => {
+    if (isAuthenticated) {
+      router.push("/");
+    } else {
+      openModal("register");
+    }
+  };
+
   return (
     <section className="pt-10 pb-20 bg-white text-slate-900 relative">
       <div className="max-w-7xl mx-auto px-6">
@@ -119,16 +132,26 @@ export function LandingPricing() {
                 </ul>
               </div>
 
-              <Link
-                href={plan.link}
-                className={`w-full text-center text-xs font-bold py-3.5 rounded-xl transition-all cursor-pointer ${
-                  plan.popular
-                    ? "bg-black hover:bg-black/90 text-white shadow-lg shadow-black/25"
-                    : "bg-white hover:bg-slate-50 text-slate-800 border border-slate-200"
-                }`}
-              >
-                {plan.cta}
-              </Link>
+              {plan.action === "register" ? (
+                <button
+                  type="button"
+                  onClick={handleFreeCta}
+                  className="w-full text-center text-xs font-bold py-3.5 rounded-xl transition-all cursor-pointer bg-white hover:bg-slate-50 text-slate-800 border border-slate-200"
+                >
+                  {plan.cta}
+                </button>
+              ) : (
+                <Link
+                  href={plan.link ?? "/suscripcion"}
+                  className={`w-full text-center text-xs font-bold py-3.5 rounded-xl transition-all cursor-pointer ${
+                    plan.popular
+                      ? "bg-black hover:bg-black/90 text-white shadow-lg shadow-black/25"
+                      : "bg-white hover:bg-slate-50 text-slate-800 border border-slate-200"
+                  }`}
+                >
+                  {plan.cta}
+                </Link>
+              )}
             </div>
           ))}
         </div>

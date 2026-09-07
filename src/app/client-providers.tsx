@@ -120,7 +120,8 @@ export function ClientLayoutProviders({
   const isLandingPage = pathname === "/home" ||
     pathname === "/empresas" ||
     pathname.startsWith("/empresas/") ||
-    pathname.startsWith("/invitar/");
+    pathname.startsWith("/invitar/") ||
+    pathname.startsWith("/auth");
   // Pages that use the sidebar layout (no navbar/footer)
   const sidebarPages = [
     "/",

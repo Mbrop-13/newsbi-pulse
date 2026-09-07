@@ -102,6 +102,41 @@ const nextConfig = {
         permanent: true,
       },
       {
+        source: '/precios',
+        destination: '/suscripcion',
+        permanent: true,
+      },
+      {
+        source: '/precios/:path*',
+        destination: '/suscripcion',
+        permanent: true,
+      },
+      {
+        source: '/pricing',
+        destination: '/suscripcion',
+        permanent: true,
+      },
+      {
+        source: '/login',
+        destination: '/auth?view=login',
+        permanent: false,
+      },
+      {
+        source: '/signup',
+        destination: '/auth?view=register',
+        permanent: false,
+      },
+      {
+        source: '/registro',
+        destination: '/auth?view=register',
+        permanent: false,
+      },
+      {
+        source: '/register',
+        destination: '/auth?view=register',
+        permanent: false,
+      },
+      {
         source: '/casos-de-uso',
         destination: '/',
         permanent: true,

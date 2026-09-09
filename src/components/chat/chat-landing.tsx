@@ -6,7 +6,7 @@ import { useTheme } from "next-themes"
 import { ChatInput } from "@/components/chat/chat-input"
 import { ChatMessages } from "@/components/chat/chat-messages"
 import { ModelSelector, type MaverlangModel } from "@/components/chat/model-selector"
-import { WelcomePopup, WelcomeChips, useWelcomePopup, type WelcomeAction } from "@/components/chat/welcome-popup"
+import { WelcomeChips, type WelcomeAction } from "@/components/chat/welcome-popup"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
@@ -1218,10 +1218,8 @@ function ChatLandingContent() {
   }, [aiMessages])
 
   const hasMessages = storeMessages.length > 0 || aiMessages.length > 0
-  const welcome = useWelcomePopup(!hasMessages)
 
   const handleWelcomeAction = (action: WelcomeAction) => {
-    welcome.close()
     if (action.id === "create-portfolio") {
       if (!isAuthenticated) {
         openAuthModal("register")
@@ -1621,7 +1619,7 @@ function ChatLandingContent() {
 <div className="flex flex-col h-full relative">
         {/* Main content area */}
         {!hasMessages ? (
-          /* Landing: logo + input. El popup de bienvenida cubre las acciones. */
+          /* Landing vacío: chips de acción junto a la barra (móvil arriba, desktop abajo). */
           isMobile ? (
             <div className="flex flex-col h-full relative px-4 pt-4 pb-4 overflow-hidden">
               <div className="flex-1 flex flex-col items-center justify-center min-h-0 w-full max-w-md mx-auto">
@@ -1635,7 +1633,7 @@ function ChatLandingContent() {
               </div>
 
               <div className="relative w-full max-w-md mx-auto shrink-0 space-y-3 mt-5">
-                {!welcome.open && <WelcomeChips onAction={handleWelcomeAction} />}
+                <WelcomeChips onAction={handleWelcomeAction} />
                 <ChatInput
                   placeholder="Pregúntame lo que quieras..."
                   onSubmit={handleSend}
@@ -1688,7 +1686,7 @@ function ChatLandingContent() {
                   transition={{ duration: 0.5, ease: "easeOut", delay: 0.2 }}
                   className="w-full mt-3 flex justify-center"
                 >
-                  {!welcome.open && <WelcomeChips onAction={handleWelcomeAction} />}
+                  <WelcomeChips onAction={handleWelcomeAction} />
                 </motion.div>
               </div>
             </div>
@@ -1849,14 +1847,6 @@ function ChatLandingContent() {
           </>
         )}
       </div>
-
-      {!hasMessages && (
-        <WelcomePopup
-          open={welcome.open}
-          onClose={welcome.close}
-          onAction={handleWelcomeAction}
-        />
-      )}
 
       <ShareChatDialog
         isOpen={shareDialog.isOpen}

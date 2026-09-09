@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
+import { parseIncompleteMarkdown } from "@/components/ai/response"
+import { useSmoothedStream } from "@/hooks/use-smoothed-stream"
 import { useCanvasStore } from "@/lib/stores/canvas-store"
 import { useBrowserStore } from "@/lib/stores/browser-store"
 import { CanvasFileCard } from "@/components/chat/canvas-file-card"
@@ -115,13 +117,7 @@ export function ChatMessages({
                 <div className="flex gap-3">
                   {/* Use compact avatar (no video) when canvas/browser is open */}
                   {!isSplitMode && !isMobile && <AssistantAvatar isResponding={true} isWebBuilderMode={false} />}
-                  <div className="flex items-center gap-2 py-2">
-                    <div className="flex items-center gap-1">
-                      <div className="w-2 h-2 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <div className="w-2 h-2 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <div className="w-2 h-2 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                    </div>
-                  </div>
+                  <ThinkingPulse />
                 </div>
               ) : (
                 /* WebBuilder Live Orchestration Loading View */
@@ -129,11 +125,7 @@ export function ChatMessages({
                   {/* Title / Header */}
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-xs font-bold text-black dark:text-white">Delegando agentes</span>
-                    <div className="flex items-center gap-1 ml-1 shrink-0">
-                      <div className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <div className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <div className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                    </div>
+                    <ThinkingPulse label="" />
                   </div>
 
                   {/* Dynamic checklist or planning logs */}
@@ -591,6 +583,30 @@ function MessageBubble({
   // Keep track of loading transition to auto-collapse states when stream ends
   const isResponding = isLast && isLoading;
   const prevLoadingRef = useRef(isLoading);
+
+  const parsedMessage = useMemo(() => {
+    let content = message.content || ""
+    let reasoning = message.reasoning || ""
+    if (content.includes("<think>")) {
+      const thinkMatch = content.match(/<think>([\s\S]*?)<\/think>/)
+      if (thinkMatch) {
+        reasoning = (reasoning ? reasoning + "\n" : "") + thinkMatch[1].trim()
+        content = content.replace(/<think>[\s\S]*?<\/think>/, "").trim()
+      } else {
+        const partialMatch = content.match(/<think>([\s\S]*)/)
+        if (partialMatch) {
+          reasoning = (reasoning ? reasoning + "\n" : "") + partialMatch[1].trim()
+          content = content.replace(/<think>[\s\S]*/, "").trim()
+        }
+      }
+    }
+    return { content, reasoning }
+  }, [message.content, message.reasoning])
+
+  const displayContent = useSmoothedStream(
+    parsedMessage.content,
+    Boolean(isResponding && !isUser)
+  )
   
   useEffect(() => {
     if (isResponding) {
@@ -973,23 +989,8 @@ function MessageBubble({
     );
   }
 
-  let finalContent = message.content || '';
-  let extractedReasoning = message.reasoning || '';
-  
-  if (finalContent.includes('<think>')) {
-    const thinkMatch = finalContent.match(/<think>([\s\S]*?)<\/think>/);
-    if (thinkMatch) {
-      extractedReasoning = (extractedReasoning ? extractedReasoning + '\n' : '') + thinkMatch[1].trim();
-      finalContent = finalContent.replace(/<think>[\s\S]*?<\/think>/, '').trim();
-    } else {
-      // Handle streaming case where closing tag is not yet present
-      const partialMatch = finalContent.match(/<think>([\s\S]*)/);
-      if (partialMatch) {
-        extractedReasoning = (extractedReasoning ? extractedReasoning + '\n' : '') + partialMatch[1].trim();
-        finalContent = finalContent.replace(/<think>[\s\S]*/, '').trim();
-      }
-    }
-  }
+  const finalContent = displayContent
+  const extractedReasoning = parsedMessage.reasoning
 
   // ─── Model Reasoning (Grok-style) ───
   // - Label: solo "Razonamiento" + flecha (sin icono de cerebro)
@@ -1633,7 +1634,7 @@ function MessageBubble({
         })()}
 
         {/* 4. Main text content (sin code blocks, que ya se renderizaron arriba) */}
-        <div className="prose dark:prose-invert max-w-none text-[15px] leading-relaxed">
+        <div className="prose dark:prose-invert max-w-none text-[15px] leading-[1.75]">
           {(() => {
             const proseContent = isWebBuilderMode
               ? stripArtifactXml(finalContent)
@@ -1641,6 +1642,7 @@ function MessageBubble({
             const hasCanvasCards = !isWebBuilderMode && extractCodeBlocks(finalContent, isResponding).length > 0;
             if (proseContent) {
               return (
+            <>
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
@@ -1670,19 +1672,21 @@ function MessageBubble({
                 }
               }}
             >
-              {proseContent}
+              {isResponding ? parseIncompleteMarkdown(proseContent) : proseContent}
             </ReactMarkdown>
+            {isResponding && (
+              <span
+                aria-hidden
+                className="inline-block w-[1.5px] h-[0.95em] ml-0.5 align-text-bottom rounded-full bg-foreground/70 animate-pulse"
+              />
+            )}
+            </>
             );
             }
 
             if (isResponding && !hasCanvasCards) {
               if (!(message.reasoning || citationsList.length > 0)) {
-                return (
-                  <div className="flex items-center gap-2 py-1.5 text-muted-foreground text-xs font-semibold">
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-[#1890FF]" />
-                    <span>Escribiendo respuesta...</span>
-                  </div>
-                );
+                return <ThinkingPulse label="Pensando" />;
               }
               return null;
             }
@@ -1697,13 +1701,7 @@ function MessageBubble({
                 );
               }
               if (isLast && isLoading) {
-                return (
-                  <div className="flex items-center gap-1 py-1.5">
-                    <div className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <div className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <div className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                  </div>
-                );
+                return <ThinkingPulse />;
               }
             }
 
@@ -1797,10 +1795,25 @@ const getGoogleFinanceSymbol = (symbol: string): string => {
   return ticker;
 };
 
+function ThinkingPulse({ label = "Pensando" }: { label?: string }) {
+  return (
+    <div className="flex items-center gap-2 py-1.5 text-muted-foreground select-none">
+      <span className="relative flex h-1.5 w-1.5">
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-current opacity-35" />
+        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-current opacity-80" />
+      </span>
+      {label ? (
+        <span className="text-[13px] font-medium tracking-tight">{label}</span>
+      ) : null}
+    </div>
+  )
+}
+
 function AssistantAvatar({ isResponding, isWebBuilderMode }: { isResponding: boolean; isWebBuilderMode?: boolean }) {
   const { resolvedTheme } = useTheme();
   const { isMobile } = useSidebar();
   const [mounted, setMounted] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -1810,18 +1823,33 @@ function AssistantAvatar({ isResponding, isWebBuilderMode }: { isResponding: boo
 
   // Desactivar el video en móvil y en modo claro (solo mostrar en modo oscuro)
   const showVideo = isResponding && !isMobile && isDark;
+  const videoSrc = isDark
+    ? "https://mail.programbi.com/uploads/Letras_se_mueven_planeta_c%C3%ADrculo%E2%80%A6_202606230457.mp4"
+    : "https://mail.programbi.com/uploads/Flow_1080p_202606260417.mp4";
+
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el || !showVideo) return;
+    const calm = () => {
+      el.playbackRate = 0.55;
+    };
+    calm();
+    el.addEventListener("loadedmetadata", calm);
+    el.addEventListener("play", calm);
+    return () => {
+      el.removeEventListener("loadedmetadata", calm);
+      el.removeEventListener("play", calm);
+    };
+  }, [showVideo, videoSrc]);
 
   if (showVideo) {
-    const videoSrc = isDark
-      ? "https://mail.programbi.com/uploads/Letras_se_mueven_planeta_c%C3%ADrculo%E2%80%A6_202606230457.mp4"
-      : "https://mail.programbi.com/uploads/Flow_1080p_202606260417.mp4";
-
     return (
       <div className={cn(
         "shrink-0 mt-1 flex items-center justify-center rounded-2xl overflow-hidden bg-transparent",
         isWebBuilderMode ? "h-10 w-10 rounded-xl" : "h-24 w-32"
       )}>
         <video 
+          ref={videoRef}
           src={videoSrc} 
           autoPlay 
           loop 

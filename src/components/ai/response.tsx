@@ -16,7 +16,7 @@ import { CodeBlock, CodeBlockCopyButton } from './code-block';
  * Parses markdown text and removes incomplete tokens to prevent partial rendering
  * of links, images, bold, and italic formatting during streaming.
  */
-function parseIncompleteMarkdown(text: string): string {
+export function parseIncompleteMarkdown(text: string): string {
   if (!text || typeof text !== 'string') {
     return text;
   }

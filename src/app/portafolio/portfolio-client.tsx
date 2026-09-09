@@ -84,7 +84,9 @@ export default function PortfolioClient() {
         if (res.ok) {
           const liveData = await res.json();
           const enriched = dbAssets.map(dbA => {
-            const live = liveData.find((l: any) => l.symbol === dbA.symbol) || {};
+            const live = liveData.find((l: any) =>
+              String(l.symbol || "").toUpperCase() === String(dbA.symbol || "").toUpperCase()
+            ) || {};
             return { ...dbA, price: live.price || 0, change: live.change || 0, changePercent: live.changePercent || 0, shares: dbA.shares || 0, average_price: dbA.average_price || 0, logo: getLogoUrl(dbA.symbol) };
           });
           setAssets(enriched);
@@ -167,8 +169,10 @@ export default function PortfolioClient() {
     const activeAlerts = alerts;
     if (!activeAlerts || activeAlerts.length === 0) return;
     for (const alert of activeAlerts) {
-      const live = liveData.find((l: any) => l.symbol === alert.symbol);
-      if (!live) continue;
+      const live = liveData.find((l: any) =>
+        String(l.symbol || "").toUpperCase() === String(alert.symbol || "").toUpperCase()
+      );
+      if (!live || live.price == null || Number(live.price) <= 0) continue;
       const triggered = (alert.condition === "above" && live.price >= alert.target_price) || (alert.condition === "below" && live.price <= alert.target_price);
       if (triggered) {
         await fetch("/api/portfolio/alerts", {

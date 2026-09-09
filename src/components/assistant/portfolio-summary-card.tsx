@@ -31,10 +31,10 @@ export function PortfolioSummaryCard({ result }: PortfolioSummaryCardProps) {
 
   const assets = result.assets || [];
   const summary = result.summary || {};
-  const totalValue = summary.total_value || 0;
-  const totalPnl = summary.total_pnl || 0;
-  const avgChange = summary.average_daily_change || 0;
-  const isPositive = avgChange >= 0;
+  const totalValue = typeof summary.total_value === "number" ? summary.total_value : null;
+  const totalPnl = typeof summary.total_pnl === "number" ? summary.total_pnl : null;
+  const avgChange = typeof summary.average_daily_change === "number" ? summary.average_daily_change : null;
+  const isPositive = (avgChange || 0) >= 0;
 
   // Preview: circular logo thumbnails for first 5 stocks
   const previewLogos = assets.slice(0, 5);
@@ -91,8 +91,8 @@ export function PortfolioSummaryCard({ result }: PortfolioSummaryCardProps) {
             </div>
             <span className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 ml-1">{assets.length} activos</span>
             <span className="text-[10px] text-gray-300 dark:text-gray-600">•</span>
-            <span className={`text-[11px] font-bold ${isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
-              {isPositive ? '+' : ''}{avgChange.toFixed(2)}% hoy
+            <span className={`text-[11px] font-bold ${avgChange == null ? 'text-gray-400' : isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
+              {avgChange == null ? 'sin cotización' : `${isPositive ? '+' : ''}${avgChange.toFixed(2)}% hoy`}
             </span>
           </div>
         </div>
@@ -125,10 +125,12 @@ export function PortfolioSummaryCard({ result }: PortfolioSummaryCardProps) {
                     <span className="text-xs font-medium text-gray-500">Valor Total</span>
                   </div>
                   <span className="text-sm font-black text-gray-900 dark:text-white tabular-nums">
-                    ${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {totalValue == null
+                      ? "—"
+                      : `$${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                   </span>
                 </div>
-                {totalPnl !== 0 && (
+                {totalPnl != null && totalPnl !== 0 && (
                   <div className="flex items-center justify-between mt-1.5">
                     <span className="text-[11px] text-gray-400">Ganancia/Pérdida</span>
                     <span className={`text-xs font-bold tabular-nums ${totalPnl >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
@@ -141,7 +143,11 @@ export function PortfolioSummaryCard({ result }: PortfolioSummaryCardProps) {
               {/* Scrollable assets list */}
               <div className="max-h-[340px] overflow-y-auto hidden-scrollbar divide-y divide-gray-100 dark:divide-white/5">
                 {assets.map((asset: any, i: number) => {
-                  const changePositive = (asset.changePercent || 0) >= 0;
+                  const livePrice = asset.last_price ?? asset.price;
+                  const quoteOk = asset.quote_ok !== false && livePrice != null && Number(livePrice) > 0;
+                  const changePct = quoteOk ? Number(asset.changePercent || 0) : null;
+                  const changePositive = (changePct || 0) >= 0;
+                  const currency = asset.currency && asset.currency !== "USD" ? `${asset.currency} ` : "$";
                   return (
                     <Link
                       key={asset.symbol}
@@ -181,14 +187,20 @@ export function PortfolioSummaryCard({ result }: PortfolioSummaryCardProps) {
                       {/* Price + Change */}
                       <div className="text-right shrink-0">
                         <p className="text-[13px] font-bold text-gray-900 dark:text-white tabular-nums">
-                          ${(asset.price || 0).toFixed(2)}
+                          {quoteOk
+                            ? `${currency}${Number(livePrice).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                            : "—"}
                         </p>
-                        <div className={`flex items-center justify-end gap-0.5 mt-0.5 ${changePositive ? 'text-emerald-500' : 'text-red-500'}`}>
-                          {changePositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                          <span className="text-[10px] font-bold tabular-nums">
-                            {changePositive ? '+' : ''}{(asset.changePercent || 0).toFixed(2)}%
-                          </span>
-                        </div>
+                        {quoteOk && changePct != null ? (
+                          <div className={`flex items-center justify-end gap-0.5 mt-0.5 ${changePositive ? 'text-emerald-500' : 'text-red-500'}`}>
+                            {changePositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                            <span className="text-[10px] font-bold tabular-nums">
+                              {changePositive ? '+' : ''}{changePct.toFixed(2)}%
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] font-medium text-gray-400">sin cotización</span>
+                        )}
                       </div>
 
                       {/* Arrow link */}

@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
-import YahooFinance from "yahoo-finance2";
 import { createClient } from "@/lib/supabase/server";
-
-const yf = new YahooFinance();
+import { findQuote, getLiveQuotes, quoteKey } from "@/lib/market-quotes";
 
 export async function GET(request: Request) {
   // Verify user is authenticated
@@ -19,28 +17,28 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Missing symbols parameter" }, { status: 400 });
   }
 
-  const symbols = symbolsParam.split(",").map(s => s.trim().toUpperCase());
-  
+  const symbols = symbolsParam.split(",").map(s => s.trim()).filter(Boolean);
+
   if (symbols.length === 0) {
     return NextResponse.json([]);
   }
 
   try {
-    const quotes = await yf.quote(symbols);
-    // quote returns an array if multiple, or a single object if one
-    const quoteArray = Array.isArray(quotes) ? quotes : [quotes];
-
-    const results = quoteArray.map((q: any) => ({
-      symbol: q.symbol,
-      price: q.regularMarketPrice,
-      change: q.regularMarketChange,
-      changePercent: q.regularMarketChangePercent,
-      // Timestamp (segundos, epoch) del último precio regular. Nos sirve para
-      // saber si la cotización es del día de hoy o está "congelada" de un día
-      // de mercado anterior (findes de semana, festivos, etc.).
-      regularMarketTime: q.regularMarketTime ?? null,
-      logo: `https://assets.parqet.com/logos/symbol/${q.symbol.toUpperCase()}`
-    }));
+    const quotes = await getLiveQuotes(symbols);
+    const results = symbols.map((raw) => {
+      const live = findQuote(quotes, raw);
+      const symbol = (live?.symbol || quoteKey(raw) || raw).toUpperCase();
+      return {
+        symbol,
+        price: live?.price ?? null,
+        change: live?.change ?? null,
+        changePercent: live?.changePercent ?? null,
+        currency: live?.currency ?? null,
+        quote_ok: !!(live && live.price > 0),
+        regularMarketTime: live?.asOf ?? null,
+        logo: `https://assets.parqet.com/logos/symbol/${symbol}`,
+      };
+    });
 
     return NextResponse.json(results);
   } catch (error) {

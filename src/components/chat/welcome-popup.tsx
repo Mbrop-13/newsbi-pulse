@@ -29,7 +29,7 @@ export const WELCOME_ACTIONS: WelcomeAction[] = [
     title: "Analizar tu portafolio",
     description: "Rendimiento, riesgos y qué está moviendo tus posiciones hoy.",
     prompt:
-      "Analiza mi portafolio. Dame un resumen del rendimiento, las posiciones que más suben y bajan, el riesgo actual y una recomendación concreta.",
+      "Analiza mi portafolio con las cotizaciones en vivo. Dame un resumen del rendimiento, las posiciones que más suben y bajan, el riesgo actual y una recomendación concreta.",
     icon: Briefcase,
   },
   {

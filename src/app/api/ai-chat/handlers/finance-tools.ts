@@ -4,6 +4,7 @@ import YahooFinance from "yahoo-finance2";
 import { createClient } from "@/lib/supabase/server";
 import { checkLimit } from "@/lib/check-limits";
 import { buildIlike, escapeOrFilter } from "@/lib/db-escape";
+import { findQuote, getLiveQuotes } from "@/lib/market-quotes";
 
 const yf = new YahooFinance();
 
@@ -16,7 +17,7 @@ export function getFinanceTools({ user, userId }: FinanceToolsParams) {
   return {
     // ── PORTFOLIO TOOLS ──
     get_portfolio_summary: tool({
-      description: 'Resumen en vivo del portafolio: precios, cambios diarios, posiciones. Usar cuando pregunten por "mis acciones". IMPORTANTE: El "changePercent" devuelto es SÓLO el cambio de hoy (1d). Si el usuario pide el rendimiento de "este mes" (1mo), "este año" (1y) u otro periodo, DEBES llamar primero a esta herramienta para saber qué símbolos tiene el usuario, y LUEGO llamar a la herramienta "compare_stocks" pasándole esos símbolos y el "period" correspondiente para obtener el crecimiento histórico real antes de responder o graficar.',
+      description: 'Cotizaciones REALES en vivo del portafolio del usuario (precio, cambio del día, valor de posición, P/L). OBLIGATORIO usarla antes de hablar de "mis acciones", "mi portafolio" o de armar una tabla de precios. Los campos last_price / price son la ÚNICA fuente de verdad: nunca inventes ni sustituyas esos números. changePercent es SOLO el cambio de hoy (1d). Si piden 1mo/1y, llama esto y después compare_stocks con esos símbolos.',
       parameters: z.object({}),
       execute: async () => {
         try {
@@ -31,43 +32,80 @@ export function getFinanceTools({ user, userId }: FinanceToolsParams) {
           const symbols = dbAssets
             .map((a: any) => a.symbol)
             .filter((sym): sym is string => typeof sym === 'string' && sym.trim().length > 0);
-          
+
           if (symbols.length === 0) {
             return {
-              assets: dbAssets.map((a: any) => ({ symbol: a.symbol, company_name: a.company_name, shares: a.shares || 0, average_price: a.average_price || 0, price: 0, change: 0, changePercent: 0 })),
-              summary: { total_assets: dbAssets.length, total_value: 0, total_pnl: 0, average_daily_change: 0 },
-              error_note: 'El portafolio no contiene símbolos de activos válidos.'
+              assets: [],
+              summary: { total_assets: dbAssets.length, total_value: null, total_pnl: null, average_daily_change: null },
+              error_note: 'El portafolio no contiene símbolos de activos válidos.',
+              instruction_for_model: 'No inventes precios ni una cartera de ejemplo.',
             };
           }
-          try {
-            const quotes = await yf.quote(symbols);
-            const quoteArray = Array.isArray(quotes) ? quotes : [quotes];
-            const assets = dbAssets.map((dbA: any) => {
-              const live = quoteArray.find((q: any) => q?.symbol === dbA.symbol) || {} as any;
-              const price = live.regularMarketPrice || 0;
-              const shares = dbA.shares || 0;
-              const avgPrice = dbA.average_price || 0;
-              return {
-                symbol: dbA.symbol, company_name: dbA.company_name,
-                price, change: live.regularMarketChange || 0,
-                changePercent: live.regularMarketChangePercent || 0,
-                shares, average_price: avgPrice,
-                position_value: price * shares,
-                pnl: avgPrice > 0 ? (price * shares) - (avgPrice * shares) : 0,
-                currency: live.currency || 'USD'
-              };
-            });
-            const totalValue = assets.reduce((s: number, a: any) => s + a.position_value, 0);
-            const totalPnl = assets.reduce((s: number, a: any) => s + a.pnl, 0);
-            const avgChange = assets.length > 0 ? assets.reduce((s: number, a: any) => s + a.changePercent, 0) / assets.length : 0;
-            return { assets, summary: { total_assets: assets.length, total_value: totalValue, total_pnl: totalPnl, average_daily_change: avgChange } };
-          } catch (e: any) {
+
+          const quotes = await getLiveQuotes(symbols);
+          const missing: string[] = [];
+          const quotedAt: string[] = [];
+
+          const assets = dbAssets.map((dbA: any) => {
+            const live = findQuote(quotes, dbA.symbol);
+            const quoteOk = !!(live && live.price > 0);
+            if (!quoteOk) missing.push(String(dbA.symbol || "").toUpperCase());
+            if (live?.asOf) quotedAt.push(live.asOf);
+
+            const shares = Number(dbA.shares) || 0;
+            const avgPrice = Number(dbA.average_price) || 0;
+            const price = quoteOk ? live!.price : null;
+            const positionValue = price != null ? price * shares : null;
+            const cost = avgPrice > 0 && shares > 0 ? avgPrice * shares : null;
+            const pnl = positionValue != null && cost != null ? positionValue - cost : null;
+            const pnlPercent = pnl != null && cost ? (pnl / cost) * 100 : null;
+
             return {
-              assets: dbAssets.map((a: any) => ({ symbol: a.symbol, company_name: a.company_name, shares: a.shares || 0, average_price: a.average_price || 0, price: 0, change: 0, changePercent: 0 })),
-              summary: { total_assets: dbAssets.length, total_value: 0, total_pnl: 0, average_daily_change: 0 },
-              error_note: 'No se pudieron obtener precios en vivo: ' + (e.message || String(e))
+              symbol: String(dbA.symbol || "").trim().toUpperCase(),
+              company_name: dbA.company_name || dbA.symbol,
+              shares,
+              average_price: avgPrice,
+              last_price: price,
+              price,
+              change: quoteOk ? live!.change : null,
+              changePercent: quoteOk ? live!.changePercent : null,
+              position_value: positionValue,
+              pnl,
+              pnl_percent: pnlPercent,
+              currency: quoteOk ? live!.currency : null,
+              quote_ok: quoteOk,
+              quote_source: quoteOk ? live!.source : null,
+              quote_time: quoteOk ? live!.asOf : null,
+              market_state: quoteOk ? live!.marketState : null,
             };
-          }
+          });
+
+          const priced = assets.filter((a: any) => a.quote_ok && a.position_value != null);
+          const totalValue = priced.reduce((s: number, a: any) => s + a.position_value, 0);
+          const totalPnl = priced.reduce((s: number, a: any) => s + (a.pnl || 0), 0);
+          const changes = assets.filter((a: any) => a.quote_ok && a.changePercent != null).map((a: any) => a.changePercent);
+          const avgChange = changes.length > 0 ? changes.reduce((s: number, n: number) => s + n, 0) / changes.length : null;
+          const asOf = quotedAt.sort().at(-1) || new Date().toISOString();
+
+          return {
+            as_of: asOf,
+            source: "yahoo-finance",
+            prices_are_live: missing.length === 0,
+            instruction_for_model:
+              "Copia estos last_price / changePercent tal cual. Si quote_ok es false, escribe 'sin cotización en vivo' — nunca un precio de memoria ni $0.",
+            assets,
+            missing_quotes: missing,
+            summary: {
+              total_assets: assets.length,
+              quoted_assets: priced.length,
+              total_value: priced.length > 0 ? totalValue : null,
+              total_pnl: priced.length > 0 ? totalPnl : null,
+              average_daily_change: avgChange,
+            },
+            ...(missing.length > 0
+              ? { error_note: `Sin cotización en vivo para: ${missing.join(", ")}` }
+              : {}),
+          };
         } catch (error: any) {
           console.error("[get_portfolio_summary] Unhandled error:", error);
           return { error: error.message || String(error) };

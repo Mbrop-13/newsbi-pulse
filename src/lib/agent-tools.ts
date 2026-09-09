@@ -7,6 +7,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import YahooFinance from "yahoo-finance2";
+import { findQuote, getLiveQuotes } from "@/lib/market-quotes";
 
 // yahoo-finance2 v3+ requires instantiation before use
 const yf = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
@@ -80,37 +81,20 @@ export async function getPortfolioData(userId: string): Promise<ToolResult> {
     };
   }
 
-  // 2. Fetch live prices from Yahoo Finance
-  let liveData: any[] = [];
-  try {
-    const symbolArray = dbAssets.map((a: any) => a.symbol.trim().toUpperCase());
-    const quotes = await yf.quote(symbolArray);
-    const quoteArray = Array.isArray(quotes) ? quotes : [quotes];
-    
-    liveData = quoteArray.map((q: any) => ({
-      symbol: q.symbol,
-      price: q.regularMarketPrice,
-      change: q.regularMarketChange,
-      changePercent: q.regularMarketChangePercent,
-    }));
-  } catch (error) {
-    console.error("[agent-tools] Yahoo Finance Portfolio Error:", error);
-    // If Yahoo Finance fails, return DB data only
-  }
+  const quotes = await getLiveQuotes(dbAssets.map((a: any) => a.symbol));
 
-  // 3. Enrich with live data
   const stocks: PortfolioStock[] = dbAssets.map((dbA: any) => {
-    const live = liveData.find((l: any) => l.symbol === dbA.symbol) || {};
-    const price = live.price || 0;
+    const live = findQuote(quotes, dbA.symbol);
+    const price = live?.price || 0;
     const shares = dbA.shares || 0;
     return {
-      symbol: dbA.symbol,
+      symbol: String(dbA.symbol || "").trim().toUpperCase(),
       company_name: dbA.company_name || dbA.symbol,
       shares,
       average_price: dbA.average_price || 0,
       price,
-      change: live.change || 0,
-      changePercent: live.changePercent || 0,
+      change: live?.change || 0,
+      changePercent: live?.changePercent || 0,
       positionValue: price * shares,
       logo: getLogoUrl(dbA.symbol),
       fallbackLogo: getFallbackLogo(dbA.symbol)

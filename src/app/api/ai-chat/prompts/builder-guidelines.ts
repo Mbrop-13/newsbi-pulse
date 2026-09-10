@@ -56,5 +56,6 @@ RESPONSIVE Y ACCESIBILIDAD:
 COMPLETITUD:
 - Código COMPLETO y funcional. Cero placeholders, cero "// TODO", cero comentarios vacíos.
 - Exportación por defecto del componente principal en cada archivo React.
+- Si otro archivo importa `{ generateMap }` (named), ese símbolo DEBE ser `export function` / `export const` / `export { generateMap }`. `export default function generateMap` NO sirve para named imports.
 - Importaciones correctas y balance de paréntesis/llaves/etiquetas JSX siempre cerrado.
 `;

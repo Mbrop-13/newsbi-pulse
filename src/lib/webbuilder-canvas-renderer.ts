@@ -271,6 +271,33 @@ function moduleName(path: string): string {
  *    resuelven en runtime). Se coleccionan para ir TODOS al inicio del módulo
  *    completo (ESM hace hoisting de imports → resuelve el temporal dead zone).
  */
+/** Quita `type Foo` de `{ Foo, type Bar }` para no importar tipos como valor. */
+function dropInlineTypeImports(clause: string): string {
+  return clause.replace(/\{([^}]*)\}/g, (_m, inner: string) => {
+    const names = inner
+      .split(",")
+      .map((s) => s.trim())
+      .filter((n) => n && !/^type\s/.test(n));
+    return `{ ${names.join(", ")} }`;
+  });
+}
+
+/**
+ * Los archivos se envuelven en un IIFE. `export type` / `import type` solo son
+ * válidos a nivel de módulo, así que hay que bajarlos a `type`/`interface` o
+ * eliminarlos ANTES de wrappear. Si no, Babel tira:
+ *   'import' and 'export' may only appear at the top level
+ */
+function stripTypeOnlySyntax(code: string): string {
+  let out = code;
+  out = out.replace(/\bimport\s+type\s+[\s\S]*?from\s+['"][^'"]+['"];?/g, "");
+  out = out.replace(/\bexport\s+type\s*\{[^}]*\}\s*(?:from\s*['"][^'"]+['"])?;?/g, "");
+  out = out.replace(/\bexport\s+type\s+/g, "type ");
+  out = out.replace(/\bexport\s+interface\s+/g, "interface ");
+  out = out.replace(/\bexport\s+declare\s+/g, "declare ");
+  return out;
+}
+
 function transformImports(
   code: string,
   importerPath: string,
@@ -283,7 +310,10 @@ function transformImports(
   out = out.replace(
     /\bimport\s+([^'";]+?)\s+from\s+['"]([^'"]+)['"]/g,
     (fullMatch: string, clause: string, spec: string) => {
-      const trimmedClause = clause.trim();
+      let trimmedClause = dropInlineTypeImports(clause.trim());
+      if (/^type(\s|{)/.test(trimmedClause) || trimmedClause === "{  }" || trimmedClause === "{}") {
+        return "";
+      }
       if (spec.startsWith("./") || spec.startsWith("../") || spec.startsWith("/")) {
         if (ASSET_EXT.test(spec)) {
           if (/^\w+$/.test(trimmedClause)) {
@@ -448,7 +478,7 @@ function wrapFileAsModule(
   fileMap: Record<string, string>
 ): { code: string; bareImports: string[]; error: string | null } {
   const { code: transformed, bareImports } = transformImports(
-    code,
+    stripTypeOnlySyntax(code),
     path,
     fileMap
   );
@@ -456,9 +486,9 @@ function wrapFileAsModule(
   const exportNames: string[] = [];
   let body = transformed;
 
-  // Quitar "export" de export const/function/class/let (quedan como declarations)
+  // Quitar "export" de export const/function/class/let/enum (quedan como declarations)
   body = body.replace(
-    /\bexport\s+(const|let|var|function|class|async\s+function)\s+(\w+)/g,
+    /\bexport\s+(async\s+function|const\s+enum|function|class|enum|const|let|var)\s+(\w+)/g,
     (_m, kw: string, name: string) => {
       exportNames.push(name);
       return `${kw} ${name}`;
@@ -487,9 +517,13 @@ function wrapFileAsModule(
     }
   }
 
-  // Quitar re-exports no soportados
+  // Quitar re-exports no soportados y cualquier `export` residual (type/interface
+  // ya deberían estar strippeados; esto evita el error de Babel "may only appear
+  // at the top level" si queda alguno dentro del IIFE).
   body = body.replace(/\bexport\s*\{[^}]*\}\s*(?:from\s*['"][^'"]+['"])?;?/g, "");
-  body = body.replace(/\bexport\s*\*\s+from\s*['"][^'"]+['"];?/g, "");
+  body = body.replace(/\bexport\s*\*\s+(?:as\s+\w+\s+)?from\s*['"][^'"]+['"];?/g, "");
+  body = stripTypeOnlySyntax(body);
+  body = body.replace(/\bexport\s+(?=type\b|interface\b|enum\b|declare\b|async\b|function\b|class\b|const\b|let\b|var\b|default\b|{)/g, "");
 
   const namespaceEntries = [
     `default: ${defaultExpr}`,
@@ -841,13 +875,14 @@ if (root) {
   createRoot(root).render(App ? React.createElement(App) : React.createElement("div", null, "El archivo principal no exporta un componente por defecto."));
 }`;
 
-  const fullCode =
+  const fullCode = stripTypeOnlySyntax(
     "// === imports (hoisted por ESM) ===\n" +
     uniqueImports.join("\n") +
     "\n\n" +
     moduleBlocks.join("\n\n") +
     "\n\n" +
-    bootstrap;
+    bootstrap
+  );
 
   // 7. Generar HTML
   const html = buildIframeHtml(fullCode, userCss);

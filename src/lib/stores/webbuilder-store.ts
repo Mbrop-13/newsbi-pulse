@@ -762,6 +762,8 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
           lastBuildDiff: [],
           lastBuildPrevFiles: {},
           appliedFixHashes: [],
+          pendingPlan: null,
+          activeAgentReports: null,
         }),
 
       initProject: (chatId) => {
@@ -782,6 +784,8 @@ export const useWebBuilderStore = create<WebBuilderStore>()(
           lastBuildDiff: [],
           lastBuildPrevFiles: {},
           appliedFixHashes: [],
+          pendingPlan: null,
+          activeAgentReports: null,
         });
       },
 

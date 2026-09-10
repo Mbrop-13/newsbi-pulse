@@ -565,14 +565,14 @@ export async function POST(req: NextRequest) {
           } else if (safeReplanFeedback) {
             // Si la replanificación dio una nueva tarjeta, pedir autorización de nuevo.
             if (orchestrationResult.agents && orchestrationResult.agents.length > 0) {
-              planTurnMessage = "He replanificado con tus cambios. Revisa el nuevo plan y, cuando estés listo, escribe **aprobado** para construir, **no** para cancelar, o dime qué más cambiar.";
+              planTurnMessage = "He replanificado con tus cambios. Revisa el nuevo plan y usa **Aprobar y construir**, **Cancelar**, o dime qué más cambiar.";
             } else {
               planTurnMessage = "Con tus cambios la consulta pasó a ser simple. La resolveré directamente.";
             }
           } else {
             // Primera tarjeta del plan.
             const fileCount = orchestrationResult.agents?.length || 0;
-            planTurnMessage = `He preparado un plan con ${fileCount} ${fileCount === 1 ? "archivo" : "archivos"}. Revisa la tarjeta del plan: escribe **aprobado** para que lo construya, **no** para cancelar, o descríbeme los cambios que quieres y replanifico.`;
+            planTurnMessage = `He preparado un plan con ${fileCount} ${fileCount === 1 ? "archivo" : "archivos"}. Revisa la tarjeta: **Aprobar y construir**, **Cancelar**, o descríbeme los cambios y replanifico.`;
           }
           try {
             // Emitir como texto del stream del asistente.

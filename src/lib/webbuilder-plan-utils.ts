@@ -2,44 +2,53 @@
  * Utilidades del modo Plan del WebBuilder.
  *
  * El usuario aprueba / cancela / ajusta un plan escribiendo en lenguaje
- * natural. Esta función clasifica su respuesta en una de tres intenciones para
- * que el cliente decida qué enviar al servidor:
+ * natural (o con los botones de la tarjeta). Esta función clasifica su
+ * respuesta en una de tres intenciones:
  *  - "approve": construir el plan tal cual.
  *  - "reject":  cancelar el plan.
  *  - "feedback": replanificar incorporando el texto como cambios.
  *
- * Orden de prioridad: approve > reject > feedback. Es decir, si el mensaje
- * contiene una palabra de aprobación se aprueba aunque también mencione
- * "cambiar"; para pedir cambios hay que NO usar palabras de aprobación.
+ * Palabras cortas y ambiguas ("ok", "sí", "bien") SOLO aprueban si el
+ * mensaje es casi solo eso. Si hay más texto ("ok pero cambia el color")
+ * se trata como feedback, no como aprobación.
  */
 
-const APPROVE_WORDS = [
+const EXPLICIT_APPROVE_WORDS = [
   "aprobado", "aprovado", "aprobar", "aprovar", "aprueba", "aprueva", "apruebo", "apruevo",
   "aprobarlo", "aprovarlo", "aprobarla", "aprovarla", "aprobadlo", "aprovadlo",
-  "sí", "si", "ok", "okay", "dale", "adelante", "adelántate",
-  "continuar", "continúa", "continua", "procede", "proceder", "procedé",
-  "ejecuta", "ejecutar", "construye", "construir", "hazlo", "confirmo",
-  "confirmar", "avanza", "vamos", "empieza", "comienza", "perfecto", "listo", "bien", "excelente"
+  "dale", "adelante", "adelantate",
+  "ejecuta", "ejecutar", "construye", "construir", "hazlo", "confirmo", "confirmar",
 ];
 
-const REJECT_WORDS = [
+const SHORT_APPROVE_ONLY = [
+  "si", "ok", "okay", "vale", "va", "go", "yes",
+];
+
+const EXPLICIT_REJECT_WORDS = [
   "cancelar", "cancela", "cancelo", "descartar", "descarta", "descarto",
-  "detener", "detén", "deten", "parar", "para", "no", "nada", "stop",
+  "detener", "deten", "parar", "stop",
+];
+
+const SHORT_REJECT_ONLY = ["no", "nada"];
+
+const CHANGE_WORDS = [
+  "cambia", "cambiar", "cambio", "pero", "en vez", "en lugar",
+  "agrega", "agregar", "quita", "quitar", "mejor", "tambien",
+  "ademas", "excepto", "salvo", "en lugar de",
 ];
 
 function normalize(text: string): string {
   return text
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // quitar tildes
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[¿?¡!.,;:()"'“”‘’]/g, " ")
+    .replace(/\s+/g, " ")
     .trim();
 }
 
 function containsAny(text: string, words: string[]): boolean {
-  // Coincidencia de palabra completa para evitar falsos positivos como
-  // "no" dentro de "naranja". Acepta la palabra aislada por espacios, inicio,
-  // fin del texto, o signos de puntuación alrededor.
-  return words.some((w) => new RegExp(`(^|[^a-záéíóúñ])${w}([^a-záéíóúñ]|$)`, "i").test(text));
+  return words.some((w) => new RegExp(`(^|[^a-z0-9])${w}([^a-z0-9]|$)`, "i").test(text));
 }
 
 export type PlanResponseIntent = "approve" | "reject" | "feedback";
@@ -48,12 +57,25 @@ export function classifyPlanResponse(text: string): PlanResponseIntent {
   const normalized = normalize(text);
   if (!normalized) return "feedback";
 
-  // Aprobación tiene prioridad: si el usuario dice "aprobado" se construye.
-  if (containsAny(normalized, APPROVE_WORDS)) return "approve";
+  const tokenCount = normalized.split(" ").filter(Boolean).length;
+  const isShort = tokenCount <= 3;
+  const wantsChanges = containsAny(normalized, CHANGE_WORDS);
 
-  // Rechazo: "no", "cancelar", etc.
-  if (containsAny(normalized, REJECT_WORDS)) return "reject";
+  if (containsAny(normalized, EXPLICIT_APPROVE_WORDS) && !wantsChanges) {
+    return "approve";
+  }
 
-  // Cualquier otra cosa se interpreta como cambios al plan.
+  if (isShort && !wantsChanges && SHORT_APPROVE_ONLY.includes(normalized)) {
+    return "approve";
+  }
+
+  if (containsAny(normalized, EXPLICIT_REJECT_WORDS) && isShort) {
+    return "reject";
+  }
+
+  if (isShort && SHORT_REJECT_ONLY.includes(normalized)) {
+    return "reject";
+  }
+
   return "feedback";
 }

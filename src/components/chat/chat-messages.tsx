@@ -37,6 +37,8 @@ interface ChatMessagesProps {
   onShare?: (question: string, answer: string) => void
   /** Edit a user message and re-send (truncates history after that message). */
   onEditMessage?: (messageId: string, newContent: string) => void
+  /** Acciones de la tarjeta de plan (modo Plan del WebBuilder). */
+  onPlanAction?: (intent: "approve" | "reject") => void
   messageFeedback?: Record<string, 'like' | 'dislike'>
   openReasoning?: Record<string, boolean>
   onToggleReasoning?: (id: string) => void
@@ -50,6 +52,7 @@ export function ChatMessages({
   onRetry,
   onShare,
   onEditMessage,
+  onPlanAction,
   messageFeedback = {},
   openReasoning = {},
   onToggleReasoning,
@@ -100,6 +103,7 @@ export function ChatMessages({
               onRetry={idx === messages.length - 1 && msg.role === 'assistant' ? onRetry : undefined}
               onShare={onShare}
               onEditMessage={onEditMessage}
+              onPlanAction={onPlanAction}
               isReasoningOpen={openReasoning[msg.id] === true}
               onToggleReasoning={() => onToggleReasoning?.(msg.id)}
               prevMessageContent={idx > 0 ? messages[idx - 1].content : ""}
@@ -526,6 +530,7 @@ function MessageBubble({
   onRetry,
   onShare,
   onEditMessage,
+  onPlanAction,
   isReasoningOpen,
   onToggleReasoning,
   prevMessageContent,
@@ -540,6 +545,7 @@ function MessageBubble({
   onRetry?: () => void
   onShare?: (question: string, answer: string) => void
   onEditMessage?: (messageId: string, newContent: string) => void
+  onPlanAction?: (intent: "approve" | "reject") => void
   isReasoningOpen: boolean
   onToggleReasoning: () => void
   prevMessageContent: string
@@ -567,6 +573,7 @@ function MessageBubble({
   const [isPlanExpanded, setIsPlanExpanded] = useState(true)
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false)
   const setSelectedTab = useWebBuilderStore((s) => s.setSelectedTab)
+  const storePendingPlan = useWebBuilderStore((s) => s.pendingPlan)
   const isBubbleCanvasOpen = useCanvasStore((s) => s.isOpen)
   const isBubbleBrowserOpen = useBrowserStore((s) => s.isOpen)
   const isBubbleSplitMode = isWebBuilderMode || isBubbleCanvasOpen || isBubbleBrowserOpen
@@ -1094,6 +1101,14 @@ function MessageBubble({
 
     if (!plan || !plan.agents || plan.agents.length === 0) return null;
 
+    const canActOnPlan = Boolean(
+      isLast &&
+      !isLoading &&
+      onPlanAction &&
+      storePendingPlan &&
+      plan.planId === storePendingPlan.planId
+    );
+
     return (
       <div className="mb-3">
         {/* Contenedor de la tarjeta del plan (clickeable → expande/colapsa en chat) */}
@@ -1221,18 +1236,45 @@ function MessageBubble({
                     ))}
                   </div>
 
-                  {/* Pista de acción para el usuario */}
-                  <div className="rounded-xl bg-zinc-100/70 dark:bg-white/[0.03] border border-zinc-200/60 dark:border-zinc-800/60 px-3 py-2.5 mt-1">
-                    <p className="text-[9.5px] text-foreground dark:text-zinc-300 leading-relaxed font-semibold flex items-start gap-1.5">
-                      <Sparkles className="w-3 h-3 shrink-0 mt-0.5 text-muted-foreground dark:text-zinc-400" />
-                      <span>Escribe <span className="font-extrabold px-1 py-0.5 rounded bg-zinc-200/70 dark:bg-white/10">aprobado</span> para construir, <span className="font-extrabold px-1 py-0.5 rounded bg-zinc-200/70 dark:bg-white/10">no</span> para cancelar, o describe los cambios.</span>
-                    </p>
-                  </div>
+                  {canActOnPlan && (
+                    <div className="rounded-xl bg-zinc-100/70 dark:bg-white/[0.03] border border-zinc-200/60 dark:border-zinc-800/60 px-3 py-2.5 mt-1">
+                      <p className="text-[9.5px] text-foreground dark:text-zinc-300 leading-relaxed font-semibold flex items-start gap-1.5">
+                        <Sparkles className="w-3 h-3 shrink-0 mt-0.5 text-muted-foreground dark:text-zinc-400" />
+                        <span>Aprobá el plan, cancelalo, o describí los cambios en el chat.</span>
+                      </p>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
+
+        {canActOnPlan && (
+          <div
+            className="mt-2 flex items-center gap-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => onPlanAction?.("approve")}
+              className="h-8 rounded-full px-3.5 text-xs font-bold bg-foreground text-background hover:opacity-90"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
+              Aprobar y construir
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => onPlanAction?.("reject")}
+              className="h-8 rounded-full px-3 text-xs font-semibold text-muted-foreground hover:text-foreground"
+            >
+              Cancelar
+            </Button>
+          </div>
+        )}
 
         {/* Modal View */}
         <AnimatePresence>
@@ -1326,18 +1368,44 @@ function MessageBubble({
 
                   <div className="p-3.5 bg-amber-500/10 border border-amber-500/25 rounded-xl text-center">
                     <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed font-semibold">
-                      Escribe <span className="font-extrabold">aprobado</span> en el chat para ejecutar, <span className="font-extrabold">no</span> para cancelar, o describe tus cambios.
+                      {canActOnPlan
+                        ? "Aprobá el plan para construir, cancelalo, o describí cambios en el chat."
+                        : "Este plan ya no está pendiente."}
                     </p>
                   </div>
                 </div>
                 {/* Modal Footer */}
-                <div className="p-4 bg-gray-50/50 dark:bg-zinc-950/80 border-t border-gray-200/60 dark:border-white/5 flex justify-end shrink-0">
-                  <button
-                    onClick={() => setIsPlanModalOpen(false)}
-                    className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-gray-100 text-white dark:text-black rounded-full text-xs font-extrabold cursor-pointer transition-all shadow-md hover:scale-[1.02] active:scale-95"
-                  >
-                    Cerrar Vista
-                  </button>
+                <div className="p-4 bg-gray-50/50 dark:bg-zinc-950/80 border-t border-gray-200/60 dark:border-white/5 flex justify-end gap-2 shrink-0">
+                  {canActOnPlan && (
+                    <>
+                      <button
+                        onClick={() => {
+                          setIsPlanModalOpen(false);
+                          onPlanAction?.("reject");
+                        }}
+                        className="px-4 py-2.5 rounded-full text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer transition-all"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsPlanModalOpen(false);
+                          onPlanAction?.("approve");
+                        }}
+                        className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-gray-100 text-white dark:text-black rounded-full text-xs font-extrabold cursor-pointer transition-all shadow-md hover:scale-[1.02] active:scale-95"
+                      >
+                        Aprobar y construir
+                      </button>
+                    </>
+                  )}
+                  {!canActOnPlan && (
+                    <button
+                      onClick={() => setIsPlanModalOpen(false)}
+                      className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-gray-100 text-white dark:text-black rounded-full text-xs font-extrabold cursor-pointer transition-all shadow-md hover:scale-[1.02] active:scale-95"
+                    >
+                      Cerrar
+                    </button>
+                  )}
                 </div>
               </motion.div>
             </motion.div>

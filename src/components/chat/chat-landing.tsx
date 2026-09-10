@@ -1761,6 +1761,13 @@ function ChatLandingContent() {
                  }}
                  onShare={handleShare}
                  onEditMessage={handleEditMessage}
+                 onPlanAction={(intent) => {
+                   handleSend(intent === "approve" ? "aprobado" : "no", {
+                     ...lastSendOptionsRef.current,
+                     codeInterpreter: false,
+                     browser: false,
+                   })
+                 }}
                  messageFeedback={messageFeedback}
                  openReasoning={openReasoning}
                  onToggleReasoning={toggleReasoning}
@@ -1787,8 +1794,16 @@ function ChatLandingContent() {
                             "";
 
                           if (optionId === "activate_build") {
-                            useWebBuilderStore.getState().setWebBuilderMode(true);
-                            useWebBuilderStore.getState().setSplitView(true);
+                            const chatId = useAIChatStore.getState().currentChatId;
+                            const wb = useWebBuilderStore.getState();
+                            wb.setWebBuilderMode(true);
+                            wb.setSplitView(true);
+                            wb.clearPendingPlan();
+                            if (chatId && wb.activeProjectId !== chatId) {
+                              wb.initProject(chatId);
+                            } else if (!chatId) {
+                              wb.resetProject();
+                            }
                             useCanvasStore.getState().setOpen(false);
                             const prompt = lastUser
                               ? lastUser

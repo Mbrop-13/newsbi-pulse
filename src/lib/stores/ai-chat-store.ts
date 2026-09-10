@@ -387,7 +387,12 @@ export const useAIChatStore = create<AIChatStore>()(
           const hasArtifact = chat.messages.some(m => m.content && (m.content.includes("<maverlangArtifact") || m.content.includes("</maverlangArtifact>")));
           const firstMsgHasWB = chat.messages[0]?.isWebBuilder;
           const isWB = !!(chat.isWebBuilder || firstMsgHasWB || hasArtifact);
-          useWebBuilderStore.getState().setWebBuilderMode(isWB);
+          const wb = useWebBuilderStore.getState();
+          wb.setWebBuilderMode(isWB);
+          wb.clearPendingPlan();
+          if (isWB) {
+            wb.initProject(id);
+          }
         }
       },
       deleteSavedChat: async (id) => {

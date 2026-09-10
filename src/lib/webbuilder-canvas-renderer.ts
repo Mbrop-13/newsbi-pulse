@@ -101,6 +101,18 @@ function addDualDefaultExport(code: string): string {
   return out + "\nexport { " + unique.join(", ") + " };\nexport default " + unique[0] + ";\n";
 }
 
+/** Evita map[y][x] = v cuando y/x son NaN o la fila no existe. */
+function patch2dGridAssign(code: string): string {
+  const prelude =
+    "function __idx(n){n=Number(n);return isFinite(n)?(n|0):0;}\n" +
+    "function __ensureRow(g,y){if(!g||typeof g!==\"object\")return [];y=__idx(y);if(!g[y]||typeof g[y]!==\"object\")g[y]=[];return g[y];}\n";
+  const patched = code.replace(
+    /((?:this\.)?[A-Za-z_$][\w.$]*)\[([^\[\]]+)\]\[([^\[\]]+)\]\s*=(?!=)/g,
+    "__ensureRow($1, $2)[__idx($3)] ="
+  );
+  return prelude + patched;
+}
+
 /**
  * Reescribe imports/exports para ESM de preview.
  * Los relativos pasan a `@mod/ruta.tsx` (bare, resuelto por importmap).
@@ -304,7 +316,9 @@ export function renderProjectToHtml(files: ProjectFiles): RenderResult {
   for (const [path, code] of Object.entries(fileMap)) {
     if (!PARSABLE_EXT.some((e) => path.endsWith(e))) continue;
     if (path === "/index.tsx" || path === "/index.jsx") continue;
-    modules[path] = addDualDefaultExport(rewriteImportsForEsm(code, path, fileMap));
+    modules[path] = patch2dGridAssign(
+      addDualDefaultExport(rewriteImportsForEsm(code, path, fileMap))
+    );
   }
 
   if (Object.keys(modules).length === 0) {
@@ -511,14 +525,7 @@ ${styleTag}
       var module = { exports: {} };
       cache[path] = module;
       try {
-        var prelude =
-          'function __idx(n){n=Number(n);return isFinite(n)?(n|0):0;}' +
-          'function __ensureRow(g,y){if(!g||typeof g!=="object")return [];y=__idx(y);if(!g[y]||typeof g[y]!=="object")g[y]=[];return g[y];}';
-        var patched = String(code).replace(
-          /((?:this\.)?[A-Za-z_$][\w.$]*)\[([^\[\]]+)\]\[([^\[\]]+)\]\s*=(?!=)/g,
-          '__ensureRow($1, $2)[__idx($3)] ='
-        );
-        var fn = new Function('require', 'module', 'exports', 'React', 'ReactDOM', prelude + patched);
+        var fn = new Function('require', 'module', 'exports', 'React', 'ReactDOM', code);
         fn(req, module, module.exports, React, ReactDOM);
         flattenExports(module.exports);
         ['generateRandomMap','generateMap','createMap','initMap','buildMap'].forEach(function (name) {

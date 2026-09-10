@@ -28,17 +28,19 @@ const nextConfig = {
     const tradingViewHosts =
       "https://s3.tradingview.com https://www.tradingview.com https://*.tradingview.com https://s.tradingview.com";
 
+    const previewCdns =
+      "https://esm.sh https://*.esm.sh https://unpkg.com https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://*.jsdelivr.net";
     const scriptSrc = isProd
-      ? `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com https://esm.sh https://*.esm.sh https://unpkg.com https://cdn.tailwindcss.com ${tradingViewHosts}`
-      : `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com https://esm.sh https://*.esm.sh https://unpkg.com https://cdn.tailwindcss.com ${tradingViewHosts}`;
+      ? `script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com ${previewCdns} ${tradingViewHosts}`
+      : `script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com ${previewCdns} ${tradingViewHosts}`;
 
     const csp = [
       "default-src 'self'",
       scriptSrc,
-      `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com ${tradingViewHosts}`,
+      `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://*.jsdelivr.net ${tradingViewHosts}`,
       "img-src 'self' data: blob: https:",
-      "font-src 'self' data: https://fonts.gstatic.com",
-      `connect-src 'self' https://*.supabase.co https://api.mercadopago.com https://api.openai.com https://openrouter.ai https://api.x.ai https://api.mapbox.com https://api.newsdata.io https://www.googleapis.com https://generativelanguage.googleapis.com https://*.upstash.io https://*.codesandbox.io https://codesandbox.io https://col.csbops.io https://*.csbops.io https://unpkg.com https://esm.sh https://*.esm.sh ${tradingViewHosts} ${isProd ? "wss:" : "wss: ws:"}`,
+      "font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net https://*.jsdelivr.net",
+      `connect-src 'self' blob: https://*.supabase.co https://api.mercadopago.com https://api.openai.com https://openrouter.ai https://api.x.ai https://api.mapbox.com https://api.newsdata.io https://www.googleapis.com https://generativelanguage.googleapis.com https://*.upstash.io https://*.codesandbox.io https://codesandbox.io https://col.csbops.io https://*.csbops.io ${previewCdns} ${tradingViewHosts} ${isProd ? "wss:" : "wss: ws:"}`,
       `frame-src 'self' https://www.youtube.com https://*.mercadopago.cl https://*.mercadopago.com https://hcaptcha.com https://*.hcaptcha.com https://*.codesandbox.io https://codesandbox.io ${tradingViewHosts}`,
       "object-src 'none'",
       "script-src-attr 'none'",

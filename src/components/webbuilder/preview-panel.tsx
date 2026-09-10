@@ -2350,10 +2350,15 @@ export function PreviewPanel() {
                   <div className="flex-grow min-h-0 relative w-full h-full bg-white dark:bg-background">
                     {(isAiResponding || chatLoading) ? (
                       <PremiumSkeletonLoader isAiResponding={isAiResponding || chatLoading} />
-                    ) : (hasBuildError || lastAutoFixError) ? (
-                      <BuildErrorView error={lastAutoFixError ?? "Error de compilación detectado. Usa \"Abrir en Editor\" para inspeccionar o \"Reintentar Compilación\"."} />
                     ) : (
-                      <CanvasPreview stableFiles={stableFiles} />
+                      <>
+                        <CanvasPreview stableFiles={stableFiles} />
+                        {(hasBuildError || lastAutoFixError) && (
+                          <div className="absolute inset-0 z-20">
+                            <BuildErrorView error={lastAutoFixError ?? "Error de compilación detectado. Usa \"Abrir en Editor\" para inspeccionar o \"Reintentar Compilación\"."} />
+                          </div>
+                        )}
+                      </>
                     )}
 
                     {/* #7 POPOVER DE EDICIÓN INLINE: flotante sobre el iframe.

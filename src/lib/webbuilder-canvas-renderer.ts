@@ -25,23 +25,86 @@ export type ProjectFiles = Record<string, { code: string } | string>;
 // importen React como bare specifier ("react") en vez de inlinear su propia
 // copia. Así todos usan la instancia del importmap → una sola React.
 const REACT_VERSION = "18.3.1";
+const LUCIDE_VERSION = "0.400.0";
+const ESM = "https://esm.sh";
+
 const IMPORT_MAP: Record<string, string> = {
-  react: `https://esm.sh/react@${REACT_VERSION}`,
-  "react/": `https://esm.sh/react@${REACT_VERSION}/`,
-  "react-dom": `https://esm.sh/react-dom@${REACT_VERSION}?external=react`,
-  "react-dom/": `https://esm.sh/react-dom@${REACT_VERSION}&external=react/`,
-  "react-dom/client": `https://esm.sh/react-dom@${REACT_VERSION}/client?external=react`,
-  "framer-motion": `https://esm.sh/framer-motion@11.18.2?external=react`,
-  "lucide-react": `https://esm.sh/lucide-react@0.400.0?external=react`,
-  recharts: `https://esm.sh/recharts@2.12.7?external=react,react-dom`,
-  clsx: `https://esm.sh/clsx@2.1.1`,
-  "tailwind-merge": `https://esm.sh/tailwind-merge@2.5.2`,
-  "class-variance-authority": `https://esm.sh/class-variance-authority@0.7.0`,
-  "canvas-confetti": `https://esm.sh/canvas-confetti@1.9.3`,
-  "react-icons/": `https://esm.sh/react-icons@5.2.1&external=react/`,
+  react: `${ESM}/react@${REACT_VERSION}`,
+  "react/": `${ESM}/react@${REACT_VERSION}/`,
+  "react-dom": `${ESM}/react-dom@${REACT_VERSION}?external=react`,
+  "react-dom/": `${ESM}/react-dom@${REACT_VERSION}/`,
+  "react-dom/client": `${ESM}/react-dom@${REACT_VERSION}/client?external=react`,
+  "framer-motion": `${ESM}/framer-motion@11.18.2?external=react`,
+  "lucide-react": `${ESM}/lucide-react@${LUCIDE_VERSION}?external=react`,
+  recharts: `${ESM}/recharts@2.12.7?external=react,react-dom`,
+  clsx: `${ESM}/clsx@2.1.1`,
+  "tailwind-merge": `${ESM}/tailwind-merge@2.5.2`,
+  "class-variance-authority": `${ESM}/class-variance-authority@0.7.0`,
+  "canvas-confetti": `${ESM}/canvas-confetti@1.9.3`,
+  "react-icons/": `${ESM}/react-icons@5.2.1/`,
+  "react-router-dom": `${ESM}/react-router-dom@6.28.0?external=react,react-dom`,
+  three: `${ESM}/three@0.167.0`,
+  "three/": `${ESM}/three@0.167.0/`,
+  howler: `${ESM}/howler@2.2.4`,
+  "matter-js": `${ESM}/matter-js@0.20.0`,
+  zustand: `${ESM}/zustand@4.5.5?external=react`,
 };
 
-const IMPORT_MAP_JSON = JSON.stringify({ imports: IMPORT_MAP }, null, 2);
+/** PascalCase icon → kebab-case file (AlertCircle → alert-circle). */
+function pascalToKebab(name: string): string {
+  return name
+    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+    .replace(/([A-Z])([A-Z][a-z])/g, "$1-$2")
+    .toLowerCase();
+}
+
+/**
+ * Reescribe `import { Sword, Heart as H } from "lucide-react"` a un import
+ * por icono. El barrel de lucide-react en esm.sh suele tardar tanto que
+ * Vercel/CDN responden 504 y el preview muere con "Script error".
+ */
+function lucideClauseToPerIconImports(clause: string): string[] {
+  const c = clause.trim();
+  if (!c.startsWith("{") || !c.endsWith("}")) return [];
+  const names = c
+    .slice(1, -1)
+    .split(",")
+    .map((s) => s.trim())
+    .filter((n) => n && !n.startsWith("type "));
+  return names.map((n) => {
+    const parts = n.split(/\s+as\s+/);
+    const orig = (parts[0] || "").trim();
+    const local = (parts[1] || orig).trim();
+    if (!orig) return "";
+    const kebab = pascalToKebab(orig);
+    return `import ${local} from "${ESM}/lucide-react@${LUCIDE_VERSION}/dist/esm/icons/${kebab}?external=react";`;
+  }).filter(Boolean);
+}
+
+/** Convierte un specifier npm a URL de esm.sh, dejando react/* en bare (importmap). */
+function rewriteBareSpec(spec: string): string {
+  if (
+    spec === "react" ||
+    spec.startsWith("react/") ||
+    spec === "react-dom" ||
+    spec.startsWith("react-dom/")
+  ) {
+    return spec;
+  }
+  if (spec === "lucide-react") {
+    return `${ESM}/lucide-react@${LUCIDE_VERSION}?external=react`;
+  }
+  if (IMPORT_MAP[spec] && !spec.endsWith("/")) {
+    return IMPORT_MAP[spec];
+  }
+  if (spec.startsWith("react-icons/")) {
+    const sub = spec.slice("react-icons/".length);
+    return `${ESM}/react-icons@5.2.1/${sub}?external=react`;
+  }
+  return `${ESM}/${spec}?external=react,react-dom`;
+}
+
+const ASSET_EXT = /\.(css|scss|sass|png|jpe?g|gif|svg|webp|ico|mp3|wav|ogg|json|glb|gltf)$/i;
 
 const PARSABLE_EXT = [".tsx", ".ts", ".jsx", ".js"];
 
@@ -221,8 +284,13 @@ function transformImports(
     /\bimport\s+([^'";]+?)\s+from\s+['"]([^'"]+)['"]/g,
     (fullMatch: string, clause: string, spec: string) => {
       const trimmedClause = clause.trim();
-      if (spec.startsWith("./") || spec.startsWith("../")) {
-        // Import relativo → resolver al módulo inlineado
+      if (spec.startsWith("./") || spec.startsWith("../") || spec.startsWith("/")) {
+        if (ASSET_EXT.test(spec)) {
+          if (/^\w+$/.test(trimmedClause)) {
+            return `const ${trimmedClause} = ${JSON.stringify(spec)};`;
+          }
+          return `/* asset import skipped: ${spec} */`;
+        }
         const resolvedPath = resolveWithExtension(
           resolveRelativeImport(spec, importerPath),
           fileMap
@@ -233,9 +301,16 @@ function transformImports(
         }
         return `/* unresolved relative: ${spec} */`;
       }
-      // Import bare → coleccionar el import ORIGINAL para el inicio del módulo
-      bareImports.push(fullMatch);
-      return ""; // eliminar del cuerpo (irá al inicio)
+      if (spec === "lucide-react") {
+        const perIcon = lucideClauseToPerIconImports(trimmedClause);
+        if (perIcon.length > 0) {
+          bareImports.push(...perIcon);
+          return "";
+        }
+      }
+      const rewritten = rewriteBareSpec(spec);
+      bareImports.push(`import ${trimmedClause} from "${rewritten}";`);
+      return "";
     }
   );
 
@@ -243,10 +318,11 @@ function transformImports(
   out = out.replace(
     /\bimport\s+['"]([^'"]+)['"]/g,
     (fullMatch: string, spec: string) => {
-      if (spec.startsWith("./") || spec.startsWith("../")) {
+      if (spec.startsWith("./") || spec.startsWith("../") || spec.startsWith("/")) {
         return `/* unresolved side-effect relative: ${spec} */`;
       }
-      bareImports.push(fullMatch);
+      const rewritten = rewriteBareSpec(spec);
+      bareImports.push(`import "${rewritten}";`);
       return "";
     }
   );
@@ -783,78 +859,165 @@ function buildIframeHtml(jsCode: string, userCss: string): string {
   const styleTag = userCss.trim()
     ? "<style>" + userCss.trim() + "</style>"
     : "";
+  const safeCode = jsCode.replace(/<\/script/gi, "<\\/script");
+  const importMapJson = JSON.stringify({ imports: IMPORT_MAP }, null, 2);
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<base href="https://preview.invalid/">
 <script type="importmap">
-${IMPORT_MAP_JSON}
+${importMapJson}
 </script>
 <script>
-window.addEventListener('error', function(e) {
-  window.parent.postMessage({
-    type: 'MAVERLANG_RUNTIME_ERROR',
-    message: e.error?.stack || e.message,
-    lineno: e.lineno,
-  }, '*');
-});
-window.addEventListener('unhandledrejection', function(e) {
-  window.parent.postMessage({
-    type: 'MAVERLANG_RUNTIME_ERROR',
-    message: 'Unhandled Promise rejection: ' + (e.reason && e.reason.message ? e.reason.message : String(e.reason)),
-    lineno: 0,
-  }, '*');
-});
-window.addEventListener('click', function(e) {
-  var target = e.target;
-  while (target && target.tagName !== 'A') {
-    target = target.parentNode;
+(function () {
+  function ignorable(msg, src) {
+    src = (src || '').toLowerCase();
+    msg = (msg || '').toLowerCase();
+    if (src.indexOf('cdn.tailwindcss.com') !== -1 || src.indexOf('tailwindcss') !== -1) return true;
+    if (src.indexOf('preview.invalid') !== -1) return true;
+    if ((msg === 'script error.' || msg === 'script error') && !src) return true;
+    return false;
   }
-  if (target && target.tagName === 'A') {
-    var href = target.getAttribute('href');
-    if (href) {
-      var isAnchor = href.startsWith('#');
-      var isJavascript = href.startsWith('javascript:');
-      if (!isAnchor && !isJavascript) {
-        e.preventDefault();
-        if (href.startsWith('http://') || href.startsWith('https://')) {
-          window.open(href, '_blank');
-        } else {
-          window.parent.postMessage({
-            type: 'MAVERLANG_PREVIEW_NAVIGATE',
-            href: href
-          }, '*');
-          console.log('[Maverlang Preview] Navegación interceptada a: ' + href);
+  function report(message, lineno, filename, ignorableFlag) {
+    if (ignorableFlag || ignorable(message, filename)) return;
+    window.parent.postMessage({
+      type: 'MAVERLANG_RUNTIME_ERROR',
+      message: message || 'Error desconocido',
+      lineno: lineno || 0,
+      filename: filename || '',
+    }, '*');
+  }
+  window.addEventListener('error', function (e) {
+    var target = e.target;
+    if (target && target !== window && (target.src || target.href)) {
+      var resSrc = target.src || target.href || '';
+      if (ignorable('', resSrc)) return;
+      if (resSrc.indexOf('babel') !== -1 || resSrc.indexOf('@babel') !== -1) {
+        report('No se pudo cargar el compilador de la preview (timeout). Reintentá.', 0, resSrc, false);
+        return;
+      }
+      if (resSrc.indexOf('esm.sh') !== -1 || resSrc.indexOf('jsdelivr') !== -1) {
+        report('No se pudo cargar una librería (' + resSrc + '). Suele ser un timeout del CDN. Reintentá la preview.', 0, resSrc, false);
+        return;
+      }
+      return;
+    }
+    report((e.error && (e.error.stack || e.error.message)) || e.message, e.lineno, e.filename, false);
+  }, true);
+  window.addEventListener('unhandledrejection', function (e) {
+    var reason = e.reason;
+    var message = (reason && reason.message) ? reason.message : String(reason || '');
+    report('Unhandled Promise rejection: ' + message, 0, '', false);
+  });
+  window.addEventListener('click', function (e) {
+    var target = e.target;
+    while (target && target.tagName !== 'A') target = target.parentNode;
+    if (target && target.tagName === 'A') {
+      var href = target.getAttribute('href');
+      if (href) {
+        var isAnchor = href.startsWith('#');
+        var isJavascript = href.startsWith('javascript:');
+        if (!isAnchor && !isJavascript) {
+          e.preventDefault();
+          if (href.startsWith('http://') || href.startsWith('https://')) {
+            window.open(href, '_blank');
+          } else {
+            window.parent.postMessage({ type: 'MAVERLANG_PREVIEW_NAVIGATE', href: href }, '*');
+          }
         }
       }
     }
-  }
-}, true);
+  }, true);
+})();
 </script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.17/dist/tailwind.min.css" crossorigin="anonymous">
 <script>
-var _origWarn = console.warn;
-console.warn = function() {};
-</script>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
-<script>
-console.warn = _origWarn;
-if (typeof Babel !== 'undefined') {
-  Babel.registerPreset('typescript-custom', {
-    presets: [
-      [Babel.availablePresets['typescript'], { allExtensions: true, isTSX: true }],
-      Babel.availablePresets['react']
-    ]
-  });
-}
+(function () {
+  var s = document.createElement('script');
+  s.src = 'https://cdn.tailwindcss.com';
+  s.async = true;
+  s.onerror = function () { s.remove(); };
+  document.head.appendChild(s);
+})();
 </script>
 ${styleTag}
 </head>
 <body>
 <div id="root"></div>
-<script type="text/babel" data-type="module" data-presets="typescript-custom">
-${jsCode}
+<script type="text/plain" id="__maverlang_src">${safeCode}</script>
+<script>
+(function () {
+  var BABEL_URLS = [
+    'https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.7/babel.min.js',
+    'https://unpkg.com/@babel/standalone@7.24.7/babel.min.js'
+  ];
+  function loadScript(src) {
+    return new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.src = src;
+      s.crossOrigin = 'anonymous';
+      s.onload = function () { resolve(); };
+      s.onerror = function () { reject(new Error(src)); };
+      document.head.appendChild(s);
+    });
+  }
+  function loadBabel(i) {
+    if (i >= BABEL_URLS.length) {
+      window.parent.postMessage({
+        type: 'MAVERLANG_RUNTIME_ERROR',
+        message: 'No se pudo cargar el compilador de la preview (timeout de red). Reintentá.',
+      }, '*');
+      return;
+    }
+    loadScript(BABEL_URLS[i]).then(run).catch(function () { loadBabel(i + 1); });
+  }
+  function run() {
+    if (typeof Babel === 'undefined') {
+      window.parent.postMessage({
+        type: 'MAVERLANG_RUNTIME_ERROR',
+        message: 'Babel no está disponible en la preview.',
+      }, '*');
+      return;
+    }
+    Babel.registerPreset('typescript-custom', {
+      presets: [
+        [Babel.availablePresets['typescript'], { allExtensions: true, isTSX: true }],
+        Babel.availablePresets['react']
+      ]
+    });
+    var src = document.getElementById('__maverlang_src');
+    var code = src ? src.textContent : '';
+    var transformed;
+    try {
+      transformed = Babel.transform(code, {
+        presets: ['typescript-custom'],
+        filename: 'App.tsx',
+        sourceType: 'module'
+      }).code;
+    } catch (err) {
+      window.parent.postMessage({
+        type: 'MAVERLANG_RUNTIME_ERROR',
+        message: 'Error de sintaxis: ' + (err && err.message ? err.message : String(err)),
+      }, '*');
+      return;
+    }
+    var blob = new Blob([transformed], { type: 'text/javascript' });
+    var url = URL.createObjectURL(blob);
+    import(url).catch(function (err) {
+      var msg = (err && err.message) ? err.message : String(err);
+      if (/Failed to fetch|error loading dynamically imported module|504|502|timeout/i.test(msg)) {
+        msg = 'No se pudieron cargar las librerías de la preview (timeout del CDN). Reintentá.';
+      }
+      window.parent.postMessage({
+        type: 'MAVERLANG_RUNTIME_ERROR',
+        message: msg,
+      }, '*');
+    });
+  }
+  loadBabel(0);
+})();
 </script>
 </body>
 </html>`;

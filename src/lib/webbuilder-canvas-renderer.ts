@@ -163,72 +163,25 @@ function rewriteSpecifier(
   return { spec: rewriteBareSpec(spec), skip: false };
 }
 
-/**
- * export default function Name no crea un named export.
- * El LLM suele hacer default en utils y named import en App.
- * Dejamos default + named para que el import map no falle.
- */
 function addDualDefaultExport(code: string): string {
   const extras: string[] = [];
   let out = code;
   out = out.replace(/\bexport\s+default\s+function\s+(\w+)/g, (_m, name: string) => {
     extras.push(name);
-    return `function ${name}`;
+    return "function " + name;
   });
   out = out.replace(/\bexport\s+default\s+class\s+(\w+)/g, (_m, name: string) => {
     extras.push(name);
-    return `class ${name}`;
+    return "class " + name;
   });
   out = out.replace(/\bexport\s+default\s+(\w+)\s*;/g, (_m, name: string) => {
     if (name === "function" || name === "class" || name === "abstract") return _m;
     extras.push(name);
-    return `/* default ${name} */`;
+    return "/* default as named */";
   });
   if (extras.length === 0) return code;
   const unique = [...new Set(extras)];
-  return `${out}\nexport { ${unique.join(", ")} };\nexport default ${unique[0]};\n`;
-}
-
-/** Named import desde @mod → namespace + fallback (named | default.named | default si el nombre coincide). */
-function namedModImportInterop(clause: string, spec: string, ns: string): string | null {
-  if (!spec.startsWith(MOD_PREFIX + "/")) return null;
-  const trimmed = clause.trim();
-  if (/^\*\s+as\s+\w+$/.test(trimmed)) return null;
-  if (/^\w+$/.test(trimmed)) return null;
-  if (/^type(\s|{)/.test(trimmed)) return null;
-
-  let defaultName: string | null = null;
-  let namedInner: string | null = null;
-  const mixed = trimmed.match(/^(\w+)\s*,\s*\{([^}]*)\}$/);
-  if (mixed) {
-    defaultName = mixed[1];
-    namedInner = mixed[2];
-  } else if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
-    namedInner = trimmed.slice(1, -1);
-  } else {
-    return null;
-  }
-
-  const names = (namedInner || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter((n) => n && !/^type\s/.test(n));
-
-  const lines = ["import * as " + ns + " from \"" + spec + "\";"];
-  if (defaultName) {
-    lines.push(`const ${defaultName} = ${ns}.default !== undefined ? ${ns}.default : ${ns};`);
-  }
-  for (const n of names) {
-    const parts = n.split(/\s+as\s+/);
-    const orig = (parts[0] || "").trim();
-    const local = (parts[1] || orig).trim();
-    if (!orig || orig === "default") continue;
-    const origLit = JSON.stringify(orig);
-    lines.push(
-      `const ${local} = ${ns}[${origLit}] !== undefined ? ${ns}[${origLit}] : (${ns}.default && ${ns}.default[${origLit}] !== undefined ? ${ns}.default[${origLit}] : (typeof ${ns}.default === "function" && ${ns}.default.name === ${origLit} ? ${ns}.default : undefined));`
-    );
-  }
-  return lines.join("\n");
+  return out + "\nexport { " + unique.join(", ") + " };\nexport default " + unique[0] + ";\n";
 }
 
 /**
@@ -243,7 +196,6 @@ function rewriteImportsForEsm(
   fileMap: Record<string, string>
 ): string {
   let out = code;
-  let nsCounter = 0;
 
   out = out.replace(
     /\bimport\s+([^'";]+?)\s+from\s+['"]([^'"]+)['"]/g,
@@ -262,11 +214,6 @@ function rewriteImportsForEsm(
           return `const ${trimmed} = ${JSON.stringify(spec)};`;
         }
         return `/* ${resolved.comment || spec} */`;
-      }
-      const interop = namedModImportInterop(trimmed, resolved.spec, `__ns${nsCounter}`);
-      if (interop) {
-        nsCounter += 1;
-        return interop;
       }
       return `import ${trimmed} from "${resolved.spec}"`;
     }
@@ -593,6 +540,12 @@ ${styleTag}
       report('Babel no está disponible en la preview.');
       return;
     }
+    Babel.registerPreset('maverlang', {
+      presets: [
+        [Babel.availablePresets['typescript'], { allExtensions: true, isTSX: true }],
+        [Babel.availablePresets['react'], { runtime: 'automatic' }]
+      ]
+    });
     var raw = document.getElementById('__maverlang_payload');
     var payload;
     try {
@@ -607,14 +560,10 @@ ${styleTag}
     var paths = Object.keys(files);
     for (var i = 0; i < paths.length; i++) {
       var path = paths[i];
-      var isTsx = /\\.(tsx|jsx)$/.test(path);
       try {
         transformed[path] = Babel.transform(files[path], {
-          presets: [
-            [Babel.availablePresets['typescript'], { allExtensions: true, isTSX: isTsx }],
-            [Babel.availablePresets['react'], { runtime: 'automatic' }]
-          ],
-          filename: path.replace(/^\\//, '') || 'module.tsx',
+          presets: ['maverlang'],
+          filename: path,
           sourceType: 'module'
         }).code;
       } catch (err) {

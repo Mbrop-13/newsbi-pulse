@@ -101,12 +101,121 @@ function addDualDefaultExport(code: string): string {
   return out + "\nexport { " + unique.join(", ") + " };\nexport default " + unique[0] + ";\n";
 }
 
+function findMatchingBrace(s: string, openIdx: number): number {
+  let depth = 0;
+  let inStr: string | null = null;
+  let escape = false;
+  let lineComment = false;
+  let blockComment = false;
+  for (let i = openIdx; i < s.length; i++) {
+    const c = s[i];
+    const n = s[i + 1];
+    if (lineComment) {
+      if (c === "\n") lineComment = false;
+      continue;
+    }
+    if (blockComment) {
+      if (c === "*" && n === "/") {
+        blockComment = false;
+        i++;
+      }
+      continue;
+    }
+    if (inStr) {
+      if (escape) {
+        escape = false;
+        continue;
+      }
+      if (c === "\\") {
+        escape = true;
+        continue;
+      }
+      if (c === inStr) inStr = null;
+      continue;
+    }
+    if (c === "/" && n === "/") {
+      lineComment = true;
+      i++;
+      continue;
+    }
+    if (c === "/" && n === "*") {
+      blockComment = true;
+      i++;
+      continue;
+    }
+    if (c === '"' || c === "'" || c === "`") {
+      inStr = c;
+      continue;
+    }
+    if (c === "{") depth++;
+    else if (c === "}") {
+      depth--;
+      if (depth === 0) return i;
+    }
+  }
+  return -1;
+}
+
+function wrapNamedFunctionBodies(
+  code: string,
+  names: string[],
+  before: string,
+  after: string
+): string {
+  if (!names.length) return code;
+  const alt = names.join("|");
+  const starts = [
+    new RegExp(
+      `\\b(?:export\\s+)?(?:async\\s+)?function\\s+(?:${alt})\\s*(?:<[^>]*>)?\\s*\\([^)]*\\)\\s*(?::[^{]*)?\\{`,
+      "g"
+    ),
+    new RegExp(
+      `\\b(?:const|let|var)\\s+(?:${alt})\\s*(?::[^=]+)?\\s*=\\s*(?:async\\s*)?(?:function\\s*)?(?:<[^>]*>)?\\s*\\([^)]*\\)\\s*(?::[^{=]*)?\\s*(?:=>\\s*)?\\{`,
+      "g"
+    ),
+  ];
+  const opens: number[] = [];
+  for (const re of starts) {
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(code))) {
+      opens.push(m.index + m[0].length - 1);
+    }
+  }
+  opens.sort((a, b) => a - b);
+  let out = "";
+  let last = 0;
+  for (const open of opens) {
+    if (open < last) continue;
+    const close = findMatchingBrace(code, open);
+    if (close < 0) continue;
+    out += code.slice(last, open + 1) + before + code.slice(open + 1, close) + after;
+    last = close;
+  }
+  return out + code.slice(last);
+}
+
+const COLLIDE_FN_NAMES = [
+  "checkCollision",
+  "checkCollisions",
+  "isColliding",
+  "isCollision",
+  "rectsOverlap",
+  "aabbIntersect",
+  "aabbCollision",
+  "hitTest",
+  "detectCollision",
+  "collidesWith",
+];
+
+const GAME_LOOP_FN_NAMES = ["updateGame", "gameLoop", "gameTick", "runLoop"];
+
 /** Evita map[y][x] = v cuando y/x son NaN o la fila no existe. */
 function patch2dGridAssign(code: string): string {
   const prelude =
     "function __idx(n){n=Number(n);return isFinite(n)?(n|0):0;}\n" +
     "function __ensureRow(g,y){if(!g||typeof g!==\"object\")return [];y=__idx(y);if(!g[y]||typeof g[y]!==\"object\")g[y]=[];return g[y];}\n" +
-    "function __safeMap(arr, fn, ctx){if(arr==null||typeof arr.map!==\"function\")return [];return arr.map(fn, ctx);}\n";
+    "function __safeMap(arr, fn, ctx){if(arr==null||typeof arr.map!==\"function\")return [];return arr.map(fn, ctx);}\n" +
+    "function __safeCollide(fn){var a=[];for(var i=1;i<arguments.length;i++)a.push(arguments[i]);for(var j=0;j<a.length;j++)if(a[j]==null)return false;if(typeof fn!==\"function\")return false;try{return fn.apply(null,a);}catch(e){return false;}}\n";
   let next = code.replace(/useState\s*(?:<[^>]*>)?\s*\(\s*\)/g, "useState([])");
   next = next.replace(
     /function\s+(generateRandomMap|generateMap|createMap|initMap|buildMap)\s*\(([^)]*)\)\s*\{/g,
@@ -134,6 +243,22 @@ function patch2dGridAssign(code: string): string {
       if (obj === "Children" || obj.endsWith(".Children") || obj === "__safeMap") return _m;
       return "__safeMap(" + obj + ", ";
     }
+  );
+  next = wrapNamedFunctionBodies(
+    next,
+    COLLIDE_FN_NAMES,
+    "if(arguments[0]==null||(arguments.length>1&&arguments[1]==null))return false;try{",
+    "}catch(__e){return false;}"
+  );
+  next = wrapNamedFunctionBodies(
+    next,
+    GAME_LOOP_FN_NAMES,
+    "try{",
+    "}catch(__e){}"
+  );
+  next = next.replace(
+    /(?<!function\s)(?<![.\w$])(checkCollision|checkCollisions|isColliding|isCollision|rectsOverlap|aabbIntersect|aabbCollision|hitTest|detectCollision|collidesWith)\s*\(/g,
+    "__safeCollide($1, "
   );
   return prelude + next;
 }
@@ -386,8 +511,35 @@ ${styleTag}
 <script type="application/json" id="__maverlang_payload">${payload}</script>
 <script>
 (function () {
+  var reported = {};
   function report(msg, filename) {
-    window.parent.postMessage({ type: 'MAVERLANG_RUNTIME_ERROR', message: String(msg || ''), filename: filename || '' }, '*');
+    msg = String(msg || '');
+    if (!msg || reported[msg]) return;
+    reported[msg] = 1;
+    window.parent.postMessage({ type: 'MAVERLANG_RUNTIME_ERROR', message: msg, filename: filename || '' }, '*');
+  }
+  function hardenLoops() {
+    var raf = window.requestAnimationFrame.bind(window);
+    window.requestAnimationFrame = function (cb) {
+      if (typeof cb !== 'function') return raf(cb);
+      return raf(function (t) {
+        try { return cb(t); } catch (e) { report(e && e.message ? e.message : e); }
+      });
+    };
+    var si = window.setInterval.bind(window);
+    window.setInterval = function (cb, ms) {
+      if (typeof cb !== 'function') return si.apply(window, arguments);
+      return si(function () {
+        try { return cb.apply(this, arguments); } catch (e) { report(e && e.message ? e.message : e); }
+      }, ms);
+    };
+    var st = window.setTimeout.bind(window);
+    window.setTimeout = function (cb, ms) {
+      if (typeof cb !== 'function') return st.apply(window, arguments);
+      return st(function () {
+        try { return cb.apply(this, arguments); } catch (e) { report(e && e.message ? e.message : e); }
+      }, ms);
+    };
   }
   function loadScript(src) {
     return new Promise(function (resolve, reject) {
@@ -482,6 +634,7 @@ ${styleTag}
       report('React o Babel no cargaron.');
       return;
     }
+    hardenLoops();
     var raw = document.getElementById('__maverlang_payload');
     var payload;
     try { payload = JSON.parse(raw.textContent); } catch (e) { report('No se pudo leer el proyecto.'); return; }
@@ -553,6 +706,13 @@ ${styleTag}
         var fn = new Function('require', 'module', 'exports', 'React', 'ReactDOM', code);
         fn(req, module, module.exports, React, ReactDOM);
         flattenExports(module.exports);
+        ['checkCollision','checkCollisions','isColliding','hitTest','detectCollision','collidesWith','updateGame','gameLoop'].forEach(function (name) {
+          var orig = module.exports[name];
+          if (typeof orig !== 'function') return;
+          module.exports[name] = function () {
+            try { return orig.apply(this, arguments); } catch (e) { return name.indexOf('update') === 0 || name.indexOf('game') === 0 ? undefined : false; }
+          };
+        });
         ['generateRandomMap','generateMap','createMap','initMap','buildMap'].forEach(function (name) {
           var fnMap = module.exports[name] || (module.exports.default && module.exports.default[name]);
           var isDefault = module.exports.default === fnMap;

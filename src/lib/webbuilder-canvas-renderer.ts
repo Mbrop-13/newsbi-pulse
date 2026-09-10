@@ -428,6 +428,14 @@ ${styleTag}
     });
     return { __esModule: true, motion: motion, AnimatePresence: function (p) { return (p && p.children) || null; } };
   }
+  window.addEventListener('error', function (e) {
+    var msg = (e.error && e.error.message) || e.message;
+    if (msg) report(msg);
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    var r = e.reason;
+    report((r && r.message) ? r.message : String(r || 'Promise rejection'));
+  });
   function run() {
     var React = window.React;
     var ReactDOM = window.ReactDOM;
@@ -472,9 +480,27 @@ ${styleTag}
       }
       return id;
     }
+    function flattenExports(mod) {
+      if (!mod || typeof mod !== 'object') return mod;
+      var def = mod.default;
+      if (typeof def === 'function' && def.name && mod[def.name] === undefined) {
+        mod[def.name] = def;
+      }
+      if (def && typeof def === 'object' && !def.$$typeof && !Array.isArray(def)) {
+        Object.keys(def).forEach(function (k) {
+          if (mod[k] === undefined) mod[k] = def[k];
+        });
+      }
+      return mod;
+    }
+    function reactLike(lib) {
+      var o = { __esModule: true, default: lib };
+      try { Object.keys(lib).forEach(function (k) { o[k] = lib[k]; }); } catch (e) {}
+      return o;
+    }
     function req(id) {
-      if (id === 'react' || id.indexOf('react/') === 0) return React;
-      if (id === 'react-dom' || id.indexOf('react-dom') === 0) return ReactDOM;
+      if (id === 'react' || id.indexOf('react/') === 0) return reactLike(React);
+      if (id === 'react-dom' || id.indexOf('react-dom') === 0) return reactLike(ReactDOM);
       if (id === 'lucide-react' || id.indexOf('lucide-react') === 0) return lucideStub(React);
       if (id === 'framer-motion') return motionStub(React);
       if (id === 'clsx') return function () { return Array.prototype.slice.call(arguments).filter(Boolean).join(' '); };
@@ -487,12 +513,31 @@ ${styleTag}
       try {
         var fn = new Function('require', 'module', 'exports', 'React', 'ReactDOM', code);
         fn(req, module, module.exports, React, ReactDOM);
+        flattenExports(module.exports);
       } catch (err) {
         report('Error en ' + path + ': ' + (err && err.message ? err.message : err), path);
         throw err;
       }
       return module.exports;
     }
+    function Boundary(props) {
+      React.Component.call(this, props);
+      this.state = { error: null };
+    }
+    Boundary.prototype = Object.create(React.Component.prototype);
+    Boundary.prototype.componentDidCatch = function (err) {
+      var msg = err && err.message ? err.message : String(err);
+      this.setState({ error: msg });
+      report(msg);
+    };
+    Boundary.prototype.render = function () {
+      if (this.state.error) {
+        return React.createElement('div', {
+          style: { padding: 16, fontFamily: 'sans-serif', color: '#111', background: '#fff', whiteSpace: 'pre-wrap' }
+        }, this.state.error);
+      }
+      return this.props.children;
+    };
     var rootEl = document.getElementById('root');
     try {
       var exp = req(entry);
@@ -501,8 +546,9 @@ ${styleTag}
         rootEl.innerHTML = '<div style="padding:16px;font-family:sans-serif;color:#111">El archivo principal no exporta un componente.</div>';
         return;
       }
-      if (ReactDOM.createRoot) ReactDOM.createRoot(rootEl).render(React.createElement(App));
-      else ReactDOM.render(React.createElement(App), rootEl);
+      var tree = React.createElement(Boundary, null, React.createElement(App));
+      if (ReactDOM.createRoot) ReactDOM.createRoot(rootEl).render(tree);
+      else ReactDOM.render(tree, rootEl);
     } catch (err) {
       report(err && err.message ? err.message : err, entry);
     }

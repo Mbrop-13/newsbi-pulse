@@ -44,7 +44,7 @@ const nextConfig = {
       `frame-src 'self' https://www.youtube.com https://*.mercadopago.cl https://*.mercadopago.com https://hcaptcha.com https://*.hcaptcha.com https://*.codesandbox.io https://codesandbox.io ${tradingViewHosts}`,
       "object-src 'none'",
       "script-src-attr 'none'",
-      "base-uri 'self'",
+      "base-uri 'self' https://preview.invalid",
       "form-action 'self' https://*.mercadopago.cl https://*.mercadopago.com",
       "frame-ancestors 'self'",
       "upgrade-insecure-requests",

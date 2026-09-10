@@ -58,6 +58,9 @@ self.addEventListener('fetch', (event) => {
 
   // API calls: network only (no cacheamos datos del usuario).
   if (url.pathname.startsWith('/api/')) return;
+  // Chat / AI: no interceptar. El iframe de preview a veces resuelve URLs
+  // relativas contra la pagina del chat; un 504 del SW mata el preview.
+  if (url.pathname.startsWith('/ai')) return;
 
   // HTML pages: network first, fallback to cache.
   if (request.headers.get('accept')?.includes('text/html')) {

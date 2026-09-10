@@ -487,16 +487,7 @@ function buildIframeHtml(
   }, true);
 })();
 </script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.17/dist/tailwind.min.css" crossorigin="anonymous">
-<script>
-(function () {
-  var s = document.createElement('script');
-  s.src = 'https://cdn.tailwindcss.com';
-  s.async = true;
-  s.onerror = function () { s.remove(); };
-  document.head.appendChild(s);
-})();
-</script>
+<script src="https://cdn.tailwindcss.com"></script>
 ${styleTag}
 </head>
 <body>

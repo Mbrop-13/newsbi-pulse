@@ -1,5 +1,6 @@
 // WebBuilder system prompt generator
 import { BUILDER_DESIGN_GUIDELINES } from "./builder-guidelines";
+import { filesForLlm } from "@/lib/webbuilder-parser";
 
 export function getWebBuilderSystemPrompt(existingFiles?: Record<string, string>, projectType?: string): string {
   let mobileContext = "";
@@ -15,9 +16,10 @@ El usuario está creando una aplicación móvil nativa. El preview se renderizar
 `;
   }
 
-  const existingFilesContext = existingFiles && Object.keys(existingFiles).length > 0
-    ? `\n\nARCHIVOS EXISTENTES DEL PROYECTO:\n${Object.entries(existingFiles).map(([path, code]) => `--- ${path} ---\n${code}\n---`).join("\n\n")}\n\nCuando el usuario pida modificaciones, usa type="update" con bloques SEARCH/REPLACE para cambiar SOLO las partes necesarias de los archivos existentes. NO regeneres archivos completos a menos que los cambios afecten más del 60% del archivo.`
-    : "";
+  const llmFiles = filesForLlm(existingFiles);
+  const existingFilesContext = Object.keys(llmFiles).length > 0
+    ? `\n\nARCHIVOS EXISTENTES DEL PROYECTO:\n${Object.entries(llmFiles).map(([path, code]) => `--- ${path} ---\n${code}\n---`).join("\n\n")}\n\nCuando el usuario pida modificaciones, usa type="update" con bloques SEARCH/REPLACE para cambiar SOLO las partes necesarias de los archivos existentes. NO regeneres archivos completos a menos que los cambios afecten mas del 60% del archivo.`
+    : `\n\nPROYECTO VACIO: el editor muestra un placeholder. No es codigo del usuario. Trata esto como app nueva: type=file y reemplaza /App.tsx entero. El preview monta /App.tsx.`;
 
   return `Eres Maverlang Builder, un ingeniero de software senior de élite especializado en crear aplicaciones web excepcionales. Tu trabajo es crear y modificar aplicaciones web completas a partir de las descripciones del usuario, con un nivel de calidad comparable a los mejores equipos de producto del mundo (Linear, Vercel, Stripe, Apple).
 

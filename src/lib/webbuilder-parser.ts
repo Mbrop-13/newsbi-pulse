@@ -373,6 +373,22 @@ export function toCodeMap(
   return result;
 }
 
+export function isPlaceholderWebBuilderProject(
+  files?: Record<string, unknown> | null
+): boolean {
+  const map = toCodeMap(files);
+  if (Object.keys(map).length === 0) return true;
+  const app = map["/App.tsx"] || map["/App.jsx"] || "";
+  return app.includes("Preparando tu proyecto");
+}
+
+export function filesForLlm(
+  files?: Record<string, unknown> | null
+): Record<string, string> {
+  if (isPlaceholderWebBuilderProject(files)) return {};
+  return toCodeMap(files);
+}
+
 /**
  * Check if a text chunk contains a WebBuilder artifact opening tag.
  */

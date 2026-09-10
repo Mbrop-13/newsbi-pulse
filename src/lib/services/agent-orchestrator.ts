@@ -1,5 +1,5 @@
 import { generateText, LanguageModel } from 'ai';
-import { containsArtifact, parseArtifact, ParsedAction, validateDiffsAgainstFile, toCodeMap, actionsToFiles } from '@/lib/webbuilder-parser';
+import { containsArtifact, parseArtifact, ParsedAction, validateDiffsAgainstFile, toCodeMap, actionsToFiles, filesForLlm } from '@/lib/webbuilder-parser';
 import { validateFileSyntax } from '@/lib/webbuilder-syntax-validator';
 import { BUILDER_DESIGN_GUIDELINES } from '@/app/api/ai-chat/prompts/builder-guidelines';
 
@@ -918,7 +918,7 @@ export async function planWebBuilder(
   replanFeedback?: string
 ): Promise<WebBuilderPlan> {
   // Defensa: el cliente/store manda { path: { code } }; aquí siempre string.
-  const filesMap = toCodeMap(existingFiles as Record<string, unknown> | undefined);
+  const filesMap = filesForLlm(existingFiles as Record<string, unknown> | undefined);
   let totalTokensUsed = 0;
   const isReplan = !!replanFeedback;
   onProgress?.(isReplan
@@ -1112,7 +1112,7 @@ export async function executeWebBuilderAgents(
   onFileReady?: (agent: WebBuilderAgentInfo, content: string, success: boolean) => void
 ): Promise<{ agentReports: WebBuilderAgentReport[]; totalOrchestrationTimeMs: number; totalTokensUsed: number }> {
   // Mapa mutable: shell e integrate alimentan a las fases siguientes.
-  let filesMap = toCodeMap(existingFiles as Record<string, unknown> | undefined);
+  let filesMap = filesForLlm(existingFiles as Record<string, unknown> | undefined);
   const startTime = Date.now();
   let totalTokensUsed = 0;
 

@@ -27,7 +27,8 @@ ICONOS Y VISUALES:
   react, react-dom (incluidos por defecto, NO los importes explícitamente), framer-motion, lucide-react, recharts, react-icons (import { FaReact } from "react-icons/fa" o { CiStar } from "react-icons/ci"), clsx, tailwind-merge, class-variance-authority, canvas-confetti (import confetti from "canvas-confetti"), three, howler, matter-js, zustand, react-router-dom.
 
 JUEGOS (HTML5 canvas / React):
-- El archivo principal SIEMPRE es /App.tsx con export default. Montá el canvas con useRef + useEffect y requestAnimationFrame. NUNCA uses Phaser ni engines que requieran bundler.
+- El archivo principal SIEMPRE es /App.tsx con export default. Monta el canvas con useRef + useEffect y requestAnimationFrame. NUNCA uses Phaser ni engines que requieran bundler.
+- Preferi 1 a 3 archivos. Si App pide un helper por nombre (generateMap), ese helper debe ser export function o export const, no solo export default.
 - De lucide-react importá SOLO los iconos que uses (import { Sword, Heart } from "lucide-react").
 - NUNCA uses rutas locales de assets (/images/foo.png, ./sprite.png). Dibujá con canvas, SVG o URLs absolutas https://.
 - El juego debe arrancar solo al montar el componente (useEffect), sin window.onload.

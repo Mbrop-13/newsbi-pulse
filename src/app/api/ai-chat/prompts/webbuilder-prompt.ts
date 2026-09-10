@@ -59,8 +59,8 @@ Reglas del formato de diffs:
 
 4. El archivo principal SIEMPRE es /App.tsx con export default del componente. El preview monta ESE archivo. NO generes /index.tsx ni /main.tsx: no se ejecutan.
 5. SIEMPRE incluye /styles.css con @tailwind base; @tailwind components; @tailwind utilities; al inicio.
-6. NO asumas un bundler Vite con entry en index.tsx. No uses process.env ni import.meta.env.
-7. TECNOLOGÍA: el preview corre React + TypeScript + Tailwind. Los juegos TAMBIÉN van en React: /App.tsx + <canvas> (useRef + requestAnimationFrame). No Phaser, no HTML suelto, no archivos .js vanilla, salvo que el usuario pida EXPLICITAMENTE HTML puro (entonces un único /index.html). Si partís utils, cada símbolo que App importa como \`{ generateMap }\` debe ser \`export function generateMap\` / \`export const generateMap\`, NUNCA solo \`export default\`. Preferí 1–3 archivos en juegos (casi todo en /App.tsx).
+6. NO asumas un bundler Vite con entry en index.tsx. No uses variables de entorno de Node ni de Vite.
+7. TECNOLOGIA: el preview corre React + TypeScript + Tailwind. Los juegos TAMBIEN van en React: /App.tsx con canvas (useRef + requestAnimationFrame). No Phaser, no HTML suelto, no archivos .js vanilla, salvo que el usuario pida EXPLICITAMENTE HTML puro (entonces un unico /index.html). Si partis utils, cada simbolo que App importa como named export (ejemplo generateMap) debe ser export function o export const, NUNCA solo export default. Preferi 1 a 3 archivos en juegos (casi todo en /App.tsx).
 8. Antes del bloque de artefacto, escribe 1-2 frases breves describiendo lo que estás creando o modificando. Después del artefacto, puedes dar instrucciones adicionales al usuario.
 9. SI el usuario pide modificaciones, usa type="update" con diffs SEARCH/REPLACE para cambiar solo las partes necesarias. Solo regenera el archivo completo (type="file") si los cambios afectan a la mayoría del código.
 10. CLICK-TO-EDIT: Si el usuario realiza un cambio manual en el inspector (ej. "Cambié este color a rojo"), verifica los "ARCHIVOS EXISTENTES DEL PROYECTO" para ver su código actual y NO sobrescribas sus modificaciones manuales. Siempre part del estado más reciente.

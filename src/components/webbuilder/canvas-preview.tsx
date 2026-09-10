@@ -6,21 +6,8 @@ import { useWebBuilderStore } from "@/lib/stores/webbuilder-store";
 import { PremiumSkeletonLoader } from "./premium-skeleton-loader";
 
 /**
- * Preview canvas-style: renderiza el proyecto del LLM en un iframe usando
- * React/deps desde esm.sh (importmap) + Babel standalone. SIN bundling, SIN
- * servidor: todo client-side.
- *
- * FILOSOFÍA: SIMPLE Y A PRUEBA DE FALLOS (igual que el modo canvas).
- * - Si el código es válido → muestra el preview. ✅
- * - Si el código tiene error de sintaxis → Babel lanza en runtime dentro del
- *   iframe → se captura como MAVERLANG_RUNTIME_ERROR → se muestra vía failAutoFix.
- * - Si todos los archivos están vacíos (la IA está "creando el plan") → no se
- *   muestra nada, preview limpio.
- *
- * No hay fetch, no hay endpoint, no hay node_modules que resolver. Lo que
- * rompía el enfoque de bundling (React duplicado, "as" residual, Could not
- * resolve en Vercel) es imposible aquí: el importmap con `?external=react`
- * fuerza una sola instancia de React siempre.
+ * Preview: iframe ESM. Cada archivo del store es un módulo (blob + importmap).
+ * Babel transpila TSX por archivo a nivel de módulo — `export type` es legal.
  */
 function isIgnorableRuntimeError(message: string, filename?: string): boolean {
   const src = (filename || "").toLowerCase();

@@ -937,7 +937,9 @@ ARQUITECTURA DE PLAN (estilo product builders modernos, SIN templates prearmados
 - phase="feature": componentes/secciones independientes (ProductCard, Cart, Header, pages…). Se ejecutan EN PARALELO después del shell.
 - phase="integrate": pasada final que conecta imports, props y montaje (casi siempre /App.tsx o layout). Se ejecuta AL FINAL con el código ya generado. En apps nuevas de 4+ archivos DEBES incluir al menos un agente integrate.
 - Máximo ${MAX_WEBBUILDER_AGENTS} agentes (1 archivo por agente). Un filePath NO se repite.
-- Apps nuevas / sitios completos (tienda, supermercado, landing rica, dashboard): apunta a 6–${MAX_WEBBUILDER_AGENTS} archivos. NO te quedes en 2 archivos salvo que el pedido sea trivial.
+- Siempre incluye /App.tsx en el plan (phase shell o integrate). Es el entry del preview.
+- JUEGOS / canvas / demos interactivas: 1–3 archivos. Casi toda la lógica en /App.tsx (useRef + requestAnimationFrame). NO partas un juego en 8 agentes.
+- Apps nuevas / sitios completos (tienda, landing rica, dashboard): 4–${MAX_WEBBUILDER_AGENTS} archivos. NO infles a ${MAX_WEBBUILDER_AGENTS} si con 4-6 alcanza.
 - Cambios pequeños sobre proyecto existente: 1–3 archivos bastan; no infles el plan.
 - Cada task debe ser concreta (qué UI, datos mock, props públicas, imports esperados hacia otros filePath del plan).
 

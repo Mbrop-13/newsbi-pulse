@@ -1,36 +1,34 @@
 /**
- * WebBuilder — Renderer canvas-style (ISOMORFO).
+ * WebBuilder preview — ESM nativo (un archivo = un módulo).
  *
- * Genera el HTML completo del iframe del preview DIRECTAMENTE desde los
- * archivos del LLM, SIN bundling. Carga React y deps desde esm.sh vía importmap
- * y transpila el TSX con Babel standalone en el navegador.
+ * Cada .tsx/.ts se transpila con Babel EN EL IFRAME como módulo de verdad
+ * (import/export en el top-level). Después se publica como blob URL y se
+ * resuelve vía importmap (`@mod/App.tsx` → blob).
  *
- * Por qué este enfoque (en vez de esbuild/esm.sh inlineado):
- *  - El importmap con `?external=react` fuerza a TODOS los paquetes a usar la
- *    MISMA instancia de React. Imposible el bug de "React duplicado" /
- *    "useContext null" / "Minified React error #31" que perseguíamos antes.
- *  - Babel standalone transpila TS/TSX correctamente en el navegador. Imposible
- *    el "Unexpected identifier 'as'" que dejaba esbuild-wasm pasar.
- *  - Todo es client-side: funciona igual en local y en Vercel. Imposible el
- *    "Could not resolve" del endpoint serverless.
+ * Por qué no concatenamos en IIFEs: `export type`, `export interface` y
+ * re-exports solo son legales a nivel de módulo. El concatenador propio era
+ * un mini-bundler y se rompía con TypeScript real.
  *
- * El navegador hace TODO el trabajo. Cero servidor, cero bundler, cero
- * node_modules que resolver.
+ * React se carga una sola vez (importmap + ?external=react en esm.sh).
  */
 
 export type ProjectFiles = Record<string, { code: string } | string>;
 
-// ─── Importmap: paquetes disponibles para el LLM ──────────────────────────
-// La clave es `?external=react`: hace que react-dom, framer-motion, etc.
-// importen React como bare specifier ("react") en vez de inlinear su propia
-// copia. Así todos usan la instancia del importmap → una sola React.
+export interface RenderResult {
+  html: string | null;
+  error: string | null;
+}
+
 const REACT_VERSION = "18.3.1";
 const LUCIDE_VERSION = "0.400.0";
 const ESM = "https://esm.sh";
+const MOD_PREFIX = "@mod";
 
 const IMPORT_MAP: Record<string, string> = {
   react: `${ESM}/react@${REACT_VERSION}`,
   "react/": `${ESM}/react@${REACT_VERSION}/`,
+  "react/jsx-runtime": `${ESM}/react@${REACT_VERSION}/jsx-runtime`,
+  "react/jsx-dev-runtime": `${ESM}/react@${REACT_VERSION}/jsx-dev-runtime`,
   "react-dom": `${ESM}/react-dom@${REACT_VERSION}?external=react`,
   "react-dom/": `${ESM}/react-dom@${REACT_VERSION}/`,
   "react-dom/client": `${ESM}/react-dom@${REACT_VERSION}/client?external=react`,
@@ -50,7 +48,9 @@ const IMPORT_MAP: Record<string, string> = {
   zustand: `${ESM}/zustand@4.5.5?external=react`,
 };
 
-/** PascalCase icon → kebab-case file (AlertCircle → alert-circle). */
+const ASSET_EXT = /\.(css|scss|sass|png|jpe?g|gif|svg|webp|ico|mp3|wav|ogg|json|glb|gltf)$/i;
+const PARSABLE_EXT = [".tsx", ".ts", ".jsx", ".js"];
+
 function pascalToKebab(name: string): string {
   return name
     .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
@@ -58,11 +58,6 @@ function pascalToKebab(name: string): string {
     .toLowerCase();
 }
 
-/**
- * Reescribe `import { Sword, Heart as H } from "lucide-react"` a un import
- * por icono. El barrel de lucide-react en esm.sh suele tardar tanto que
- * Vercel/CDN responden 504 y el preview muere con "Script error".
- */
 function lucideClauseToPerIconImports(clause: string): string[] {
   const c = clause.trim();
   if (!c.startsWith("{") || !c.endsWith("}")) return [];
@@ -71,17 +66,18 @@ function lucideClauseToPerIconImports(clause: string): string[] {
     .split(",")
     .map((s) => s.trim())
     .filter((n) => n && !n.startsWith("type "));
-  return names.map((n) => {
-    const parts = n.split(/\s+as\s+/);
-    const orig = (parts[0] || "").trim();
-    const local = (parts[1] || orig).trim();
-    if (!orig) return "";
-    const kebab = pascalToKebab(orig);
-    return `import ${local} from "${ESM}/lucide-react@${LUCIDE_VERSION}/dist/esm/icons/${kebab}?external=react";`;
-  }).filter(Boolean);
+  return names
+    .map((n) => {
+      const parts = n.split(/\s+as\s+/);
+      const orig = (parts[0] || "").trim();
+      const local = (parts[1] || orig).trim();
+      if (!orig) return "";
+      const kebab = pascalToKebab(orig);
+      return `import ${local} from "${ESM}/lucide-react@${LUCIDE_VERSION}/dist/esm/icons/${kebab}?external=react";`;
+    })
+    .filter(Boolean);
 }
 
-/** Convierte un specifier npm a URL de esm.sh, dejando react/* en bare (importmap). */
 function rewriteBareSpec(spec: string): string {
   if (
     spec === "react" ||
@@ -98,17 +94,10 @@ function rewriteBareSpec(spec: string): string {
     return IMPORT_MAP[spec];
   }
   if (spec.startsWith("react-icons/")) {
-    const sub = spec.slice("react-icons/".length);
-    return `${ESM}/react-icons@5.2.1/${sub}?external=react`;
+    return `${ESM}/react-icons@5.2.1/${spec.slice("react-icons/".length)}?external=react`;
   }
   return `${ESM}/${spec}?external=react,react-dom`;
 }
-
-const ASSET_EXT = /\.(css|scss|sass|png|jpe?g|gif|svg|webp|ico|mp3|wav|ogg|json|glb|gltf)$/i;
-
-const PARSABLE_EXT = [".tsx", ".ts", ".jsx", ".js"];
-
-// ─── Normalización de rutas ───────────────────────────────────────────────
 
 function normalizePath(p: string): string {
   if (!p) return "/";
@@ -117,7 +106,6 @@ function normalizePath(p: string): string {
   return clean;
 }
 
-/** Resuelve un import relativo (./foo, ../foo) contra el directorio del importador. */
 function resolveRelativeImport(spec: string, importerPath: string): string {
   const importerDir = importerPath.replace(/\/[^/]*$/, "");
   let base: string;
@@ -128,7 +116,6 @@ function resolveRelativeImport(spec: string, importerPath: string): string {
   } else {
     base = spec;
   }
-  // Normalizar segmentos . y ..
   const segments = base.split("/").filter((s) => s && s !== ".");
   const resolved: string[] = [];
   for (const seg of segments) {
@@ -138,19 +125,15 @@ function resolveRelativeImport(spec: string, importerPath: string): string {
   return normalizePath("/" + resolved.join("/"));
 }
 
-/** Dado un path sin extensión, prueba extensiones hasta encontrarlo en fileMap. */
 function resolveWithExtension(
   basePath: string,
   fileMap: Record<string, string>
 ): string | null {
-  // Si ya tiene extensión válida y existe
   if (fileMap[basePath] !== undefined) return basePath;
-  // Probar extensiones
   for (const ext of PARSABLE_EXT) {
     const withExt = basePath + ext;
     if (fileMap[withExt] !== undefined) return withExt;
   }
-  // Probar /index
   for (const ext of PARSABLE_EXT) {
     const index = basePath + "/index" + ext;
     if (fileMap[index] !== undefined) return index;
@@ -158,398 +141,86 @@ function resolveWithExtension(
   return null;
 }
 
-// ─── Parser de imports ────────────────────────────────────────────────────
-
-interface ParsedImport {
-  /** Texto completo del match para reemplazar. */
-  raw: string;
-  /** Specifier del import: "./components/Foo" o "react" o "framer-motion". */
-  specifier: string;
-  /** Si es relativo (./ o ../). */
-  isRelative: boolean;
+function isRelativeSpec(spec: string): boolean {
+  return spec.startsWith("./") || spec.startsWith("../") || (spec.startsWith("/") && !spec.startsWith("//"));
 }
 
-/** Extrae todos los imports estáticos de un archivo. */
-function extractImports(code: string): ParsedImport[] {
-  const imports: ParsedImport[] = [];
-  // import ... from "spec" / import "spec"
-  const re =
-    /\bimport\b(?:\s+[^'";]*?\s+from\s*)?['"]([^'"]+)['"]/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(code)) !== null) {
-    const specifier = m[1];
-    imports.push({
-      raw: m[0],
-      specifier,
-      isRelative: specifier.startsWith("./") || specifier.startsWith("../"),
-    });
-  }
-  return imports;
-}
-
-// ─── Resolver de dependencias (orden topológico) ──────────────────────────
-
-/**
- * Dado el mapa de archivos, devuelve los paths de archivos parsables (.tsx/.ts)
- * en orden topológico: las dependencias (imports relativos) antes que los
- * dependientes. Esto permite concatenarlos sin forward references.
- */
-function topoSort(fileMap: Record<string, string>): {
-  order: string[];
-  error: string | null;
-} {
-  const parsable = Object.keys(fileMap).filter((p) =>
-    PARSABLE_EXT.some((e) => p.endsWith(e))
-  );
-
-  // Construir grafo de dependencias: deps[path] = [paths relativos que importa]
-  const deps: Record<string, string[]> = {};
-  for (const path of parsable) {
-    const code = fileMap[path];
-    const imports = extractImports(code);
-    const relativeDeps: string[] = [];
-    for (const imp of imports) {
-      if (!imp.isRelative) continue;
-      const resolvedPath = resolveWithExtension(
-        resolveRelativeImport(imp.specifier, path),
-        fileMap
-      );
-      if (resolvedPath && resolvedPath !== path) {
-        relativeDeps.push(resolvedPath);
-      }
+function rewriteSpecifier(
+  spec: string,
+  importerPath: string,
+  fileMap: Record<string, string>
+): { spec: string; skip: boolean; comment?: string } {
+  if (isRelativeSpec(spec)) {
+    if (ASSET_EXT.test(spec)) {
+      return { spec, skip: true, comment: spec };
     }
-    deps[path] = [...new Set(relativeDeps)];
-  }
-
-  // DFS con marca de "visitando" para detectar ciclos
-  const order: string[] = [];
-  const visited = new Set<string>();
-  const visiting = new Set<string>();
-  let cycleError: string | null = null;
-
-  const visit = (path: string): void => {
-    if (visited.has(path)) return;
-    if (visiting.has(path)) {
-      cycleError = `Dependencia circular detectada involucrando "${path}". Reorganiza los imports para evitar el ciclo.`;
-      return;
+    const resolved = resolveWithExtension(resolveRelativeImport(spec, importerPath), fileMap);
+    if (!resolved) {
+      return { spec, skip: true, comment: `unresolved ${spec}` };
     }
-    visiting.add(path);
-    for (const dep of deps[path] || []) {
-      visit(dep);
-      if (cycleError) return;
-    }
-    visiting.delete(path);
-    visited.add(path);
-    order.push(path);
-  };
-
-  for (const path of parsable) {
-    visit(path);
-    if (cycleError) break;
+    return { spec: MOD_PREFIX + resolved, skip: false };
   }
-
-  return { order, error: cycleError };
-}
-
-// ─── Generador de nombres de módulo ───────────────────────────────────────
-
-/** Convierte un path "/components/Header.tsx" → "__mod_components_Header". */
-function moduleName(path: string): string {
-  const cleaned = path
-    .replace(/^\//, "")
-    .replace(/\.(tsx|ts|jsx|js)$/, "")
-    .replace(/[^a-zA-Z0-9_]/g, "_");
-  return "__mod_" + cleaned;
-}
-
-// ─── Transformador de imports relativos ───────────────────────────────────
-
-/**
- * Transforma los imports de un archivo para inlineado:
- *  - Imports relativos → const { X } = __mod_xxx; (referencia al módulo inlineado)
- *  - Imports bare → se MANTIENEN como imports estáticos (Babel + importmap los
- *    resuelven en runtime). Se coleccionan para ir TODOS al inicio del módulo
- *    completo (ESM hace hoisting de imports → resuelve el temporal dead zone).
- */
-/** Quita `type Foo` de `{ Foo, type Bar }` para no importar tipos como valor. */
-function dropInlineTypeImports(clause: string): string {
-  return clause.replace(/\{([^}]*)\}/g, (_m, inner: string) => {
-    const names = inner
-      .split(",")
-      .map((s) => s.trim())
-      .filter((n) => n && !/^type\s/.test(n));
-    return `{ ${names.join(", ")} }`;
-  });
+  return { spec: rewriteBareSpec(spec), skip: false };
 }
 
 /**
- * Los archivos se envuelven en un IIFE. `export type` / `import type` solo son
- * válidos a nivel de módulo, así que hay que bajarlos a `type`/`interface` o
- * eliminarlos ANTES de wrappear. Si no, Babel tira:
- *   'import' and 'export' may only appear at the top level
+ * Reescribe imports/exports para ESM de preview.
+ * Los relativos pasan a `@mod/ruta.tsx` (bare, resuelto por importmap).
+ * lucide-react named → un import por icono (el barrel 504-ea).
+ * CSS/assets relativos se comentan (el CSS ya va en un <style>).
  */
-function stripTypeOnlySyntax(code: string): string {
-  let out = code;
-  out = out.replace(/\bimport\s+type\s+[\s\S]*?from\s+['"][^'"]+['"];?/g, "");
-  out = out.replace(/\bexport\s+type\s*\{[^}]*\}\s*(?:from\s*['"][^'"]+['"])?;?/g, "");
-  out = out.replace(/\bexport\s+type\s+/g, "type ");
-  out = out.replace(/\bexport\s+interface\s+/g, "interface ");
-  out = out.replace(/\bexport\s+declare\s+/g, "declare ");
-  return out;
-}
-
-function transformImports(
+function rewriteImportsForEsm(
   code: string,
   importerPath: string,
   fileMap: Record<string, string>
-): { code: string; bareImports: string[] } {
-  const bareImports: string[] = [];
+): string {
   let out = code;
 
-  // Caso 1: import ... from "spec"
   out = out.replace(
     /\bimport\s+([^'";]+?)\s+from\s+['"]([^'"]+)['"]/g,
-    (fullMatch: string, clause: string, spec: string) => {
-      let trimmedClause = dropInlineTypeImports(clause.trim());
-      if (/^type(\s|{)/.test(trimmedClause) || trimmedClause === "{  }" || trimmedClause === "{}") {
-        return "";
-      }
-      if (spec.startsWith("./") || spec.startsWith("../") || spec.startsWith("/")) {
-        if (ASSET_EXT.test(spec)) {
-          if (/^\w+$/.test(trimmedClause)) {
-            return `const ${trimmedClause} = ${JSON.stringify(spec)};`;
-          }
-          return `/* asset import skipped: ${spec} */`;
-        }
-        const resolvedPath = resolveWithExtension(
-          resolveRelativeImport(spec, importerPath),
-          fileMap
-        );
-        if (resolvedPath) {
-          const mod = moduleName(resolvedPath);
-          return transformClauseToDestructuring(trimmedClause, mod);
-        }
-        return `/* unresolved relative: ${spec} */`;
-      }
+    (_m, clause: string, spec: string) => {
+      const trimmed = clause.trim();
       if (spec === "lucide-react") {
-        const perIcon = lucideClauseToPerIconImports(trimmedClause);
-        if (perIcon.length > 0) {
-          bareImports.push(...perIcon);
-          return "";
-        }
+        const perIcon = lucideClauseToPerIconImports(trimmed);
+        if (perIcon.length > 0) return perIcon.join("\n");
       }
-      const rewritten = rewriteBareSpec(spec);
-      bareImports.push(`import ${trimmedClause} from "${rewritten}";`);
-      return "";
+      const resolved = rewriteSpecifier(spec, importerPath, fileMap);
+      if (resolved.skip) {
+        if (ASSET_EXT.test(spec) && /\.(css|scss|sass)$/i.test(spec)) {
+          return "/* css inlined globally */";
+        }
+        if (/^\w+$/.test(trimmed)) {
+          return `const ${trimmed} = ${JSON.stringify(spec)};`;
+        }
+        return `/* ${resolved.comment || spec} */`;
+      }
+      return `import ${trimmed} from "${resolved.spec}"`;
     }
   );
 
-  // Caso 2: import "spec" (side-effect, sin cláusula)
   out = out.replace(
     /\bimport\s+['"]([^'"]+)['"]/g,
-    (fullMatch: string, spec: string) => {
-      if (spec.startsWith("./") || spec.startsWith("../") || spec.startsWith("/")) {
-        return `/* unresolved side-effect relative: ${spec} */`;
+    (_m, spec: string) => {
+      const resolved = rewriteSpecifier(spec, importerPath, fileMap);
+      if (resolved.skip) {
+        return `/* ${resolved.comment || spec} */`;
       }
-      const rewritten = rewriteBareSpec(spec);
-      bareImports.push(`import "${rewritten}";`);
-      return "";
+      return `import "${resolved.spec}"`;
     }
   );
 
-  return { code: out, bareImports };
-}
-
-/**
- * Convierte una cláusula de import en destructuring del objeto módulo.
- *   "Default"           → "const Default = __mod.default;"
- *   "{ A, B as C }"     → "const { A, B: C } = __mod;"
- *   "Default, { A }"    → "const { default: Default, A } = __mod;"
- *   "* as ns"           → "const ns = __mod;"
- */
-function transformClauseToDestructuring(clause: string, modVar: string): string {
-  const c = clause.trim();
-  // import * as ns
-  if (/^\*\s+as\s+/.test(c)) {
-    const ns = c.replace(/^\*\s+as\s+/, "");
-    return `const ${ns} = ${modVar};`;
-  }
-  // import Default, { A, B as C }
-  const mixedMatch = c.match(/^(\w+)\s*,\s*\{([^}]*)\}$/);
-  if (mixedMatch) {
-    const defaultName = mixedMatch[1];
-    const named = mixedMatch[2]
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .map((n) => n.replace(/\s+as\s+/, ": "));
-    return `const { default: ${defaultName}, ${named.join(", ")} } = ${modVar};`;
-  }
-  // import { A, B as C }
-  if (c.startsWith("{") && c.endsWith("}")) {
-    const named = c
-      .slice(1, -1)
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .map((n) => n.replace(/\s+as\s+/, ": "));
-    return `const { ${named.join(", ")} } = ${modVar};`;
-  }
-  // import Default
-  if (/^\w+$/.test(c)) {
-    return `const ${c} = ${modVar}.default;`;
-  }
-  // Fallback
-  return `const ${c.replace(/\W/g, "_")} = ${modVar};`;
-}
-
-/**
- * Genera el código dinámico de import() para los bare imports al inicio del IIFE.
- * Ej: `const { Heart } = await import("lucide-react");`
- */
-function generateBareImportBlock(
-  bareImports: { spec: string; clauses: string }[]
-): string {
-  if (bareImports.length === 0) return "";
-  // Agrupar por specifier para evitar importar el mismo módulo varias veces.
-  const bySpec = new Map<string, string[]>();
-  for (const bi of bareImports) {
-    if (!bi.clauses) continue;
-    const existing = bySpec.get(bi.spec) || [];
-    existing.push(bi.clauses);
-    bySpec.set(bi.spec, existing);
-  }
-  const lines: string[] = [];
-  for (const [spec, clausesList] of bySpec) {
-    // Tomar la primera cláusula (suficiente; las duplicadas son inofensivas)
-    const clause = clausesList[0];
-    if (clause.includes("{") || clause.includes("*") || /^\w+$/.test(clause)) {
-      // Transformar la cláusula a destructuring de await import()
-      const tempVar = `__imp_${spec.replace(/[^a-zA-Z0-9]/g, "_")}`;
-      lines.push(`const ${tempVar} = await import(${JSON.stringify(spec)});`);
-      // Aplicar destructuring según la cláusula
-      const c = clause.trim();
-      if (/^\*\s+as\s+/.test(c)) {
-        const ns = c.replace(/^\*\s+as\s+/, "");
-        lines.push(`const ${ns} = ${tempVar};`);
-      } else if (c.startsWith("{") && c.endsWith("}")) {
-        const named = c
-          .slice(1, -1)
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean)
-          .map((n) => n.replace(/\s+as\s+/, ": "));
-        lines.push(`const { ${named.join(", ")} } = ${tempVar};`);
-      } else if (/^\w+$/.test(c)) {
-        lines.push(`const ${c} = ${tempVar}.default;`);
-      } else {
-        const mixedMatch = c.match(/^(\w+)\s*,\s*\{([^}]*)\}$/);
-        if (mixedMatch) {
-          const defaultName = mixedMatch[1];
-          const named = mixedMatch[2]
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean)
-            .map((n) => n.replace(/\s+as\s+/, ": "));
-          lines.push(
-            `const { default: ${defaultName}, ${named.join(", ")} } = ${tempVar};`
-          );
-        }
-      }
-    }
-  }
-  return lines.join("\n");
-}
-
-// ─── Generador del código concatenado ─────────────────────────────────────
-
-/**
- * Convierte un archivo parsable en un bloque que asigna su namespace a una
- * variable local: `const __mod_xxx = (() => { ...body...; return { default, ...named }; })();`
- *
- * Los imports bare NO se inlinean aquí: se coleccionan y van TODOS al inicio
- * del módulo completo (ESM hace hoisting de imports estáticos, así se evita
- * el temporal dead zone). Los imports relativos se resuelven a referencias
- * a las variables `__mod_yyy` de otros módulos inlineados.
- */
-function wrapFileAsModule(
-  path: string,
-  code: string,
-  fileMap: Record<string, string>
-): { code: string; bareImports: string[]; error: string | null } {
-  const { code: transformed, bareImports } = transformImports(
-    stripTypeOnlySyntax(code),
-    path,
-    fileMap
-  );
-
-  const exportNames: string[] = [];
-  let body = transformed;
-
-  // Quitar "export" de export const/function/class/let/enum (quedan como declarations)
-  body = body.replace(
-    /\bexport\s+(async\s+function|const\s+enum|function|class|enum|const|let|var)\s+(\w+)/g,
-    (_m, kw: string, name: string) => {
-      exportNames.push(name);
-      return `${kw} ${name}`;
+  out = out.replace(
+    /\bexport\s+(type\s+)?(\*|\{[^}]*\}|\*\s+as\s+\w+)\s+from\s+['"]([^'"]+)['"]/g,
+    (_m, typeKw: string, clause: string, spec: string) => {
+      const resolved = rewriteSpecifier(spec, importerPath, fileMap);
+      if (resolved.skip) return `/* re-export skipped: ${spec} */`;
+      return `export ${typeKw || ""}${clause} from "${resolved.spec}"`;
     }
   );
 
-  // Quitar "export default" dejando la declaración
-  let defaultExpr = "undefined";
-  if (body.includes("export default")) {
-    const fnMatch = body.match(/\bexport\s+default\s+function\s+(\w+)\s*\(/);
-    if (fnMatch) {
-      body = body.replace(/\bexport\s+default\s+function/, "function");
-      defaultExpr = fnMatch[1];
-    } else {
-      const clsMatch = body.match(/\bexport\s+default\s+class\s+(\w+)/);
-      if (clsMatch) {
-        body = body.replace(/\bexport\s+default\s+class/, "class");
-        defaultExpr = clsMatch[1];
-      } else {
-        body = body.replace(
-          /\bexport\s+default\s+/,
-          "const __default_export = "
-        );
-        defaultExpr = "__default_export";
-      }
-    }
-  }
-
-  // Quitar re-exports no soportados y cualquier `export` residual (type/interface
-  // ya deberían estar strippeados; esto evita el error de Babel "may only appear
-  // at the top level" si queda alguno dentro del IIFE).
-  body = body.replace(/\bexport\s*\{[^}]*\}\s*(?:from\s*['"][^'"]+['"])?;?/g, "");
-  body = body.replace(/\bexport\s*\*\s+(?:as\s+\w+\s+)?from\s*['"][^'"]+['"];?/g, "");
-  body = stripTypeOnlySyntax(body);
-  body = body.replace(/\bexport\s+(?=type\b|interface\b|enum\b|declare\b|async\b|function\b|class\b|const\b|let\b|var\b|default\b|{)/g, "");
-
-  const namespaceEntries = [
-    `default: ${defaultExpr}`,
-    ...exportNames.map((n) => `${n}: ${n}`),
-  ];
-
-  const modVar = moduleName(path);
-
-  // IIFE síncrono (NO async): los imports bare van al inicio del módulo
-  // completo, no aquí. Esto evita el temporal dead zone.
-  const wrapped = `const ${modVar} = (() => {
-${body}
-return { ${namespaceEntries.join(", ")} };
-})();`;
-
-  return { code: wrapped, bareImports, error: null };
+  return out;
 }
 
-// ─── Inspector de elementos (migrado de webbuilder-html.ts) ───────────────
-
-/**
- * Inyecta en el HTML del iframe: (a) estilos para el hover del inspector, y
- * (b) un <script> que escucha clicks en el iframe y los reporta al parent vía
- * postMessage. Así el usuario puede clickear un elemento del preview para que
- * la IA lo edite.
- */
 export function injectInspectorScript(html: string): string {
   if (html.includes("MAVERLANG_ELEMENT_CLICKED")) return html;
 
@@ -654,128 +325,7 @@ export function injectInspectorScript(html: string): string {
   return modifiedHtml;
 }
 
-// ─── Función principal: renderProjectToHtml ───────────────────────────────
-
-export interface RenderResult {
-  /** HTML completo para el iframe srcdoc, o null si hubo error. */
-  html: string | null;
-  /** Mensaje de error limpio si el render falló. */
-  error: string | null;
-}
-
-/**
- * Genera el HTML completo del iframe del preview desde los archivos del LLM.
- * Es la única función pública del módulo.
- */
-/**
- * Fusiona imports bare del mismo specifier para evitar conflictos de
- * identificadores duplicados. Ej:
- *   import { useContext } from "react";
- *   import { createContext, useState } from "react";
- * →
- *   import { useContext, createContext, useState } from "react";
- *
- * También fusiona default + named del mismo specifier:
- *   import React from "react";
- *   import { useState } from "react";
- * →
- *   import React, { useState } from "react";
- *
- * Los imports side-effect (import "x") y namespace (import * as x) se dejan
- * intactos (no se fusionan).
- */
-function mergeBareImports(imports: string[]): string[] {
-  const bySpec = new Map<
-    string,
-    { defaults: string[]; named: Set<string>; sideEffect: boolean; namespace: string[] }
-  >();
-
-  for (const imp of imports) {
-    // import "spec" (side-effect)
-    const sideMatch = imp.match(/^import\s+['"]([^'"]+)['"];?$/);
-    if (sideMatch) {
-      const spec = sideMatch[1];
-      const entry = bySpec.get(spec) || { defaults: [], named: new Set(), sideEffect: false, namespace: [] };
-      entry.sideEffect = true;
-      bySpec.set(spec, entry);
-      continue;
-    }
-    // import * as ns from "spec"
-    const nsMatch = imp.match(/^import\s+\*\s+as\s+(\w+)\s+from\s+['"]([^'"]+)['"];?$/);
-    if (nsMatch) {
-      const ns = nsMatch[1];
-      const spec = nsMatch[2];
-      const entry = bySpec.get(spec) || { defaults: [], named: new Set(), sideEffect: false, namespace: [] };
-      entry.namespace.push(ns);
-      bySpec.set(spec, entry);
-      continue;
-    }
-    // import Default, { A, B as C } from "spec"
-    const mixedMatch = imp.match(
-      /^import\s+(\w+)\s*,\s*\{([^}]*)\}\s+from\s+['"]([^'"]+)['"];?$/
-    );
-    if (mixedMatch) {
-      const def = mixedMatch[1];
-      const namedStr = mixedMatch[2];
-      const spec = mixedMatch[3];
-      const entry = bySpec.get(spec) || { defaults: [], named: new Set(), sideEffect: false, namespace: [] };
-      entry.defaults.push(def);
-      for (const n of namedStr.split(",").map((s) => s.trim()).filter(Boolean)) {
-        entry.named.add(n);
-      }
-      bySpec.set(spec, entry);
-      continue;
-    }
-    // import { A, B as C } from "spec"
-    const namedMatch = imp.match(/^import\s+\{([^}]*)\}\s+from\s+['"]([^'"]+)['"];?$/);
-    if (namedMatch) {
-      const namedStr = namedMatch[1];
-      const spec = namedMatch[2];
-      const entry = bySpec.get(spec) || { defaults: [], named: new Set(), sideEffect: false, namespace: [] };
-      for (const n of namedStr.split(",").map((s) => s.trim()).filter(Boolean)) {
-        entry.named.add(n);
-      }
-      bySpec.set(spec, entry);
-      continue;
-    }
-    // import Default from "spec"
-    const defaultMatch = imp.match(/^import\s+(\w+)\s+from\s+['"]([^'"]+)['"];?$/);
-    if (defaultMatch) {
-      const def = defaultMatch[1];
-      const spec = defaultMatch[2];
-      const entry = bySpec.get(spec) || { defaults: [], named: new Set(), sideEffect: false, namespace: [] };
-      entry.defaults.push(def);
-      bySpec.set(spec, entry);
-      continue;
-    }
-  }
-
-  // Reconstruir imports fusionados
-  const result: string[] = [];
-  for (const [spec, entry] of bySpec) {
-    if (entry.sideEffect && entry.defaults.length === 0 && entry.named.size === 0 && entry.namespace.length === 0) {
-      result.push(`import "${spec}";`);
-      continue;
-    }
-    const parts: string[] = [];
-    if (entry.defaults.length > 0) {
-      // Si hay múltiples defaults del mismo spec (raro), tomar el primero.
-      parts.push(entry.defaults[0]);
-    }
-    for (const ns of entry.namespace) {
-      parts.push(`* as ${ns}`);
-    }
-    if (entry.named.size > 0) {
-      parts.push(`{ ${[...entry.named].join(", ")} }`);
-    }
-    const clause = parts.join(", ");
-    result.push(`import ${clause} from "${spec}";`);
-  }
-  return result;
-}
-
 export function renderProjectToHtml(files: ProjectFiles): RenderResult {
-  // 1. Normalizar el input a Record<string, string>
   const fileMap: Record<string, string> = {};
   for (const [p, f] of Object.entries(files)) {
     const code = typeof f === "string" ? f : f?.code ?? "";
@@ -785,10 +335,9 @@ export function renderProjectToHtml(files: ProjectFiles): RenderResult {
   }
 
   if (Object.keys(fileMap).length === 0) {
-    return { html: null, error: null }; // sin código, sin preview
+    return { html: null, error: null };
   }
 
-  // 2. Separar CSS de código
   let userCss = "";
   for (const [path, code] of Object.entries(fileMap)) {
     if (path.endsWith(".css")) {
@@ -796,7 +345,6 @@ export function renderProjectToHtml(files: ProjectFiles): RenderResult {
     }
   }
 
-  // 3. Encontrar el entry (priorizar /App.tsx)
   const entryCandidates = [
     "/App.tsx",
     "/App.jsx",
@@ -818,93 +366,44 @@ export function renderProjectToHtml(files: ProjectFiles): RenderResult {
     };
   }
 
-  // 4. Orden topológico de archivos parsables
-  const { order, error: topoError } = topoSort(fileMap);
-  if (topoError) {
-    return { html: null, error: topoError };
+  const modules: Record<string, string> = {};
+  for (const [path, code] of Object.entries(fileMap)) {
+    if (!PARSABLE_EXT.some((e) => path.endsWith(e))) continue;
+    modules[path] = rewriteImportsForEsm(code, path, fileMap);
   }
 
-  // 5. Envolver cada archivo como módulo y recolectar imports bare
-  const moduleBlocks: string[] = [];
-  const allBareImports: string[] = [];
-  for (const path of order) {
-    const { code: wrapped, bareImports, error: wrapError } = wrapFileAsModule(
-      path,
-      fileMap[path],
-      fileMap
-    );
-    if (wrapError) {
-      return { html: null, error: wrapError };
-    }
-    moduleBlocks.push(`// === ${path} ===\n${wrapped}`);
-    allBareImports.push(...bareImports);
+  if (Object.keys(modules).length === 0) {
+    return {
+      html: null,
+      error: "No hay módulos para previsualizar.",
+    };
   }
 
-  // 6. Imports bare al inicio (con hoisting de ESM, evita temporal dead zone).
-  //    Hay que FUSIONAR imports del mismo specifier: si App.tsx importa
-  //    `{ useContext }` de "react" y Badge.tsx también, no podemos tener dos
-  //    `import { useContext } from "react"` (chocarían). Los fusionamos en uno.
-  const reactImports = [
-    'import React from "react";',
-    'import { createRoot } from "react-dom/client";',
-  ];
-  // Asegurar que React y createRoot estén importados (el bootstrap los usa).
-  const hasReactDefaultImport = allBareImports.some((i) =>
-    /^import\s+React\s+from\s+["']react["']/.test(i)
-  );
-  const hasCreateRootImport = allBareImports.some((i) =>
-    /from\s+["']react-dom\/client["']/.test(i)
-  );
-  const bootstrapImports = [
-    !hasReactDefaultImport ? reactImports[0] : null,
-    !hasCreateRootImport ? reactImports[1] : null,
-  ].filter((x): x is string => x !== null);
-  // Fusionar imports bare del usuario por specifier.
-  const uniqueImports = mergeBareImports([...bootstrapImports, ...allBareImports]);
-
-  // 7. Bootstrap: monta el entry en #root.
-  //    Como los imports están arriba (hoisting), React y createRoot están
-  //    disponibles. __entry es el namespace del módulo entry (IIFE síncrono).
-  const entryMod = moduleName(entry);
-  const bootstrap = `
-// === bootstrap ===
-const __entry = ${entryMod};
-const root = document.getElementById("root");
-if (root) {
-  const App = __entry.default;
-  createRoot(root).render(App ? React.createElement(App) : React.createElement("div", null, "El archivo principal no exporta un componente por defecto."));
-}`;
-
-  const fullCode = stripTypeOnlySyntax(
-    "// === imports (hoisted por ESM) ===\n" +
-    uniqueImports.join("\n") +
-    "\n\n" +
-    moduleBlocks.join("\n\n") +
-    "\n\n" +
-    bootstrap
-  );
-
-  // 7. Generar HTML
-  const html = buildIframeHtml(fullCode, userCss);
+  const html = buildIframeHtml(modules, entry, userCss);
   return { html: injectInspectorScript(html), error: null };
 }
 
-/** Construye el HTML del iframe con importmap, Babel, Tailwind y el código. */
-function buildIframeHtml(jsCode: string, userCss: string): string {
-  const styleTag = userCss.trim()
-    ? "<style>" + userCss.trim() + "</style>"
-    : "";
-  const safeCode = jsCode.replace(/<\/script/gi, "<\\/script");
-  const importMapJson = JSON.stringify({ imports: IMPORT_MAP }, null, 2);
+function buildIframeHtml(
+  modules: Record<string, string>,
+  entry: string,
+  userCss: string
+): string {
+  const styleTag = userCss.trim() ? "<style>" + userCss.trim() + "</style>" : "";
+  const payload = JSON.stringify({
+    entry,
+    files: modules,
+    importMap: IMPORT_MAP,
+  })
+    .replace(/</g, "\\u003c")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
+
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <base href="https://preview.invalid/">
-<script type="importmap">
-${importMapJson}
-</script>
 <script>
 (function () {
   function ignorable(msg, src) {
@@ -915,8 +414,8 @@ ${importMapJson}
     if ((msg === 'script error.' || msg === 'script error') && !src) return true;
     return false;
   }
-  function report(message, lineno, filename, ignorableFlag) {
-    if (ignorableFlag || ignorable(message, filename)) return;
+  function report(message, lineno, filename) {
+    if (ignorable(message, filename)) return;
     window.parent.postMessage({
       type: 'MAVERLANG_RUNTIME_ERROR',
       message: message || 'Error desconocido',
@@ -930,21 +429,21 @@ ${importMapJson}
       var resSrc = target.src || target.href || '';
       if (ignorable('', resSrc)) return;
       if (resSrc.indexOf('babel') !== -1 || resSrc.indexOf('@babel') !== -1) {
-        report('No se pudo cargar el compilador de la preview (timeout). Reintentá.', 0, resSrc, false);
+        report('No se pudo cargar el compilador de la preview (timeout). Reintentá.', 0, resSrc);
         return;
       }
       if (resSrc.indexOf('esm.sh') !== -1 || resSrc.indexOf('jsdelivr') !== -1) {
-        report('No se pudo cargar una librería (' + resSrc + '). Suele ser un timeout del CDN. Reintentá la preview.', 0, resSrc, false);
+        report('No se pudo cargar una librería. Suele ser un timeout del CDN. Reintentá la preview.', 0, resSrc);
         return;
       }
       return;
     }
-    report((e.error && (e.error.stack || e.error.message)) || e.message, e.lineno, e.filename, false);
+    report((e.error && (e.error.stack || e.error.message)) || e.message, e.lineno, e.filename);
   }, true);
   window.addEventListener('unhandledrejection', function (e) {
     var reason = e.reason;
     var message = (reason && reason.message) ? reason.message : String(reason || '');
-    report('Unhandled Promise rejection: ' + message, 0, '', false);
+    report('Unhandled Promise rejection: ' + message, 0, '');
   });
   window.addEventListener('click', function (e) {
     var target = e.target;
@@ -981,7 +480,7 @@ ${styleTag}
 </head>
 <body>
 <div id="root"></div>
-<script type="text/plain" id="__maverlang_src">${safeCode}</script>
+<script type="application/json" id="__maverlang_payload">${payload}</script>
 <script>
 (function () {
   var BABEL_URLS = [
@@ -1008,47 +507,90 @@ ${styleTag}
     }
     loadScript(BABEL_URLS[i]).then(run).catch(function () { loadBabel(i + 1); });
   }
+  function report(msg, filename) {
+    window.parent.postMessage({
+      type: 'MAVERLANG_RUNTIME_ERROR',
+      message: msg,
+      filename: filename || '',
+    }, '*');
+  }
   function run() {
     if (typeof Babel === 'undefined') {
-      window.parent.postMessage({
-        type: 'MAVERLANG_RUNTIME_ERROR',
-        message: 'Babel no está disponible en la preview.',
-      }, '*');
+      report('Babel no está disponible en la preview.');
       return;
     }
-    Babel.registerPreset('typescript-custom', {
+    Babel.registerPreset('maverlang', {
       presets: [
         [Babel.availablePresets['typescript'], { allExtensions: true, isTSX: true }],
-        Babel.availablePresets['react']
+        [Babel.availablePresets['react'], { runtime: 'automatic' }]
       ]
     });
-    var src = document.getElementById('__maverlang_src');
-    var code = src ? src.textContent : '';
-    var transformed;
+    var raw = document.getElementById('__maverlang_payload');
+    var payload;
     try {
-      transformed = Babel.transform(code, {
-        presets: ['typescript-custom'],
-        filename: 'App.tsx',
-        sourceType: 'module'
-      }).code;
+      payload = JSON.parse(raw.textContent);
     } catch (err) {
-      window.parent.postMessage({
-        type: 'MAVERLANG_RUNTIME_ERROR',
-        message: 'Error de sintaxis: ' + (err && err.message ? err.message : String(err)),
-      }, '*');
+      report('No se pudo leer el proyecto de la preview.');
       return;
     }
-    var blob = new Blob([transformed], { type: 'text/javascript' });
-    var url = URL.createObjectURL(blob);
-    import(url).catch(function (err) {
+    var files = payload.files || {};
+    var entry = payload.entry;
+    var transformed = {};
+    var paths = Object.keys(files);
+    for (var i = 0; i < paths.length; i++) {
+      var path = paths[i];
+      try {
+        transformed[path] = Babel.transform(files[path], {
+          presets: ['maverlang'],
+          filename: path,
+          sourceType: 'module'
+        }).code;
+      } catch (err) {
+        var m = (err && err.message) ? err.message : String(err);
+        report('Error de sintaxis: ' + path + ': ' + m, path);
+        return;
+      }
+    }
+    var imports = Object.assign({}, payload.importMap || {});
+    var blobs = {};
+    for (var j = 0; j < paths.length; j++) {
+      var p = paths[j];
+      var blob = new Blob([transformed[p]], { type: 'text/javascript' });
+      var url = URL.createObjectURL(blob);
+      blobs[p] = url;
+      imports['@mod' + p] = url;
+      var noExt = p.replace(/\\.(tsx|ts|jsx|js)$/, '');
+      if (!imports['@mod' + noExt]) imports['@mod' + noExt] = url;
+    }
+    var mapEl = document.createElement('script');
+    mapEl.type = 'importmap';
+    mapEl.textContent = JSON.stringify({ imports: imports });
+    document.head.appendChild(mapEl);
+
+    var entrySpec = '@mod' + entry;
+    var source = files[entry] || '';
+    var hasOwnMount = /createRoot\\s*\\(|ReactDOM\\.render\\s*\\(/.test(source);
+
+    import(entrySpec).then(function (mod) {
+      if (hasOwnMount) return;
+      var App = mod && mod.default;
+      var root = document.getElementById('root');
+      if (!root) return;
+      if (!App) {
+        root.textContent = 'El archivo principal no exporta un componente por defecto.';
+        return;
+      }
+      return import('react').then(function (React) {
+        return import('react-dom/client').then(function (ReactDOM) {
+          ReactDOM.createRoot(root).render(React.createElement(App));
+        });
+      });
+    }).catch(function (err) {
       var msg = (err && err.message) ? err.message : String(err);
       if (/Failed to fetch|error loading dynamically imported module|504|502|timeout/i.test(msg)) {
         msg = 'No se pudieron cargar las librerías de la preview (timeout del CDN). Reintentá.';
       }
-      window.parent.postMessage({
-        type: 'MAVERLANG_RUNTIME_ERROR',
-        message: msg,
-      }, '*');
+      report(msg, entry);
     });
   }
   loadBabel(0);

@@ -300,6 +300,19 @@ const DEFAULT_FILES: Record<string, WebBuilderFile> = {
   );
 }`,
   },
+  "/index.tsx": {
+    code: `import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import App from "./App";
+import "./styles.css";
+
+const root = createRoot(document.getElementById("root")!);
+root.render(
+  <StrictMode>
+    <App />
+  </StrictMode>
+);`,
+  },
   "/styles.css": {
     code: `@tailwind base;
 @tailwind components;

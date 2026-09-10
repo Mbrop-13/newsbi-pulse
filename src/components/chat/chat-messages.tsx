@@ -137,10 +137,16 @@ export function ChatMessages({
                     const steps = parseOrchestrationSteps(liveReasoning);
                     const agentStatuses = getAgentStatuses(steps);
                     const hasAgentSteps = agentStatuses.length > 0;
+                    const allAgentsSettled = hasAgentSteps && agentStatuses.every(
+                      (a) => a.status === "done" || a.status === "failed"
+                    );
+                    const railClass = allAgentsSettled
+                      ? "border-black dark:border-white"
+                      : "border-zinc-400 dark:border-zinc-500";
 
                     if (hasAgentSteps) {
                       return (
-                        <div className="ml-2.5 border-l-2 border-black dark:border-white pl-4 space-y-3">
+                        <div className={cn("ml-2.5 border-l-2 pl-4 space-y-3", railClass)}>
                           {agentStatuses.map((agent, idx) => {
                             const isDone = agent.status === 'done';
                             const isFailed = agent.status === 'failed';
@@ -190,7 +196,7 @@ export function ChatMessages({
                       if (!cleaned) return null;
                       return (
                         <div className="mb-2">
-                          <div className="pl-3.5 border-l-2 border-[#1890FF]/30 text-[12.5px] text-muted-foreground/80 font-sans whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto scrollbar-hide py-1">
+                          <div className="pl-3.5 border-l-2 border-zinc-400 dark:border-zinc-500 text-[12.5px] text-muted-foreground/80 font-sans whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto scrollbar-hide py-1">
                             {cleaned}
                           </div>
                         </div>
@@ -848,7 +854,12 @@ function MessageBubble({
                     <p className="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest flex items-center gap-1.5 mb-1.5">
                       <Cpu className="w-3.5 h-3.5 text-[#1890FF] dark:text-blue-400" /> Pasos de Investigación
                     </p>
-                    <div className="ml-2 pl-3 border-l border-slate-200 dark:border-zinc-850 space-y-2.5">
+                    <div className={cn(
+                      "ml-2 pl-3 border-l-2 space-y-2.5",
+                      isLoading
+                        ? "border-zinc-400 dark:border-zinc-500"
+                        : "border-black dark:border-white"
+                    )}>
                       {thinkingSteps.map((step, idx) => {
                         const isDone = step.status === 'done';
                         const isFailed = step.status === 'failed';
@@ -1054,7 +1065,10 @@ function MessageBubble({
               {/* Grok-like: soft left border, muted prose, no heavy card */}
               <div
                 className={cn(
-                  "mt-2 pl-3 border-l border-border/70",
+                  "mt-2 pl-3 border-l-2",
+                  isThinking
+                    ? "border-zinc-400 dark:border-zinc-500"
+                    : "border-black dark:border-white",
                   "text-[13px] leading-relaxed text-muted-foreground",
                   "whitespace-pre-wrap max-h-60 overflow-y-auto scrollbar-hide"
                 )}

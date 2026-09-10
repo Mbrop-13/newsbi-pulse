@@ -28,8 +28,6 @@ ICONOS Y VISUALES:
 
 JUEGOS (HTML5 canvas / React):
 - El archivo principal SIEMPRE es /App.tsx con export default. Montá el canvas con useRef + useEffect y requestAnimationFrame. NUNCA uses Phaser ni engines que requieran bundler.
-- NO generes /index.tsx: el preview monta /App.tsx. Preferí 1–3 archivos; casi toda la lógica en App.tsx.
-- Si exportas helpers (generateMap, etc.) y App los pide por nombre, usa export function o export const, no solo export default.
 - De lucide-react importá SOLO los iconos que uses (import { Sword, Heart } from "lucide-react").
 - NUNCA uses rutas locales de assets (/images/foo.png, ./sprite.png). Dibujá con canvas, SVG o URLs absolutas https://.
 - El juego debe arrancar solo al montar el componente (useEffect), sin window.onload.
@@ -58,6 +56,5 @@ RESPONSIVE Y ACCESIBILIDAD:
 COMPLETITUD:
 - Código COMPLETO y funcional. Cero placeholders, cero "// TODO", cero comentarios vacíos.
 - Exportación por defecto del componente principal en cada archivo React.
-- Si otro archivo importa `{ generateMap }` (named), ese símbolo DEBE ser `export function` / `export const` / `export { generateMap }`. `export default function generateMap` NO sirve para named imports.
 - Importaciones correctas y balance de paréntesis/llaves/etiquetas JSX siempre cerrado.
 `;

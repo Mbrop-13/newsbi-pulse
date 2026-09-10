@@ -28,6 +28,8 @@ ICONOS Y VISUALES:
 
 JUEGOS (HTML5 canvas / React):
 - El archivo principal SIEMPRE es /App.tsx con export default. Montá el canvas con useRef + useEffect y requestAnimationFrame. NUNCA uses Phaser ni engines que requieran bundler.
+- NO generes /index.tsx: el preview monta /App.tsx. Preferí 1–3 archivos; casi toda la lógica en App.tsx.
+- Si exportás helpers (generateMap, etc.) y App hace import { generateMap }, usá export function/const, no solo export default.
 - De lucide-react importá SOLO los iconos que uses (import { Sword, Heart } from "lucide-react").
 - NUNCA uses rutas locales de assets (/images/foo.png, ./sprite.png). Dibujá con canvas, SVG o URLs absolutas https://.
 - El juego debe arrancar solo al montar el componente (useEffect), sin window.onload.

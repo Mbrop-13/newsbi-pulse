@@ -1,5 +1,5 @@
 import { generateText, LanguageModel } from 'ai';
-import { containsArtifact, parseArtifact, ParsedAction, validateDiffsAgainstFile, toCodeMap, actionsToFiles } from '@/lib/webbuilder-parser';
+import { containsArtifact, parseArtifact, ParsedAction, validateDiffsAgainstFile, actionsToFiles, filesForLlm } from '@/lib/webbuilder-parser';
 import { validateFileSyntax } from '@/lib/webbuilder-syntax-validator';
 import { BUILDER_DESIGN_GUIDELINES } from '@/app/api/ai-chat/prompts/builder-guidelines';
 
@@ -918,7 +918,8 @@ export async function planWebBuilder(
   replanFeedback?: string
 ): Promise<WebBuilderPlan> {
   // Defensa: el cliente/store manda { path: { code } }; aquí siempre string.
-  const filesMap = toCodeMap(existingFiles as Record<string, unknown> | undefined);
+  // El placeholder de arranque NO cuenta como proyecto existente.
+  const filesMap = filesForLlm(existingFiles as Record<string, unknown> | undefined);
   let totalTokensUsed = 0;
   const isReplan = !!replanFeedback;
   onProgress?.(isReplan
@@ -1031,7 +1032,7 @@ ${existingFilesContext
       const preview = code.slice(0, 280).replace(/\n/g, ' ');
       return `- ${p} (${lines} líneas): ${preview}${code.length > 280 ? '…' : ''}`;
     }).join('\n')}`
-  : '(Proyecto vacío)'}`
+  : '(Proyecto VACÍO: solo hay un placeholder visual. Planificá app nueva con type="file" sobre /App.tsx. NO planifiques /index.tsx.)'}`
         }
       ],
       temperature: 0.1,
@@ -1112,7 +1113,8 @@ export async function executeWebBuilderAgents(
   onFileReady?: (agent: WebBuilderAgentInfo, content: string, success: boolean) => void
 ): Promise<{ agentReports: WebBuilderAgentReport[]; totalOrchestrationTimeMs: number; totalTokensUsed: number }> {
   // Mapa mutable: shell e integrate alimentan a las fases siguientes.
-  let filesMap = toCodeMap(existingFiles as Record<string, unknown> | undefined);
+  // Placeholder de arranque = proyecto vacío (si no, los agentes hacen SEARCH sobre el loader).
+  let filesMap = filesForLlm(existingFiles as Record<string, unknown> | undefined);
   const startTime = Date.now();
   let totalTokensUsed = 0;
 

@@ -29,7 +29,7 @@ const nextConfig = {
       "https://s3.tradingview.com https://www.tradingview.com https://*.tradingview.com https://s.tradingview.com";
 
     const previewCdns =
-      "https://esm.sh https://*.esm.sh https://unpkg.com https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://*.jsdelivr.net";
+      "https://esm.sh https://*.esm.sh https://unpkg.com https://cdn.jsdelivr.net https://*.jsdelivr.net https://cdnjs.cloudflare.com https://*.cloudflare.com";
     const scriptSrc = isProd
       ? `script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com ${previewCdns} ${tradingViewHosts}`
       : `script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com ${previewCdns} ${tradingViewHosts}`;

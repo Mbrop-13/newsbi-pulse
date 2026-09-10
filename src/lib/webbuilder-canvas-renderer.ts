@@ -164,8 +164,8 @@ function rewriteSpecifier(
 }
 
 /**
- * `export default function generateMap` NO crea un named export.
- * El LLM suele hacer default en utils y `import { generateMap }` en App.
+ * export default function Name no crea un named export.
+ * El LLM suele hacer default en utils y named import en App.
  * Dejamos default + named para que el import map no falle.
  */
 function addDualDefaultExport(code: string): string {
@@ -214,7 +214,7 @@ function namedModImportInterop(clause: string, spec: string, ns: string): string
     .map((s) => s.trim())
     .filter((n) => n && !/^type\s/.test(n));
 
-  const lines = [`import * as ${ns} from "${spec}";`];
+  const lines = ["import * as " + ns + " from \"" + spec + "\";"];
   if (defaultName) {
     lines.push(`const ${defaultName} = ${ns}.default !== undefined ? ${ns}.default : ${ns};`);
   }

@@ -38,7 +38,8 @@ JUEGOS (HTML5 canvas / React):
     grid[y] = [];
     for (let x = 0; x < COLS; x++) grid[y][x] = 0;
   }
-  COLS y ROWS deben ser numeros literales en el mismo archivo. generateRandomMap(width, height) usa Number(width)||16 y Number(height)||12, crea TODAS las filas, y recien ahi pone paredes.
+  COLS y ROWS deben ser numeros literales en el mismo archivo. generateRandomMap(width, height) usa Number(width)||16 y Number(height)||12, crea TODAS las filas, y recien ahi pone paredes. SIEMPRE return grid al final.
+- Estado React: listas y grillas con useState([]) nunca useState() vacio. Nunca hagas foo.map si foo puede ser undefined: usa (foo || []).map.
 - De lucide-react importa SOLO los iconos que uses, por nombre, desde lucide-react.
 - NUNCA uses rutas locales de assets (/images/foo.png, ./sprite.png). Dibujá con canvas, SVG o URLs absolutas https://.
 - El juego debe arrancar solo al montar el componente (useEffect), sin window.onload.

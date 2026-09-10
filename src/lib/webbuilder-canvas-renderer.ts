@@ -105,8 +105,10 @@ function addDualDefaultExport(code: string): string {
 function patch2dGridAssign(code: string): string {
   const prelude =
     "function __idx(n){n=Number(n);return isFinite(n)?(n|0):0;}\n" +
-    "function __ensureRow(g,y){if(!g||typeof g!==\"object\")return [];y=__idx(y);if(!g[y]||typeof g[y]!==\"object\")g[y]=[];return g[y];}\n";
-  const withDims = code.replace(
+    "function __ensureRow(g,y){if(!g||typeof g!==\"object\")return [];y=__idx(y);if(!g[y]||typeof g[y]!==\"object\")g[y]=[];return g[y];}\n" +
+    "function __safeMap(arr, fn, ctx){if(arr==null||typeof arr.map!==\"function\")return [];return arr.map(fn, ctx);}\n";
+  let next = code.replace(/useState\s*(?:<[^>]*>)?\s*\(\s*\)/g, "useState([])");
+  next = next.replace(
     /function\s+(generateRandomMap|generateMap|createMap|initMap|buildMap)\s*\(([^)]*)\)\s*\{/g,
     (_m, name: string, args: string) => {
       const names = args.split(",").map((s) =>
@@ -122,11 +124,18 @@ function patch2dGridAssign(code: string): string {
       return "function " + name + "(" + args + "){" + inject;
     }
   );
-  const patched = withDims.replace(
+  next = next.replace(
     /((?:this\.)?[A-Za-z_$][\w.$]*)\[([^\[\]]+)\]\[([^\[\]]+)\]\s*=(?!=)/g,
     "__ensureRow($1, $2)[__idx($3)] ="
   );
-  return prelude + patched;
+  next = next.replace(
+    /((?:this\.)?[A-Za-z_$][\w.$]*)\.map\s*\(/g,
+    (_m, obj: string) => {
+      if (obj === "Children" || obj.endsWith(".Children") || obj === "__safeMap") return _m;
+      return "__safeMap(" + obj + ", ";
+    }
+  );
+  return prelude + next;
 }
 
 /**
@@ -551,7 +560,18 @@ ${styleTag}
           var wrapped = function (a, b, c) {
             if (a === undefined || (typeof a === 'number' && !isFinite(a))) a = 16;
             if (b === undefined || (typeof b === 'number' && !isFinite(b))) b = 12;
-            return fnMap.call(this, a, b, c);
+            var result = null;
+            try { result = fnMap.call(this, a, b, c); } catch (e) { result = null; }
+            if (!Array.isArray(result)) {
+              result = [];
+              var hh = Number(b) || 12;
+              var ww = Number(a) || 16;
+              for (var yy = 0; yy < hh; yy++) {
+                result[yy] = [];
+                for (var xx = 0; xx < ww; xx++) result[yy][xx] = 0;
+              }
+            }
+            return result;
           };
           module.exports[name] = wrapped;
           if (module.exports.default && module.exports.default[name]) module.exports.default[name] = wrapped;

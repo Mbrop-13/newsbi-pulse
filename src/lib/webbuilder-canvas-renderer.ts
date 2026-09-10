@@ -511,9 +511,29 @@ ${styleTag}
       var module = { exports: {} };
       cache[path] = module;
       try {
-        var fn = new Function('require', 'module', 'exports', 'React', 'ReactDOM', code);
+        var prelude =
+          'function __idx(n){n=Number(n);return isFinite(n)?(n|0):0;}' +
+          'function __ensureRow(g,y){if(!g||typeof g!=="object")return [];y=__idx(y);if(!g[y]||typeof g[y]!=="object")g[y]=[];return g[y];}';
+        var patched = String(code).replace(
+          /((?:this\.)?[A-Za-z_$][\w.$]*)\[([^\[\]]+)\]\[([^\[\]]+)\]\s*=(?!=)/g,
+          '__ensureRow($1, $2)[__idx($3)] ='
+        );
+        var fn = new Function('require', 'module', 'exports', 'React', 'ReactDOM', prelude + patched);
         fn(req, module, module.exports, React, ReactDOM);
         flattenExports(module.exports);
+        ['generateRandomMap','generateMap','createMap','initMap','buildMap'].forEach(function (name) {
+          var fnMap = module.exports[name] || (module.exports.default && module.exports.default[name]);
+          var isDefault = module.exports.default === fnMap;
+          if (typeof fnMap !== 'function') return;
+          var wrapped = function (a, b, c) {
+            if (a === undefined || (typeof a === 'number' && !isFinite(a))) a = 16;
+            if (b === undefined || (typeof b === 'number' && !isFinite(b))) b = 12;
+            return fnMap.call(this, a, b, c);
+          };
+          module.exports[name] = wrapped;
+          if (module.exports.default && module.exports.default[name]) module.exports.default[name] = wrapped;
+          if (isDefault) module.exports.default = wrapped;
+        });
       } catch (err) {
         report('Error en ' + path + ': ' + (err && err.message ? err.message : err), path);
         throw err;
@@ -533,7 +553,7 @@ ${styleTag}
     Boundary.prototype.render = function () {
       if (this.state.error) {
         return React.createElement('div', {
-          style: { padding: 16, fontFamily: 'sans-serif', color: '#111', background: '#fff', whiteSpace: 'pre-wrap' }
+          style: { padding: 16, fontFamily: 'sans-serif', color: '#111', background: '#ffffff', minHeight: '100vh', whiteSpace: 'pre-wrap' }
         }, this.state.error);
       }
       return this.props.children;

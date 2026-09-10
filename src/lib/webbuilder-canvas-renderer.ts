@@ -106,7 +106,23 @@ function patch2dGridAssign(code: string): string {
   const prelude =
     "function __idx(n){n=Number(n);return isFinite(n)?(n|0):0;}\n" +
     "function __ensureRow(g,y){if(!g||typeof g!==\"object\")return [];y=__idx(y);if(!g[y]||typeof g[y]!==\"object\")g[y]=[];return g[y];}\n";
-  const patched = code.replace(
+  const withDims = code.replace(
+    /function\s+(generateRandomMap|generateMap|createMap|initMap|buildMap)\s*\(([^)]*)\)\s*\{/g,
+    (_m, name: string, args: string) => {
+      const names = args.split(",").map((s) =>
+        s.split("=")[0].replace(/[?:].*$/, "").trim()
+      ).filter((n) => /^[A-Za-z_$][\w$]*$/.test(n));
+      let inject = "";
+      if (names[0]) {
+        inject += `${names[0]}=Number(${names[0]});if(!isFinite(${names[0]})||${names[0]}<1)${names[0]}=16;`;
+      }
+      if (names[1]) {
+        inject += `${names[1]}=Number(${names[1]});if(!isFinite(${names[1]})||${names[1]}<1)${names[1]}=12;`;
+      }
+      return "function " + name + "(" + args + "){" + inject;
+    }
+  );
+  const patched = withDims.replace(
     /((?:this\.)?[A-Za-z_$][\w.$]*)\[([^\[\]]+)\]\[([^\[\]]+)\]\s*=(?!=)/g,
     "__ensureRow($1, $2)[__idx($3)] ="
   );

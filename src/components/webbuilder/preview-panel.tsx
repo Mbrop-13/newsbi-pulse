@@ -1184,12 +1184,8 @@ export function PreviewPanel() {
     }
   }, [isSettingsOpen, currentProject]);
 
-  // Enforce mobile viewport for mobile apps
-  useEffect(() => {
-    if (currentProject?.projectType === "app") {
-      setViewport("mobile");
-    }
-  }, [currentProject]);
+  // Viewport starts on desktop. Never force the phone frame — the user
+  // picks PC / tablet / phone from the toolbar.
 
   const handleSaveSettings = async () => {
     if (!currentProject) return;
@@ -1703,7 +1699,7 @@ export function PreviewPanel() {
             </div>
 
             {/* Viewport (Only in Preview) */}
-            {selectedTab === "preview" && currentProject?.projectType !== "app" && (
+            {selectedTab === "preview" && (
               <div className="flex items-center gap-1 bg-muted/30 rounded-lg p-1 border border-border/30">
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -2351,14 +2347,7 @@ export function PreviewPanel() {
                     {(isAiResponding || chatLoading) ? (
                       <PremiumSkeletonLoader isAiResponding={isAiResponding || chatLoading} />
                     ) : (
-                      <>
-                        <CanvasPreview stableFiles={stableFiles} />
-                        {(hasBuildError || lastAutoFixError) && (
-                          <div className="absolute inset-0 z-20">
-                            <BuildErrorView error={lastAutoFixError ?? "Error de compilación detectado. Usa \"Abrir en Editor\" para inspeccionar o \"Reintentar Compilación\"."} />
-                          </div>
-                        )}
-                      </>
+                      <CanvasPreview stableFiles={stableFiles} />
                     )}
 
                     {/* #7 POPOVER DE EDICIÓN INLINE: flotante sobre el iframe.
